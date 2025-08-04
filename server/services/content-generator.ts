@@ -51,6 +51,36 @@ const contentTemplates = {
         "Elegance is knowing exactly how to drive you wild"
       ],
       content: "There's an art to seduction that goes beyond the obvious ✨\n\nI believe in building anticipation... making you crave every reveal. True elegance is knowing when to tease and when to please.\n\nFor those with refined tastes, check my exclusive content 💎\n\n#elegant #sophisticated #classy"
+    },
+    shy: {
+      titles: [
+        "I'm so nervous to post this... please be nice 🥺",
+        "First time showing this much... am I doing okay?",
+        "Too shy to show my face but... here's the rest 😊",
+        "My friend dared me to post... what do you think?",
+        "Still learning to be confident... rate me gently? 💕"
+      ],
+      content: "I'm still so new to this and honestly a bit scared... 🥺\n\nBut everyone here seems so sweet! Maybe you could help boost my confidence? Your comments mean everything to a shy girl like me.\n\nI promise I'll get braver if you're nice to me 💕\n\n#shy #nervous #beginner"
+    },
+    naughty: {
+      titles: [
+        "Being a bad girl while parents are out 😈",
+        "Can't sleep... anyone want to keep me company?",
+        "Feeling so horny right now... help me out? 💦",
+        "Just did something very naughty... wanna see?",
+        "Late night cravings got me acting up again 🔥"
+      ],
+      content: "I've been such a naughty girl today and I can't help myself 😈\n\nI need someone to tell me exactly what they'd do to me... the dirtier the better. I'm already so wet just thinking about it 💦\n\nDM me your fantasies - I reply to everyone tonight 🔥\n\n#naughty #horny #wetandready"
+    },
+    kinky: {
+      titles: [
+        "Looking for someone to explore my darker side with 🖤",
+        "Vanilla is boring... who wants to get freaky?",
+        "I have some very specific needs... can you handle them?",
+        "Ready to be your perfect little submissive tonight 😈",
+        "Daddy issues and rope marks - your type? 🔗"
+      ],
+      content: "I'm not your average girl next door... I crave things that would shock most people 🖤\n\nI love being tied up, spanked, and told exactly what to do. The rougher the better. I'm your perfect little toy if you know how to use me right.\n\nOnly real doms in my DMs - prove you can handle me 😈\n\n#kinky #submissive #bdsm #roughplay"
     }
   }
 };
@@ -93,6 +123,32 @@ const photoInstructionTemplates = {
       "Photo 3: Topless, confident look",
       "Photo 4: Everything off, artistic pose",
       "Photo 5: Whatever makes you feel powerful"
+    ]
+  },
+  slutty: {
+    lighting: ["Bright lighting to show everything"],
+    angles: ["Get close, show the details"],
+    composition: ["Don't worry about being classy"],
+    styling: ["Wear the sluttiest outfit you have"],
+    technical: [
+      "Photo 1: Slutty outfit, bend over pose",
+      "Photo 2: Top off, push up your tits",
+      "Photo 3: Spread your legs, show pussy",
+      "Photo 4: Ass up, face down position",
+      "Photo 5: Completely naked, legs wide open"
+    ]
+  },
+  nude: {
+    lighting: ["Whatever lighting you have"],
+    angles: ["Full body shots"],
+    composition: ["Show everything clearly"],
+    styling: ["Start completely naked"],
+    technical: [
+      "Photo 1: Standing nude, hands at sides",
+      "Photo 2: Bent over showing ass and pussy",
+      "Photo 3: Lying down, legs spread wide",
+      "Photo 4: On knees, tits pushed together",
+      "Photo 5: Whatever slutty pose you want"
     ]
   }
 };

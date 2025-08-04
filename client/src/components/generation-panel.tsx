@@ -95,7 +95,7 @@ export function GenerationPanel({ onContentGenerated }: GenerationPanelProps) {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Content Style</label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {["playful", "mysterious", "bold", "elegant"].map((styleOption) => (
+              {["playful", "mysterious", "bold", "elegant", "shy", "naughty", "kinky"].map((styleOption) => (
                 <Button
                   key={styleOption}
                   variant={style === styleOption ? "default" : "outline"}
@@ -111,8 +111,8 @@ export function GenerationPanel({ onContentGenerated }: GenerationPanelProps) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Photo Style</label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {["tease", "shower", "lingerie"].map((themeOption) => (
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              {["tease", "shower", "lingerie", "slutty", "nude"].map((themeOption) => (
                 <Button
                   key={themeOption}
                   variant={theme === themeOption ? "default" : "outline"}
