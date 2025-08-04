@@ -1,26 +1,42 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { ContentGeneration } from "@shared/schema";
-import { Camera, Lightbulb, CameraIcon, Crop, Palette, Settings, Save, History, Download } from "lucide-react";
+import { Camera, Lightbulb, CameraIcon, Crop, Palette, Settings, Save, History, Download, ChevronDown, ChevronUp } from "lucide-react";
 
 interface PhotoInstructionsProps {
   currentGeneration: ContentGeneration | null;
 }
 
 export function PhotoInstructions({ currentGeneration }: PhotoInstructionsProps) {
+  const [isExpanded, setIsExpanded] = useState(true);
   const instructions = currentGeneration?.photoInstructions;
 
   return (
     <div className="space-y-6">
       <Card className="bg-white rounded-xl shadow-sm border border-gray-200 sticky top-8">
         <CardContent className="p-6">
-          <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-            <Camera className="text-accent mr-2 h-5 w-5" />
-            Photo Instructions
-          </h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-bold text-gray-900 flex items-center">
+              <Camera className="text-accent mr-2 h-5 w-5" />
+              Photo Instructions
+            </h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              {isExpanded ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
 
           {instructions ? (
-            <div className="space-y-4">
+            <div className={`space-y-4 ${!isExpanded ? 'hidden' : ''}`}>
               {/* Quick Setup */}
               <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-4 border border-yellow-200">
                 <h4 className="font-semibold text-gray-900 mb-2 flex items-center">

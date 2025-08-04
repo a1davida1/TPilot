@@ -16,6 +16,8 @@ export function GenerationPanel({ onContentGenerated }: GenerationPanelProps) {
   const [platform, setPlatform] = useState("reddit");
   const [style, setStyle] = useState("playful");
   const [theme, setTheme] = useState("tease");
+  const [timing, setTiming] = useState("evening");
+  const [spiceLevel, setSpiceLevel] = useState("medium");
   const [copiedItem, setCopiedItem] = useState<string | null>(null);
   const [generatedContent, setGeneratedContent] = useState<ContentGeneration | null>(null);
 
@@ -121,6 +123,40 @@ export function GenerationPanel({ onContentGenerated }: GenerationPanelProps) {
                   className={theme === themeOption ? "bg-secondary text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}
                 >
                   {themeOption.charAt(0).toUpperCase() + themeOption.slice(1)}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Post Timing</label>
+            <div className="grid grid-cols-3 gap-2">
+              {["morning", "evening", "late"].map((timingOption) => (
+                <Button
+                  key={timingOption}
+                  variant={timing === timingOption ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setTiming(timingOption)}
+                  className={timing === timingOption ? "bg-accent text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}
+                >
+                  {timingOption.charAt(0).toUpperCase() + timingOption.slice(1)}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Spice Level</label>
+            <div className="grid grid-cols-3 gap-2">
+              {["mild", "medium", "explicit"].map((spiceOption) => (
+                <Button
+                  key={spiceOption}
+                  variant={spiceLevel === spiceOption ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSpiceLevel(spiceOption)}
+                  className={spiceLevel === spiceOption ? "bg-red-500 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}
+                >
+                  {spiceOption.charAt(0).toUpperCase() + spiceOption.slice(1)}
                 </Button>
               ))}
             </div>
