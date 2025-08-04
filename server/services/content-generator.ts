@@ -14,142 +14,85 @@ const contentTemplates = {
   reddit: {
     playful: {
       titles: [
-        "First time posting here... be gentle 💕",
-        "Lazy Sunday vibes ✨ What would you do with me?",
-        "Coffee in bed hits different when you're like this ☕",
-        "Just got out of the shower and feeling myself 💦",
-        "Morning light hitting just right today 🌅"
+        "First time posting... should I be nervous? 😇",
+        "Just turned 18 and feeling adventurous 💕",
+        "My roommate's gone for the weekend... what should I do? 😈",
+        "Fresh out of the shower and feeling naughty 💦",
+        "Daddy said I've been a good girl... do you agree? 🥺"
       ],
-      content: "Just got out of the shower and feeling absolutely amazing! 💦✨\n\nThere's something so liberating about these quiet moments... What are you up to this evening? 😘\n\n#selfcare #confidence #authentic"
+      content: "Just got verified and I'm already getting so many sweet messages! 💕\n\nI love how friendly everyone is here... maybe I should post more often? What do you think I should show you next? 😘\n\nCheck my bio for more exclusive content 💋"
     },
     mysterious: {
       titles: [
-        "What secrets do my eyes hold? 👁️",
-        "Shadow and light tell stories... what's mine saying?",
-        "Some mysteries are worth discovering 🖤",
-        "Behind closed doors, who am I really?",
-        "The darkness reveals more than light ever could"
+        "What would you do if you found me like this? 🌙",
+        "The things I do when nobody's watching... 🖤",
+        "Some secrets are too delicious to keep hidden",
+        "Behind this innocent face lies something darker 😈",
+        "You have no idea what I'm capable of..."
       ],
-      content: "There's something intoxicating about the unknown, don't you think? 🌙\n\nIn shadows, we find our truest selves... What would you discover about me?\n\n#mysterious #alluring #secrets"
+      content: "There's so much more to me than meets the eye... 🌙\n\nI have fantasies that would make you blush. Want to know what they are?\n\nDM me if you think you can handle the real me 💋\n\n#mysterious #naughty #secrets"
     },
     bold: {
       titles: [
-        "Confidence is my favorite outfit 💪",
-        "Taking up space and loving every inch of it",
-        "Bold moves only - life's too short for maybe",
-        "Here's to being unapologetically me 🔥",
-        "Fierce energy, unstoppable attitude"
+        "I know exactly what you're thinking right now 🔥",
+        "Confidence looks good on me, doesn't it?",
+        "I dare you to tell me what you'd do to me",
+        "No limits, no boundaries, just pure desire 💋",
+        "Think you can handle all of this? Prove it"
       ],
-      content: "Life's too short to play it safe, don't you think? 🔥\n\nI'm here, I'm bold, and I'm owning every moment. What bold move are you making today?\n\n#confidence #fierce #unapologetic"
+      content: "I'm not here to play games or be subtle 🔥\n\nI know what I want and I'm not afraid to ask for it. The question is... are you brave enough to give it to me?\n\nSlide into my DMs and show me what you're made of 😈\n\n#confident #bold #nolimits"
     },
     elegant: {
       titles: [
-        "Grace in every movement, beauty in simplicity ✨",
-        "Elegance is the only beauty that never fades",
-        "Soft curves, gentle light, timeless allure",
-        "Classic beauty with a modern twist 🤍",
-        "Sophistication speaks louder than words"
+        "Sophistication with a sinful twist ✨",
+        "Class in the streets, freak in the sheets",
+        "Pearls and lace hide the wildest desires",
+        "Refined on the outside, insatiable within 🤍",
+        "Elegance is knowing exactly how to drive you wild"
       ],
-      content: "There's something timeless about quiet elegance, isn't there? ✨\n\nIn a world of noise, I choose grace. What speaks to your soul today?\n\n#elegant #timeless #sophisticated"
+      content: "There's an art to seduction that goes beyond the obvious ✨\n\nI believe in building anticipation... making you crave every reveal. True elegance is knowing when to tease and when to please.\n\nFor those with refined tastes, check my exclusive content 💎\n\n#elegant #sophisticated #classy"
     }
   }
 };
 
 const photoInstructionTemplates = {
-  lifestyle: {
-    lighting: [
-      "Soft natural light from large window",
-      "Use sheer curtains to diffuse harsh sunlight", 
-      "Golden hour timing (1 hour before sunset)",
-      "Avoid direct overhead lighting"
-    ],
-    angles: [
-      "Slightly above eye level for flattering perspective",
-      "45-degree angle for natural shadows",
-      "Leave negative space around subject",
-      "Use timer or remote for natural poses"
-    ],
-    composition: [
-      "Clean, minimal background",
-      "Use rule of thirds for positioning", 
-      "Include contextual elements (coffee, books, plants)",
-      "Multiple shots with different expressions"
-    ],
-    styling: [
-      "Relaxed, natural poses",
-      "Subtle makeup for fresh look",
-      "Comfortable, flattering clothing",
-      "Props that match the story theme"
-    ],
+  tease: {
+    lighting: ["Natural window light works best"],
+    angles: ["Use your phone timer"],
+    composition: ["Keep your bedroom/bathroom tidy"],
+    styling: ["Start fully clothed"],
     technical: [
-      "Portrait mode for background blur",
-      "High resolution for cropping flexibility",
-      "Multiple exposures for best lighting",
-      "Focus on eyes for portrait shots"
+      "Photo 1: Fully clothed, cute smile",
+      "Photo 2: Remove your top, cover with hands",
+      "Photo 3: Hands away, show everything",
+      "Photo 4: Turn around, look over shoulder",
+      "Photo 5: Your choice - get creative!"
     ]
   },
-  fashion: {
-    lighting: [
-      "Even, diffused lighting setup",
-      "Ring light or softbox for consistent illumination",
-      "Avoid harsh shadows on fabric textures",
-      "Side lighting to highlight clothing details"
-    ],
-    angles: [
-      "Eye level for outfit showcase",
-      "Full body shots from slight distance",
-      "Detail shots of accessories and textures",
-      "Multiple angles to show garment movement"
-    ],
-    composition: [
-      "Neutral background to highlight outfit",
-      "Vertical framing for full-body shots",
-      "Include styling accessories strategically",
-      "Clean, uncluttered composition"
-    ],
-    styling: [
-      "Confident, fashion-forward poses",
-      "Coordinated makeup with outfit colors",
-      "Attention to garment fit and draping",
-      "Accessories that complement the look"
-    ],
+  shower: {
+    lighting: ["Bathroom lighting is fine"],
+    angles: ["Mirror selfies work great"],
+    composition: ["Steam up the mirror a bit"],
+    styling: ["Start with a towel"],
     technical: [
-      "Sharp focus on clothing details",
-      "Proper white balance for true colors",
-      "Higher aperture for garment sharpness",
-      "Consistent lighting across multiple shots"
+      "Photo 1: Wrapped in towel after shower",
+      "Photo 2: Towel dropped to waist",
+      "Photo 3: Towel around ankles",
+      "Photo 4: Towel on floor, you're free",
+      "Photo 5: Wet hair, confident pose"
     ]
   },
-  artistic: {
-    lighting: [
-      "Dramatic lighting with strong contrasts",
-      "Play with shadows and highlights",
-      "Colored gels for mood lighting",
-      "Creative use of practical lights"
-    ],
-    angles: [
-      "Experimental and unconventional angles",
-      "Close-ups for abstract compositions",
-      "Low or high angles for dramatic effect",
-      "Multiple perspectives for storytelling"
-    ],
-    composition: [
-      "Break traditional composition rules",
-      "Use leading lines and geometric shapes",
-      "Negative space as part of the art",
-      "Layered elements for visual depth"
-    ],
-    styling: [
-      "Bold, artistic poses and expressions",
-      "Creative makeup and styling choices",
-      "Wardrobe that supports the artistic vision",
-      "Props that enhance the narrative"
-    ],
+  lingerie: {
+    lighting: ["Dim bedroom lighting"],
+    angles: ["Bed selfies are perfect"],
+    composition: ["Messy bed is actually better"],
+    styling: ["Wear your sexiest lingerie"],
     technical: [
-      "Experiment with different focal lengths",
-      "Creative use of depth of field",
-      "Post-processing for artistic effect",
-      "Multiple exposures for creative blending"
+      "Photo 1: Full lingerie set, innocent pose",
+      "Photo 2: Bra off, cover with arm",
+      "Photo 3: Topless, confident look",
+      "Photo 4: Everything off, artistic pose",
+      "Photo 5: Whatever makes you feel powerful"
     ]
   }
 };

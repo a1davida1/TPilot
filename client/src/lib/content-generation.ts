@@ -18,9 +18,9 @@ export const CONTENT_STYLES: ContentStyle[] = [
 ];
 
 export const CONTENT_THEMES: ContentTheme[] = [
-  { id: "lifestyle", name: "Lifestyle", description: "Everyday moments and authenticity" },
-  { id: "fashion", name: "Fashion", description: "Style-focused content" },
-  { id: "artistic", name: "Artistic", description: "Creative and expressive" },
+  { id: "tease", name: "Tease", description: "Playful revealing sequence" },
+  { id: "shower", name: "Shower", description: "Fresh and clean towel drops" },
+  { id: "lingerie", name: "Lingerie", description: "Sexy bedroom vibes" },
 ];
 
 export const PLATFORMS = [

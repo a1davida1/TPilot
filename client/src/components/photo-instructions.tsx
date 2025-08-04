@@ -21,11 +21,11 @@ export function PhotoInstructions({ currentGeneration }: PhotoInstructionsProps)
 
           {instructions ? (
             <div className="space-y-4">
-              {/* Lighting Setup */}
+              {/* Quick Setup */}
               <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-4 border border-yellow-200">
                 <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
                   <Lightbulb className="text-yellow-600 mr-2 h-4 w-4" />
-                  Lighting Setup
+                  Setup
                 </h4>
                 <ul className="text-sm text-gray-700 space-y-1">
                   {instructions.lighting.map((tip, index) => (
@@ -34,11 +34,11 @@ export function PhotoInstructions({ currentGeneration }: PhotoInstructionsProps)
                 </ul>
               </div>
 
-              {/* Camera Angles */}
+              {/* Camera Tips */}
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
                 <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
                   <CameraIcon className="text-blue-600 mr-2 h-4 w-4" />
-                  Camera Angles
+                  Camera Tips
                 </h4>
                 <ul className="text-sm text-gray-700 space-y-1">
                   {instructions.angles.map((tip, index) => (
@@ -47,11 +47,11 @@ export function PhotoInstructions({ currentGeneration }: PhotoInstructionsProps)
                 </ul>
               </div>
 
-              {/* Composition */}
+              {/* Background */}
               <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200">
                 <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
                   <Crop className="text-green-600 mr-2 h-4 w-4" />
-                  Composition
+                  Background
                 </h4>
                 <ul className="text-sm text-gray-700 space-y-1">
                   {instructions.composition.map((tip, index) => (
@@ -60,11 +60,11 @@ export function PhotoInstructions({ currentGeneration }: PhotoInstructionsProps)
                 </ul>
               </div>
 
-              {/* Styling Tips */}
+              {/* What to Wear */}
               <div className="bg-gradient-to-r from-pink-50 to-rose-50 rounded-lg p-4 border border-pink-200">
                 <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
                   <Palette className="text-pink-600 mr-2 h-4 w-4" />
-                  Styling Tips
+                  What to Wear
                 </h4>
                 <ul className="text-sm text-gray-700 space-y-1">
                   {instructions.styling.map((tip, index) => (
@@ -73,11 +73,11 @@ export function PhotoInstructions({ currentGeneration }: PhotoInstructionsProps)
                 </ul>
               </div>
 
-              {/* Technical Settings */}
+              {/* Photo Sequence */}
               <div className="bg-gradient-to-r from-purple-50 to-violet-50 rounded-lg p-4 border border-purple-200">
                 <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
                   <Settings className="text-purple-600 mr-2 h-4 w-4" />
-                  Camera Settings
+                  Photo Sequence
                 </h4>
                 <ul className="text-sm text-gray-700 space-y-1">
                   {instructions.technical.map((tip, index) => (

@@ -15,7 +15,7 @@ interface GenerationPanelProps {
 export function GenerationPanel({ onContentGenerated }: GenerationPanelProps) {
   const [platform, setPlatform] = useState("reddit");
   const [style, setStyle] = useState("playful");
-  const [theme, setTheme] = useState("lifestyle");
+  const [theme, setTheme] = useState("tease");
   const [copiedItem, setCopiedItem] = useState<string | null>(null);
   const [generatedContent, setGeneratedContent] = useState<ContentGeneration | null>(null);
 
@@ -110,9 +110,9 @@ export function GenerationPanel({ onContentGenerated }: GenerationPanelProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Theme Focus</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Photo Style</label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {["lifestyle", "fashion", "artistic"].map((themeOption) => (
+              {["tease", "shower", "lingerie"].map((themeOption) => (
                 <Button
                   key={themeOption}
                   variant={theme === themeOption ? "default" : "outline"}
