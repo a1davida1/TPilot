@@ -27,7 +27,7 @@ export default function Dashboard() {
               <div className="flex-shrink-0">
                 <h1 className="text-2xl font-bold text-primary flex items-center">
                   <Sparkles className="mr-2 h-6 w-6" />
-                  ContentCraft
+                  PromotionPro
                 </h1>
               </div>
             </div>
@@ -95,7 +95,7 @@ export default function Dashboard() {
       <footer className="bg-white border-t border-gray-200 mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center text-gray-500 text-sm">
-            <p>&copy; 2024 ContentCraft. Professional content creation tools.</p>
+            <p>&copy; 2024 PromotionPro. Professional content creation tools.</p>
           </div>
         </div>
       </footer>

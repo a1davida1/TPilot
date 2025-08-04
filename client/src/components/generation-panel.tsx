@@ -17,7 +17,7 @@ export function GenerationPanel({ onContentGenerated }: GenerationPanelProps) {
   const [style, setStyle] = useState("playful");
   const [theme, setTheme] = useState("tease");
   const [timing, setTiming] = useState("evening");
-  const [spiceLevel, setSpiceLevel] = useState("medium");
+  const [allowsPromotion, setAllowsPromotion] = useState("no");
   const [copiedItem, setCopiedItem] = useState<string | null>(null);
   const [generatedContent, setGeneratedContent] = useState<ContentGeneration | null>(null);
 
@@ -48,7 +48,7 @@ export function GenerationPanel({ onContentGenerated }: GenerationPanelProps) {
   });
 
   const handleGenerate = () => {
-    generateMutation.mutate({ platform, style, theme });
+    generateMutation.mutate({ platform, style, theme, timing, allowsPromotion });
   };
 
   const copyToClipboard = async (text: string, type: string) => {
@@ -146,17 +146,17 @@ export function GenerationPanel({ onContentGenerated }: GenerationPanelProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Spice Level</label>
-            <div className="grid grid-cols-3 gap-2">
-              {["mild", "medium", "explicit"].map((spiceOption) => (
+            <label className="block text-sm font-medium text-gray-700 mb-2">Does the subreddit allow promotion in the main post?</label>
+            <div className="grid grid-cols-2 gap-2">
+              {["yes", "no"].map((promotionOption) => (
                 <Button
-                  key={spiceOption}
-                  variant={spiceLevel === spiceOption ? "default" : "outline"}
+                  key={promotionOption}
+                  variant={allowsPromotion === promotionOption ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setSpiceLevel(spiceOption)}
-                  className={spiceLevel === spiceOption ? "bg-red-500 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}
+                  onClick={() => setAllowsPromotion(promotionOption)}
+                  className={allowsPromotion === promotionOption ? "bg-green-500 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}
                 >
-                  {spiceOption.charAt(0).toUpperCase() + spiceOption.slice(1)}
+                  {promotionOption === "yes" ? "Yes - Include links/promo" : "No - Keep it subtle"}
                 </Button>
               ))}
             </div>

@@ -13,7 +13,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const generatedContent = await generateContent(
         validatedData.platform,
         validatedData.style,
-        validatedData.theme
+        validatedData.theme,
+        req.body.timing,
+        req.body.allowsPromotion
       );
       
       const contentGeneration = await storage.createContentGeneration({

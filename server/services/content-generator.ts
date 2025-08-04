@@ -20,7 +20,8 @@ const contentTemplates = {
         "Fresh out of the shower and feeling naughty 💦",
         "Daddy said I've been a good girl... do you agree? 🥺"
       ],
-      content: "Just got verified and I'm already getting so many sweet messages! 💕\n\nI love how friendly everyone is here... maybe I should post more often? What do you think I should show you next? 😘\n\nCheck my bio for more exclusive content 💋"
+      content: "Just got verified and I'm already getting so many sweet messages! 💕\n\nI love how friendly everyone is here... maybe I should post more often? What do you think I should show you next? 😘",
+      contentWithPromo: "Just got verified and I'm already getting so many sweet messages! 💕\n\nI love how friendly everyone is here... maybe I should post more often? What do you think I should show you next? 😘\n\nCheck my bio for more exclusive content 💋\nDM me for custom requests! 🔥"
     },
     mysterious: {
       titles: [
@@ -156,7 +157,9 @@ const photoInstructionTemplates = {
 export async function generateContent(
   platform: string,
   style: string,
-  theme: string
+  theme: string,
+  timing?: string,
+  allowsPromotion?: string
 ): Promise<GeneratedContent> {
   // Get content template based on platform and style
   const platformTemplates = contentTemplates[platform as keyof typeof contentTemplates];
@@ -178,9 +181,14 @@ export async function generateContent(
   // Simulate some processing time
   await new Promise(resolve => setTimeout(resolve, 1000));
 
+  // Choose content based on whether promotion is allowed
+  const finalContent = allowsPromotion === "yes" && styleTemplate.contentWithPromo 
+    ? styleTemplate.contentWithPromo 
+    : styleTemplate.content;
+
   return {
     titles: styleTemplate.titles,
-    content: styleTemplate.content,
+    content: finalContent,
     photoInstructions: instructionTemplate
   };
 }
