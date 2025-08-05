@@ -13,6 +13,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link, useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ProviderStatus } from "@/components/provider-status";
+import { ConversionOptimization } from "@/components/conversion-optimization";
 
 export default function Dashboard() {
   const [currentGeneration, setCurrentGeneration] = useState<ContentGeneration | null>(null);
@@ -161,12 +163,40 @@ export default function Dashboard() {
             </TabsTrigger>
           </TabsList>
           
+          {/* Provider Status Tab (Admin/Debug) */}
+          {!isGuestMode && (
+            <div className="mb-4">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => window.open('/api/providers', '_blank')}
+                className="flex items-center"
+              >
+                <Brain className="mr-2 h-4 w-4" />
+                Check Provider Status
+              </Button>
+            </div>
+          )}
+          
           {/* AI Content Generator */}
           <TabsContent value="ai-content" className="space-y-8">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* AI Generation Panel */}
               <div className="lg:col-span-2">
                 <AIGenerator onContentGenerated={handleContentGenerated} />
+              </div>
+              
+              {/* Sidebar with Conversion Optimization */}
+              <div className="space-y-6">
+                {isGuestMode && (
+                  <ConversionOptimization 
+                    isGuestMode={true}
+                    onUpgrade={() => window.location.href = '/login'}
+                  />
+                )}
+                
+                {/* Always show provider status for cost transparency */}
+                <ProviderStatus />
               </div>
               
               {/* Generated Content Display */}

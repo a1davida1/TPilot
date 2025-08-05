@@ -4,6 +4,8 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
+import { SEOOptimization, seoConfigs } from "@/components/seo-optimization";
+import { LandingPage } from "@/components/landing-page";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import Login from "@/pages/login";
@@ -27,9 +29,12 @@ function UnauthenticatedRoutes() {
     <Switch>
       <Route path="/login" component={Login} />
       <Route path="/dashboard" component={Dashboard} />
-      <Route path="/" component={Login} />
+      <Route path="/">
+        <SEOOptimization {...seoConfigs.landing} />
+        <LandingPage />
+      </Route>
       <Route>
-        <Redirect to="/login" />
+        <Redirect to="/" />
       </Route>
     </Switch>
   );

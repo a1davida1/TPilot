@@ -21,7 +21,7 @@ const storage_config = multer.diskStorage({
       await fs.mkdir(uploadDir, { recursive: true });
       cb(null, uploadDir);
     } catch (error) {
-      cb(error, uploadDir);
+      cb(error as Error, uploadDir);
     }
   },
   filename: (req, file, cb) => {
@@ -37,7 +37,7 @@ const upload = multer({
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);
     } else {
-      cb(new Error('Only image files are allowed!'), false);
+      cb(new Error('Only image files are allowed!'));
     }
   }
 });
