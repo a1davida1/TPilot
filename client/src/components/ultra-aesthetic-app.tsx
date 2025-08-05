@@ -40,6 +40,7 @@ import { SocialAuth } from "@/components/social-auth";
 import { ProviderStatus } from "@/components/provider-status";
 import { SampleUpload } from "@/components/sample-upload";
 import { FineTuningSettings } from "@/components/fine-tuning-settings";
+import { AuthModal } from "@/components/auth-modal";
 import { cn } from "@/lib/utils";
 
 interface UltraAestheticAppProps {
@@ -51,6 +52,7 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isVisible, setIsVisible] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
     setIsVisible(true);
@@ -166,7 +168,7 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
                   </p>
                   <Button 
                     className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-                    onClick={() => window.location.href = '/login'}
+                    onClick={() => setShowAuthModal(true)}
                   >
                     Unlock Full Access
                   </Button>
@@ -361,7 +363,10 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
                         </CardContent>
                       </Card>
                     </div>
-                    <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 h-12">
+                    <Button 
+                      className="w-full bg-gradient-to-r from-purple-600 to-pink-600 h-12"
+                      onClick={() => isGuestMode ? setShowAuthModal(true) : null}
+                    >
                       {isGuestMode ? "Sign Up to Access" : "Start Protecting Images"}
                     </Button>
                   </CardContent>
@@ -418,6 +423,16 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
           </div>
         </div>
       </main>
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={() => {
+          setShowAuthModal(false);
+          window.location.reload(); // Reload to update authentication state
+        }}
+      />
     </div>
   );
 }

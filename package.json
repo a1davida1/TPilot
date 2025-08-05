@@ -49,6 +49,8 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/memoizee": "^0.4.12",
     "@types/multer": "^2.0.0",
+    "@types/passport-facebook": "^3.0.3",
+    "@types/passport-google-oauth20": "^2.0.16",
     "@uppy/aws-s3": "^4.3.2",
     "@uppy/core": "^4.5.2",
     "@uppy/dashboard": "^4.4.2",

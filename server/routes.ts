@@ -13,6 +13,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import session from 'express-session';
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
+import { setupAuth } from "./auth";
 
 // Configure multer for file uploads
 const storage_config = multer.diskStorage({
@@ -69,6 +70,21 @@ const authenticateToken = async (req: AuthRequest, res: express.Response, next: 
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Session configuration
+  app.use(session({
+    secret: process.env.SESSION_SECRET || 'your-session-secret-change-in-production',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
+  }));
+
+  // Setup authentication
+  setupAuth(app);
+
   // Serve uploaded files
   app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 

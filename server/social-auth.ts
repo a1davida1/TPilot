@@ -4,6 +4,7 @@ import { Strategy as FacebookStrategy } from 'passport-facebook';
 import { Strategy as RedditStrategy } from 'passport-reddit';
 import type { Express } from 'express';
 import { storage } from './storage';
+import type { User } from '@shared/schema';
 
 export function setupSocialAuth(app: Express) {
   // Initialize Passport
@@ -15,7 +16,7 @@ export function setupSocialAuth(app: Express) {
     done(null, user.id);
   });
 
-  passport.deserializeUser(async (id: string, done) => {
+  passport.deserializeUser(async (id: number, done) => {
     try {
       const user = await storage.getUser(id);
       done(null, user);
@@ -43,9 +44,8 @@ export function setupSocialAuth(app: Express) {
             password: '', // No password for social auth
             provider: 'google',
             providerId: profile.id,
-            avatar: profile.photos?.[0]?.value,
-            createdAt: new Date()
-          });
+            avatar: profile.photos?.[0]?.value
+          } as any);
         }
         
         return done(null, user);

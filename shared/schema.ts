@@ -5,9 +5,12 @@ import { z } from "zod";
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: varchar("username", { length: 255 }).unique().notNull(),
-  password: varchar("password", { length: 255 }).notNull(),
+  password: varchar("password", { length: 255 }).notNull().default(''),
   email: varchar("email", { length: 255 }),
   tier: varchar("tier", { length: 50 }).default("free").notNull(), // free, pro, premium
+  provider: varchar("provider", { length: 50 }), // google, facebook, reddit
+  providerId: varchar("provider_id", { length: 255 }),
+  avatar: varchar("avatar", { length: 500 }),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
