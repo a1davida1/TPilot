@@ -21,20 +21,20 @@ export default function Login() {
 
   const authMutation = useMutation({
     mutationFn: async (data: { email: string; password: string; username?: string; mode: 'login' | 'signup' }) => {
-      return apiRequest(`/api/auth/${data.mode}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
+      return apiRequest(`/api/auth/${data.mode}`, 'POST', data);
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast({
         title: view === 'login' ? "Welcome back!" : "Account created!",
         description: view === 'login' ? "You're logged in successfully." : "Your account has been created and you're logged in.",
       });
       // Store auth token/user data
-      localStorage.setItem('authToken', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      if (data.token) {
+        localStorage.setItem('authToken', data.token);
+      }
+      if (data.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
       setLocation('/dashboard');
     },
     onError: (error: any) => {

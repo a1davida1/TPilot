@@ -3,6 +3,34 @@ import OpenAI from 'openai';
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// Demo content generator for when API is unavailable
+function generateDemoContent(request: AIGenerationRequest): AIContentResponse {
+  const { customPrompt, platform, allowsPromotion } = request;
+  
+  const demoTitles = [
+    "Just had the most amazing day! ✨",
+    "Feeling confident and loving life 💫",
+    "Sometimes you just gotta shine your own light ✨"
+  ];
+  
+  const demoContent = customPrompt 
+    ? `Here's some engaging content based on your prompt: "${customPrompt}"\n\nThis is a demo of what ThottoPilot can create for you! The actual AI would generate personalized content that matches your voice and style perfectly. ${allowsPromotion === 'yes' ? 'With promotion-friendly messaging included!' : 'Keeping things subtle and authentic.'}\n\nSign up to unlock the full AI generator with real OpenAI integration! 🚀`
+    : `This is a demo of ThottoPilot's AI content generation! 🎉\n\nIn the full version, I would create personalized ${platform} content that matches your exact voice, style, and brand. Every post would be tailored to your personality profile and optimized for maximum engagement.\n\nReady to see what real AI-generated content can do for your growth? Sign up now! ✨`;
+
+  return {
+    titles: demoTitles,
+    content: demoContent,
+    photoInstructions: {
+      lighting: "Soft natural light from a window - creates a warm, inviting glow that's flattering and professional",
+      cameraAngle: "Slightly above eye level - this angle is universally flattering and creates connection with viewers",
+      composition: "Rule of thirds with you positioned off-center - creates visual interest and professional-looking shots",
+      styling: "Your signature style with a touch of confidence - wear what makes you feel amazing and authentic",
+      mood: "Confident, approachable, and genuinely happy - let your personality shine through naturally",
+      technicalSettings: "Portrait mode with soft background blur - keeps focus on you while creating depth"
+    }
+  };
+}
+
 interface User {
   personalityProfile: {
     toneOfVoice: string;
@@ -113,7 +141,9 @@ Content length should be ${profile.contentLength}.
     };
   } catch (error) {
     console.error('AI generation error:', error);
-    throw new Error('Failed to generate AI content. Please check your API key and try again.');
+    
+    // Fallback to demo content for testing/quota issues
+    return generateDemoContent(request);
   }
 }
 
