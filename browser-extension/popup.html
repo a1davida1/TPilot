@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      width: 320px;
+      padding: 0;
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .popup-header {
+      background: white;
+      padding: 20px;
+      text-align: center;
+      border-radius: 0 0 16px 16px;
+    }
+    
+    .logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    
+    .logo-icon {
+      font-size: 24px;
+    }
+    
+    .logo-text {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+    
+    .tagline {
+      color: #64748b;
+      font-size: 14px;
+      margin: 0;
+    }
+    
+    .popup-content {
+      padding: 20px;
+      color: white;
+    }
+    
+    .status-card {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .status-title {
+      font-weight: 600;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    
+    .status-desc {
+      font-size: 13px;
+      opacity: 0.9;
+      line-height: 1.4;
+    }
+    
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .btn {
+      background: white;
+      color: #4c1d95;
+      border: none;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      text-align: center;
+      display: block;
+    }
+    
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+    
+    .btn-secondary {
+      background: transparent;
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .instructions {
+      font-size: 12px;
+      opacity: 0.8;
+      text-align: center;
+      margin-top: 16px;
+      line-height: 1.4;
+    }
+    
+    .version {
+      text-align: center;
+      opacity: 0.6;
+      font-size: 11px;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="popup-header">
+    <div class="logo">
+      <span class="logo-icon">🛡️</span>
+      <span class="logo-text">PromotionPro</span>
+    </div>
+    <p class="tagline">Reddit Auto-Fill Helper</p>
+  </div>
+  
+  <div class="popup-content">
+    <div class="status-card">
+      <div class="status-title">Extension Status</div>
+      <div class="status-desc" id="status">
+        Ready to help with Reddit posting
+      </div>
+    </div>
+    
+    <div class="actions">
+      <button class="btn" id="openPromotionPro">
+        Open PromotionPro
+      </button>
+      
+      <button class="btn btn-secondary" id="testConnection">
+        Test Connection
+      </button>
+    </div>
+    
+    <div class="instructions">
+      <strong>How to use:</strong><br>
+      1. Generate content in PromotionPro<br>
+      2. Go to any Reddit submit page<br>
+      3. Click "Fill Last Generated" in the helper
+    </div>
+    
+    <div class="version">
+      v1.0 - Made for content creators
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

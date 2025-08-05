@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "PromotionPro Reddit Helper",
+  "version": "1.0",
+  "description": "Auto-fills Reddit posts with content from PromotionPro",
+  "permissions": [
+    "activeTab",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://www.reddit.com/*",
+    "https://old.reddit.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.reddit.com/r/*/submit*",
+        "https://old.reddit.com/r/*/submit*",
+        "https://www.reddit.com/submit*",
+        "https://old.reddit.com/submit*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"]
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "PromotionPro Helper"
+  },
+  "icons": {
+    "16": "icons/icon16.svg",
+    "48": "icons/icon48.svg",
+    "128": "icons/icon128.svg"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["injected.js"],
+      "matches": ["https://www.reddit.com/*", "https://old.reddit.com/*"]
+    }
+  ]
+}

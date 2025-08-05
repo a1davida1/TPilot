@@ -22,6 +22,7 @@ export interface IStorage {
     totalSaved: number;
     avgEngagement: number;
   }>;
+  getLastGenerated(): Promise<ContentGeneration | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -89,6 +90,12 @@ export class MemStorage implements IStorage {
       totalSaved: Math.floor(totalGenerated * 0.25), // 25% saved rate
       avgEngagement: 89 // Fixed high engagement rate
     };
+  }
+
+  async getLastGenerated(): Promise<ContentGeneration | undefined> {
+    const generations = Array.from(this.contentGenerations.values())
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return generations[0];
   }
 }
 

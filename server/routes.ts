@@ -54,6 +54,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get last generated content for browser extension
+  app.get("/api/last-generated", async (req, res) => {
+    try {
+      const lastGenerated = await storage.getLastGenerated();
+      if (lastGenerated) {
+        res.json(lastGenerated);
+      } else {
+        res.status(404).json({ message: "No content generated yet" });
+      }
+    } catch (error) {
+      console.error("Error fetching last generated content:", error);
+      res.status(500).json({ message: "Failed to fetch last generated content" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
