@@ -5,10 +5,14 @@ import { z } from "zod";
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
+  username: text("username").unique(),
+  email: text("email").notNull().unique(),
   password: text("password").notNull(),
   displayName: text("display_name"),
   bio: text("bio"),
+  subscription: text("subscription").default("free"),
+  isActive: text("is_active").default("true"),
+  lastLoginAt: timestamp("last_login_at"),
   personalityProfile: jsonb("personality_profile").$type<{
     toneOfVoice: string; // casual, flirty, mysterious, confident
     contentStyle: string; // playful, sultry, artistic, authentic

@@ -5,10 +5,12 @@ import { AIGenerator } from "@/components/ai-generator";
 import { ImageGallery } from "@/components/image-gallery";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
 import type { ContentGeneration } from "@shared/schema";
-import { Sparkles, User, History, Settings, Shield, Brain, ImageIcon } from "lucide-react";
+import { Sparkles, User, History, Settings, Shield, Brain, ImageIcon, LogOut } from "lucide-react";
 import { ImageProtector } from "@/components/image-protector";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Link } from "wouter";
 
 export default function Dashboard() {
   const [currentGeneration, setCurrentGeneration] = useState<ContentGeneration | null>(null);
@@ -37,21 +39,35 @@ export default function Dashboard() {
             </div>
             <nav className="hidden md:block">
               <div className="ml-10 flex items-baseline space-x-4">
-                <a href="#" className="text-primary bg-indigo-50 px-3 py-2 rounded-md text-sm font-medium">
-                  Dashboard
-                </a>
-                <a href="#" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
-                  History
-                </a>
-                <a href="#" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
-                  Settings
-                </a>
+                <Link href="/dashboard">
+                  <a className="text-primary bg-indigo-50 px-3 py-2 rounded-md text-sm font-medium">
+                    Dashboard
+                  </a>
+                </Link>
+                <Link href="/history">
+                  <a className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                    History
+                  </a>
+                </Link>
+                <Link href="/settings">
+                  <a className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                    Settings
+                  </a>
+                </Link>
               </div>
             </nav>
-            <div className="flex items-center">
-              <Button className="bg-primary text-white hover:bg-indigo-700">
-                <User className="mr-2 h-4 w-4" />
-                Profile
+            <div className="flex items-center space-x-3">
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  localStorage.removeItem('authToken');
+                  localStorage.removeItem('user');
+                  window.location.href = '/login';
+                }}
+                className="hover:bg-red-50 hover:border-red-300 hover:text-red-600"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Logout
               </Button>
             </div>
           </div>
