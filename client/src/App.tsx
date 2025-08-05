@@ -8,6 +8,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { SEOOptimization, seoConfigs } from "@/components/seo-optimization";
 import { LandingPage } from "@/components/landing-page";
 import { PremiumLanding } from "./components/premium-landing";
+import { AestheticLanding } from "./components/aesthetic-landing";
+import { UltraAestheticApp } from "./components/ultra-aesthetic-app";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import Login from "@/pages/login";
@@ -33,7 +35,7 @@ function UnauthenticatedRoutes() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/">
         <SEOOptimization {...seoConfigs.landing} />
-        <PremiumLanding />
+        <UltraAestheticApp isGuestMode={true} />
       </Route>
       <Route>
         <Redirect to="/" />
