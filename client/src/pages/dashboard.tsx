@@ -4,7 +4,9 @@ import { PhotoInstructions } from "@/components/photo-instructions";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import type { ContentGeneration } from "@shared/schema";
-import { Sparkles, User, History, Settings } from "lucide-react";
+import { Sparkles, User, History, Settings, Shield } from "lucide-react";
+import { ImageProtector } from "@/components/image-protector";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Dashboard() {
   const [currentGeneration, setCurrentGeneration] = useState<ContentGeneration | null>(null);
@@ -56,17 +58,36 @@ export default function Dashboard() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Main Dashboard */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Content Generation Panel */}
-          <div className="lg:col-span-2">
-            <GenerationPanel onContentGenerated={handleContentGenerated} />
-          </div>
+        <Tabs defaultValue="content" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-8">
+            <TabsTrigger value="content" className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4" />
+              Content Generator
+            </TabsTrigger>
+            <TabsTrigger value="protect" className="flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              Image Protector
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="content" className="space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Content Generation Panel */}
+              <div className="lg:col-span-2">
+                <GenerationPanel onContentGenerated={handleContentGenerated} />
+              </div>
 
-          {/* Photography Instructions Panel */}
-          <div className="lg:col-span-1">
-            <PhotoInstructions currentGeneration={currentGeneration} />
-          </div>
-        </div>
+              {/* Photography Instructions Panel */}
+              <div className="lg:col-span-1">
+                <PhotoInstructions currentGeneration={currentGeneration} />
+              </div>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="protect" className="space-y-8">
+            <ImageProtector />
+          </TabsContent>
+        </Tabs>
 
         {/* Statistics Section */}
         <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">

@@ -1,6 +1,6 @@
 # Overview
 
-ContentCraft is a social media content generation platform that helps users create engaging posts with personalized titles, content, and photo instructions for different social media platforms (Reddit, Twitter, Instagram). The application uses AI-powered content generation to produce platform-specific content in various styles (playful, mysterious, bold, elegant) and themes (lifestyle, fashion, artistic), complete with detailed photography guidance for optimal visual content creation.
+PromotionPro is a comprehensive social media content creation platform designed for adult content creators. It generates engaging Reddit posts with personalized titles, content, and photo instructions while providing intelligent promotion features and image protection capabilities. The application adapts content based on subreddit promotion rules and includes advanced image processing tools to prevent reverse image searches while maintaining visual quality.
 
 # User Preferences
 
@@ -40,6 +40,14 @@ Preferred communication style: Simple, everyday language.
 - **Template Engine**: Predefined content templates organized by platform, style, and theme combinations
 - **Photo Instructions**: Structured guidance covering lighting, camera angles, composition, styling, and technical settings
 - **Platform Optimization**: Content tailored for specific social media platform requirements and audience expectations
+- **Promotion Intelligence**: Smart content adaptation based on subreddit promotion rules (promotional vs. subtle content)
+
+## Image Protection System
+- **Anti-Reverse Search**: Multi-layered image processing to prevent reverse image search detection
+- **Quality Preservation**: Gaussian blur, subtle noise, and intelligent resizing that maintain visual appeal
+- **Client-Side Processing**: Browser-based image manipulation using HTML5 Canvas for privacy and speed
+- **Preset Configurations**: Light, standard, and heavy protection levels with customizable settings
+- **Metadata Stripping**: Automatic removal of EXIF data and file signatures that could identify sources
 
 # External Dependencies
 
