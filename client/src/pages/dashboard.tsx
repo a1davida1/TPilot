@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { GenerationPanel } from "@/components/generation-panel";
 import { PhotoInstructions } from "@/components/photo-instructions";
+import { AIGenerator } from "@/components/ai-generator";
+import { ImageGallery } from "@/components/image-gallery";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import type { ContentGeneration } from "@shared/schema";
-import { Sparkles, User, History, Settings, Shield } from "lucide-react";
+import { Sparkles, User, History, Settings, Shield, Brain, ImageIcon } from "lucide-react";
 import { ImageProtector } from "@/components/image-protector";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -58,11 +60,19 @@ export default function Dashboard() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Main Dashboard */}
-        <Tabs defaultValue="content" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-8">
+        <Tabs defaultValue="ai-content" className="w-full">
+          <TabsList className="grid w-full grid-cols-4 mb-8">
+            <TabsTrigger value="ai-content" className="flex items-center gap-2">
+              <Brain className="h-4 w-4" />
+              AI Generator
+            </TabsTrigger>
             <TabsTrigger value="content" className="flex items-center gap-2">
               <Sparkles className="h-4 w-4" />
-              Content Generator
+              Templates
+            </TabsTrigger>
+            <TabsTrigger value="gallery" className="flex items-center gap-2">
+              <ImageIcon className="h-4 w-4" />
+              Image Gallery
             </TabsTrigger>
             <TabsTrigger value="protect" className="flex items-center gap-2">
               <Shield className="h-4 w-4" />
@@ -70,6 +80,94 @@ export default function Dashboard() {
             </TabsTrigger>
           </TabsList>
           
+          {/* AI Content Generator */}
+          <TabsContent value="ai-content" className="space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* AI Generation Panel */}
+              <div className="lg:col-span-2">
+                <AIGenerator onContentGenerated={handleContentGenerated} />
+              </div>
+              
+              {/* Generated Content Display */}
+              <div className="space-y-6">
+                {currentGeneration && (
+                  <div className="bg-white rounded-lg p-6 shadow-md border space-y-4">
+                    <h3 className="text-lg font-semibold mb-4">Generated Content</h3>
+                    
+                    {/* Titles */}
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-2">Title Options</h4>
+                      {(currentGeneration.titles || []).map((title, index) => (
+                        <div key={index} className="p-2 bg-gray-50 rounded mb-2 text-sm">
+                          {String(title)}
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* Content */}
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-2">Post Content</h4>
+                      <div className="p-3 bg-gray-50 rounded text-sm whitespace-pre-wrap">
+                        {String(currentGeneration.content || '')}
+                      </div>
+                    </div>
+                    
+                    {/* Photo Instructions */}
+                    {currentGeneration.photoInstructions && (
+                      <div>
+                        <h4 className="font-medium text-gray-900 mb-2">Photo Instructions</h4>
+                        <div className="space-y-2 text-sm">
+                          {typeof currentGeneration.photoInstructions === 'object' && 
+                           currentGeneration.photoInstructions && 
+                           'lighting' in currentGeneration.photoInstructions && (
+                            <div className="p-2 bg-blue-50 rounded">
+                              <strong>Lighting:</strong> {String(currentGeneration.photoInstructions.lighting)}
+                            </div>
+                          )}
+                          {typeof currentGeneration.photoInstructions === 'object' && 
+                           currentGeneration.photoInstructions && 
+                           'cameraAngle' in currentGeneration.photoInstructions && (
+                            <div className="p-2 bg-green-50 rounded">
+                              <strong>Camera Angle:</strong> {String(currentGeneration.photoInstructions.cameraAngle)}
+                            </div>
+                          )}
+                          {typeof currentGeneration.photoInstructions === 'object' && 
+                           currentGeneration.photoInstructions && 
+                           'mood' in currentGeneration.photoInstructions && (
+                            <div className="p-2 bg-purple-50 rounded">
+                              <strong>Mood:</strong> {String(currentGeneration.photoInstructions.mood)}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {stats && (
+                  <div className="bg-white rounded-lg p-6 shadow-md border">
+                    <h3 className="text-lg font-semibold mb-4">Quick Stats</h3>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Content Generated</span>
+                        <span className="font-semibold">{stats.totalGenerated}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Content Saved</span>
+                        <span className="font-semibold">{stats.totalSaved}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Avg Engagement</span>
+                        <span className="font-semibold">{stats.avgEngagement}%</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </TabsContent>
+          
+          {/* Template Content Generator */}
           <TabsContent value="content" className="space-y-8">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Content Generation Panel */}
@@ -82,6 +180,11 @@ export default function Dashboard() {
                 <PhotoInstructions currentGeneration={currentGeneration} />
               </div>
             </div>
+          </TabsContent>
+          
+          {/* Image Gallery */}
+          <TabsContent value="gallery" className="space-y-8">
+            <ImageGallery />
           </TabsContent>
           
           <TabsContent value="protect" className="space-y-8">
