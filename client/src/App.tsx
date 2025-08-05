@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import { SEOOptimization, seoConfigs } from "@/components/seo-optimization";
 import { LandingPage } from "@/components/landing-page";
+import { PremiumLanding } from "./components/premium-landing";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import Login from "@/pages/login";
@@ -31,7 +32,7 @@ function UnauthenticatedRoutes() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/">
         <SEOOptimization {...seoConfigs.landing} />
-        <LandingPage />
+        <PremiumLanding />
       </Route>
       <Route>
         <Redirect to="/" />

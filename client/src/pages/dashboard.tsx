@@ -15,26 +15,37 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ProviderStatus } from "@/components/provider-status";
 import { ConversionOptimization } from "@/components/conversion-optimization";
+import { EnhancedDashboard } from "@/components/enhanced-dashboard";
 
 export default function Dashboard() {
   const [currentGeneration, setCurrentGeneration] = useState<ContentGeneration | null>(null);
   const [isGuestMode, setIsGuestMode] = useState(false);
   const [location] = useLocation();
+  const { user, isLoading, isAuthenticated } = useAuth();
 
   // Check for guest mode
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    setIsGuestMode(urlParams.get('guest') === 'true');
-  }, [location]);
-
-  const { data: stats } = useQuery({
-    queryKey: ["/api/stats"],
-    enabled: !isGuestMode, // Don't fetch stats in guest mode
-  });
+    setIsGuestMode(urlParams.get('guest') === 'true' || !isAuthenticated);
+  }, [location, isAuthenticated]);
 
   const handleContentGenerated = (generation: ContentGeneration) => {
     setCurrentGeneration(generation);
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Use enhanced dashboard for better UX
+  return <EnhancedDashboard isGuestMode={isGuestMode} />;
 
   return (
     <div className="min-h-screen bg-gray-50">
