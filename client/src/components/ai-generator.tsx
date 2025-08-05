@@ -49,10 +49,18 @@ export function AIGenerator({ onContentGenerated }: AIGeneratorProps) {
           formData.append(key, data[key]);
         }
       });
-      return apiRequest('/api/generate-ai', {
+      const res = await fetch('/api/generate-ai', {
         method: 'POST',
         body: formData,
+        credentials: 'include'
       });
+      
+      if (!res.ok) {
+        const text = (await res.text()) || res.statusText;
+        throw new Error(`${res.status}: ${text}`);
+      }
+      
+      return await res.json();
     },
     onSuccess: (data) => {
       onContentGenerated(data);

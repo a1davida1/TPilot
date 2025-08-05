@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import { insertContentGenerationSchema, insertUserImageSchema, insertUserSchema } from "@shared/schema";
 import { generateContent } from "./services/content-generator";
 import { generateAIContent, analyzeImageForContent } from "./services/ai-generator";
+import { generateWithMultiProvider, getProviderStatus } from "./services/multi-ai-provider";
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs/promises';
@@ -308,8 +309,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         imageDescription = await analyzeImageForContent(fullImageUrl, { personalityProfile: parsedProfile } as any);
       }
       
-      // Generate AI content
-      const aiContent = await generateAIContent({
+      // Generate AI content using multi-provider system (75-98% cost savings)
+      const aiContent = await generateWithMultiProvider({
         user: { personalityProfile: parsedProfile, preferences: parsedProfile } as any,
         platform,
         imageDescription: imageDescription || undefined,
@@ -319,7 +320,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         baseImageUrl: imageUrl || undefined
       });
       
-      // Save to database
+      // Save to database with provider info
       const contentGeneration = await storage.createContentGeneration({
         platform,
         style: style || 'ai-generated',
@@ -332,6 +333,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         subreddit,
         allowsPromotion
       });
+      
+      // Add provider info to response
+      (contentGeneration as any).aiProvider = aiContent.provider;
+      (contentGeneration as any).estimatedCost = aiContent.estimatedCost;
       
       res.json(contentGeneration);
     } catch (error) {
@@ -363,6 +368,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Image upload error:", error);
       res.status(500).json({ message: "Failed to upload image" });
+    }
+  });
+
+  // Get AI provider status
+  app.get("/api/providers", async (req, res) => {
+    try {
+      const providers = getProviderStatus();
+      res.json(providers);
+    } catch (error) {
+      console.error("Provider status error:", error);
+      res.status(500).json({ message: "Failed to get provider status" });
     }
   });
 
