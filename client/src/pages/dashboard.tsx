@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { GenerationPanel } from "@/components/generation-panel";
 import { PhotoInstructions } from "@/components/photo-instructions";
 import { AIGenerator } from "@/components/ai-generator";
@@ -7,16 +7,27 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import type { ContentGeneration } from "@shared/schema";
-import { Sparkles, User, History, Settings, Shield, Brain, ImageIcon, LogOut } from "lucide-react";
+import { Sparkles, User, History, Settings, Shield, Brain, ImageIcon, LogOut, UserPlus } from "lucide-react";
 import { ImageProtector } from "@/components/image-protector";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function Dashboard() {
   const [currentGeneration, setCurrentGeneration] = useState<ContentGeneration | null>(null);
+  const [isGuestMode, setIsGuestMode] = useState(false);
+  const [location] = useLocation();
+
+  // Check for guest mode
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    setIsGuestMode(urlParams.get('guest') === 'true');
+  }, [location]);
 
   const { data: stats } = useQuery({
     queryKey: ["/api/stats"],
+    enabled: !isGuestMode, // Don't fetch stats in guest mode
   });
 
   const handleContentGenerated = (generation: ContentGeneration) => {
@@ -39,40 +50,94 @@ export default function Dashboard() {
             </div>
             <nav className="hidden md:block">
               <div className="ml-10 flex items-baseline space-x-4">
-                <Link href="/dashboard">
+                <Link href={isGuestMode ? "/dashboard?guest=true" : "/dashboard"}>
                   <a className="text-primary bg-indigo-50 px-3 py-2 rounded-md text-sm font-medium">
                     Dashboard
                   </a>
                 </Link>
-                <Link href="/history">
-                  <a className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                    History
-                  </a>
-                </Link>
-                <Link href="/settings">
-                  <a className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                    Settings
-                  </a>
-                </Link>
+                {!isGuestMode && (
+                  <>
+                    <Link href="/history">
+                      <a className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                        History
+                      </a>
+                    </Link>
+                    <Link href="/settings">
+                      <a className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                        Settings
+                      </a>
+                    </Link>
+                  </>
+                )}
+                {isGuestMode && (
+                  <span className="text-gray-400 px-3 py-2 text-sm">
+                    Sign up to access History & Settings
+                  </span>
+                )}
               </div>
             </nav>
             <div className="flex items-center space-x-3">
-              <Button 
-                variant="outline"
-                onClick={() => {
-                  localStorage.removeItem('authToken');
-                  localStorage.removeItem('user');
-                  window.location.href = '/login';
-                }}
-                className="hover:bg-red-50 hover:border-red-300 hover:text-red-600"
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                Logout
-              </Button>
+              {isGuestMode ? (
+                <>
+                  <Button 
+                    onClick={() => window.location.href = '/login'}
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+                  >
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Sign Up Free
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => window.location.href = '/login'}
+                  >
+                    Sign In
+                  </Button>
+                </>
+              ) : (
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('user');
+                    window.location.href = '/login';
+                  }}
+                  className="hover:bg-red-50 hover:border-red-300 hover:text-red-600"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Logout
+                </Button>
+              )}
             </div>
           </div>
         </div>
       </header>
+
+      {/* Guest Mode Banner */}
+      {isGuestMode && (
+        <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <Alert className="border-white/20 bg-white/10 text-white">
+              <Sparkles className="h-4 w-4" />
+              <AlertDescription>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div>
+                    <strong>You're in guest mode!</strong> Try the features below. Sign up to save your content, access history, and unlock advanced features.
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={() => window.location.href = '/login'}
+                      className="bg-white text-purple-600 hover:bg-gray-100"
+                      size="sm"
+                    >
+                      Sign Up Free
+                    </Button>
+                  </div>
+                </div>
+              </AlertDescription>
+            </Alert>
+          </div>
+        </div>
+      )}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Main Dashboard */}

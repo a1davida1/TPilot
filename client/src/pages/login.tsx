@@ -97,7 +97,7 @@ export default function Login() {
                 protect your images, and optimize your social media presence.
               </p>
               
-              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
                 <Button 
                   onClick={() => setView('signup')}
                   className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 py-3 text-lg"
@@ -110,6 +110,16 @@ export default function Login() {
                   className="px-8 py-3 text-lg hover:bg-white/80"
                 >
                   Sign In
+                </Button>
+              </div>
+              
+              <div className="text-center mb-16">
+                <Button 
+                  onClick={() => setLocation('/dashboard?guest=true')}
+                  variant="ghost"
+                  className="text-gray-600 hover:text-gray-800 underline"
+                >
+                  Continue as Guest - Try it first
                 </Button>
               </div>
             </div>

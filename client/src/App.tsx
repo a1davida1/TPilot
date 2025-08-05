@@ -26,6 +26,7 @@ function UnauthenticatedRoutes() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
+      <Route path="/dashboard" component={Dashboard} />
       <Route path="/" component={Login} />
       <Route>
         <Redirect to="/login" />

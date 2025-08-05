@@ -5,7 +5,7 @@ PromotionPro is a comprehensive social media content creation platform designed 
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
-Authentication: Landing page first, registration form only shows when "Register" clicked
+Authentication: Landing page first, registration form only shows when "Register" clicked, guest mode available for trial
 UI/UX: Polished interface with gradients, glass cards, and smooth animations
 Navigation: History and Settings buttons fully functional
 Future features: Payment system integration planned
