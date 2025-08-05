@@ -90,7 +90,7 @@ export default function Login() {
                 </div>
               </div>
               <h1 className="text-6xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-6">
-                PromotionPro
+                ThottoPilot
               </h1>
               <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
                 AI-powered content creation platform for content creators. Generate engaging posts, 
@@ -179,7 +179,7 @@ export default function Login() {
             </div>
           </div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-            PromotionPro
+            ThottoPilot
           </h1>
           <p className="text-gray-600 mt-2">
             AI-powered content creation for creators

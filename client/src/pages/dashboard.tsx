@@ -44,7 +44,7 @@ export default function Dashboard() {
               <div className="flex-shrink-0">
                 <h1 className="text-2xl font-bold text-primary flex items-center">
                   <Sparkles className="mr-2 h-6 w-6" />
-                  PromotionPro
+                  ThottoPilot
                 </h1>
               </div>
             </div>

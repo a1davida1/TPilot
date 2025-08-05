@@ -1,6 +1,6 @@
 # Overview
 
-PromotionPro is a comprehensive social media content creation platform designed for adult content creators. It generates engaging Reddit posts with personalized titles, content, and photo instructions while providing intelligent promotion features and image protection capabilities. The application adapts content based on subreddit promotion rules and includes advanced image processing tools to prevent reverse image searches while maintaining visual quality.
+ThottoPilot is a comprehensive social media content creation platform designed for adult content creators. It generates engaging Reddit posts with personalized titles, content, and photo instructions while providing intelligent promotion features and image protection capabilities. The application adapts content based on subreddit promotion rules and includes advanced image processing tools to prevent reverse image searches while maintaining visual quality.
 
 # User Preferences
 
