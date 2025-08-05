@@ -38,6 +38,8 @@ import {
 import { EnhancedAIGenerator } from "@/components/enhanced-ai-generator";
 import { SocialAuth } from "@/components/social-auth";
 import { ProviderStatus } from "@/components/provider-status";
+import { SampleUpload } from "@/components/sample-upload";
+import { FineTuningSettings } from "@/components/fine-tuning-settings";
 import { cn } from "@/lib/utils";
 
 interface UltraAestheticAppProps {
@@ -63,6 +65,8 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
 
   const navigationItems = [
     { id: "generate", label: "AI Generator", icon: <Brain className="h-5 w-5" />, badge: "NEW" },
+    { id: "samples", label: "Sample Library", icon: <FileText className="h-5 w-5" />, badge: "PRO" },
+    { id: "finetune", label: "Fine-Tuning", icon: <Sparkles className="h-5 w-5" />, badge: "PRO" },
     { id: "protect", label: "Image Shield", icon: <Shield className="h-5 w-5" /> },
     { id: "analytics", label: "Analytics", icon: <BarChart3 className="h-5 w-5" /> },
     { id: "history", label: "History", icon: <History className="h-5 w-5" /> },
@@ -362,6 +366,18 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
                     </Button>
                   </CardContent>
                 </Card>
+              </div>
+            )}
+            
+            {activeView === "samples" && (
+              <div className="max-w-6xl mx-auto">
+                <SampleUpload />
+              </div>
+            )}
+            
+            {activeView === "finetune" && (
+              <div className="max-w-4xl mx-auto">
+                <FineTuningSettings />
               </div>
             )}
             

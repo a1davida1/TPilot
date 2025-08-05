@@ -12,6 +12,7 @@ import fs from 'fs/promises';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import session from 'express-session';
+import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 
 // Configure multer for file uploads
 const storage_config = multer.diskStorage({
@@ -426,6 +427,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Image deletion error:", error);
       res.status(500).json({ message: "Failed to delete image" });
+    }
+  });
+
+  // User samples routes (pro users only)
+  app.post("/api/user-samples", async (req, res) => {
+    try {
+      // For demo mode, use userId 1
+      const userId = 1; // In production, get from authenticated user
+      const sample = await storage.createUserSample({
+        ...req.body,
+        userId,
+      });
+      res.json(sample);
+    } catch (error) {
+      console.error("Error creating user sample:", error);
+      res.status(500).json({ error: "Failed to create sample" });
+    }
+  });
+
+  app.get("/api/user-samples", async (req, res) => {
+    try {
+      const userId = 1; // In production, get from authenticated user
+      const samples = await storage.getUserSamples(userId);
+      res.json(samples);
+    } catch (error) {
+      console.error("Error fetching user samples:", error);
+      res.status(500).json({ error: "Failed to fetch samples" });
+    }
+  });
+
+  app.delete("/api/user-samples/:id", async (req, res) => {
+    try {
+      const userId = 1; // In production, get from authenticated user
+      await storage.deleteUserSample(parseInt(req.params.id), userId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting user sample:", error);
+      res.status(500).json({ error: "Failed to delete sample" });
+    }
+  });
+
+  // User preferences routes (pro users only)
+  app.get("/api/user-preferences", async (req, res) => {
+    try {
+      const userId = 1; // In production, get from authenticated user
+      const preferences = await storage.getUserPreferences(userId);
+      res.json(preferences || {
+        fineTuningEnabled: false,
+        writingStyle: { tone: 50, formality: 50, explicitness: 50 },
+        contentPreferences: { themes: "", avoid: "" },
+        prohibitedWords: [],
+        photoStyle: { lighting: 50, mood: 50, composition: 50 },
+      });
+    } catch (error) {
+      console.error("Error fetching preferences:", error);
+      res.status(500).json({ error: "Failed to fetch preferences" });
+    }
+  });
+
+  app.put("/api/user-preferences", async (req, res) => {
+    try {
+      const userId = 1; // In production, get from authenticated user
+      const preferences = await storage.upsertUserPreferences({
+        ...req.body,
+        userId,
+      });
+      res.json(preferences);
+    } catch (error) {
+      console.error("Error updating preferences:", error);
+      res.status(500).json({ error: "Failed to update preferences" });
+    }
+  });
+
+  // Object storage routes
+  app.post("/api/objects/upload", async (req, res) => {
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      res.json({ uploadURL });
+    } catch (error) {
+      console.error("Error getting upload URL:", error);
+      res.status(500).json({ error: "Failed to get upload URL" });
+    }
+  });
+
+  app.put("/api/sample-images", async (req, res) => {
+    if (!req.body.imageURL) {
+      return res.status(400).json({ error: "imageURL is required" });
+    }
+
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const objectPath = objectStorageService.normalizeObjectEntityPath(
+        req.body.imageURL
+      );
+      res.json({ objectPath });
+    } catch (error) {
+      console.error("Error processing image:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.get("/objects/:objectPath(*)", async (req, res) => {
+    const objectStorageService = new ObjectStorageService();
+    try {
+      const objectFile = await objectStorageService.getObjectEntityFile(
+        req.path
+      );
+      objectStorageService.downloadObject(objectFile, res);
+    } catch (error) {
+      console.error("Error downloading object:", error);
+      if (error instanceof ObjectNotFoundError) {
+        return res.sendStatus(404);
+      }
+      return res.sendStatus(500);
     }
   });
 
