@@ -31,6 +31,7 @@ import { AnalyticsDashboard } from "@/components/analytics-dashboard";
 import { PerformanceOptimization } from "@/components/performance-optimization";
 import { MobileOptimization } from "@/components/mobile-optimization";
 import { EnhancedAIGenerator } from "@/components/enhanced-ai-generator";
+import { DemoFallback } from "@/components/demo-fallback";
 
 interface EnhancedDashboardProps {
   isGuestMode?: boolean;

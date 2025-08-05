@@ -96,14 +96,14 @@ export function ProviderStatus() {
               <div className="flex items-center space-x-4">
                 <div className="text-right">
                   <div className="text-sm font-medium">
-                    Input: {provider.inputCost} | Output: {provider.outputCost}
+                    Input: {provider.inputCost || 'N/A'} | Output: {provider.outputCost || 'N/A'}
                   </div>
                   <div className="text-xs text-green-600 font-medium">
-                    {provider.savings} vs OpenAI
+                    {provider.savings || '0%'} vs OpenAI
                   </div>
                 </div>
                 <Badge className={getStatusColor(provider.status)}>
-                  {provider.status.replace('_', ' ')}
+                  {provider.status ? String(provider.status).replace('_', ' ') : 'Unknown'}
                 </Badge>
               </div>
             </div>
