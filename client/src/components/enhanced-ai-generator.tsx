@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Sparkles, Brain, Zap, DollarSign, Clock, TrendingUp, RefreshCw } from "lucide-react";
+import { Sparkles, Brain, Zap, DollarSign, Clock, TrendingUp, RefreshCw, Settings, Copy, Check, Hash } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -25,8 +25,40 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
   const [useAdvancedSettings, setUseAdvancedSettings] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState("auto");
   
+  // New categorization system
+  const [photoType, setPhotoType] = useState("casual");
+  const [textTone, setTextTone] = useState("confident");
+  const [includePromotion, setIncludePromotion] = useState(true);
+  const [includeHashtags, setIncludeHashtags] = useState(true);
+  const [selectedHashtags, setSelectedHashtags] = useState<string[]>([]);
+  const [generatedContent, setGeneratedContent] = useState<any>(null);
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Photo type categories with humor
+  const photoTypes = [
+    { id: 'casual', label: 'Casual & Cute', icon: '😊' },
+    { id: 'workout', label: 'Workout Vibes', icon: '💪' },
+    { id: 'shower', label: 'Shower Fresh', icon: '🚿' },
+    { id: 'showing-skin', label: 'Showing a Lil Skin', icon: '😘' },
+    { id: 'spicy', label: 'XX Spicy', icon: '🌶️' },
+    { id: 'very-spicy', label: 'XXX Very Spicy', icon: '🔥' },
+    { id: 'all-xs', label: 'All the X\'s & Then Some!', icon: '🔥💥' }
+  ];
+
+  const textTones = [
+    { id: 'confident', label: 'Confident & Bold' },
+    { id: 'playful', label: 'Playful & Flirty' },
+    { id: 'mysterious', label: 'Mysterious & Alluring' },
+    { id: 'authentic', label: 'Authentic & Real' },
+    { id: 'sassy', label: 'Sassy & Fun' }
+  ];
+
+  const defaultHashtags = [
+    '#selfie', '#confidence', '#beautiful', '#mood', '#vibes',
+    '#natural', '#authentic', '#stunning', '#goddess', '#empowered'
+  ];
 
   // Preset style definitions matching unified content creator
   const contentPresets = [
@@ -113,6 +145,7 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
       return await response.json();
     },
     onSuccess: (data) => {
+      setGeneratedContent(data);
       onContentGenerated(data);
       
       // Check if watermark was added (free tier)
@@ -152,32 +185,72 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
   const handleGenerate = () => {
     if (!customPrompt.trim()) {
       toast({
-        title: "Prompt Required",
+        title: "Prompt Required", 
         description: "Please enter a prompt for content generation",
         variant: "destructive"
       });
       return;
     }
 
+    const hashtagText = includeHashtags && selectedHashtags.length > 0 
+      ? ` Include these hashtags: ${selectedHashtags.join(' ')}`
+      : '';
+
     generateContentMutation.mutate({
       platform,
-      customPrompt,
+      customPrompt: customPrompt + hashtagText,
       subreddit: subreddit || undefined,
-      allowsPromotion,
+      allowsPromotion: includePromotion ? allowsPromotion : 'none',
+      photoType,
+      textTone,
+      includeHashtags,
+      selectedHashtags,
       preferredProvider: selectedProvider !== "auto" ? selectedProvider : undefined
     });
   };
 
   const handlePresetGenerate = (preset: typeof contentPresets[0]) => {
+    const hashtagText = includeHashtags && selectedHashtags.length > 0 
+      ? ` Include these hashtags: ${selectedHashtags.join(' ')}`
+      : '';
+
     generateContentMutation.mutate({
       platform,
-      customPrompt: preset.prompt,
+      customPrompt: preset.prompt + hashtagText,
       subreddit: subreddit || undefined,
-      allowsPromotion,
+      allowsPromotion: includePromotion ? allowsPromotion : 'none',
+      photoType,
+      textTone,
+      includeHashtags,
+      selectedHashtags,
       style: preset.id,
       theme: preset.title.toLowerCase(),
       preferredProvider: selectedProvider !== "auto" ? selectedProvider : undefined
     });
+  };
+
+  const toggleHashtag = (hashtag: string) => {
+    setSelectedHashtags(prev => 
+      prev.includes(hashtag) 
+        ? prev.filter(h => h !== hashtag)
+        : [...prev, hashtag]
+    );
+  };
+
+  const copyToClipboard = async (text: string, type: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({
+        title: "Copied!",
+        description: `${type} copied to clipboard`
+      });
+    } catch (err) {
+      toast({
+        title: "Copy Failed",
+        description: "Unable to copy to clipboard",
+        variant: "destructive"
+      });
+    }
   };
 
   // Cost information hidden from user interface - used internally for optimization
@@ -240,20 +313,101 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
           )}
         </div>
 
-        {/* Cost Optimization Banner */}
-        <div className="bg-gradient-to-r from-pink-50 to-purple-50 border border-pink-200 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Sparkles className="h-5 w-5 text-pink-600" />
-              <span className="font-medium text-pink-900">Smart Content Creation</span>
+        {/* Main Categories */}
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Photo Type */}
+          <div className="space-y-3">
+            <Label className="text-base font-medium text-pink-600">Photo Type</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {photoTypes.map((type) => (
+                <Button
+                  key={type.id}
+                  variant={photoType === type.id ? "default" : "outline"}
+                  className={`text-xs p-2 h-auto ${photoType === type.id ? 'bg-pink-600 text-white' : 'hover:bg-pink-50'}`}
+                  onClick={() => setPhotoType(type.id)}
+                >
+                  <span className="mr-1">{type.icon}</span>
+                  {type.label}
+                </Button>
+              ))}
             </div>
-            <Badge className="bg-pink-100 text-pink-800">
-              AI Powered
-            </Badge>
           </div>
-          <p className="text-sm text-pink-700 mt-2">
-            Intelligent content generation optimized for women creators
-          </p>
+
+          {/* Text Tone */}
+          <div className="space-y-3">
+            <Label className="text-base font-medium text-purple-600">Text Tone</Label>
+            <Select value={textTone} onValueChange={setTextTone}>
+              <SelectTrigger className="border-purple-200 focus:ring-purple-500">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {textTones.map((tone) => (
+                  <SelectItem key={tone.id} value={tone.id}>
+                    {tone.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Promotion & Hashtags */}
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="space-y-3">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="include-promotion"
+                checked={includePromotion}
+                onCheckedChange={setIncludePromotion}
+              />
+              <Label htmlFor="include-promotion" className="text-base font-medium text-blue-600">
+                Include Promotion in Post
+              </Label>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="include-hashtags"
+                checked={includeHashtags}
+                onCheckedChange={setIncludeHashtags}
+              />
+              <Label htmlFor="include-hashtags" className="text-base font-medium text-green-600">
+                Include Hashtags
+              </Label>
+            </div>
+            {includeHashtags && (
+              <div className="space-y-2">
+                <Label className="text-sm text-gray-600">Choose hashtags:</Label>
+                <div className="flex flex-wrap gap-1">
+                  {defaultHashtags.map((hashtag) => (
+                    <Button
+                      key={hashtag}
+                      variant={selectedHashtags.includes(hashtag) ? "default" : "outline"}
+                      size="sm"
+                      className={`text-xs h-6 px-2 ${selectedHashtags.includes(hashtag) ? 'bg-green-600 text-white' : 'hover:bg-green-50'}`}
+                      onClick={() => toggleHashtag(hashtag)}
+                    >
+                      {hashtag}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Custom Prompt */}
+        <div className="space-y-2">
+          <Label className="text-base font-medium">Custom Prompt (Optional)</Label>
+          <Textarea
+            placeholder="Add specific details about your content... (e.g., 'Cozy morning selfie with coffee')"
+            value={customPrompt}
+            onChange={(e) => setCustomPrompt(e.target.value)}
+            rows={3}
+            className="border-pink-200 focus:ring-pink-500"
+          />
         </div>
 
         {/* Advanced Settings Toggle */}
@@ -263,113 +417,81 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
             checked={useAdvancedSettings}
             onCheckedChange={setUseAdvancedSettings}
           />
-          <Label htmlFor="advanced-settings">Advanced Settings</Label>
+          <Label htmlFor="advanced-settings" className="text-sm text-gray-600">
+            <Settings className="inline h-4 w-4 mr-1" />
+            Advanced Settings
+          </Label>
         </div>
 
-        {/* Provider Selection (Advanced) */}
+        {/* Advanced Settings (Hidden by default) */}
         {useAdvancedSettings && (
-          <div className="space-y-2">
-            <Label>Provider Preference</Label>
-            <Select value={selectedProvider} onValueChange={setSelectedProvider}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select provider" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="auto">Auto (Optimized)</SelectItem>
-                <SelectItem value="gemini">
-                  Gemini Flash - Fast & Efficient
-                </SelectItem>
-                <SelectItem value="claude">
-                  Claude Haiku - Balanced Performance
-                </SelectItem>
-                <SelectItem value="openai">
-                  OpenAI GPT-4o - Premium Quality
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        )}
+          <div className="space-y-4 p-4 bg-gray-50 rounded-lg border">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Platform</Label>
+                <Select value={platform} onValueChange={setPlatform}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="reddit">Reddit</SelectItem>
+                    <SelectItem value="twitter">Twitter</SelectItem>
+                    <SelectItem value="instagram">Instagram</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-        {/* Platform Selection */}
-        <div className="space-y-2">
-          <Label>Platform</Label>
-          <Select value={platform} onValueChange={setPlatform}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="reddit">Reddit</SelectItem>
-              <SelectItem value="twitter">Twitter</SelectItem>
-              <SelectItem value="instagram">Instagram</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Subreddit (for Reddit) */}
-        {platform === "reddit" && (
-          <div className="space-y-2">
-            <Label>Subreddit (optional)</Label>
-            <input
-              type="text"
-              placeholder="e.g., selfie, photography"
-              value={subreddit}
-              onChange={(e) => setSubreddit(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            />
-          </div>
-        )}
-
-        {/* Promotion Level */}
-        <div className="space-y-2">
-          <Label>Promotion Style</Label>
-          <Select value={allowsPromotion} onValueChange={setAllowsPromotion}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="subtle">Subtle - Natural engagement</SelectItem>
-              <SelectItem value="moderate">Moderate - Balanced approach</SelectItem>
-              <SelectItem value="direct">Direct - Clear promotion</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Content Prompt */}
-        <div className="space-y-2">
-          <Label>Content Prompt</Label>
-          <Textarea
-            placeholder="Describe the content you want to create... (e.g., 'Cozy morning selfie with coffee')"
-            value={customPrompt}
-            onChange={(e) => setCustomPrompt(e.target.value)}
-            rows={4}
-          />
-        </div>
-
-        {/* Generation Stats (Advanced) */}
-        {useAdvancedSettings && (
-          <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
-            <div className="text-center">
-              <Clock className="h-4 w-4 mx-auto mb-1 text-gray-600" />
-              <div className="text-sm font-medium">Est. Time</div>
-              <div className="text-xs text-gray-600">2-5 seconds</div>
+              <div className="space-y-2">
+                <Label>Provider Preference</Label>
+                <Select value={selectedProvider} onValueChange={setSelectedProvider}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">Auto (Optimized)</SelectItem>
+                    <SelectItem value="gemini">Gemini Flash</SelectItem>
+                    <SelectItem value="claude">Claude Haiku</SelectItem>
+                    <SelectItem value="openai">OpenAI GPT-4o</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="text-center">
-              <DollarSign className="h-4 w-4 mx-auto mb-1 text-gray-600" />
-              <div className="text-sm font-medium">Est. Cost</div>
-              <div className="text-xs text-gray-600">$0.001-0.02</div>
-            </div>
-            <div className="text-center">
-              <TrendingUp className="h-4 w-4 mx-auto mb-1 text-gray-600" />
-              <div className="text-sm font-medium">Quality</div>
-              <div className="text-xs text-gray-600">Premium AI</div>
-            </div>
+
+            {platform === "reddit" && (
+              <div className="space-y-2">
+                <Label>Subreddit (optional)</Label>
+                <input
+                  type="text"
+                  placeholder="e.g., selfie, photography"
+                  value={subreddit}
+                  onChange={(e) => setSubreddit(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                />
+              </div>
+            )}
+
+            {includePromotion && (
+              <div className="space-y-2">
+                <Label>Promotion Style</Label>
+                <Select value={allowsPromotion} onValueChange={setAllowsPromotion}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="subtle">Subtle - Natural engagement</SelectItem>
+                    <SelectItem value="moderate">Moderate - Balanced approach</SelectItem>
+                    <SelectItem value="direct">Direct - Clear promotion</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
         )}
 
         {/* Generate Button */}
         <Button
           onClick={handleGenerate}
-          disabled={generateContentMutation.isPending || !customPrompt.trim()}
+          disabled={generateContentMutation.isPending}
           className="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white font-medium"
           size="lg"
         >
@@ -381,18 +503,90 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
           ) : (
             <>
               <Sparkles className="mr-2 h-4 w-4" />
-              Generate AI Content
+              Generate Content
             </>
           )}
         </Button>
 
+        {/* Generated Content Output */}
+        {generatedContent && (
+          <div className="space-y-4 p-4 bg-gradient-to-br from-pink-50 to-purple-50 rounded-lg border border-pink-200">
+            <h4 className="font-semibold text-lg text-pink-800">Generated Content</h4>
+            
+            {/* Titles */}
+            {generatedContent.titles && generatedContent.titles.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-pink-700">Titles:</Label>
+                {(Array.isArray(generatedContent.titles) ? generatedContent.titles : [generatedContent.titles]).map((title: string, index: number) => (
+                  <div key={index} className="relative p-3 bg-white rounded-lg border group">
+                    <p className="text-sm font-medium pr-8">{title}</p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => copyToClipboard(title, 'Title')}
+                      className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Content */}
+            {generatedContent.content && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-purple-700">Content:</Label>
+                <div className="relative p-3 bg-white rounded-lg border group">
+                  <p className="text-sm whitespace-pre-wrap pr-8">{generatedContent.content}</p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard(generatedContent.content, 'Content')}
+                    className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Photo Instructions */}
+            {generatedContent.photoInstructions && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-blue-700">Photo Instructions:</Label>
+                <div className="relative p-3 bg-white rounded-lg border group">
+                  <p className="text-sm whitespace-pre-wrap pr-8">
+                    {typeof generatedContent.photoInstructions === 'string' 
+                      ? generatedContent.photoInstructions 
+                      : JSON.stringify(generatedContent.photoInstructions, null, 2)}
+                  </p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard(
+                      typeof generatedContent.photoInstructions === 'string' 
+                        ? generatedContent.photoInstructions 
+                        : JSON.stringify(generatedContent.photoInstructions, null, 2), 
+                      'Photo Instructions'
+                    )}
+                    className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Guest Mode Limitation */}
         {isGuestMode && (
-          <div className="text-center p-4 bg-orange-50 border border-orange-200 rounded-lg">
-            <p className="text-sm text-orange-700">
-              🎯 <strong>Guest Mode:</strong> Limited to demo content. 
-              <a href="/login" className="text-orange-800 underline ml-1">
-                Sign up for full AI access
+          <div className="text-center p-4 bg-pink-50 border border-pink-200 rounded-lg">
+            <p className="text-sm text-pink-700">
+              ✨ <strong>Guest Mode:</strong> Limited to demo content. 
+              <a href="/login" className="text-pink-800 underline ml-1 font-medium">
+                Sign up for full access
               </a>
             </p>
           </div>
