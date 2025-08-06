@@ -284,15 +284,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Reddit communities endpoint
-  app.get("/api/reddit-communities", async (req, res) => {
-    try {
-      res.json(redditCommunitiesDatabase);
-    } catch (error) {
-      console.error("Error fetching communities:", error);
-      res.status(500).json({ message: "Failed to fetch communities" });
-    }
-  });
+
 
   app.get("/api/user/export", authenticateToken, async (req: AuthRequest, res) => {
     try {

@@ -94,7 +94,7 @@ export function RedditCommunities() {
 
   // Filter and sort communities
   const filteredCommunities = useMemo(() => {
-    let filtered = [...displayCommunities];
+    let filtered = Array.isArray(displayCommunities) ? [...displayCommunities] : [];
 
     // Search filter
     if (searchTerm) {
@@ -381,7 +381,7 @@ export function RedditCommunities() {
                             <div>
                               <h4 className="text-sm font-semibold text-purple-300 mb-2">Best Posting Times</h4>
                               <div className="space-y-1 text-xs text-gray-400">
-                                {community.bestPostingTimes.slice(0, 3).map((time, idx) => (
+                                {community.bestPostingTimes.slice(0, 3).map((time: string, idx: number) => (
                                   <p key={idx}>• {time}</p>
                                 ))}
                               </div>
@@ -403,10 +403,10 @@ export function RedditCommunities() {
                               <div>
                                 <h4 className="text-sm font-semibold text-purple-300 mb-2">Community Rules</h4>
                                 <div className="space-y-1 text-xs text-gray-400">
-                                  {community.rules.titleRules && community.rules.titleRules.map((rule, idx) => (
+                                  {community.rules.titleRules && community.rules.titleRules.map((rule: string, idx: number) => (
                                     <p key={idx}>• Title: {rule}</p>
                                   ))}
-                                  {community.rules.contentRules && community.rules.contentRules.map((rule, idx) => (
+                                  {community.rules.contentRules && community.rules.contentRules.map((rule: string, idx: number) => (
                                     <p key={idx}>• Content: {rule}</p>
                                   ))}
                                 </div>
@@ -417,7 +417,7 @@ export function RedditCommunities() {
                               <div>
                                 <h4 className="text-sm font-semibold text-purple-300 mb-2">Tags</h4>
                                 <div className="flex flex-wrap gap-1">
-                                  {community.tags.map((tag, idx) => (
+                                  {community.tags.map((tag: string, idx: number) => (
                                     <Badge key={idx} className="bg-gray-700/50 text-gray-300 text-xs">
                                       {tag}
                                     </Badge>
