@@ -14,7 +14,7 @@ import {
   Search,
   Filter,
   Clock,
-  Fire,
+  Zap,
   BarChart3,
   RefreshCw,
   ArrowUp,
@@ -332,7 +332,7 @@ export function TrendingTagsExpanded() {
                 <p className="text-2xl font-bold">12</p>
                 <p className="text-xs text-orange-400">Above 30% growth</p>
               </div>
-              <Fire className="h-8 w-8 text-orange-400/50" />
+              <Flame className="h-8 w-8 text-orange-400/50" />
             </div>
           </CardContent>
         </Card>
