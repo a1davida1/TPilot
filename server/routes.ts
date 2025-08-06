@@ -476,49 +476,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       let contentGeneration: any;
       
-      // Tier-based content generation
+      // Tier-based content generation  
       if (userTier === 'free' || userTier === 'basic') {
         // Use pre-generated templates for free/basic tier
         const mood = parsedProfile?.toneOfVoice || 'playful';
         const category = allowsPromotion === 'yes' ? 'promotional' : 'teasing';
         
-        // Get random templates based on criteria
-        const templates = getRandomTemplates(3, category, mood);
+        // Get more templates for variety - Free: 5-8, Basic: 8-12
+        const templateCount = userTier === 'free' ? 6 : 10;
+        const templates = getRandomTemplates(templateCount, category, mood);
         
         if (templates.length === 0) {
           throw new Error("No suitable templates found");
         }
         
-        // Select best matching template
+        // Select best matching template (first one)
         const selectedTemplate = templates[0];
         
-        // Apply watermark for free tier
-        const finalTitle = userTier === 'free' 
-          ? addWatermark(selectedTemplate.title, true)
-          : selectedTemplate.title;
+        // Create variety of titles from multiple templates
+        const titleOptions = templates.slice(0, userTier === 'free' ? 3 : 5).map(template => {
+          return userTier === 'free' ? addWatermark(template.title, true) : template.title;
+        });
         
+        // Apply watermark to content for free tier
         const finalContent = userTier === 'free'
           ? addWatermark(selectedTemplate.content, false)
           : selectedTemplate.content;
+        
+        // Enhanced photo instructions based on template variety
+        const photoInstructionOptions = templates.slice(0, 3).map(t => t.photoInstructions || "Natural lighting recommended");
         
         // Create content generation response
         contentGeneration = await storage.createContentGeneration({
           platform: platform || 'reddit',
           style: style || selectedTemplate.style,
           theme: theme || selectedTemplate.category,
-          titles: [finalTitle, templates[1]?.title || '', templates[2]?.title || ''].filter(Boolean),
+          titles: titleOptions.filter(Boolean),
           content: finalContent,
           photoInstructions: {
-            lighting: selectedTemplate.photoInstructions || "Natural lighting recommended",
-            angles: "Multiple angles for variety",
-            composition: "Rule of thirds, engaging framing",
-            styling: "Based on content theme",
-            technical: "High resolution, good focus"
+            lighting: photoInstructionOptions[0] || "Natural lighting recommended",
+            angles: "Multiple angles for variety - front, side, close-up",
+            composition: "Rule of thirds, engaging framing, variety in poses",
+            styling: `${selectedTemplate.category} theme - ${mood} mood`,
+            technical: "High resolution, good focus, consistent quality",
+            alternatives: photoInstructionOptions.slice(1).join(" | ")
           },
           generationType: 'template',
-          prompt: customPrompt || 'Pre-generated template',
+          prompt: customPrompt || `${category} content with ${mood} tone`,
           subreddit,
-          allowsPromotion
+          allowsPromotion,
+          userId: req.session?.userId || undefined
         });
         
         // Add tier info to response
@@ -552,25 +559,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
           preferredProvider: preferredProvider || 'auto'
         });
         
-        // Save to database with provider info
+        // Generate multiple content variations for Pro/Premium
+        const variationCount = userTier === 'premium' ? 3 : 2;
+        const allVariations = [aiContent];
+        
+        // Generate additional variations for premium users
+        if (userTier === 'premium' && variationCount > 1) {
+          for (let i = 1; i < variationCount; i++) {
+            try {
+              const variation = await generateWithMultiProvider({
+                user: { personalityProfile: { ...parsedProfile, variation: i } } as any,
+                platform,
+                imageDescription: imageDescription || undefined,
+                customPrompt: customPrompt ? `${customPrompt} (variation ${i + 1})` : undefined,
+                subreddit: subreddit || undefined,
+                allowsPromotion: allowsPromotion as 'yes' | 'no',
+                baseImageUrl: imageUrl || undefined,
+                preferredProvider: preferredProvider || 'auto'
+              });
+              allVariations.push(variation);
+            } catch (error) {
+              console.log(`Variation ${i} failed, continuing with fewer options`);
+            }
+          }
+        }
+        
+        // Combine all variations into comprehensive output
+        const allTitles = allVariations.flatMap(v => v.titles).slice(0, userTier === 'premium' ? 8 : 5);
+        const primaryContent = allVariations[0].content;
+        const alternativeContent = allVariations.slice(1).map(v => v.content).join('\n\n---ALTERNATIVE---\n\n');
+        
+        // Save to database with provider info and user association
         contentGeneration = await storage.createContentGeneration({
           platform,
           style: style || 'ai-generated',
           theme: theme || 'personalized',
-          titles: aiContent.titles,
-          content: aiContent.content,
-          photoInstructions: aiContent.photoInstructions,
+          titles: allTitles,
+          content: alternativeContent ? `${primaryContent}\n\n---ALTERNATIVES---\n\n${alternativeContent}` : primaryContent,
+          photoInstructions: {
+            ...aiContent.photoInstructions,
+            variations: allVariations.length > 1 ? 
+              allVariations.slice(1).map((v, i) => `Style ${i + 2}: ${JSON.stringify(v.photoInstructions)}`).join(' | ') : 
+              undefined
+          },
           generationType: 'ai',
           prompt: customPrompt || imageDescription,
           subreddit,
-          allowsPromotion
+          allowsPromotion,
+          userId: req.session?.userId || undefined
         });
         
         // Add provider info to response
-        (contentGeneration as any).aiProvider = aiContent.provider;
-        (contentGeneration as any).estimatedCost = aiContent.estimatedCost;
+        (contentGeneration as any).aiProvider = allVariations.map(v => v.provider).join(', ');
+        (contentGeneration as any).estimatedCost = allVariations.reduce((sum, v) => sum + (v.estimatedCost || 0), 0);
         (contentGeneration as any).contentSource = 'ai';
         (contentGeneration as any).userTier = userTier;
+        (contentGeneration as any).variationCount = allVariations.length;
       }
       
       res.json(contentGeneration);
