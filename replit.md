@@ -33,6 +33,7 @@ ThottoPilot is a comprehensive social media content creation platform designed f
 ✓ **Unified Content Creator** - Merged dual workflow and enhanced generator into single component with tier-based feature gating
 ✓ **Tier-Based Feature Access** - Text workflow free for all users, image workflow requires Pro tier with upgrade prompts
 ✓ **50+ Promotional Templates System** - Implemented intelligent style and promotion matching with 7 subcategories (flash-sale, new-content, discount, exclusive-offer, custom-request, bundle, limited-time) × 5 styles × 4 promotion levels = 140+ unique combinations
+✓ **One-Click Style Presets** - Added 8 clickable preset buttons (Nude Photos, Shower Scene, Workout Gear, Lingerie, Casual Tease, Bedroom Scene, Outdoor Fun, Professional) with instant content generation, color-coded icons, and "Quick Styles" as default tab for faster UX
 
 ## Recent Changes (Previous Sessions)
 
