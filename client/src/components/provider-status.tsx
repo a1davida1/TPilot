@@ -52,7 +52,7 @@ export function ProviderStatus() {
         <CardHeader>
           <CardTitle className="flex items-center">
             <DollarSign className="mr-2 h-5 w-5" />
-            AI Provider Status
+            Service Status
           </CardTitle>
           <CardDescription>Loading provider information...</CardDescription>
         </CardHeader>
@@ -66,7 +66,7 @@ export function ProviderStatus() {
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center">
             <DollarSign className="mr-2 h-5 w-5" />
-            AI Provider Status & Cost Savings
+            Service Status & Cost Savings
           </div>
           <Button
             variant="outline"

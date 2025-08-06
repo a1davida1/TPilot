@@ -117,7 +117,7 @@ export function AdminDashboard() {
         <TabsList className="bg-gray-900/50 border-white/10">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
-          <TabsTrigger value="providers">AI Providers</TabsTrigger>
+          <TabsTrigger value="providers">Service Providers</TabsTrigger>
           <TabsTrigger value="revenue">Revenue</TabsTrigger>
           <TabsTrigger value="system">System</TabsTrigger>
         </TabsList>
@@ -210,12 +210,12 @@ export function AdminDashboard() {
           </Card>
         </TabsContent>
 
-        {/* AI Providers Tab */}
+        {/* Providers Tab */}
         <TabsContent value="providers" className="space-y-6">
           <Card className="bg-gray-900/50 backdrop-blur-xl border-white/10">
             <CardHeader>
-              <CardTitle>AI Provider Costs & Status</CardTitle>
-              <CardDescription>Monitor API usage and costs</CardDescription>
+              <CardTitle>Provider Costs & Status</CardTitle>
+              <CardDescription>Monitor service usage and costs</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -288,7 +288,7 @@ export function AdminDashboard() {
 
             <Card className="bg-gray-900/50 backdrop-blur-xl border-white/10">
               <CardHeader>
-                <CardTitle>API Costs</CardTitle>
+                <CardTitle>Service Costs</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-3xl font-bold">${stats?.apiCosts || '0'}</p>
@@ -330,7 +330,7 @@ export function AdminDashboard() {
                 <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
                   <div className="flex items-center gap-3">
                     <Activity className="h-5 w-5 text-green-400" />
-                    <span>API Services</span>
+                    <span>Content Services</span>
                   </div>
                   <Badge variant="outline" className="text-green-400 border-green-400">
                     <CheckCircle className="h-3 w-3 mr-1" />

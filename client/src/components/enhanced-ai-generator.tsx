@@ -32,7 +32,7 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
     mutationFn: async (data: any) => {
       return await apiRequest("/api/generate-ai", "POST", {
         ...data,
-        generationType: "ai-prompt",
+        generationType: "prompt",
         userProfile: {
           toneOfVoice: "confident",
           contentStyle: "authentic",
@@ -47,7 +47,7 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
       onContentGenerated(data);
       toast({
         title: "Content Generated Successfully!",
-        description: `Used ${data.aiProvider || 'demo'} provider${data.estimatedCost ? ` • Est. cost: $${data.estimatedCost}` : ''}`
+        description: "Your content is ready to use!"
       });
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
     },
@@ -91,7 +91,7 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center">
             <Brain className="mr-2 h-5 w-5" />
-            Enhanced AI Content Generator
+            Enhanced Content Generator
           </div>
           {isGuestMode && (
             <Badge variant="secondary" className="bg-orange-100 text-orange-800">
@@ -100,7 +100,7 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
           )}
         </CardTitle>
         <CardDescription>
-          Generate engaging content with AI optimization and cost control
+          Generate engaging content optimized for your audience
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -133,7 +133,7 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
         {/* Provider Selection (Advanced) */}
         {useAdvancedSettings && (
           <div className="space-y-2">
-            <Label>AI Provider Preference</Label>
+            <Label>Provider Preference</Label>
             <Select value={selectedProvider} onValueChange={setSelectedProvider}>
               <SelectTrigger>
                 <SelectValue placeholder="Select provider" />

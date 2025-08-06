@@ -69,9 +69,9 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
   }, []);
 
   const navigationItems = [
-    { id: "generate", label: "AI Generator", icon: <Brain className="h-5 w-5" />, badge: "NEW" },
+    { id: "generate", label: "Content Creator", icon: <Brain className="h-5 w-5" />, badge: "NEW" },
     { id: "samples", label: "Sample Library", icon: <FileText className="h-5 w-5" />, badge: "PRO" },
-    { id: "finetune", label: "Fine-Tuning", icon: <Sparkles className="h-5 w-5" />, badge: "PRO" },
+    { id: "finetune", label: "Personalization", icon: <Sparkles className="h-5 w-5" />, badge: "PRO" },
     { id: "gallery", label: "Image Gallery", icon: <ImageIcon className="h-5 w-5" /> },
     { id: "trending", label: "Trending Tags", icon: <Hash className="h-5 w-5" /> },
     { id: "insights", label: "Audience Insights", icon: <Users className="h-5 w-5" /> },
