@@ -85,7 +85,7 @@ ThottoPilot is a comprehensive social media content creation platform designed f
 Preferred communication style: Simple, everyday language.
 Authentication: Landing page first, registration form only shows when "Register" clicked, guest mode available for trial
 UI/UX: Ultra-polished dark interface with neon accents, glass morphism, and dynamic gradients
-Navigation: History and Settings buttons fully functional
+Navigation: Left sidebar with collapsible sections (cleaner and more user-friendly than tabs)
 Future features: Payment system integration planned
 Design: Live app interface demonstration instead of traditional landing page, showing actual functionality
 Interface: Dark theme with purple/pink gradients, animated backgrounds, and premium visual effects
