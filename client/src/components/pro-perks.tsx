@@ -24,7 +24,8 @@ import {
   ExternalLink,
   Copy,
   Search,
-  Filter
+  Filter,
+  Crown
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 

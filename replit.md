@@ -5,6 +5,8 @@ ThottoPilot is a comprehensive social media content creation platform designed f
 ## Recent Changes (August 2025)
 
 ### Latest Session Updates - Aug 6
+✓ **Dual Workflow Feature** - Two creative modes: Text-First (generate content → get photo instructions) and Image-First (upload photo → get captions)
+✓ **ProPerks Section** - 15+ resources including tax guides, privacy tools, professional discounts, and educational content with $1,247 in savings
 ✓ **Reddit Communities Database** - Created comprehensive database of 50+ subreddits with engagement metrics, posting rules, and verification requirements
 ✓ **Advanced Filtering & Sorting** - Sortable by members, engagement rate, upvotes; filterable by category, promotion rules, and verification status
 ✓ **Integrated Fine-Tuning** - Combined sample library with personalization settings into streamlined workflow

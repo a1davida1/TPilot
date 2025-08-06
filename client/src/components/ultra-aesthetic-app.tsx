@@ -47,6 +47,7 @@ import { AudienceInsights } from "@/components/audience-insights";
 import { ImageGallery } from "@/components/image-gallery";
 import { RedditCommunities } from "@/components/reddit-communities";
 import { ProPerks } from "@/components/pro-perks";
+import { DualWorkflowGenerator } from "@/components/dual-workflow-generator";
 import { cn } from "@/lib/utils";
 
 interface UltraAestheticAppProps {
@@ -73,6 +74,7 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
 
   const navigationItems = [
     { id: "generate", label: "Content Creator", icon: <Brain className="h-5 w-5" />, badge: "NEW" },
+    { id: "dual", label: "Dual Workflow", icon: <Zap className="h-5 w-5" />, badge: "HOT" },
     { id: "samples", label: "Sample Library", icon: <FileText className="h-5 w-5" />, badge: "PRO" },
     { id: "finetune", label: "Personalization", icon: <Sparkles className="h-5 w-5" />, badge: "PRO" },
     { id: "perks", label: "ProPerks", icon: <Gift className="h-5 w-5" />, badge: "15+" },
@@ -357,6 +359,12 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
             {activeView === "communities" && (
               <div className="max-w-7xl mx-auto">
                 <RedditCommunities />
+              </div>
+            )}
+            
+            {activeView === "dual" && (
+              <div className="max-w-6xl mx-auto">
+                <DualWorkflowGenerator />
               </div>
             )}
             
