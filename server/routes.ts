@@ -377,58 +377,151 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI Content Generation
+  // Import content templates
+  const { getRandomTemplates, addWatermark, getTemplateByMood } = require('./content-templates');
+  
   app.post("/api/generate-ai", upload.single('image'), async (req, res) => {
     try {
-      const { generationType, platform, customPrompt, subreddit, allowsPromotion, userProfile, style, theme } = req.body;
+      const { generationType, platform, customPrompt, subreddit, allowsPromotion, userProfile, style, theme, preferredProvider } = req.body;
       
       // Parse userProfile if it's a string
       const parsedProfile = typeof userProfile === 'string' ? JSON.parse(userProfile) : userProfile;
       
-      let imageDescription = '';
-      let imageUrl = '';
+      // Determine user tier (in production, get from authenticated user)
+      // For demo: check localStorage or session
+      const userTier = req.session?.userTier || 'free'; // 'free', 'basic', 'pro', 'premium'
       
-      // If image was uploaded, analyze it
-      if (req.file && generationType === 'ai-image') {
-        imageUrl = `/uploads/${req.file.filename}`;
-        const fullImageUrl = `${req.protocol}://${req.get('host')}${imageUrl}`;
-        imageDescription = await analyzeImageForContent(fullImageUrl, { personalityProfile: parsedProfile } as any);
+      let contentGeneration: any;
+      
+      // Tier-based content generation
+      if (userTier === 'free' || userTier === 'basic') {
+        // Use pre-generated templates for free/basic tier
+        const mood = parsedProfile?.toneOfVoice || 'playful';
+        const category = allowsPromotion === 'yes' ? 'promotional' : 'teasing';
+        
+        // Get random templates based on criteria
+        const templates = getRandomTemplates(3, category, mood);
+        
+        if (templates.length === 0) {
+          throw new Error("No suitable templates found");
+        }
+        
+        // Select best matching template
+        const selectedTemplate = templates[0];
+        
+        // Apply watermark for free tier
+        const finalTitle = userTier === 'free' 
+          ? addWatermark(selectedTemplate.title, true)
+          : selectedTemplate.title;
+        
+        const finalContent = userTier === 'free'
+          ? addWatermark(selectedTemplate.content, false)
+          : selectedTemplate.content;
+        
+        // Create content generation response
+        contentGeneration = await storage.createContentGeneration({
+          platform: platform || 'reddit',
+          style: style || selectedTemplate.style,
+          theme: theme || selectedTemplate.category,
+          titles: [finalTitle, templates[1]?.title || '', templates[2]?.title || ''].filter(Boolean),
+          content: finalContent,
+          photoInstructions: {
+            lighting: selectedTemplate.photoInstructions || "Natural lighting recommended",
+            angles: "Multiple angles for variety",
+            composition: "Rule of thirds, engaging framing",
+            styling: "Based on content theme",
+            technical: "High resolution, good focus"
+          },
+          generationType: 'template',
+          prompt: customPrompt || 'Pre-generated template',
+          subreddit,
+          allowsPromotion
+        });
+        
+        // Add tier info to response
+        (contentGeneration as any).contentSource = 'template';
+        (contentGeneration as any).userTier = userTier;
+        (contentGeneration as any).upgradeMessage = userTier === 'free' 
+          ? "Upgrade to remove watermarks and access AI-generated content"
+          : "Upgrade to Pro for personalized AI content generation";
+        
+      } else {
+        // Pro and Premium tiers get AI-generated content
+        let imageDescription = '';
+        let imageUrl = '';
+        
+        // If image was uploaded, analyze it
+        if (req.file && generationType === 'ai-image') {
+          imageUrl = `/uploads/${req.file.filename}`;
+          const fullImageUrl = `${req.protocol}://${req.get('host')}${imageUrl}`;
+          imageDescription = await analyzeImageForContent(fullImageUrl, { personalityProfile: parsedProfile } as any);
+        }
+        
+        // Generate AI content using multi-provider system
+        const aiContent = await generateWithMultiProvider({
+          user: { personalityProfile: parsedProfile, preferences: parsedProfile } as any,
+          platform,
+          imageDescription: imageDescription || undefined,
+          customPrompt: customPrompt || undefined,
+          subreddit: subreddit || undefined,
+          allowsPromotion: allowsPromotion as 'yes' | 'no',
+          baseImageUrl: imageUrl || undefined,
+          preferredProvider: preferredProvider || 'auto'
+        });
+        
+        // Save to database with provider info
+        contentGeneration = await storage.createContentGeneration({
+          platform,
+          style: style || 'ai-generated',
+          theme: theme || 'personalized',
+          titles: aiContent.titles,
+          content: aiContent.content,
+          photoInstructions: aiContent.photoInstructions,
+          generationType: 'ai',
+          prompt: customPrompt || imageDescription,
+          subreddit,
+          allowsPromotion
+        });
+        
+        // Add provider info to response
+        (contentGeneration as any).aiProvider = aiContent.provider;
+        (contentGeneration as any).estimatedCost = aiContent.estimatedCost;
+        (contentGeneration as any).contentSource = 'ai';
+        (contentGeneration as any).userTier = userTier;
       }
-      
-      // Generate AI content using multi-provider system (75-98% cost savings)
-      const aiContent = await generateWithMultiProvider({
-        user: { personalityProfile: parsedProfile, preferences: parsedProfile } as any,
-        platform,
-        imageDescription: imageDescription || undefined,
-        customPrompt: customPrompt || undefined,
-        subreddit: subreddit || undefined,
-        allowsPromotion: allowsPromotion as 'yes' | 'no',
-        baseImageUrl: imageUrl || undefined
-      });
-      
-      // Save to database with provider info
-      const contentGeneration = await storage.createContentGeneration({
-        platform,
-        style: style || 'ai-generated',
-        theme: theme || 'personalized',
-        titles: aiContent.titles,
-        content: aiContent.content,
-        photoInstructions: aiContent.photoInstructions,
-        generationType: 'ai',
-        prompt: customPrompt || imageDescription,
-        subreddit,
-        allowsPromotion
-      });
-      
-      // Add provider info to response
-      (contentGeneration as any).aiProvider = aiContent.provider;
-      (contentGeneration as any).estimatedCost = aiContent.estimatedCost;
       
       res.json(contentGeneration);
     } catch (error) {
-      console.error("AI generation error:", error);
-      res.status(500).json({ 
-        message: error instanceof Error ? error.message : "Failed to generate AI content" 
-      });
+      console.error("Content generation error:", error);
+      
+      // Fallback to templates if AI fails
+      try {
+        const templates = getRandomTemplates(3);
+        const fallbackTemplate = templates[0];
+        
+        const fallbackContent = {
+          id: Date.now(),
+          platform: req.body.platform || 'reddit',
+          titles: [fallbackTemplate.title],
+          content: addWatermark(fallbackTemplate.content, false),
+          photoInstructions: {
+            lighting: fallbackTemplate.photoInstructions || "Natural lighting",
+            angles: "Various angles",
+            composition: "Engaging framing",
+            styling: "Theme-appropriate",
+            technical: "High quality"
+          },
+          contentSource: 'template',
+          userTier: 'free',
+          fallbackReason: 'AI service temporarily unavailable'
+        };
+        
+        res.json(fallbackContent);
+      } catch (fallbackError) {
+        res.status(500).json({ 
+          message: "Content generation temporarily unavailable. Please try again." 
+        });
+      }
     }
   });
 

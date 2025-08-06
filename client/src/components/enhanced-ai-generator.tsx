@@ -45,10 +45,30 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
     },
     onSuccess: (data) => {
       onContentGenerated(data);
+      
+      // Check if watermark was added (free tier)
+      const hasWatermark = data.content?.includes('[via ThottoPilot]') || 
+                          data.titles?.[0]?.includes('[via ThottoPilot]');
+      
+      const description = data.contentSource === 'template' 
+        ? `Using pre-generated content${hasWatermark ? ' (with watermark)' : ''}`
+        : `Generated with ${data.aiProvider || 'service'}`;
+      
       toast({
         title: "Content Generated Successfully!",
-        description: "Your content is ready to use!"
+        description: description
       });
+      
+      // Show upgrade prompt for free/basic users
+      if (data.upgradeMessage) {
+        setTimeout(() => {
+          toast({
+            title: "Want More?",
+            description: data.upgradeMessage
+          });
+        }, 2000);
+      }
+      
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
     },
     onError: (error) => {
