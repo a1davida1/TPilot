@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { LoginModal } from "./login-modal";
 import { 
   Brain, 
   Sparkles, 
@@ -22,7 +23,11 @@ import {
   Target,
   CheckCircle,
   ArrowRight,
-  Rocket
+  Rocket,
+  LogIn,
+  LogOut,
+  UserPlus,
+  Crown
 } from "lucide-react";
 import { SocialAuth } from "@/components/social-auth";
 import { ProviderStatus } from "@/components/provider-status";
@@ -38,12 +43,41 @@ interface EnhancedDashboardProps {
 }
 
 export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProps) {
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [userTier, setUserTier] = useState<'guest' | 'free' | 'pro' | 'premium'>('guest');
+  
+  // Load user from localStorage on mount
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      const userData = JSON.parse(storedUser);
+      setUser(userData);
+      setUserTier(userData.tier || 'free');
+    } else if (isGuestMode) {
+      setUserTier('guest');
+    }
+  }, [isGuestMode]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+    setUserTier('guest');
+    window.location.reload();
+  };
+
+  const handleLoginSuccess = (userData: any) => {
+    setUser(userData);
+    setUserTier(userData.tier || 'free');
+    window.location.reload();
+  };
   const [activeTab, setActiveTab] = useState("ai-content");
   const [userStats, setUserStats] = useState({
-    postsCreated: isGuestMode ? 0 : 47,
-    totalViews: isGuestMode ? 0 : 12840,
-    engagementRate: isGuestMode ? 0 : 14.9,
-    streak: isGuestMode ? 0 : 7
+    postsCreated: userTier === 'guest' ? 0 : 47,
+    totalViews: userTier === 'guest' ? 0 : 12840,
+    engagementRate: userTier === 'guest' ? 0 : 14.9,
+    streak: userTier === 'guest' ? 0 : 7
   });
 
   const quickActions = [
@@ -79,10 +113,10 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
   ];
 
   const achievements = [
-    { icon: <Star className="h-4 w-4" />, title: "First Post", completed: true },
-    { icon: <Eye className="h-4 w-4" />, title: "1K Views", completed: !isGuestMode },
-    { icon: <Heart className="h-4 w-4" />, title: "High Engagement", completed: !isGuestMode },
-    { icon: <Rocket className="h-4 w-4" />, title: "Viral Content", completed: false }
+    { icon: <Star className="h-4 w-4" />, title: "First Post", completed: userTier !== 'guest' },
+    { icon: <Eye className="h-4 w-4" />, title: "1K Views", completed: userTier === 'pro' || userTier === 'premium' },
+    { icon: <Heart className="h-4 w-4" />, title: "High Engagement", completed: userTier === 'pro' || userTier === 'premium' },
+    { icon: <Rocket className="h-4 w-4" />, title: "Viral Content", completed: userTier === 'premium' }
   ];
 
   return (
@@ -102,30 +136,77 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
                   </h1>
                 </div>
                 
-                {!isGuestMode && (
-                  <Badge className="bg-green-100 text-green-800 animate-pulse-slow">
+                {userTier === 'pro' && (
+                  <Badge className="bg-purple-100 text-purple-800 animate-pulse-slow">
                     <CheckCircle className="mr-1 h-3 w-3" />
                     Pro
+                  </Badge>
+                )}
+                {userTier === 'premium' && (
+                  <Badge className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-900 animate-pulse-slow">
+                    <Sparkles className="mr-1 h-3 w-3" />
+                    Premium
                   </Badge>
                 )}
               </div>
 
               <div className="flex items-center space-x-4">
-                {isGuestMode ? (
-                  <Button 
-                    className="btn-premium"
-                    onClick={() => window.location.href = '/login'}
-                  >
-                    <Star className="mr-2 h-4 w-4" />
-                    Upgrade to Pro
-                  </Button>
+                {userTier === 'guest' ? (
+                  <>
+                    <Button 
+                      variant="outline"
+                      onClick={() => setShowLoginModal(true)}
+                      className="border-purple-500/20 hover:border-purple-500/40"
+                    >
+                      <LogIn className="mr-2 h-4 w-4" />
+                      Login
+                    </Button>
+                    <Button 
+                      className="btn-premium"
+                      onClick={() => setShowLoginModal(true)}
+                    >
+                      <UserPlus className="mr-2 h-4 w-4" />
+                      Sign Up Free
+                    </Button>
+                  </>
                 ) : (
                   <div className="flex items-center space-x-3">
                     <div className="text-sm text-gray-600">
-                      <div className="font-medium">{userStats.streak} day streak</div>
+                      <div className="font-medium">{user?.username || 'User'}</div>
+                      <div className="text-xs">
+                        {userTier === 'pro' ? (
+                          <span className="flex items-center text-purple-600">
+                            <Crown className="h-3 w-3 mr-1" />
+                            Pro Member
+                          </span>
+                        ) : userTier === 'premium' ? (
+                          <span className="flex items-center text-pink-600">
+                            <Sparkles className="h-3 w-3 mr-1" />
+                            Premium
+                          </span>
+                        ) : (
+                          <span className="text-gray-500">Free Account</span>
+                        )}
+                      </div>
                     </div>
-                    <Button variant="outline" size="sm">
-                      Profile
+                    {userTier === 'free' && (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="border-purple-500/20 hover:border-purple-500/40"
+                        onClick={() => setShowLoginModal(true)}
+                      >
+                        <Crown className="mr-1 h-3 w-3" />
+                        Upgrade
+                      </Button>
+                    )}
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={handleLogout}
+                      className="text-gray-600 hover:text-gray-900"
+                    >
+                      <LogOut className="h-4 w-4" />
                     </Button>
                   </div>
                 )}
@@ -134,8 +215,8 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
           </div>
         </header>
 
-        {/* Guest Mode Banner */}
-        {isGuestMode && (
+        {/* Guest Mode Banner - Only for guests */}
+        {userTier === 'guest' && (
           <div className="bg-gradient-to-r from-orange-500 to-pink-500 text-white">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
               <Alert className="border-white/20 bg-white/10 text-white">
@@ -148,7 +229,7 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
                     </div>
                     <div className="flex gap-2">
                       <Button 
-                        onClick={() => window.location.href = '/login'}
+                        onClick={() => setShowLoginModal(true)}
                         className="bg-white text-orange-600 hover:bg-gray-100"
                         size="sm"
                       >
@@ -161,6 +242,31 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
             </div>
           </div>
         )}
+
+        {/* Free User Banner - Subtle upgrade prompt */}
+        {userTier === 'free' && (
+          <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-100">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center space-x-2 text-purple-700">
+                  <Crown className="h-4 w-4" />
+                  <span>Unlock Pro features: Image workflow, unlimited generations, priority support</span>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="text-purple-700 hover:text-purple-900"
+                  onClick={() => setShowLoginModal(true)}
+                >
+                  Upgrade to Pro
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Pro users see nothing - clean interface */}
+        {/* Premium users see nothing - clean interface */}
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Quick Stats Dashboard */}
@@ -177,9 +283,9 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
                   </div>
                 </div>
                 <div className="mt-4">
-                  <Progress value={isGuestMode ? 0 : 65} className="h-2" />
+                  <Progress value={userTier === 'guest' ? 0 : 65} className="h-2" />
                   <p className="text-xs text-gray-500 mt-1">
-                    {isGuestMode ? "Start creating!" : "13 this week"}
+                    {userTier === 'guest' ? "Start creating!" : "13 this week"}
                   </p>
                 </div>
               </CardContent>
@@ -201,7 +307,7 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
                 <div className="mt-4">
                   <div className="flex items-center text-sm text-green-600">
                     <TrendingUp className="h-4 w-4 mr-1" />
-                    {isGuestMode ? "Join to track" : "+24% this week"}
+                    {userTier === 'guest' ? "Join to track" : "+24% this week"}
                   </div>
                 </div>
               </CardContent>
@@ -221,7 +327,7 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
                 <div className="mt-4">
                   <div className="flex items-center text-sm text-green-600">
                     <ArrowRight className="h-4 w-4 mr-1" />
-                    {isGuestMode ? "Unlock insights" : "Above average"}
+                    {userTier === 'guest' ? "Unlock insights" : "Above average"}
                   </div>
                 </div>
               </CardContent>
@@ -241,7 +347,7 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
                 <div className="mt-4">
                   <div className="flex items-center text-sm text-orange-600">
                     <Clock className="h-4 w-4 mr-1" />
-                    {isGuestMode ? "Start your streak!" : "Keep it up!"}
+                    {userTier === 'guest' ? "Start your streak!" : "Keep it up!"}
                   </div>
                 </div>
               </CardContent>
@@ -322,15 +428,15 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
                 <div className="lg:col-span-2">
                   <UnifiedContentCreator 
                     onContentGenerated={(generation) => console.log('Generated:', generation)}
-                    isGuestMode={isGuestMode}
-                    userTier={isGuestMode ? "free" : "pro"}
+                    isGuestMode={userTier === 'guest'}
+                    userTier={userTier === 'guest' ? "free" : userTier}
                   />
                 </div>
                 <div className="space-y-6">
-                  {isGuestMode && (
+                  {userTier === 'guest' && (
                     <ConversionOptimization 
                       isGuestMode={true}
-                      onUpgrade={() => window.location.href = '/login'}
+                      onUpgrade={() => setShowLoginModal(true)}
                     />
                   )}
                   <ProviderStatus />
@@ -339,7 +445,7 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
             </TabsContent>
 
             <TabsContent value="analytics">
-              <AnalyticsDashboard isGuestMode={isGuestMode} />
+              <AnalyticsDashboard isGuestMode={userTier === 'guest'} />
             </TabsContent>
 
             <TabsContent value="gallery">
@@ -347,16 +453,16 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
                 <div className="text-center space-y-4">
                   <ImageIcon className="h-16 w-16 mx-auto text-gray-400" />
                   <h3 className="text-xl font-medium text-gray-600">
-                    {isGuestMode ? "Gallery Preview" : "Your Content Gallery"}
+                    {userTier === 'guest' ? "Gallery Preview" : "Your Content Gallery"}
                   </h3>
                   <p className="text-gray-500 max-w-md">
-                    {isGuestMode 
+                    {userTier === 'guest' 
                       ? "Sign up to save and organize your generated content"
                       : "Your generated content and images will appear here"
                     }
                   </p>
-                  {isGuestMode && (
-                    <Button className="btn-premium" onClick={() => window.location.href = '/login'}>
+                  {userTier === 'guest' && (
+                    <Button className="btn-premium" onClick={() => setShowLoginModal(true)}>
                       Unlock Gallery
                     </Button>
                   )}
@@ -372,8 +478,8 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
                   <p className="text-gray-500 max-w-md">
                     Protect your images from reverse searches while maintaining visual quality
                   </p>
-                  {isGuestMode && (
-                    <Button className="btn-premium" onClick={() => window.location.href = '/login'}>
+                  {userTier === 'guest' && (
+                    <Button className="btn-premium" onClick={() => setShowLoginModal(true)}>
                       Unlock Protection
                     </Button>
                   )}
@@ -387,7 +493,7 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
           </Tabs>
 
           {/* Achievements Section */}
-          {!isGuestMode && (
+          {userTier !== 'guest' && (
             <Card className="mt-8">
               <CardHeader>
                 <CardTitle className="flex items-center">
@@ -423,6 +529,13 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
           )}
         </main>
       </div>
+      
+      {/* Login Modal */}
+      <LoginModal 
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onSuccess={handleLoginSuccess}
+      />
     </MobileOptimization>
   );
 }
