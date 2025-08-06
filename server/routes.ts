@@ -109,8 +109,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newUser = await storage.createUser({
         email,
         password: hashedPassword,
-        username: username || email.split('@')[0],
-        displayName: username || email.split('@')[0]
+        username: username || email.split('@')[0]
       });
 
       // Generate JWT token
@@ -150,8 +149,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Invalid credentials' });
       }
 
-      // Update last login
-      await storage.updateUserProfile(user.id, { lastLoginAt: new Date() });
+      // Note: last login tracking can be added to schema if needed
 
       // Generate JWT token
       const token = jwt.sign(
@@ -210,7 +208,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = await storage.getUser(req.user.userId);
       res.json({
-        plan: user?.subscription || 'free',
+        plan: user?.tier || 'free',
         status: 'active'
       });
     } catch (error) {
@@ -289,8 +287,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Reddit communities endpoint
   app.get("/api/reddit-communities", async (req, res) => {
     try {
-      const { redditCommunities } = await import("./reddit-communities");
-      res.json(redditCommunities);
+      res.json(redditCommunitiesDatabase);
     } catch (error) {
       console.error("Error fetching communities:", error);
       res.status(500).json({ message: "Failed to fetch communities" });
@@ -301,7 +298,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = await storage.getUser(req.user.userId);
       const generations = await storage.getUserContentGenerations(req.user.userId);
-      const images = await storage.getUserImages(req.user.userId);
+      const images = await storage.getUserImages(req.user.userId.toString());
       
       const { password: _, ...userResponse } = user || {};
       

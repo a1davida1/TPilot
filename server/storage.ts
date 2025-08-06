@@ -7,10 +7,13 @@ import {
   type InsertUserSample,
   type UserPreference,
   type InsertUserPreference,
+  type UserImage,
+  type InsertUserImage,
   users,
   contentGenerations,
   userSamples,
-  userPreferences
+  userPreferences,
+  userImages
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
@@ -22,10 +25,16 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUserTier(userId: number, tier: string): Promise<void>;
+  updateUserProfile(userId: number, updates: Partial<User>): Promise<User | undefined>;
+  deleteUser(userId: number): Promise<void>;
   
   // Generation operations
   createGeneration(gen: InsertContentGeneration): Promise<ContentGeneration>;
   getGenerationsByUserId(userId: number): Promise<ContentGeneration[]>;
+  createContentGeneration(gen: InsertContentGeneration): Promise<ContentGeneration>;
+  getUserContentGenerations(userId: number): Promise<ContentGeneration[]>;
+  getContentGenerationStats(userId: number): Promise<{ total: number; thisWeek: number; thisMonth: number }>;
+  getLastGenerated(userId: number): Promise<ContentGeneration | undefined>;
   
   // Sample operations
   createUserSample(sample: InsertUserSample): Promise<UserSample>;
@@ -35,6 +44,13 @@ export interface IStorage {
   // Preference operations
   getUserPreferences(userId: number): Promise<UserPreference | undefined>;
   upsertUserPreferences(prefs: InsertUserPreference): Promise<UserPreference>;
+  
+  // Image operations
+  createUserImage(image: InsertUserImage): Promise<UserImage>;
+  getUserImages(userId: string): Promise<UserImage[]>;
+  getImageById(id: number): Promise<UserImage | undefined>;
+  updateImageProtection(id: number, protectionData: Partial<UserImage>): Promise<UserImage | undefined>;
+  deleteUserImage(id: number, userId: number): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -42,10 +58,12 @@ export class MemStorage implements IStorage {
   private contentGenerations: ContentGeneration[] = [];
   private userSamples: UserSample[] = [];
   private userPreferences: UserPreference[] = [];
+  private userImages: UserImage[] = [];
   private nextUserId = 1;
   private nextGenId = 1;
   private nextSampleId = 1;
   private nextPrefId = 1;
+  private nextImageId = 1;
 
   constructor() {
     // Create a demo user
@@ -55,6 +73,9 @@ export class MemStorage implements IStorage {
       password: "demo",
       email: "demo@example.com",
       tier: "pro",
+      provider: null,
+      providerId: null,
+      avatar: null,
       createdAt: new Date(),
     });
     this.nextUserId = 2;
@@ -77,6 +98,10 @@ export class MemStorage implements IStorage {
     const newUser: User = {
       ...user,
       id: this.nextUserId++,
+      email: user.email ?? null,
+      provider: user.provider ?? null,
+      providerId: user.providerId ?? null,
+      avatar: user.avatar ?? null,
       createdAt: new Date(),
     };
     this.users.push(newUser);
@@ -90,11 +115,28 @@ export class MemStorage implements IStorage {
     }
   }
 
+  async updateUserProfile(userId: number, updates: Partial<User>): Promise<User | undefined> {
+    const user = this.users.find(u => u.id === userId);
+    if (user) {
+      Object.assign(user, updates);
+      return user;
+    }
+    return undefined;
+  }
+
+  async deleteUser(userId: number): Promise<void> {
+    const index = this.users.findIndex(u => u.id === userId);
+    if (index >= 0) {
+      this.users.splice(index, 1);
+    }
+  }
+
   // Generation operations
   async createGeneration(gen: InsertContentGeneration): Promise<ContentGeneration> {
     const newGen: ContentGeneration = {
       ...gen,
       id: this.nextGenId++,
+      userId: gen.userId ?? null,
       createdAt: new Date(),
     };
     this.contentGenerations.push(newGen);
@@ -105,11 +147,44 @@ export class MemStorage implements IStorage {
     return this.contentGenerations.filter(g => g.userId === userId);
   }
 
+  async createContentGeneration(gen: InsertContentGeneration): Promise<ContentGeneration> {
+    return this.createGeneration(gen);
+  }
+
+  async getUserContentGenerations(userId: number): Promise<ContentGeneration[]> {
+    return this.getGenerationsByUserId(userId);
+  }
+
+  async getContentGenerationStats(userId: number): Promise<{ total: number; thisWeek: number; thisMonth: number }> {
+    const userGenerations = this.contentGenerations.filter(g => g.userId === userId);
+    const now = new Date();
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    return {
+      total: userGenerations.length,
+      thisWeek: userGenerations.filter(g => g.createdAt && g.createdAt > oneWeekAgo).length,
+      thisMonth: userGenerations.filter(g => g.createdAt && g.createdAt > oneMonthAgo).length,
+    };
+  }
+
+  async getLastGenerated(userId: number): Promise<ContentGeneration | undefined> {
+    const userGenerations = this.contentGenerations
+      .filter(g => g.userId === userId)
+      .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+    return userGenerations[0];
+  }
+
   // Sample operations
   async createUserSample(sample: InsertUserSample): Promise<UserSample> {
     const newSample: UserSample = {
       ...sample,
       id: this.nextSampleId++,
+      style: sample.style ?? null,
+      performanceScore: sample.performanceScore ?? null,
+      tags: sample.tags ?? null,
+      imageUrls: sample.imageUrls ?? null,
+      metadata: sample.metadata ?? null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -143,11 +218,58 @@ export class MemStorage implements IStorage {
       const newPrefs: UserPreference = {
         ...prefs,
         id: this.nextPrefId++,
+        writingStyle: prefs.writingStyle ?? null,
+        contentPreferences: prefs.contentPreferences ?? null,
+        prohibitedWords: prefs.prohibitedWords ?? null,
+        photoStyle: prefs.photoStyle ?? null,
+        platformSettings: prefs.platformSettings ?? null,
+        fineTuningEnabled: prefs.fineTuningEnabled ?? false,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
       this.userPreferences.push(newPrefs);
       return newPrefs;
+    }
+  }
+
+  // Image operations
+  async createUserImage(image: InsertUserImage): Promise<UserImage> {
+    const newImage: UserImage = {
+      ...image,
+      id: this.nextImageId++,
+      isProtected: image.isProtected ?? false,
+      protectionLevel: image.protectionLevel ?? "none",
+      tags: image.tags ?? null,
+      metadata: image.metadata ?? null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.userImages.push(newImage);
+    return newImage;
+  }
+
+  async getUserImages(userId: string): Promise<UserImage[]> {
+    const userIdNum = parseInt(userId);
+    return this.userImages.filter(img => img.userId === userIdNum);
+  }
+
+  async getImageById(id: number): Promise<UserImage | undefined> {
+    return this.userImages.find(img => img.id === id);
+  }
+
+  async updateImageProtection(id: number, protectionData: Partial<UserImage>): Promise<UserImage | undefined> {
+    const image = this.userImages.find(img => img.id === id);
+    if (image) {
+      Object.assign(image, protectionData, { updatedAt: new Date() });
+      return image;
+    }
+    return undefined;
+  }
+
+  async deleteUserImage(id: number, userId: number): Promise<void> {
+    const index = this.userImages.findIndex(img => img.id === id && img.userId === userId);
+    if (index >= 0) {
+      this.userImages.splice(index, 1);
     }
   }
 }
