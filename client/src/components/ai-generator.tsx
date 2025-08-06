@@ -7,11 +7,25 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Brain, Upload, Sparkles, Image as ImageIcon, Settings } from 'lucide-react';
+import { Brain, Upload, Sparkles, Image as ImageIcon, Settings, Copy, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import type { ContentGeneration } from '@shared/schema';
+
+// Extended interface for frontend display with dynamic server properties
+interface GeneratedContentDisplay extends ContentGeneration {
+  contentSource?: 'ai' | 'template';
+  aiProvider?: string;
+  estimatedCost?: number;
+  upgradeMessage?: string;
+  userTier?: string;
+  variationCount?: number;
+  titles: string[]; // Ensure titles is always an array
+  photoInstructions: {
+    [key: string]: string;
+  } | string; // Support both object and string formats
+}
 
 interface AIGeneratorProps {
   onContentGenerated: (generation: ContentGeneration) => void;
@@ -33,9 +47,33 @@ export function AIGenerator({ onContentGenerated }: AIGeneratorProps) {
     includeEmojis: true,
     promotionLevel: 'moderate' as 'subtle' | 'moderate' | 'direct'
   });
+  
+  // Output display states
+  const [generatedContent, setGeneratedContent] = useState<GeneratedContentDisplay | null>(null);
+  const [copiedItem, setCopiedItem] = useState<string | null>(null);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const copyToClipboard = async (text: string, itemName: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedItem(itemName);
+      toast({
+        title: "Copied!",
+        description: `${itemName} copied to clipboard`
+      });
+      
+      // Reset copied state after 2 seconds
+      setTimeout(() => setCopiedItem(null), 2000);
+    } catch (err) {
+      toast({
+        title: "Copy Failed",
+        description: "Unable to copy to clipboard",
+        variant: "destructive"
+      });
+    }
+  };
 
   const generateMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -63,10 +101,17 @@ export function AIGenerator({ onContentGenerated }: AIGeneratorProps) {
       return await res.json();
     },
     onSuccess: (data) => {
+      // Ensure titles is always an array
+      const displayData = {
+        ...data,
+        titles: Array.isArray(data.titles) ? data.titles : [data.titles].filter(Boolean)
+      } as GeneratedContentDisplay;
+      
+      setGeneratedContent(displayData);
       onContentGenerated(data);
       queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
       toast({
-        title: "AI content generated!",
+        title: "Content Generated!",
         description: "Your personalized content is ready."
       });
     },
@@ -369,6 +414,135 @@ export function AIGenerator({ onContentGenerated }: AIGeneratorProps) {
             </>
           )}
         </Button>
+
+        {/* Generated Content Output Display */}
+        {generatedContent && (
+          <div className="mt-8 space-y-6 border-t pt-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold flex items-center">
+                <Sparkles className="mr-2 h-5 w-5 text-purple-500" />
+                Generated Content
+              </h3>
+              {generatedContent.contentSource && (
+                <Badge variant="secondary" className="text-xs">
+                  {generatedContent.contentSource === 'template' ? 'Template' : 'AI Generated'}
+                </Badge>
+              )}
+            </div>
+
+            {/* Generated Titles */}
+            {generatedContent.titles && Array.isArray(generatedContent.titles) && generatedContent.titles.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-sm text-gray-700 dark:text-gray-300">
+                    Titles ({generatedContent.titles.length} options)
+                  </h4>
+                </div>
+                <div className="space-y-2">
+                  {generatedContent.titles.map((title: string, index: number) => (
+                    <div 
+                      key={index} 
+                      className="relative p-3 bg-gray-50 dark:bg-gray-800 rounded-lg group hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <p className="text-sm pr-8">{title}</p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => copyToClipboard(title, `Title ${index + 1}`)}
+                        className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        {copiedItem === `Title ${index + 1}` ? (
+                          <Check className="h-3 w-3" />
+                        ) : (
+                          <Copy className="h-3 w-3" />
+                        )}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Generated Content */}
+            {generatedContent.content && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-sm text-gray-700 dark:text-gray-300">
+                    Post Content
+                  </h4>
+                </div>
+                <div className="relative p-4 bg-gray-50 dark:bg-gray-800 rounded-lg group hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                  <p className="text-sm whitespace-pre-wrap pr-8">{generatedContent.content}</p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard(generatedContent.content || '', 'Content')}
+                    className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    {copiedItem === 'Content' ? (
+                      <Check className="h-3 w-3" />
+                    ) : (
+                      <Copy className="h-3 w-3" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Photo Instructions */}
+            {generatedContent.photoInstructions && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-sm text-gray-700 dark:text-gray-300">
+                    Photo Instructions
+                  </h4>
+                </div>
+                <div className="space-y-3">
+                  {typeof generatedContent.photoInstructions === 'string' ? (
+                    <div className="relative p-4 bg-gray-50 dark:bg-gray-800 rounded-lg group hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                      <p className="text-sm whitespace-pre-wrap pr-8">{generatedContent.photoInstructions}</p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => copyToClipboard(generatedContent.photoInstructions as string, 'Photo Instructions')}
+                        className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        {copiedItem === 'Photo Instructions' ? (
+                          <Check className="h-3 w-3" />
+                        ) : (
+                          <Copy className="h-3 w-3" />
+                        )}
+                      </Button>
+                    </div>
+                  ) : (
+                    Object.entries(generatedContent.photoInstructions).map(([key, value], index) => (
+                      <div key={index} className="space-y-2">
+                        <Label className="text-xs font-medium uppercase tracking-wider text-gray-500">
+                          {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                        </Label>
+                        <div className="relative p-3 bg-gray-50 dark:bg-gray-800 rounded-lg group hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                          <p className="text-sm pr-8">{value}</p>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyToClipboard(value, key)}
+                            className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            {copiedItem === key ? (
+                              <Check className="h-3 w-3" />
+                            ) : (
+                              <Copy className="h-3 w-3" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

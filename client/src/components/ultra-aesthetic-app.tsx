@@ -48,6 +48,7 @@ import { ImageGallery } from "@/components/image-gallery";
 import { RedditCommunities } from "@/components/reddit-communities";
 import { ProPerks } from "@/components/pro-perks";
 import { DualWorkflowGenerator } from "@/components/dual-workflow-generator";
+import { ImageShield } from "@/components/image-shield";
 import { cn } from "@/lib/utils";
 
 interface UltraAestheticAppProps {
@@ -473,53 +474,10 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
             
             {activeView === "protect" && (
               <div className="max-w-4xl mx-auto">
-                <Card className="bg-gray-900/50 backdrop-blur-xl border-white/10">
-                  <CardHeader className="text-center py-12">
-                    <Shield className="h-24 w-24 mx-auto text-purple-400 mb-6" />
-                    <CardTitle className="text-3xl mb-4">Image Protection Suite</CardTitle>
-                    <CardDescription className="text-lg max-w-2xl mx-auto">
-                      Military-grade protection for your photos. Prevent reverse image searches 
-                      while maintaining visual quality. Your content, your control.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid md:grid-cols-3 gap-6 mb-8">
-                      <Card className="bg-white/5 border-white/10">
-                        <CardHeader>
-                          <Lock className="h-8 w-8 text-green-400 mb-2" />
-                          <CardTitle className="text-lg">Light Protection</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-sm text-gray-400">Basic protection for casual use</p>
-                        </CardContent>
-                      </Card>
-                      <Card className="bg-white/5 border-white/10">
-                        <CardHeader>
-                          <Shield className="h-8 w-8 text-blue-400 mb-2" />
-                          <CardTitle className="text-lg">Standard Protection</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-sm text-gray-400">Recommended for most creators</p>
-                        </CardContent>
-                      </Card>
-                      <Card className="bg-white/5 border-white/10">
-                        <CardHeader>
-                          <Zap className="h-8 w-8 text-purple-400 mb-2" />
-                          <CardTitle className="text-lg">Heavy Protection</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-sm text-gray-400">Maximum security for sensitive content</p>
-                        </CardContent>
-                      </Card>
-                    </div>
-                    <Button 
-                      className="w-full bg-gradient-to-r from-purple-600 to-pink-600 h-12"
-                      onClick={() => isGuestMode ? setShowAuthModal(true) : null}
-                    >
-                      {isGuestMode ? "Sign Up to Access" : "Start Protecting Images"}
-                    </Button>
-                  </CardContent>
-                </Card>
+                <ImageShield 
+                  isGuestMode={isGuestMode} 
+                  userTier={isGuestMode ? "free" : "pro"} 
+                />
               </div>
             )}
             
