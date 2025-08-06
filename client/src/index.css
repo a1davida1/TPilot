@@ -61,9 +61,9 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Premium gradients with better readability */
+/* Feminine theme gradients for women creators */
 .gradient-primary {
-  background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+  background: linear-gradient(135deg, #d946ef 0%, #ec4899 100%);
 }
 
 .gradient-secondary {
@@ -71,7 +71,22 @@
 }
 
 .gradient-success {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%);
+}
+
+.gradient-accent {
+  background: linear-gradient(135deg, #a855f7 0%, #3b82f6 100%);
+}
+
+/* Feminine color scheme variables */
+:root {
+  --primary-pink: #ec4899;
+  --primary-purple: #d946ef;
+  --primary-blue: #06b6d4;
+  --accent-light: #f8fafc;
+  --accent-pink: #fdf2f8;
+  --accent-purple: #faf5ff;
+  --accent-blue: #f0f9ff;
 }
 
 .gradient-purple {

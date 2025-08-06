@@ -69,7 +69,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
   const [userTier, setUserTier] = useState<'guest' | 'free' | 'pro' | 'premium'>('guest');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeSection, setActiveSection] = useState('generator');
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['content']));
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['content', 'creator-tools']));
   
   // Load user from localStorage on mount
   useEffect(() => {
@@ -109,14 +109,24 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
 
   const menuItems = [
     {
-      id: 'content',
-      label: 'Content Creation',
+      id: 'creator-tools',
+      label: 'Creator Tools',
       icon: <PenTool className="h-4 w-4" />,
       items: [
-        { id: 'generator', label: 'Content Generator', icon: <Brain className="h-4 w-4" />, badge: 'Popular' },
+        { id: 'generator', label: 'Content Creator', icon: <Brain className="h-4 w-4" />, badge: 'Popular' },
         { id: 'gallery', label: 'Image Gallery', icon: <ImageIcon className="h-4 w-4" /> },
-        { id: 'protect', label: 'Image Protection', icon: <Shield className="h-4 w-4" />, proOnly: true },
+        { id: 'protect', label: 'Image Shield', icon: <Shield className="h-4 w-4" /> },
         { id: 'history', label: 'Generation History', icon: <History className="h-4 w-4" /> },
+      ]
+    },
+    {
+      id: 'content',
+      label: 'Content Templates',
+      icon: <Sparkles className="h-4 w-4" />,
+      items: [
+        { id: 'templates', label: 'Style Presets', icon: <FileText className="h-4 w-4" />, badge: '8 Styles' },
+        { id: 'customization', label: 'Personalization', icon: <Settings className="h-4 w-4" /> },
+        { id: 'export', label: 'Export Tools', icon: <FileText className="h-4 w-4" /> },
       ]
     },
     {
