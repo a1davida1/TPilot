@@ -47,8 +47,6 @@ import {
   Globe
 } from "lucide-react";
 import { UnifiedContentCreator } from "@/components/unified-content-creator";
-import { ProviderStatus } from "@/components/provider-status";
-import { ConversionOptimization } from "@/components/conversion-optimization";
 import { AnalyticsDashboard } from "@/components/analytics-dashboard";
 import { PerformanceOptimization } from "@/components/performance-optimization";
 import { MobileOptimization } from "@/components/mobile-optimization";
@@ -161,10 +159,20 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
               userTier={userTier === 'guest' ? "free" : userTier}
             />
             {userTier === 'guest' && (
-              <ConversionOptimization 
-                isGuestMode={true}
-                onUpgrade={() => setShowLoginModal(true)}
-              />
+              <Card className="bg-gray-800 border-purple-500/20">
+                <CardContent className="p-4 text-center space-y-2">
+                  <Sparkles className="h-8 w-8 mx-auto text-purple-400" />
+                  <h4 className="text-sm font-medium text-white">Unlock Full Access</h4>
+                  <p className="text-xs text-gray-400">Get unlimited generations and premium features</p>
+                  <Button 
+                    size="sm" 
+                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600"
+                    onClick={() => setShowLoginModal(true)}
+                  >
+                    Sign Up Free
+                  </Button>
+                </CardContent>
+              </Card>
             )}
           </div>
         );
