@@ -85,7 +85,7 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
   const stats = [
     { value: "2.4K", label: "Posts Created", trend: "+12%" },
     { value: "89%", label: "Engagement", trend: "+5%" },
-    { value: "158", label: "Active Subs", trend: "+23%" }
+    { value: "2,847", label: "Active Creators", trend: "+12%" }
   ];
 
   return (
