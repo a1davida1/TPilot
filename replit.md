@@ -30,7 +30,7 @@ Compliance: Phased approach - base features without ID verification, gate advanc
 - **Server Framework**: Express.js with TypeScript on Node.js.
 - **API Design**: RESTful API with structured error handling.
 - **Data Storage**: In-memory storage with interface abstraction, moving towards PostgreSQL.
-- **Content Generation**: Template-based content generator with predefined patterns, adapting content for specific social media platforms and subreddit promotion rules.
+- **Content Generation**: Advanced template-based content generator with predefined patterns that produces authentically different outputs based on all user parameters (photoType, textTone, promotion settings, hashtags), adapting content for specific social media platforms and subreddit promotion rules.
 - **Session Management**: Express sessions with PostgreSQL-backed storage.
 - **System Design Choices**: Smart 4090 architecture for batch processing (ImageShield preprocessing, Content Engine generation, Voice Clone library creation) to optimize costs. Dual workflow feature (Text-First, Image-First) merged into a unified content creator with tier-based access.
 
@@ -49,7 +49,7 @@ Compliance: Phased approach - base features without ID verification, gate advanc
 - **Photo Instructions**: Structured guidance for lighting, angles, composition, styling, and technical settings.
 - **Platform Optimization**: Content tailored for social media requirements and audience expectations.
 - **Promotion Intelligence**: Smart content adaptation based on subreddit rules.
-- **Advanced Features**: Integrated fine-tuning combining sample library with personalization settings. One-click style presets with 8 clickable buttons for instant content generation. Tiered content system with pre-generated templates for free/basic users and AI generation for Pro/Premium.
+- **Advanced Features**: Integrated fine-tuning combining sample library with personalization settings. One-click style presets with 8 clickable buttons for instant content generation. Tiered content system with pre-generated templates for free/basic users and AI generation for Pro/Premium. Advanced content generation engine that produces genuinely different outputs based on photo type (casual, workout, shower, showing-skin, spicy, very-spicy, all-xs), text tone (confident, playful, mysterious, authentic, sassy), promotion settings, and hashtag selection.
 
 ## Image Protection System
 - **Anti-Reverse Search**: Multi-layered image processing (Gaussian blur, subtle noise, intelligent resizing, metadata stripping).

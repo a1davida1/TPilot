@@ -14,6 +14,7 @@ import jwt from 'jsonwebtoken';
 import session from 'express-session';
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { getRandomTemplates, addWatermark, getTemplateByMood } from "./content-templates";
+import { generateAdvancedContent, type ContentParameters } from "./advanced-content-generator";
 import { setupAuth } from "./auth";
 import { redditCommunitiesDatabase, getRecommendationsForUser, getCommunityInsights } from "./reddit-communities";
 
@@ -471,7 +472,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/generate-ai", upload.single('image'), async (req, res) => {
     try {
-      const { generationType, platform, customPrompt, subreddit, allowsPromotion, userProfile, style, theme, preferredProvider } = req.body;
+      const { 
+        generationType, 
+        platform, 
+        customPrompt, 
+        subreddit, 
+        allowsPromotion, 
+        userProfile, 
+        style, 
+        theme, 
+        preferredProvider,
+        photoType,
+        textTone,
+        includePromotion,
+        selectedHashtags
+      } = req.body;
       
       // Parse userProfile if it's a string
       const parsedProfile = typeof userProfile === 'string' ? JSON.parse(userProfile) : userProfile;
@@ -482,54 +497,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       let contentGeneration: any;
       
-      // Tier-based content generation  
+      // Advanced Content Generation System - Uses ALL Parameters for Genuinely Different Outputs
       if (userTier === 'free' || userTier === 'basic') {
-        // Use pre-generated templates for free/basic tier
-        const mood = parsedProfile?.toneOfVoice || 'playful';
-        const category = allowsPromotion === 'yes' ? 'promotional' : 'teasing';
+        // Create content parameters using ALL the new options
+        const contentParams: ContentParameters = {
+          photoType: photoType || 'casual',
+          textTone: textTone || 'authentic',
+          style: style || 'casual-tease',
+          includePromotion: includePromotion || false,
+          selectedHashtags: selectedHashtags || [],
+          customPrompt: customPrompt,
+          platform: platform || 'reddit'
+        };
         
-        // Get more templates for variety - Free: 5-8, Basic: 8-12
-        const templateCount = userTier === 'free' ? 6 : 10;
-        const templates = getRandomTemplates(templateCount, category, mood);
+        console.log('🎯 Content Generation Parameters:', contentParams);
         
-        if (templates.length === 0) {
-          throw new Error("No suitable templates found");
-        }
+        // Generate truly different content based on ALL parameters
+        const generatedContent = generateAdvancedContent(contentParams);
         
-        // Select best matching template (first one)
-        const selectedTemplate = templates[0];
-        
-        // Create variety of titles from multiple templates
-        const titleOptions = templates.slice(0, userTier === 'free' ? 3 : 5).map(template => {
-          return userTier === 'free' ? addWatermark(template.title, true) : template.title;
+        console.log('📝 Generated Content:', {
+          titles: generatedContent.titles.length,
+          contentLength: generatedContent.content.length,
+          photoType: contentParams.photoType,
+          textTone: contentParams.textTone
         });
         
-        // Apply watermark to content for free tier
+        // Apply tier-specific modifications
+        const finalTitles = userTier === 'free' 
+          ? generatedContent.titles.map(title => addWatermark(title, true))
+          : generatedContent.titles;
+        
         const finalContent = userTier === 'free'
-          ? addWatermark(selectedTemplate.content, false)
-          : selectedTemplate.content;
+          ? addWatermark(generatedContent.content, false)
+          : generatedContent.content;
         
-        // Enhanced photo instructions based on template variety
-        const photoInstructionOptions = templates.slice(0, 3).map(t => t.photoInstructions || "Natural lighting recommended");
-        
-        // Create content generation response
+        // Create content generation response with comprehensive photo instructions
         contentGeneration = await storage.createContentGeneration({
           platform: platform || 'reddit',
-          style: style || selectedTemplate.style,
-          theme: theme || selectedTemplate.category,
-          titles: titleOptions.filter(Boolean),
+          style: style || contentParams.photoType,
+          theme: theme || contentParams.textTone,
+          titles: finalTitles,
           content: finalContent,
-          photoInstructions: {
-            lighting: photoInstructionOptions[0] || "Natural lighting recommended",
-            angles: "Multiple angles for variety - front, side, close-up",
-            composition: "Rule of thirds, engaging framing, variety in poses",
-            styling: `${selectedTemplate.category} theme - ${mood} mood`,
-            technical: "High resolution, good focus, consistent quality",
-            alternatives: photoInstructionOptions.slice(1).join(" | ")
-          },
-          prompt: customPrompt || `${category} content with ${mood} tone`,
+          photoInstructions: generatedContent.photoInstructions,
+          prompt: customPrompt || `${contentParams.photoType} content with ${contentParams.textTone} tone`,
           subreddit,
-          allowsPromotion,
+          allowsPromotion: includePromotion,
           userId: 1 // Demo user ID, would come from auth in production
         });
         
