@@ -15,6 +15,8 @@ ThottoPilot is a comprehensive social media content creation platform designed f
 ✓ **Functional Content Generation** - Implemented tiered content system with pre-generated templates for free/basic users
 ✓ **Watermark System** - Free tier content includes watermarks to encourage upgrades
 ✓ **Smart Pricing Strategy** - Free/Basic tiers use templates (thousands available), Pro/Premium get AI generation
+✓ **Cost Visibility Fixed** - Removed provider costs from user interface, showing user-friendly service descriptions instead
+✓ **Compliance Strategy Defined** - Phased approach: base functionality without ID requirements, advanced features gated behind verification
 
 ## Recent Changes (Previous Sessions)
 
@@ -81,6 +83,8 @@ Future features: Payment system integration planned
 Design: Live app interface demonstration instead of traditional landing page, showing actual functionality
 Interface: Dark theme with purple/pink gradients, animated backgrounds, and premium visual effects
 Content: Remove "AI" terminology from user-facing interface to make it feel more natural and accessible
+RTX 4090 Strategy: Use for helper AI training, image protection algorithms, and model fine-tuning - not core live functionality
+Compliance: Phased approach - base features without ID verification, gate advanced content features behind age verification
 
 # System Architecture
 
