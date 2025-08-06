@@ -42,7 +42,7 @@ import { ProviderStatus } from "@/components/provider-status";
 import { SampleUpload } from "@/components/sample-upload";
 import { IntegratedFineTuning } from "@/components/integrated-fine-tuning";
 import { AuthModal } from "@/components/auth-modal";
-import { TrendingTags } from "@/components/trending-tags";
+import { TrendingTagsExpanded } from "@/components/trending-tags-expanded";
 import { AudienceInsights } from "@/components/audience-insights";
 import { ImageGallery } from "@/components/image-gallery";
 import { RedditCommunities } from "@/components/reddit-communities";
@@ -382,8 +382,8 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
             )}
             
             {activeView === "trending" && (
-              <div className="max-w-4xl mx-auto">
-                <TrendingTags />
+              <div className="max-w-7xl mx-auto">
+                <TrendingTagsExpanded />
               </div>
             )}
             
