@@ -17,6 +17,8 @@ ThottoPilot is a comprehensive social media content creation platform designed f
 ✓ **Smart Pricing Strategy** - Free/Basic tiers use templates (thousands available), Pro/Premium get AI generation
 ✓ **Cost Visibility Fixed** - Removed provider costs from user interface, showing user-friendly service descriptions instead
 ✓ **Compliance Strategy Defined** - Phased approach: base functionality without ID requirements, advanced features gated behind verification
+✓ **Unified Content Creator** - Merged dual workflow and enhanced generator into single component with tier-based feature gating
+✓ **Tier-Based Feature Access** - Text workflow free for all users, image workflow requires Pro tier with upgrade prompts
 
 ## Recent Changes (Previous Sessions)
 

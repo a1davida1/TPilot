@@ -30,7 +30,7 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
 
   const generateContentMutation = useMutation({
     mutationFn: async (data: any) => {
-      return await apiRequest("/api/generate-ai", "POST", {
+      const response = await apiRequest("POST", "/api/generate-ai", {
         ...data,
         generationType: "prompt",
         userProfile: {
@@ -42,6 +42,7 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
           promotionLevel: allowsPromotion
         }
       });
+      return await response.json();
     },
     onSuccess: (data) => {
       onContentGenerated(data);

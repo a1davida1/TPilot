@@ -30,7 +30,7 @@ import { ConversionOptimization } from "@/components/conversion-optimization";
 import { AnalyticsDashboard } from "@/components/analytics-dashboard";
 import { PerformanceOptimization } from "@/components/performance-optimization";
 import { MobileOptimization } from "@/components/mobile-optimization";
-import { EnhancedAIGenerator } from "@/components/enhanced-ai-generator";
+import { UnifiedContentCreator } from "@/components/unified-content-creator";
 import { DemoFallback } from "@/components/demo-fallback";
 
 interface EnhancedDashboardProps {
@@ -320,9 +320,10 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
             <TabsContent value="ai-content" className="space-y-8">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2">
-                  <EnhancedAIGenerator 
+                  <UnifiedContentCreator 
                     onContentGenerated={(generation) => console.log('Generated:', generation)}
                     isGuestMode={isGuestMode}
+                    userTier={isGuestMode ? "free" : "pro"}
                   />
                 </div>
                 <div className="space-y-6">
