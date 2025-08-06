@@ -191,7 +191,9 @@ export const preGeneratedTemplates: ContentTemplate[] = [
 export function getRandomTemplates(
   count: number = 3,
   category?: string,
-  style?: string
+  style?: string,
+  promotionLevel?: string,
+  subCategory?: string
 ): ContentTemplate[] {
   let filtered = [...preGeneratedTemplates];
   
@@ -203,8 +205,25 @@ export function getRandomTemplates(
     filtered = filtered.filter(t => t.style === style);
   }
   
+  if (promotionLevel) {
+    filtered = filtered.filter(t => (t as any).promotionLevel === promotionLevel || !t.hasOwnProperty('promotionLevel'));
+  }
+  
+  if (subCategory) {
+    filtered = filtered.filter(t => (t as any).subCategory === subCategory);
+  }
+  
+  // Prioritize exact matches, then partial matches
+  const exactMatches = filtered.filter(t => 
+    (!category || t.category === category) &&
+    (!style || t.style === style) &&
+    (!promotionLevel || (t as any).promotionLevel === promotionLevel)
+  );
+  
+  const results = exactMatches.length >= count ? exactMatches : [...exactMatches, ...filtered];
+  
   // Shuffle and return requested count
-  const shuffled = filtered.sort(() => Math.random() - 0.5);
+  const shuffled = results.sort(() => Math.random() - 0.5);
   return shuffled.slice(0, count);
 }
 
