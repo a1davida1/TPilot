@@ -97,7 +97,7 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white flex">
+    <div className="min-h-screen bg-background text-foreground flex dark">
       {/* Dynamic gradient background */}
       <div 
         className="fixed inset-0 opacity-20 pointer-events-none"
@@ -326,80 +326,114 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
                   </Card>
                 )}
 
-                <div className="grid lg:grid-cols-3 gap-6">
-                  <div className="lg:col-span-2 space-y-6">
-                    <EnhancedAIGenerator 
-                      isGuestMode={isGuestMode}
-                      onContentGenerated={() => {}}
-                    />
-                  
-                  {/* Recent Generations */}
-                  <Card className="bg-gray-900/50 backdrop-blur-xl border-white/10">
-                    <CardHeader>
-                      <CardTitle className="flex items-center justify-between">
-                        Recent Generations
-                        <Button variant="ghost" size="sm" className="text-purple-400">
-                          View All
-                        </Button>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        {[1, 2, 3].map((item) => (
-                          <div key={item} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
-                            <div className="flex items-center space-x-3">
-                              <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
-                                <FileText className="h-5 w-5 text-white" />
-                              </div>
-                              <div>
-                                <p className="text-sm font-medium">Reddit Post - r/nsfw</p>
-                                <p className="text-xs text-gray-500">Generated 2 hours ago</p>
-                              </div>
-                            </div>
-                            <Button variant="ghost" size="sm" className="text-purple-400">
-                              View
-                            </Button>
-                          </div>
-                        ))}
+                <div className="grid lg:grid-cols-4 gap-6">
+                  {/* Main Content Area - Generator + Output */}
+                  <div className="lg:col-span-3 space-y-6">
+                    <div className="grid xl:grid-cols-2 gap-6">
+                      {/* Content Generator */}
+                      <div>
+                        <EnhancedAIGenerator 
+                          isGuestMode={isGuestMode}
+                          onContentGenerated={() => {}}
+                        />
                       </div>
-                    </CardContent>
-                  </Card>
+                      
+                      {/* Content Output Section */}
+                      <div>
+                        <Card className="bg-card/80 backdrop-blur-xl border-border h-full">
+                          <CardHeader>
+                            <CardTitle className="flex items-center">
+                              <Sparkles className="mr-2 h-5 w-5 text-primary" />
+                              Generated Content
+                            </CardTitle>
+                            <CardDescription>
+                              Your personalized content will appear here
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            <div className="text-center py-12 text-muted-foreground">
+                              <Brain className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                              <p className="text-lg font-medium mb-2">Ready to Create</p>
+                              <p className="text-sm">
+                                Generate content using the options on the left to see your 
+                                personalized titles, content, and photo instructions here.
+                              </p>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </div>
                   </div>
                   
-                  {/* Sidebar */}
+                  {/* Right Sidebar */}
                   <div className="space-y-6">
+                    {/* Recent Generations */}
+                    <Card className="bg-card/80 backdrop-blur-xl border-border">
+                      <CardHeader>
+                        <CardTitle className="flex items-center justify-between text-sm">
+                          <span className="flex items-center">
+                            <History className="mr-2 h-4 w-4" />
+                            Recent Generations
+                          </span>
+                          <Button variant="ghost" size="sm" className="text-primary text-xs h-auto p-1">
+                            View All
+                          </Button>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {[1, 2, 3].map((item) => (
+                            <div key={item} className="flex items-center justify-between p-2 bg-muted/30 rounded-lg text-xs">
+                              <div className="flex items-center space-x-2">
+                                <div className="w-6 h-6 bg-gradient-to-r from-primary to-accent rounded flex items-center justify-center">
+                                  <FileText className="h-3 w-3 text-primary-foreground" />
+                                </div>
+                                <div>
+                                  <p className="font-medium">Reddit Post</p>
+                                  <p className="text-muted-foreground">2h ago</p>
+                                </div>
+                              </div>
+                              <Button variant="ghost" size="sm" className="text-primary text-xs h-auto p-1">
+                                View
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+
                     {/* Quick Actions */}
-                  <Card className="bg-gray-900/50 backdrop-blur-xl border-white/10">
-                    <CardHeader>
-                      <CardTitle>Quick Actions</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <Button 
-                        className="w-full justify-start" 
-                        variant="outline"
-                        onClick={() => setActiveView("gallery")}
-                      >
-                        <Camera className="mr-2 h-4 w-4" />
-                        Upload Images
-                      </Button>
-                      <Button 
-                        className="w-full justify-start" 
-                        variant="outline"
-                        onClick={() => setActiveView("trending")}
-                      >
-                        <Hash className="mr-2 h-4 w-4" />
-                        Trending Tags
-                      </Button>
-                      <Button 
-                        className="w-full justify-start" 
-                        variant="outline"
-                        onClick={() => setActiveView("insights")}
-                      >
-                        <Users className="mr-2 h-4 w-4" />
-                        Audience Insights
-                      </Button>
-                    </CardContent>
-                  </Card>
+                    <Card className="bg-card/80 backdrop-blur-xl border-border">
+                      <CardHeader>
+                        <CardTitle className="text-sm">Quick Actions</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        <Button 
+                          className="w-full justify-start text-xs h-8" 
+                          variant="outline"
+                          onClick={() => setActiveView("gallery")}
+                        >
+                          <Camera className="mr-2 h-3 w-3" />
+                          Upload Images
+                        </Button>
+                        <Button 
+                          className="w-full justify-start text-xs h-8" 
+                          variant="outline"
+                          onClick={() => setActiveView("trending")}
+                        >
+                          <Hash className="mr-2 h-3 w-3" />
+                          Trending Tags
+                        </Button>
+                        <Button 
+                          className="w-full justify-start text-xs h-8" 
+                          variant="outline"
+                          onClick={() => setActiveView("insights")}
+                        >
+                          <Users className="mr-2 h-3 w-3" />
+                          Audience Insights
+                        </Button>
+                      </CardContent>
+                    </Card>
                   
                   {/* Upgrade Prompt */}
                   {isGuestMode && (
