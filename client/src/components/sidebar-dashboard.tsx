@@ -66,7 +66,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
   const [user, setUser] = useState<any>(null);
   const [userTier, setUserTier] = useState<'guest' | 'free' | 'pro' | 'premium'>('guest');
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeSection, setActiveSection] = useState('content');
+  const [activeSection, setActiveSection] = useState('generator');
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['content']));
   
   // Load user from localStorage on mount
@@ -150,6 +150,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
 
   const renderContent = () => {
     switch (activeSection) {
+      case 'content':
       case 'generator':
         return (
           <div className="space-y-6">
