@@ -106,21 +106,21 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed left-0 top-0 h-full bg-gray-950/80 backdrop-blur-xl border-r border-white/10 transition-all duration-300 z-40",
+        "fixed left-0 top-0 h-full bg-gray-900/95 backdrop-blur-xl border-r border-purple-500/20 transition-all duration-300 z-40",
         sidebarOpen ? "w-64" : "w-20"
       )}>
         {/* Logo */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-white/10">
+        <div className="h-16 flex items-center justify-between px-4 border-b border-purple-500/20">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl flex items-center justify-center neon-purple">
+            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/25">
               <Sparkles className="h-6 w-6 text-white" />
             </div>
             {sidebarOpen && (
               <div>
-                <h1 className="text-lg font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                <h1 className="text-lg font-bold bg-gradient-to-r from-purple-300 to-pink-300 bg-clip-text text-transparent">
                   ThottoPilot
                 </h1>
-                <p className="text-xs text-gray-500">Pro Dashboard</p>
+                <p className="text-xs text-gray-400">Pro Dashboard</p>
               </div>
             )}
           </div>

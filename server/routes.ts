@@ -13,6 +13,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import session from 'express-session';
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
+import { getRandomTemplates, addWatermark, getTemplateByMood } from "./content-templates";
 import { setupAuth } from "./auth";
 
 // Configure multer for file uploads
@@ -377,8 +378,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI Content Generation
-  // Import content templates
-  const { getRandomTemplates, addWatermark, getTemplateByMood } = require('./content-templates');
   
   app.post("/api/generate-ai", upload.single('image'), async (req, res) => {
     try {

@@ -61,13 +61,13 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Premium gradients */
+/* Premium gradients with better readability */
 .gradient-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
 }
 
 .gradient-secondary {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background: linear-gradient(135deg, #f472b6 0%, #fb7185 100%);
 }
 
 .gradient-success {
