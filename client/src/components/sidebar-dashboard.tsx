@@ -46,6 +46,7 @@ import {
   Calculator,
   Globe
 } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { UnifiedContentCreator } from "@/components/unified-content-creator";
 import { AnalyticsDashboard } from "@/components/analytics-dashboard";
 import { PerformanceOptimization } from "@/components/performance-optimization";
@@ -253,6 +254,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
             </div>
 
             <div className="flex items-center space-x-4">
+              <ThemeToggle />
               {userTier === 'guest' ? (
                 <>
                   <Button 

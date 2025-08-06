@@ -264,48 +264,50 @@ html {
 }
 
 :root {
-  --background: hsl(0, 0%, 100%);
-  --foreground: hsl(20, 14.3%, 4.1%);
-  --muted: hsl(60, 4.8%, 95.9%);
-  --muted-foreground: hsl(25, 5.3%, 44.7%);
+  /* Light Theme - Premium minimalist */
+  --background: hsl(0, 0%, 99%);
+  --foreground: hsl(240, 10%, 15%);
+  --muted: hsl(240, 4.8%, 95.9%);
+  --muted-foreground: hsl(240, 3.8%, 46.1%);
   --popover: hsl(0, 0%, 100%);
-  --popover-foreground: hsl(20, 14.3%, 4.1%);
+  --popover-foreground: hsl(240, 10%, 15%);
   --card: hsl(0, 0%, 100%);
-  --card-foreground: hsl(20, 14.3%, 4.1%);
-  --border: hsl(20, 5.9%, 90%);
-  --input: hsl(20, 5.9%, 90%);
-  --primary: hsl(248, 83%, 67%);
-  --primary-foreground: hsl(211, 100%, 99%);
-  --secondary: hsl(262, 70%, 68%);
-  --secondary-foreground: hsl(24, 9.8%, 10%);
+  --card-foreground: hsl(240, 10%, 15%);
+  --border: hsl(240, 5.9%, 90%);
+  --input: hsl(240, 5.9%, 95%);
+  --primary: hsl(248, 90%, 60%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(240, 4.8%, 95.9%);
+  --secondary-foreground: hsl(240, 10%, 15%);
   --accent: hsl(327, 70%, 61%);
-  --accent-foreground: hsl(60, 9.1%, 97.8%);
+  --accent-foreground: hsl(240, 10%, 15%);
   --destructive: hsl(0, 84.2%, 60.2%);
-  --destructive-foreground: hsl(60, 9.1%, 97.8%);
-  --ring: hsl(20, 14.3%, 4.1%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --ring: hsl(248, 90%, 60%);
   --radius: 0.5rem;
 }
 
 .dark {
-  --background: hsl(0, 0%, 0%);
-  --foreground: hsl(0, 0%, 98%);
-  --muted: hsl(240, 3.7%, 15.9%);
-  --muted-foreground: hsl(240, 5%, 64.9%);
-  --popover: hsl(240, 10%, 3.9%);
-  --popover-foreground: hsl(0, 0%, 98%);
-  --card: hsl(240, 10%, 3.9%);
-  --card-foreground: hsl(0, 0%, 98%);
-  --border: hsl(240, 3.7%, 15.9%);
-  --input: hsl(240, 3.7%, 15.9%);
-  --primary: hsl(248, 83%, 67%);
+  /* Dark Theme - Enhanced neon luxury */
+  --background: hsl(240, 6%, 6%);
+  --foreground: hsl(0, 0%, 95%);
+  --muted: hsl(240, 4%, 12%);
+  --muted-foreground: hsl(240, 5%, 65%);
+  --popover: hsl(240, 6%, 8%);
+  --popover-foreground: hsl(0, 0%, 95%);
+  --card: hsl(240, 6%, 8%);
+  --card-foreground: hsl(0, 0%, 95%);
+  --border: hsl(240, 4%, 16%);
+  --input: hsl(240, 4%, 14%);
+  --primary: hsl(248, 90%, 66%);
   --primary-foreground: hsl(0, 0%, 100%);
-  --secondary: hsl(240, 3.7%, 15.9%);
-  --secondary-foreground: hsl(0, 0%, 98%);
-  --accent: hsl(240, 3.7%, 15.9%);
-  --accent-foreground: hsl(0, 0%, 98%);
-  --destructive: hsl(0, 62.8%, 30.6%);
-  --destructive-foreground: hsl(0, 0%, 98%);
-  --ring: hsl(240, 4.9%, 83.9%);
+  --secondary: hsl(240, 4%, 14%);
+  --secondary-foreground: hsl(0, 0%, 90%);
+  --accent: hsl(327, 80%, 65%);
+  --accent-foreground: hsl(0, 0%, 100%);
+  --destructive: hsl(0, 85%, 65%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --ring: hsl(248, 90%, 66%);
   --radius: 0.5rem;
 }
 
@@ -321,40 +323,46 @@ html {
 }
 
 @layer components {
+  /* Enhanced glass morphism */
   .glass-card {
-    @apply bg-white/80 backdrop-blur-sm border border-white/20 shadow-lg;
+    @apply bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border border-gray-200 dark:border-gray-700 shadow-lg;
   }
   
+  .glass-card-dark {
+    @apply bg-gray-900/60 backdrop-blur-xl border border-gray-700/50 shadow-2xl;
+  }
+  
+  /* Improved gradient text */
   .gradient-text {
-    @apply bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent;
   }
   
+  /* Premium button gradients */
   .gradient-button {
-    @apply bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white;
+    @apply bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg;
   }
   
+  /* Enhanced inputs */
   .polished-input {
-    @apply transition-all duration-200 focus:shadow-lg focus:border-blue-400;
+    @apply bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 transition-all duration-200 focus:ring-2 focus:ring-purple-500 focus:border-purple-500;
   }
   
+  /* Premium cards */
   .polished-card {
-    @apply shadow-lg hover:shadow-xl transition-shadow duration-300 border-0 bg-white/90 backdrop-blur-sm;
+    @apply bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-md hover:shadow-lg transition-all duration-300 backdrop-blur-sm;
   }
 
-  /* Fix button styling for dark theme */
-  .dark .button-default {
-    @apply bg-purple-600 text-white hover:bg-purple-700;
+  /* Background size utilities for gradient animations */
+  .bg-size-200 {
+    background-size: 200% 100%;
   }
   
-  .dark .button-secondary {
-    @apply bg-gray-800 text-gray-100 hover:bg-gray-700 border-gray-600;
+  .bg-pos-100 {
+    background-position: 100% 0;
   }
-  
-  .dark .button-outline {
-    @apply border-purple-500/30 text-purple-300 hover:bg-purple-600/20 hover:text-purple-200;
-  }
-  
-  .dark .button-ghost {
-    @apply text-gray-300 hover:bg-gray-800 hover:text-white;
+
+  /* Theme-specific enhancements */
+  .glass-enhanced {
+    @apply bg-white/40 dark:bg-gray-900/40 backdrop-blur-2xl border border-purple-200 dark:border-purple-800/30 shadow-2xl;
   }
 }
