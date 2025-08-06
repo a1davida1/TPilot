@@ -84,8 +84,8 @@ export function RedditCommunities() {
       if (filterCategory !== 'all') params.append('category', filterCategory);
       if (searchTerm) params.append('search', searchTerm);
       
-      const response = await apiRequest(`/api/reddit-communities?${params.toString()}`, 'GET');
-      return response;
+      const response = await apiRequest('GET', `/api/reddit-communities?${params.toString()}`);
+      return response.json();
     },
     retry: false
   });
