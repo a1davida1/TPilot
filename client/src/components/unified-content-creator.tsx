@@ -26,6 +26,20 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { ContentGeneration } from "@shared/schema";
 
+// Extended interface for frontend display with dynamic server properties
+interface GeneratedContentDisplay extends ContentGeneration {
+  contentSource?: 'ai' | 'template';
+  aiProvider?: string;
+  estimatedCost?: number;
+  upgradeMessage?: string;
+  userTier?: string;
+  variationCount?: number;
+  titles: string[]; // Ensure titles is always an array
+  photoInstructions: {
+    [key: string]: string;
+  } | string; // Support both object and string formats
+}
+
 interface UnifiedContentCreatorProps {
   onContentGenerated: (generation: ContentGeneration) => void;
   isGuestMode?: boolean;
@@ -51,13 +65,33 @@ export function UnifiedContentCreator({
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Output display states
-  const [generatedContent, setGeneratedContent] = useState<ContentGeneration | null>(null);
+  const [generatedContent, setGeneratedContent] = useState<GeneratedContentDisplay | null>(null);
   const [copiedItem, setCopiedItem] = useState<string | null>(null);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const canUseImageWorkflow = userTier === "pro" || userTier === "premium";
+
+  const copyToClipboard = async (text: string, itemName: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedItem(itemName);
+      toast({
+        title: "Copied!",
+        description: `${itemName} copied to clipboard`
+      });
+      
+      // Reset copied state after 2 seconds
+      setTimeout(() => setCopiedItem(null), 2000);
+    } catch (err) {
+      toast({
+        title: "Copy Failed",
+        description: "Unable to copy to clipboard",
+        variant: "destructive"
+      });
+    }
+  };
 
   const generateContentMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -76,11 +110,20 @@ export function UnifiedContentCreator({
       return await response.json();
     },
     onSuccess: (data) => {
+      // Ensure proper data structure for display
+      const displayData: GeneratedContentDisplay = {
+        ...data,
+        titles: Array.isArray(data.titles) ? data.titles : 
+                typeof data.titles === 'string' ? [data.titles] :
+                data.titles ? Object.values(data.titles).filter(Boolean) : [],
+        photoInstructions: data.photoInstructions || {}
+      };
+      
       onContentGenerated(data);
-      setGeneratedContent(data);
+      setGeneratedContent(displayData);
       
       const hasWatermark = data.content?.includes('[via ThottoPilot]') || 
-                          data.titles?.[0]?.includes('[via ThottoPilot]');
+                          (Array.isArray(data.titles) && data.titles[0]?.includes('[via ThottoPilot]'));
       
       const description = data.contentSource === 'template' 
         ? `Using pre-generated content${hasWatermark ? ' (with watermark)' : ''}`
@@ -172,24 +215,6 @@ export function UnifiedContentCreator({
       description: "Image-based content generation requires Pro tier. Upgrade to unlock this feature!",
       variant: "default"
     });
-  };
-
-  const copyToClipboard = async (text: string, type: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedItem(type);
-      setTimeout(() => setCopiedItem(null), 1000);
-      toast({
-        title: "Copied!",
-        description: `${type} copied to clipboard`,
-      });
-    } catch (error) {
-      toast({
-        title: "Copy Failed",
-        description: "Failed to copy to clipboard",
-        variant: "destructive",
-      });
-    }
   };
 
   return (
@@ -405,7 +430,7 @@ export function UnifiedContentCreator({
             </div>
 
             {/* Generated Titles */}
-            {generatedContent.titles && generatedContent.titles.length > 0 && (
+            {generatedContent.titles && Array.isArray(generatedContent.titles) && generatedContent.titles.length > 0 && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <h4 className="font-medium text-sm text-gray-700 dark:text-gray-300">
@@ -413,7 +438,7 @@ export function UnifiedContentCreator({
                   </h4>
                 </div>
                 <div className="space-y-2">
-                  {generatedContent.titles.map((title, index) => (
+                  {generatedContent.titles.map((title: string, index: number) => (
                     <div 
                       key={index} 
                       className="relative p-3 bg-gray-50 dark:bg-gray-800 rounded-lg group hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -474,22 +499,28 @@ export function UnifiedContentCreator({
                 </div>
                 <div className="relative p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg group hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors border border-blue-200 dark:border-blue-800">
                   <div className="space-y-3 pr-8">
-                    {Object.entries(generatedContent.photoInstructions).map(([key, value]) => (
-                      <div key={key}>
-                        <span className="font-medium text-xs text-blue-700 dark:text-blue-300 uppercase tracking-wide">
-                          {key.replace(/([A-Z])/g, ' $1').trim()}:
-                        </span>
-                        <p className="text-sm mt-1">{value}</p>
-                      </div>
-                    ))}
+                    {typeof generatedContent.photoInstructions === 'string' ? (
+                      <p className="text-sm">{generatedContent.photoInstructions}</p>
+                    ) : (
+                      Object.entries(generatedContent.photoInstructions as { [key: string]: string }).map(([key, value]) => (
+                        <div key={key}>
+                          <span className="font-medium text-xs text-blue-700 dark:text-blue-300 uppercase tracking-wide">
+                            {key.replace(/([A-Z])/g, ' $1').trim()}:
+                          </span>
+                          <p className="text-sm mt-1">{String(value)}</p>
+                        </div>
+                      ))
+                    )}
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => copyToClipboard(
-                      Object.entries(generatedContent.photoInstructions || {})
-                        .map(([key, value]) => `${key.replace(/([A-Z])/g, ' $1').trim()}: ${value}`)
-                        .join('\n\n'),
+                      typeof generatedContent.photoInstructions === 'string' 
+                        ? generatedContent.photoInstructions
+                        : Object.entries(generatedContent.photoInstructions as { [key: string]: string })
+                            .map(([key, value]) => `${key.replace(/([A-Z])/g, ' $1').trim()}: ${value}`)
+                            .join('\n\n'),
                       'Photo Instructions'
                     )}
                     className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
