@@ -154,8 +154,63 @@ export function TrendingTags() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-3">
-          {trendingTags.map((item) => (
+        {/* Search and Filter Controls */}
+        <div className="flex flex-col lg:flex-row gap-3 mb-6">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Search tags or subreddits..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-gray-900/50 border-white/10"
+            />
+          </div>
+          
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-[180px] bg-gray-900/50 border-white/10">
+              <SelectValue placeholder="All Categories" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              {categories.map(cat => (
+                <SelectItem key={cat} value={cat}>
+                  {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={timeRange} onValueChange={setTimeRange}>
+            <SelectTrigger className="w-[140px] bg-gray-900/50 border-white/10">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="24h">Last 24h</SelectItem>
+              <SelectItem value="7d">Last 7 Days</SelectItem>
+              <SelectItem value="30d">Last 30 Days</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Stats Summary */}
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          <div className="p-3 bg-purple-900/20 rounded-lg border border-purple-500/20">
+            <p className="text-xs text-gray-400">Total Tags</p>
+            <p className="text-xl font-bold">{filteredTags.length}</p>
+          </div>
+          <div className="p-3 bg-orange-900/20 rounded-lg border border-orange-500/20">
+            <p className="text-xs text-gray-400">Hot Trending</p>
+            <p className="text-xl font-bold">{filteredTags.filter(t => t.heat === 'hot').length}</p>
+          </div>
+          <div className="p-3 bg-green-900/20 rounded-lg border border-green-500/20">
+            <p className="text-xs text-gray-400">Avg Growth</p>
+            <p className="text-xl font-bold">+22%</p>
+          </div>
+        </div>
+
+        {/* Tags List */}
+        <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+          {filteredTags.map((item) => (
             <div 
               key={item.tag}
               className="group p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-all cursor-pointer"
