@@ -55,6 +55,7 @@ import { TrendingTags } from "@/components/trending-tags";
 import { AudienceInsights } from "@/components/audience-insights";
 import { ImageGallery } from "@/components/image-gallery";
 import { ProPerks } from "@/components/pro-perks";
+import { ImageProtector } from "@/components/image-protector";
 import { cn } from "@/lib/utils";
 
 interface SidebarDashboardProps {
@@ -191,22 +192,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
         return <ImageGallery />;
       
       case 'protect':
-        return (
-          <Card className="min-h-[500px] flex items-center justify-center">
-            <div className="text-center space-y-4">
-              <Shield className="h-16 w-16 mx-auto text-gray-400" />
-              <h3 className="text-xl font-medium text-gray-600">Image Protection Tools</h3>
-              <p className="text-gray-500 max-w-md">
-                Protect your images from reverse searches while maintaining visual quality
-              </p>
-              {userTier === 'guest' && (
-                <Button className="btn-premium" onClick={() => setShowLoginModal(true)}>
-                  Unlock Protection
-                </Button>
-              )}
-            </div>
-          </Card>
-        );
+        return <ImageProtector />;
       
       case 'analytics':
         return <AnalyticsDashboard isGuestMode={userTier === 'guest'} />;
