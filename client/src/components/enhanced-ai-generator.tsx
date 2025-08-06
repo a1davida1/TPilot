@@ -99,11 +99,7 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
     });
   };
 
-  const costSavings = {
-    "gemini": { savings: "98%", cost: "$0.075" },
-    "claude": { savings: "75%", cost: "$0.80" },
-    "openai": { savings: "0%", cost: "$5.00" }
-  };
+  // Cost information hidden from user interface - used internally for optimization
 
   return (
     <Card className="w-full">
@@ -159,15 +155,15 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
                 <SelectValue placeholder="Select provider" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="auto">Auto (Best Cost)</SelectItem>
+                <SelectItem value="auto">Auto (Optimized)</SelectItem>
                 <SelectItem value="gemini">
-                  Gemini Flash - {costSavings.gemini.savings} savings ({costSavings.gemini.cost}/1M)
+                  Gemini Flash - Fast & Efficient
                 </SelectItem>
                 <SelectItem value="claude">
-                  Claude Haiku - {costSavings.claude.savings} savings ({costSavings.claude.cost}/1M)
+                  Claude Haiku - Balanced Performance
                 </SelectItem>
                 <SelectItem value="openai">
-                  OpenAI GPT-4o - Premium ({costSavings.openai.cost}/1M)
+                  OpenAI GPT-4o - Premium Quality
                 </SelectItem>
               </SelectContent>
             </Select>
