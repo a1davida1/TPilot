@@ -5,6 +5,8 @@ ThottoPilot is a comprehensive social media content creation platform designed f
 ## Recent Changes (August 2025)
 
 ### Latest Session Updates - Aug 6
+✓ **Reddit Communities Database** - Created comprehensive database of 50+ subreddits with engagement metrics, posting rules, and verification requirements
+✓ **Advanced Filtering & Sorting** - Sortable by members, engagement rate, upvotes; filterable by category, promotion rules, and verification status
 ✓ **Integrated Fine-Tuning** - Combined sample library with personalization settings into streamlined workflow
 ✓ **Admin Login Added** - Quick admin access with admin@thottopilot.com / admin123 for testing pro features
 ✓ **Mobile Portability** - 80-90% of UI components are mobile-responsive and ready for app conversion

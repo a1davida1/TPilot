@@ -44,6 +44,7 @@ import { AuthModal } from "@/components/auth-modal";
 import { TrendingTags } from "@/components/trending-tags";
 import { AudienceInsights } from "@/components/audience-insights";
 import { ImageGallery } from "@/components/image-gallery";
+import { RedditCommunities } from "@/components/reddit-communities";
 import { cn } from "@/lib/utils";
 
 interface UltraAestheticAppProps {
@@ -346,6 +347,12 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
             {activeView === "insights" && (
               <div className="max-w-6xl mx-auto">
                 <AudienceInsights />
+              </div>
+            )}
+            
+            {activeView === "communities" && (
+              <div className="max-w-7xl mx-auto">
+                <RedditCommunities />
               </div>
             )}
             
