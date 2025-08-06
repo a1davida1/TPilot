@@ -33,7 +33,8 @@ import {
   PlusCircle,
   FileText,
   Camera,
-  Hash
+  Hash,
+  Gift
 } from "lucide-react";
 import { EnhancedAIGenerator } from "@/components/enhanced-ai-generator";
 import { SocialAuth } from "@/components/social-auth";
@@ -45,6 +46,7 @@ import { TrendingTags } from "@/components/trending-tags";
 import { AudienceInsights } from "@/components/audience-insights";
 import { ImageGallery } from "@/components/image-gallery";
 import { RedditCommunities } from "@/components/reddit-communities";
+import { ProPerks } from "@/components/pro-perks";
 import { cn } from "@/lib/utils";
 
 interface UltraAestheticAppProps {
@@ -73,11 +75,13 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
     { id: "generate", label: "Content Creator", icon: <Brain className="h-5 w-5" />, badge: "NEW" },
     { id: "samples", label: "Sample Library", icon: <FileText className="h-5 w-5" />, badge: "PRO" },
     { id: "finetune", label: "Personalization", icon: <Sparkles className="h-5 w-5" />, badge: "PRO" },
+    { id: "perks", label: "ProPerks", icon: <Gift className="h-5 w-5" />, badge: "15+" },
     { id: "gallery", label: "Image Gallery", icon: <ImageIcon className="h-5 w-5" /> },
+    { id: "communities", label: "Reddit Communities", icon: <Users className="h-5 w-5" />, badge: "50+" },
     { id: "trending", label: "Trending Tags", icon: <Hash className="h-5 w-5" /> },
-    { id: "insights", label: "Audience Insights", icon: <Users className="h-5 w-5" /> },
+    { id: "insights", label: "Audience Insights", icon: <BarChart3 className="h-5 w-5" /> },
     { id: "protect", label: "Image Shield", icon: <Shield className="h-5 w-5" /> },
-    { id: "analytics", label: "Analytics", icon: <BarChart3 className="h-5 w-5" /> },
+    { id: "analytics", label: "Analytics", icon: <TrendingUp className="h-5 w-5" /> },
     { id: "history", label: "History", icon: <History className="h-5 w-5" /> },
     { id: "settings", label: "Settings", icon: <Settings className="h-5 w-5" /> }
   ];
@@ -353,6 +357,12 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
             {activeView === "communities" && (
               <div className="max-w-7xl mx-auto">
                 <RedditCommunities />
+              </div>
+            )}
+            
+            {activeView === "perks" && (
+              <div className="max-w-7xl mx-auto">
+                <ProPerks />
               </div>
             )}
             
