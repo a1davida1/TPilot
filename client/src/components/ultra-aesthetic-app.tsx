@@ -75,6 +75,7 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
   const navigationItems = [
     { id: "generate", label: "Content Creator", icon: <Brain className="h-5 w-5" />, badge: "NEW" },
     { id: "dual", label: "Dual Workflow", icon: <Zap className="h-5 w-5" />, badge: "HOT" },
+    { id: "protect", label: "Image Shield", icon: <Shield className="h-5 w-5" />, badge: "FREE" },
     { id: "samples", label: "Sample Library", icon: <FileText className="h-5 w-5" />, badge: "PRO" },
     { id: "finetune", label: "Personalization", icon: <Sparkles className="h-5 w-5" />, badge: "PRO" },
     { id: "perks", label: "ProPerks", icon: <Gift className="h-5 w-5" />, badge: "15+" },
@@ -82,7 +83,6 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
     { id: "communities", label: "Reddit Communities", icon: <Users className="h-5 w-5" />, badge: "50+" },
     { id: "trending", label: "Trending Tags", icon: <Hash className="h-5 w-5" /> },
     { id: "insights", label: "Audience Insights", icon: <BarChart3 className="h-5 w-5" /> },
-    { id: "protect", label: "Image Shield", icon: <Shield className="h-5 w-5" /> },
     { id: "analytics", label: "Analytics", icon: <TrendingUp className="h-5 w-5" /> },
     { id: "history", label: "History", icon: <History className="h-5 w-5" /> },
     { id: "settings", label: "Settings", icon: <Settings className="h-5 w-5" /> }
@@ -272,12 +272,65 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
         <div className="p-6">
           <div className={`transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
             {activeView === "generate" && (
-              <div className="grid lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-6">
-                  <EnhancedAIGenerator 
-                    isGuestMode={isGuestMode}
-                    onContentGenerated={() => {}}
-                  />
+              <div className="space-y-6">
+                {/* Functionality Description for Guest Users */}
+                {isGuestMode && (
+                  <Card className="bg-gradient-to-r from-blue-900/20 to-cyan-900/20 border-blue-500/30 overflow-hidden">
+                    <CardContent className="p-8">
+                      <div className="text-center space-y-4">
+                        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                          Welcome to ThottoPilot
+                        </h1>
+                        <p className="text-xl text-gray-200 max-w-4xl mx-auto leading-relaxed">
+                          The complete platform for adult content creators. Generate engaging Reddit posts, 
+                          protect your images from reverse searches, access exclusive industry resources, 
+                          and optimize your content strategy with intelligent tools.
+                        </p>
+                        <div className="grid md:grid-cols-3 gap-6 mt-8">
+                          <div className="bg-white/5 p-4 rounded-lg">
+                            <Brain className="h-8 w-8 text-purple-400 mx-auto mb-2" />
+                            <h3 className="font-semibold text-white mb-1">Smart Content Creation</h3>
+                            <p className="text-sm text-gray-300">Generate personalized Reddit posts with titles, content, and photo instructions</p>
+                          </div>
+                          <div className="bg-white/5 p-4 rounded-lg">
+                            <Shield className="h-8 w-8 text-blue-400 mx-auto mb-2" />
+                            <h3 className="font-semibold text-white mb-1">Image Protection</h3>
+                            <p className="text-sm text-gray-300">Prevent reverse image searches while maintaining visual quality</p>
+                          </div>
+                          <div className="bg-white/5 p-4 rounded-lg">
+                            <Gift className="h-8 w-8 text-pink-400 mx-auto mb-2" />
+                            <h3 className="font-semibold text-white mb-1">Pro Resources</h3>
+                            <p className="text-sm text-gray-300">Access exclusive guides, discounts, and professional tools worth $1,200+</p>
+                          </div>
+                        </div>
+                        <div className="flex justify-center gap-4 mt-6">
+                          <Button 
+                            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-8 py-3 text-lg"
+                            onClick={() => setShowAuthModal(true)}
+                          >
+                            Start Free Trial
+                            <ArrowRight className="ml-2 h-5 w-5" />
+                          </Button>
+                          <Button 
+                            variant="outline"
+                            className="border-blue-500/50 text-blue-400 hover:bg-blue-500/10 px-8 py-3 text-lg"
+                            onClick={() => setActiveView("protect")}
+                          >
+                            Try Image Shield Free
+                            <Shield className="ml-2 h-5 w-5" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                <div className="grid lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-2 space-y-6">
+                    <EnhancedAIGenerator 
+                      isGuestMode={isGuestMode}
+                      onContentGenerated={() => {}}
+                    />
                   
                   {/* Recent Generations */}
                   <Card className="bg-gray-900/50 backdrop-blur-xl border-white/10">
@@ -310,11 +363,11 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
                       </div>
                     </CardContent>
                   </Card>
-                </div>
-                
-                {/* Sidebar */}
-                <div className="space-y-6">
-                  {/* Quick Actions */}
+                  </div>
+                  
+                  {/* Sidebar */}
+                  <div className="space-y-6">
+                    {/* Quick Actions */}
                   <Card className="bg-gray-900/50 backdrop-blur-xl border-white/10">
                     <CardHeader>
                       <CardTitle>Quick Actions</CardTitle>
@@ -377,6 +430,7 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
                       </CardContent>
                     </Card>
                   )}
+                </div>
                 </div>
               </div>
             )}
