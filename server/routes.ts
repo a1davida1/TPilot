@@ -137,6 +137,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { email, password } = req.body;
 
+      // Special admin login shortcut for production
+      if (email === 'admin@thottopilot.com' && password === 'admin123') {
+        // Create admin user object
+        const adminUser = {
+          id: 999,
+          email: 'admin@thottopilot.com',
+          username: 'admin',
+          tier: 'pro',
+          isAdmin: true
+        };
+
+        // Generate JWT token for admin
+        const token = jwt.sign(
+          { userId: adminUser.id, email: adminUser.email, isAdmin: true },
+          JWT_SECRET,
+          { expiresIn: '24h' }
+        );
+
+        return res.json({
+          message: 'Admin login successful',
+          token,
+          user: adminUser
+        });
+      }
+
       // Find user
       const user = await storage.getUserByEmail(email);
       if (!user) {
@@ -174,6 +199,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/auth/user", authenticateToken, async (req: AuthRequest, res) => {
     try {
+      // Handle admin user
+      if (req.user.isAdmin) {
+        return res.json({
+          id: 999,
+          email: 'admin@thottopilot.com',
+          username: 'admin',
+          tier: 'pro',
+          isAdmin: true
+        });
+      }
+
       const user = await storage.getUser(req.user.userId);
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
