@@ -313,91 +313,6 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
           )}
         </div>
 
-        {/* Main Categories */}
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Photo Type */}
-          <div className="space-y-3">
-            <Label className="text-base font-medium text-pink-600">Photo Type</Label>
-            <div className="grid grid-cols-2 gap-2">
-              {photoTypes.map((type) => (
-                <Button
-                  key={type.id}
-                  variant={photoType === type.id ? "default" : "outline"}
-                  className={`text-xs p-2 h-auto ${photoType === type.id ? 'bg-pink-600 text-white' : 'hover:bg-pink-50'}`}
-                  onClick={() => setPhotoType(type.id)}
-                >
-                  <span className="mr-1">{type.icon}</span>
-                  {type.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          {/* Text Tone */}
-          <div className="space-y-3">
-            <Label className="text-base font-medium text-purple-600">Text Tone</Label>
-            <Select value={textTone} onValueChange={setTextTone}>
-              <SelectTrigger className="border-purple-200 focus:ring-purple-500">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {textTones.map((tone) => (
-                  <SelectItem key={tone.id} value={tone.id}>
-                    {tone.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* Promotion & Hashtags */}
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="space-y-3">
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="include-promotion"
-                checked={includePromotion}
-                onCheckedChange={setIncludePromotion}
-              />
-              <Label htmlFor="include-promotion" className="text-base font-medium text-blue-600">
-                Include Promotion in Post
-              </Label>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="include-hashtags"
-                checked={includeHashtags}
-                onCheckedChange={setIncludeHashtags}
-              />
-              <Label htmlFor="include-hashtags" className="text-base font-medium text-green-600">
-                Include Hashtags
-              </Label>
-            </div>
-            {includeHashtags && (
-              <div className="space-y-2">
-                <Label className="text-sm text-gray-600">Choose hashtags:</Label>
-                <div className="flex flex-wrap gap-1">
-                  {defaultHashtags.map((hashtag) => (
-                    <Button
-                      key={hashtag}
-                      variant={selectedHashtags.includes(hashtag) ? "default" : "outline"}
-                      size="sm"
-                      className={`text-xs h-6 px-2 ${selectedHashtags.includes(hashtag) ? 'bg-green-600 text-white' : 'hover:bg-green-50'}`}
-                      onClick={() => toggleHashtag(hashtag)}
-                    >
-                      {hashtag}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
         {/* Custom Prompt */}
         <div className="space-y-2">
           <Label className="text-base font-medium">Custom Prompt (Optional)</Label>
@@ -425,7 +340,93 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
 
         {/* Advanced Settings (Hidden by default) */}
         {useAdvancedSettings && (
-          <div className="space-y-4 p-4 bg-gray-50 rounded-lg border">
+          <div className="space-y-6 p-4 bg-gray-50 rounded-lg border">
+            {/* Main Categories */}
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Photo Type */}
+              <div className="space-y-3">
+                <Label className="text-base font-medium text-pink-600">Photo Type</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {photoTypes.map((type) => (
+                    <Button
+                      key={type.id}
+                      variant={photoType === type.id ? "default" : "outline"}
+                      className={`text-xs p-2 h-auto ${photoType === type.id ? 'bg-pink-600 text-white' : 'hover:bg-pink-50'}`}
+                      onClick={() => setPhotoType(type.id)}
+                    >
+                      <span className="mr-1">{type.icon}</span>
+                      {type.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Text Tone */}
+              <div className="space-y-3">
+                <Label className="text-base font-medium text-purple-600">Text Tone</Label>
+                <Select value={textTone} onValueChange={setTextTone}>
+                  <SelectTrigger className="border-purple-200 focus:ring-purple-500">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {textTones.map((tone) => (
+                      <SelectItem key={tone.id} value={tone.id}>
+                        {tone.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Promotion & Hashtags */}
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="include-promotion"
+                    checked={includePromotion}
+                    onCheckedChange={setIncludePromotion}
+                  />
+                  <Label htmlFor="include-promotion" className="text-base font-medium text-blue-600">
+                    Include Promotion in Post
+                  </Label>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="include-hashtags"
+                    checked={includeHashtags}
+                    onCheckedChange={setIncludeHashtags}
+                  />
+                  <Label htmlFor="include-hashtags" className="text-base font-medium text-green-600">
+                    Include Hashtags
+                  </Label>
+                </div>
+                {includeHashtags && (
+                  <div className="space-y-2">
+                    <Label className="text-sm text-gray-600">Choose hashtags:</Label>
+                    <div className="flex flex-wrap gap-1">
+                      {defaultHashtags.map((hashtag) => (
+                        <Button
+                          key={hashtag}
+                          variant={selectedHashtags.includes(hashtag) ? "default" : "outline"}
+                          size="sm"
+                          className={`text-xs h-6 px-2 ${selectedHashtags.includes(hashtag) ? 'bg-green-600 text-white' : 'hover:bg-green-50'}`}
+                          onClick={() => toggleHashtag(hashtag)}
+                        >
+                          {hashtag}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Platform & Provider Settings */}
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Platform</Label>
