@@ -67,10 +67,17 @@ export function FineTuningSettings() {
 
   const saveMutation = useMutation({
     mutationFn: async (data: UserPreferences) => {
-      return await apiRequest("/api/user-preferences", {
+      const response = await fetch("/api/user-preferences", {
         method: "PUT",
+        headers: {
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify(data)
       });
+      if (!response.ok) {
+        throw new Error("Failed to save preferences");
+      }
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/user-preferences"] });

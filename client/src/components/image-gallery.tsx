@@ -9,7 +9,24 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { protectImage, downloadProtectedImage } from '@/lib/image-protection';
 import { Upload, Shield, Download, Trash2, Eye, Tag, Plus } from 'lucide-react';
-import type { UserImage } from '@shared/schema';
+
+// Define UserImage interface since it's not in the schema
+interface UserImage {
+  id: string;
+  userId: number;
+  url: string;
+  originalUrl: string;
+  originalFileName: string;
+  protectedUrl?: string;
+  tags: string[];
+  createdAt: Date;
+  protectionLevel?: string;
+  isProtected?: boolean;
+  protectionSettings?: {
+    level: string;
+    appliedAt: Date;
+  };
+}
 
 export function ImageGallery() {
   const [selectedTags, setSelectedTags] = useState<string>('');
@@ -23,10 +40,7 @@ export function ImageGallery() {
 
   const uploadMutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      return apiRequest('/api/upload-image', {
-        method: 'POST',
-        body: formData,
-      });
+      return apiRequest('POST', '/api/upload-image', formData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/user-images'] });
@@ -46,11 +60,7 @@ export function ImageGallery() {
 
   const protectMutation = useMutation({
     mutationFn: async ({ imageId, protectionLevel }: { imageId: string, protectionLevel: string }) => {
-      return apiRequest(`/api/protect-image/${imageId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ protectionLevel }),
-      });
+      return apiRequest('POST', `/api/protect-image/${imageId}`, { protectionLevel });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/user-images'] });
@@ -63,9 +73,7 @@ export function ImageGallery() {
 
   const deleteMutation = useMutation({
     mutationFn: async (imageId: string) => {
-      return apiRequest(`/api/user-images/${imageId}`, {
-        method: 'DELETE',
-      });
+      return apiRequest('DELETE', `/api/user-images/${imageId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/user-images'] });
@@ -114,7 +122,7 @@ export function ImageGallery() {
   };
 
   const filteredImages = images.filter(image => 
-    !selectedTags || image.tags?.some(tag => 
+    !selectedTags || image.tags?.some((tag: string) => 
       tag.toLowerCase().includes(selectedTags.toLowerCase())
     )
   );
@@ -198,7 +206,7 @@ export function ImageGallery() {
                         <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all">
                           <div className="absolute bottom-2 left-2 right-2">
                             <div className="flex flex-wrap gap-1">
-                              {image.tags?.slice(0, 2).map((tag) => (
+                              {image.tags?.slice(0, 2).map((tag: string) => (
                                 <Badge key={tag} variant="secondary" className="text-xs">
                                   {tag}
                                 </Badge>
@@ -230,7 +238,7 @@ export function ImageGallery() {
                         />
                         
                         <div className="flex flex-wrap gap-2">
-                          {image.tags?.map((tag) => (
+                          {image.tags?.map((tag: string) => (
                             <Badge key={tag} variant="outline">
                               <Tag className="h-3 w-3 mr-1" />
                               {tag}
