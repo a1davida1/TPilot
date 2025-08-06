@@ -5,6 +5,8 @@ export interface ContentTemplate {
   id: string;
   category: 'teasing' | 'promotional' | 'engagement' | 'lifestyle' | 'announcement';
   style: 'playful' | 'confident' | 'mysterious' | 'casual' | 'direct';
+  promotionLevel?: 'none' | 'subtle' | 'moderate' | 'direct';
+  subCategory?: 'flash-sale' | 'new-content' | 'discount' | 'exclusive-offer' | 'custom-request' | 'bundle' | 'limited-time';
   title: string;
   content: string;
   tags: string[];
@@ -41,33 +43,422 @@ export const preGeneratedTemplates: ContentTemplate[] = [
     photoInstructions: "Steamy bathroom, water droplets, silhouette shots"
   },
 
-  // Promotional Content
+  // PROMOTIONAL CONTENT - 50+ VARIATIONS WITH STYLE & PROMOTION MATCHING
+  
+  // FLASH SALE - Playful Style
   {
-    id: 'promo_001',
-    category: 'promotional',
-    style: 'direct',
-    title: "New content drop! 🎉 Your weekend just got better",
-    content: "Just uploaded 50+ new pics and 3 exclusive videos! This week's theme was 'Office After Hours' and let's just say... HR would not approve 😈 Limited time discount for the next 24 hours. Don't miss out!",
-    tags: ['newcontent', 'promotion', 'discount'],
-    photoInstructions: "Professional outfit with sultry twist, office setting"
-  },
-  {
-    id: 'promo_002',
-    category: 'promotional',
-    style: 'casual',
-    title: "Hey loves! Special surprise for my Reddit fam 💕",
-    content: "You guys have been amazing, so I'm doing something special! First 10 people to subscribe get 40% off + a custom pic of their choice. Been working on some content that's... well, let's say it's my boldest yet 🙈",
-    tags: ['discount', 'reddit', 'special'],
-    photoInstructions: "Friendly, approachable pose with flirty element"
-  },
-  {
-    id: 'promo_003',
+    id: 'promo_flash_play_001',
     category: 'promotional',
     style: 'playful',
-    title: "Oops, did I just lower my prices? 🤭",
-    content: "Someone told me I was being too naughty with my content... So naturally, I made it naughtier AND more affordable 😇 Flash sale happening right now! Come see what trouble I've been getting into lately...",
-    tags: ['sale', 'playful', 'naughty'],
-    photoInstructions: "Playful expression, colorful setting, fun poses"
+    promotionLevel: 'moderate',
+    subCategory: 'flash-sale',
+    title: "Oops! My finger slipped on the discount button 🤭",
+    content: "Accidentally made everything 60% off for the next 12 hours! Guess you'll just have to take advantage before I notice my 'mistake' 😇 This month's content theme: 'Pajama Party Gone Wild' - need I say more?",
+    tags: ['flash-sale', 'accident', 'playful'],
+    photoInstructions: "Cute 'oops' expression, playful pose in pajamas"
+  },
+  {
+    id: 'promo_flash_play_002',
+    category: 'promotional',
+    style: 'playful',
+    promotionLevel: 'direct',
+    subCategory: 'flash-sale',
+    title: "24-hour sale because I'm feeling generous! 💕",
+    content: "You've been such good boys and girls, so here's a treat! Everything 50% off until tomorrow midnight. Just dropped my steamiest content yet - bathtub photoshoot that got a little... bubbly 🛁✨",
+    tags: ['24hour', 'generous', 'bathtub'],
+    photoInstructions: "Bubbly bathtub scene, playful water splashes"
+  },
+  {
+    id: 'promo_flash_play_003',
+    category: 'promotional',
+    style: 'playful',
+    promotionLevel: 'subtle',
+    subCategory: 'flash-sale',
+    title: "Having a weird day... decided to do something crazy 🙈",
+    content: "So I woke up feeling a bit rebellious today and thought 'why not make my fans happy?' Next 6 hours only - special pricing on my VIP tier! Fair warning: today's uploads are definitely not safe for work 😘",
+    tags: ['rebellious', 'crazy', 'vip'],
+    photoInstructions: "Mischievous smile, casual rebellious outfit"
+  },
+
+  // FLASH SALE - Confident Style  
+  {
+    id: 'promo_flash_conf_001',
+    category: 'promotional',
+    style: 'confident',
+    promotionLevel: 'direct',
+    subCategory: 'flash-sale',
+    title: "Flash sale because I know what you want 💪",
+    content: "I don't do discounts often, but when I do, it's worth it. 48 hours only - premium content at standard prices. This week's release: 'Power Suit to Birthday Suit' - watch me take control 🔥",
+    tags: ['confident', 'premium', 'power'],
+    photoInstructions: "Confident power pose, business attire transition"
+  },
+  {
+    id: 'promo_flash_conf_002',
+    category: 'promotional',
+    style: 'confident',
+    promotionLevel: 'moderate',
+    subCategory: 'flash-sale',
+    title: "Your favorite content creator just got more affordable",
+    content: "Quality doesn't usually go on sale, but here we are 💅 Limited 36-hour window for my exclusive tier. Recent theme: 'Mirror Mirror' - where I explore every angle and you get the best view in the house",
+    tags: ['quality', 'exclusive', 'mirror'],
+    photoInstructions: "Multiple mirror angles, confident poses"
+  },
+  {
+    id: 'promo_flash_conf_003',
+    category: 'promotional',
+    style: 'confident',
+    promotionLevel: 'subtle',
+    subCategory: 'flash-sale',
+    title: "Rare opportunity - don't overthink it",
+    content: "I rarely do promotions, but this week's content deserves a special introduction. Short-time pricing adjustment on my premium gallery. Subject matter: 'Silk and Shadows' - artistic nude photography that pushes boundaries",
+    tags: ['rare', 'artistic', 'boundaries'],
+    photoInstructions: "Artistic nude silhouettes, silk fabrics"
+  },
+
+  // FLASH SALE - Mysterious Style
+  {
+    id: 'promo_flash_myst_001',
+    category: 'promotional',
+    style: 'mysterious',
+    promotionLevel: 'moderate',
+    subCategory: 'flash-sale',
+    title: "Something special happens at midnight... 🌙",
+    content: "For the next 24 hours, access to my hidden vault is half price. Content you won't find anywhere else - shadows, candlelight, and secrets I've been keeping. Only for those who truly appreciate art 🕯️",
+    tags: ['midnight', 'vault', 'candlelight'],
+    photoInstructions: "Candlelit scenes, mysterious shadows, artistic mood"
+  },
+  {
+    id: 'promo_flash_myst_002',
+    category: 'promotional',
+    style: 'mysterious',
+    promotionLevel: 'direct',
+    subCategory: 'flash-sale',
+    title: "The vault opens... briefly 🗝️",
+    content: "Once a month I unlock my most exclusive content. Tonight is that night. 40% reduction for early access to 'Behind Closed Doors' collection. Warning: not for the faint of heart 💀",
+    tags: ['vault', 'monthly', 'exclusive'],
+    photoInstructions: "Dark, intimate settings behind doors"
+  },
+  {
+    id: 'promo_flash_myst_003',
+    category: 'promotional',
+    style: 'mysterious',
+    promotionLevel: 'subtle',
+    subCategory: 'flash-sale',
+    title: "Midnight whispers... sale until dawn 🌃",
+    content: "Some of my most intimate content is on sale until sunrise. The 'Moonlight Confessions' collection - where shadows dance and secrets are shared. Not for everyone... but perhaps for you.",
+    tags: ['midnight', 'moonlight', 'confessions'],
+    photoInstructions: "Moonlit scenes, intimate shadows, whispered secrets"
+  },
+
+  // FLASH SALE - Casual & Direct Styles
+  {
+    id: 'promo_flash_cas_001',
+    category: 'promotional',
+    style: 'casual',
+    promotionLevel: 'moderate',
+    subCategory: 'flash-sale',
+    title: "Lazy Sunday sale - because we all deserve treats 🍰",
+    content: "Sunday funday pricing! 35% off while you're lounging around. Perfect timing for my 'Sunday Silk' series - what happens when silk pajamas meet Sunday morning light? Come find out!",
+    tags: ['sunday', 'lazy', 'silk'],
+    photoInstructions: "Sunday morning in silk pajamas, soft natural light"
+  },
+  {
+    id: 'promo_flash_dir_001',
+    category: 'promotional',
+    style: 'direct',
+    promotionLevel: 'direct',
+    subCategory: 'flash-sale',
+    title: "48-hour flash sale - no games, just results",
+    content: "Straightforward offer: 55% off all premium content for exactly 48 hours. This includes my latest 'Boardroom Confessions' series - professional by day, wild by night. Timer starts now.",
+    tags: ['48hour', 'straightforward', 'boardroom'],
+    photoInstructions: "Professional boardroom transition to wild"
+  },
+
+  // NEW CONTENT - All Styles
+  {
+    id: 'promo_new_play_001',
+    category: 'promotional',
+    style: 'playful',
+    promotionLevel: 'moderate',
+    subCategory: 'new-content',
+    title: "Just finished the most fun photoshoot ever! 📸",
+    content: "Spent all weekend creating something amazing - 100+ pics of pure playfulness! Theme was 'Pillow Fight Gone Wrong' and let's just say... not much stayed on 🙊 Available now for subscribers!",
+    tags: ['weekend', 'pillow-fight', 'playful'],
+    photoInstructions: "Pillow fight scene, playful chaos, minimal clothing"
+  },
+  {
+    id: 'promo_new_play_002', 
+    category: 'promotional',
+    style: 'playful',
+    promotionLevel: 'direct',
+    subCategory: 'new-content',
+    title: "200+ new pics dropped! Your Tuesday just got better 🎉",
+    content: "Biggest content release yet! Spent three days shooting 'Gaming Girl Gets Naughty' series. Spoiler alert: I lose every game but you definitely win 🎮 Full collection available now!",
+    tags: ['biggest', 'gaming', 'naughty'],
+    photoInstructions: "Gaming setup with playful undressing sequence"
+  },
+  {
+    id: 'promo_new_conf_001',
+    category: 'promotional',
+    style: 'confident',
+    promotionLevel: 'direct',
+    subCategory: 'new-content',
+    title: "New content series: Unleashed 🔥",
+    content: "You asked for bolder content. I delivered. 'Unleashed' is my most daring series yet - 150+ photos where I hold nothing back. This isn't just content, it's an experience. Available exclusively for VIP members.",
+    tags: ['unleashed', 'bolder', 'daring'],
+    photoInstructions: "Bold, daring poses, confident expressions"
+  },
+  {
+    id: 'promo_new_conf_002',
+    category: 'promotional',
+    style: 'confident',
+    promotionLevel: 'moderate',
+    subCategory: 'new-content',
+    title: "Fresh content: Power & Passion collection",
+    content: "Combining strength with sensuality in my latest 80-photo series. Professional studio lighting meets raw passion. This collection showcases a side of me you haven't seen before 💪",
+    tags: ['power', 'passion', 'studio'],
+    photoInstructions: "Professional studio lighting, powerful poses"
+  },
+  {
+    id: 'promo_new_myst_001',
+    category: 'promotional',
+    style: 'mysterious',
+    promotionLevel: 'direct',
+    subCategory: 'new-content',
+    title: "The forbidden gallery is now open 🚪",
+    content: "Content I never thought I'd share... until now. 'Forbidden Desires' collection - 300+ photos exploring themes that push every boundary. This content exists in the shadows for a reason.",
+    tags: ['forbidden', 'shadows', 'boundaries'],
+    photoInstructions: "Dark, forbidden themes, boundary-pushing content"
+  },
+  {
+    id: 'promo_new_cas_001',
+    category: 'promotional',
+    style: 'casual',
+    promotionLevel: 'moderate',
+    subCategory: 'new-content',
+    title: "Fresh content drop - 'Girl Next Door Undressed' 🏠",
+    content: "Ever wonder what the sweet girl next door does when no one's watching? Wonder no more! 150+ photos showing my true colors. Spoiler: they're much more vibrant than anyone expected 🌈",
+    tags: ['girl-next-door', 'true-colors', 'vibrant'],
+    photoInstructions: "Girl-next-door to revealing transformation"
+  },
+  {
+    id: 'promo_new_dir_001',
+    category: 'promotional',
+    style: 'direct',
+    promotionLevel: 'direct',
+    subCategory: 'new-content',
+    title: "New content available: 'Executive After Hours' series",
+    content: "Professional content for discerning viewers. 120+ high-quality images documenting what happens when the office closes and inhibitions open. Premium tier members get immediate access.",
+    tags: ['executive', 'after-hours', 'professional'],
+    photoInstructions: "Executive office after-hours scenarios"
+  },
+
+  // DISCOUNT PROMOTIONS - All Styles
+  {
+    id: 'promo_disc_cas_001',
+    category: 'promotional',
+    style: 'casual',
+    promotionLevel: 'moderate',
+    subCategory: 'discount',
+    title: "Hey loves! Surprise discount just for you 💕",
+    content: "You've been so supportive lately, I wanted to do something nice! 30% off everything for the next week. Just uploaded my 'Cozy Sunday Morning' series - coffee, curves, and comfort 😊",
+    tags: ['supportive', 'cozy', 'morning'],
+    photoInstructions: "Cozy morning setting with coffee, natural light"
+  },
+  {
+    id: 'promo_disc_cas_002',
+    category: 'promotional',
+    style: 'casual',
+    promotionLevel: 'direct',
+    subCategory: 'discount',
+    title: "Mid-week special - because why not? 🌸",
+    content: "Feeling generous this Wednesday! Everything 40% off until Friday. Perfect timing since I just added 'Yoga Flow' content - flexibility has never looked so good 🧘‍♀️",
+    tags: ['midweek', 'yoga', 'flexibility'],
+    photoInstructions: "Yoga poses, flexible positions, athletic wear"
+  },
+  {
+    id: 'promo_disc_conf_001',
+    category: 'promotional',
+    style: 'confident',
+    promotionLevel: 'direct',
+    subCategory: 'discount',
+    title: "Quality content, quality discount - 50% off everything",
+    content: "I don't compromise on content quality, but I can compromise on price. This week only - half off my entire catalog. Recent addition: 'Executive Suite' series where power meets passion in corporate America.",
+    tags: ['quality', 'executive', 'corporate'],
+    photoInstructions: "Executive office settings, power suits, corporate seduction"
+  },
+  {
+    id: 'promo_disc_myst_001',
+    category: 'promotional',
+    style: 'mysterious',
+    promotionLevel: 'subtle',
+    subCategory: 'discount',
+    title: "Rare price adjustment... take advantage 💫",
+    content: "My content rarely goes on sale, but this week is different. 25% reduction on exclusive tiers - a chance to explore content that usually remains hidden. The 'Velvet Underground' awaits.",
+    tags: ['rare', 'exclusive', 'velvet-underground'],
+    photoInstructions: "Underground velvet themes, exclusive hidden content"
+  },
+  {
+    id: 'promo_disc_play_001',
+    category: 'promotional',
+    style: 'playful',
+    promotionLevel: 'moderate',
+    subCategory: 'discount',
+    title: "Oops! Did I accidentally make everything cheaper? 😅",
+    content: "Clumsy me must have hit the wrong button! Everything's mysteriously 45% off for the next few days. Hope nobody notices... especially not after seeing my new 'Bubble Bath Bloopers' series! 🛁💦",
+    tags: ['accidental', 'bubble-bath', 'bloopers'],
+    photoInstructions: "Bubble bath with playful mishaps and splashing"
+  },
+
+  // EXCLUSIVE OFFERS - All Styles
+  {
+    id: 'promo_excl_dir_001',
+    category: 'promotional',
+    style: 'direct',
+    promotionLevel: 'direct',
+    subCategory: 'exclusive-offer',
+    title: "VIP membership special - limited slots available",
+    content: "Opening 25 VIP slots this month. Includes: weekly custom content, direct messaging, and exclusive behind-the-scenes access. VIP members see everything first, including my 'After Dark' collection launching next week.",
+    tags: ['vip', 'limited', 'behind-scenes'],
+    photoInstructions: "VIP exclusive content, luxurious settings"
+  },
+  {
+    id: 'promo_excl_conf_001',
+    category: 'promotional',
+    style: 'confident',
+    promotionLevel: 'moderate',
+    subCategory: 'exclusive-offer',
+    title: "Exclusive tier access - for serious collectors only",
+    content: "Premium tier unlocked for qualified subscribers. Includes unreleased content from my private collection plus monthly video calls. Current featured series: 'Private Dancer' - intimate performances created exclusively for this tier.",
+    tags: ['premium', 'unreleased', 'private-dancer'],
+    photoInstructions: "Intimate dance poses, private performance setting"
+  },
+  {
+    id: 'promo_excl_myst_001',
+    category: 'promotional',
+    style: 'mysterious',
+    promotionLevel: 'subtle',
+    subCategory: 'exclusive-offer',
+    title: "The inner circle expands... slightly 🌟",
+    content: "A few select individuals will gain access to content that exists beyond the public eye. The 'Inner Circle' tier includes material I've never shared... and probably never should. Applications reviewed personally.",
+    tags: ['inner-circle', 'select', 'beyond'],
+    photoInstructions: "Exclusive inner circle themes, selective content"
+  },
+  {
+    id: 'promo_excl_play_001',
+    category: 'promotional',
+    style: 'playful',
+    promotionLevel: 'moderate',
+    subCategory: 'exclusive-offer',
+    title: "Secret club membership now open! 🤫",
+    content: "Psst... want to join my secret club? Limited memberships available! Club perks include: surprise content drops, silly behind-the-scenes clips, and access to my 'Pillow Fort Confessions' series. First rule of secret club? Have fun! 🏰",
+    tags: ['secret-club', 'surprise', 'pillow-fort'],
+    photoInstructions: "Secret club theme with pillow forts and playful scenes"
+  },
+
+  // BUNDLE DEALS - Multiple Styles
+  {
+    id: 'promo_bundle_play_001',
+    category: 'promotional',
+    style: 'playful',
+    promotionLevel: 'moderate',
+    subCategory: 'bundle',
+    title: "Bundle bonanza! Everything you want in one package 📦",
+    content: "Why choose when you can have it all? Photo sets + videos + custom messages bundled together! This month's theme pack: 'Schoolgirl Secrets' - 200+ pics, 10 videos, daily messages 🎀",
+    tags: ['bundle', 'everything', 'schoolgirl'],
+    photoInstructions: "School theme outfit, innocent to naughty transition"
+  },
+  {
+    id: 'promo_bundle_conf_001',
+    category: 'promotional',
+    style: 'confident',
+    promotionLevel: 'direct',
+    subCategory: 'bundle',
+    title: "Complete collection bundle - everything I've shot",
+    content: "Access to my entire catalog in one purchase. 2000+ photos, 100+ videos, exclusive content spanning 2 years. This is my life's work made available to serious collectors only.",
+    tags: ['complete', 'catalog', 'collectors'],
+    photoInstructions: "Portfolio showcase, variety of professional shots"
+  },
+  {
+    id: 'promo_bundle_mega_001',
+    category: 'promotional',
+    style: 'playful',
+    promotionLevel: 'direct',
+    subCategory: 'bundle',
+    title: "MEGA BUNDLE ALERT! 🚨 Everything + kitchen sink!",
+    content: "This is insane but I'm doing it anyway! EVERY photo, EVERY video, EVERY message, PLUS upcoming content for next 3 months - all for one price! 'Kitchen Sink' bundle because literally everything is included! 🤪",
+    tags: ['mega', 'everything', 'insane'],
+    photoInstructions: "Overwhelming variety, everything included theme"
+  },
+
+  // CUSTOM REQUEST PROMOTIONS
+  {
+    id: 'promo_custom_myst_001',
+    category: 'promotional',
+    style: 'mysterious',
+    promotionLevel: 'subtle',
+    subCategory: 'custom-request',
+    title: "Custom content slots opening soon... 🎭",
+    content: "Five exclusive custom commission slots available this month. Bring me your fantasies and watch them come to life through my lens. Previous commissions include themes I never imagined... but loved creating 🖤",
+    tags: ['custom', 'fantasies', 'commissions'],
+    photoInstructions: "Artistic custom scenarios, creative lighting"
+  },
+  {
+    id: 'promo_custom_cas_001',
+    category: 'promotional',
+    style: 'casual',
+    promotionLevel: 'moderate',
+    subCategory: 'custom-request',
+    title: "Taking custom requests - your ideas welcome! 💭",
+    content: "Love hearing what you'd like to see! Opening custom request spots for next month. Whether it's a specific outfit, theme, or scenario - let's make it happen together! Past favorites: retro pin-up and rainy day romance 🌧️",
+    tags: ['custom-requests', 'ideas', 'scenarios'],
+    photoInstructions: "Various custom scenarios, retro and romantic themes"
+  },
+  {
+    id: 'promo_custom_conf_001',
+    category: 'promotional',
+    style: 'confident',
+    promotionLevel: 'direct',
+    subCategory: 'custom-request',
+    title: "Premium custom content - bring your vision to life",
+    content: "High-end custom photography sessions now available. Professional lighting, multiple outfits, and your creative direction. Minimum 50-photo delivery with editing included. Limited slots per month for quality assurance.",
+    tags: ['premium-custom', 'professional', 'vision'],
+    photoInstructions: "High-end professional custom photography setups"
+  },
+
+  // LIMITED TIME OFFERS
+  {
+    id: 'promo_limited_dir_001',
+    category: 'promotional',
+    style: 'direct',
+    promotionLevel: 'direct',
+    subCategory: 'limited-time',
+    title: "72 hours only - then it's gone forever",
+    content: "This offer disappears Sunday night. Premium access at basic rates, plus exclusive unreleased content from my 'Red Room' sessions. This deal won't repeat - secure your access now.",
+    tags: ['72hours', 'forever', 'red-room'],
+    photoInstructions: "Red-themed room, dramatic lighting, premium content"
+  },
+  {
+    id: 'promo_limited_play_001',
+    category: 'promotional',
+    style: 'playful',
+    promotionLevel: 'moderate', 
+    subCategory: 'limited-time',
+    title: "Weekend warriors get special treatment! ⚔️",
+    content: "Saturday to Sunday only - warrior discount activated! 45% off all tiers because weekends should be for fun. Just released 'Cosplay Chronicles' - guess which character made me blush the most 😊",
+    tags: ['weekend', 'warriors', 'cosplay'],
+    photoInstructions: "Various cosplay outfits, character transformations"
+  },
+  {
+    id: 'promo_limited_final_001',
+    category: 'promotional',
+    style: 'direct',
+    promotionLevel: 'direct',
+    subCategory: 'limited-time',
+    title: "Last call - final 24 hours for premium access",
+    content: "This opportunity ends tomorrow at midnight. Premium tier access at 60% off, including immediate access to my private 'After Hours' collection. No extensions, no repeats. Secure your access now or wait until next year.",
+    tags: ['last-call', 'final', 'after-hours'],
+    photoInstructions: "Final opportunity theme, after-hours intimate content"
   },
 
   // Engagement Content
