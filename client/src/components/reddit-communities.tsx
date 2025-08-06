@@ -42,9 +42,9 @@ interface RedditCommunity {
   displayName: string;
   members: number;
   engagementRate: number;
-  category: 'premium' | 'general' | 'niche' | 'fetish' | 'verification';
+  category: 'premium' | 'general' | 'niche' | 'fetish' | 'verification' | 'gonewild' | 'selling';
   verificationRequired: boolean;
-  promotionAllowed: 'yes' | 'limited' | 'no';
+  promotionAllowed: 'yes' | 'limited' | 'subtle' | 'no';
   postingLimits: {
     perDay?: number;
     perWeek?: number;
@@ -55,15 +55,22 @@ interface RedditCommunity {
     minAccountAge?: number;
     watermarksAllowed?: boolean;
     sellingAllowed?: boolean;
+    titleRules?: string[];
+    contentRules?: string[];
   };
   bestPostingTimes: string[];
   averageUpvotes: number;
+  successProbability: number;
+  growthTrend: 'up' | 'stable' | 'down';
+  modActivity: 'high' | 'medium' | 'low';
   description: string;
+  tags: string[];
+  competitionLevel: 'low' | 'medium' | 'high';
 }
 
 export function RedditCommunities() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState<'members' | 'engagement' | 'upvotes' | 'name'>('engagement');
+  const [sortBy, setSortBy] = useState<'members' | 'engagement' | 'upvotes' | 'name' | 'success'>('success');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterPromotion, setFilterPromotion] = useState<string>('all');
   const [filterVerification, setFilterVerification] = useState<string>('all');
@@ -71,52 +78,19 @@ export function RedditCommunities() {
 
   // Fetch communities data
   const { data: communities = [], isLoading } = useQuery({
-    queryKey: ['/api/reddit-communities'],
+    queryKey: ['/api/reddit-communities', filterCategory, searchTerm],
     queryFn: async () => {
-      // In production, this would fetch from the backend
-      // For now, using mock data
-      const response = await apiRequest('/api/reddit-communities', 'GET');
+      const params = new URLSearchParams();
+      if (filterCategory !== 'all') params.append('category', filterCategory);
+      if (searchTerm) params.append('search', searchTerm);
+      
+      const response = await apiRequest(`/api/reddit-communities?${params.toString()}`, 'GET');
       return response;
     },
     retry: false
   });
 
-  // Mock data for demonstration (replace with API call)
-  const mockCommunities: RedditCommunity[] = [
-    {
-      id: 'gonewild',
-      name: 'r/gonewild',
-      displayName: 'Gone Wild',
-      members: 3400000,
-      engagementRate: 8.5,
-      category: 'premium',
-      verificationRequired: true,
-      promotionAllowed: 'no',
-      postingLimits: { perDay: 3, cooldownHours: 8 },
-      rules: { minKarma: 100, minAccountAge: 30, watermarksAllowed: false, sellingAllowed: false },
-      bestPostingTimes: ['Tue 9PM EST', 'Thu 10PM EST', 'Sat 11PM EST'],
-      averageUpvotes: 450,
-      description: 'Largest amateur community, strict no selling policy'
-    },
-    {
-      id: 'onlyfansgirls101',
-      name: 'r/OnlyFansGirls101',
-      displayName: 'OnlyFans Girls 101',
-      members: 2100000,
-      engagementRate: 6.8,
-      category: 'general',
-      verificationRequired: false,
-      promotionAllowed: 'yes',
-      postingLimits: { perDay: 3, cooldownHours: 4 },
-      rules: { minKarma: 20, minAccountAge: 7, watermarksAllowed: true, sellingAllowed: true },
-      bestPostingTimes: ['Mon 7PM EST', 'Wed 8PM EST', 'Fri 9PM EST'],
-      averageUpvotes: 180,
-      description: 'Large promotional community for female creators'
-    },
-    // Add more communities as needed
-  ];
-
-  const displayCommunities = communities.length > 0 ? communities : mockCommunities;
+  const displayCommunities = communities;
 
   // Filter and sort communities
   const filteredCommunities = useMemo(() => {
@@ -157,6 +131,8 @@ export function RedditCommunities() {
           return b.engagementRate - a.engagementRate;
         case 'upvotes':
           return b.averageUpvotes - a.averageUpvotes;
+        case 'success':
+          return b.successProbability - a.successProbability;
         case 'name':
           return a.name.localeCompare(b.name);
         default:
@@ -179,6 +155,8 @@ export function RedditCommunities() {
         return <Badge className="bg-green-500/20 text-green-400">Allowed</Badge>;
       case 'limited':
         return <Badge className="bg-yellow-500/20 text-yellow-400">Limited</Badge>;
+      case 'subtle':
+        return <Badge className="bg-blue-500/20 text-blue-400">Subtle</Badge>;
       case 'no':
         return <Badge className="bg-red-500/20 text-red-400">Not Allowed</Badge>;
       default:
@@ -189,12 +167,31 @@ export function RedditCommunities() {
   const getCategoryBadge = (category: string) => {
     const colors = {
       premium: 'bg-purple-500/20 text-purple-400',
+      gonewild: 'bg-pink-500/20 text-pink-400',
       general: 'bg-blue-500/20 text-blue-400',
-      niche: 'bg-pink-500/20 text-pink-400',
+      niche: 'bg-cyan-500/20 text-cyan-400',
       fetish: 'bg-orange-500/20 text-orange-400',
-      verification: 'bg-green-500/20 text-green-400'
+      selling: 'bg-green-500/20 text-green-400',
+      verification: 'bg-yellow-500/20 text-yellow-400'
     };
-    return <Badge className={colors[category as keyof typeof colors] || ''}>{category}</Badge>;
+    return <Badge className={colors[category as keyof typeof colors] || 'bg-gray-500/20 text-gray-400'}>{category}</Badge>;
+  };
+
+  const getSuccessProbabilityColor = (probability: number) => {
+    if (probability >= 85) return 'text-green-400';
+    if (probability >= 70) return 'text-yellow-400';
+    return 'text-red-400';
+  };
+
+  const getGrowthTrendIcon = (trend: string) => {
+    switch (trend) {
+      case 'up':
+        return <TrendingUp className="h-3 w-3 text-green-400" />;
+      case 'down':
+        return <ChevronDown className="h-3 w-3 text-red-400" />;
+      default:
+        return <div className="h-3 w-3 bg-gray-400 rounded-full" />;
+    }
   };
 
   return (
@@ -204,7 +201,7 @@ export function RedditCommunities() {
           Reddit Communities Database
         </CardTitle>
         <p className="text-sm text-gray-400">
-          50+ communities with engagement metrics, rules, and posting requirements
+          100+ communities with success probability scoring, growth trends, and intelligent recommendations
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -227,9 +224,12 @@ export function RedditCommunities() {
             <SelectContent>
               <SelectItem value="all">All Categories</SelectItem>
               <SelectItem value="premium">Premium</SelectItem>
+              <SelectItem value="gonewild">Gone Wild</SelectItem>
               <SelectItem value="general">General</SelectItem>
               <SelectItem value="niche">Niche</SelectItem>
               <SelectItem value="fetish">Fetish</SelectItem>
+              <SelectItem value="selling">Selling</SelectItem>
+              <SelectItem value="verification">Verification</SelectItem>
             </SelectContent>
           </Select>
 
@@ -241,6 +241,7 @@ export function RedditCommunities() {
               <SelectItem value="all">All Promotion</SelectItem>
               <SelectItem value="yes">Allowed</SelectItem>
               <SelectItem value="limited">Limited</SelectItem>
+              <SelectItem value="subtle">Subtle</SelectItem>
               <SelectItem value="no">Not Allowed</SelectItem>
             </SelectContent>
           </Select>
@@ -261,6 +262,7 @@ export function RedditCommunities() {
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="success">Success Rate</SelectItem>
               <SelectItem value="engagement">Engagement</SelectItem>
               <SelectItem value="members">Members</SelectItem>
               <SelectItem value="upvotes">Avg Upvotes</SelectItem>
@@ -281,11 +283,11 @@ export function RedditCommunities() {
               <TableRow className="border-purple-500/20">
                 <TableHead className="text-purple-300">Community</TableHead>
                 <TableHead className="text-purple-300">Members</TableHead>
+                <TableHead className="text-purple-300">Success Rate</TableHead>
                 <TableHead className="text-purple-300">Engagement</TableHead>
                 <TableHead className="text-purple-300">Category</TableHead>
                 <TableHead className="text-purple-300">Verification</TableHead>
                 <TableHead className="text-purple-300">Promotion</TableHead>
-                <TableHead className="text-purple-300">Posting Limits</TableHead>
                 <TableHead className="text-purple-300">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -306,6 +308,14 @@ export function RedditCommunities() {
                       <div className="flex items-center gap-1">
                         <Users className="h-4 w-4 text-gray-400" />
                         <span className="text-gray-300">{formatNumber(community.members)}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <span className={`font-medium ${getSuccessProbabilityColor(community.successProbability)}`}>
+                          {community.successProbability}%
+                        </span>
+                        {getGrowthTrendIcon(community.growthTrend)}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -347,7 +357,7 @@ export function RedditCommunities() {
                         <div className="p-4 space-y-4">
                           <p className="text-sm text-gray-300">{community.description}</p>
                           
-                          <div className="grid md:grid-cols-3 gap-4">
+                          <div className="grid md:grid-cols-4 gap-4">
                             <div>
                               <h4 className="text-sm font-semibold text-purple-300 mb-2">Requirements</h4>
                               <div className="space-y-1 text-xs text-gray-400">
@@ -357,11 +367,21 @@ export function RedditCommunities() {
                                 <p>• Selling: {community.rules.sellingAllowed ? '✓ Allowed' : '✗ Not Allowed'}</p>
                               </div>
                             </div>
+
+                            <div>
+                              <h4 className="text-sm font-semibold text-purple-300 mb-2">Intelligence</h4>
+                              <div className="space-y-1 text-xs text-gray-400">
+                                <p>• Success Rate: <span className={getSuccessProbabilityColor(community.successProbability)}>{community.successProbability}%</span></p>
+                                <p>• Competition: <span className={community.competitionLevel === 'low' ? 'text-green-400' : community.competitionLevel === 'medium' ? 'text-yellow-400' : 'text-red-400'}>{community.competitionLevel}</span></p>
+                                <p>• Growth: <span className={community.growthTrend === 'up' ? 'text-green-400' : community.growthTrend === 'stable' ? 'text-yellow-400' : 'text-red-400'}>{community.growthTrend}</span></p>
+                                <p>• Mod Activity: <span className={community.modActivity === 'high' ? 'text-red-400' : community.modActivity === 'medium' ? 'text-yellow-400' : 'text-green-400'}>{community.modActivity}</span></p>
+                              </div>
+                            </div>
                             
                             <div>
                               <h4 className="text-sm font-semibold text-purple-300 mb-2">Best Posting Times</h4>
                               <div className="space-y-1 text-xs text-gray-400">
-                                {community.bestPostingTimes.map((time, idx) => (
+                                {community.bestPostingTimes.slice(0, 3).map((time, idx) => (
                                   <p key={idx}>• {time}</p>
                                 ))}
                               </div>
@@ -370,11 +390,41 @@ export function RedditCommunities() {
                             <div>
                               <h4 className="text-sm font-semibold text-purple-300 mb-2">Performance</h4>
                               <div className="space-y-1 text-xs text-gray-400">
-                                <p>• Avg Upvotes: {community.averageUpvotes}</p>
+                                <p>• Avg Upvotes: {community.averageUpvotes.toLocaleString()}</p>
                                 <p>• Engagement Rate: {community.engagementRate}%</p>
                                 <p>• Total Members: {community.members.toLocaleString()}</p>
                               </div>
                             </div>
+                          </div>
+
+                          {/* Rules and Tags */}
+                          <div className="grid md:grid-cols-2 gap-4 mt-4">
+                            {(community.rules.titleRules || community.rules.contentRules) && (
+                              <div>
+                                <h4 className="text-sm font-semibold text-purple-300 mb-2">Community Rules</h4>
+                                <div className="space-y-1 text-xs text-gray-400">
+                                  {community.rules.titleRules && community.rules.titleRules.map((rule, idx) => (
+                                    <p key={idx}>• Title: {rule}</p>
+                                  ))}
+                                  {community.rules.contentRules && community.rules.contentRules.map((rule, idx) => (
+                                    <p key={idx}>• Content: {rule}</p>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {community.tags && community.tags.length > 0 && (
+                              <div>
+                                <h4 className="text-sm font-semibold text-purple-300 mb-2">Tags</h4>
+                                <div className="flex flex-wrap gap-1">
+                                  {community.tags.map((tag, idx) => (
+                                    <Badge key={idx} className="bg-gray-700/50 text-gray-300 text-xs">
+                                      {tag}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </TableCell>

@@ -15,6 +15,7 @@ import session from 'express-session';
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { getRandomTemplates, addWatermark, getTemplateByMood } from "./content-templates";
 import { setupAuth } from "./auth";
+import { redditCommunitiesDatabase, getRecommendationsForUser, getCommunityInsights } from "./reddit-communities";
 
 // Configure multer for file uploads
 const storage_config = multer.diskStorage({
@@ -385,6 +386,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching last generated content:", error);
       res.status(500).json({ message: "Failed to fetch last generated content" });
+    }
+  });
+
+  // Reddit Communities API
+  app.get("/api/reddit-communities", async (req, res) => {
+    try {
+      const { category, search, userStyle, experience } = req.query;
+      
+      let communities = redditCommunitiesDatabase;
+      
+      // Apply filters
+      if (category && category !== 'all') {
+        communities = communities.filter(c => c.category === category);
+      }
+      
+      if (search) {
+        const searchTerm = (search as string).toLowerCase();
+        communities = communities.filter(c => 
+          c.name.toLowerCase().includes(searchTerm) ||
+          c.displayName.toLowerCase().includes(searchTerm) ||
+          c.description.toLowerCase().includes(searchTerm) ||
+          c.tags.some(tag => tag.toLowerCase().includes(searchTerm))
+        );
+      }
+      
+      // Get personalized recommendations if user parameters provided
+      if (userStyle && experience) {
+        communities = getRecommendationsForUser(userStyle as string, experience as string);
+      }
+      
+      res.json(communities);
+    } catch (error) {
+      console.error("Error fetching Reddit communities:", error);
+      res.status(500).json({ message: "Failed to fetch communities" });
+    }
+  });
+
+  app.get("/api/community-insights/:communityId", async (req, res) => {
+    try {
+      const { communityId } = req.params;
+      const insights = getCommunityInsights(communityId);
+      res.json(insights);
+    } catch (error) {
+      console.error("Error fetching community insights:", error);
+      res.status(500).json({ message: "Failed to fetch insights" });
     }
   });
 
