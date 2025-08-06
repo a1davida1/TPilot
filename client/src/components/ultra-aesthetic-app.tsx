@@ -39,7 +39,7 @@ import { EnhancedAIGenerator } from "@/components/enhanced-ai-generator";
 import { SocialAuth } from "@/components/social-auth";
 import { ProviderStatus } from "@/components/provider-status";
 import { SampleUpload } from "@/components/sample-upload";
-import { FineTuningSettings } from "@/components/fine-tuning-settings";
+import { IntegratedFineTuning } from "@/components/integrated-fine-tuning";
 import { AuthModal } from "@/components/auth-modal";
 import { TrendingTags } from "@/components/trending-tags";
 import { AudienceInsights } from "@/components/audience-insights";
@@ -415,7 +415,7 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
             
             {activeView === "finetune" && (
               <div className="max-w-4xl mx-auto">
-                <FineTuningSettings />
+                <IntegratedFineTuning />
               </div>
             )}
             
