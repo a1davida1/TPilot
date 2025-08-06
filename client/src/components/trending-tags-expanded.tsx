@@ -332,7 +332,7 @@ export function TrendingTagsExpanded() {
                 <p className="text-2xl font-bold">12</p>
                 <p className="text-xs text-orange-400">Above 30% growth</p>
               </div>
-              <Flame className="h-8 w-8 text-orange-400/50" />
+              <Zap className="h-8 w-8 text-orange-400/50" />
             </div>
           </CardContent>
         </Card>

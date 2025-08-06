@@ -25,7 +25,7 @@ import {
   Copy,
   Search,
   Filter,
-  Crown
+  Award
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -328,7 +328,7 @@ export function ProPerks() {
                   </Badge>
                 </div>
                 {resource.isPremium && (
-                  <Crown className="h-4 w-4 text-yellow-500" />
+                  <Award className="h-4 w-4 text-yellow-500" />
                 )}
               </div>
               <CardTitle className="text-lg mt-3">{resource.title}</CardTitle>
