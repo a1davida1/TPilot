@@ -47,7 +47,7 @@ export interface IStorage {
   
   // Image operations
   createUserImage(image: InsertUserImage): Promise<UserImage>;
-  getUserImages(userId: string): Promise<UserImage[]>;
+  getUserImages(userId: number): Promise<UserImage[]>;
   getImageById(id: number): Promise<UserImage | undefined>;
   updateImageProtection(id: number, protectionData: Partial<UserImage>): Promise<UserImage | undefined>;
   deleteUserImage(id: number, userId: number): Promise<void>;
@@ -248,9 +248,8 @@ export class MemStorage implements IStorage {
     return newImage;
   }
 
-  async getUserImages(userId: string): Promise<UserImage[]> {
-    const userIdNum = parseInt(userId);
-    return this.userImages.filter(img => img.userId === userIdNum);
+  async getUserImages(userId: number): Promise<UserImage[]> {
+    return this.userImages.filter(img => img.userId === userId);
   }
 
   async getImageById(id: number): Promise<UserImage | undefined> {

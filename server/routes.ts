@@ -382,7 +382,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get content history
   app.get("/api/content-history", async (req, res) => {
     try {
-      const history = await storage.getUserContentGenerations();
+      // For demo purposes, use userId 1, or get from auth
+      const userId = 1; // This would come from authenticated user in production
+      const history = await storage.getUserContentGenerations(userId);
       res.json(history);
     } catch (error) {
       console.error("Error fetching content history:", error);
@@ -393,7 +395,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get statistics
   app.get("/api/stats", async (req, res) => {
     try {
-      const stats = await storage.getContentGenerationStats();
+      // For demo purposes, use userId 1, or get from auth
+      const userId = 1; // This would come from authenticated user in production
+      const stats = await storage.getContentGenerationStats(userId);
       res.json(stats);
     } catch (error) {
       console.error("Error fetching stats:", error);
@@ -404,7 +408,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get last generated content for browser extension
   app.get("/api/last-generated", async (req, res) => {
     try {
-      const lastGenerated = await storage.getLastGenerated();
+      // For demo purposes, use userId 1, or get from auth
+      const userId = 1; // This would come from authenticated user in production
+      const lastGenerated = await storage.getLastGenerated(userId);
       if (lastGenerated) {
         res.json(lastGenerated);
       } else {
@@ -471,8 +477,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const parsedProfile = typeof userProfile === 'string' ? JSON.parse(userProfile) : userProfile;
       
       // Determine user tier (in production, get from authenticated user)
-      // For demo: check localStorage or session
-      const userTier = req.session?.userTier || 'free'; // 'free', 'basic', 'pro', 'premium'
+      // For demo: default to free tier
+      const userTier = 'free'; // 'free', 'basic', 'pro', 'premium'
       
       let contentGeneration: any;
       
@@ -521,11 +527,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             technical: "High resolution, good focus, consistent quality",
             alternatives: photoInstructionOptions.slice(1).join(" | ")
           },
-          generationType: 'template',
           prompt: customPrompt || `${category} content with ${mood} tone`,
           subreddit,
           allowsPromotion,
-          userId: req.session?.userId || undefined
+          userId: 1 // Demo user ID, would come from auth in production
         });
         
         // Add tier info to response
@@ -555,8 +560,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           customPrompt: customPrompt || undefined,
           subreddit: subreddit || undefined,
           allowsPromotion: allowsPromotion as 'yes' | 'no',
-          baseImageUrl: imageUrl || undefined,
-          preferredProvider: preferredProvider || 'auto'
+          baseImageUrl: imageUrl || undefined
         });
         
         // Generate multiple content variations for Pro/Premium
@@ -574,8 +578,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 customPrompt: customPrompt ? `${customPrompt} (variation ${i + 1})` : undefined,
                 subreddit: subreddit || undefined,
                 allowsPromotion: allowsPromotion as 'yes' | 'no',
-                baseImageUrl: imageUrl || undefined,
-                preferredProvider: preferredProvider || 'auto'
+                baseImageUrl: imageUrl || undefined
               });
               allVariations.push(variation);
             } catch (error) {
@@ -602,11 +605,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               allVariations.slice(1).map((v, i) => `Style ${i + 2}: ${JSON.stringify(v.photoInstructions)}`).join(' | ') : 
               undefined
           },
-          generationType: 'ai',
           prompt: customPrompt || imageDescription,
           subreddit,
           allowsPromotion,
-          userId: req.session?.userId || undefined
+          userId: 1 // Demo user ID, would come from auth in production
         });
         
         // Add provider info to response
@@ -662,11 +664,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { tags } = req.body;
       const imageUrl = `/uploads/${req.file.filename}`;
       
-      const userImage = await storage.createUserImage('temp-user', {
-        originalFileName: req.file.originalname,
-        originalUrl: imageUrl,
-        tags: tags ? tags.split(',').map((tag: string) => tag.trim()) : [],
-        protectionSettings: undefined
+      const userImage = await storage.createUserImage({
+        userId: 1, // Demo user ID, would come from auth in production
+        filename: req.file.filename,
+        originalName: req.file.originalname,
+        url: imageUrl,
+        size: req.file.size,
+        mimeType: req.file.mimetype,
+        tags: tags ? JSON.stringify(tags.split(',').map((tag: string) => tag.trim())) : null
       });
       
       res.json(userImage);
@@ -690,7 +695,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user images
   app.get("/api/user-images", async (req, res) => {
     try {
-      const images = await storage.getUserImages('temp-user');
+      const images = await storage.getUserImages(1); // Demo user ID
       res.json(images);
     } catch (error) {
       console.error("Error fetching user images:", error);
@@ -704,17 +709,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { imageId } = req.params;
       const { protectionLevel } = req.body;
       
-      const image = await storage.getImageById(imageId);
+      const image = await storage.getImageById(parseInt(imageId));
       if (!image) {
         return res.status(404).json({ message: "Image not found" });
       }
       
       // For now, just mark as protected. In a real implementation,
       // you'd apply the actual protection processing here
-      const protectedUrl = image.originalUrl + '?protected=true';
-      const settings = { level: protectionLevel };
-      
-      const updatedImage = await storage.updateImageProtection(imageId, protectedUrl, settings);
+      const updatedImage = await storage.updateImageProtection(parseInt(imageId), {
+        isProtected: true,
+        protectionLevel: protectionLevel,
+        url: image.url + '?protected=true'
+      });
       res.json(updatedImage);
     } catch (error) {
       console.error("Image protection error:", error);
@@ -726,7 +732,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/user-images/:imageId", async (req, res) => {
     try {
       const { imageId } = req.params;
-      await storage.deleteUserImage(imageId);
+      await storage.deleteUserImage(parseInt(imageId), 1); // Demo user ID
       res.json({ message: "Image deleted successfully" });
     } catch (error) {
       console.error("Image deletion error:", error);
