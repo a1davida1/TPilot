@@ -329,40 +329,34 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
                 <div className="grid lg:grid-cols-4 gap-6">
                   {/* Main Content Area - Generator + Output */}
                   <div className="lg:col-span-3 space-y-6">
-                    <div className="grid xl:grid-cols-2 gap-6">
-                      {/* Content Generator */}
-                      <div>
-                        <EnhancedAIGenerator 
-                          isGuestMode={isGuestMode}
-                          onContentGenerated={() => {}}
-                        />
-                      </div>
-                      
-                      {/* Content Output Section */}
-                      <div>
-                        <Card className="bg-card/80 backdrop-blur-xl border-border h-full">
-                          <CardHeader>
-                            <CardTitle className="flex items-center">
-                              <Sparkles className="mr-2 h-5 w-5 text-primary" />
-                              Generated Content
-                            </CardTitle>
-                            <CardDescription>
-                              Your personalized content will appear here
-                            </CardDescription>
-                          </CardHeader>
-                          <CardContent className="space-y-4">
-                            <div className="text-center py-12 text-muted-foreground">
-                              <Brain className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                              <p className="text-lg font-medium mb-2">Ready to Create</p>
-                              <p className="text-sm">
-                                Generate content using the options on the left to see your 
-                                personalized titles, content, and photo instructions here.
-                              </p>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </div>
-                    </div>
+                    {/* Content Generator */}
+                    <EnhancedAIGenerator 
+                      isGuestMode={isGuestMode}
+                      onContentGenerated={() => {}}
+                    />
+                    
+                    {/* Content Output Section - Below Generator */}
+                    <Card className="bg-card/80 backdrop-blur-xl border-border">
+                      <CardHeader>
+                        <CardTitle className="flex items-center">
+                          <Sparkles className="mr-2 h-5 w-5 text-primary" />
+                          Generated Content
+                        </CardTitle>
+                        <CardDescription>
+                          Your personalized content will appear here
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="text-center py-12 text-muted-foreground">
+                          <Brain className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                          <p className="text-lg font-medium mb-2">Ready to Create</p>
+                          <p className="text-sm">
+                            Generate content using the options above to see your 
+                            personalized titles, content, and photo instructions here.
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
                   </div>
                   
                   {/* Right Sidebar */}
