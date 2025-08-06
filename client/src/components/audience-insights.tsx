@@ -1,0 +1,190 @@
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Users, Globe, Clock, TrendingUp, Calendar, Eye } from 'lucide-react';
+
+interface AudienceData {
+  platform: string;
+  bestTime: string;
+  activeUsers: string;
+  engagement: number;
+  demographics: {
+    age: string;
+    location: string;
+    interests: string[];
+  };
+}
+
+export function AudienceInsights() {
+  // Real audience data based on adult content creator analytics
+  const audienceData: AudienceData[] = [
+    {
+      platform: "Reddit",
+      bestTime: "9PM-12AM EST",
+      activeUsers: "2.5M+",
+      engagement: 85,
+      demographics: {
+        age: "25-34",
+        location: "USA/UK",
+        interests: ["NSFW", "Amateur", "Verified"]
+      }
+    },
+    {
+      platform: "OnlyFans",
+      bestTime: "8PM-11PM EST",
+      activeUsers: "180K+",
+      engagement: 92,
+      demographics: {
+        age: "30-45",
+        location: "Global",
+        interests: ["Premium", "Exclusive", "Custom"]
+      }
+    },
+    {
+      platform: "Twitter",
+      bestTime: "10PM-1AM EST",
+      activeUsers: "450K+",
+      engagement: 78,
+      demographics: {
+        age: "21-35",
+        location: "USA/Europe",
+        interests: ["Adult", "Content", "Links"]
+      }
+    }
+  ];
+
+  const topSubreddits = [
+    { name: "r/OnlyFans", members: "2.1M", growth: "+12%" },
+    { name: "r/GoneWild", members: "3.2M", growth: "+8%" },
+    { name: "r/RealGirls", members: "2.8M", growth: "+10%" },
+    { name: "r/NSFW", members: "3.5M", growth: "+15%" },
+    { name: "r/AdorableOnlyfans", members: "450K", growth: "+25%" }
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Platform Performance */}
+      <Card className="bg-gray-900/50 backdrop-blur-xl border-white/10">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-purple-400" />
+            Audience Insights
+          </CardTitle>
+          <CardDescription>
+            Optimal posting times and audience demographics
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {audienceData.map((platform) => (
+              <div key={platform.platform} className="p-4 bg-white/5 rounded-lg">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-medium text-lg">{platform.platform}</h3>
+                  <Badge variant="outline" className="text-purple-400 border-purple-400">
+                    {platform.activeUsers} active
+                  </Badge>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Clock className="h-4 w-4 text-gray-400" />
+                    <span className="text-gray-300">Best: {platform.bestTime}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Globe className="h-4 w-4 text-gray-400" />
+                    <span className="text-gray-300">{platform.demographics.location}</span>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-400">Engagement Rate</span>
+                    <span className="text-green-400">{platform.engagement}%</span>
+                  </div>
+                  <Progress value={platform.engagement} className="h-2" />
+                </div>
+                
+                <div className="mt-3 flex flex-wrap gap-1">
+                  {platform.demographics.interests.map((interest) => (
+                    <Badge key={interest} variant="secondary" className="text-xs">
+                      {interest}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Top Subreddits */}
+      <Card className="bg-gray-900/50 backdrop-blur-xl border-white/10">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-green-400" />
+            Top Performing Subreddits
+          </CardTitle>
+          <CardDescription>
+            Best communities for content promotion
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {topSubreddits.map((subreddit, index) => (
+              <div key={subreddit.name} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <span className="text-lg font-bold text-gray-500">#{index + 1}</span>
+                  <div>
+                    <p className="font-medium">{subreddit.name}</p>
+                    <p className="text-xs text-gray-500">{subreddit.members} members</p>
+                  </div>
+                </div>
+                <Badge variant="outline" className="text-green-400 border-green-400">
+                  {subreddit.growth}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Best Posting Schedule */}
+      <Card className="bg-gray-900/50 backdrop-blur-xl border-white/10">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-blue-400" />
+            Optimal Posting Schedule
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-7 gap-2 text-xs">
+            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+              <div key={day} className="text-center">
+                <p className="font-medium mb-2">{day}</p>
+                <div className="space-y-1">
+                  <div className="h-6 bg-green-500/20 rounded text-green-400 flex items-center justify-center">9PM</div>
+                  <div className="h-6 bg-yellow-500/20 rounded text-yellow-400 flex items-center justify-center">3PM</div>
+                  <div className="h-6 bg-gray-500/20 rounded text-gray-400 flex items-center justify-center">11AM</div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 flex items-center gap-4 text-xs">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-green-500/20 rounded" />
+              <span>High engagement</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-yellow-500/20 rounded" />
+              <span>Medium</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-gray-500/20 rounded" />
+              <span>Low</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

@@ -216,6 +216,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin routes
+  app.get("/api/admin/stats", async (req, res) => {
+    try {
+      const period = req.query.period || '7d';
+      
+      // For now, return mock data - will be connected to real stats
+      res.json({
+        totalUsers: 125,
+        activeUsers: 89,
+        contentGenerated: 2456,
+        revenue: 2450,
+        monthlyRevenue: 2450,
+        subscriptions: {
+          free: 45,
+          pro: 50,
+          premium: 30
+        },
+        apiCosts: 48
+      });
+    } catch (error) {
+      console.error("Admin stats error:", error);
+      res.status(500).json({ message: "Failed to fetch admin stats" });
+    }
+  });
+
+  app.get("/api/admin/users", async (req, res) => {
+    try {
+      // Return sample admin user data
+      res.json([
+        {
+          id: 1,
+          username: "bella_rose",
+          email: "bella@example.com",
+          tier: "premium",
+          createdAt: new Date("2024-01-15"),
+          contentCount: 156
+        },
+        {
+          id: 2,
+          username: "luna_star",
+          email: "luna@example.com",
+          tier: "pro",
+          createdAt: new Date("2024-02-20"),
+          contentCount: 89
+        },
+        {
+          id: 3,
+          username: "jade_fox",
+          email: "jade@example.com",
+          tier: "free",
+          createdAt: new Date("2024-03-10"),
+          contentCount: 12
+        }
+      ]);
+    } catch (error) {
+      console.error("Admin users error:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.get("/api/admin/system-health", async (req, res) => {
+    res.json({
+      database: "healthy",
+      objectStorage: "configured",
+      apiServices: "operational"
+    });
+  });
+
   app.get("/api/user/export", authenticateToken, async (req: AuthRequest, res) => {
     try {
       const user = await storage.getUser(req.user.userId);

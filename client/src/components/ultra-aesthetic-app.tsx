@@ -41,6 +41,9 @@ import { ProviderStatus } from "@/components/provider-status";
 import { SampleUpload } from "@/components/sample-upload";
 import { FineTuningSettings } from "@/components/fine-tuning-settings";
 import { AuthModal } from "@/components/auth-modal";
+import { TrendingTags } from "@/components/trending-tags";
+import { AudienceInsights } from "@/components/audience-insights";
+import { ImageGallery } from "@/components/image-gallery";
 import { cn } from "@/lib/utils";
 
 interface UltraAestheticAppProps {
@@ -69,17 +72,20 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
     { id: "generate", label: "AI Generator", icon: <Brain className="h-5 w-5" />, badge: "NEW" },
     { id: "samples", label: "Sample Library", icon: <FileText className="h-5 w-5" />, badge: "PRO" },
     { id: "finetune", label: "Fine-Tuning", icon: <Sparkles className="h-5 w-5" />, badge: "PRO" },
+    { id: "gallery", label: "Image Gallery", icon: <ImageIcon className="h-5 w-5" /> },
+    { id: "trending", label: "Trending Tags", icon: <Hash className="h-5 w-5" /> },
+    { id: "insights", label: "Audience Insights", icon: <Users className="h-5 w-5" /> },
     { id: "protect", label: "Image Shield", icon: <Shield className="h-5 w-5" /> },
     { id: "analytics", label: "Analytics", icon: <BarChart3 className="h-5 w-5" /> },
     { id: "history", label: "History", icon: <History className="h-5 w-5" /> },
     { id: "settings", label: "Settings", icon: <Settings className="h-5 w-5" /> }
   ];
 
+  // These stats will be connected to real data from your content and analytics
   const stats = [
     { value: "2.4K", label: "Posts Created", trend: "+12%" },
-    { value: "89%", label: "Engagement Rate", trend: "+5%" },
-    { value: "$1,245", label: "Earnings", trend: "+23%" },
-    { value: "4.9", label: "Rating", trend: "Stable" }
+    { value: "89%", label: "Engagement", trend: "+5%" },
+    { value: "158", label: "Active Subs", trend: "+23%" }
   ];
 
   return (
@@ -264,24 +270,33 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
                 
                 {/* Sidebar */}
                 <div className="space-y-6">
-                  {/* Provider Status */}
-                  <ProviderStatus />
-                  
                   {/* Quick Actions */}
                   <Card className="bg-gray-900/50 backdrop-blur-xl border-white/10">
                     <CardHeader>
                       <CardTitle>Quick Actions</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      <Button className="w-full justify-start" variant="outline">
+                      <Button 
+                        className="w-full justify-start" 
+                        variant="outline"
+                        onClick={() => setActiveView("gallery")}
+                      >
                         <Camera className="mr-2 h-4 w-4" />
                         Upload Images
                       </Button>
-                      <Button className="w-full justify-start" variant="outline">
+                      <Button 
+                        className="w-full justify-start" 
+                        variant="outline"
+                        onClick={() => setActiveView("trending")}
+                      >
                         <Hash className="mr-2 h-4 w-4" />
                         Trending Tags
                       </Button>
-                      <Button className="w-full justify-start" variant="outline">
+                      <Button 
+                        className="w-full justify-start" 
+                        variant="outline"
+                        onClick={() => setActiveView("insights")}
+                      >
                         <Users className="mr-2 h-4 w-4" />
                         Audience Insights
                       </Button>
@@ -319,6 +334,24 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
                     </Card>
                   )}
                 </div>
+              </div>
+            )}
+            
+            {activeView === "trending" && (
+              <div className="max-w-4xl mx-auto">
+                <TrendingTags />
+              </div>
+            )}
+            
+            {activeView === "insights" && (
+              <div className="max-w-6xl mx-auto">
+                <AudienceInsights />
+              </div>
+            )}
+            
+            {activeView === "gallery" && (
+              <div className="max-w-6xl mx-auto">
+                <ImageGallery />
               </div>
             )}
             

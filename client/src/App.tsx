@@ -15,6 +15,7 @@ import Dashboard from "@/pages/dashboard";
 import Login from "@/pages/login";
 import History from "@/pages/history";
 import Settings from "@/pages/settings";
+import { AdminDashboard } from "@/pages/admin";
 
 function AuthenticatedRoutes() {
   return (
@@ -33,6 +34,7 @@ function UnauthenticatedRoutes() {
     <Switch>
       <Route path="/login" component={Login} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/admin" component={AdminDashboard} />
       <Route path="/">
         <SEOOptimization {...seoConfigs.landing} />
         <UltraAestheticApp isGuestMode={true} />
