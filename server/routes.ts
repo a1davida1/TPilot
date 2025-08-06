@@ -136,8 +136,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { email, password } = req.body;
+      console.log('Login attempt:', { email, password });
 
       // Special admin login shortcut for production
+      console.log('Checking admin credentials:', email === 'admin@thottopilot.com', password === 'admin123');
       if (email === 'admin@thottopilot.com' && password === 'admin123') {
         // Create admin user object
         const adminUser = {

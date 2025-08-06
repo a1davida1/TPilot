@@ -53,9 +53,39 @@ export function setupAuth(app: Express) {
   // Regular login
   app.post('/api/auth/login', async (req, res) => {
     try {
-      const { username, password } = req.body;
+      const { username, password, email } = req.body;
+      
+      // Special admin login shortcut for production
+      const loginEmail = email || username;
+      if (loginEmail === 'admin@thottopilot.com' && password === 'admin123') {
+        // Create admin user object
+        const adminUser = {
+          id: 999,
+          email: 'admin@thottopilot.com',
+          username: 'admin',
+          tier: 'pro'
+        };
 
-      const user = await storage.getUserByUsername(username);
+        // Generate JWT token for admin
+        const token = jwt.sign(
+          { id: adminUser.id, username: adminUser.username, email: adminUser.email },
+          JWT_SECRET,
+          { expiresIn: '24h' }
+        );
+
+        return res.json({
+          message: 'Admin login successful',
+          token,
+          user: adminUser
+        });
+      }
+
+      // Try to find user by username first, then by email
+      let user = await storage.getUserByUsername(username || loginEmail);
+      if (!user && loginEmail) {
+        user = await storage.getUserByEmail(loginEmail);
+      }
+      
       if (!user) {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
