@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -291,9 +291,8 @@ export function RedditCommunities() {
             </TableHeader>
             <TableBody>
               {filteredCommunities.map((community) => (
-                <>
+                <React.Fragment key={community.id}>
                   <TableRow 
-                    key={community.id}
                     className="border-purple-500/10 hover:bg-purple-500/5 cursor-pointer"
                     onClick={() => setExpandedRow(expandedRow === community.id ? null : community.id)}
                   >
@@ -381,7 +380,7 @@ export function RedditCommunities() {
                       </TableCell>
                     </TableRow>
                   )}
-                </>
+                </React.Fragment>
               ))}
             </TableBody>
           </Table>
