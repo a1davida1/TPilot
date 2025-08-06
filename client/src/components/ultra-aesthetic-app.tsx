@@ -219,15 +219,52 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
             </p>
           </div>
           
-          {/* Quick Stats */}
+          {/* Login/Register and Stats */}
           <div className="flex items-center space-x-6">
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center">
-                <p className="text-2xl font-bold text-white">{stat.value}</p>
-                <p className="text-xs text-gray-500">{stat.label}</p>
-                <p className="text-xs text-green-400">{stat.trend}</p>
+            {/* Quick Stats */}
+            <div className="hidden lg:flex items-center space-x-6">
+              {stats.map((stat, index) => (
+                <div key={index} className="text-center">
+                  <p className="text-2xl font-bold text-white">{stat.value}</p>
+                  <p className="text-xs text-gray-500">{stat.label}</p>
+                  <p className="text-xs text-green-400">{stat.trend}</p>
+                </div>
+              ))}
+            </div>
+            
+            {/* Auth Buttons */}
+            {isGuestMode ? (
+              <div className="flex items-center space-x-3">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="border-purple-500/30 hover:bg-purple-500/10"
+                  onClick={() => setShowAuthModal(true)}
+                >
+                  Sign In
+                </Button>
+                <Button 
+                  size="sm"
+                  className="bg-gradient-to-r from-purple-500 to-pink-500"
+                  onClick={() => setShowAuthModal(true)}
+                >
+                  Get Started
+                </Button>
               </div>
-            ))}
+            ) : (
+              <div className="flex items-center space-x-3">
+                <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/50">
+                  PRO MEMBER
+                </Badge>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="text-gray-400"
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
           </div>
         </header>
 
