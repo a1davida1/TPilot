@@ -45,6 +45,16 @@ export function AdminDashboard() {
     queryKey: ['/api/admin/system-health'],
   });
 
+  // Fetch visitor analytics
+  const { data: analytics } = useQuery({
+    queryKey: ['/api/admin/analytics', selectedPeriod],
+  });
+
+  // Fetch system completeness
+  const { data: completeness } = useQuery({
+    queryKey: ['/api/admin/completeness'],
+  });
+
   const adminStats = [
     { 
       label: 'Total Users', 
@@ -116,10 +126,12 @@ export function AdminDashboard() {
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList className="bg-gray-900/50 border-white/10">
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="analytics">Visitor Analytics</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="providers">Service Providers</TabsTrigger>
           <TabsTrigger value="revenue">Revenue</TabsTrigger>
           <TabsTrigger value="system">System</TabsTrigger>
+          <TabsTrigger value="status">System Status</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -337,6 +349,170 @@ export function AdminDashboard() {
                     Operational
                   </Badge>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Visitor Analytics Tab */}
+        <TabsContent value="analytics" className="space-y-6">
+          <div className="grid lg:grid-cols-3 gap-6 mb-6">
+            <Card className="bg-gray-900/50 backdrop-blur-xl border-white/10">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-2xl font-bold">{analytics?.uniqueVisitors || 0}</p>
+                    <p className="text-sm text-gray-400">Unique Visitors</p>
+                  </div>
+                  <Eye className="h-8 w-8 text-blue-400" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-gray-900/50 backdrop-blur-xl border-white/10">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-2xl font-bold">{analytics?.pageViews || 0}</p>
+                    <p className="text-sm text-gray-400">Page Views</p>
+                  </div>
+                  <BarChart3 className="h-8 w-8 text-green-400" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-gray-900/50 backdrop-blur-xl border-white/10">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-2xl font-bold">{analytics?.bounceRate?.toFixed(1) || 0}%</p>
+                    <p className="text-sm text-gray-400">Bounce Rate</p>
+                  </div>
+                  <TrendingUp className="h-8 w-8 text-purple-400" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-6">
+            {/* Top Pages */}
+            <Card className="bg-gray-900/50 backdrop-blur-xl border-white/10">
+              <CardHeader>
+                <CardTitle>Top Pages</CardTitle>
+                <CardDescription>Most visited pages</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {analytics?.topPages?.slice(0, 5).map((page, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                      <span className="text-sm">{page.path}</span>
+                      <Badge variant="secondary">{page.views} views</Badge>
+                    </div>
+                  )) || (
+                    <div className="text-center text-gray-500 py-8">
+                      No page data available yet
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Traffic Sources */}
+            <Card className="bg-gray-900/50 backdrop-blur-xl border-white/10">
+              <CardHeader>
+                <CardTitle>Traffic Sources</CardTitle>
+                <CardDescription>Where visitors come from</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {analytics?.trafficSources?.slice(0, 5).map((source, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                      <span className="text-sm">{source.source}</span>
+                      <Badge variant="secondary">{source.visitors} visitors</Badge>
+                    </div>
+                  )) || (
+                    <div className="text-center text-gray-500 py-8">
+                      No traffic data available yet
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* System Status Tab */}
+        <TabsContent value="status" className="space-y-6">
+          <Card className="bg-gray-900/50 backdrop-blur-xl border-white/10">
+            <CardHeader>
+              <CardTitle>System Completeness Status</CardTitle>
+              <CardDescription>Track implementation progress and missing features</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {completeness?.map((item, index) => (
+                  <div key={index} className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      {item.status === 'complete' ? (
+                        <CheckCircle className="h-5 w-5 text-green-400" />
+                      ) : item.status === 'partial' ? (
+                        <AlertCircle className="h-5 w-5 text-yellow-400" />
+                      ) : (
+                        <XCircle className="h-5 w-5 text-red-400" />
+                      )}
+                      <div>
+                        <p className="font-medium">{item.category}</p>
+                        <p className="text-sm text-gray-400">{item.description}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge 
+                        variant={
+                          item.status === 'complete' ? 'default' : 
+                          item.status === 'partial' ? 'secondary' : 'destructive'
+                        }
+                        className="capitalize"
+                      >
+                        {item.status}
+                      </Badge>
+                      <Badge 
+                        variant="outline" 
+                        className={
+                          item.priority === 'high' ? 'border-red-400 text-red-400' :
+                          item.priority === 'medium' ? 'border-yellow-400 text-yellow-400' :
+                          'border-gray-400 text-gray-400'
+                        }
+                      >
+                        {item.priority} priority
+                      </Badge>
+                    </div>
+                  </div>
+                )) || (
+                  <div className="text-center text-gray-500 py-8">
+                    Loading system status...
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Quick Actions for Missing Features */}
+          <Card className="bg-gray-900/50 backdrop-blur-xl border-white/10">
+            <CardHeader>
+              <CardTitle>Priority Actions</CardTitle>
+              <CardDescription>High-priority items that need attention</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-4">
+                {completeness?.filter(item => item.priority === 'high' && item.status !== 'complete').map((item, index) => (
+                  <div key={index} className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+                    <div className="flex items-center gap-3 mb-2">
+                      <XCircle className="h-5 w-5 text-red-400" />
+                      <p className="font-medium text-red-400">{item.category}</p>
+                    </div>
+                    <p className="text-sm text-gray-400">{item.description}</p>
+                  </div>
+                )) || null}
               </div>
             </CardContent>
           </Card>

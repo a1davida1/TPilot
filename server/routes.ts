@@ -17,6 +17,7 @@ import { getRandomTemplates, addWatermark, getTemplateByMood } from "./content-t
 import { generateAdvancedContent, type ContentParameters } from "./advanced-content-generator";
 import { setupAuth } from "./auth";
 import { redditCommunitiesDatabase, getRecommendationsForUser, getCommunityInsights } from "./reddit-communities";
+import { visitorAnalytics } from "./visitor-analytics";
 
 // Configure multer for file uploads
 const storage_config = multer.diskStorage({
@@ -73,6 +74,15 @@ const authenticateToken = async (req: AuthRequest, res: express.Response, next: 
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Visitor analytics middleware
+  app.use((req, res, next) => {
+    // Only track non-API routes to avoid noise
+    if (!req.path.startsWith('/api/') && !req.path.startsWith('/uploads/')) {
+      visitorAnalytics.trackPageView(req, req.path);
+    }
+    next();
+  });
+
   // Session configuration
   app.use(session({
     secret: process.env.SESSION_SECRET || 'your-session-secret-change-in-production',
@@ -309,6 +319,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       objectStorage: "configured",
       apiServices: "operational"
     });
+  });
+
+  // Visitor analytics endpoints
+  app.get("/api/admin/analytics/:period?", async (req, res) => {
+    try {
+      const period = (req.params.period || '24h') as '24h' | '7d' | '30d';
+      const analytics = visitorAnalytics.getAnalytics(period);
+      res.json(analytics);
+    } catch (error) {
+      console.error("Analytics error:", error);
+      res.status(500).json({ message: "Failed to fetch analytics" });
+    }
+  });
+
+  app.get("/api/admin/completeness", async (req, res) => {
+    try {
+      const completeness = visitorAnalytics.getSystemCompleteness();
+      res.json(completeness);
+    } catch (error) {
+      console.error("Completeness error:", error);
+      res.status(500).json({ message: "Failed to fetch system status" });
+    }
   });
 
 

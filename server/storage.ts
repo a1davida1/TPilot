@@ -34,7 +34,7 @@ export interface IStorage {
   getGenerationsByUserId(userId: number): Promise<ContentGeneration[]>;
   createContentGeneration(gen: InsertContentGeneration): Promise<ContentGeneration>;
   getUserContentGenerations(userId: number): Promise<ContentGeneration[]>;
-  getContentGenerationStats(userId: number): Promise<{ total: number; thisWeek: number; thisMonth: number }>;
+  getContentGenerationStats(userId: number): Promise<{ total: number; thisWeek: number; thisMonth: number; totalGenerations?: number }>;
   getLastGenerated(userId: number): Promise<ContentGeneration | undefined>;
   
   // Sample operations
@@ -103,6 +103,8 @@ export class MemStorage implements IStorage {
     const newUser: User = {
       ...user,
       id: this.nextUserId++,
+      password: user.password || '',
+      tier: user.tier || 'free',
       email: user.email ?? null,
       provider: user.provider ?? null,
       providerId: user.providerId ?? null,
@@ -142,6 +144,9 @@ export class MemStorage implements IStorage {
       ...gen,
       id: this.nextGenId++,
       userId: gen.userId ?? null,
+      prompt: gen.prompt ?? null,
+      subreddit: gen.subreddit ?? null,
+      allowsPromotion: gen.allowsPromotion ?? null,
       createdAt: new Date(),
     };
     this.contentGenerations.push(newGen);
