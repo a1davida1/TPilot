@@ -21,6 +21,7 @@ import { eq, desc } from "drizzle-orm";
 export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
+  getAllUsers(): Promise<User[]>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
@@ -84,6 +85,10 @@ export class MemStorage implements IStorage {
   // User operations
   async getUser(id: number): Promise<User | undefined> {
     return this.users.find(u => u.id === id);
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return [...this.users];
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
@@ -155,7 +160,7 @@ export class MemStorage implements IStorage {
     return this.getGenerationsByUserId(userId);
   }
 
-  async getContentGenerationStats(userId: number): Promise<{ total: number; thisWeek: number; thisMonth: number }> {
+  async getContentGenerationStats(userId: number): Promise<{ total: number; thisWeek: number; thisMonth: number; totalGenerations?: number }> {
     const userGenerations = this.contentGenerations.filter(g => g.userId === userId);
     const now = new Date();
     const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -163,6 +168,7 @@ export class MemStorage implements IStorage {
 
     return {
       total: userGenerations.length,
+      totalGenerations: userGenerations.length,
       thisWeek: userGenerations.filter(g => g.createdAt && g.createdAt > oneWeekAgo).length,
       thisMonth: userGenerations.filter(g => g.createdAt && g.createdAt > oneMonthAgo).length,
     };

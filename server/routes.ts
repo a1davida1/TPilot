@@ -282,33 +282,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/admin/users", async (req, res) => {
     try {
-      // Return sample admin user data
-      res.json([
-        {
-          id: 1,
-          username: "bella_rose",
-          email: "bella@example.com",
-          tier: "premium",
-          createdAt: new Date("2024-01-15"),
-          contentCount: 156
-        },
-        {
-          id: 2,
-          username: "luna_star",
-          email: "luna@example.com",
-          tier: "pro",
-          createdAt: new Date("2024-02-20"),
-          contentCount: 89
-        },
-        {
-          id: 3,
-          username: "jade_fox",
-          email: "jade@example.com",
-          tier: "free",
-          createdAt: new Date("2024-03-10"),
-          contentCount: 12
-        }
-      ]);
+      const users = await storage.getAllUsers();
+      const usersWithStats = await Promise.all(
+        users.map(async (user) => {
+          const contentCount = await storage.getContentGenerationStats(user.id);
+          return {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            tier: user.tier,
+            createdAt: user.createdAt,
+            contentCount: contentCount.totalGenerations || 0
+          };
+        })
+      );
+      res.json(usersWithStats);
     } catch (error) {
       console.error("Admin users error:", error);
       res.status(500).json({ message: "Failed to fetch users" });
