@@ -23,6 +23,9 @@ export const contentGenerations = pgTable("content_generations", {
   titles: jsonb("titles").notNull(),
   content: text("content").notNull(),
   photoInstructions: jsonb("photo_instructions").notNull(),
+  prompt: text("prompt"),
+  subreddit: varchar("subreddit", { length: 100 }),
+  allowsPromotion: boolean("allows_promotion").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
