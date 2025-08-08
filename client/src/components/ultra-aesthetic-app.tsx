@@ -36,7 +36,7 @@ import {
   Hash,
   Gift
 } from "lucide-react";
-import { EnhancedAIGenerator } from "@/components/enhanced-ai-generator";
+import { SimpleContentGenerator } from "@/components/simple-content-generator";
 import { SocialAuth } from "@/components/social-auth";
 import { ProviderStatus } from "@/components/provider-status";
 import { SampleUpload } from "@/components/sample-upload";
@@ -47,7 +47,6 @@ import { AudienceInsights } from "@/components/audience-insights";
 import { ImageGallery } from "@/components/image-gallery";
 import { RedditCommunities } from "@/components/reddit-communities";
 import { ProPerks } from "@/components/pro-perks";
-import { DualWorkflowGenerator } from "@/components/dual-workflow-generator";
 import { ImageShield } from "@/components/image-shield";
 import { cn } from "@/lib/utils";
 
@@ -330,33 +329,12 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
                   {/* Main Content Area - Generator + Output */}
                   <div className="lg:col-span-3 space-y-6">
                     {/* Content Generator */}
-                    <EnhancedAIGenerator 
+                    <SimpleContentGenerator 
                       isGuestMode={isGuestMode}
                       onContentGenerated={() => {}}
                     />
                     
-                    {/* Content Output Section - Below Generator */}
-                    <Card className="bg-card/80 backdrop-blur-xl border-border">
-                      <CardHeader>
-                        <CardTitle className="flex items-center">
-                          <Sparkles className="mr-2 h-5 w-5 text-primary" />
-                          Generated Content
-                        </CardTitle>
-                        <CardDescription>
-                          Your personalized content will appear here
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="text-center py-12 text-muted-foreground">
-                          <Brain className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                          <p className="text-lg font-medium mb-2">Ready to Create</p>
-                          <p className="text-sm">
-                            Generate content using the options above to see your 
-                            personalized titles, content, and photo instructions here.
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
+
                   </div>
                   
                   {/* Right Sidebar */}
@@ -484,7 +462,10 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
             
             {activeView === "dual" && (
               <div className="max-w-6xl mx-auto">
-                <DualWorkflowGenerator />
+                <SimpleContentGenerator 
+                  isGuestMode={isGuestMode}
+                  onContentGenerated={() => {}}
+                />
               </div>
             )}
             
