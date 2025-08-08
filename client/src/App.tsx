@@ -9,7 +9,7 @@ import { SEOOptimization, seoConfigs } from "@/components/seo-optimization";
 import { LandingPage } from "@/components/landing-page";
 import { PremiumLanding } from "./components/premium-landing";
 import { AestheticLanding } from "./components/aesthetic-landing";
-import { UltraAestheticApp } from "./components/ultra-aesthetic-app";
+import { AppleInspiredApp } from "./components/apple-inspired-app";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import Login from "@/pages/login";
@@ -37,7 +37,7 @@ function UnauthenticatedRoutes() {
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/">
         <SEOOptimization {...seoConfigs.landing} />
-        <UltraAestheticApp isGuestMode={true} />
+        <AppleInspiredApp />
       </Route>
       <Route>
         <Redirect to="/" />
