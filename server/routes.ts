@@ -18,6 +18,7 @@ import { generateAdvancedContent, type ContentParameters } from "./advanced-cont
 import { setupAuth } from "./auth";
 import { redditCommunitiesDatabase, getRecommendationsForUser, getCommunityInsights } from "./reddit-communities";
 import { visitorAnalytics } from "./visitor-analytics";
+import { getAvailablePerks, getPerksByCategory, generateReferralCode, getSignupInstructions } from "./pro-perks";
 
 // Configure multer for file uploads
 const storage_config = multer.diskStorage({
@@ -340,6 +341,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Completeness error:", error);
       res.status(500).json({ message: "Failed to fetch system status" });
+    }
+  });
+
+  // Pro Perks API Endpoints - Real Affiliate Programs
+  app.get("/api/pro-perks", async (req, res) => {
+    try {
+      const { tier, category } = req.query;
+      const userTier = (tier as string) || 'free';
+      
+      let perks = getAvailablePerks(userTier as any);
+      
+      if (category && category !== 'all') {
+        perks = getPerksByCategory(category as any);
+      }
+      
+      res.json({
+        perks,
+        totalCount: perks.length,
+        userTier,
+        message: perks.length === 0 ? 'Upgrade to Pro or Premium to access real affiliate programs!' : undefined
+      });
+    } catch (error) {
+      console.error("Pro perks error:", error);
+      res.status(500).json({ message: "Failed to fetch pro perks" });
+    }
+  });
+  
+  app.get("/api/pro-perks/:perkId/instructions", async (req, res) => {
+    try {
+      const { perkId } = req.params;
+      const instructions = getSignupInstructions(perkId);
+      res.json(instructions);
+    } catch (error) {
+      console.error("Perk instructions error:", error);
+      res.status(500).json({ message: "Failed to fetch signup instructions" });
+    }
+  });
+  
+  app.post("/api/pro-perks/:perkId/generate-referral", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const { perkId } = req.params;
+      const userId = req.user.userId;
+      const referralCode = generateReferralCode(userId, perkId);
+      
+      res.json({
+        referralCode,
+        perkId,
+        userId,
+        message: 'Use this code when signing up for the affiliate program'
+      });
+    } catch (error) {
+      console.error("Referral generation error:", error);
+      res.status(500).json({ message: "Failed to generate referral code" });
     }
   });
 
@@ -884,6 +938,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.sendStatus(404);
       }
       return res.sendStatus(500);
+    }
+  });
+
+  // Pro Perks API Endpoints
+  app.get("/api/pro-perks", async (req, res) => {
+    try {
+      const { tier = 'free', category } = req.query;
+      
+      let perks;
+      if (category) {
+        perks = getPerksByCategory(category as any);
+      } else {
+        perks = getAvailablePerks(tier as any);
+      }
+      
+      res.json({
+        perks,
+        totalCount: perks.length,
+        availableCategories: ['affiliate', 'integration', 'tools', 'community', 'premium']
+      });
+    } catch (error) {
+      console.error("Pro perks error:", error);
+      res.status(500).json({ message: "Failed to fetch pro perks" });
+    }
+  });
+
+  app.post("/api/pro-perks/:perkId/signup", async (req, res) => {
+    try {
+      const { perkId } = req.params;
+      const userId = 1; // Demo user ID, would come from auth in production
+      
+      const referralCode = generateReferralCode(userId, perkId);
+      const instructions = getSignupInstructions(perkId);
+      
+      res.json({
+        success: true,
+        referralCode,
+        instructions,
+        message: 'Signup instructions generated successfully'
+      });
+    } catch (error) {
+      console.error("Perk signup error:", error);
+      res.status(500).json({ message: "Failed to generate signup instructions" });
     }
   });
 
