@@ -27,6 +27,38 @@ export interface GeneratedContent {
 
 // Photo Type Specific Content Variations
 const photoTypeVariations = {
+  'teasing': {
+    themes: ['playful tease', 'subtle hint', 'flirty suggestion', 'mysterious allure', 'coy moment'],
+    settings: ['bedroom door', 'mirror selfie', 'cozy couch', 'bath time', 'morning bed'],
+    clothing: ['oversized shirt', 'silk robe', 'cute lingerie peek', 'towel wrap', 'strategic coverage'],
+    lighting: 'Soft intimate lighting, warm candlelight, sunset glow',
+    angles: 'Teasing glimpses, over-shoulder looks, partial reveals',
+    mood: 'playful and teasing'
+  },
+  'behind-scenes': {
+    themes: ['getting ready', 'makeup process', 'outfit selection', 'photoshoot prep', 'content creation'],
+    settings: ['vanity mirror', 'wardrobe area', 'makeup station', 'photo setup', 'behind camera'],
+    clothing: ['robe and lingerie', 'getting dressed', 'outfit changes', 'casual prep wear'],
+    lighting: 'Natural backstage lighting, mirror lights, behind-the-scenes authenticity',
+    angles: 'Candid preparation shots, mirror reflections, process documentation',
+    mood: 'authentic and intimate'
+  },
+  'outfit': {
+    themes: ['outfit reveal', 'fashion show', 'style showcase', 'wardrobe tour', 'clothing haul'],
+    settings: ['bedroom mirror', 'dressing room', 'closet area', 'fashion backdrop', 'outfit display'],
+    clothing: ['multiple outfits', 'lingerie sets', 'dress collection', 'style variations'],
+    lighting: 'Bright fashion lighting, clear visibility, flattering angles',
+    angles: 'Full body shots, detail close-ups, 360 turns, outfit transitions',
+    mood: 'fashionable and stylish'
+  },
+  'lifestyle': {
+    themes: ['daily routine', 'home life', 'relaxation', 'self-care', 'personal moments'],
+    settings: ['living space', 'kitchen area', 'bathroom routine', 'outdoor relaxation', 'cozy corners'],
+    clothing: ['comfortable home wear', 'yoga outfit', 'bath robe', 'casual chic', 'loungewear'],
+    lighting: 'Natural daylight, golden hour, cozy ambient lighting',
+    angles: 'Lifestyle documentation, natural poses, everyday moments',
+    mood: 'relatable and authentic'
+  },
   'casual': {
     themes: ['cozy morning', 'lazy afternoon', 'girl next door', 'everyday cute', 'spontaneous moment'],
     settings: ['bedroom', 'living room', 'kitchen', 'balcony', 'natural environment'],
