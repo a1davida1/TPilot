@@ -392,12 +392,24 @@ export function AppleInspiredApp() {
                 </h2>
               </div>
 
-              {/* User Menu */}
-              <div className="flex items-center space-x-2">
-                <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                  <Bell className="h-5 w-5 text-gray-600" />
-                </button>
-                <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full" />
+              {/* Auth Buttons */}
+              <div className="flex items-center space-x-3">
+                <motion.button
+                  onClick={() => window.location.href = '/login'}
+                  className="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium transition-colors"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Login
+                </motion.button>
+                <motion.button
+                  onClick={() => window.location.href = '/login'}
+                  className="px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Sign Up Free
+                </motion.button>
               </div>
             </div>
           </div>
