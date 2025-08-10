@@ -1,7 +1,7 @@
-import { 
-  type User, 
-  type InsertUser, 
-  type ContentGeneration, 
+import {
+  type User,
+  type InsertUser,
+  type ContentGeneration,
   type InsertContentGeneration,
   type UserSample,
   type InsertUserSample,
@@ -28,7 +28,7 @@ export interface IStorage {
   updateUserTier(userId: number, tier: string): Promise<void>;
   updateUserProfile(userId: number, updates: Partial<User>): Promise<User | undefined>;
   deleteUser(userId: number): Promise<void>;
-  
+
   // Generation operations
   createGeneration(gen: InsertContentGeneration): Promise<ContentGeneration>;
   getGenerationsByUserId(userId: number): Promise<ContentGeneration[]>;
@@ -36,16 +36,16 @@ export interface IStorage {
   getUserContentGenerations(userId: number): Promise<ContentGeneration[]>;
   getContentGenerationStats(userId: number): Promise<{ total: number; thisWeek: number; thisMonth: number; totalGenerations?: number }>;
   getLastGenerated(userId: number): Promise<ContentGeneration | undefined>;
-  
+
   // Sample operations
   createUserSample(sample: InsertUserSample): Promise<UserSample>;
   getUserSamples(userId: number): Promise<UserSample[]>;
   deleteUserSample(id: number, userId: number): Promise<void>;
-  
+
   // Preference operations
   getUserPreferences(userId: number): Promise<UserPreference | undefined>;
   upsertUserPreferences(prefs: InsertUserPreference): Promise<UserPreference>;
-  
+
   // Image operations
   createUserImage(image: InsertUserImage): Promise<UserImage>;
   getUserImages(userId: number): Promise<UserImage[]>;
@@ -84,7 +84,9 @@ export class MemStorage implements IStorage {
 
   // User operations
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.find(u => u.id === id);
+    console.log('Storage: Looking for user with ID:', id);
+    console.log('Storage: Available users:', this.users.map(u => ({ id: u.id, username: u.username })));
+    return this.users.find(user => user.id === id);
   }
 
   async getAllUsers(): Promise<User[]> {
@@ -99,20 +101,17 @@ export class MemStorage implements IStorage {
     return this.users.find(u => u.email === email);
   }
 
-  async createUser(user: InsertUser): Promise<User> {
-    const newUser: User = {
-      ...user,
-      id: this.nextUserId++,
-      password: user.password || '',
-      tier: user.tier || 'free',
-      email: user.email ?? null,
-      provider: user.provider ?? null,
-      providerId: user.providerId ?? null,
-      avatar: user.avatar ?? null,
-      createdAt: new Date(),
+  async createUser(userData: Omit<User, 'id' | 'createdAt'>): Promise<User> {
+    const newId = Math.max(0, ...this.users.map(u => u.id)) + 1;
+    const user: User = {
+      ...userData,
+      id: newId,
+      createdAt: new Date().toISOString()
     };
-    this.users.push(newUser);
-    return newUser;
+    this.users.push(user);
+    console.log('Storage: Created user:', { id: user.id, username: user.username });
+    console.log('Storage: Total users now:', this.users.length);
+    return user;
   }
 
   async updateUserTier(userId: number, tier: string): Promise<void> {
@@ -221,7 +220,7 @@ export class MemStorage implements IStorage {
 
   async upsertUserPreferences(prefs: InsertUserPreference): Promise<UserPreference> {
     let existing = this.userPreferences.find(p => p.userId === prefs.userId);
-    
+
     if (existing) {
       Object.assign(existing, prefs, { updatedAt: new Date() });
       return existing;

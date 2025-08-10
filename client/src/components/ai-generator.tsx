@@ -77,28 +77,37 @@ export function AIGenerator({ onContentGenerated }: AIGeneratorProps) {
 
   const generateMutation = useMutation({
     mutationFn: async (data: any) => {
-      const formData = new FormData();
-      Object.keys(data).forEach(key => {
-        if (key === 'userProfile') {
-          formData.append(key, JSON.stringify(data[key]));
-        } else if (key === 'image' && data[key]) {
-          formData.append(key, data[key]);
-        } else {
-          formData.append(key, data[key]);
+      try {
+        const formData = new FormData();
+        Object.keys(data).forEach(key => {
+          if (key === 'userProfile') {
+            formData.append(key, JSON.stringify(data[key]));
+          } else if (key === 'image' && data[key]) {
+            formData.append(key, data[key]);
+          } else if (data[key] !== undefined && data[key] !== null) {
+            formData.append(key, data[key]);
+          }
+        });
+        
+        const res = await fetch('/api/generate-ai', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+          }
+        });
+        
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({ message: res.statusText }));
+          throw new Error(errorData.message || `HTTP ${res.status}: ${res.statusText}`);
         }
-      });
-      const res = await fetch('/api/generate-ai', {
-        method: 'POST',
-        body: formData,
-        credentials: 'include'
-      });
-      
-      if (!res.ok) {
-        const text = (await res.text()) || res.statusText;
-        throw new Error(`${res.status}: ${text}`);
+        
+        return await res.json();
+      } catch (error) {
+        console.error('Generation error:', error);
+        throw error;
       }
-      
-      return await res.json();
     },
     onSuccess: (data) => {
       // Ensure titles is always an array

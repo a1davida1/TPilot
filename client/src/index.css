@@ -10,61 +10,61 @@
     /* Light Mode - Apple Inspired */
     --background: 0 0% 100%;
     --foreground: 0 0% 5%;
-    
+
     --card: 0 0% 100%;
     --card-foreground: 0 0% 5%;
- 
+
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 5%;
- 
+
     --primary: 280 85% 60%;
     --primary-foreground: 0 0% 100%;
- 
+
     --secondary: 0 0% 96%;
     --secondary-foreground: 0 0% 5%;
- 
+
     --muted: 0 0% 96%;
     --muted-foreground: 0 0% 45%;
- 
+
     --accent: 340 75% 55%;
     --accent-foreground: 0 0% 100%;
- 
+
     --destructive: 0 84% 50%;
     --destructive-foreground: 0 0% 100%;
- 
+
     --border: 0 0% 90%;
     --input: 0 0% 90%;
     --ring: 280 85% 60%;
- 
+
     --radius: 0.75rem;
   }
- 
+
   .dark {
     /* Dark Mode - High Contrast for Readability */
     --background: 0 0% 3.9%;
     --foreground: 0 0% 98%;
- 
+
     --card: 0 0% 8%;
     --card-foreground: 0 0% 98%;
- 
+
     --popover: 0 0% 8%;
     --popover-foreground: 0 0% 98%;
- 
+
     --primary: 280 85% 70%;
     --primary-foreground: 0 0% 100%;
- 
+
     --secondary: 0 0% 14.9%;
     --secondary-foreground: 0 0% 98%;
- 
+
     --muted: 0 0% 14.9%;
     --muted-foreground: 0 0% 85%;
- 
+
     --accent: 340 75% 65%;
     --accent-foreground: 0 0% 100%;
- 
+
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
- 
+
     --border: 0 0% 20%;
     --input: 0 0% 14.9%;
     --ring: 280 85% 70%;
@@ -81,18 +81,18 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-  
+
   /* Smooth scrolling */
   html {
     scroll-behavior: smooth;
   }
-  
+
   /* Apple-inspired selection colors */
   ::selection {
     background-color: hsl(280, 85%, 60%, 0.3);
     color: inherit;
   }
-  
+
   ::-moz-selection {
     background-color: hsl(280, 85%, 60%, 0.3);
     color: inherit;
@@ -412,4 +412,56 @@ button, .btn, nav {
 
 .micro-bounce {
   animation: micro-bounce 0.3s ease;
+}
+
+/* Mobile-first responsive design */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Fix dashboard layout on mobile */
+  .dashboard-container {
+    padding: 0.5rem;
+  }
+
+  /* Fix card layouts */
+  .card-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  /* Fix form layouts */
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Fix navigation */
+  .nav-container {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+
+/* Fix overflow issues */
+.overflow-fix {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* Fix button layouts */
+.button-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+@media (max-width: 640px) {
+  .button-group {
+    flex-direction: column;
+  }
 }

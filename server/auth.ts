@@ -30,19 +30,19 @@ export function setupAuth(app: Express) {
 
       // Generate token
       const token = jwt.sign(
-        { id: user.id, username: user.username },
+        { id: user.id, userId: user.id, username: user.username },
         JWT_SECRET,
         { expiresIn: '24h' }
       );
 
-      res.json({ 
-        token, 
-        user: { 
-          id: user.id, 
-          username: user.username, 
+      res.json({
+        token,
+        user: {
+          id: user.id,
+          username: user.username,
           email: user.email,
-          tier: user.tier 
-        } 
+          tier: user.tier
+        }
       });
     } catch (error) {
       console.error('Signup error:', error);
@@ -54,7 +54,7 @@ export function setupAuth(app: Express) {
   app.post('/api/auth/login', async (req, res) => {
     try {
       const { username, password, email } = req.body;
-      
+
       // Special admin login shortcut for production
       const loginEmail = email || username;
       if (loginEmail === 'admin@thottopilot.com' && password === 'admin123') {
@@ -68,7 +68,7 @@ export function setupAuth(app: Express) {
 
         // Generate JWT token for admin
         const token = jwt.sign(
-          { id: adminUser.id, username: adminUser.username, email: adminUser.email },
+          { id: adminUser.id, userId: adminUser.id, username: adminUser.username, email: adminUser.email },
           JWT_SECRET,
           { expiresIn: '24h' }
         );
@@ -85,7 +85,7 @@ export function setupAuth(app: Express) {
       if (!user && loginEmail) {
         user = await storage.getUserByEmail(loginEmail);
       }
-      
+
       if (!user) {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
@@ -96,19 +96,19 @@ export function setupAuth(app: Express) {
       }
 
       const token = jwt.sign(
-        { id: user.id, username: user.username },
+        { id: user.id, userId: user.id, username: user.username },
         JWT_SECRET,
         { expiresIn: '24h' }
       );
 
-      res.json({ 
-        token, 
-        user: { 
-          id: user.id, 
-          username: user.username, 
+      res.json({
+        token,
+        user: {
+          id: user.id,
+          username: user.username,
           email: user.email,
-          tier: user.tier 
-        } 
+          tier: user.tier
+        }
       });
     } catch (error) {
       console.error('Login error:', error);
@@ -122,7 +122,7 @@ export function setupAuth(app: Express) {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const redirectUri = encodeURIComponent(`${req.protocol}://${req.get('host')}/api/auth/google/callback`);
     const scope = encodeURIComponent('email profile');
-    
+
     if (!clientId) {
       return res.status(500).json({ message: 'Google OAuth not configured' });
     }
@@ -147,7 +147,7 @@ export function setupAuth(app: Express) {
     // Similar to Google OAuth
     const appId = process.env.FACEBOOK_APP_ID;
     const redirectUri = encodeURIComponent(`${req.protocol}://${req.get('host')}/api/auth/facebook/callback`);
-    
+
     if (!appId) {
       return res.status(500).json({ message: 'Facebook OAuth not configured' });
     }
@@ -169,7 +169,7 @@ export function setupAuth(app: Express) {
     // Similar to Google OAuth
     const clientId = process.env.REDDIT_CLIENT_ID;
     const redirectUri = encodeURIComponent(`${req.protocol}://${req.get('host')}/api/auth/reddit/callback`);
-    
+
     if (!clientId) {
       return res.status(500).json({ message: 'Reddit OAuth not configured' });
     }
