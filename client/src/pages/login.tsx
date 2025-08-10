@@ -118,14 +118,14 @@ export default function Login() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
                 <Button 
                   onClick={() => setView('signup')}
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 py-3 text-lg"
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold px-8 py-4 text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
                 >
                   Get Started Free
                 </Button>
                 <Button 
                   onClick={() => setView('login')}
                   variant="outline"
-                  className="px-8 py-3 text-lg hover:bg-white/80"
+                  className="border-2 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white font-semibold px-8 py-4 text-lg transition-all duration-200"
                 >
                   Sign In
                 </Button>
@@ -135,7 +135,7 @@ export default function Login() {
                 <Button 
                   onClick={() => setLocation('/demo')}
                   variant="ghost"
-                  className="text-gray-600 hover:text-gray-800 underline"
+                  className="text-gray-700 hover:text-purple-600 underline font-medium text-lg transition-colors duration-200"
                 >
                   Continue as Guest - Try it first
                 </Button>
@@ -183,7 +183,7 @@ export default function Login() {
           <Button 
             variant="ghost" 
             onClick={() => setView('landing')}
-            className="text-gray-600 hover:text-gray-800"
+            className="text-gray-700 hover:text-purple-600 font-medium transition-colors duration-200"
           >
             ← Back to Home
           </Button>
@@ -296,7 +296,7 @@ export default function Login() {
               
               <Button
                 type="submit"
-                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium py-2.5"
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-3 text-lg shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200"
                 disabled={authMutation.isPending}
               >
                 {authMutation.isPending 

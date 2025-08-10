@@ -6,6 +6,7 @@ import { insertContentGenerationSchema, insertUserImageSchema, insertUserSchema 
 import { generateContent } from "./services/content-generator";
 import { generateAIContent, analyzeImageForContent } from "./services/ai-generator";
 import { generateWithMultiProvider, getProviderStatus } from "./services/multi-ai-provider";
+import { generateImageCaption, imageToBase64, validateImageFormat } from "./image-caption-generator";
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs/promises';
@@ -428,6 +429,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   // Generate content endpoint
+  // Image to caption generation endpoint
+  app.post('/api/generate-image-caption', upload.single('image'), async (req, res) => {
+    try {
+      const { platform, contentStyle, includePromotion, customInstructions } = req.body;
+      
+      if (!req.file) {
+        return res.status(400).json({ error: 'No image file provided' });
+      }
+
+      if (!validateImageFormat(req.file.originalname)) {
+        return res.status(400).json({ error: 'Invalid image format. Please use JPG, PNG, or WebP.' });
+      }
+
+      // Convert uploaded image to base64
+      const imageBase64 = imageToBase64(req.file.path);
+
+      const captionRequest = {
+        imageBase64,
+        platform: platform || 'reddit',
+        contentStyle: contentStyle || 'playful',
+        includePromotion: includePromotion === 'true',
+        customInstructions
+      };
+
+      const result = await generateImageCaption(captionRequest);
+
+      // Clean up uploaded file
+      await fs.unlink(req.file.path).catch(console.error);
+
+      res.json(result);
+    } catch (error) {
+      console.error('Error generating image caption:', error);
+      res.status(500).json({ error: 'Failed to generate caption' });
+    }
+  });
+
   app.post("/api/generate", async (req, res) => {
     try {
       const validatedData = insertContentGenerationSchema.parse(req.body);

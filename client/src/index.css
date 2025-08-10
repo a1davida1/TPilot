@@ -40,34 +40,34 @@
   }
  
   .dark {
-    /* Dark Mode - Apple Inspired */
-    --background: 0 0% 5%;
-    --foreground: 0 0% 95%;
+    /* Dark Mode - Improved Contrast */
+    --background: 220 13% 9%;
+    --foreground: 0 0% 98%;
  
-    --card: 0 0% 8%;
+    --card: 220 13% 12%;
     --card-foreground: 0 0% 95%;
  
-    --popover: 0 0% 8%;
+    --popover: 220 13% 12%;
     --popover-foreground: 0 0% 95%;
  
-    --primary: 280 85% 65%;
+    --primary: 280 85% 70%;
     --primary-foreground: 0 0% 100%;
  
-    --secondary: 0 0% 12%;
+    --secondary: 220 13% 18%;
     --secondary-foreground: 0 0% 95%;
  
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 60%;
+    --muted: 220 13% 16%;
+    --muted-foreground: 0 0% 70%;
  
-    --accent: 340 75% 60%;
+    --accent: 340 75% 65%;
     --accent-foreground: 0 0% 100%;
  
-    --destructive: 0 84% 55%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
  
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
-    --ring: 280 85% 65%;
+    --border: 220 13% 25%;
+    --input: 220 13% 18%;
+    --ring: 280 85% 70%;
   }
 }
 
@@ -263,13 +263,13 @@
 /* Premium button styles */
 .btn-premium {
   @apply relative overflow-hidden;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .btn-premium:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 10px 20px rgba(139, 92, 246, 0.4);
 }
 
 .btn-premium::before {
