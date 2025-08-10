@@ -56,6 +56,16 @@ export default function Login() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Admin login shortcut - fast access for development/admin use
+    if (view === 'login' && email === 'admin@thottopilot.com' && password === 'admin123') {
+      authMutation.mutate({
+        email: 'admin@thottopilot.com',
+        password: 'admin123',
+        mode: 'login'
+      });
+      return;
+    }
+    
     if (view === 'signup') {
       if (password !== confirmPassword) {
         toast({
@@ -321,6 +331,13 @@ export default function Login() {
               </p>
             </div>
             
+            {view === 'login' && (
+              <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                <p className="text-xs text-purple-700 text-center">
+                  <strong>Admin Access:</strong> admin@thottopilot.com / admin123
+                </p>
+              </div>
+            )}
 
           </CardContent>
         </Card>
