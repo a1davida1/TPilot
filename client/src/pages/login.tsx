@@ -133,7 +133,7 @@ export default function Login() {
               
               <div className="text-center mb-16">
                 <Button 
-                  onClick={() => setLocation('/dashboard?guest=true')}
+                  onClick={() => setLocation('/demo')}
                   variant="ghost"
                   className="text-gray-600 hover:text-gray-800 underline"
                 >

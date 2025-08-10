@@ -35,9 +35,12 @@ function UnauthenticatedRoutes() {
       <Route path="/login" component={Login} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/admin" component={AdminDashboard} />
+      <Route path="/demo">
+        <AppleInspiredApp />
+      </Route>
       <Route path="/">
         <SEOOptimization {...seoConfigs.landing} />
-        <AppleInspiredApp />
+        <Login />
       </Route>
       <Route>
         <Redirect to="/" />

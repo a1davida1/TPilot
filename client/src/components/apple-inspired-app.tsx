@@ -395,7 +395,7 @@ export function AppleInspiredApp() {
               {/* Auth Buttons */}
               <div className="flex items-center space-x-3">
                 <motion.button
-                  onClick={() => window.location.href = '/login'}
+                  onClick={() => { window.location.href = '/login'; }}
                   className="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium transition-colors"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -403,7 +403,7 @@ export function AppleInspiredApp() {
                   Login
                 </motion.button>
                 <motion.button
-                  onClick={() => window.location.href = '/login'}
+                  onClick={() => { window.location.href = '/login'; }}
                   className="px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
