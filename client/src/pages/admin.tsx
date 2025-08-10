@@ -69,28 +69,28 @@ export function AdminDashboard() {
   const adminStats = [
     { 
       label: 'Total Users', 
-      value: stats?.totalUsers || 0, 
+      value: (stats as any)?.totalUsers || 0, 
       change: '+12%',
       icon: <Users className="h-4 w-4" />,
       color: 'text-blue-500'
     },
     { 
       label: 'Revenue', 
-      value: `$${stats?.revenue || '0'}`, 
+      value: `$${(stats as any)?.revenue || '0'}`, 
       change: '+23%',
       icon: <DollarSign className="h-4 w-4" />,
       color: 'text-green-500'
     },
     { 
       label: 'Active Users (30d)', 
-      value: stats?.activeUsers || 0, 
+      value: (stats as any)?.activeUsers || 0, 
       change: '+5%',
       icon: <Activity className="h-4 w-4" />,
       color: 'text-purple-500'
     },
     { 
       label: 'Content Generated', 
-      value: stats?.contentGenerated || 0, 
+      value: (stats as any)?.contentGenerated || 0, 
       change: '+34%',
       icon: <BarChart3 className="h-4 w-4" />,
       color: 'text-pink-500'
@@ -198,7 +198,7 @@ export function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {users?.slice(0, 5).map((user: any) => (
+                    {(users as any)?.slice(0, 5).map((user: any) => (
                       <tr key={user.id} className="border-b border-white/5">
                         <td className="p-4">
                           <div>
@@ -243,7 +243,7 @@ export function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {providers?.map((provider: any) => (
+                {(providers as any)?.map((provider: any) => (
                   <div key={provider.name} className="p-4 bg-white/5 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-3">
@@ -283,7 +283,7 @@ export function AdminDashboard() {
                 <CardTitle>Monthly Revenue</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold">${stats?.monthlyRevenue || '0'}</p>
+                <p className="text-3xl font-bold">${(stats as any)?.monthlyRevenue || '0'}</p>
                 <p className="text-sm text-gray-400 mt-2">From subscriptions</p>
               </CardContent>
             </Card>
@@ -296,15 +296,15 @@ export function AdminDashboard() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-gray-400">Free</span>
-                    <span>{stats?.subscriptions?.free || 0}</span>
+                    <span>{(stats as any)?.subscriptions?.free || 0}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">Pro</span>
-                    <span>{stats?.subscriptions?.pro || 0}</span>
+                    <span>{(stats as any)?.subscriptions?.pro || 0}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">Premium</span>
-                    <span>{stats?.subscriptions?.premium || 0}</span>
+                    <span>{(stats as any)?.subscriptions?.premium || 0}</span>
                   </div>
                 </div>
               </CardContent>
@@ -315,7 +315,7 @@ export function AdminDashboard() {
                 <CardTitle>Service Costs</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold">${stats?.apiCosts || '0'}</p>
+                <p className="text-3xl font-bold">${(stats as any)?.apiCosts || '0'}</p>
                 <p className="text-sm text-gray-400 mt-2">This month</p>
               </CardContent>
             </Card>
@@ -373,7 +373,7 @@ export function AdminDashboard() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-2xl font-bold">{analytics?.uniqueVisitors || 0}</p>
+                    <p className="text-2xl font-bold">{(analytics as any)?.uniqueVisitors || 0}</p>
                     <p className="text-sm text-gray-400">Unique Visitors</p>
                   </div>
                   <Eye className="h-8 w-8 text-blue-400" />
@@ -385,7 +385,7 @@ export function AdminDashboard() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-2xl font-bold">{analytics?.pageViews || 0}</p>
+                    <p className="text-2xl font-bold">{(analytics as any)?.pageViews || 0}</p>
                     <p className="text-sm text-gray-400">Page Views</p>
                   </div>
                   <BarChart3 className="h-8 w-8 text-green-400" />
@@ -397,7 +397,7 @@ export function AdminDashboard() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-2xl font-bold">{analytics?.bounceRate?.toFixed(1) || 0}%</p>
+                    <p className="text-2xl font-bold">{(analytics as any)?.bounceRate?.toFixed(1) || 0}%</p>
                     <p className="text-sm text-gray-400">Bounce Rate</p>
                   </div>
                   <TrendingUp className="h-8 w-8 text-purple-400" />
@@ -415,7 +415,7 @@ export function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {analytics?.topPages?.slice(0, 5).map((page, index) => (
+                  {(analytics as any)?.topPages?.slice(0, 5).map((page: any, index: number) => (
                     <div key={index} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
                       <span className="text-sm">{page.path}</span>
                       <Badge variant="secondary">{page.views} views</Badge>
@@ -437,7 +437,7 @@ export function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {analytics?.trafficSources?.slice(0, 5).map((source, index) => (
+                  {(analytics as any)?.trafficSources?.slice(0, 5).map((source: any, index: number) => (
                     <div key={index} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
                       <span className="text-sm">{source.source}</span>
                       <Badge variant="secondary">{source.visitors} visitors</Badge>
@@ -630,7 +630,7 @@ export function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {completeness?.map((item, index) => (
+                {(completeness as any)?.map((item: any, index: number) => (
                   <div key={index} className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
                     <div className="flex items-center gap-3">
                       {item.status === 'complete' ? (
@@ -684,7 +684,7 @@ export function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="grid md:grid-cols-2 gap-4">
-                {completeness?.filter(item => item.priority === 'high' && item.status !== 'complete').map((item, index) => (
+                {(completeness as any)?.filter((item: any) => item.priority === 'high' && item.status !== 'complete').map((item: any, index: number) => (
                   <div key={index} className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
                     <div className="flex items-center gap-3 mb-2">
                       <XCircle className="h-5 w-5 text-red-400" />
