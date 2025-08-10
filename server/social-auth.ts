@@ -170,12 +170,5 @@ function setupAuthRoutes(app: Express) {
     });
   });
 
-  // Current user route
-  app.get('/api/auth/user', (req, res) => {
-    if (req.isAuthenticated()) {
-      res.json(req.user);
-    } else {
-      res.status(401).json({ error: 'Not authenticated' });
-    }
-  });
+  // User endpoint is handled in routes.ts with proper JWT authentication middleware
 }

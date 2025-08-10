@@ -184,7 +184,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Generate JWT token for admin
         const token = jwt.sign(
-          { userId: adminUser.id, email: adminUser.email, isAdmin: true },
+          { userId: adminUser.id, id: adminUser.id, email: adminUser.email, username: adminUser.username, isAdmin: true },
           JWT_SECRET,
           { expiresIn: '24h' }
         );
@@ -239,8 +239,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/auth/user", authenticateToken, async (req: AuthRequest, res) => {
     try {
-      // Handle admin user
-      if (req.user.isAdmin) {
+      console.log('Auth user request - req.user:', req.user);
+      
+      // Handle admin user case
+      if (req.user?.isAdmin || req.user?.id === 999) {
+        console.log('Returning admin user');
         return res.json({
           id: 999,
           email: 'admin@thottopilot.com',
@@ -251,9 +254,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Handle regular user - JWT token contains either 'id' or 'userId'
-      const userId = req.user.userId || req.user.id;
+      const userId = req.user?.userId || req.user?.id;
+      console.log('Looking for regular user with ID:', userId);
+      
+      if (!userId) {
+        return res.status(400).json({ message: 'No user ID in token' });
+      }
+      
       const user = await storage.getUser(userId);
       if (!user) {
+        console.log('User not found in storage for ID:', userId);
         return res.status(404).json({ message: 'User not found' });
       }
 
