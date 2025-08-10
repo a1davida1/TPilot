@@ -85,30 +85,25 @@ Keep it authentic and engaging for ${platform}.
       throw new Error('No image provided');
     }
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
+    // Use multi-provider system with Gemini first (70x cheaper than OpenAI)
+    const { generateWithMultiProvider } = require('./services/multi-ai-provider');
+    
+    const response = await generateWithMultiProvider(
+      [
         {
-          role: "system",
-          content: "You are an expert content creator specializing in adult content creation. Analyze images and create engaging, authentic social media content that respects platform guidelines while being appealing and personality-driven."
+          type: "text",
+          text: "You are an expert content creator specializing in adult content creation. Analyze images and create engaging, authentic social media content that respects platform guidelines while being appealing and personality-driven.\n\n" + prompt
         },
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: prompt
-            },
-            imageContent
-          ]
-        }
+        imageContent
       ],
-      response_format: { type: "json_object" },
-      max_tokens: 1000,
-      temperature: 0.8
-    });
+      { 
+        responseFormat: "json_object",
+        maxTokens: 1000,
+        temperature: 0.8
+      }
+    );
 
-    const result = JSON.parse(response.choices[0].message.content || '{}');
+    const result = JSON.parse(response.content || '{}');
     
     return {
       caption: result.caption || "Beautiful moment captured",
