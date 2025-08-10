@@ -56,24 +56,6 @@ export default function Login() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Admin login shortcut
-    if (view === 'login' && email === 'admin@thottopilot.com' && password === 'admin123') {
-      localStorage.setItem('authToken', 'admin-token');
-      localStorage.setItem('user', JSON.stringify({
-        id: 1,
-        email: 'admin@thottopilot.com',
-        username: 'Admin',
-        role: 'admin',
-        isPremium: true
-      }));
-      toast({
-        title: "Admin Access Granted",
-        description: "Welcome to ThottoPilot Admin Mode",
-      });
-      setLocation('/admin');
-      return;
-    }
-    
     if (view === 'signup') {
       if (password !== confirmPassword) {
         toast({
@@ -339,13 +321,7 @@ export default function Login() {
               </p>
             </div>
             
-            {view === 'login' && (
-              <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                <p className="text-xs text-purple-700 text-center">
-                  <strong>Admin Login:</strong> admin@thottopilot.com / admin123
-                </p>
-              </div>
-            )}
+
           </CardContent>
         </Card>
         
