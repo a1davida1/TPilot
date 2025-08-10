@@ -107,10 +107,10 @@ export default function Login() {
                   <Sparkles className="h-12 w-12 text-white" />
                 </div>
               </div>
-              <h1 className="text-6xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-6">
+              <h1 className="text-6xl font-bold bg-gradient-to-r from-indigo-700 to-purple-700 bg-clip-text text-transparent mb-6">
                 ThottoPilot
               </h1>
-              <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+              <p className="text-xl text-gray-700 font-medium mb-8 max-w-3xl mx-auto">
                 AI-powered content creation platform for content creators. Generate engaging posts, 
                 protect your images, and optimize your social media presence.
               </p>
@@ -118,14 +118,17 @@ export default function Login() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
                 <Button 
                   onClick={() => setView('signup')}
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold px-8 py-4 text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+                  className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white font-bold px-10 py-5 text-xl shadow-2xl border-2 border-white/20 hover:shadow-purple-500/30 hover:scale-105 transition-all duration-300"
+                  style={{
+                    background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #ec4899 100%)',
+                    boxShadow: '0 20px 40px rgba(79, 70, 229, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.2) inset'
+                  }}
                 >
                   Get Started Free
                 </Button>
                 <Button 
                   onClick={() => setView('login')}
-                  variant="outline"
-                  className="border-2 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white font-semibold px-8 py-4 text-lg transition-all duration-200"
+                  className="bg-white/90 backdrop-blur-sm border-2 border-indigo-600 text-indigo-700 hover:bg-indigo-600 hover:text-white font-bold px-10 py-5 text-xl shadow-xl transition-all duration-300"
                 >
                   Sign In
                 </Button>
@@ -135,7 +138,7 @@ export default function Login() {
                 <Button 
                   onClick={() => setLocation('/demo')}
                   variant="ghost"
-                  className="text-gray-700 hover:text-purple-600 underline font-medium text-lg transition-colors duration-200"
+                  className="bg-gray-800/10 backdrop-blur-sm text-gray-800 hover:bg-indigo-600 hover:text-white underline font-semibold text-lg px-6 py-3 rounded-full border border-gray-300 transition-all duration-300"
                 >
                   Continue as Guest - Try it first
                 </Button>
