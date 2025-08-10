@@ -18,7 +18,18 @@ import {
   BarChart3,
   AlertCircle,
   CheckCircle,
-  XCircle
+  XCircle,
+  Target,
+  Smartphone,
+  Calendar,
+  VideoIcon,
+  MessageSquare,
+  Globe,
+  Zap,
+  Gift,
+  Headphones,
+  MonitorPlay,
+  FileCheck
 } from 'lucide-react';
 
 export function AdminDashboard() {
@@ -130,6 +141,7 @@ export function AdminDashboard() {
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="providers">Service Providers</TabsTrigger>
           <TabsTrigger value="revenue">Revenue</TabsTrigger>
+          <TabsTrigger value="roadmap">Development Roadmap</TabsTrigger>
           <TabsTrigger value="system">System</TabsTrigger>
           <TabsTrigger value="status">System Status</TabsTrigger>
         </TabsList>
@@ -439,6 +451,174 @@ export function AdminDashboard() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* Development Roadmap Tab */}
+        <TabsContent value="roadmap" className="space-y-6">
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Immediate Priority (Q1) */}
+            <Card className="bg-gray-900/50 backdrop-blur-xl border-white/10">
+              <CardHeader>
+                <CardTitle className="text-red-400">🔥 Immediate Priority</CardTitle>
+                <CardDescription>Q1 2025 - Critical features</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Gift className="h-5 w-5 text-red-400" />
+                    <p className="font-medium text-red-400">Referral System</p>
+                  </div>
+                  <p className="text-sm text-gray-400">User referral program with tiered rewards and tracking dashboard</p>
+                  <Badge variant="outline" className="mt-2 border-red-400 text-red-400">High Priority</Badge>
+                </div>
+
+                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Smartphone className="h-5 w-5 text-red-400" />
+                    <p className="font-medium text-red-400">Mobile App</p>
+                  </div>
+                  <p className="text-sm text-gray-400">Native mobile app for iOS and Android with full feature parity</p>
+                  <Badge variant="outline" className="mt-2 border-red-400 text-red-400">High Priority</Badge>
+                </div>
+
+                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Target className="h-5 w-5 text-red-400" />
+                    <p className="font-medium text-red-400">Advanced Analytics</p>
+                  </div>
+                  <p className="text-sm text-gray-400">Comprehensive performance tracking and ROI analysis</p>
+                  <Badge variant="outline" className="mt-2 border-red-400 text-red-400">High Priority</Badge>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Short Term (Q2) */}
+            <Card className="bg-gray-900/50 backdrop-blur-xl border-white/10">
+              <CardHeader>
+                <CardTitle className="text-yellow-400">⚡ Short Term</CardTitle>
+                <CardDescription>Q2 2025 - Enhancement features</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Calendar className="h-5 w-5 text-yellow-400" />
+                    <p className="font-medium text-yellow-400">Social Media Scheduler</p>
+                  </div>
+                  <p className="text-sm text-gray-400">Automated posting across multiple platforms with optimal timing</p>
+                  <Badge variant="outline" className="mt-2 border-yellow-400 text-yellow-400">Medium Priority</Badge>
+                </div>
+
+                <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                  <div className="flex items-center gap-3 mb-2">
+                    <VideoIcon className="h-5 w-5 text-yellow-400" />
+                    <p className="font-medium text-yellow-400">Video Content Support</p>
+                  </div>
+                  <p className="text-sm text-gray-400">Video generation, editing tools, and protection features</p>
+                  <Badge variant="outline" className="mt-2 border-yellow-400 text-yellow-400">Medium Priority</Badge>
+                </div>
+
+                <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                  <div className="flex items-center gap-3 mb-2">
+                    <MessageSquare className="h-5 w-5 text-yellow-400" />
+                    <p className="font-medium text-yellow-400">Community Features</p>
+                  </div>
+                  <p className="text-sm text-gray-400">Creator forums, collaboration tools, and peer support</p>
+                  <Badge variant="outline" className="mt-2 border-yellow-400 text-yellow-400">Medium Priority</Badge>
+                </div>
+
+                <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Zap className="h-5 w-5 text-yellow-400" />
+                    <p className="font-medium text-yellow-400">API Integration</p>
+                  </div>
+                  <p className="text-sm text-gray-400">Public API for third-party integrations and custom tools</p>
+                  <Badge variant="outline" className="mt-2 border-yellow-400 text-yellow-400">Medium Priority</Badge>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Long Term (Q3-Q4) */}
+            <Card className="bg-gray-900/50 backdrop-blur-xl border-white/10">
+              <CardHeader>
+                <CardTitle className="text-green-400">🚀 Long Term</CardTitle>
+                <CardDescription>Q3-Q4 2025 - Innovation features</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Headphones className="h-5 w-5 text-green-400" />
+                    <p className="font-medium text-green-400">Voice Content Generation</p>
+                  </div>
+                  <p className="text-sm text-gray-400">AI voice cloning and audio content creation</p>
+                  <Badge variant="outline" className="mt-2 border-green-400 text-green-400">Future</Badge>
+                </div>
+
+                <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+                  <div className="flex items-center gap-3 mb-2">
+                    <MonitorPlay className="h-5 w-5 text-green-400" />
+                    <p className="font-medium text-green-400">Live Streaming Integration</p>
+                  </div>
+                  <p className="text-sm text-gray-400">Live cam integration with automated content generation</p>
+                  <Badge variant="outline" className="mt-2 border-green-400 text-green-400">Future</Badge>
+                </div>
+
+                <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Globe className="h-5 w-5 text-green-400" />
+                    <p className="font-medium text-green-400">Multi-Language Support</p>
+                  </div>
+                  <p className="text-sm text-gray-400">Global expansion with localized content generation</p>
+                  <Badge variant="outline" className="mt-2 border-green-400 text-green-400">Future</Badge>
+                </div>
+
+                <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+                  <div className="flex items-center gap-3 mb-2">
+                    <FileCheck className="h-5 w-5 text-green-400" />
+                    <p className="font-medium text-green-400">Compliance Automation</p>
+                  </div>
+                  <p className="text-sm text-gray-400">Automated age verification and platform compliance</p>
+                  <Badge variant="outline" className="mt-2 border-green-400 text-green-400">Future</Badge>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Development Progress Overview */}
+          <Card className="bg-gray-900/50 backdrop-blur-xl border-white/10">
+            <CardHeader>
+              <CardTitle>📊 Development Progress Overview</CardTitle>
+              <CardDescription>Track feature completion and timeline</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div className="text-center p-4 bg-white/5 rounded-lg">
+                  <p className="text-3xl font-bold text-green-400">85%</p>
+                  <p className="text-sm text-gray-400">Core Platform</p>
+                </div>
+                <div className="text-center p-4 bg-white/5 rounded-lg">
+                  <p className="text-3xl font-bold text-yellow-400">12</p>
+                  <p className="text-sm text-gray-400">Features Planned</p>
+                </div>
+                <div className="text-center p-4 bg-white/5 rounded-lg">
+                  <p className="text-3xl font-bold text-blue-400">3</p>
+                  <p className="text-sm text-gray-400">In Development</p>
+                </div>
+                <div className="text-center p-4 bg-white/5 rounded-lg">
+                  <p className="text-3xl font-bold text-purple-400">9</p>
+                  <p className="text-sm text-gray-400">Months Timeline</p>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Q1 2025 Goals</span>
+                  <span className="text-sm text-gray-400">3 of 3 features</span>
+                </div>
+                <div className="w-full bg-gray-700 rounded-full h-2">
+                  <div className="bg-gradient-to-r from-red-500 to-red-400 h-2 rounded-full" style={{width: '33%'}}></div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* System Status Tab */}
