@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { PasswordReset } from '@/components/password-reset';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,6 +13,7 @@ import { Link, useLocation } from 'wouter';
 export default function Login() {
   const [, setLocation] = useLocation();
   const [view, setView] = useState<'landing' | 'login' | 'signup'>('landing');
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -314,7 +316,17 @@ export default function Login() {
               </Button>
             </form>
             
-            <div className="mt-6 text-center">
+            <div className="mt-6 text-center space-y-2">
+              {view === 'login' && (
+                <button
+                  type="button"
+                  onClick={() => setShowPasswordReset(true)}
+                  className="text-sm text-purple-600 hover:text-purple-800 font-medium"
+                >
+                  Forgot your password?
+                </button>
+              )}
+              
               <p className="text-sm text-gray-600">
                 {view === 'login' ? "Don't have an account?" : "Already have an account?"}
                 <button
@@ -341,6 +353,11 @@ export default function Login() {
           <p>Protected by industry-standard encryption</p>
         </div>
       </div>
+      
+      <PasswordReset 
+        isOpen={showPasswordReset} 
+        onClose={() => setShowPasswordReset(false)} 
+      />
     </div>
   );
 }

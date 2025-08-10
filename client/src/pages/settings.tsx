@@ -49,11 +49,7 @@ export default function SettingsPage() {
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (settings: any) => {
-      return apiRequest('/api/user/settings', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(settings),
-      });
+      return apiRequest('PATCH', '/api/user/settings', settings);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/user/settings'] });
@@ -66,9 +62,7 @@ export default function SettingsPage() {
 
   const deleteAccountMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest('/api/user/account', {
-        method: 'DELETE',
-      });
+      return apiRequest('DELETE', '/api/user/account');
     },
     onSuccess: () => {
       toast({
@@ -83,10 +77,8 @@ export default function SettingsPage() {
 
   const exportDataMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest('/api/user/export', {
-        method: 'GET',
-      });
-      return response;
+      const response = await apiRequest('GET', '/api/user/export');
+      return response.json();
     },
     onSuccess: (data) => {
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
