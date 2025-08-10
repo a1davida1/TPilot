@@ -103,24 +103,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve uploaded files
   app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
-  // Password reset endpoint
-  app.post('/api/auth/reset-password', async (req, res) => {
-    try {
-      const { email } = req.body;
-      
-      // In a real app, you'd send an email here
-      // For now, we'll just return success
-      console.log(`Password reset requested for: ${email}`);
-      
-      res.json({ 
-        message: 'Password reset email sent (simulated)',
-        success: true 
-      });
-    } catch (error) {
-      console.error('Password reset error:', error);
-      res.status(500).json({ message: 'Failed to send reset email' });
-    }
-  });
+  // Password reset endpoint removed - was non-functional placeholder
 
   // Authentication routes
   app.post("/api/auth/signup", async (req, res) => {

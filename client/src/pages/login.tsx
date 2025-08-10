@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { PasswordReset } from '@/components/password-reset';
+// Password reset component removed - was non-functional
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,7 @@ import { Link, useLocation } from 'wouter';
 export default function Login() {
   const [, setLocation] = useLocation();
   const [view, setView] = useState<'landing' | 'login' | 'signup'>('landing');
-  const [showPasswordReset, setShowPasswordReset] = useState(false);
+  // Password reset state removed - was non-functional
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -309,15 +309,7 @@ export default function Login() {
             </form>
             
             <div className="mt-6 text-center space-y-2">
-              {view === 'login' && (
-                <button
-                  type="button"
-                  onClick={() => setShowPasswordReset(true)}
-                  className="text-sm text-purple-600 hover:text-purple-800 font-medium"
-                >
-                  Forgot your password?
-                </button>
-              )}
+              {/* Password reset feature removed - was non-functional */}
               
               <p className="text-sm text-gray-600">
                 {view === 'login' ? "Don't have an account?" : "Already have an account?"}
@@ -347,10 +339,7 @@ export default function Login() {
         </div>
       </div>
       
-      <PasswordReset 
-        isOpen={showPasswordReset} 
-        onClose={() => setShowPasswordReset(false)} 
-      />
+      {/* Password reset modal removed - was non-functional */}
     </div>
   );
 }
