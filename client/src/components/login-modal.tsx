@@ -28,20 +28,21 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
     const password = formData.get("password") as string;
 
     try {
-      const response = await apiRequest("/api/auth/login", "POST", {
+      const response = await apiRequest("POST", "/api/auth/login", {
         username,
         password
       });
+      const data = await response.json();
 
-      localStorage.setItem("token", response.token);
-      localStorage.setItem("user", JSON.stringify(response.user));
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
       
       toast({
         title: "Welcome back!",
-        description: `Logged in as ${response.user.username}`,
+        description: `Logged in as ${data.user.username}`,
       });
 
-      onSuccess(response.user);
+      onSuccess(data.user);
       onClose();
     } catch (error) {
       toast({
@@ -64,21 +65,22 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
     const password = formData.get("password") as string;
 
     try {
-      const response = await apiRequest("/api/auth/signup", "POST", {
+      const response = await apiRequest("POST", "/api/auth/signup", {
         username,
         email,
         password
       });
+      const data = await response.json();
 
-      localStorage.setItem("token", response.token);
-      localStorage.setItem("user", JSON.stringify(response.user));
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
       
       toast({
         title: "Account created!",
         description: "Welcome to ThottoPilot",
       });
 
-      onSuccess(response.user);
+      onSuccess(data.user);
       onClose();
     } catch (error) {
       toast({

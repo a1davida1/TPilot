@@ -2,6 +2,16 @@
 
 ThottoPilot is a comprehensive social media content creation platform for adult content creators. It generates engaging Reddit posts with personalized titles, content, and photo instructions, while providing intelligent promotion features and image protection capabilities. The application adapts content based on subreddit promotion rules and includes advanced image processing tools to prevent reverse image searches while maintaining visual quality. ThottoPilot aims to be a leading platform by offering a streamlined workflow and advanced tools for content monetization and protection.
 
+## Recent Changes (August 10, 2025)
+
+**CRITICAL AUTHENTICATION FIXES COMPLETED:**
+- Fixed parameter swap bug in login-modal.tsx (URL and method parameters were reversed in apiRequest calls)
+- Resolved JWT token field inconsistency (backend now properly reads both 'userId' and 'id' fields)
+- Fixed authentication persistence issues (users can now register/login and stay authenticated)
+- Resolved TypeScript errors in login modal (proper Response object handling)
+- Cleaned up debug logging for production readiness
+- **Status:** Authentication system fully operational
+
 # User Preferences
 
 Preferred communication style: Simple, everyday language.

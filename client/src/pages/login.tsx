@@ -25,7 +25,6 @@ export default function Login() {
     },
     onSuccess: async (response: Response) => {
       const data = await response.json();
-      console.log('Registration/Login success:', data);
       
       toast({
         title: view === 'login' ? "Welcome back!" : "Account created!",
@@ -35,11 +34,9 @@ export default function Login() {
       // Store auth token/user data
       if (data.token) {
         localStorage.setItem('authToken', data.token);
-        console.log('Stored token:', data.token);
       }
       if (data.user) {
         localStorage.setItem('user', JSON.stringify(data.user));
-        console.log('Stored user:', data.user);
       }
       
       // Trigger auth refetch to update useAuth state

@@ -227,9 +227,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Handle regular user - JWT token contains either 'id' or 'userId'
       const userId = req.user.userId || req.user.id;
-      console.log('Looking for user with ID:', userId, 'JWT fields:', Object.keys(req.user));
       const user = await storage.getUser(userId);
-      console.log('Found user:', user ? 'YES' : 'NO');
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
       }
