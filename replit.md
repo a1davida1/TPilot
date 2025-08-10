@@ -9,8 +9,14 @@ ThottoPilot is a comprehensive social media content creation platform for adult 
 - Resolved JWT token field inconsistency (backend now properly reads both 'userId' and 'id' fields)
 - Fixed authentication persistence issues (users can now register/login and stay authenticated)
 - Resolved TypeScript errors in login modal (proper Response object handling)
+- **DUAL LOGIN METHOD SUPPORT:** Backend now accepts BOTH email AND username for login
+- Updated frontend login form to show "Email or Username" field with appropriate icon
+- Fixed settings page API calls to use correct parameter order (method, URL, data)
+- Added comprehensive password reset system with backend endpoint and UI modal
+- Improved dark mode contrast for better readability (high contrast CSS variables)
+- Added all user management endpoints (settings, subscription, export, delete account)
 - Cleaned up debug logging for production readiness
-- **Status:** Authentication system fully operational
+- **Status:** Authentication system fully operational with dual login support
 
 # User Preferences
 

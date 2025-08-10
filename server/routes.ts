@@ -196,8 +196,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Find user
-      const user = await storage.getUserByEmail(email);
+      // Find user by email OR username (support both login methods)
+      let user = await storage.getUserByEmail(email);
+      
+      // If not found by email, try by username
+      if (!user) {
+        user = await storage.getUserByUsername(email); // email field can contain username
+      }
+      
       if (!user) {
         return res.status(400).json({ message: 'Invalid credentials' });
       }
