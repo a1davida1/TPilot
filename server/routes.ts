@@ -127,7 +127,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Generate JWT token
       const token = jwt.sign(
-        { userId: newUser.id, email: newUser.email },
+        { userId: newUser.id, username: newUser.username, email: newUser.email },
         JWT_SECRET,
         { expiresIn: '24h' }
       );
@@ -193,7 +193,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Generate JWT token
       const token = jwt.sign(
-        { userId: user.id, email: user.email },
+        { userId: user.id, username: user.username, email: user.email },
         JWT_SECRET,
         { expiresIn: '24h' }
       );
@@ -225,13 +225,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const user = await storage.getUser(req.user.userId);
+      // Handle regular user - JWT token contains either 'id' or 'userId'
+      const userId = req.user.userId || req.user.id;
+      console.log('Looking for user with ID:', userId, 'JWT fields:', Object.keys(req.user));
+      const user = await storage.getUser(userId);
+      console.log('Found user:', user ? 'YES' : 'NO');
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
       }
 
+      // Remove password from response and add default tier
       const { password: _, ...userResponse } = user;
-      res.json(userResponse);
+      res.json({
+        ...userResponse,
+        tier: userResponse.tier || 'free'
+      });
     } catch (error) {
       console.error('Get user error:', error);
       res.status(500).json({ message: 'Error fetching user' });

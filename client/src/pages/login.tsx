@@ -23,19 +23,27 @@ export default function Login() {
     mutationFn: async (data: { email: string; password: string; username?: string; mode: 'login' | 'signup' }) => {
       return apiRequest('POST', `/api/auth/${data.mode}`, data);
     },
-    onSuccess: (data: any) => {
+    onSuccess: async (response: Response) => {
+      const data = await response.json();
+      console.log('Registration/Login success:', data);
+      
       toast({
         title: view === 'login' ? "Welcome back!" : "Account created!",
         description: view === 'login' ? "You're logged in successfully." : "Your account has been created and you're logged in.",
       });
+      
       // Store auth token/user data
       if (data.token) {
         localStorage.setItem('authToken', data.token);
+        console.log('Stored token:', data.token);
       }
       if (data.user) {
         localStorage.setItem('user', JSON.stringify(data.user));
+        console.log('Stored user:', data.user);
       }
-      setLocation('/dashboard');
+      
+      // Trigger auth refetch to update useAuth state
+      window.location.reload();
     },
     onError: (error: any) => {
       toast({

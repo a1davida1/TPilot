@@ -20,13 +20,19 @@ export function useAuth() {
     queryFn: async () => {
       if (!token) throw new Error('No token');
       
+      console.log('Making auth request with token:', token);
       const response = await fetch('/api/auth/user', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
       
+      console.log('Auth response status:', response.status);
+      
       if (!response.ok) {
+        const errorText = await response.text();
+        console.log('Auth error response:', errorText);
+        
         if (response.status === 401 || response.status === 403) {
           localStorage.removeItem('authToken');
           localStorage.removeItem('user');
@@ -36,7 +42,9 @@ export function useAuth() {
         throw new Error('Failed to fetch user');
       }
       
-      return response.json();
+      const userData = await response.json();
+      console.log('Successfully fetched user:', userData);
+      return userData;
     },
     enabled: !!token,
     retry: false,
