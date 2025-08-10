@@ -21,7 +21,7 @@ export default function Login() {
 
   const authMutation = useMutation({
     mutationFn: async (data: { email: string; password: string; username?: string; mode: 'login' | 'signup' }) => {
-      return apiRequest(`/api/auth/${data.mode}`, 'POST', data);
+      return apiRequest('POST', `/api/auth/${data.mode}`, data);
     },
     onSuccess: (data: any) => {
       toast({
