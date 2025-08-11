@@ -454,7 +454,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   // Generate content endpoint
-  // Image to caption generation endpoint
+  // Import the unified AI service
+  const { generateUnifiedAIContent, analyzeImage } = await import('./services/unified-ai-service');
+
+  // Unified AI generation endpoint - handles both text and image
+  app.post('/api/generate-unified', upload.single('image'), async (req: AuthRequest, res) => {
+    try {
+      const { mode, prompt, platform, style, theme, includePromotion, customInstructions } = req.body;
+      
+      let imageBase64: string | undefined;
+      
+      // Handle image upload if present
+      if (mode === 'image' && req.file) {
+        if (!validateImageFormat(req.file.originalname)) {
+          return res.status(400).json({ error: 'Invalid image format. Please use JPG, PNG, or WebP.' });
+        }
+        imageBase64 = imageToBase64(req.file.path);
+        
+        // Clean up uploaded file after converting to base64
+        await fs.unlink(req.file.path).catch(console.error);
+      }
+
+      const result = await generateUnifiedAIContent({
+        mode: mode || 'text',
+        prompt,
+        imageBase64,
+        platform: platform || 'reddit',
+        style: style || 'playful',
+        theme,
+        includePromotion: includePromotion === 'true' || includePromotion === true,
+        customInstructions
+      });
+
+      // Save to database if user is authenticated
+      if (req.user?.id) {
+        await storage.createContentGeneration({
+          userId: req.user.id,
+          platform: platform || 'reddit',
+          style: style || 'playful',
+          theme: theme || 'general',
+          titles: result.titles,
+          content: result.content,
+          photoInstructions: result.photoInstructions,
+          prompt: prompt || customInstructions,
+          allowsPromotion: includePromotion === 'true' || includePromotion === true
+        });
+      }
+
+      res.json(result);
+    } catch (error) {
+      console.error('Unified AI generation error:', error);
+      res.status(500).json({ 
+        error: 'Failed to generate content',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Image analysis endpoint
+  app.post('/api/analyze-image', upload.single('image'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No image file provided' });
+      }
+
+      if (!validateImageFormat(req.file.originalname)) {
+        return res.status(400).json({ error: 'Invalid image format. Please use JPG, PNG, or WebP.' });
+      }
+
+      const imageBase64 = imageToBase64(req.file.path);
+      const description = await analyzeImage(imageBase64);
+
+      // Clean up uploaded file
+      await fs.unlink(req.file.path).catch(console.error);
+
+      res.json({ description });
+    } catch (error) {
+      console.error('Image analysis error:', error);
+      res.status(500).json({ error: 'Failed to analyze image' });
+    }
+  });
+
+  // Legacy image to caption generation endpoint (kept for backward compatibility)
   app.post('/api/generate-image-caption', upload.single('image'), async (req, res) => {
     try {
       const { platform, contentStyle, includePromotion, customInstructions } = req.body;

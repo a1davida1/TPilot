@@ -163,18 +163,39 @@ export function UnifiedContentCreator({
 
   const generateContentMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest("POST", "/api/generate-ai", {
-        ...data,
-        generationType: workflowMode === 'text' ? "prompt" : "image",
-        userProfile: {
-          toneOfVoice: "confident",
-          contentStyle: "authentic",
-          personalBrand: "girl-next-door",
-          contentLength: "medium",
-          includeEmojis: true,
-          promotionLevel: allowsPromotion
-        }
+      // Use FormData for unified endpoint that handles both text and images
+      const formData = new FormData();
+      
+      // Set mode based on workflow
+      if (workflowMode === 'image' && imageFile) {
+        formData.append('mode', 'image');
+        formData.append('image', imageFile);
+      } else {
+        formData.append('mode', 'text');
+        formData.append('prompt', data.customPrompt || data.prompt || '');
+      }
+      
+      // Add common parameters
+      formData.append('platform', data.platform || platform);
+      formData.append('style', data.style || 'playful');
+      formData.append('theme', data.theme || '');
+      formData.append('includePromotion', String(data.allowsPromotion === 'high'));
+      formData.append('customInstructions', data.customPrompt || '');
+      
+      // Send to unified endpoint
+      const response = await fetch('/api/generate-unified', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: formData
       });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to generate content');
+      }
+      
       return await response.json();
     },
     onSuccess: (data) => {
@@ -257,8 +278,8 @@ export function UnifiedContentCreator({
         allowsPromotion,
         preferredProvider: selectedProvider !== "auto" ? selectedProvider : undefined
       });
-    } else {
-      if (!uploadedImage) {
+    } else if (workflowMode === 'image') {
+      if (!imageFile) {
         toast({
           title: "Image Required",
           description: "Please upload an image for content generation",
@@ -269,7 +290,7 @@ export function UnifiedContentCreator({
 
       generateContentMutation.mutate({
         platform,
-        imageData: uploadedImage,
+        imageFile,
         subreddit: subreddit || undefined,
         allowsPromotion,
         preferredProvider: selectedProvider !== "auto" ? selectedProvider : undefined
