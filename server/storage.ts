@@ -1,3 +1,4 @@
+
 import {
   type User,
   type InsertUser,
@@ -16,7 +17,7 @@ import {
   userImages
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, gte, sql, count } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -40,126 +41,127 @@ export interface IStorage {
   // Sample operations
   createUserSample(sample: InsertUserSample): Promise<UserSample>;
   getUserSamples(userId: number): Promise<UserSample[]>;
-  deleteUserSample(id: number, userId: number): Promise<void>;
+  deleteUserSample(sampleId: number, userId: number): Promise<void>;
 
   // Preference operations
   getUserPreferences(userId: number): Promise<UserPreference | undefined>;
-  upsertUserPreferences(prefs: InsertUserPreference): Promise<UserPreference>;
+  updateUserPreferences(userId: number, preferences: InsertUserPreference): Promise<UserPreference>;
 
   // Image operations
   createUserImage(image: InsertUserImage): Promise<UserImage>;
   getUserImages(userId: number): Promise<UserImage[]>;
-  getImageById(id: number): Promise<UserImage | undefined>;
-  updateImageProtection(id: number, protectionData: Partial<UserImage>): Promise<UserImage | undefined>;
-  deleteUserImage(id: number, userId: number): Promise<void>;
+  getUserImage(imageId: number, userId: number): Promise<UserImage | undefined>;
+  deleteUserImage(imageId: number, userId: number): Promise<void>;
 }
 
-export class MemStorage implements IStorage {
-  private users: User[] = [];
-  private contentGenerations: ContentGeneration[] = [];
-  private userSamples: UserSample[] = [];
-  private userPreferences: UserPreference[] = [];
-  private userImages: UserImage[] = [];
-  private nextUserId = 1;
-  private nextGenId = 1;
-  private nextSampleId = 1;
-  private nextPrefId = 1;
-  private nextImageId = 1;
-
-  constructor() {
-    // Create a demo user
-    this.users.push({
-      id: 1,
-      username: "demo",
-      password: "demo",
-      email: "demo@example.com",
-      tier: "pro",
-      provider: null,
-      providerId: null,
-      avatar: null,
-      createdAt: new Date(),
-    });
-    this.nextUserId = 2;
-  }
-
+class PostgreSQLStorage implements IStorage {
   // User operations
   async getUser(id: number): Promise<User | undefined> {
     console.log('Storage: Looking for user with ID:', id);
-    console.log('Storage: Available users:', this.users.map(u => ({ id: u.id, username: u.username })));
-    return this.users.find(user => user.id === id);
+    try {
+      const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+      const user = result[0];
+      if (user) {
+        console.log('Storage: Found user:', { id: user.id, username: user.username });
+      } else {
+        console.log('Storage: User not found');
+      }
+      return user;
+    } catch (error) {
+      console.error('Storage: Error getting user:', error);
+      return undefined;
+    }
   }
 
   async getAllUsers(): Promise<User[]> {
-    return [...this.users];
+    try {
+      return await db.select().from(users);
+    } catch (error) {
+      console.error('Storage: Error getting all users:', error);
+      return [];
+    }
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return this.users.find(u => u.username === username);
+    try {
+      const result = await db.select().from(users).where(eq(users.username, username)).limit(1);
+      return result[0];
+    } catch (error) {
+      console.error('Storage: Error getting user by username:', error);
+      return undefined;
+    }
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    return this.users.find(u => u.email === email);
+    try {
+      const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+      return result[0];
+    } catch (error) {
+      console.error('Storage: Error getting user by email:', error);
+      return undefined;
+    }
   }
 
   async createUser(userData: InsertUser): Promise<User> {
-    const newId = Math.max(0, ...this.users.map(u => u.id)) + 1;
-    const user: User = {
-      id: newId,
-      username: userData.username,
-      password: userData.password,
-      email: userData.email,
-      tier: userData.tier || 'free',
-      provider: userData.provider || null,
-      providerId: userData.providerId || null,
-      avatar: userData.avatar || null,
-      createdAt: new Date()
-    };
-    this.users.push(user);
-    console.log('Storage: Created user:', { id: user.id, username: user.username });
-    console.log('Storage: Total users now:', this.users.length);
-    return user;
+    try {
+      const result = await db.insert(users).values(userData).returning();
+      const user = result[0];
+      console.log('Storage: Created user:', { id: user.id, username: user.username });
+      return user;
+    } catch (error) {
+      console.error('Storage: Error creating user:', error);
+      throw error;
+    }
   }
 
   async updateUserTier(userId: number, tier: string): Promise<void> {
-    const user = this.users.find(u => u.id === userId);
-    if (user) {
-      user.tier = tier;
+    try {
+      await db.update(users).set({ tier }).where(eq(users.id, userId));
+    } catch (error) {
+      console.error('Storage: Error updating user tier:', error);
+      throw error;
     }
   }
 
   async updateUserProfile(userId: number, updates: Partial<User>): Promise<User | undefined> {
-    const user = this.users.find(u => u.id === userId);
-    if (user) {
-      Object.assign(user, updates);
-      return user;
+    try {
+      const result = await db.update(users).set(updates).where(eq(users.id, userId)).returning();
+      return result[0];
+    } catch (error) {
+      console.error('Storage: Error updating user profile:', error);
+      return undefined;
     }
-    return undefined;
   }
 
   async deleteUser(userId: number): Promise<void> {
-    const index = this.users.findIndex(u => u.id === userId);
-    if (index >= 0) {
-      this.users.splice(index, 1);
+    try {
+      await db.delete(users).where(eq(users.id, userId));
+    } catch (error) {
+      console.error('Storage: Error deleting user:', error);
+      throw error;
     }
   }
 
   // Generation operations
   async createGeneration(gen: InsertContentGeneration): Promise<ContentGeneration> {
-    const newGen: ContentGeneration = {
-      ...gen,
-      id: this.nextGenId++,
-      userId: gen.userId ?? null,
-      prompt: gen.prompt ?? null,
-      subreddit: gen.subreddit ?? null,
-      allowsPromotion: gen.allowsPromotion ?? null,
-      createdAt: new Date(),
-    };
-    this.contentGenerations.push(newGen);
-    return newGen;
+    try {
+      const result = await db.insert(contentGenerations).values(gen).returning();
+      return result[0];
+    } catch (error) {
+      console.error('Storage: Error creating generation:', error);
+      throw error;
+    }
   }
 
   async getGenerationsByUserId(userId: number): Promise<ContentGeneration[]> {
-    return this.contentGenerations.filter(g => g.userId === userId);
+    try {
+      return await db.select().from(contentGenerations)
+        .where(eq(contentGenerations.userId, userId))
+        .orderBy(desc(contentGenerations.createdAt));
+    } catch (error) {
+      console.error('Storage: Error getting generations by user ID:', error);
+      return [];
+    }
   }
 
   async createContentGeneration(gen: InsertContentGeneration): Promise<ContentGeneration> {
@@ -171,122 +173,152 @@ export class MemStorage implements IStorage {
   }
 
   async getContentGenerationStats(userId: number): Promise<{ total: number; thisWeek: number; thisMonth: number; totalGenerations?: number }> {
-    const userGenerations = this.contentGenerations.filter(g => g.userId === userId);
-    const now = new Date();
-    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    try {
+      const now = new Date();
+      const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    return {
-      total: userGenerations.length,
-      totalGenerations: userGenerations.length,
-      thisWeek: userGenerations.filter(g => g.createdAt && g.createdAt > oneWeekAgo).length,
-      thisMonth: userGenerations.filter(g => g.createdAt && g.createdAt > oneMonthAgo).length,
-    };
+      const [totalResult, weekResult, monthResult] = await Promise.all([
+        db.select({ count: count() }).from(contentGenerations).where(eq(contentGenerations.userId, userId)),
+        db.select({ count: count() }).from(contentGenerations)
+          .where(and(eq(contentGenerations.userId, userId), gte(contentGenerations.createdAt, oneWeekAgo))),
+        db.select({ count: count() }).from(contentGenerations)
+          .where(and(eq(contentGenerations.userId, userId), gte(contentGenerations.createdAt, oneMonthAgo)))
+      ]);
+
+      return {
+        total: totalResult[0]?.count || 0,
+        thisWeek: weekResult[0]?.count || 0,
+        thisMonth: monthResult[0]?.count || 0,
+        totalGenerations: totalResult[0]?.count || 0
+      };
+    } catch (error) {
+      console.error('Storage: Error getting content generation stats:', error);
+      return { total: 0, thisWeek: 0, thisMonth: 0 };
+    }
   }
 
   async getLastGenerated(userId: number): Promise<ContentGeneration | undefined> {
-    const userGenerations = this.contentGenerations
-      .filter(g => g.userId === userId)
-      .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
-    return userGenerations[0];
+    try {
+      const result = await db.select().from(contentGenerations)
+        .where(eq(contentGenerations.userId, userId))
+        .orderBy(desc(contentGenerations.createdAt))
+        .limit(1);
+      return result[0];
+    } catch (error) {
+      console.error('Storage: Error getting last generated:', error);
+      return undefined;
+    }
   }
 
   // Sample operations
   async createUserSample(sample: InsertUserSample): Promise<UserSample> {
-    const newSample: UserSample = {
-      ...sample,
-      id: this.nextSampleId++,
-      style: sample.style ?? null,
-      performanceScore: sample.performanceScore ?? null,
-      tags: sample.tags ?? null,
-      imageUrls: sample.imageUrls ?? null,
-      metadata: sample.metadata ?? null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    this.userSamples.push(newSample);
-    return newSample;
+    try {
+      const result = await db.insert(userSamples).values(sample).returning();
+      return result[0];
+    } catch (error) {
+      console.error('Storage: Error creating user sample:', error);
+      throw error;
+    }
   }
 
   async getUserSamples(userId: number): Promise<UserSample[]> {
-    return this.userSamples.filter(s => s.userId === userId);
+    try {
+      return await db.select().from(userSamples)
+        .where(eq(userSamples.userId, userId))
+        .orderBy(desc(userSamples.createdAt));
+    } catch (error) {
+      console.error('Storage: Error getting user samples:', error);
+      return [];
+    }
   }
 
-  async deleteUserSample(id: number, userId: number): Promise<void> {
-    const index = this.userSamples.findIndex(s => s.id === id && s.userId === userId);
-    if (index >= 0) {
-      this.userSamples.splice(index, 1);
+  async deleteUserSample(sampleId: number, userId: number): Promise<void> {
+    try {
+      await db.delete(userSamples).where(and(eq(userSamples.id, sampleId), eq(userSamples.userId, userId)));
+    } catch (error) {
+      console.error('Storage: Error deleting user sample:', error);
+      throw error;
     }
   }
 
   // Preference operations
   async getUserPreferences(userId: number): Promise<UserPreference | undefined> {
-    return this.userPreferences.find(p => p.userId === userId);
+    try {
+      const result = await db.select().from(userPreferences).where(eq(userPreferences.userId, userId)).limit(1);
+      return result[0];
+    } catch (error) {
+      console.error('Storage: Error getting user preferences:', error);
+      return undefined;
+    }
   }
 
-  async upsertUserPreferences(prefs: InsertUserPreference): Promise<UserPreference> {
-    let existing = this.userPreferences.find(p => p.userId === prefs.userId);
+  async updateUserPreferences(userId: number, preferences: InsertUserPreference): Promise<UserPreference> {
+    try {
+      // Try to update first
+      const updateResult = await db.update(userPreferences)
+        .set({ ...preferences, updatedAt: new Date() })
+        .where(eq(userPreferences.userId, userId))
+        .returning();
 
-    if (existing) {
-      Object.assign(existing, prefs, { updatedAt: new Date() });
-      return existing;
-    } else {
-      const newPrefs: UserPreference = {
-        ...prefs,
-        id: this.nextPrefId++,
-        writingStyle: prefs.writingStyle ?? null,
-        contentPreferences: prefs.contentPreferences ?? null,
-        prohibitedWords: prefs.prohibitedWords ?? null,
-        photoStyle: prefs.photoStyle ?? null,
-        platformSettings: prefs.platformSettings ?? null,
-        fineTuningEnabled: prefs.fineTuningEnabled ?? false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      this.userPreferences.push(newPrefs);
-      return newPrefs;
+      if (updateResult.length > 0) {
+        return updateResult[0];
+      }
+
+      // If no rows were updated, insert new preferences
+      const insertResult = await db.insert(userPreferences)
+        .values({ ...preferences, userId })
+        .returning();
+      return insertResult[0];
+    } catch (error) {
+      console.error('Storage: Error updating user preferences:', error);
+      throw error;
     }
   }
 
   // Image operations
   async createUserImage(image: InsertUserImage): Promise<UserImage> {
-    const newImage: UserImage = {
-      ...image,
-      id: this.nextImageId++,
-      isProtected: image.isProtected ?? false,
-      protectionLevel: image.protectionLevel ?? "none",
-      tags: image.tags ?? null,
-      metadata: image.metadata ?? null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    this.userImages.push(newImage);
-    return newImage;
+    try {
+      const result = await db.insert(userImages).values(image).returning();
+      return result[0];
+    } catch (error) {
+      console.error('Storage: Error creating user image:', error);
+      throw error;
+    }
   }
 
   async getUserImages(userId: number): Promise<UserImage[]> {
-    return this.userImages.filter(img => img.userId === userId);
-  }
-
-  async getImageById(id: number): Promise<UserImage | undefined> {
-    return this.userImages.find(img => img.id === id);
-  }
-
-  async updateImageProtection(id: number, protectionData: Partial<UserImage>): Promise<UserImage | undefined> {
-    const image = this.userImages.find(img => img.id === id);
-    if (image) {
-      Object.assign(image, protectionData, { updatedAt: new Date() });
-      return image;
+    try {
+      return await db.select().from(userImages)
+        .where(eq(userImages.userId, userId))
+        .orderBy(desc(userImages.createdAt));
+    } catch (error) {
+      console.error('Storage: Error getting user images:', error);
+      return [];
     }
-    return undefined;
   }
 
-  async deleteUserImage(id: number, userId: number): Promise<void> {
-    const index = this.userImages.findIndex(img => img.id === id && img.userId === userId);
-    if (index >= 0) {
-      this.userImages.splice(index, 1);
+  async getUserImage(imageId: number, userId: number): Promise<UserImage | undefined> {
+    try {
+      const result = await db.select().from(userImages)
+        .where(and(eq(userImages.id, imageId), eq(userImages.userId, userId)))
+        .limit(1);
+      return result[0];
+    } catch (error) {
+      console.error('Storage: Error getting user image:', error);
+      return undefined;
+    }
+  }
+
+  async deleteUserImage(imageId: number, userId: number): Promise<void> {
+    try {
+      await db.delete(userImages).where(and(eq(userImages.id, imageId), eq(userImages.userId, userId)));
+    } catch (error) {
+      console.error('Storage: Error deleting user image:', error);
+      throw error;
     }
   }
 }
 
-export const storage = new MemStorage();
+// Create and export the storage instance
+export const storage = new PostgreSQLStorage();
