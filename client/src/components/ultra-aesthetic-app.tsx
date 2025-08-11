@@ -63,11 +63,11 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
 
   useEffect(() => {
     setIsVisible(true);
-    
+
     const handleMouseMove = (e: MouseEvent) => {
       setMousePosition({ x: e.clientX, y: e.clientY });
     };
-    
+
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
@@ -104,7 +104,7 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
           background: `radial-gradient(circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(147, 51, 234, 0.15), transparent 40%)`
         }}
       />
-      
+
       {/* Animated gradient orbs */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl animate-pulse-slow" />
@@ -218,7 +218,7 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
               {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </p>
           </div>
-          
+
           {/* Login/Register and Stats */}
           <div className="flex items-center space-x-6">
             {/* Quick Stats */}
@@ -231,7 +231,7 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
                 </div>
               ))}
             </div>
-            
+
             {/* Auth Buttons */}
             {isGuestMode ? (
               <div className="flex items-center space-x-3">
@@ -333,10 +333,10 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
                       isGuestMode={isGuestMode}
                       onContentGenerated={() => {}}
                     />
-                    
+
 
                   </div>
-                  
+
                   {/* Right Sidebar */}
                   <div className="space-y-6">
                     {/* Recent Generations */}
@@ -406,7 +406,7 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
                         </Button>
                       </CardContent>
                     </Card>
-                  
+
                   {/* Upgrade Prompt */}
                   {isGuestMode && (
                     <Card className="bg-gradient-to-br from-purple-600/20 to-pink-600/20 border-purple-500/30">
@@ -441,25 +441,25 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
                 </div>
               </div>
             )}
-            
+
             {activeView === "trending" && (
               <div className="max-w-7xl mx-auto">
                 <TrendingTagsExpanded />
               </div>
             )}
-            
+
             {activeView === "insights" && (
               <div className="max-w-6xl mx-auto">
                 <AudienceInsights />
               </div>
             )}
-            
+
             {activeView === "communities" && (
               <div className="max-w-7xl mx-auto">
                 <RedditCommunities />
               </div>
             )}
-            
+
             {activeView === "dual" && (
               <div className="max-w-6xl mx-auto">
                 <SimpleContentGenerator 
@@ -468,19 +468,19 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
                 />
               </div>
             )}
-            
+
             {activeView === "perks" && (
               <div className="max-w-7xl mx-auto">
                 <ProPerks />
               </div>
             )}
-            
+
             {activeView === "gallery" && (
               <div className="max-w-6xl mx-auto">
                 <ImageGallery />
               </div>
             )}
-            
+
             {activeView === "protect" && (
               <div className="max-w-4xl mx-auto">
                 <ImageShield 
@@ -489,19 +489,19 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
                 />
               </div>
             )}
-            
+
             {activeView === "samples" && (
               <div className="max-w-6xl mx-auto">
                 <SampleUpload />
               </div>
             )}
-            
+
             {activeView === "finetune" && (
               <div className="max-w-4xl mx-auto">
                 <IntegratedFineTuning />
               </div>
             )}
-            
+
             {activeView === "analytics" && (
               <div className="space-y-6">
                 <div className="grid md:grid-cols-4 gap-6">
@@ -523,7 +523,7 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
                     </Card>
                   ))}
                 </div>
-                
+
                 <Card className="bg-gray-900/50 backdrop-blur-xl border-white/10">
                   <CardHeader>
                     <CardTitle>Performance Overview</CardTitle>

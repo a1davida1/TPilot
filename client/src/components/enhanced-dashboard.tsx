@@ -46,7 +46,7 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [userTier, setUserTier] = useState<'guest' | 'free' | 'pro' | 'premium'>('guest');
-  
+
   // Load user from localStorage on mount
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -128,14 +128,16 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
             <div className="flex items-center justify-between h-16">
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
-                    <Sparkles className="h-5 w-5 text-white" />
-                  </div>
+                  <img 
+                    src="/logo.png" 
+                    alt="ThottoPilot" 
+                    className="h-10 w-auto"
+                  />
                   <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                     ThottoPilot
                   </h1>
                 </div>
-                
+
                 {userTier === 'pro' && (
                   <Badge className="bg-purple-100 text-purple-800 animate-pulse-slow">
                     <CheckCircle className="mr-1 h-3 w-3" />
@@ -529,7 +531,7 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
           )}
         </main>
       </div>
-      
+
       {/* Login Modal */}
       <LoginModal 
         isOpen={showLoginModal}

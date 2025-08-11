@@ -73,10 +73,11 @@ export function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-primary flex items-center">
-                <Sparkles className="mr-2 h-6 w-6" />
-                ThottoPilot
-              </h1>
+              <img 
+                src="/logo.png" 
+                alt="ThottoPilot" 
+                className="h-12 w-auto"
+              />
             </div>
             <nav className="flex items-center space-x-4">
               <Link href="/dashboard?guest=true">
@@ -253,10 +254,13 @@ export function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
-              <h3 className="text-lg font-bold mb-4 flex items-center">
-                <Sparkles className="mr-2 h-5 w-5" />
-                ThottoPilot
-              </h3>
+              <div className="mb-4">
+                <img 
+                  src="/logo.png" 
+                  alt="ThottoPilot" 
+                  className="h-10 w-auto"
+                />
+              </div>
               <p className="text-gray-400">
                 AI-powered content creation platform for the modern creator.
               </p>
