@@ -101,12 +101,18 @@ export class MemStorage implements IStorage {
     return this.users.find(u => u.email === email);
   }
 
-  async createUser(userData: Omit<User, 'id' | 'createdAt'>): Promise<User> {
+  async createUser(userData: InsertUser): Promise<User> {
     const newId = Math.max(0, ...this.users.map(u => u.id)) + 1;
     const user: User = {
-      ...userData,
       id: newId,
-      createdAt: new Date().toISOString()
+      username: userData.username,
+      password: userData.password,
+      email: userData.email,
+      tier: userData.tier || 'free',
+      provider: userData.provider || null,
+      providerId: userData.providerId || null,
+      avatar: userData.avatar || null,
+      createdAt: new Date()
     };
     this.users.push(user);
     console.log('Storage: Created user:', { id: user.id, username: user.username });

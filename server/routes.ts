@@ -124,7 +124,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newUser = await storage.createUser({
         email,
         password: hashedPassword,
-        username: username || email.split('@')[0]
+        username: username || email.split('@')[0],
+        tier: 'free'
       });
 
       // Generate JWT token
