@@ -57,6 +57,7 @@ import { AudienceInsights } from "@/components/audience-insights";
 import { ImageGallery } from "@/components/image-gallery";
 import { ProPerks } from "@/components/pro-perks";
 import { ImageProtector } from "@/components/image-protector";
+import { AdminPortal } from "@/components/admin-portal";
 import { cn } from "@/lib/utils";
 
 interface SidebarDashboardProps {
@@ -107,6 +108,9 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
     setExpandedSections(newExpanded);
   };
 
+  // Check if user is admin
+  const isAdmin = user?.username === 'admin' || user?.isAdmin || user?.email === 'admin@thottopilot.com';
+  
   const menuItems = [
     {
       id: 'creator-tools',
@@ -150,7 +154,16 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
         { id: 'guides', label: 'Creator Guides', icon: <FileText className="h-4 w-4" /> },
         { id: 'community', label: 'Community', icon: <Globe className="h-4 w-4" /> },
       ]
-    }
+    },
+    // Admin-only section
+    ...(isAdmin ? [{
+      id: 'admin',
+      label: 'Administration',
+      icon: <Shield className="h-4 w-4 text-red-400" />,
+      items: [
+        { id: 'admin-portal', label: 'Admin Control Center', icon: <Crown className="h-4 w-4 text-yellow-400" />, badge: 'Admin' },
+      ]
+    }] : [])
   ];
 
   const userStats = {
@@ -210,6 +223,9 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
       
       case 'perks':
         return <ProPerks userTier={userTier} />;
+      
+      case 'admin-portal':
+        return isAdmin ? <AdminPortal /> : null;
       
       default:
         return (

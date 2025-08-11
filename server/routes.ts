@@ -17,6 +17,7 @@ import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { getRandomTemplates, addWatermark, getTemplateByMood } from "./content-templates";
 import { generateAdvancedContent, type ContentParameters } from "./advanced-content-generator";
 import { setupAuth } from "./auth";
+import { setupAdminRoutes } from "./admin-routes";
 import { redditCommunitiesDatabase, getRecommendationsForUser, getCommunityInsights } from "./reddit-communities";
 import { visitorAnalytics } from "./visitor-analytics";
 import { getAvailablePerks, getPerksByCategory, generateReferralCode, getSignupInstructions } from "./pro-perks";
@@ -99,6 +100,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Setup authentication
   setupAuth(app);
+  setupAdminRoutes(app);
 
   // Serve uploaded files
   app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
@@ -938,18 +940,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { imageId } = req.params;
       const { protectionLevel } = req.body;
       
-      const image = await storage.getImageById(parseInt(imageId));
+      const image = await storage.getUserImage(parseInt(imageId), 1); // Demo user ID
       if (!image) {
         return res.status(404).json({ message: "Image not found" });
       }
       
       // For now, just mark as protected. In a real implementation,
       // you'd apply the actual protection processing here
-      const updatedImage = await storage.updateImageProtection(parseInt(imageId), {
+      const updatedImage = {
+        ...image,
         isProtected: true,
         protectionLevel: protectionLevel,
         url: image.url + '?protected=true'
-      });
+      };
       res.json(updatedImage);
     } catch (error) {
       console.error("Image protection error:", error);
@@ -1028,7 +1031,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/user-preferences", async (req, res) => {
     try {
       const userId = 1; // In production, get from authenticated user
-      const preferences = await storage.upsertUserPreferences({
+      const preferences = await storage.updateUserPreferences(userId, {
         ...req.body,
         userId,
       });

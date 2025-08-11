@@ -2,6 +2,7 @@ import { Express } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { storage } from './storage';
+import { emailService } from './services/email-service';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
 
@@ -34,6 +35,11 @@ export function setupAuth(app: Express) {
         JWT_SECRET,
         { expiresIn: '24h' }
       );
+
+      // Send welcome email
+      if (user.email) {
+        await emailService.sendWelcomeEmail(user.email, user.username);
+      }
 
       res.json({
         token,
@@ -184,6 +190,110 @@ export function setupAuth(app: Express) {
     } catch (error) {
       console.error('Reddit OAuth callback error:', error);
       res.redirect('/?error=oauth-failed');
+    }
+  });
+
+  // Password reset request
+  app.post('/api/auth/forgot-password', async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: 'Email is required' });
+      }
+
+      // Find user by email
+      const user = await storage.getUserByEmail(email);
+      
+      if (!user) {
+        // Don't reveal if email exists for security
+        return res.json({ message: 'If the email exists, a reset link has been sent' });
+      }
+
+      // Send password reset email
+      if (user.email) {
+        await emailService.sendPasswordResetEmail(user.email, user.username);
+      }
+
+      res.json({ message: 'If the email exists, a reset link has been sent' });
+    } catch (error) {
+      console.error('Password reset request error:', error);
+      res.status(500).json({ message: 'Error processing password reset' });
+    }
+  });
+
+  // Reset password with token
+  app.post('/api/auth/reset-password', async (req, res) => {
+    try {
+      const { token, newPassword } = req.body;
+      
+      if (!token || !newPassword) {
+        return res.status(400).json({ message: 'Token and new password are required' });
+      }
+
+      // Verify token
+      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      
+      if (decoded.type !== 'password-reset') {
+        return res.status(400).json({ message: 'Invalid reset token' });
+      }
+
+      // Find user and update password
+      const user = await storage.getUserByEmail(decoded.email);
+      
+      if (!user) {
+        return res.status(400).json({ message: 'Invalid reset token' });
+      }
+
+      // Hash new password
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      
+      // Update user password (would need to add this method to storage)
+      await storage.updateUserPassword(user.id, hashedPassword);
+
+      res.json({ message: 'Password reset successfully' });
+    } catch (error) {
+      if (error instanceof jwt.TokenExpiredError) {
+        return res.status(400).json({ message: 'Reset link has expired' });
+      }
+      console.error('Password reset error:', error);
+      res.status(500).json({ message: 'Error resetting password' });
+    }
+  });
+
+  // Verify email with token
+  app.get('/api/auth/verify-email', async (req, res) => {
+    try {
+      const { token } = req.query;
+      
+      if (!token) {
+        return res.status(400).json({ message: 'Verification token required' });
+      }
+
+      // Verify token
+      const decoded = jwt.verify(token as string, JWT_SECRET) as any;
+      
+      if (decoded.type !== 'email-verification') {
+        return res.status(400).json({ message: 'Invalid verification token' });
+      }
+
+      // Update user email verification status
+      const user = await storage.getUserByEmail(decoded.email);
+      
+      if (!user) {
+        return res.status(400).json({ message: 'Invalid verification token' });
+      }
+
+      // Mark email as verified (would need to add this to schema)
+      await storage.updateUserEmailVerified(user.id, true);
+
+      res.json({ message: 'Email verified successfully' });
+    } catch (error) {
+      if (error instanceof jwt.TokenExpiredError) {
+        return res.status(400).json({ message: 'Verification link has expired' });
+      }
+      console.error('Email verification error:', error);
+      res.status(500).json({ message: 'Error verifying email' });
     }
   });
 }

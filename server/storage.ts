@@ -28,6 +28,8 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUserTier(userId: number, tier: string): Promise<void>;
   updateUserProfile(userId: number, updates: Partial<User>): Promise<User | undefined>;
+  updateUserPassword(userId: number, hashedPassword: string): Promise<void>;
+  updateUserEmailVerified(userId: number, verified: boolean): Promise<void>;
   deleteUser(userId: number): Promise<void>;
 
   // Generation operations
@@ -130,6 +132,26 @@ class PostgreSQLStorage implements IStorage {
     } catch (error) {
       console.error('Storage: Error updating user profile:', error);
       return undefined;
+    }
+  }
+
+  async updateUserPassword(userId: number, hashedPassword: string): Promise<void> {
+    try {
+      await db.update(users).set({ password: hashedPassword }).where(eq(users.id, userId));
+      console.log('Storage: Password updated for user:', userId);
+    } catch (error) {
+      console.error('Storage: Error updating user password:', error);
+      throw error;
+    }
+  }
+
+  async updateUserEmailVerified(userId: number, verified: boolean): Promise<void> {
+    try {
+      await db.update(users).set({ emailVerified: verified }).where(eq(users.id, userId));
+      console.log('Storage: Email verification status updated for user:', userId);
+    } catch (error) {
+      console.error('Storage: Error updating email verification:', error);
+      throw error;
     }
   }
 
