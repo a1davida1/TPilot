@@ -203,7 +203,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
         return <ImageGallery />;
       
       case 'protect':
-        return <ImageProtector />;
+        return <ImageProtector userTier={userTier} />;
       
       case 'analytics':
         return <AnalyticsDashboard isGuestMode={userTier === 'guest'} />;

@@ -25,7 +25,11 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { protectImage, downloadProtectedImage, protectionPresets, type ImageProcessingOptions } from '@/lib/image-protection';
 
-export function ImageProtector() {
+interface ImageProtectorProps {
+  userTier?: 'guest' | 'free' | 'pro' | 'premium';
+}
+
+export function ImageProtector({ userTier = 'guest' }: ImageProtectorProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [originalImageUrl, setOriginalImageUrl] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -92,16 +96,22 @@ export function ImageProtector() {
     setIsProcessing(true);
     try {
       const settings = useCustom ? customSettings : protectionPresets[preset];
-      const protectedBlob = await protectImage(selectedFile, settings);
+      // Add watermark for free and guest users
+      const shouldAddWatermark = userTier === 'guest' || userTier === 'free';
+      const protectedBlob = await protectImage(selectedFile, settings, shouldAddWatermark);
       
       // Create preview URL
       const url = URL.createObjectURL(protectedBlob);
       setProtectedImageUrl(url);
       setShowComparison(true);
       
+      const successMessage = shouldAddWatermark 
+        ? "Image protected! Upgrade to Pro to remove watermarks."
+        : "Your image is now protected against reverse search.";
+      
       toast({
         title: "Image protected successfully!",
-        description: "Your image is now protected against reverse search.",
+        description: successMessage,
         action: (
           <Button 
             size="sm" 
@@ -163,16 +173,51 @@ export function ImageProtector() {
       {/* Header Card */}
       <Card className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/20">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-2xl">
-            <Shield className="h-6 w-6 text-purple-600" />
-            ImageShield™ Protection
-          </CardTitle>
-          <CardDescription className="text-base">
-            Protect your photos from reverse image searches while maintaining visual quality.
-            Our advanced algorithms make your images unsearchable while keeping them beautiful.
-          </CardDescription>
+          <div className="flex items-start justify-between">
+            <div className="space-y-1 flex-1">
+              <CardTitle className="flex items-center gap-2 text-2xl">
+                <Shield className="h-6 w-6 text-purple-600" />
+                ImageShield™ Protection
+              </CardTitle>
+              <CardDescription className="text-base">
+                Protect your photos from reverse image searches while maintaining visual quality.
+                Our advanced algorithms make your images unsearchable while keeping them beautiful.
+              </CardDescription>
+            </div>
+            <div className="ml-4">
+              {userTier === 'guest' || userTier === 'free' ? (
+                <Badge variant="outline" className="border-orange-500 text-orange-600 px-3 py-1">
+                  <Lock className="h-3 w-3 mr-1" />
+                  Free Tier - Watermark Applied
+                </Badge>
+              ) : (
+                <Badge className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 py-1">
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  Pro Tier - No Watermark
+                </Badge>
+              )}
+            </div>
+          </div>
         </CardHeader>
       </Card>
+      
+      {/* Watermark Notice for Free Users */}
+      {(userTier === 'guest' || userTier === 'free') && (
+        <Alert className="border-orange-500/30 bg-orange-500/5">
+          <AlertCircle className="h-4 w-4 text-orange-600" />
+          <AlertDescription className="text-sm">
+            <span className="font-medium">Free Tier Notice:</span> Protected images will include a subtle "Protected by ThottoPilot™" watermark. 
+            <Button 
+              variant="link" 
+              className="px-2 h-auto py-0 text-purple-600"
+              onClick={() => window.location.href = '/pricing'}
+            >
+              Upgrade to Pro
+            </Button>
+            to remove watermarks and unlock advanced features.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Main Content */}
       <div className="grid md:grid-cols-2 gap-6">

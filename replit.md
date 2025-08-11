@@ -4,6 +4,16 @@ ThottoPilot is a comprehensive social media content creation platform for adult 
 
 ## Recent Changes (August 11, 2025)
 
+**WATERMARK SYSTEM FOR FREE USERS IMPLEMENTED:**
+- Added tiered watermark system for ImageShield protection
+- **FREE/GUEST USERS:** Protected images include "Protected by ThottoPilot™" watermark in bottom-right corner
+- **PRO/PREMIUM USERS:** Clean images without watermarks
+- **VISUAL INDICATORS:** Badge shows current tier and watermark status
+- **UPGRADE PROMPTS:** Clear notice for free users with upgrade option
+- **WATERMARK DESIGN:** Subtle white text with shield icon, semi-transparent overlay
+- **MONETIZATION:** Strategic feature to encourage Pro upgrades
+- **Status:** Watermark system fully functional and integrated with user tiers
+
 **IMAGESHIELD FULLY OPERATIONAL:**
 - Completely rewrote ImageProtector component with enhanced UI/UX
 - **DRAG & DROP UPLOAD:** Easy drag-and-drop or click-to-upload functionality

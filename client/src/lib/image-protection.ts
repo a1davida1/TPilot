@@ -41,7 +41,8 @@ export const protectionPresets: Record<string, ProtectionSettings> = {
 
 export async function protectImage(
   imageFile: File,
-  settingsOrLevel: ProtectionSettings | 'light' | 'standard' | 'heavy' = 'standard'
+  settingsOrLevel: ProtectionSettings | 'light' | 'standard' | 'heavy' = 'standard',
+  addWatermark: boolean = false
 ): Promise<Blob> {
   const settings = typeof settingsOrLevel === 'string' 
     ? protectionPresets[settingsOrLevel] 
@@ -72,6 +73,49 @@ export async function protectImage(
         // Add noise
         if (settings.noise && settings.noise > 0) {
           addNoise(ctx, canvas.width, canvas.height, settings.noise);
+        }
+        
+        // Add watermark for free users
+        if (addWatermark) {
+          // Reset any filters for watermark
+          ctx.filter = 'none';
+          
+          // Set up watermark style
+          const fontSize = Math.max(16, canvas.width * 0.03);
+          ctx.font = `bold ${fontSize}px Arial`;
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+          ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+          ctx.lineWidth = 2;
+          
+          // Watermark text
+          const watermarkText = 'Protected by ThottoPilot™';
+          
+          // Calculate position (bottom right corner)
+          const textMetrics = ctx.measureText(watermarkText);
+          const padding = fontSize;
+          const x = canvas.width - textMetrics.width - padding;
+          const y = canvas.height - padding;
+          
+          // Draw text with outline for better visibility
+          ctx.strokeText(watermarkText, x, y);
+          ctx.fillText(watermarkText, x, y);
+          
+          // Add subtle shield icon before text
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+          const iconSize = fontSize * 0.8;
+          const iconX = x - iconSize - 5;
+          const iconY = y - fontSize + 5;
+          
+          // Draw simple shield icon
+          ctx.beginPath();
+          ctx.moveTo(iconX, iconY);
+          ctx.lineTo(iconX + iconSize, iconY);
+          ctx.lineTo(iconX + iconSize, iconY + iconSize * 0.6);
+          ctx.lineTo(iconX + iconSize * 0.5, iconY + iconSize);
+          ctx.lineTo(iconX, iconY + iconSize * 0.6);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
         }
         
         // Convert to blob
