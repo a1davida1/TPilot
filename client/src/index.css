@@ -7,67 +7,67 @@
 
 @layer base {
   :root {
-    /* Light Mode - Apple Inspired */
-    --background: 0 0% 100%;
-    --foreground: 0 0% 5%;
+    /* Light Mode - Cotton Candy Theme */
+    --background: 300 100% 99%; /* Very light pink-white */
+    --foreground: 280 60% 25%; /* Deep purple for text */
 
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 5%;
+    --card: 0 0% 100%; /* Pure white cards */
+    --card-foreground: 280 50% 30%; /* Dark purple text */
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 5%;
+    --popover: 0 0% 100%; /* White popovers */
+    --popover-foreground: 280 50% 30%; /* Dark purple text */
 
-    --primary: 280 85% 60%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 280 70% 65%; /* Purple primary */
+    --primary-foreground: 0 0% 100%; /* White text on purple */
 
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 5%;
+    --secondary: 330 70% 95%; /* Very light pink */
+    --secondary-foreground: 280 60% 35%; /* Purple text */
 
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
+    --muted: 330 40% 96%; /* Soft pink-white */
+    --muted-foreground: 280 40% 45%; /* Medium purple */
 
-    --accent: 340 75% 55%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 330 65% 70%; /* Pink accent */
+    --accent-foreground: 0 0% 100%; /* White text */
 
-    --destructive: 0 84% 50%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 350 80% 60%; /* Pink-red */
+    --destructive-foreground: 0 0% 100%; /* White text */
 
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
-    --ring: 280 85% 60%;
+    --border: 330 30% 92%; /* Light pink border */
+    --input: 330 20% 96%; /* Very light pink input */
+    --ring: 280 70% 65%; /* Purple focus ring */
 
     --radius: 0.75rem;
   }
 
   .dark {
-    /* Dark Mode - High Contrast for Readability */
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
+    /* Dark Mode - Cotton Candy with High Readability */
+    --background: 280 40% 8%; /* Deep purple-black */
+    --foreground: 330 100% 97%; /* Pink-tinted white */
 
-    --card: 0 0% 8%;
-    --card-foreground: 0 0% 98%;
+    --card: 280 35% 12%; /* Dark purple card */
+    --card-foreground: 330 80% 95%; /* Light pink-white text */
 
-    --popover: 0 0% 8%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 280 35% 12%; /* Dark purple */
+    --popover-foreground: 330 80% 95%; /* Light pink-white */
 
-    --primary: 280 85% 70%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 330 75% 75%; /* Bright pink */
+    --primary-foreground: 280 40% 10%; /* Dark purple text */
 
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 280 50% 25%; /* Medium purple */
+    --secondary-foreground: 330 100% 95%; /* Pink-white text */
 
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 85%;
+    --muted: 280 30% 20%; /* Muted dark purple */
+    --muted-foreground: 330 60% 85%; /* Light pink text */
 
-    --accent: 340 75% 65%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 300 70% 70%; /* Purple-pink accent */
+    --accent-foreground: 280 40% 10%; /* Dark purple text */
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 350 75% 65%; /* Pink-red */
+    --destructive-foreground: 0 0% 100%; /* White */
 
-    --border: 0 0% 20%;
-    --input: 0 0% 14.9%;
-    --ring: 280 85% 70%;
+    --border: 280 30% 25%; /* Purple border */
+    --input: 280 35% 18%; /* Dark purple input */
+    --ring: 330 75% 75%; /* Pink focus ring */
   }
 }
 
@@ -87,14 +87,14 @@
     scroll-behavior: smooth;
   }
 
-  /* Apple-inspired selection colors */
+  /* Cotton Candy selection colors */
   ::selection {
-    background-color: hsl(280, 85%, 60%, 0.3);
+    background-color: hsl(330, 70%, 70%, 0.3);
     color: inherit;
   }
 
   ::-moz-selection {
-    background-color: hsl(280, 85%, 60%, 0.3);
+    background-color: hsl(330, 70%, 70%, 0.3);
     color: inherit;
   }
 }
@@ -107,7 +107,7 @@
 }
 
 .text-gradient {
-  @apply bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent;
+  @apply bg-gradient-to-r from-purple-500 via-pink-400 to-purple-400 bg-clip-text text-transparent;
   font-weight: 600;
 }
 
@@ -260,16 +260,16 @@
   background-color: rgba(155, 155, 155, 0.7);
 }
 
-/* Premium button styles */
+/* Premium button styles - Cotton Candy */
 .btn-premium {
   @apply relative overflow-hidden;
-  background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+  background: linear-gradient(135deg, #c084fc 0%, #f9a8d4 50%, #e9d5ff 100%);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .btn-premium:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(139, 92, 246, 0.4);
+  box-shadow: 0 10px 20px rgba(244, 114, 182, 0.3);
 }
 
 .btn-premium::before {
@@ -318,10 +318,11 @@
 .text-gradient-animate {
   background: linear-gradient(
     270deg,
-    #667eea,
-    #764ba2,
-    #f093fb,
-    #f5576c
+    #c084fc,
+    #f9a8d4,
+    #fbbaa8,
+    #e9d5ff,
+    #fce7f3
   );
   background-size: 300% 300%;
   -webkit-background-clip: text;
