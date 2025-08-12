@@ -19,12 +19,32 @@ import {
   ArrowRight,
   RefreshCw,
   Copy,
-  Check
+  Check,
+  Wand2
 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { ContentGeneration } from "@shared/schema";
+
+// Assuming ThemeToggle and other necessary components/hooks are imported correctly.
+// For example: import ThemeToggle from "@/components/ThemeToggle";
+// And placeholder functions/types like photoTypes, textTones, availableHashtags, setSelectedPhotoType, etc. are defined or imported.
+
+// Dummy definitions for placeholder types and states to make the code runnable for demonstration.
+// In a real app, these would be imported or defined elsewhere.
+const ThemeToggle = () => null; // Placeholder for ThemeToggle component
+const photoTypes = [
+  { id: 'realistic', label: 'Realistic', emoji: '📸' },
+  { id: 'artistic', label: 'Artistic', emoji: '🎨' },
+];
+const textTones = [
+  { id: 'playful', label: 'Playful', emoji: '😜' },
+  { id: 'sensual', label: 'Sensual', emoji: '💋' },
+  { id: 'elegant', label: 'Elegant', emoji: '👑' },
+  { id: 'casual', label: 'Casual', emoji: '😊' },
+];
+const availableHashtags = ['#model', '#photography', '#fashion', '#lifestyle', '#beauty', '#art', '#portrait', '#creative', '#outfit', '#style'];
 
 // Extended interface for frontend display with dynamic server properties
 interface GeneratedContentDisplay extends ContentGeneration {
@@ -58,16 +78,21 @@ export function UnifiedContentCreator({
   const [allowsPromotion, setAllowsPromotion] = useState("moderate");
   const [useAdvancedSettings, setUseAdvancedSettings] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState("auto");
-  
+
+  // State for photo types and text tones
+  const [selectedPhotoType, setSelectedPhotoType] = useState(photoTypes[0].id);
+  const [selectedTextTone, setSelectedTextTone] = useState(textTones[0].id);
+  const [selectedHashtags, setSelectedHashtags] = useState<string[]>([]);
+
   // Image workflow states
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   // Output display states
   const [generatedContent, setGeneratedContent] = useState<GeneratedContentDisplay | null>(null);
   const [copiedItem, setCopiedItem] = useState<string | null>(null);
-  
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -149,7 +174,7 @@ export function UnifiedContentCreator({
         title: "Copied!",
         description: `${itemName} copied to clipboard`
       });
-      
+
       // Reset copied state after 2 seconds
       setTimeout(() => setCopiedItem(null), 2000);
     } catch (err) {
@@ -165,7 +190,7 @@ export function UnifiedContentCreator({
     mutationFn: async (data: any) => {
       // Use FormData for unified endpoint that handles both text and images
       const formData = new FormData();
-      
+
       // Set mode based on workflow
       if (workflowMode === 'image' && imageFile) {
         formData.append('mode', 'image');
@@ -174,14 +199,18 @@ export function UnifiedContentCreator({
         formData.append('mode', 'text');
         formData.append('prompt', data.customPrompt || data.prompt || '');
       }
-      
+
       // Add common parameters
       formData.append('platform', data.platform || platform);
       formData.append('style', data.style || 'playful');
       formData.append('theme', data.theme || '');
       formData.append('includePromotion', String(data.allowsPromotion === 'high'));
       formData.append('customInstructions', data.customPrompt || '');
-      
+      formData.append('photoType', data.photoType || selectedPhotoType);
+      formData.append('textTone', data.textTone || selectedTextTone);
+      formData.append('hashtags', data.hashtags?.join(',') || selectedHashtags.join(','));
+
+
       // Send to unified endpoint
       const response = await fetch('/api/generate-unified', {
         method: 'POST',
@@ -190,12 +219,12 @@ export function UnifiedContentCreator({
         },
         body: formData
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || 'Failed to generate content');
       }
-      
+
       return await response.json();
     },
     onSuccess: (data) => {
@@ -207,22 +236,22 @@ export function UnifiedContentCreator({
                 data.titles ? Object.values(data.titles).filter(Boolean) : [],
         photoInstructions: data.photoInstructions || {}
       };
-      
+
       onContentGenerated(data);
       setGeneratedContent(displayData);
-      
+
       const hasWatermark = data.content?.includes('[via ThottoPilot]') || 
                           (Array.isArray(data.titles) && data.titles[0]?.includes('[via ThottoPilot]'));
-      
+
       const description = data.contentSource === 'template' 
         ? `Using pre-generated content${hasWatermark ? ' (with watermark)' : ''}`
         : `Generated with ${data.aiProvider || 'service'}`;
-      
+
       toast({
         title: "Content Generated Successfully!",
         description: description
       });
-      
+
       if (data.upgradeMessage) {
         setTimeout(() => {
           toast({
@@ -231,7 +260,7 @@ export function UnifiedContentCreator({
           });
         }, 2000);
       }
-      
+
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
     },
     onError: (error) => {
@@ -252,7 +281,7 @@ export function UnifiedContentCreator({
         setUploadedImage(e.target?.result as string);
       };
       reader.readAsDataURL(file);
-      
+
       toast({
         title: "Image Uploaded",
         description: "Your image has been uploaded successfully!"
@@ -276,7 +305,10 @@ export function UnifiedContentCreator({
         customPrompt,
         subreddit: subreddit || undefined,
         allowsPromotion,
-        preferredProvider: selectedProvider !== "auto" ? selectedProvider : undefined
+        preferredProvider: selectedProvider !== "auto" ? selectedProvider : undefined,
+        photoType: selectedPhotoType,
+        textTone: selectedTextTone,
+        hashtags: selectedHashtags
       });
     } else if (workflowMode === 'image') {
       if (!imageFile) {
@@ -294,7 +326,10 @@ export function UnifiedContentCreator({
         imageFile,
         subreddit: subreddit || undefined,
         allowsPromotion,
-        preferredProvider: selectedProvider !== "auto" ? selectedProvider : undefined
+        preferredProvider: selectedProvider !== "auto" ? selectedProvider : undefined,
+        photoType: selectedPhotoType,
+        textTone: selectedTextTone,
+        hashtags: selectedHashtags
       });
     }
   };
@@ -307,7 +342,10 @@ export function UnifiedContentCreator({
       allowsPromotion,
       style: preset.id,
       theme: preset.title.toLowerCase(),
-      preferredProvider: selectedProvider !== "auto" ? selectedProvider : undefined
+      preferredProvider: selectedProvider !== "auto" ? selectedProvider : undefined,
+      photoType: selectedPhotoType,
+      textTone: selectedTextTone,
+      hashtags: selectedHashtags
     });
   };
 
@@ -317,6 +355,14 @@ export function UnifiedContentCreator({
       description: "Image-based content generation requires Pro tier. Upgrade to unlock this feature!",
       variant: "default"
     });
+  };
+
+  const toggleHashtag = (hashtag: string) => {
+    setSelectedHashtags((prev) =>
+      prev.includes(hashtag)
+        ? prev.filter((h) => h !== hashtag)
+        : [...prev.slice(0, 9), hashtag].slice(0, 10) // Limit to 10 hashtags
+    );
   };
 
   return (
@@ -362,11 +408,11 @@ export function UnifiedContentCreator({
             <div className="space-y-4">
               <div className="text-center">
                 <h3 className="text-lg font-semibold mb-2">Choose Your Style</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-sm text-muted-foreground">
                   Click any style below to instantly generate content for that theme
                 </p>
               </div>
-              
+
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {contentPresets.map((preset) => (
                   <Button
@@ -384,11 +430,11 @@ export function UnifiedContentCreator({
                   </Button>
                 ))}
               </div>
-              
+
               {generateContentMutation.isPending && (
                 <div className="flex items-center justify-center space-x-2 py-4">
                   <RefreshCw className="h-4 w-4 animate-spin" />
-                  <span className="text-sm text-gray-600">Generating content...</span>
+                  <span className="text-sm text-muted-foreground">Generating content...</span>
                 </div>
               )}
             </div>
@@ -417,7 +463,7 @@ export function UnifiedContentCreator({
                 <p className="text-gray-600 dark:text-gray-400 mb-4">
                   Image-based content generation is available for Pro and Premium users
                 </p>
-                <Button onClick={handleUpgradePrompt} className="bg-purple-600 hover:bg-purple-700">
+                <Button onClick={handleUpgradePrompt} className="bg-primary hover:bg-primary/90">
                   <Crown className="mr-2 h-4 w-4" />
                   Upgrade to Pro
                 </Button>
@@ -546,15 +592,19 @@ export function UnifiedContentCreator({
         <Button 
           onClick={handleGenerate} 
           disabled={generateContentMutation.isPending}
-          className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-3"
         >
           {generateContentMutation.isPending ? (
-            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+            <>
+              <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+              Generating...
+            </>
           ) : (
-            <Sparkles className="mr-2 h-4 w-4" />
+            <>
+              <Sparkles className="h-4 w-4 mr-2" />
+              Generate Content
+            </>
           )}
-          {generateContentMutation.isPending ? "Generating..." : "Generate Content"}
-          <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
 
         {/* Generated Content Output */}
@@ -562,7 +612,7 @@ export function UnifiedContentCreator({
           <div className="mt-8 space-y-6 border-t pt-6">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold flex items-center">
-                <Sparkles className="mr-2 h-5 w-5 text-purple-500" />
+                <Sparkles className="mr-2 h-5 w-5 text-primary" />
                 Generated Content
               </h3>
               {generatedContent.contentSource && (
@@ -576,7 +626,7 @@ export function UnifiedContentCreator({
             {generatedContent.titles && Array.isArray(generatedContent.titles) && generatedContent.titles.length > 0 && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-medium text-sm text-gray-700 dark:text-gray-300">
+                  <h4 className="font-medium text-sm text-card-foreground">
                     Titles ({generatedContent.titles.length} options)
                   </h4>
                 </div>
@@ -584,9 +634,9 @@ export function UnifiedContentCreator({
                   {generatedContent.titles.map((title: string, index: number) => (
                     <div 
                       key={index} 
-                      className="relative p-3 bg-gray-50 dark:bg-gray-800 rounded-lg group hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      className="relative p-3 bg-secondary rounded-lg group hover:bg-secondary/80 transition-colors border border-border"
                     >
-                      <p className="text-sm pr-8">{title}</p>
+                      <p className="text-secondary-foreground">{title}</p>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -609,12 +659,12 @@ export function UnifiedContentCreator({
             {generatedContent.content && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-medium text-sm text-gray-700 dark:text-gray-300">
+                  <h4 className="font-medium text-sm text-card-foreground">
                     Post Content
                   </h4>
                 </div>
-                <div className="relative p-4 bg-gray-50 dark:bg-gray-800 rounded-lg group hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                  <p className="text-sm whitespace-pre-wrap pr-8">{generatedContent.content}</p>
+                <div className="relative p-4 bg-secondary rounded-lg group hover:bg-secondary/80 transition-colors border border-border">
+                  <p className="text-secondary-foreground whitespace-pre-wrap">{generatedContent.content}</p>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -635,22 +685,22 @@ export function UnifiedContentCreator({
             {generatedContent.photoInstructions && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-medium text-sm text-gray-700 dark:text-gray-300 flex items-center">
+                  <h4 className="font-medium text-sm text-card-foreground flex items-center">
                     <Camera className="mr-1 h-4 w-4" />
                     Photo Instructions
                   </h4>
                 </div>
-                <div className="relative p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg group hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors border border-blue-200 dark:border-blue-800">
+                <div className="relative p-4 bg-primary/10 rounded-lg group hover:bg-primary/20 transition-colors border border-primary/30">
                   <div className="space-y-3 pr-8">
                     {typeof generatedContent.photoInstructions === 'string' ? (
-                      <p className="text-sm">{generatedContent.photoInstructions}</p>
+                      <p className="text-sm text-card-foreground">{generatedContent.photoInstructions}</p>
                     ) : (
                       Object.entries(generatedContent.photoInstructions as { [key: string]: string }).map(([key, value]) => (
                         <div key={key}>
-                          <span className="font-medium text-xs text-blue-700 dark:text-blue-300 uppercase tracking-wide">
+                          <span className="font-medium text-xs text-primary uppercase tracking-wide">
                             {key.replace(/([A-Z])/g, ' $1').trim()}:
                           </span>
-                          <p className="text-sm mt-1">{String(value)}</p>
+                          <p className="text-sm mt-1 text-card-foreground">{String(value)}</p>
                         </div>
                       ))
                     )}

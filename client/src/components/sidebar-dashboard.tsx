@@ -59,10 +59,26 @@ import { ProPerks } from "@/components/pro-perks";
 import { ImageProtector } from "@/components/image-protector";
 import { AdminPortal } from "@/components/admin-portal";
 import { cn } from "@/lib/utils";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/sidebar"; // Assuming these are your sidebar components
 
 interface SidebarDashboardProps {
   isGuestMode?: boolean;
 }
+
+// Placeholder for getPageTitle function, assuming it exists elsewhere or is defined here
+const getPageTitle = () => {
+  // This is a placeholder. In a real app, this would dynamically return the title
+  // based on the activeSection or route.
+  return "Dashboard Overview"; 
+};
 
 export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps) {
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -71,7 +87,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeSection, setActiveSection] = useState('generator');
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['content', 'creator-tools']));
-  
+
   // Load user from localStorage on mount
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -110,7 +126,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
 
   // Check if user is admin
   const isAdmin = user?.username === 'admin' || user?.isAdmin || user?.email === 'admin@thottopilot.com';
-  
+
   const menuItems = [
     {
       id: 'creator-tools',
@@ -202,31 +218,31 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
             )}
           </div>
         );
-      
+
       case 'reddit':
         return <RedditCommunities />;
-      
+
       case 'trending':
         return <TrendingTags />;
-      
+
       case 'audience':
         return <AudienceInsights />;
-      
+
       case 'gallery':
         return <ImageGallery />;
-      
+
       case 'protect':
         return <ImageProtector userTier={userTier} />;
-      
+
       case 'analytics':
         return <AnalyticsDashboard isGuestMode={userTier === 'guest'} />;
-      
+
       case 'perks':
         return <ProPerks userTier={userTier} />;
-      
+
       case 'admin-portal':
         return isAdmin ? <AdminPortal /> : null;
-      
+
       default:
         return (
           <Card className="min-h-[400px] flex items-center justify-center">
@@ -255,7 +271,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
               >
                 {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </Button>
-              
+
               <div className="flex items-center space-x-2">
                 <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
                   <Sparkles className="h-5 w-5 text-white" />
@@ -264,7 +280,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
                   ThottoPilot
                 </h1>
               </div>
-              
+
               {userTier === 'pro' && (
                 <Badge className="bg-purple-600/20 text-purple-400 border-purple-500/30">
                   <Crown className="mr-1 h-3 w-3" />
@@ -385,7 +401,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
                           <ChevronRight className="h-4 w-4" />
                         )}
                       </Button>
-                      
+
                       {expandedSections.has(section.id) && (
                         <div className="ml-4 space-y-1">
                           {section.items.map((item) => (
@@ -445,7 +461,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
           </aside>
 
           {/* Main Content */}
-          <main className="flex-1 p-6 overflow-auto">
+          <main className="flex-1 p-6 overflow-auto bg-background text-foreground">
             {/* Guest Mode Banner */}
             {userTier === 'guest' && (
               <Alert className="mb-6 bg-gradient-to-r from-orange-500/10 to-pink-500/10 border-orange-500/20">
@@ -492,7 +508,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
           </main>
         </div>
       </div>
-      
+
       {/* Login Modal */}
       <LoginModal 
         isOpen={showLoginModal}

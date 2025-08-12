@@ -359,18 +359,52 @@ input:focus, textarea:focus, select:focus {
 }
 
 /* Ensure all text is readable */
-p, span, div, h1, h2, h3, h4, h5, h6, label {
-  @apply text-gray-900 dark:text-gray-100;
+p, span, div, h1, h2, h3, h4, h5, h6, label, button {
+  @apply text-foreground;
 }
 
 /* Muted text with better contrast */
 .text-muted-foreground {
-  @apply text-gray-600 dark:text-gray-400 !important;
+  @apply text-muted-foreground;
 }
 
 /* Card text readability */
 .card {
-  @apply bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100;
+  @apply bg-card text-card-foreground border-border;
+}
+
+/* Force readable text on all components */
+* {
+  color: inherit;
+}
+
+/* Specific component fixes */
+.sidebar-content {
+  @apply bg-sidebar text-sidebar-foreground;
+}
+
+/* Form elements readability */
+input[type="text"], 
+input[type="email"], 
+input[type="password"], 
+textarea, 
+select {
+  @apply bg-input text-foreground border-border;
+}
+
+/* Button text readability */
+button {
+  @apply text-current;
+}
+
+/* Link readability */
+a {
+  @apply text-foreground hover:text-foreground/80;
+}
+
+/* Badge readability */
+.badge {
+  @apply bg-secondary text-secondary-foreground border-border;
 }
 
 /* Refined scrollbar for main content */
