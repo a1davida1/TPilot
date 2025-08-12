@@ -27,6 +27,7 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUserTier(userId: number, tier: string): Promise<void>;
+  updateUser(userId: number, updates: Partial<User>): Promise<User>;
   updateUserProfile(userId: number, updates: Partial<User>): Promise<User | undefined>;
   updateUserPassword(userId: number, hashedPassword: string): Promise<void>;
   updateUserEmailVerified(userId: number, verified: boolean): Promise<void>;
@@ -121,6 +122,19 @@ class PostgreSQLStorage implements IStorage {
       await db.update(users).set({ tier }).where(eq(users.id, userId));
     } catch (error) {
       console.error('Storage: Error updating user tier:', error);
+      throw error;
+    }
+  }
+
+  async updateUser(userId: number, updates: Partial<User>): Promise<User> {
+    try {
+      const result = await db.update(users).set(updates).where(eq(users.id, userId)).returning();
+      if (!result[0]) {
+        throw new Error('User not found');
+      }
+      return result[0];
+    } catch (error) {
+      console.error('Storage: Error updating user:', error);
       throw error;
     }
   }

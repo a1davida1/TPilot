@@ -18,6 +18,7 @@ import { getRandomTemplates, addWatermark, getTemplateByMood } from "./content-t
 import { generateAdvancedContent, type ContentParameters } from "./advanced-content-generator";
 import { setupAuth } from "./auth";
 import { setupAdminRoutes } from "./admin-routes";
+import { configureSocialAuth, socialAuthRoutes } from "./social-auth-config";
 import { redditCommunitiesDatabase, getRecommendationsForUser, getCommunityInsights } from "./reddit-communities";
 import { visitorAnalytics } from "./visitor-analytics";
 import { getAvailablePerks, getPerksByCategory, generateReferralCode, getSignupInstructions } from "./pro-perks";
