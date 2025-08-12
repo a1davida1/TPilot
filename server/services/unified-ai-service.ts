@@ -176,26 +176,27 @@ Create content that's perfect for ${platform}.`;
   } catch (error) {
     console.error('Unified AI generation error:', error);
     
-    // Return demo content as fallback
+    // Check if it's a quota/billing issue
+    const isQuotaError = error.message?.includes('quota') || error.message?.includes('billing');
+    
+    // Return clearly marked demo content as fallback
     return {
       titles: [
-        `Feeling ${style} today 💕`,
-        `New ${theme || 'content'} just dropped!`,
-        'You won\'t want to miss this 😘'
+        `[DEMO] Feeling ${style} today 💕`,
+        `[DEMO] New ${theme || 'content'} just dropped!`,
+        '[DEMO] You won\'t want to miss this 😘'
       ],
-      content: `Hey loves! Just wanted to share something special with you today. ${
-        includePromotion ? 'Check out my profile for more exclusive content!' : 'Hope you enjoy!'
-      } Let me know what you think in the comments 💕`,
+      content: `[DEMO CONTENT] ${isQuotaError ? 'OpenAI API quota exceeded - using demo content.' : 'AI service temporarily unavailable - using demo content.'}\n\nThis would normally be personalized AI-generated content based on your prompt: "${prompt || customInstructions || 'Generate content'}"\n\nStyle: ${style} | Platform: ${platform} | ${includePromotion ? 'With promotion' : 'No promotion'}\n\nTo enable real AI generation, the OpenAI API key needs to be configured with available credits.`,
       photoInstructions: {
-        lighting: 'Golden hour lighting (1 hour before sunset) or soft window light',
-        cameraAngle: 'Eye level for connection, slightly above for a flattering look',
-        composition: 'Rule of thirds - place yourself off-center for visual interest',
-        styling: 'Casual elegance - comfortable but put-together look',
-        mood: 'Natural and confident with genuine expressions',
-        technicalSettings: 'Portrait mode or f/1.8-2.8, ISO 100-400, warm white balance'
+        lighting: '[DEMO] Golden hour lighting or soft window light',
+        cameraAngle: '[DEMO] Eye level for connection, slightly above for flattering angles',
+        composition: '[DEMO] Rule of thirds with subject off-center',
+        styling: '[DEMO] Casual elegance - comfortable but put-together look',
+        mood: '[DEMO] Natural and confident with genuine expressions',
+        technicalSettings: '[DEMO] Portrait mode f/1.8-2.8, ISO 100-400, warm white balance'
       },
-      hashtags: ['#contentcreator', '#dailyvibes', '#photooftheday', '#aesthetic', '#mood'],
-      caption: 'Living my best life and sharing it with you!'
+      hashtags: ['#demo', '#contentcreator', '#aiunavailable', '#placeholder', '#test'],
+      caption: '[DEMO] This would be AI-generated content!'
     };
   }
 }

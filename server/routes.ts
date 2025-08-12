@@ -499,6 +499,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         customInstructions
       });
 
+      // Check if this is demo content and add metadata
+      const isDemoContent = result.titles[0]?.includes('[DEMO]') || result.content?.includes('[DEMO CONTENT]');
+      
       // Save to database if user is authenticated
       if (req.user?.id) {
         await storage.createContentGeneration({
@@ -514,7 +517,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      res.json(result);
+      // Add metadata to response
+      const response = {
+        ...result,
+        contentSource: isDemoContent ? 'demo' : 'ai',
+        isDemo: isDemoContent,
+        apiStatus: isDemoContent ? 'unavailable' : 'active'
+      };
+
+      res.json(response);
     } catch (error) {
       console.error('Unified AI generation error:', error);
       res.status(500).json({ 

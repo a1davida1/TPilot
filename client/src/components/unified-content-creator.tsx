@@ -615,11 +615,22 @@ export function UnifiedContentCreator({
                 <Sparkles className="mr-2 h-5 w-5 text-primary" />
                 Generated Content
               </h3>
-              {generatedContent.contentSource && (
-                <Badge variant="secondary" className="text-xs">
-                  {generatedContent.contentSource === 'template' ? 'Template' : 'AI Generated'}
-                </Badge>
-              )}
+              <div className="flex gap-2">
+                {generatedContent.contentSource && (
+                  <Badge 
+                    variant={generatedContent.contentSource === 'demo' ? 'destructive' : 'secondary'} 
+                    className="text-xs"
+                  >
+                    {generatedContent.contentSource === 'demo' ? 'DEMO - AI Unavailable' : 
+                     generatedContent.contentSource === 'template' ? 'Template' : 'AI Generated'}
+                  </Badge>
+                )}
+                {(generatedContent as any).isDemo && (
+                  <Badge variant="outline" className="text-xs text-orange-600 border-orange-600">
+                    OpenAI Quota Exceeded
+                  </Badge>
+                )}
+              </div>
             </div>
 
             {/* Generated Titles */}

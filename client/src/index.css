@@ -398,9 +398,9 @@ button {
 }
 
 /* Link readability */
-a {
-  @apply text-foreground hover:text-foreground/80;
-}
+  a {
+    @apply text-foreground hover:opacity-80;
+  }
 
 /* Badge readability */
 .badge {
