@@ -7,67 +7,67 @@
 
 @layer base {
   :root {
-    /* Light Mode - Cotton Candy Theme with Better Readability */
-    --background: 0 0% 100%; /* Pure white background */
-    --foreground: 280 80% 15%; /* Much darker purple for text */
-
-    --card: 0 0% 100%; /* Pure white cards */
-    --card-foreground: 280 80% 20%; /* Dark purple text */
-
-    --popover: 0 0% 100%; /* White popovers */
-    --popover-foreground: 280 80% 20%; /* Dark purple text */
-
-    --primary: 280 70% 50%; /* Darker purple primary */
-    --primary-foreground: 0 0% 100%; /* White text on purple */
-
-    --secondary: 330 30% 90%; /* Light pink */
-    --secondary-foreground: 280 80% 25%; /* Dark purple text */
-
-    --muted: 330 20% 95%; /* Very light pink */
-    --muted-foreground: 280 60% 35%; /* Medium-dark purple */
-
-    --accent: 330 65% 55%; /* Darker pink accent */
-    --accent-foreground: 0 0% 100%; /* White text */
-
-    --destructive: 350 80% 50%; /* Darker pink-red */
-    --destructive-foreground: 0 0% 100%; /* White text */
-
-    --border: 330 30% 85%; /* Darker pink border */
-    --input: 330 20% 98%; /* Very light pink input */
-    --ring: 280 70% 50%; /* Darker purple focus ring */
-
-    --radius: 0.75rem;
+    /* Light Mode - Clean & Readable */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 10%;
+    
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 10%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 10%;
+    
+    --primary: 280 60% 50%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 10%;
+    
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 40%;
+    
+    --accent: 330 60% 50%;
+    --accent-foreground: 0 0% 100%;
+    
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 0 0% 90%;
+    --input: 0 0% 100%;
+    --ring: 280 60% 50%;
+    
+    --radius: 0.5rem;
   }
 
   .dark {
-    /* Dark Mode - Cotton Candy with High Readability */
-    --background: 280 30% 5%; /* Very dark purple-black */
-    --foreground: 0 0% 95%; /* Near white text */
-
-    --card: 280 20% 10%; /* Dark purple card */
-    --card-foreground: 0 0% 90%; /* Light text */
-
-    --popover: 280 20% 10%; /* Dark purple */
-    --popover-foreground: 0 0% 90%; /* Light text */
-
-    --primary: 330 70% 60%; /* Bright pink */
-    --primary-foreground: 0 0% 100%; /* White text */
-
-    --secondary: 280 30% 20%; /* Medium dark purple */
-    --secondary-foreground: 0 0% 85%; /* Light text */
-
-    --muted: 280 20% 15%; /* Dark purple */
-    --muted-foreground: 0 0% 70%; /* Medium light text */
-
-    --accent: 300 70% 65%; /* Purple-pink accent */
-    --accent-foreground: 0 0% 100%; /* White text */
-
-    --destructive: 350 75% 60%; /* Pink-red */
-    --destructive-foreground: 0 0% 100%; /* White */
-
-    --border: 280 20% 25%; /* Lighter border */
-    --input: 280 20% 12%; /* Dark input */
-    --ring: 330 70% 60%; /* Pink focus ring */
+    /* Dark Mode - High Contrast for Perfect Readability */
+    --background: 0 0% 8%;
+    --foreground: 0 0% 98%;
+    
+    --card: 0 0% 12%;
+    --card-foreground: 0 0% 98%;
+    
+    --popover: 0 0% 12%;
+    --popover-foreground: 0 0% 98%;
+    
+    --primary: 280 60% 60%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 0 0% 16%;
+    --secondary-foreground: 0 0% 98%;
+    
+    --muted: 0 0% 16%;
+    --muted-foreground: 0 0% 70%;
+    
+    --accent: 330 60% 60%;
+    --accent-foreground: 0 0% 100%;
+    
+    --destructive: 0 70% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 0 0% 20%;
+    --input: 0 0% 16%;
+    --ring: 280 60% 60%;
   }
 }
 
@@ -75,9 +75,10 @@
   * {
     @apply border-border;
   }
+  
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -87,15 +88,18 @@
     scroll-behavior: smooth;
   }
 
-  /* Cotton Candy selection colors */
+  /* Ensure all text elements use proper colors */
+  h1, h2, h3, h4, h5, h6, p, span, div, label, a {
+    @apply text-foreground;
+  }
+
+  /* Selection colors */
   ::selection {
-    background-color: hsl(330, 70%, 70%, 0.3);
-    color: inherit;
+    background-color: hsl(280, 60%, 60%, 0.3);
   }
 
   ::-moz-selection {
-    background-color: hsl(330, 70%, 70%, 0.3);
-    color: inherit;
+    background-color: hsl(280, 60%, 60%, 0.3);
   }
 }
 
@@ -111,22 +115,7 @@
   font-weight: 700;
 }
 
-/* High contrast text utilities */
-.text-readable {
-  @apply text-gray-900 dark:text-gray-100;
-}
-
-.text-readable-muted {
-  @apply text-gray-700 dark:text-gray-300;
-}
-
-.bg-readable {
-  @apply bg-white dark:bg-gray-900;
-}
-
-.bg-readable-card {
-  @apply bg-white/95 dark:bg-gray-800/95;
-}
+/* Removed problematic color overrides - using CSS variables instead */
 
 .button-glow {
   @apply shadow-lg hover:shadow-xl transition-all duration-200;
@@ -348,64 +337,7 @@
   animation: gradient-shift 3s ease infinite;
 }
 
-/* Modern input styles with better contrast */
-input, textarea, select {
-  @apply transition-all duration-200 text-gray-900 dark:text-gray-100;
-  @apply bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600;
-}
-
-input:focus, textarea:focus, select:focus {
-  @apply ring-2 ring-primary border-primary;
-}
-
-/* Ensure all text is readable */
-p, span, div, h1, h2, h3, h4, h5, h6, label, button {
-  @apply text-foreground;
-}
-
-/* Muted text with better contrast */
-.text-muted-foreground {
-  @apply text-gray-500 dark:text-gray-400;
-}
-
-/* Card text readability */
-.card {
-  @apply bg-card text-card-foreground border-border;
-}
-
-/* Force readable text on all components */
-* {
-  color: inherit;
-}
-
-/* Specific component fixes */
-.sidebar-content {
-  @apply bg-sidebar text-sidebar-foreground;
-}
-
-/* Form elements readability */
-input[type="text"], 
-input[type="email"], 
-input[type="password"], 
-textarea, 
-select {
-  @apply bg-input text-foreground border-border;
-}
-
-/* Button text readability */
-button {
-  @apply text-current;
-}
-
-/* Link readability */
-  a {
-    @apply text-foreground hover:opacity-80;
-  }
-
-/* Badge readability */
-.badge {
-  @apply bg-secondary text-secondary-foreground border-border;
-}
+/* Clean, simple styles - let CSS variables handle the colors */
 
 /* Refined scrollbar for main content */
 ::-webkit-scrollbar {
