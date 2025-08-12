@@ -28,7 +28,11 @@ import {
   Crown,
   Sparkles,
   ChevronRight,
-  RefreshCw
+  RefreshCw,
+  Target,
+  Rocket,
+  CheckSquare,
+  Square
 } from 'lucide-react';
 
 interface UserStats {
@@ -217,21 +221,189 @@ export function AdminPortal() {
       </div>
 
       {/* Management Tabs */}
-      <Tabs defaultValue="trials" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+      <Tabs defaultValue="roadmap" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="roadmap" className="flex items-center gap-2">
+            <Target className="h-4 w-4" />
+            Roadmap
+          </TabsTrigger>
           <TabsTrigger value="trials" className="flex items-center gap-2">
             <Gift className="h-4 w-4" />
-            Trial Management
+            Trials
           </TabsTrigger>
           <TabsTrigger value="users" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
-            User Management
+            Users
           </TabsTrigger>
           <TabsTrigger value="settings" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
-            Platform Settings
+            Settings
           </TabsTrigger>
         </TabsList>
+
+        {/* Roadmap Tab */}
+        <TabsContent value="roadmap" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Rocket className="h-5 w-5 text-purple-600" />
+                Development Roadmap
+              </CardTitle>
+              <CardDescription>
+                ThottoPilot implementation progress and milestones
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {/* Core Features */}
+                <div>
+                  <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5 text-green-500" />
+                    Phase 1: Core Features (Complete)
+                  </h3>
+                  <div className="space-y-2 ml-7">
+                    <div className="flex items-center gap-2 text-sm">
+                      <CheckSquare className="h-4 w-4 text-green-500" />
+                      <span>✅ Authentication system with JWT</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <CheckSquare className="h-4 w-4 text-green-500" />
+                      <span>✅ Social login (Facebook, Google, Reddit)</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <CheckSquare className="h-4 w-4 text-green-500" />
+                      <span>✅ Content generation with templates</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <CheckSquare className="h-4 w-4 text-green-500" />
+                      <span>✅ ImageShield protection system</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <CheckSquare className="h-4 w-4 text-green-500" />
+                      <span>✅ Watermark system for free users</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <CheckSquare className="h-4 w-4 text-green-500" />
+                      <span>✅ Admin portal with user management</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <CheckSquare className="h-4 w-4 text-green-500" />
+                      <span>✅ Three-tier access (Guest/Free/Pro/Premium)</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Advanced Features */}
+                <div>
+                  <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5 text-green-500" />
+                    Phase 2: Advanced Features (Complete)
+                  </h3>
+                  <div className="space-y-2 ml-7">
+                    <div className="flex items-center gap-2 text-sm">
+                      <CheckSquare className="h-4 w-4 text-green-500" />
+                      <span>✅ AI content generation (OpenAI GPT-4o)</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <CheckSquare className="h-4 w-4 text-green-500" />
+                      <span>✅ Image-to-caption workflow</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <CheckSquare className="h-4 w-4 text-green-500" />
+                      <span>✅ Multi-platform support (Reddit, Twitter, Instagram)</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <CheckSquare className="h-4 w-4 text-green-500" />
+                      <span>✅ 50+ promotional templates</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <CheckSquare className="h-4 w-4 text-green-500" />
+                      <span>✅ Quick style presets (8 styles)</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <CheckSquare className="h-4 w-4 text-green-500" />
+                      <span>✅ Dark mode with neon accents</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* In Progress */}
+                <div>
+                  <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                    <Clock className="h-5 w-5 text-yellow-500" />
+                    Phase 3: Monetization (In Progress)
+                  </h3>
+                  <div className="space-y-2 ml-7">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Square className="h-4 w-4 text-gray-400" />
+                      <span>⏳ Payment integration (Stripe)</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Square className="h-4 w-4 text-gray-400" />
+                      <span>⏳ Email system (SendGrid)</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Square className="h-4 w-4 text-gray-400" />
+                      <span>⏳ Subscription management</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Square className="h-4 w-4 text-gray-400" />
+                      <span>⏳ Analytics dashboard</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Future Features */}
+                <div>
+                  <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                    <Target className="h-5 w-5 text-purple-500" />
+                    Phase 4: Future Enhancements
+                  </h3>
+                  <div className="space-y-2 ml-7">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Square className="h-4 w-4 text-gray-400" />
+                      <span>📋 Voice clone library</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Square className="h-4 w-4 text-gray-400" />
+                      <span>📋 RTX 4090 batch processing</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Square className="h-4 w-4 text-gray-400" />
+                      <span>📋 Age verification system</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Square className="h-4 w-4 text-gray-400" />
+                      <span>📋 Mobile app</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Square className="h-4 w-4 text-gray-400" />
+                      <span>📋 API for external integrations</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Progress Summary */}
+                <div className="mt-6 p-4 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold">Overall Progress</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Core platform complete, monetization in progress
+                      </p>
+                    </div>
+                    <div className="text-3xl font-bold text-purple-600">
+                      75%
+                    </div>
+                  </div>
+                  <div className="mt-3 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                    <div className="bg-gradient-to-r from-purple-600 to-pink-600 h-3 rounded-full" style={{ width: '75%' }}></div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         {/* Trial Management Tab */}
         <TabsContent value="trials" className="space-y-4">
