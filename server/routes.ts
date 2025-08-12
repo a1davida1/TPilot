@@ -6,6 +6,7 @@ import { insertContentGenerationSchema, insertUserImageSchema, insertUserSchema 
 import { generateContent } from "./services/content-generator";
 import { generateAIContent, analyzeImageForContent } from "./services/ai-generator";
 import { generateWithMultiProvider, getProviderStatus } from "./services/multi-ai-provider";
+import { generateUnifiedAIContent, analyzeImage } from "./services/unified-ai-service";
 import { generateImageCaption, imageToBase64, validateImageFormat } from "./image-caption-generator";
 import multer from 'multer';
 import path from 'path';
@@ -102,6 +103,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
   setupAuth(app);
   setupAdminRoutes(app);
+  
+  // Configure social authentication
+  configureSocialAuth();
+  
+  // Social auth routes
+  app.get('/api/auth/google', socialAuthRoutes.googleAuth);
+  app.get('/api/auth/google/callback', socialAuthRoutes.googleCallback);
+  app.get('/api/auth/facebook', socialAuthRoutes.facebookAuth);
+  app.get('/api/auth/facebook/callback', socialAuthRoutes.facebookCallback);
+  app.get('/api/auth/reddit', socialAuthRoutes.redditAuth);
+  app.get('/api/auth/reddit/callback', socialAuthRoutes.redditCallback);
 
   // Serve uploaded files
   app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
@@ -457,8 +469,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   // Generate content endpoint
-  // Import the unified AI service
-  const { generateUnifiedAIContent, analyzeImage } = await import('./services/unified-ai-service');
 
   // Unified AI generation endpoint - handles both text and image
   app.post('/api/generate-unified', upload.single('image'), async (req: AuthRequest, res) => {

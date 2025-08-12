@@ -4,14 +4,6 @@ import { Strategy as FacebookStrategy } from 'passport-facebook';
 import { storage } from './storage';
 import type { User } from '@shared/schema';
 
-// Type declaration for passport-reddit
-declare module 'passport-reddit' {
-  export class Strategy extends passport.Strategy {
-    constructor(options: any, verify: any);
-  }
-}
-const RedditStrategy = require('passport-reddit').Strategy;
-
 // Helper function to handle social auth user creation/update
 async function handleSocialAuth(
   provider: string,
@@ -79,17 +71,11 @@ export function configureSocialAuth() {
     }));
   }
 
-  // Reddit OAuth Strategy
-  if (process.env.REDDIT_CLIENT_ID && process.env.REDDIT_CLIENT_SECRET) {
-    passport.use(new RedditStrategy({
-      clientID: process.env.REDDIT_CLIENT_ID,
-      clientSecret: process.env.REDDIT_CLIENT_SECRET,
-      callbackURL: '/api/auth/reddit/callback',
-      state: 'random_state'
-    }, async (accessToken: string, refreshToken: string, profile: any, done: any) => {
-      await handleSocialAuth('reddit', profile, done);
-    }));
-  }
+  // Reddit OAuth Strategy - temporarily disabled due to import issues
+  // Will be enabled once passport-reddit ES module compatibility is resolved
+  // if (process.env.REDDIT_CLIENT_ID && process.env.REDDIT_CLIENT_SECRET) {
+  //   // Reddit strategy implementation
+  // }
 
   // Serialize and deserialize user
   passport.serializeUser((user: any, done) => {

@@ -290,6 +290,7 @@ export function UnifiedContentCreator({
 
       generateContentMutation.mutate({
         platform,
+        customPrompt: '', // Add empty prompt for image mode
         imageFile,
         subreddit: subreddit || undefined,
         allowsPromotion,

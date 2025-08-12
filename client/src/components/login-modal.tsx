@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { LogIn, UserPlus, Sparkles } from "lucide-react";
+import { SocialLoginButtons } from "./social-login-buttons";
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -152,6 +153,11 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
             <div className="text-center text-xs text-gray-500">
               Test account: admin@thottopilot.com / admin123
             </div>
+            
+            {/* Social login buttons */}
+            <div className="mt-6">
+              <SocialLoginButtons onClose={onClose} />
+            </div>
           </TabsContent>
 
           <TabsContent value="signup" className="space-y-4 mt-4">
@@ -198,6 +204,11 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                 {isLoading ? "Creating account..." : "Create Account"}
               </Button>
             </form>
+            
+            {/* Social login buttons */}
+            <div className="mt-6">
+              <SocialLoginButtons onClose={onClose} />
+            </div>
           </TabsContent>
         </Tabs>
 
