@@ -7,67 +7,67 @@
 
 @layer base {
   :root {
-    /* Light Mode - Cotton Candy Theme */
-    --background: 300 100% 99%; /* Very light pink-white */
-    --foreground: 280 60% 25%; /* Deep purple for text */
+    /* Light Mode - Cotton Candy Theme with Better Readability */
+    --background: 0 0% 100%; /* Pure white background */
+    --foreground: 280 80% 15%; /* Much darker purple for text */
 
     --card: 0 0% 100%; /* Pure white cards */
-    --card-foreground: 280 50% 30%; /* Dark purple text */
+    --card-foreground: 280 80% 20%; /* Dark purple text */
 
     --popover: 0 0% 100%; /* White popovers */
-    --popover-foreground: 280 50% 30%; /* Dark purple text */
+    --popover-foreground: 280 80% 20%; /* Dark purple text */
 
-    --primary: 280 70% 65%; /* Purple primary */
+    --primary: 280 70% 50%; /* Darker purple primary */
     --primary-foreground: 0 0% 100%; /* White text on purple */
 
-    --secondary: 330 70% 95%; /* Very light pink */
-    --secondary-foreground: 280 60% 35%; /* Purple text */
+    --secondary: 330 30% 90%; /* Light pink */
+    --secondary-foreground: 280 80% 25%; /* Dark purple text */
 
-    --muted: 330 40% 96%; /* Soft pink-white */
-    --muted-foreground: 280 40% 45%; /* Medium purple */
+    --muted: 330 20% 95%; /* Very light pink */
+    --muted-foreground: 280 60% 35%; /* Medium-dark purple */
 
-    --accent: 330 65% 70%; /* Pink accent */
+    --accent: 330 65% 55%; /* Darker pink accent */
     --accent-foreground: 0 0% 100%; /* White text */
 
-    --destructive: 350 80% 60%; /* Pink-red */
+    --destructive: 350 80% 50%; /* Darker pink-red */
     --destructive-foreground: 0 0% 100%; /* White text */
 
-    --border: 330 30% 92%; /* Light pink border */
-    --input: 330 20% 96%; /* Very light pink input */
-    --ring: 280 70% 65%; /* Purple focus ring */
+    --border: 330 30% 85%; /* Darker pink border */
+    --input: 330 20% 98%; /* Very light pink input */
+    --ring: 280 70% 50%; /* Darker purple focus ring */
 
     --radius: 0.75rem;
   }
 
   .dark {
     /* Dark Mode - Cotton Candy with High Readability */
-    --background: 280 40% 8%; /* Deep purple-black */
-    --foreground: 330 100% 97%; /* Pink-tinted white */
+    --background: 280 30% 5%; /* Very dark purple-black */
+    --foreground: 0 0% 95%; /* Near white text */
 
-    --card: 280 35% 12%; /* Dark purple card */
-    --card-foreground: 330 80% 95%; /* Light pink-white text */
+    --card: 280 20% 10%; /* Dark purple card */
+    --card-foreground: 0 0% 90%; /* Light text */
 
-    --popover: 280 35% 12%; /* Dark purple */
-    --popover-foreground: 330 80% 95%; /* Light pink-white */
+    --popover: 280 20% 10%; /* Dark purple */
+    --popover-foreground: 0 0% 90%; /* Light text */
 
-    --primary: 330 75% 75%; /* Bright pink */
-    --primary-foreground: 280 40% 10%; /* Dark purple text */
+    --primary: 330 70% 60%; /* Bright pink */
+    --primary-foreground: 0 0% 100%; /* White text */
 
-    --secondary: 280 50% 25%; /* Medium purple */
-    --secondary-foreground: 330 100% 95%; /* Pink-white text */
+    --secondary: 280 30% 20%; /* Medium dark purple */
+    --secondary-foreground: 0 0% 85%; /* Light text */
 
-    --muted: 280 30% 20%; /* Muted dark purple */
-    --muted-foreground: 330 60% 85%; /* Light pink text */
+    --muted: 280 20% 15%; /* Dark purple */
+    --muted-foreground: 0 0% 70%; /* Medium light text */
 
-    --accent: 300 70% 70%; /* Purple-pink accent */
-    --accent-foreground: 280 40% 10%; /* Dark purple text */
+    --accent: 300 70% 65%; /* Purple-pink accent */
+    --accent-foreground: 0 0% 100%; /* White text */
 
-    --destructive: 350 75% 65%; /* Pink-red */
+    --destructive: 350 75% 60%; /* Pink-red */
     --destructive-foreground: 0 0% 100%; /* White */
 
-    --border: 280 30% 25%; /* Purple border */
-    --input: 280 35% 18%; /* Dark purple input */
-    --ring: 330 75% 75%; /* Pink focus ring */
+    --border: 280 20% 25%; /* Lighter border */
+    --input: 280 20% 12%; /* Dark input */
+    --ring: 330 70% 60%; /* Pink focus ring */
   }
 }
 
@@ -101,14 +101,31 @@
 
 /* Apple-inspired utility classes */
 .glass-panel {
-  @apply bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50;
+  @apply bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border border-gray-300/50 dark:border-gray-600/50;
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
 .text-gradient {
-  @apply bg-gradient-to-r from-purple-500 via-pink-400 to-purple-400 bg-clip-text text-transparent;
-  font-weight: 600;
+  @apply bg-gradient-to-r from-purple-600 via-pink-500 to-purple-500 bg-clip-text text-transparent;
+  font-weight: 700;
+}
+
+/* High contrast text utilities */
+.text-readable {
+  @apply text-gray-900 dark:text-gray-100;
+}
+
+.text-readable-muted {
+  @apply text-gray-700 dark:text-gray-300;
+}
+
+.bg-readable {
+  @apply bg-white dark:bg-gray-900;
+}
+
+.bg-readable-card {
+  @apply bg-white/95 dark:bg-gray-800/95;
 }
 
 .button-glow {
@@ -331,13 +348,29 @@
   animation: gradient-shift 3s ease infinite;
 }
 
-/* Modern input styles */
+/* Modern input styles with better contrast */
 input, textarea, select {
-  @apply transition-all duration-200;
+  @apply transition-all duration-200 text-gray-900 dark:text-gray-100;
+  @apply bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600;
 }
 
 input:focus, textarea:focus, select:focus {
   @apply ring-2 ring-primary border-primary;
+}
+
+/* Ensure all text is readable */
+p, span, div, h1, h2, h3, h4, h5, h6, label {
+  @apply text-gray-900 dark:text-gray-100;
+}
+
+/* Muted text with better contrast */
+.text-muted-foreground {
+  @apply text-gray-600 dark:text-gray-400 !important;
+}
+
+/* Card text readability */
+.card {
+  @apply bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100;
 }
 
 /* Refined scrollbar for main content */
