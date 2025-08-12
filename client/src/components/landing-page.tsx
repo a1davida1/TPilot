@@ -103,14 +103,14 @@ export function LandingPage() {
             <Badge className="mb-4 bg-gradient-to-r from-indigo-100 to-pink-100 text-indigo-800 border-indigo-200">
               🚀 AI-Powered Content Creation Platform
             </Badge>
-            <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
+            <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6">
               Create Viral Content
               <br />
               <span className="bg-gradient-to-r from-indigo-600 to-pink-600 bg-clip-text text-transparent">
                 in Minutes, Not Hours
               </span>
             </h1>
-            <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+            <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">
               ThottoPilot empowers content creators with AI-driven tools to generate engaging Reddit posts, 
               protect images from reverse searches, and optimize content strategy for maximum engagement.
             </p>
@@ -141,10 +141,10 @@ export function LandingPage() {
       <section className="py-20 bg-white/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
               Everything You Need to Succeed
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Comprehensive tools designed specifically for content creators who want to scale their presence.
             </p>
           </div>
@@ -183,10 +183,10 @@ export function LandingPage() {
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
               Loved by Content Creators
             </h2>
-            <p className="text-xl text-gray-600">
+            <p className="text-xl text-muted-foreground">
               Join thousands of creators who've transformed their content strategy
             </p>
           </div>
@@ -206,8 +206,8 @@ export function LandingPage() {
                 </CardHeader>
                 <CardContent>
                   <div>
-                    <p className="font-medium text-gray-900">{testimonial.name}</p>
-                    <p className="text-sm text-gray-600">{testimonial.role}</p>
+                    <p className="font-medium text-foreground">{testimonial.name}</p>
+                    <p className="text-sm text-muted-foreground">{testimonial.role}</p>
                   </div>
                 </CardContent>
               </Card>

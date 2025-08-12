@@ -160,7 +160,7 @@ export function AdminPortal() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Total Users</p>
+                <p className="text-sm text-muted-foreground">Total Users</p>
                 <p className="text-3xl font-bold">{stats?.totalUsers || 0}</p>
                 <p className="text-xs text-green-600 mt-1">
                   +{stats?.newUsersToday || 0} today
@@ -175,7 +175,7 @@ export function AdminPortal() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Pro/Premium</p>
+                <p className="text-sm text-muted-foreground">Pro/Premium</p>
                 <p className="text-3xl font-bold">
                   {(stats?.proUsers || 0) + (stats?.premiumUsers || 0)}
                 </p>
@@ -192,7 +192,7 @@ export function AdminPortal() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Monthly Revenue</p>
+                <p className="text-sm text-muted-foreground">Monthly Revenue</p>
                 <p className="text-3xl font-bold">${stats?.revenue || 0}</p>
                 <p className="text-xs text-green-600 mt-1">
                   <TrendingUp className="h-3 w-3 inline mr-1" />
@@ -208,7 +208,7 @@ export function AdminPortal() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Active Today</p>
+                <p className="text-sm text-muted-foreground">Active Today</p>
                 <p className="text-3xl font-bold">{stats?.activeToday || 0}</p>
                 <p className="text-xs text-orange-600 mt-1">
                   Real-time activity

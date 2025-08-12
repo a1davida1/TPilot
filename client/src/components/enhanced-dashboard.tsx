@@ -173,8 +173,8 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
                   </>
                 ) : (
                   <div className="flex items-center space-x-3">
-                    <div className="text-sm text-gray-600">
-                      <div className="font-medium">{user?.username || 'User'}</div>
+                    <div className="text-sm text-muted-foreground">
+                      <div className="font-medium text-foreground">{user?.username || 'User'}</div>
                       <div className="text-xs">
                         {userTier === 'pro' ? (
                           <span className="flex items-center text-purple-600">
@@ -187,7 +187,7 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
                             Premium
                           </span>
                         ) : (
-                          <span className="text-gray-500">Free Account</span>
+                          <span className="text-muted-foreground">Free Account</span>
                         )}
                       </div>
                     </div>
@@ -206,7 +206,7 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
                       variant="ghost" 
                       size="sm"
                       onClick={handleLogout}
-                      className="text-gray-600 hover:text-gray-900"
+                      className="text-muted-foreground hover:text-foreground"
                     >
                       <LogOut className="h-4 w-4" />
                     </Button>

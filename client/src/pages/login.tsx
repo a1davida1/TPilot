@@ -185,7 +185,7 @@ export default function Login() {
           <Button 
             variant="ghost" 
             onClick={() => setView('landing')}
-            className="text-gray-700 hover:text-purple-600 font-medium transition-colors duration-200"
+            className="text-foreground hover:text-purple-600 font-medium transition-colors duration-200"
           >
             ← Back to Home
           </Button>
@@ -201,7 +201,7 @@ export default function Login() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
             ThottoPilot
           </h1>
-          <p className="text-gray-600 mt-2">
+          <p className="text-muted-foreground mt-2">
             AI-powered content creation for creators
           </p>
         </div>
@@ -225,7 +225,7 @@ export default function Login() {
                 <div className="space-y-2">
                   <Label htmlFor="username">Username</Label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                     <Input
                       id="username"
                       type="text"
@@ -242,7 +242,7 @@ export default function Login() {
               <div className="space-y-2">
                 <Label htmlFor="email">Email or Username</Label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
                     id="email"
                     type="text"
@@ -258,7 +258,7 @@ export default function Login() {
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
@@ -271,7 +271,7 @@ export default function Login() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -282,7 +282,7 @@ export default function Login() {
                 <div className="space-y-2">
                   <Label htmlFor="confirmPassword">Confirm Password</Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                     <Input
                       id="confirmPassword"
                       type={showPassword ? "text" : "password"}
