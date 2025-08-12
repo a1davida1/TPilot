@@ -1,9 +1,4 @@
-import OpenAI from "openai";
-
-// Initialize OpenAI with the provided API key
-const openai = new OpenAI({ 
-  apiKey: process.env.OPENAI_API_KEY 
-});
+import { generateWithMultiProvider } from './multi-ai-provider';
 
 export interface UnifiedAIRequest {
   mode: 'text' | 'image';
@@ -58,16 +53,12 @@ export async function generateUnifiedAIContent(request: UnifiedAIRequest): Promi
     : "Keep content authentic without promotional elements";
 
   try {
-    let messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-      {
-        role: "system",
-        content: "You are an expert social media content creator specializing in adult content creation. Create engaging, authentic content that respects platform guidelines while being appealing and personality-driven."
-      }
-    ];
-
+    // Build the appropriate prompt based on mode
+    let finalPrompt: string;
+    
     if (mode === 'image' && imageBase64) {
       // Image-based generation
-      const imagePrompt = `
+      finalPrompt = `
 Analyze this image and create engaging social media content.
 
 Style: ${stylePrompts[style] || stylePrompts.playful}
@@ -93,25 +84,9 @@ Please respond with JSON in this exact format:
 
 Generate 3 different title options. Make the content match the ${style} style perfectly.
 Keep it authentic and engaging for ${platform}.`;
-
-      messages.push({
-        role: "user",
-        content: [
-          {
-            type: "text",
-            text: imagePrompt
-          },
-          {
-            type: "image_url",
-            image_url: {
-              url: `data:image/jpeg;base64,${imageBase64}`
-            }
-          }
-        ]
-      });
     } else {
       // Text-based generation
-      const textPrompt = `
+      finalPrompt = `
 Create engaging social media content based on this request:
 ${prompt || `Generate ${theme || 'engaging'} content`}
 
@@ -133,45 +108,37 @@ Please respond with JSON in this exact format:
     "mood": "mood and expression guidance",
     "technicalSettings": "camera settings (aperture, ISO, etc.)"
   },
-  "hashtags": ["#hashtag1", "#hashtag2", "#hashtag3", "#hashtag4", "#hashtag5"],
+  "hashtags": ["#hashtag1", "#hashtag2", "#hashtag3", "#hashtag4", "#hashtags5"],
   "caption": "A catchy caption for the content"
 }
 
 Generate 3 different title options. Make everything match the ${style} style.
 Create content that's perfect for ${platform}.`;
-
-      messages.push({
-        role: "user",
-        content: textPrompt
-      });
     }
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o", // Using the latest GPT-4o model
-      messages,
-      response_format: { type: "json_object" },
-      max_tokens: 1500,
-      temperature: 0.8
+    // Use the multi-provider system with your preferences and user data
+    const result = await generateWithMultiProvider({
+      user: { personalityProfile: {
+        toneOfVoice: style,
+        contentStyle: style,
+        personalBrand: theme || 'authentic creator',
+        contentLength: 'medium',
+        includeEmojis: true
+      }},
+      platform,
+      imageDescription: imageBase64 ? 'User uploaded image for analysis' : undefined,
+      customPrompt: finalPrompt,
+      allowsPromotion: includePromotion ? 'yes' : 'no',
+      baseImageUrl: imageBase64 ? `data:image/jpeg;base64,${imageBase64}` : undefined
     });
 
-    const result = JSON.parse(response.choices[0].message.content || '{}');
-
-    // Validate and format the response
+    // Return the result from multi-provider system with enhanced hashtags
     return {
-      titles: Array.isArray(result.titles) ? result.titles.slice(0, 3) : 
-        ['Feeling cute today 💕', 'New content alert!', 'Check this out 😘'],
-      content: result.content || 'Generated content for your social media',
-      photoInstructions: {
-        lighting: result.photoInstructions?.lighting || 'Soft, natural lighting with warm tones',
-        cameraAngle: result.photoInstructions?.cameraAngle || 'Eye-level or slightly above for flattering angles',
-        composition: result.photoInstructions?.composition || 'Rule of thirds with subject off-center',
-        styling: result.photoInstructions?.styling || 'Casual-chic outfit with natural makeup',
-        mood: result.photoInstructions?.mood || 'Confident and playful with genuine expressions',
-        technicalSettings: result.photoInstructions?.technicalSettings || 'f/1.8-2.8 for bokeh, ISO 100-400, golden hour preferred'
-      },
-      hashtags: Array.isArray(result.hashtags) ? result.hashtags : 
-        ['#contentcreator', '#dailypost', '#photooftheday', '#instagood', '#vibes'],
-      caption: result.caption || 'Check out my new content!'
+      titles: result.titles,
+      content: result.content,
+      photoInstructions: result.photoInstructions,
+      hashtags: ['#contentcreator', '#dailypost', '#photooftheday', '#instagood', '#vibes'],
+      caption: result.content.split('\n')[0] || 'Check out my new content!'
     };
   } catch (error) {
     console.error('Unified AI generation error:', error);
@@ -204,29 +171,22 @@ Create content that's perfect for ${platform}.`;
 // Function to analyze an image and extract description
 export async function analyzeImage(imageBase64: string): Promise<string> {
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: "Describe this image in detail, focusing on the subject, setting, mood, colors, and any notable elements."
-            },
-            {
-              type: "image_url",
-              image_url: {
-                url: `data:image/jpeg;base64,${imageBase64}`
-              }
-            }
-          ]
-        }
-      ],
-      max_tokens: 500
+    const result = await generateWithMultiProvider({
+      user: { personalityProfile: {
+        toneOfVoice: 'professional',
+        contentStyle: 'descriptive',
+        personalBrand: 'image analyst',
+        contentLength: 'medium',
+        includeEmojis: false
+      }},
+      platform: 'analysis',
+      imageDescription: 'Image to be analyzed',
+      customPrompt: 'Describe this image in detail, focusing on the subject, setting, mood, colors, and any notable elements. Be descriptive and specific.',
+      allowsPromotion: 'no',
+      baseImageUrl: `data:image/jpeg;base64,${imageBase64}`
     });
 
-    return response.choices[0].message.content || 'Image analysis unavailable';
+    return result.content || 'Image analysis unavailable';
   } catch (error) {
     console.error('Image analysis error:', error);
     return 'Unable to analyze image at this time';
