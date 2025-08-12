@@ -365,7 +365,7 @@ p, span, div, h1, h2, h3, h4, h5, h6, label, button {
 
 /* Muted text with better contrast */
 .text-muted-foreground {
-  @apply text-muted-foreground;
+  @apply text-gray-500 dark:text-gray-400;
 }
 
 /* Card text readability */
