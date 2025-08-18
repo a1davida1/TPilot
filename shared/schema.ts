@@ -1,6 +1,7 @@
-import { pgTable, serial, varchar, text, integer, timestamp, jsonb, boolean } from "drizzle-orm/pg-core";
+import { pgTable, serial, varchar, text, integer, timestamp, jsonb, boolean, uuid, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { relations } from "drizzle-orm";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -75,7 +76,167 @@ export const userImages = pgTable("user_images", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Insert schemas
+// New tables for Phase 1 expansion
+
+export const creatorAccounts = pgTable("creator_accounts", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  platform: varchar("platform", { length: 50 }).notNull(), // "reddit"
+  handle: varchar("handle", { length: 100 }).notNull(),
+  oauthToken: text("oauth_token").notNull(),
+  oauthRefresh: text("oauth_refresh").notNull(),
+  status: varchar("status", { length: 20 }).default("ok").notNull(), // "ok" | "limited" | "banned"
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const subredditRules = pgTable("subreddit_rules", {
+  id: serial("id").primaryKey(),
+  subreddit: varchar("subreddit", { length: 100 }).unique().notNull(),
+  rulesJson: jsonb("rules_json").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const postTemplates = pgTable("post_templates", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  titleTpl: text("title_tpl").notNull(),
+  bodyTpl: text("body_tpl").notNull(),
+  variables: jsonb("variables").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const postPreviews = pgTable("post_previews", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  subreddit: varchar("subreddit", { length: 100 }).notNull(),
+  titlePreview: text("title_preview").notNull(),
+  bodyPreview: text("body_preview").notNull(),
+  policyState: varchar("policy_state", { length: 10 }).notNull(), // "ok" | "warn" | "block"
+  warnings: jsonb("warnings").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const postJobs = pgTable("post_jobs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  subreddit: varchar("subreddit", { length: 100 }).notNull(),
+  titleFinal: text("title_final").notNull(),
+  bodyFinal: text("body_final").notNull(),
+  mediaKey: varchar("media_key", { length: 255 }),
+  scheduledAt: timestamp("scheduled_at").notNull(),
+  status: varchar("status", { length: 20 }).default("queued").notNull(), // "queued" | "sent" | "failed" | "paused"
+  resultJson: jsonb("result_json"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const subscriptions = pgTable("subscriptions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).unique().notNull(),
+  status: varchar("status", { length: 20 }).notNull(), // "active" | "past_due" | "canceled"
+  plan: varchar("plan", { length: 20 }).notNull(), // "free" | "pro"
+  priceCents: integer("price_cents").notNull(),
+  processor: varchar("processor", { length: 20 }).notNull(), // "ccbill" | "segpay" | "epoch" | "crypto"
+  processorSubId: varchar("processor_sub_id", { length: 255 }),
+  currentPeriodEnd: timestamp("current_period_end"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const invoices = pgTable("invoices", {
+  id: serial("id").primaryKey(),
+  subscriptionId: integer("subscription_id").references(() => subscriptions.id).notNull(),
+  amountCents: integer("amount_cents").notNull(),
+  status: varchar("status", { length: 20 }).notNull(), // "paid" | "failed" | "refunded"
+  processor: varchar("processor", { length: 20 }).notNull(),
+  processorRef: varchar("processor_ref", { length: 255 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const referralCodes = pgTable("referral_codes", {
+  id: serial("id").primaryKey(),
+  code: varchar("code", { length: 50 }).unique().notNull(),
+  ownerId: integer("owner_id").references(() => users.id).notNull(),
+  sharePct: integer("share_pct").default(20).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const referrals = pgTable("referrals", {
+  id: serial("id").primaryKey(),
+  codeId: integer("code_id").references(() => referralCodes.id).notNull(),
+  referrerId: integer("referrer_id").references(() => users.id).notNull(),
+  receiverId: integer("receiver_id").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const eventLogs = pgTable("event_logs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  type: varchar("type", { length: 100 }).notNull(),
+  meta: jsonb("meta").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const featureFlags = pgTable("feature_flags", {
+  key: varchar("key", { length: 100 }).primaryKey(),
+  enabled: boolean("enabled").default(true).notNull(),
+  threshold: integer("threshold"), // Use integer for percentage (0-100)
+  meta: jsonb("meta"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const mediaAssets = pgTable("media_assets", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  key: varchar("key", { length: 255 }).unique().notNull(),
+  filename: varchar("filename", { length: 255 }).notNull(),
+  bytes: integer("bytes").notNull(),
+  mime: varchar("mime", { length: 100 }).notNull(),
+  sha256: varchar("sha256", { length: 64 }).notNull(),
+  visibility: varchar("visibility", { length: 30 }).default("private").notNull(), // "private" | "preview-watermarked"
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const mediaUsages = pgTable("media_usages", {
+  id: serial("id").primaryKey(),
+  mediaId: integer("media_id").references(() => mediaAssets.id).notNull(),
+  usedInType: varchar("used_in_type", { length: 50 }).notNull(), // "template" | "post" | "ai-context"
+  usedInId: varchar("used_in_id", { length: 255 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const aiGenerations = pgTable("ai_generations", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  provider: varchar("provider", { length: 20 }).notNull(), // "gemini" | "openai"
+  model: varchar("model", { length: 50 }).notNull(),
+  inputHash: varchar("input_hash", { length: 64 }).notNull(),
+  inputJson: jsonb("input_json").notNull(),
+  outputJson: jsonb("output_json").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Insert schemas for new tables
+export const insertCreatorAccountSchema = createInsertSchema(creatorAccounts).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertSubredditRuleSchema = createInsertSchema(subredditRules).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertPostTemplateSchema = createInsertSchema(postTemplates).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertPostPreviewSchema = createInsertSchema(postPreviews).omit({ id: true, createdAt: true });
+export const insertPostJobSchema = createInsertSchema(postJobs).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertSubscriptionSchema = createInsertSchema(subscriptions).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertInvoiceSchema = createInsertSchema(invoices).omit({ id: true, createdAt: true });
+export const insertReferralCodeSchema = createInsertSchema(referralCodes).omit({ id: true, createdAt: true });
+export const insertReferralSchema = createInsertSchema(referrals).omit({ id: true, createdAt: true });
+export const insertEventLogSchema = createInsertSchema(eventLogs).omit({ id: true, createdAt: true });
+export const insertFeatureFlagSchema = createInsertSchema(featureFlags).omit({ updatedAt: true });
+export const insertMediaAssetSchema = createInsertSchema(mediaAssets).omit({ id: true, createdAt: true });
+export const insertMediaUsageSchema = createInsertSchema(mediaUsages).omit({ id: true, createdAt: true });
+export const insertAiGenerationSchema = createInsertSchema(aiGenerations).omit({ id: true, createdAt: true });
+
+// Insert schemas for existing tables
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertContentGenerationSchema = createInsertSchema(contentGenerations).omit({ id: true, createdAt: true });
 export const insertUserSampleSchema = createInsertSchema(userSamples).omit({ id: true, createdAt: true, updatedAt: true });
@@ -97,3 +258,46 @@ export type InsertUserPreference = z.infer<typeof insertUserPreferenceSchema>;
 
 export type UserImage = typeof userImages.$inferSelect;
 export type InsertUserImage = z.infer<typeof insertUserImageSchema>;
+
+// Types for new tables
+export type CreatorAccount = typeof creatorAccounts.$inferSelect;
+export type InsertCreatorAccount = z.infer<typeof insertCreatorAccountSchema>;
+
+export type SubredditRule = typeof subredditRules.$inferSelect;
+export type InsertSubredditRule = z.infer<typeof insertSubredditRuleSchema>;
+
+export type PostTemplate = typeof postTemplates.$inferSelect;
+export type InsertPostTemplate = z.infer<typeof insertPostTemplateSchema>;
+
+export type PostPreview = typeof postPreviews.$inferSelect;
+export type InsertPostPreview = z.infer<typeof insertPostPreviewSchema>;
+
+export type PostJob = typeof postJobs.$inferSelect;
+export type InsertPostJob = z.infer<typeof insertPostJobSchema>;
+
+export type Subscription = typeof subscriptions.$inferSelect;
+export type InsertSubscription = z.infer<typeof insertSubscriptionSchema>;
+
+export type Invoice = typeof invoices.$inferSelect;
+export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
+
+export type ReferralCode = typeof referralCodes.$inferSelect;
+export type InsertReferralCode = z.infer<typeof insertReferralCodeSchema>;
+
+export type Referral = typeof referrals.$inferSelect;
+export type InsertReferral = z.infer<typeof insertReferralSchema>;
+
+export type EventLog = typeof eventLogs.$inferSelect;
+export type InsertEventLog = z.infer<typeof insertEventLogSchema>;
+
+export type FeatureFlag = typeof featureFlags.$inferSelect;
+export type InsertFeatureFlag = z.infer<typeof insertFeatureFlagSchema>;
+
+export type MediaAsset = typeof mediaAssets.$inferSelect;
+export type InsertMediaAsset = z.infer<typeof insertMediaAssetSchema>;
+
+export type MediaUsage = typeof mediaUsages.$inferSelect;
+export type InsertMediaUsage = z.infer<typeof insertMediaUsageSchema>;
+
+export type AiGeneration = typeof aiGenerations.$inferSelect;
+export type InsertAiGeneration = z.infer<typeof insertAiGenerationSchema>;

@@ -15,6 +15,13 @@
       "when": 1754872373725,
       "tag": "0001_married_dracula",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1755560344633,
+      "tag": "0002_lively_jack_flag",
+      "breakpoints": true
     }
   ]
 }
