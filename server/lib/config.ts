@@ -50,13 +50,51 @@ let env: Environment;
 try {
   env = envSchema.parse(process.env);
 } catch (error) {
-  console.error("❌ Environment validation failed:");
-  if (error instanceof z.ZodError) {
-    error.errors.forEach((err) => {
-      console.error(`  ${err.path.join('.')}: ${err.message}`);
-    });
+  if (process.env.NODE_ENV === 'development') {
+    console.warn("⚠️ Development mode: Some enterprise features may be disabled");
+    console.warn("  To enable all features, configure these environment variables:");
+    if (error instanceof z.ZodError) {
+      error.errors.forEach((err) => {
+        console.warn(`    ${err.path.join('.')}: ${err.message}`);
+      });
+    }
+    // Create minimal config for development
+    env = {
+      NODE_ENV: 'development',
+      PORT: parseInt(process.env.PORT || '5000'),
+      DATABASE_URL: process.env.DATABASE_URL || '',
+      OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
+      REDDIT_CLIENT_ID: '',
+      REDDIT_CLIENT_SECRET: '',
+      REDDIT_REDIRECT_URI: '',
+      GOOGLE_GENAI_API_KEY: '',
+      AWS_ACCESS_KEY_ID: '',
+      AWS_SECRET_ACCESS_KEY: '',
+      AWS_REGION: 'us-east-1',
+      S3_BUCKET_MEDIA: '',
+      REDIS_URL: '',
+      APP_BASE_URL: 'http://localhost:5000',
+      CCBILL_CLIENT_ACCOUNT: '',
+      CCBILL_SUBACCOUNT: '',
+      CCBILL_FLEXFORM_ID: '',
+      CCBILL_SALT: '',
+      CRON_TZ: 'America/Chicago',
+      MEDIA_MAX_BYTES_FREE: 524288000,
+      MEDIA_MAX_BYTES_PRO: 10737418240,
+      MEDIA_SIGNED_TTL_SECONDS: 600,
+      WATERMARK_ENABLED: true,
+      WATERMARK_TEXT: 'ThottoPilot',
+      WATERMARK_OPACITY: 0.18,
+    } as any;
+  } else {
+    console.error("❌ Environment validation failed:");
+    if (error instanceof z.ZodError) {
+      error.errors.forEach((err) => {
+        console.error(`  ${err.path.join('.')}: ${err.message}`);
+      });
+    }
+    process.exit(1);
   }
-  process.exit(1);
 }
 
 export { env };

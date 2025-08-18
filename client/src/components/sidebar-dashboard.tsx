@@ -171,6 +171,14 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
         { id: 'community', label: 'Community', icon: <Globe className="h-4 w-4" /> },
       ]
     },
+    {
+      id: 'enterprise',
+      label: 'Enterprise Features',
+      icon: <Crown className="h-4 w-4" />,
+      items: [
+        { id: 'enterprise-dashboard', label: 'Enterprise Dashboard', icon: <Crown className="h-4 w-4" />, badge: 'Phase 2' },
+      ]
+    },
     // Admin-only section
     ...(isAdmin ? [{
       id: 'admin',
@@ -242,6 +250,71 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
 
       case 'admin-portal':
         return isAdmin ? <AdminPortal /> : null;
+
+      case 'enterprise-dashboard':
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-white">Enterprise Dashboard</h1>
+                <p className="text-gray-400">Advanced AI content creation and automation</p>
+              </div>
+              <Badge className="bg-gradient-to-r from-purple-500 to-pink-500">Phase 2</Badge>
+            </div>
+            <div className="rounded-lg bg-gray-800 border border-purple-500/20 p-6">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
+                <Card className="bg-gray-700 border-purple-500/20">
+                  <CardContent className="p-4 text-center">
+                    <Crown className="h-8 w-8 mx-auto text-yellow-500 mb-2" />
+                    <h4 className="font-semibold text-white">AI Studio</h4>
+                    <p className="text-xs text-gray-400">Multi-platform content generation</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-gray-700 border-purple-500/20">
+                  <CardContent className="p-4 text-center">
+                    <ImageIcon className="h-8 w-8 mx-auto text-blue-500 mb-2" />
+                    <h4 className="font-semibold text-white">Media Library</h4>
+                    <p className="text-xs text-gray-400">S3 storage + watermarking</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-gray-700 border-purple-500/20">
+                  <CardContent className="p-4 text-center">
+                    <Clock className="h-8 w-8 mx-auto text-green-500 mb-2" />
+                    <h4 className="font-semibold text-white">Post Scheduler</h4>
+                    <p className="text-xs text-gray-400">Reddit automation + timing</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-gray-700 border-purple-500/20">
+                  <CardContent className="p-4 text-center">
+                    <DollarSign className="h-8 w-8 mx-auto text-purple-500 mb-2" />
+                    <h4 className="font-semibold text-white">Billing</h4>
+                    <p className="text-xs text-gray-400">CCBill integration</p>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              <div className="text-center space-y-4">
+                <p className="text-gray-300">Access the full Enterprise Dashboard with all advanced features:</p>
+                <ul className="text-sm text-gray-400 space-y-1">
+                  <li>• Advanced AI content studio with Gemini + OpenAI integration</li>
+                  <li>• Secure media library with AWS S3 storage and watermarking</li>
+                  <li>• Intelligent Reddit post scheduling with BullMQ queues</li>
+                  <li>• CCBill billing integration with Pro/Premium subscriptions</li>
+                  <li>• Background job processing with Redis queue system</li>
+                </ul>
+                
+                <Button 
+                  onClick={() => window.location.href = '/enterprise'}
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                  data-testid="button-open-enterprise"
+                >
+                  <Crown className="h-4 w-4 mr-2" />
+                  Open Enterprise Dashboard
+                </Button>
+              </div>
+            </div>
+          </div>
+        );
 
       default:
         return (

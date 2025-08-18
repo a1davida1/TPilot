@@ -15,6 +15,7 @@ import Dashboard from "@/pages/dashboard";
 import Login from "@/pages/login";
 import History from "@/pages/history";
 import Settings from "@/pages/settings";
+import Enterprise from "@/pages/enterprise";
 import { AdminDashboard } from "@/pages/admin";
 
 function AuthenticatedRoutes() {
@@ -22,6 +23,7 @@ function AuthenticatedRoutes() {
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/enterprise" component={Enterprise} />
       <Route path="/history" component={History} />
       <Route path="/settings" component={Settings} />
       <Route component={NotFound} />

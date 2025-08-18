@@ -23,6 +23,7 @@ import { configureSocialAuth, socialAuthRoutes } from "./social-auth-config";
 import { redditCommunitiesDatabase, getRecommendationsForUser, getCommunityInsights } from "./reddit-communities";
 import { visitorAnalytics } from "./visitor-analytics";
 import { getAvailablePerks, getPerksByCategory, generateReferralCode, getSignupInstructions } from "./pro-perks";
+import { registerApiRoutes } from "./api-routes";
 
 // Configure multer for file uploads
 const storage_config = multer.diskStorage({
@@ -1151,6 +1152,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to generate signup instructions" });
     }
   });
+
+  // Register new enterprise API routes (Phase 2)
+  registerApiRoutes(app);
 
   const httpServer = createServer(app);
   return httpServer;
