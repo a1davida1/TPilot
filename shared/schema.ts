@@ -14,7 +14,7 @@ export const users = pgTable("users", {
   provider: varchar("provider", { length: 50 }), // google, facebook, reddit
   providerId: varchar("provider_id", { length: 255 }),
   avatar: varchar("avatar", { length: 500 }),
-  referralCodeId: integer("referral_code_id").references(() => referralCodes.id), // Phase 5: Referral simplification
+  referralCodeId: integer("referral_code_id"), // Will reference referralCodes.id
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -24,12 +24,20 @@ export const contentGenerations = pgTable("content_generations", {
   platform: varchar("platform", { length: 50 }).notNull(),
   style: varchar("style", { length: 50 }).notNull(),
   theme: varchar("theme", { length: 50 }).notNull(),
-  titles: jsonb("titles").notNull(),
+  titles: jsonb("titles").$type<string[]>().notNull(),
   content: text("content").notNull(),
-  photoInstructions: jsonb("photo_instructions").notNull(),
+  photoInstructions: jsonb("photo_instructions").$type<{
+    lighting: string;
+    cameraAngle: string;
+    composition: string;
+    styling: string;
+    mood: string;
+    technicalSettings: string;
+  }>().notNull(),
   prompt: text("prompt"),
   subreddit: varchar("subreddit", { length: 100 }),
   allowsPromotion: boolean("allows_promotion").default(false),
+  generationType: varchar("generation_type", { length: 50 }).default("ai").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -162,7 +170,7 @@ export const invoices = pgTable("invoices", {
 export const referralCodes = pgTable("referral_codes", {
   id: serial("id").primaryKey(),
   code: varchar("code", { length: 50 }).unique().notNull(),
-  ownerId: integer("owner_id").references(() => users.id).notNull(),
+  ownerId: integer("owner_id"), // Will reference users.id
   sharePct: integer("share_pct").default(20).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

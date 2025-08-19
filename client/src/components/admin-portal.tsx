@@ -76,7 +76,7 @@ export function AdminPortal() {
 
   // Create trial user mutation
   const createTrialMutation = useMutation({
-    mutationFn: (data: TrialRequest) => apiRequest('/api/admin/create-trial', data),
+    mutationFn: (data: TrialRequest) => apiRequest('/api/admin/create-trial', 'POST', data),
     onSuccess: () => {
       toast({
         title: "Trial Created Successfully",
@@ -99,7 +99,7 @@ export function AdminPortal() {
   // Upgrade user mutation
   const upgradeUserMutation = useMutation({
     mutationFn: (data: { userId: number; tier: string }) => 
-      apiRequest('/api/admin/upgrade-user', data),
+      apiRequest('/api/admin/upgrade-user', 'POST', data),
     onSuccess: () => {
       toast({
         title: "User Upgraded",
@@ -161,9 +161,9 @@ export function AdminPortal() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Users</p>
-                <p className="text-3xl font-bold">{stats?.totalUsers || 0}</p>
+                <p className="text-3xl font-bold">{(stats as any)?.totalUsers || 0}</p>
                 <p className="text-xs text-green-600 mt-1">
-                  +{stats?.newUsersToday || 0} today
+                  +{(stats as any)?.newUsersToday || 0} today
                 </p>
               </div>
               <Users className="h-8 w-8 text-blue-500" />
@@ -177,10 +177,10 @@ export function AdminPortal() {
               <div>
                 <p className="text-sm text-muted-foreground">Pro/Premium</p>
                 <p className="text-3xl font-bold">
-                  {(stats?.proUsers || 0) + (stats?.premiumUsers || 0)}
+                  {((stats as any)?.proUsers || 0) + ((stats as any)?.premiumUsers || 0)}
                 </p>
                 <p className="text-xs text-purple-600 mt-1">
-                  {stats?.trialUsers || 0} trials active
+                  {(stats as any)?.trialUsers || 0} trials active
                 </p>
               </div>
               <Crown className="h-8 w-8 text-purple-500" />
@@ -193,7 +193,7 @@ export function AdminPortal() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Monthly Revenue</p>
-                <p className="text-3xl font-bold">${stats?.revenue || 0}</p>
+                <p className="text-3xl font-bold">${(stats as any)?.revenue || 0}</p>
                 <p className="text-xs text-green-600 mt-1">
                   <TrendingUp className="h-3 w-3 inline mr-1" />
                   12% increase
@@ -209,7 +209,7 @@ export function AdminPortal() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Active Today</p>
-                <p className="text-3xl font-bold">{stats?.activeToday || 0}</p>
+                <p className="text-3xl font-bold">{(stats as any)?.activeToday || 0}</p>
                 <p className="text-xs text-orange-600 mt-1">
                   Real-time activity
                 </p>
@@ -519,8 +519,8 @@ export function AdminPortal() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {users?.filter((u: any) => u.trialEndsAt && new Date(u.trialEndsAt) > new Date())
-                  .slice(0, 5)
+                {(Array.isArray(users) ? users.filter((u: any) => u.trialEndsAt && new Date(u.trialEndsAt) > new Date())
+                  .slice(0, 5) : [])
                   .map((user: any) => (
                     <div key={user.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
                       <div className="flex items-center gap-3">
@@ -565,7 +565,7 @@ export function AdminPortal() {
                     <p className="text-gray-500 mt-2">Loading users...</p>
                   </div>
                 ) : (
-                  users?.slice(0, 10).map((user: any) => (
+                  Array.isArray(users) ? users.slice(0, 10).map((user: any) => (
                     <div key={user.id} className="flex items-center justify-between p-4 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                       <div className="flex items-center gap-3">
                         <div className="h-12 w-12 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-lg">
@@ -596,7 +596,7 @@ export function AdminPortal() {
                         </Select>
                       </div>
                     </div>
-                  ))
+                  )) : null
                 )}
               </div>
             </CardContent>
@@ -614,14 +614,14 @@ export function AdminPortal() {
               <Alert className="border-purple-500/30 bg-purple-500/5">
                 <Zap className="h-4 w-4 text-purple-600" />
                 <AlertDescription>
-                  <strong>Email System:</strong> {stats?.emailConfigured ? 'Configured ✓' : 'Not configured - Add SendGrid API key'}
+                  <strong>Email System:</strong> {(stats as any)?.emailConfigured ? 'Configured ✓' : 'Not configured - Add SendGrid API key'}
                 </AlertDescription>
               </Alert>
               
               <Alert className="border-blue-500/30 bg-blue-500/5">
                 <Shield className="h-4 w-4 text-blue-600" />
                 <AlertDescription>
-                  <strong>Security:</strong> JWT Secret {stats?.jwtConfigured ? 'Configured ✓' : 'Using default (not secure)'}
+                  <strong>Security:</strong> JWT Secret {(stats as any)?.jwtConfigured ? 'Configured ✓' : 'Using default (not secure)'}
                 </AlertDescription>
               </Alert>
 

@@ -44,9 +44,7 @@ export function PhotoInstructions({ currentGeneration }: PhotoInstructionsProps)
                   Setup
                 </h4>
                 <ul className="text-sm text-gray-700 space-y-1">
-                  {instructions.lighting.map((tip, index) => (
-                    <li key={index}>• {tip}</li>
-                  ))}
+                  <li>• {typeof instructions.lighting === 'string' ? instructions.lighting : 'Setup lighting'}</li>
                 </ul>
               </div>
 
@@ -57,9 +55,7 @@ export function PhotoInstructions({ currentGeneration }: PhotoInstructionsProps)
                   Camera Tips
                 </h4>
                 <ul className="text-sm text-gray-700 space-y-1">
-                  {instructions.angles.map((tip, index) => (
-                    <li key={index}>• {tip}</li>
-                  ))}
+                  <li>• {typeof instructions.cameraAngle === 'string' ? instructions.cameraAngle : 'Camera angles'}</li>
                 </ul>
               </div>
 
@@ -70,9 +66,7 @@ export function PhotoInstructions({ currentGeneration }: PhotoInstructionsProps)
                   Background
                 </h4>
                 <ul className="text-sm text-gray-700 space-y-1">
-                  {instructions.composition.map((tip, index) => (
-                    <li key={index}>• {tip}</li>
-                  ))}
+                  <li>• {typeof instructions.composition === 'string' ? instructions.composition : 'Composition tips'}</li>
                 </ul>
               </div>
 
@@ -83,9 +77,7 @@ export function PhotoInstructions({ currentGeneration }: PhotoInstructionsProps)
                   What to Wear
                 </h4>
                 <ul className="text-sm text-gray-700 space-y-1">
-                  {instructions.styling.map((tip, index) => (
-                    <li key={index}>• {tip}</li>
-                  ))}
+                  <li>• {typeof instructions.styling === 'string' ? instructions.styling : 'Styling advice'}</li>
                 </ul>
               </div>
 
@@ -96,9 +88,7 @@ export function PhotoInstructions({ currentGeneration }: PhotoInstructionsProps)
                   Photo Sequence
                 </h4>
                 <ul className="text-sm text-gray-700 space-y-1">
-                  {instructions.technical.map((tip, index) => (
-                    <li key={index}>• {tip}</li>
-                  ))}
+                  <li>• {typeof instructions.technicalSettings === 'string' ? instructions.technicalSettings : 'Technical settings'}</li>
                 </ul>
               </div>
             </div>

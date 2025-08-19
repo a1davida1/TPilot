@@ -24,9 +24,7 @@ export default function HistoryPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/content-generations/${id}`, {
-        method: 'DELETE',
-      });
+      return apiRequest(`/api/content-generations/${id}`, 'DELETE');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/content-generations'] });
@@ -39,15 +37,11 @@ export default function HistoryPage() {
 
   const saveMutation = useMutation({
     mutationFn: async (generation: ContentGeneration) => {
-      return apiRequest('/api/saved-content', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: generation.titles[0] || 'Untitled',
-          content: generation.content,
-          platform: generation.platform,
-          generationId: generation.id
-        }),
+      return apiRequest('/api/saved-content', 'POST', {
+        title: Array.isArray(generation.titles) ? generation.titles[0] || 'Untitled' : 'Untitled',
+        content: generation.content,
+        platform: generation.platform,
+        generationId: generation.id
       });
     },
     onSuccess: () => {
@@ -67,9 +61,10 @@ export default function HistoryPage() {
   };
 
   const filteredGenerations = generations.filter(gen => {
+    const titles = Array.isArray(gen.titles) ? gen.titles : [];
     const matchesSearch = searchQuery === '' || 
       gen.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      gen.titles.some(title => title.toLowerCase().includes(searchQuery.toLowerCase()));
+      titles.some((title: string) => title.toLowerCase().includes(searchQuery.toLowerCase()));
     
     const matchesPlatform = filterPlatform === 'all' || gen.platform === filterPlatform;
     const matchesType = filterType === 'all' || gen.generationType === filterType;
@@ -222,11 +217,11 @@ export default function HistoryPage() {
                         )}
                       </div>
                       <CardTitle className="text-lg">
-                        {generation.titles[0] || 'Untitled'}
+                        {Array.isArray(generation.titles) ? generation.titles[0] || 'Untitled' : 'Untitled'}
                       </CardTitle>
                       <CardDescription className="flex items-center mt-1">
                         <Calendar className="h-4 w-4 mr-1" />
-                        {new Date(generation.createdAt).toLocaleDateString()}
+                        {generation.createdAt ? new Date(generation.createdAt).toLocaleDateString() : 'Unknown date'}
                       </CardDescription>
                     </div>
                     <div className="flex space-x-2">
@@ -248,7 +243,7 @@ export default function HistoryPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => deleteMutation.mutate(generation.id)}
+                        onClick={() => deleteMutation.mutate(generation.id.toString())}
                         disabled={deleteMutation.isPending}
                         className="text-red-600 hover:text-red-700"
                       >
@@ -264,11 +259,11 @@ export default function HistoryPage() {
                     </p>
                   </div>
                   
-                  {generation.titles.length > 1 && (
+                  {Array.isArray(generation.titles) && generation.titles.length > 1 && (
                     <div>
                       <h4 className="text-sm font-medium text-gray-900 mb-2">Alternative Titles:</h4>
                       <div className="space-y-1">
-                        {generation.titles.slice(1).map((title, index) => (
+                        {generation.titles.slice(1).map((title: string, index: number) => (
                           <div key={index} className="text-sm text-gray-600 bg-gray-100 rounded px-2 py-1">
                             {title}
                           </div>

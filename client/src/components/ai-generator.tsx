@@ -14,7 +14,7 @@ import { apiRequest } from '@/lib/queryClient';
 import type { ContentGeneration } from '@shared/schema';
 
 // Extended interface for frontend display with dynamic server properties
-interface GeneratedContentDisplay extends ContentGeneration {
+interface GeneratedContentDisplay extends Omit<ContentGeneration, 'titles' | 'photoInstructions'> {
   contentSource?: 'ai' | 'template';
   aiProvider?: string;
   estimatedCost?: number;
@@ -23,8 +23,13 @@ interface GeneratedContentDisplay extends ContentGeneration {
   variationCount?: number;
   titles: string[]; // Ensure titles is always an array
   photoInstructions: {
-    [key: string]: string;
-  } | string; // Support both object and string formats
+    lighting: string;
+    cameraAngle: string;
+    composition: string;
+    styling: string;
+    mood: string;
+    technicalSettings: string;
+  }; // Use the exact schema type
 }
 
 interface AIGeneratorProps {
@@ -513,7 +518,7 @@ export function AIGenerator({ onContentGenerated }: AIGeneratorProps) {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => copyToClipboard(generatedContent.photoInstructions as string, 'Photo Instructions')}
+                        onClick={() => copyToClipboard(generatedContent.photoInstructions as unknown as string, 'Photo Instructions')}
                         className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                       >
                         {copiedItem === 'Photo Instructions' ? (

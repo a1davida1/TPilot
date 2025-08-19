@@ -144,7 +144,8 @@ Create content that's perfect for ${platform}.`;
     console.error('Unified AI generation error:', error);
     
     // Check if it's a quota/billing issue
-    const isQuotaError = error.message?.includes('quota') || error.message?.includes('billing');
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const isQuotaError = errorMessage.includes('quota') || errorMessage.includes('billing');
     
     // Return clearly marked demo content as fallback
     return {
