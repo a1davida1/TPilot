@@ -7,8 +7,9 @@ import { aiGenerations } from "@shared/schema.js";
 import { eq } from "drizzle-orm";
 
 // AI service initialization
-const gemini = new GoogleGenerativeAI(env.GOOGLE_GENAI_API_KEY);
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Use Gemini as primary (with GEMINI_API_KEY), OpenAI as fallback
+const gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || env.GOOGLE_GENAI_API_KEY || '');
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || '' });
 
 export interface ContentGenerationRequest {
   userId: number;
@@ -53,7 +54,7 @@ export class AiService {
     }
     
     try {
-      // Use Gemini for multi-platform content generation
+      // Use Gemini as primary for multi-platform content generation
       const response = await this.generateWithGemini(inputData);
       
       // Cache the result
@@ -61,8 +62,13 @@ export class AiService {
       
       return { ...response, cached: false };
       
-    } catch (error) {
-      console.error('Gemini generation failed, falling back to OpenAI:', error);
+    } catch (error: any) {
+      console.error('Gemini generation failed:', error);
+      
+      // Check if Gemini has quota issues too
+      if (error?.status === 429 || error?.message?.includes('quota')) {
+        console.log('Gemini quota exceeded, trying OpenAI fallback...');
+      }
       
       // Fallback to OpenAI
       try {

@@ -10,8 +10,9 @@ export const envSchema = z.object({
   REDDIT_CLIENT_SECRET: z.string().optional(),
   REDDIT_REDIRECT_URI: z.string().optional(),
   
-  // AI APIs (accept either OpenAI or Google)
+  // AI APIs (Gemini primary, OpenAI fallback)
   GOOGLE_GENAI_API_KEY: z.string().optional(),
+  GEMINI_API_KEY: z.string().optional(),
   OPENAI_API_KEY: z.string().optional(),
   
   // AWS S3 (optional for development)
@@ -114,7 +115,8 @@ try {
       REDDIT_CLIENT_ID: '',
       REDDIT_CLIENT_SECRET: '',
       REDDIT_REDIRECT_URI: '',
-      GOOGLE_GENAI_API_KEY: process.env.GOOGLE_GENAI_API_KEY || '',
+      GOOGLE_GENAI_API_KEY: process.env.GOOGLE_GENAI_API_KEY || process.env.GEMINI_API_KEY || '',
+      GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
       OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
       AWS_ACCESS_KEY_ID: '',
       AWS_SECRET_ACCESS_KEY: '',
