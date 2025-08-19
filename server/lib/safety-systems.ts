@@ -87,20 +87,20 @@ export class SafetyManager {
       .from(postRateLimits)
       .where(
         and(
-          eq(postRateLimits.userId, userId),
+          eq(postRateLimits.userId, parseInt(userId)),
           eq(postRateLimits.subreddit, subreddit),
-          gte(postRateLimits.windowStart, windowStart)
+          gte(postRateLimits.lastPostAt, windowStart)
         )
       )
-      .orderBy(sql`${postRateLimits.windowStart} DESC`)
+      .orderBy(sql`${postRateLimits.lastPostAt} DESC`)
       .limit(1);
 
-    const postsInWindow = currentLimit?.postsCount || 0;
+    const postsInWindow = currentLimit?.postCount24h || 0;
     const maxPosts = env.MAX_POSTS_PER_SUBREDDIT_24H;
 
     if (postsInWindow >= maxPosts) {
       const nextAvailableTime = new Date(
-        (currentLimit?.windowStart?.getTime() || now.getTime()) + 24 * 60 * 60 * 1000
+        (currentLimit?.lastPostAt?.getTime() || now.getTime()) + 24 * 60 * 60 * 1000
       );
 
       return {
@@ -130,24 +130,25 @@ export class SafetyManager {
     const updated = await db
       .update(postRateLimits)
       .set({
-        postsCount: sql`${postRateLimits.postsCount} + 1`,
+        postCount24h: sql`${postRateLimits.postCount24h} + 1`,
+        lastPostAt: now,
         updatedAt: now,
       })
       .where(
         and(
-          eq(postRateLimits.userId, userId),
+          eq(postRateLimits.userId, parseInt(userId)),
           eq(postRateLimits.subreddit, subreddit),
-          gte(postRateLimits.windowStart, windowStart)
+          gte(postRateLimits.lastPostAt, windowStart)
         )
       );
 
     // If no existing record, create new one
     if (!updated) {
       await db.insert(postRateLimits).values({
-        userId,
+        userId: parseInt(userId),
         subreddit,
-        postsCount: 1,
-        windowStart: now,
+        postCount24h: 1,
+        lastPostAt: now,
       });
     }
   }
@@ -171,12 +172,12 @@ export class SafetyManager {
       .from(postDuplicates)
       .where(
         and(
-          eq(postDuplicates.userId, userId),
+          eq(postDuplicates.userId, parseInt(userId)),
           eq(postDuplicates.contentHash, contentHash),
-          gte(postDuplicates.postedAt, thirtyDaysAgo)
+          gte(postDuplicates.createdAt, thirtyDaysAgo)
         )
       )
-      .orderBy(sql`${postDuplicates.postedAt} DESC`)
+      .orderBy(sql`${postDuplicates.createdAt} DESC`)
       .limit(1);
 
     if (duplicate) {
@@ -186,8 +187,8 @@ export class SafetyManager {
       if (isSameSubreddit) {
         return {
           isDuplicate: true,
-          reason: `Identical content posted to r/${subreddit} on ${duplicate.postedAt?.toLocaleDateString()}`,
-          lastPostedAt: duplicate.postedAt || undefined,
+          reason: `Identical content posted to r/${subreddit} on ${duplicate.createdAt?.toLocaleDateString()}`,
+          lastPostedAt: duplicate.createdAt || undefined,
           subreddit: duplicate.subreddit,
         };
       } else {
@@ -195,7 +196,7 @@ export class SafetyManager {
         return {
           isDuplicate: false,
           reason: `Similar content previously posted to r/${duplicate.subreddit}`,
-          lastPostedAt: duplicate.postedAt || undefined,
+          lastPostedAt: duplicate.createdAt || undefined,
           subreddit: duplicate.subreddit,
         };
       }
@@ -216,11 +217,11 @@ export class SafetyManager {
     const contentHash = this.generateContentHash(title, body);
 
     await db.insert(postDuplicates).values({
-      userId,
+      userId: parseInt(userId),
       contentHash,
       subreddit,
       title,
-      postedAt: new Date(),
+      body: body || '',
     });
   }
 
@@ -234,16 +235,18 @@ export class SafetyManager {
     // Clean up old rate limits (keep 7 days)
     const rateLimitsDeleted = await db
       .delete(postRateLimits)
-      .where(sql`${postRateLimits.windowStart} < ${sevenDaysAgo}`);
+      .where(sql`${postRateLimits.lastPostAt} < ${sevenDaysAgo}`)
+      .returning();
 
     // Clean up old duplicates (keep 30 days)
     const duplicatesDeleted = await db
       .delete(postDuplicates)
-      .where(sql`${postDuplicates.postedAt} < ${thirtyDaysAgo}`);
+      .where(sql`${postDuplicates.createdAt} < ${thirtyDaysAgo}`)
+      .returning();
 
     return {
-      rateLimitsDeleted: rateLimitsDeleted || 0,
-      duplicatesDeleted: duplicatesDeleted || 0,
+      rateLimitsDeleted: rateLimitsDeleted?.length || 0,
+      duplicatesDeleted: duplicatesDeleted?.length || 0,
     };
   }
 
@@ -267,7 +270,7 @@ export class SafetyManager {
         count: sql<number>`COUNT(*)`.as('count'),
       })
       .from(postDuplicates)
-      .where(eq(postDuplicates.userId, userId));
+      .where(eq(postDuplicates.userId, parseInt(userId)));
 
     // Get posts in last 24h
     const [postsLast24h] = await db
@@ -277,8 +280,8 @@ export class SafetyManager {
       .from(postDuplicates)
       .where(
         and(
-          eq(postDuplicates.userId, userId),
-          gte(postDuplicates.postedAt, oneDayAgo)
+          eq(postDuplicates.userId, parseInt(userId)),
+          gte(postDuplicates.createdAt, oneDayAgo)
         )
       );
 
@@ -290,8 +293,8 @@ export class SafetyManager {
       .from(postDuplicates)
       .where(
         and(
-          eq(postDuplicates.userId, userId),
-          gte(postDuplicates.postedAt, sevenDaysAgo)
+          eq(postDuplicates.userId, parseInt(userId)),
+          gte(postDuplicates.createdAt, sevenDaysAgo)
         )
       );
 
@@ -302,7 +305,7 @@ export class SafetyManager {
         count: sql<number>`COUNT(*)`.as('count'),
       })
       .from(postDuplicates)
-      .where(eq(postDuplicates.userId, userId))
+      .where(eq(postDuplicates.userId, parseInt(userId)))
       .groupBy(postDuplicates.subreddit)
       .orderBy(sql`COUNT(*) DESC`)
       .limit(5);

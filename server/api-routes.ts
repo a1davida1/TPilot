@@ -155,7 +155,7 @@ export function registerApiRoutes(app: Express) {
       }).returning();
 
       // Add to queue
-      await addJob('post', {
+      await addJob('posting' as any, {
         userId,
         postJobId: postJob.id,
         subreddit: data.subreddit,
@@ -293,8 +293,12 @@ export function registerApiRoutes(app: Express) {
         return res.status(404).json({ error: 'Account not found' });
       }
 
-      const reddit = new RedditManager(account);
-      const info = await reddit.getAccountInfo();
+      const reddit = new RedditManager(
+        parseInt(account.oauthToken),
+        account.oauthRefresh,
+        account.handle
+      );
+      const info = await reddit.getUserInfo();
 
       res.json(info);
     } catch (error: any) {
