@@ -5,33 +5,34 @@ export const envSchema = z.object({
   // Database
   DATABASE_URL: z.string().min(1),
   
-  // Reddit API
-  REDDIT_CLIENT_ID: z.string().min(1),
-  REDDIT_CLIENT_SECRET: z.string().min(1),
-  REDDIT_REDIRECT_URI: z.string().url(),
+  // Reddit API (optional for development)
+  REDDIT_CLIENT_ID: z.string().optional(),
+  REDDIT_CLIENT_SECRET: z.string().optional(),
+  REDDIT_REDIRECT_URI: z.string().optional(),
   
-  // Google Generative AI
-  GOOGLE_GENAI_API_KEY: z.string().min(1),
+  // AI APIs (accept either OpenAI or Google)
+  GOOGLE_GENAI_API_KEY: z.string().optional(),
+  OPENAI_API_KEY: z.string().optional(),
   
-  // AWS S3
-  AWS_ACCESS_KEY_ID: z.string().min(1),
-  AWS_SECRET_ACCESS_KEY: z.string().min(1),
-  AWS_REGION: z.string().min(1),
-  S3_BUCKET_MEDIA: z.string().min(1),
+  // AWS S3 (optional for development)
+  AWS_ACCESS_KEY_ID: z.string().optional(),
+  AWS_SECRET_ACCESS_KEY: z.string().optional(),
+  AWS_REGION: z.string().optional(),
+  S3_BUCKET_MEDIA: z.string().optional(),
   S3_PUBLIC_CDN_DOMAIN: z.string().url().optional(),
   
   // Redis (Optional for Phase 5)
   REDIS_URL: z.string().optional(),
   
   // App Configuration
-  APP_BASE_URL: z.string().url(),
+  APP_BASE_URL: z.string().optional(),
   CRON_TZ: z.string().default("America/Chicago"),
   
-  // Billing - CCBill
-  CCBILL_CLIENT_ACCOUNT: z.string().min(1),
-  CCBILL_SUBACCOUNT: z.string().min(1),
-  CCBILL_FLEXFORM_ID: z.string().min(1),
-  CCBILL_SALT: z.string().min(1),
+  // Billing - CCBill (optional for development)
+  CCBILL_CLIENT_ACCOUNT: z.string().optional(),
+  CCBILL_SUBACCOUNT: z.string().optional(),
+  CCBILL_FLEXFORM_ID: z.string().optional(),
+  CCBILL_SALT: z.string().optional(),
   
   // Media Configuration (Phase 5: Updated quotas)
   PLAN_STORAGE_BYTES_FREE: z.coerce.number().default(2147483648), // 2GB
@@ -113,7 +114,8 @@ try {
       REDDIT_CLIENT_ID: '',
       REDDIT_CLIENT_SECRET: '',
       REDDIT_REDIRECT_URI: '',
-      GOOGLE_GENAI_API_KEY: '',
+      GOOGLE_GENAI_API_KEY: process.env.GOOGLE_GENAI_API_KEY || '',
+      OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
       AWS_ACCESS_KEY_ID: '',
       AWS_SECRET_ACCESS_KEY: '',
       AWS_REGION: 'us-east-1',

@@ -13,7 +13,7 @@ interface AIProvider {
 }
 
 const providers: AIProvider[] = [
-  { name: 'gemini-flash', inputCost: 0.075, outputCost: 0.30, available: !!process.env.GEMINI_API_KEY },
+  { name: 'gemini-flash', inputCost: 0.075, outputCost: 0.30, available: !!process.env.GOOGLE_GENAI_API_KEY },
   { name: 'claude-haiku', inputCost: 0.80, outputCost: 4.00, available: !!process.env.ANTHROPIC_API_KEY },
   { name: 'openai-gpt4o', inputCost: 5.00, outputCost: 15.00, available: !!process.env.OPENAI_API_KEY }
 ];
@@ -21,7 +21,7 @@ const providers: AIProvider[] = [
 // Initialize clients only if API keys are available
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
 const anthropic = process.env.ANTHROPIC_API_KEY ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }) : null;
-const gemini = process.env.GEMINI_API_KEY ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }) : null;
+const gemini = process.env.GOOGLE_GENAI_API_KEY ? new GoogleGenAI({ apiKey: process.env.GOOGLE_GENAI_API_KEY }) : null;
 
 interface MultiAIRequest {
   user: any;

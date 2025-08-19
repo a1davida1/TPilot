@@ -69,8 +69,17 @@ export class AiService {
         const response = await this.generateWithOpenAI(inputData);
         await this.cacheResult(userId, 'openai', inputHash, inputData, response);
         return { ...response, cached: false };
-      } catch (fallbackError) {
+      } catch (fallbackError: any) {
         console.error('OpenAI fallback failed:', fallbackError);
+        
+        // Check if it's a quota error
+        if (fallbackError?.code === 'insufficient_quota' || fallbackError?.status === 429) {
+          console.log('API quota exceeded, using template fallback...');
+          const platforms = inputData.platforms || ['reddit'];
+          const fallbackContent = this.createFallbackContent(platforms);
+          return { content: fallbackContent, tokensUsed: 0, model: 'fallback', cached: false };
+        }
+        
         throw new Error('All AI services failed to generate content');
       }
     }

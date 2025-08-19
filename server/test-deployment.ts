@@ -61,7 +61,7 @@ export async function runDeploymentTests() {
   // Test 3: Safety Systems
   try {
     console.log('\nTesting safety systems...');
-    const safetyCheck = await SafetySystems.validatePost(
+    const safetyCheck = await SafetySystems.performSafetyCheck(
       '1',
       'test_subreddit',
       'Test Title',

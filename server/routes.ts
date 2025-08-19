@@ -613,8 +613,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       
       const contentGeneration = await storage.createContentGeneration({
-        ...validatedData,
-        ...generatedContent
+        platform: validatedData.platform,
+        style: validatedData.style,
+        theme: validatedData.theme,
+        titles: generatedContent.titles,
+        content: generatedContent.content,
+        photoInstructions: {
+          lighting: generatedContent.photoInstructions?.lighting || '',
+          cameraAngle: generatedContent.photoInstructions?.cameraAngle || generatedContent.photoInstructions?.angles || '',
+          composition: generatedContent.photoInstructions?.composition || '',
+          styling: generatedContent.photoInstructions?.styling || '',
+          mood: generatedContent.photoInstructions?.mood || 'Natural',
+          technicalSettings: generatedContent.photoInstructions?.technicalSettings || generatedContent.photoInstructions?.technical || ''
+        },
+        prompt: validatedData.prompt || '',
+        subreddit: validatedData.subreddit,
+        allowsPromotion: validatedData.allowsPromotion,
+        userId: 1
       });
       
       res.json(contentGeneration);
@@ -784,7 +799,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           theme: theme || contentParams.textTone,
           titles: finalTitles,
           content: finalContent,
-          photoInstructions: generatedContent.photoInstructions,
+          photoInstructions: {
+            lighting: generatedContent.photoInstructions.lighting || '',
+            cameraAngle: generatedContent.photoInstructions.angles || '',
+            composition: generatedContent.photoInstructions.composition || '',
+            styling: generatedContent.photoInstructions.styling || '',
+            mood: generatedContent.photoInstructions.mood || 'Natural',
+            technicalSettings: generatedContent.photoInstructions.technical || ''
+          },
           prompt: customPrompt || `${contentParams.photoType} content with ${contentParams.textTone} tone`,
           subreddit,
           allowsPromotion: includePromotion,
@@ -857,11 +879,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           theme: theme || 'personalized',
           titles: allTitles,
           content: alternativeContent ? `${primaryContent}\n\n---ALTERNATIVES---\n\n${alternativeContent}` : primaryContent,
-          photoInstructions: {
-            ...aiContent.photoInstructions,
-            variations: allVariations.length > 1 ? 
-              allVariations.slice(1).map((v, i) => `Style ${i + 2}: ${JSON.stringify(v.photoInstructions)}`).join(' | ') : 
-              undefined
+          photoInstructions: aiContent.photoInstructions || {
+            lighting: 'Natural lighting',
+            cameraAngle: 'Eye level',
+            composition: 'Rule of thirds',
+            styling: 'Casual elegant',
+            mood: 'Confident and natural',
+            technicalSettings: 'Auto settings'
           },
           prompt: customPrompt || imageDescription,
           subreddit,
