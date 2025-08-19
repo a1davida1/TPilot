@@ -23,6 +23,7 @@ import {
   Target,
   Loader2
 } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 // Turnstile widget component (loaded dynamically)
 declare global {
@@ -197,6 +198,11 @@ export function LandingPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-yellow-50 dark:from-pink-950/20 dark:via-rose-950/20 dark:to-yellow-950/20">
+      {/* Theme Toggle - Fixed Position */}
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
+      
       {/* Hero Section with Waitlist */}
       <section className="relative py-20 px-4 text-center">
         <div className="max-w-6xl mx-auto">

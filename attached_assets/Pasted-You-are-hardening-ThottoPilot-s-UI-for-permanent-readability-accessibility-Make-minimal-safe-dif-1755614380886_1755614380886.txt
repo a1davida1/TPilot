@@ -1,0 +1,291 @@
+You are hardening ThottoPilot’s UI for permanent readability + accessibility. Make minimal, safe diffs with TypeScript + Next.js + Tailwind. Add tests + a CI guard.
+
+## Install/Update deps (add if missing)
+- next-themes
+- @playwright/test (for e2e contrast checks)
+- playwright (runtime)
+- vitest, @testing-library/react, @testing-library/jest-dom (if not present)
+
+Update package.json scripts:
+{
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test:unit": "vitest run",
+    "test:e2e": "playwright test",
+    "a11y:scan": "node scripts/a11y-scan.mjs",
+    "ci": "npm run a11y:scan && npm run test:unit && npm run test:e2e"
+  }
+}
+
+## Tailwind config: enforce darkMode by class
+- Edit tailwind.config.js to:
+module.exports = {
+  darkMode: "class",
+  content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
+  theme: { extend: {} },
+  plugins: [],
+};
+
+## Global tokens + bindings
+- Append to app/globals.css (keep @tailwind lines at top). Create if missing.
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* LIGHT */
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215 16% 46%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --border: 214 32% 91%;
+    --ring: 215 20% 65%;
+  }
+  .dark {
+    /* DARK */
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    --primary: 210 40% 96%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+    --accent: 217 33% 17%;
+    --accent-foreground: 210 40% 98%;
+    --border: 217 33% 22%;
+    --ring: 215 20% 65%;
+  }
+
+  * { @apply border-border; }
+  html, body { min-height: 100%; }
+  body { @apply bg-background text-foreground; }
+  a { color: hsl(var(--primary)); }
+  ::placeholder { color: hsl(var(--muted-foreground)); opacity: 1; }
+}
+
+/* Token utility bindings */
+@layer utilities {
+  .bg-background { background-color: hsl(var(--background)); }
+  .text-foreground { color: hsl(var(--foreground)); }
+  .bg-card { background-color: hsl(var(--card)); }
+  .text-card-foreground { color: hsl(var(--card-foreground)); }
+  .bg-primary { background-color: hsl(var(--primary)); }
+  .text-primary-foreground { color: hsl(var(--primary-foreground)); }
+  .bg-secondary { background-color: hsl(var(--secondary)); }
+  .text-secondary-foreground { color: hsl(var(--secondary-foreground)); }
+  .bg-accent { background-color: hsl(var(--accent)); }
+  .text-accent-foreground { color: hsl(var(--accent-foreground)); }
+  .border-border { border-color: hsl(var(--border)); }
+  .ring-ring { --tw-ring-color: hsl(var(--ring)); }
+}
+
+/* Emergency guardrails: disallow invisible text */
+*[style*="color: transparent"], .text-transparent { color: hsl(var(--foreground)) !important; }
+
+## Theme provider (SSR-safe)
+- Add components/ThemeProvider.tsx
+"use client";
+import { ThemeProvider as NextThemes } from "next-themes";
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  return (
+    <NextThemes attribute="class" defaultTheme="system" enableSystem>
+      {children}
+    </NextThemes>
+  );
+}
+
+- Edit app/layout.tsx to wrap:
+import { ThemeProvider } from "@/components/ThemeProvider";
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <body className="bg-background text-foreground">
+        <ThemeProvider>{children}</ThemeProvider>
+      </body>
+    </html>
+  );
+}
+
+## Core UI components using tokens (create if missing)
+- components/ui/Button.tsx
+export function Button({ className = "", ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      className={[
+        "inline-flex items-center justify-center rounded-2xl px-4 py-2 text-sm font-medium",
+        "bg-primary text-primary-foreground hover:opacity-90",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        "disabled:opacity-50 disabled:cursor-not-allowed",
+        "transition"
+      ].join(" ") + " " + className}
+      {...props}
+    />
+  );
+}
+
+- components/ui/Input.tsx
+export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <input
+      className="w-full rounded-xl border border-border bg-card text-card-foreground px-3 py-2
+                 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+      {...props}
+    />
+  );
+}
+
+- components/ui/Card.tsx
+export function Card({ className = "", ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return <div className={"rounded-2xl bg-card text-card-foreground shadow p-4 " + className} {...props} />;
+}
+
+## Kill hover-only visibility patterns automatically
+- Create scripts/a11y-scan.mjs
+import fs from "node:fs";
+import path from "node:path";
+
+const ROOTS = ["app", "components"];
+const BAD = [
+  /text-transparent\b/,
+  /\bopacity-0\b(?![^"]*skeleton)/,     // allow skeletons if you use that class name
+  /hover:opacity-100\b.*\bopacity-0\b/, // hover reveal over hidden base
+  /hover:text-opacity-\d+/,
+];
+let fail = false;
+
+function scan(file) {
+  const src = fs.readFileSync(file, "utf8");
+  BAD.forEach((re) => {
+    if (re.test(src)) {
+      console.error(`❌ A11y: disallowed pattern in ${file}: ${re}`);
+      fail = true;
+    }
+  });
+}
+
+function walk(dir) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const p = path.join(dir, entry.name);
+    if (entry.isDirectory()) walk(p);
+    else if (/\.(tsx?|jsx?)$/.test(p)) scan(p);
+  }
+}
+
+for (const r of ROOTS) if (fs.existsSync(r)) walk(r);
+if (fail) process.exit(1);
+console.log("✅ A11y scan passed");
+
+## Unit contrast test (Vitest)
+- Add tests/unit/contrast.spec.ts
+import { describe, it, expect } from "vitest";
+
+/** WCAG contrast between two sRGB hex colors */
+function hexToRgb(hex) {
+  const h = hex.replace("#",""); const n = parseInt(h.length===3 ? h.split("").map(x=>x+x).join("") : h, 16);
+  return [ (n>>16)&255, (n>>8)&255, n&255 ];
+}
+function luminance([r,g,b]) {
+  const s = [r,g,b].map(v=>v/255).map(v=>v<=0.03928? v/12.92 : Math.pow((v+0.055)/1.055,2.4));
+  return 0.2126*s[0]+0.7152*s[1]+0.0722*s[2];
+}
+function contrast(hex1, hex2) {
+  const L1 = luminance(hexToRgb(hex1));
+  const L2 = luminance(hexToRgb(hex2));
+  const [hi, lo] = L1 > L2 ? [L1, L2] : [L2, L1];
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+describe("contrast sanity", () => {
+  it("meets AA for common pairs", () => {
+    // Token approximations (these guard egregious regressions; e2e checks real computed styles)
+    expect(contrast("#0a0a0a", "#f5f7fb")).toBeGreaterThanOrEqual(4.5);
+    expect(contrast("#f5f7fb", "#0a0a0a")).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+## Playwright e2e contrast checks
+- Add playwright.config.ts (if missing)
+import { defineConfig } from "@playwright/test";
+export default defineConfig({
+  timeout: 30000,
+  use: { headless: true, viewport: { width: 1280, height: 800 } },
+  webServer: { command: "npm run start", url: "http://localhost:3000", reuseExistingServer: !process.env.CI },
+});
+
+- Add tests/e2e/contrast.spec.ts
+import { test, expect } from "@playwright/test";
+
+async function getColor(page, selector) {
+  const el = await page.waitForSelector(selector, { state: "attached", timeout: 5000 });
+  return el.evaluate((node) => {
+    const s = getComputedStyle(node);
+    return { color: s.color, bg: s.backgroundColor, opacity: s.opacity };
+  });
+}
+function parseRgb(str) {
+  const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(str)!;
+  return [parseInt(m[1]), parseInt(m[2]), parseInt(m[3])];
+}
+function luminance([r,g,b]) {
+  const s=[r,g,b].map(v=>v/255).map(v=>v<=0.03928? v/12.92:Math.pow((v+0.055)/1.055,2.4));
+  return 0.2126*s[0]+0.7152*s[1]+0.0722*s[2];
+}
+function ratio(fg,bg) {
+  const L1=luminance(fg), L2=luminance(bg); const [hi,lo]=L1>L2?[L1,L2]:[L2,L1]; return (hi+0.05)/(lo+0.05);
+}
+
+test.describe("contrast - light and dark", () => {
+  for (const theme of ["light","dark"]) {
+    test(`home page readable in ${theme}`, async ({ page }) => {
+      await page.goto("/");
+      if (theme==="dark") await page.addStyleTag({ content: "html{color-scheme:dark} html{background:black}" });
+      // Check typical elements
+      for (const sel of ["body","button","a","input","h1","p"]) {
+        const { color, bg, opacity } = await getColor(page, sel);
+        expect(parseFloat(opacity)).toBeGreaterThan(0.9);
+        const c = ratio(parseRgb(color), parseRgb(bg));
+        // body text AA ~= 4.5; allow 3.0 for large headings
+        const min = sel==="h1" ? 3.0 : 4.5;
+        expect(c).toBeGreaterThanOrEqual(min);
+      }
+    });
+  }
+});
+
+## Optional: Theme toggle
+- components/ThemeToggle.tsx
+"use client";
+import { useTheme } from "next-themes";
+export function ThemeToggle() {
+  const { theme, setTheme } = useTheme();
+  return (
+    <button onClick={()=>setTheme(theme==="dark"?"light":"dark")} className="rounded-xl px-3 py-2 bg-secondary text-secondary-foreground">
+      {theme==="dark"?"Light":"Dark"} mode
+    </button>
+  );
+}
+
+## Acceptance
+- All pages render readable text/buttons in both light and dark (no hover-needed).
+- No `text-transparent` or base `opacity-0` in content components (script enforces).
+- Buttons/inputs/cards bound to tokens; contrast meets AA in e2e test.
+- `npm run ci` passes locally; Replit CI should run a11y scan + tests.
+
+After changes, run:
+- npx playwright install --with-deps
+- npm run ci
+Provide a concise summary of files changed and any follow-up steps (if any).

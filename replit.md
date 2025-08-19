@@ -20,11 +20,13 @@ Compliance: Phased approach - base features without ID verification, gate advanc
 ## Frontend Architecture
 - **Framework**: React 18 with TypeScript using Vite.
 - **UI Components**: Shadcn/ui built on Radix UI.
-- **Styling**: Tailwind CSS with CSS variables for theming.
+- **Styling**: Tailwind CSS with comprehensive token-based theming system.
+- **Theme System**: Token-based light/dark mode with WCAG AA compliance, SSR-safe persistence, and comprehensive CSS variables.
 - **State Management**: TanStack Query (React Query).
 - **Routing**: Wouter.
 - **Form Handling**: React Hook Form with Zod validation.
-- **UI/UX Decisions**: Bubblegum color scheme (vibrant pink/rose with yellow accents), ultra-polished dark interface with high-contrast text for readability, glass morphism, dynamic gradients, premium CSS animations, and mobile-first design. Consistent preset style functionality across landing page and dashboard. Three-tier portal views (Guest, Free/Basic, Pro/Premium) with upgrade prompts.
+- **UI/UX Decisions**: Bubblegum color scheme (vibrant pink/rose with yellow accents), ultra-polished interface with guaranteed high-contrast text for permanent readability, glass morphism, dynamic gradients, premium CSS animations, and mobile-first design. Anti-hover visibility patterns implemented. Three-tier portal views (Guest, Free/Basic, Pro/Premium) with upgrade prompts.
+- **Accessibility**: WCAG AA compliance enforced via ESLint/Stylelint rules, comprehensive test suite, high contrast and reduced motion support.
 
 ## Backend Architecture
 - **Server Framework**: Express.js with TypeScript on Node.js.
