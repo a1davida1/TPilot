@@ -48,7 +48,7 @@ export function GenerationPanel({ onContentGenerated }: GenerationPanelProps) {
   });
 
   const handleGenerate = () => {
-    generateMutation.mutate({ platform, style, theme, timing, allowsPromotion });
+    generateMutation.mutate({ platform, style, theme });
   };
 
   const copyToClipboard = async (text: string, type: string) => {

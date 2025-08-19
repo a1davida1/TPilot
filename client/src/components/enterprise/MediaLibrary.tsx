@@ -148,7 +148,7 @@ export default function MediaLibrary() {
   return (
     <div className="p-6 space-y-6">
       {/* Storage Usage */}
-      {usage && (
+      {usage && (usage as any) && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -158,14 +158,14 @@ export default function MediaLibrary() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between text-sm">
-              <span>{formatFileSize(usage.usedBytes)} of {formatFileSize(usage.quotaBytes)} used</span>
-              <span>{usage.assetsCount} files</span>
+              <span>{formatFileSize((usage as any).usedBytes || 0)} of {formatFileSize((usage as any).quotaBytes || 0)} used</span>
+              <span>{(usage as any).assetsCount || 0} files</span>
             </div>
-            <Progress value={usage.usedPercentage} className="h-2" />
-            {usage.usedPercentage > 80 && (
+            <Progress value={(usage as any).usedPercentage || 0} className="h-2" />
+            {((usage as any).usedPercentage || 0) > 80 && (
               <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
                 <p className="text-sm text-orange-700 dark:text-orange-300">
-                  Storage is almost full. Upgrade to Pro for {formatFileSize(usage.proUpgrade?.quotaBytes || 0)} storage.
+                  Storage is almost full. Upgrade to Pro for {formatFileSize((usage as any).proUpgrade?.quotaBytes || 0)} storage.
                 </p>
               </div>
             )}
@@ -218,14 +218,14 @@ export default function MediaLibrary() {
                 <div key={i} className="aspect-square bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
               ))}
             </div>
-          ) : assets.length === 0 ? (
+          ) : (assets as any[])?.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <Image className="mx-auto h-12 w-12 mb-4 opacity-50" />
               <p>No media files yet. Upload some to get started!</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {assets.map((asset: MediaAsset) => (
+              {(assets as any[])?.map((asset: any) => (
                 <div key={asset.id} className="relative group">
                   <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
                     {asset.type.startsWith('image/') ? (

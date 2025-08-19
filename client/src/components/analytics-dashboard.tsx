@@ -52,7 +52,7 @@ export function AnalyticsDashboard({ isGuestMode = false }: AnalyticsDashboardPr
     ]
   };
 
-  const data = isGuestMode ? demoAnalytics : analytics || demoAnalytics;
+  const data = isGuestMode ? demoAnalytics : (analytics as typeof demoAnalytics) || demoAnalytics;
 
   const metrics = [
     {

@@ -231,14 +231,14 @@ export default function PostScheduler() {
                 </div>
               ))}
             </div>
-          ) : scheduledPosts.length === 0 ? (
+          ) : (scheduledPosts as any[])?.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <CalendarIcon className="mx-auto h-12 w-12 mb-4 opacity-50" />
               <p>No scheduled posts yet. Schedule your first post to get started!</p>
             </div>
           ) : (
             <div className="space-y-4">
-              {scheduledPosts.map((post: PostJob) => {
+              {(scheduledPosts as any[])?.map((post: PostJob) => {
                 const { date, time } = formatDateTime(post.scheduledAt);
                 return (
                   <div key={post.id} className="border rounded-lg p-4 space-y-3">

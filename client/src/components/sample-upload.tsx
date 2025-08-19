@@ -55,9 +55,7 @@ export function SampleUpload() {
   // Delete sample mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await apiRequest(`/api/user-samples/${id}`, {
-        method: "DELETE"
-      });
+      await apiRequest(`/api/user-samples/${id}`, "DELETE");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/user-samples"] });
@@ -78,10 +76,7 @@ export function SampleUpload() {
   // Add sample mutation
   const addMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      return await apiRequest("/api/user-samples", {
-        method: "POST",
-        body: JSON.stringify(data)
-      });
+      return await apiRequest("/api/user-samples", "POST", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/user-samples"] });
@@ -102,9 +97,7 @@ export function SampleUpload() {
   });
 
   const handleGetUploadParameters = async () => {
-    const response = await apiRequest("/api/objects/upload", {
-      method: "POST"
-    });
+    const response = await apiRequest("/api/objects/upload", "POST") as unknown as { uploadURL: string };
     return {
       method: "PUT" as const,
       url: response.uploadURL
@@ -114,10 +107,7 @@ export function SampleUpload() {
   const handleUploadComplete = async (result: any) => {
     if (result.successful && result.successful.length > 0) {
       const uploadedUrl = result.successful[0].uploadURL;
-      const response = await apiRequest("/api/sample-images", {
-        method: "PUT",
-        body: JSON.stringify({ imageURL: uploadedUrl })
-      });
+      const response = await apiRequest("/api/sample-images", "PUT", { imageURL: uploadedUrl }) as unknown as { objectPath: string };
       setFormData({ ...formData, imageUrl: response.objectPath });
       toast({
         title: "Image uploaded",
@@ -339,7 +329,7 @@ export function SampleUpload() {
                   <Calendar className="h-3 w-3" />
                   {new Date(sample.createdAt).toLocaleDateString()}
                 </span>
-                {sample.upvotes > 0 && (
+                {(sample.upvotes ?? 0) > 0 && (
                   <span className="flex items-center gap-1 text-green-400">
                     <Star className="h-3 w-3" />
                     {sample.upvotes}
@@ -410,7 +400,7 @@ export function SampleUpload() {
                 {selectedSample.subreddit && (
                   <span>{selectedSample.subreddit}</span>
                 )}
-                {selectedSample.upvotes > 0 && (
+                {(selectedSample.upvotes ?? 0) > 0 && (
                   <span className="flex items-center gap-1 text-green-400">
                     <Star className="h-3 w-3" />
                     {selectedSample.upvotes} upvotes

@@ -70,6 +70,10 @@ export const envSchema = z.object({
   
   // Admin Configuration
   ADMIN_EMAIL_WHITELIST: z.string().optional(),
+  
+  // Media Configuration (missing properties)
+  MEDIA_MAX_BYTES_FREE: z.coerce.number().default(524288000), // 500MB
+  MEDIA_MAX_BYTES_PRO: z.coerce.number().default(10737418240), // 10GB
 });
 
 export function getEnvConfig() {
@@ -130,18 +134,9 @@ try {
       WATERMARK_OPACITY: 0.18,
       USE_PG_QUEUE: !process.env.REDIS_URL, // Auto-enable when no Redis
       MAX_POSTS_PER_SUBREDDIT_24H: 1,
-      APP_BASE_URL: 'http://localhost:5000',
-      CCBILL_CLIENT_ACCOUNT: '',
-      CCBILL_SUBACCOUNT: '',
-      CCBILL_FLEXFORM_ID: '',
-      CCBILL_SALT: '',
-      CRON_TZ: 'America/Chicago',
+      UTM_COOKIE_TTL_DAYS: 30,
       MEDIA_MAX_BYTES_FREE: 524288000,
       MEDIA_MAX_BYTES_PRO: 10737418240,
-      MEDIA_SIGNED_TTL_SECONDS: 600,
-      WATERMARK_ENABLED: true,
-      WATERMARK_TEXT: 'ThottoPilot',
-      WATERMARK_OPACITY: 0.18,
     } as any;
   } else {
     console.error("❌ Environment validation failed:");

@@ -200,7 +200,7 @@ export function ImageGallery() {
                           alt={image.originalFileName}
                           className="w-full h-full object-cover"
                         />
-                        {image.isProtected === 'true' && (
+                        {image.isProtected && (
                           <Shield className="absolute top-2 right-2 h-4 w-4 text-green-600 bg-white rounded-full p-0.5" />
                         )}
                         <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all">
@@ -247,7 +247,7 @@ export function ImageGallery() {
                         </div>
                         
                         <div className="flex gap-2 flex-wrap">
-                          {image.isProtected !== 'true' && (
+                          {!image.isProtected && (
                             <>
                               <Button
                                 size="sm"
@@ -298,7 +298,7 @@ export function ImageGallery() {
                           </Button>
                         </div>
                         
-                        {image.isProtected === 'true' && (
+                        {image.isProtected && (
                           <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
                             <p className="text-sm text-green-800 font-medium">
                               ✓ This image is protected against reverse searches

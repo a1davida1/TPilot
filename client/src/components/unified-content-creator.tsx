@@ -47,8 +47,8 @@ const textTones = [
 const availableHashtags = ['#model', '#photography', '#fashion', '#lifestyle', '#beauty', '#art', '#portrait', '#creative', '#outfit', '#style'];
 
 // Extended interface for frontend display with dynamic server properties
-interface GeneratedContentDisplay extends ContentGeneration {
-  contentSource?: 'ai' | 'template';
+interface GeneratedContentDisplay extends Omit<ContentGeneration, 'photoInstructions'> {
+  contentSource?: 'ai' | 'template' | 'demo';
   aiProvider?: string;
   estimatedCost?: number;
   upgradeMessage?: string;
@@ -56,8 +56,13 @@ interface GeneratedContentDisplay extends ContentGeneration {
   variationCount?: number;
   titles: string[]; // Ensure titles is always an array
   photoInstructions: {
-    [key: string]: string;
-  } | string; // Support both object and string formats
+    lighting: string;
+    cameraAngle: string;
+    composition: string;
+    styling: string;
+    mood: string;
+    technicalSettings: string;
+  }; // Match the exact schema type
 }
 
 interface UnifiedContentCreatorProps {

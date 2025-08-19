@@ -207,7 +207,7 @@ export function TrendingTagsExpanded() {
     return matchesSearch && matchesCategory && matchesPlatform;
   });
 
-  const categories = ['all', ...new Set(trendingTags.map(t => t.category))];
+  const categories = ['all', ...Array.from(new Set(trendingTags.map(t => t.category)))];
   const platforms = ['all', 'Reddit', 'OnlyFans', 'Twitter', 'Instagram', 'TikTok'];
 
   return (
