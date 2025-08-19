@@ -10,7 +10,7 @@ UI/UX: Ultra-polished dark interface with neon accents, glass morphism, and dyna
 Navigation: Left sidebar with collapsible sections (cleaner and more user-friendly than tabs)
 Future features: Payment system integration planned
 Design: Live app interface demonstration instead of traditional landing page, showing actual functionality
-Interface: Dark theme with purple/pink gradients, animated backgrounds, and premium visual effects
+Interface: Bubblegum color scheme with high-contrast text for optimal readability, animated backgrounds, and premium visual effects
 Content: Remove "AI" terminology from user-facing interface to make it feel more natural and accessible
 RTX 4090 Strategy: Use for helper AI training, image protection algorithms, and model fine-tuning - not core live functionality
 Compliance: Phased approach - base features without ID verification, gate advanced content features behind age verification
@@ -24,7 +24,7 @@ Compliance: Phased approach - base features without ID verification, gate advanc
 - **State Management**: TanStack Query (React Query).
 - **Routing**: Wouter.
 - **Form Handling**: React Hook Form with Zod validation.
-- **UI/UX Decisions**: Feminine color scheme (pink/purple/light blue), ultra-polished dark interface with neon accents, glass morphism, dynamic gradients, premium CSS animations, and mobile-first design. Consistent preset style functionality across landing page and dashboard. Three-tier portal views (Guest, Free/Basic, Pro/Premium) with upgrade prompts.
+- **UI/UX Decisions**: Bubblegum color scheme (vibrant pink/rose with yellow accents), ultra-polished dark interface with high-contrast text for readability, glass morphism, dynamic gradients, premium CSS animations, and mobile-first design. Consistent preset style functionality across landing page and dashboard. Three-tier portal views (Guest, Free/Basic, Pro/Premium) with upgrade prompts.
 
 ## Backend Architecture
 - **Server Framework**: Express.js with TypeScript on Node.js.

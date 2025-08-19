@@ -7,67 +7,67 @@
 
 @layer base {
   :root {
-    /* Light Mode - Clean & Readable */
-    --background: 0 0% 100%;
-    --foreground: 0 0% 10%;
+    /* Light Mode - Bubblegum Theme */
+    --background: 330 100% 98%;
+    --foreground: 335 30% 15%;
     
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 10%;
+    --card: 330 50% 95%;
+    --card-foreground: 335 30% 15%;
     
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 10%;
+    --popover: 330 50% 95%;
+    --popover-foreground: 335 30% 15%;
     
-    --primary: 280 60% 50%;
+    --primary: 320 85% 60%;
     --primary-foreground: 0 0% 100%;
     
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 10%;
+    --secondary: 325 40% 90%;
+    --secondary-foreground: 335 30% 15%;
     
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 40%;
+    --muted: 325 30% 88%;
+    --muted-foreground: 335 20% 35%;
     
-    --accent: 330 60% 50%;
+    --accent: 305 80% 65%;
     --accent-foreground: 0 0% 100%;
     
-    --destructive: 0 70% 50%;
+    --destructive: 0 80% 60%;
     --destructive-foreground: 0 0% 100%;
     
-    --border: 0 0% 90%;
-    --input: 0 0% 100%;
-    --ring: 280 60% 50%;
+    --border: 325 30% 80%;
+    --input: 330 40% 96%;
+    --ring: 320 85% 60%;
     
-    --radius: 0.5rem;
+    --radius: 0.75rem;
   }
 
   .dark {
-    /* Dark Mode - High Contrast for Perfect Readability */
-    --background: 0 0% 8%;
-    --foreground: 0 0% 98%;
+    /* Dark Mode - Bubblegum Night Theme with High Contrast */
+    --background: 335 25% 8%;
+    --foreground: 330 15% 95%;
     
-    --card: 0 0% 12%;
-    --card-foreground: 0 0% 98%;
+    --card: 335 20% 12%;
+    --card-foreground: 330 15% 95%;
     
-    --popover: 0 0% 12%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 335 20% 12%;
+    --popover-foreground: 330 15% 95%;
     
-    --primary: 280 60% 60%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 320 80% 70%;
+    --primary-foreground: 335 30% 10%;
     
-    --secondary: 0 0% 16%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 335 15% 16%;
+    --secondary-foreground: 330 15% 90%;
     
-    --muted: 0 0% 16%;
-    --muted-foreground: 0 0% 70%;
+    --muted: 335 15% 16%;
+    --muted-foreground: 330 10% 75%;
     
-    --accent: 330 60% 60%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 305 85% 75%;
+    --accent-foreground: 335 30% 10%;
     
-    --destructive: 0 70% 60%;
+    --destructive: 0 80% 70%;
     --destructive-foreground: 0 0% 100%;
     
-    --border: 0 0% 20%;
-    --input: 0 0% 16%;
-    --ring: 280 60% 60%;
+    --border: 335 15% 22%;
+    --input: 335 15% 16%;
+    --ring: 320 80% 70%;
   }
 }
 
@@ -88,18 +88,31 @@
     scroll-behavior: smooth;
   }
 
-  /* Ensure all text elements use proper colors */
+  /* Ensure all text elements use proper colors with high contrast */
   h1, h2, h3, h4, h5, h6, p, span, div, label, a {
     @apply text-foreground;
+    color: hsl(var(--foreground));
+  }
+  
+  /* Force readable text in muted contexts */
+  .text-muted-foreground {
+    color: hsl(var(--muted-foreground)) !important;
+  }
+  
+  /* Ensure card text is always readable */
+  .card *, .card-content *, .card-header * {
+    color: hsl(var(--card-foreground)) !important;
   }
 
-  /* Selection colors */
+  /* Selection colors - Bubblegum */
   ::selection {
-    background-color: hsl(280, 60%, 60%, 0.3);
+    background-color: hsl(320, 80%, 70%, 0.4);
+    color: hsl(var(--background));
   }
 
   ::-moz-selection {
-    background-color: hsl(280, 60%, 60%, 0.3);
+    background-color: hsl(320, 80%, 70%, 0.4);
+    color: hsl(var(--background));
   }
 }
 
@@ -111,7 +124,7 @@
 }
 
 .text-gradient {
-  @apply bg-gradient-to-r from-purple-600 via-pink-500 to-purple-500 bg-clip-text text-transparent;
+  @apply bg-gradient-to-r from-pink-500 via-rose-400 to-pink-600 bg-clip-text text-transparent;
   font-weight: 700;
 }
 
@@ -266,16 +279,16 @@
   background-color: rgba(155, 155, 155, 0.7);
 }
 
-/* Premium button styles - Cotton Candy */
+/* Premium button styles - Bubblegum */
 .btn-premium {
   @apply relative overflow-hidden;
-  background: linear-gradient(135deg, #c084fc 0%, #f9a8d4 50%, #e9d5ff 100%);
+  background: linear-gradient(135deg, #ec4899 0%, #f472b6 30%, #f9a8d4 70%, #fbbf24 100%);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .btn-premium:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(244, 114, 182, 0.3);
+  box-shadow: 0 10px 25px rgba(236, 72, 153, 0.4);
 }
 
 .btn-premium::before {
@@ -324,13 +337,14 @@
 .text-gradient-animate {
   background: linear-gradient(
     270deg,
-    #c084fc,
+    #ec4899,
+    #f472b6,
     #f9a8d4,
-    #fbbaa8,
-    #e9d5ff,
-    #fce7f3
+    #fbcfe8,
+    #fce7f3,
+    #fbbf24
   );
-  background-size: 300% 300%;
+  background-size: 400% 400%;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
