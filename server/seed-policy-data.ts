@@ -92,6 +92,10 @@ export async function seedPolicyData() {
         target: featureFlags.key,
         set: {
           enabled: false,
+          meta: {
+            description: "Block posting when content has policy warnings",
+            category: "policy"
+          },
           updatedAt: new Date()
         }
       });
@@ -113,6 +117,10 @@ export async function seedPolicyData() {
         target: featureFlags.key,
         set: {
           enabled: true,
+          meta: {
+            description: "Enable advanced content quality checking",
+            category: "policy"
+          },
           updatedAt: new Date()
         }
       });

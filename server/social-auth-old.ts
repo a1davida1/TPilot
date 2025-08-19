@@ -45,12 +45,12 @@ export function setupSocialAuth(app: Express) {
             provider: 'google',
             providerId: profile.id,
             avatar: profile.photos?.[0]?.value
-          });
+          } as any);
         }
         
         return done(null, user);
       } catch (error) {
-        return done(error, false);
+        return done(error, null);
       }
     }));
   }
@@ -69,17 +69,18 @@ export function setupSocialAuth(app: Express) {
         if (!user) {
           user = await storage.createUser({
             email: profile.emails?.[0]?.value || '',
-            username: `${profile.name?.givenName || ''} ${profile.name?.familyName || ''}`.trim() || profile.emails?.[0]?.value || '',
+            username: profile.name?.givenName + ' ' + profile.name?.familyName || profile.emails?.[0]?.value || '',
             password: '',
             provider: 'facebook',
             providerId: profile.id,
-            avatar: profile.photos?.[0]?.value
+            avatar: profile.photos?.[0]?.value,
+            createdAt: new Date()
           });
         }
         
         return done(null, user);
       } catch (error) {
-        return done(error, false);
+        return done(error, null);
       }
     }));
   }
@@ -91,25 +92,26 @@ export function setupSocialAuth(app: Express) {
       clientSecret: process.env.REDDIT_CLIENT_SECRET,
       callbackURL: "/api/auth/reddit/callback",
       scope: ['identity']
-    }, async (accessToken: string, refreshToken: string, profile: any, done: any) => {
+    }, async (accessToken, refreshToken, profile, done) => {
       try {
         // Reddit doesn't provide email, use username
-        let user = await storage.getUserByUsername(profile.name || profile.id);
+        let user = await storage.getUserByUsername(profile.name);
         
         if (!user) {
           user = await storage.createUser({
             email: '', // Reddit doesn't provide email
-            username: profile.name || `reddit_${profile.id}`,
+            username: profile.name,
             password: '',
             provider: 'reddit',
             providerId: profile.id,
-            avatar: profile.icon_img || ''
+            avatar: profile.icon_img || '',
+            createdAt: new Date()
           });
         }
         
         return done(null, user);
       } catch (error) {
-        return done(error, false);
+        return done(error, null);
       }
     }));
   }
@@ -154,26 +156,19 @@ function setupAuthRoutes(app: Express) {
   app.get('/api/auth/reddit/callback',
     passport.authenticate('reddit', { failureRedirect: '/login?error=reddit_failed' }),
     (req, res) => {
-      res.redirect('/dashboard?connected=reddit');
+      res.redirect('/dashboard');
     }
   );
 
-  // Logout
+  // Logout route
   app.post('/api/auth/logout', (req, res) => {
     req.logout((err) => {
       if (err) {
         return res.status(500).json({ error: 'Logout failed' });
       }
-      res.json({ message: 'Logged out successfully' });
+      res.json({ success: true });
     });
   });
 
-  // Get current user
-  app.get('/api/auth/user', (req, res) => {
-    if (req.isAuthenticated()) {
-      res.json(req.user);
-    } else {
-      res.status(401).json({ error: 'Not authenticated' });
-    }
-  });
+  // User endpoint is handled in routes.ts with proper JWT authentication middleware
 }
