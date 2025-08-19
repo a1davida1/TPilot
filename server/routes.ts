@@ -24,6 +24,7 @@ import { redditCommunitiesDatabase, getRecommendationsForUser, getCommunityInsig
 import { visitorAnalytics } from "./visitor-analytics";
 import { getAvailablePerks, getPerksByCategory, generateReferralCode, getSignupInstructions } from "./pro-perks";
 import { registerApiRoutes } from "./api-routes";
+import { registerPolicyRoutes } from "./policy-routes";
 
 // Configure multer for file uploads
 const storage_config = multer.diskStorage({
@@ -1155,6 +1156,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register new enterprise API routes (Phase 2)
   registerApiRoutes(app);
+  
+  // Register Policy Routes
+  registerPolicyRoutes(app);
 
   const httpServer = createServer(app);
   return httpServer;

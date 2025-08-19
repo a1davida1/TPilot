@@ -281,11 +281,11 @@ export const insertFeatureFlagSchema = createInsertSchema(featureFlags).omit({ u
 export const insertMediaAssetSchema = createInsertSchema(mediaAssets).omit({ id: true, createdAt: true });
 export const insertMediaUsageSchema = createInsertSchema(mediaUsages).omit({ id: true, createdAt: true });
 export const insertAiGenerationSchema = createInsertSchema(aiGenerations).omit({ id: true, createdAt: true });
-
-// Phase 5: Insert schemas for new tables
 export const insertQueueJobSchema = createInsertSchema(queueJobs).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertPostRateLimitSchema = createInsertSchema(postRateLimits).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertPostDuplicateSchema = createInsertSchema(postDuplicates).omit({ id: true, createdAt: true });
+
+// Phase 5 schemas already included above
 
 // Insert schemas for existing tables
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
