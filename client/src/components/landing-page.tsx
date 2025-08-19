@@ -196,24 +196,24 @@ export function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-purple-900 dark:to-indigo-900">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-yellow-50 dark:from-pink-950/20 dark:via-rose-950/20 dark:to-yellow-950/20">
       {/* Hero Section with Waitlist */}
       <section className="relative py-20 px-4 text-center">
         <div className="max-w-6xl mx-auto">
-          <Badge className="mb-6 bg-gradient-to-r from-purple-600 to-pink-600 text-white border-0" variant="secondary">
-            🚀 AI Promo Copilot for NSFW Creators
+          <Badge className="mb-8 bg-gradient-to-r from-pink-500 to-rose-500 text-white border-0 text-lg px-6 py-3 font-bold tracking-tight shadow-lg hover:shadow-xl transition-all duration-300" variant="secondary">
+            🚀 Content Copilot for Creators
           </Badge>
           
-          <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent mb-6 leading-tight">
+          <h1 className="text-6xl md:text-8xl font-black text-gradient-animate mb-8 leading-tight tracking-tighter">
             ThottoPilot
           </h1>
           
-          <p className="text-xl md:text-2xl text-gray-700 dark:text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
-            Join the waitlist for the ultimate AI copilot that automates your promo workflow with smart scheduling and content protection
+          <p className="text-xl md:text-2xl font-semibold text-foreground mb-8 max-w-3xl mx-auto leading-relaxed">
+            Join the waitlist for the ultimate content copilot that automates your promo workflow with smart scheduling and content protection
           </p>
           
           {/* Waitlist Form */}
-          <Card className="max-w-2xl mx-auto mb-12 bg-white/80 backdrop-blur-sm border-0 shadow-xl">
+          <Card className="max-w-2xl mx-auto mb-12 bg-card backdrop-blur-xl border-2 border-pink-200/50 dark:border-pink-500/30 shadow-2xl card-hover">
             <CardHeader>
               <CardTitle className="text-2xl text-center">Join the Waitlist</CardTitle>
               <CardDescription className="text-center">
@@ -286,7 +286,7 @@ export function LandingPage() {
                   type="submit"
                   disabled={isSubmitting}
                   size="lg"
-                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-4 text-lg shadow-lg"
+                  className="w-full btn-premium text-white font-bold text-lg py-6"
                   data-testid="button-submit"
                 >
                   {isSubmitting ? (
@@ -308,7 +308,7 @@ export function LandingPage() {
           {/* Existing users CTA */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/login">
-              <Button size="lg" variant="outline" className="font-semibold px-8 py-4 text-lg border-purple-300 hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20">
+              <Button size="lg" variant="outline" className="font-bold px-8 py-4 text-lg border-pink-300 hover:border-pink-500 hover:bg-pink-50 dark:hover:bg-pink-950/20 shadow-lg hover:shadow-xl">
                 <Sparkles className="mr-2 h-5 w-5" />
                 Already have access? Login
               </Button>
@@ -318,14 +318,14 @@ export function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 px-4 bg-white/50 backdrop-blur-sm">
+      <section className="py-20 px-4 bg-white/70 backdrop-blur-xl dark:bg-black/20">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+            <h2 className="text-5xl font-black text-foreground mb-6">
               What's Coming Soon
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300">
-              Powerful AI tools designed specifically for NSFW content creators
+            <p className="text-xl font-semibold text-foreground">
+              Powerful tools designed specifically for content creators
             </p>
           </div>
 
@@ -333,27 +333,27 @@ export function LandingPage() {
             {features.map((feature, index) => (
               <Card
                 key={index}
-                className="group hover:shadow-xl transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm"
+                className="group card-hover bg-card backdrop-blur-xl border-2 border-pink-200/50 dark:border-pink-500/30"
                 onMouseEnter={() => setIsHovered(index.toString())}
                 onMouseLeave={() => setIsHovered(null)}
               >
                 <CardHeader>
                   <div className="flex items-center justify-between mb-4">
-                    <div className={`p-3 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 text-purple-600 transition-all duration-300 ${
+                    <div className={`p-4 rounded-2xl bg-gradient-to-br from-pink-100 to-rose-100 text-pink-600 transition-all duration-300 ${
                       isHovered === index.toString() ? 'scale-110 shadow-lg' : ''
                     }`}>
                       {feature.icon}
                     </div>
-                    <Badge className="bg-green-100 text-green-800 border-green-200 font-medium">
+                    <Badge className="bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border-green-200 font-bold shadow-md">
                       {feature.benefit}
                     </Badge>
                   </div>
-                  <CardTitle className="text-xl font-bold text-gray-900 dark:text-white group-hover:text-purple-600 transition-colors">
+                  <CardTitle className="text-2xl font-black text-card-foreground group-hover:text-pink-600 transition-colors">
                     {feature.title}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CardDescription className="text-gray-600 dark:text-gray-300 text-base leading-relaxed">
+                  <CardDescription className="text-muted-foreground text-lg leading-relaxed font-medium">
                     {feature.description}
                   </CardDescription>
                 </CardContent>
@@ -364,15 +364,15 @@ export function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 dark:bg-black text-white py-12 px-4">
+      <footer className="bg-gradient-to-r from-pink-900 via-rose-900 to-pink-800 dark:from-pink-950 dark:via-rose-950 dark:to-pink-900 text-white py-16 px-4">
         <div className="max-w-6xl mx-auto text-center">
-          <h3 className="text-2xl font-bold mb-4">ThottoPilot</h3>
-          <p className="text-gray-400 mb-6">
-            The ultimate AI copilot for NSFW content creation and promotion
+          <h3 className="text-3xl font-black mb-6 text-gradient-animate">ThottoPilot</h3>
+          <p className="text-pink-100 mb-8 text-lg font-medium">
+            The ultimate content copilot for creators
           </p>
-          <div className="flex justify-center space-x-6 text-gray-400">
-            <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
+          <div className="flex justify-center space-x-8 text-pink-200">
+            <a href="#" className="hover:text-white transition-colors font-semibold">Privacy Policy</a>
+            <a href="#" className="hover:text-white transition-colors font-semibold">Terms of Service</a>
             <a href="#" className="hover:text-white transition-colors">Contact</a>
           </div>
         </div>
