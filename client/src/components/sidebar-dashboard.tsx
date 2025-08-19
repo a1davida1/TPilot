@@ -179,6 +179,17 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
         { id: 'enterprise-dashboard', label: 'Enterprise Dashboard', icon: <Crown className="h-4 w-4" />, badge: 'Phase 2' },
       ]
     },
+    {
+      id: 'phase3',
+      label: 'Advanced Experience',
+      icon: <Brain className="h-4 w-4" />,
+      items: [
+        { id: 'smart-analytics', label: 'Smart Analytics', icon: <BarChart className="h-4 w-4" />, badge: 'Phase 3' },
+        { id: 'performance-optimizer', label: 'Performance Optimizer', icon: <Zap className="h-4 w-4" />, badge: 'AI-Powered' },
+        { id: 'user-onboarding', label: 'Getting Started', icon: <BookOpen className="h-4 w-4" />, badge: 'Interactive' },
+        { id: 'mobile-pwa', label: 'Mobile & PWA', icon: <Smartphone className="h-4 w-4" />, badge: 'Enhanced' },
+      ]
+    },
     // Admin-only section
     ...(isAdmin ? [{
       id: 'admin',
