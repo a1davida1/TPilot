@@ -35,9 +35,17 @@ export async function createLead(req: Request, res: Response) {
       return res.status(400).json({ error: 'Anti-bot verification failed' });
     }
 
-    // Parse UTM parameters from cookie and current URL
-    const utmCookie = req.cookies.utm_params || '';
-    const cookieUTM = parseUTMFromCookie(utmCookie);
+    // Parse UTM parameters from cookie and current URL - handle missing cookies
+    let cookieUTM: any = {};
+    try {
+      if (req.cookies && req.cookies.utm_params) {
+        cookieUTM = JSON.parse(decodeURIComponent(req.cookies.utm_params));
+      }
+    } catch (error) {
+      console.log('Failed to parse UTM cookie:', error);
+      cookieUTM = {};
+    }
+    
     const urlUTM = currentUrl ? parseUTMFromURL(currentUrl) : {};
     
     // Add referrer from headers
@@ -48,10 +56,14 @@ export async function createLead(req: Request, res: Response) {
 
     const mergedUTM = mergeUTMParams(cookieUTM, urlUTM);
 
+    // Generate unique ID for lead
+    const leadId = `lead_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
     // Prepare lead data
     const leadData = {
+      id: leadId,
       email,
-      platformTags: platformTags || [],
+      platformTags: Array.isArray(platformTags) ? platformTags : [],
       painPoint,
       ...mergedUTM,
     };
@@ -59,18 +71,18 @@ export async function createLead(req: Request, res: Response) {
     // Upsert lead (update if exists, create if not)
     const [lead] = await db
       .insert(leads)
-      .values(leadData)
+      .values([leadData])
       .onConflictDoUpdate({
         target: leads.email,
         set: {
           platformTags: leadData.platformTags,
-          painPoint: leadData.painPoint,
-          utmSource: leadData.utmSource,
-          utmMedium: leadData.utmMedium,
-          utmCampaign: leadData.utmCampaign,
-          utmContent: leadData.utmContent,
-          utmTerm: leadData.utmTerm,
-          referrer: leadData.referrer,
+          painPoint: leadData.painPoint || null,
+          utmSource: leadData.utmSource || null,
+          utmMedium: leadData.utmMedium || null,
+          utmCampaign: leadData.utmCampaign || null,
+          utmContent: leadData.utmContent || null,
+          utmTerm: leadData.utmTerm || null,
+          referrer: leadData.referrer || null,
           // Keep original createdAt, don't update it
         },
       })

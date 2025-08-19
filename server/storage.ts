@@ -181,7 +181,7 @@ class PostgreSQLStorage implements IStorage {
   // Generation operations
   async createGeneration(gen: InsertContentGeneration): Promise<ContentGeneration> {
     try {
-      const result = await db.insert(contentGenerations).values(gen).returning();
+      const result = await db.insert(contentGenerations).values([gen]).returning();
       return result[0];
     } catch (error) {
       console.error('Storage: Error creating generation:', error);

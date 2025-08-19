@@ -71,9 +71,9 @@ export const userPreferences = pgTable("user_preferences", {
 
 // Lead model for waitlist functionality
 export const leads = pgTable("leads", {
-  id: varchar("id", { length: 25 }).primaryKey().default('cuid()'), // Using cuid-like ID
+  id: varchar("id", { length: 25 }).primaryKey(),
   email: varchar("email", { length: 255 }).unique().notNull(),
-  platformTags: jsonb("platform_tags").$type<string[]>().notNull().default("[]"), // ["reddit","x","onlyfans","fansly"]
+  platformTags: jsonb("platform_tags").$type<string[]>().notNull(), // ["reddit","x","onlyfans","fansly"]
   painPoint: text("pain_point"),
   utmSource: varchar("utm_source", { length: 255 }),
   utmMedium: varchar("utm_medium", { length: 255 }),
@@ -317,7 +317,7 @@ export const insertContentGenerationSchema = createInsertSchema(contentGeneratio
 export const insertUserSampleSchema = createInsertSchema(userSamples).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertUserPreferenceSchema = createInsertSchema(userPreferences).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertUserImageSchema = createInsertSchema(userImages).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertLeadSchema = createInsertSchema(leads).omit({ id: true, createdAt: true, confirmedAt: true });
+export const insertLeadSchema = createInsertSchema(leads).omit({ createdAt: true, confirmedAt: true });
 
 // Types
 export type User = typeof users.$inferSelect;
