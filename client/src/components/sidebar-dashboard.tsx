@@ -44,7 +44,8 @@ import {
   BookOpen,
   FileText,
   Calculator,
-  Globe
+  Globe,
+  Smartphone
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UnifiedContentCreator } from "@/components/unified-content-creator";
@@ -67,7 +68,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/sidebar"; // Assuming these are your sidebar components
+// Navigation system using custom sidebar approach
 
 interface SidebarDashboardProps {
   isGuestMode?: boolean;
@@ -188,6 +189,14 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
         { id: 'performance-optimizer', label: 'Performance Optimizer', icon: <Zap className="h-4 w-4" />, badge: 'AI-Powered' },
         { id: 'user-onboarding', label: 'Getting Started', icon: <BookOpen className="h-4 w-4" />, badge: 'Interactive' },
         { id: 'mobile-pwa', label: 'Mobile & PWA', icon: <Smartphone className="h-4 w-4" />, badge: 'Enhanced' },
+      ]
+    },
+    {
+      id: 'phase4',
+      label: 'Automation & Intelligence',
+      icon: <Rocket className="h-4 w-4" />,
+      items: [
+        { id: 'phase4-dashboard', label: 'Phase 4 Dashboard', icon: <Rocket className="h-4 w-4" />, badge: 'Phase 4' },
       ]
     },
     // Admin-only section
@@ -321,6 +330,71 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
                 >
                   <Crown className="h-4 w-4 mr-2" />
                   Open Enterprise Dashboard
+                </Button>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'phase4-dashboard':
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-white">Phase 4: Advanced Automation</h1>
+                <p className="text-gray-400">AI-powered automation, trend intelligence, and community management</p>
+              </div>
+              <Badge className="bg-gradient-to-r from-purple-500 to-pink-500">Phase 4</Badge>
+            </div>
+            <div className="rounded-lg bg-gray-800 border border-purple-500/20 p-6">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
+                <Card className="bg-gray-700 border-purple-500/20">
+                  <CardContent className="p-4 text-center">
+                    <Zap className="h-8 w-8 mx-auto text-blue-500 mb-2" />
+                    <h4 className="font-semibold text-white">Social Automation</h4>
+                    <p className="text-xs text-gray-400">Smart posting & engagement</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-gray-700 border-purple-500/20">
+                  <CardContent className="p-4 text-center">
+                    <Brain className="h-8 w-8 mx-auto text-purple-500 mb-2" />
+                    <h4 className="font-semibold text-white">Trend Intelligence</h4>
+                    <p className="text-xs text-gray-400">AI-powered trend analysis</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-gray-700 border-purple-500/20">
+                  <CardContent className="p-4 text-center">
+                    <Users className="h-8 w-8 mx-auto text-green-500 mb-2" />
+                    <h4 className="font-semibold text-white">Community Manager</h4>
+                    <p className="text-xs text-gray-400">Auto-replies & engagement</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-gray-700 border-purple-500/20">
+                  <CardContent className="p-4 text-center">
+                    <Target className="h-8 w-8 mx-auto text-pink-500 mb-2" />
+                    <h4 className="font-semibold text-white">Content Optimizer</h4>
+                    <p className="text-xs text-gray-400">A/B testing & optimization</p>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              <div className="text-center space-y-4">
+                <p className="text-gray-300">Access the full Phase 4 automation and intelligence suite:</p>
+                <ul className="text-sm text-gray-400 space-y-1">
+                  <li>• Advanced social media automation with smart posting schedules</li>
+                  <li>• AI-powered trend detection and content suggestions</li>
+                  <li>• Intelligent community management with auto-responses</li>
+                  <li>• Content optimization through A/B testing and performance analysis</li>
+                  <li>• Cross-platform automation with sophisticated targeting</li>
+                </ul>
+                
+                <Button 
+                  onClick={() => window.location.href = '/phase4'}
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                  data-testid="button-open-phase4"
+                >
+                  <Rocket className="h-4 w-4 mr-2" />
+                  Open Phase 4 Dashboard
                 </Button>
               </div>
             </div>

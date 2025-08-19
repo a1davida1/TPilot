@@ -16,6 +16,7 @@ import Login from "@/pages/login";
 import History from "@/pages/history";
 import Settings from "@/pages/settings";
 import Enterprise from "@/pages/enterprise";
+import Phase4Dashboard from "@/pages/phase4";
 import { AdminDashboard } from "@/pages/admin";
 
 function AuthenticatedRoutes() {
@@ -24,6 +25,7 @@ function AuthenticatedRoutes() {
       <Route path="/" component={Dashboard} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/enterprise" component={Enterprise} />
+      <Route path="/phase4" component={Phase4Dashboard} />
       <Route path="/history" component={History} />
       <Route path="/settings" component={Settings} />
       <Route component={NotFound} />
