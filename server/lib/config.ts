@@ -53,9 +53,39 @@ export const envSchema = z.object({
   SEGPAY_API_KEY: z.string().optional(),
   EPOCH_MERCHANT_ID: z.string().optional(),
   EPOCH_API_KEY: z.string().optional(),
-  PAXUM_API_KEY: z.string().optional(),
-  COINBASE_COMMERCE_KEY: z.string().optional(),
+  
+  // Email Service
+  RESEND_API_KEY: z.string().optional(),
+  SENDGRID_API_KEY: z.string().optional(),
+  
+  // Anti-Bot (Turnstile)
+  TURNSTILE_SITE_KEY: z.string().optional(),
+  TURNSTILE_SECRET_KEY: z.string().optional(),
+  
+  // Analytics
+  ANALYTICS_WRITE_KEY: z.string().optional(),
+  
+  // UTM Configuration  
+  UTM_COOKIE_TTL_DAYS: z.coerce.number().default(30),
+  
+  // Admin Configuration
+  ADMIN_EMAIL_WHITELIST: z.string().optional(),
 });
+
+export function getEnvConfig() {
+  try {
+    return envSchema.parse(process.env);
+  } catch (error) {
+    console.error('Environment validation failed:', error);
+    // Return a safe default configuration for development
+    return {
+      ...process.env,
+      DATABASE_URL: process.env.DATABASE_URL || '',
+      APP_BASE_URL: process.env.APP_BASE_URL || 'http://localhost:5000',
+      UTM_COOKIE_TTL_DAYS: 30,
+    } as any;
+  }
+}
 
 export type Environment = z.infer<typeof envSchema>;
 

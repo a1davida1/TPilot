@@ -26,6 +26,8 @@ import { getAvailablePerks, getPerksByCategory, generateReferralCode, getSignupI
 import { registerApiRoutes } from "./api-routes";
 import { registerPolicyRoutes } from "./policy-routes";
 import { registerRedditRoutes } from "./reddit-routes";
+import { createLead, confirmLead } from "./api/leads";
+import { getLeads } from "./api/admin-leads";
 
 // Configure multer for file uploads
 const storage_config = multer.diskStorage({
@@ -1154,6 +1156,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to generate signup instructions" });
     }
   });
+
+  // Lead API routes (waitlist functionality)
+  app.post("/api/leads", createLead);
+  app.get("/api/leads/confirm", confirmLead);
+  app.get("/api/admin/leads", getLeads);
 
   // Register new enterprise API routes (Phase 2)
   registerApiRoutes(app);

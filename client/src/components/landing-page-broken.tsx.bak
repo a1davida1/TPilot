@@ -76,6 +76,27 @@ export function LandingPage() {
     }
   }, []);
 
+  const features = [
+    {
+      icon: <Calendar className="h-6 w-6" />,
+      title: "Caption + Schedule with Rule Checks",
+      description: "AI-generated captions and smart scheduling that automatically checks subreddit rules to prevent violations",
+      benefit: "Zero rule violations"
+    },
+    {
+      icon: <ImageIcon className="h-6 w-6" />,
+      title: "Image Library with Protection",
+      description: "Secure image storage with advanced protection against reverse searches and unauthorized use",
+      benefit: "100% privacy protection"  
+    },
+    {
+      icon: <Target className="h-6 w-6" />,
+      title: "Time-of-Day Optimizer",
+      description: "Analyzes engagement patterns to automatically schedule posts at optimal times for maximum reach",
+      benefit: "3x higher engagement"
+    }
+  ];
+
   const platforms = [
     { id: 'reddit', label: 'Reddit' },
     { id: 'x', label: 'X (Twitter)' },
@@ -113,8 +134,7 @@ export function LandingPage() {
       return;
     }
 
-    // Skip Turnstile validation in development
-    if (!turnstileToken && window.turnstile && process.env.NODE_ENV === 'production') {
+    if (!turnstileToken && window.turnstile) {
       toast({
         title: "Verification required",
         description: "Please complete the anti-bot verification.",
@@ -174,24 +194,24 @@ export function LandingPage() {
     }
   };
 
-  const features = [
+  const testimonials = [
     {
-      icon: <Calendar className="h-6 w-6" />,
-      title: "Caption + Schedule with Rule Checks",
-      description: "AI-generated captions and smart scheduling that automatically checks subreddit rules to prevent violations",
-      benefit: "Zero rule violations"
+      name: "Sarah M.",
+      role: "Content Creator",
+      content: "ThottoPilot transformed my Reddit strategy. I went from spending hours crafting posts to generating perfect content in minutes.",
+      rating: 5
     },
     {
-      icon: <ImageIcon className="h-6 w-6" />,
-      title: "Image Library with Protection",
-      description: "Secure image storage with advanced protection against reverse searches and unauthorized use",
-      benefit: "100% privacy protection"  
+      name: "Alex K.",
+      role: "Social Media Manager",
+      content: "The image protection feature is a game-changer. Finally, I can share content without worrying about privacy.",
+      rating: 5
     },
     {
-      icon: <Target className="h-6 w-6" />,
-      title: "Time-of-Day Optimizer",
-      description: "Analyzes engagement patterns to automatically schedule posts at optimal times for maximum reach",
-      benefit: "3x higher engagement"
+      name: "Jordan L.",
+      role: "Digital Creator",
+      content: "The AI understands my brand voice perfectly. It's like having a personal content writer who never sleeps.",
+      rating: 5
     }
   ];
 
@@ -274,11 +294,15 @@ export function LandingPage() {
                   />
                 </div>
 
-                {/* Turnstile Widget (disabled in dev) */}
+                {/* Turnstile Widget */}
                 <div className="flex justify-center">
-                  <div className="text-sm text-gray-500 p-4 border-2 border-dashed rounded-lg">
-                    🔒 Anti-bot verification (Turnstile) - Ready for production
-                  </div>
+                  <div 
+                    id="turnstile-widget"
+                    className="cf-turnstile"
+                    data-sitekey="0x4AAAAAAA..." // This would be populated from env
+                    data-callback={(token: string) => setTurnstileToken(token)}
+                    data-theme="light"
+                  ></div>
                 </div>
 
                 {/* Submit Button */}
@@ -374,6 +398,50 @@ export function LandingPage() {
             <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
             <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
             <a href="#" className="hover:text-white transition-colors">Contact</a>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+} 
+                  alt="ThottoPilot" 
+                  className="h-10 w-auto"
+                />
+              </div>
+              <p className="text-gray-400">
+                AI-powered content creation platform for the modern creator.
+              </p>
+            </div>
+            <div>
+              <h4 className="font-medium mb-4">Features</h4>
+              <ul className="space-y-2 text-gray-400">
+                <li>AI Content Generation</li>
+                <li>Image Protection</li>
+                <li>Subreddit Optimization</li>
+                <li>Performance Analytics</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-medium mb-4">Support</h4>
+              <ul className="space-y-2 text-gray-400">
+                <li>Documentation</li>
+                <li>Community</li>
+                <li>Contact Support</li>
+                <li>Feature Requests</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-medium mb-4">Legal</h4>
+              <ul className="space-y-2 text-gray-400">
+                <li>Privacy Policy</li>
+                <li>Terms of Service</li>
+                <li>Cookie Policy</li>
+                <li>GDPR Compliance</li>
+              </ul>
+            </div>
+          </div>
+          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+            <p>&copy; 2025 ThottoPilot. All rights reserved.</p>
           </div>
         </div>
       </footer>

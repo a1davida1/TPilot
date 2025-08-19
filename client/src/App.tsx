@@ -18,6 +18,7 @@ import Settings from "@/pages/settings";
 import Enterprise from "@/pages/enterprise";
 import Phase4Dashboard from "@/pages/phase4";
 import { AdminDashboard } from "@/pages/admin";
+import { AdminLeadsPage } from "@/pages/admin-leads";
 import PolicyDemo from "@/pages/PolicyDemo";
 
 function AuthenticatedRoutes() {
@@ -40,13 +41,14 @@ function UnauthenticatedRoutes() {
       <Route path="/login" component={Login} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/admin" component={AdminDashboard} />
+      <Route path="/admin/leads" component={AdminLeadsPage} />
       <Route path="/policy-demo" component={PolicyDemo} />
       <Route path="/demo">
         <AppleInspiredApp />
       </Route>
       <Route path="/">
         <SEOOptimization {...seoConfigs.landing} />
-        <Login />
+        <LandingPage />
       </Route>
       <Route>
         <Redirect to="/" />
