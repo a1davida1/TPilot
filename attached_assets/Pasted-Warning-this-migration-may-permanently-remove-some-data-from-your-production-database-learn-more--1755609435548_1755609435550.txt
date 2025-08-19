@@ -1,0 +1,169 @@
+Warning, this migration may permanently remove some data from your production database, learn more:
+You're about to delete image_id column in content_generations table with 12 items
+You're about to delete generation_type column in content_generations table with 12 items
+You're about to delete is_saved column in content_generations table with 12 items
+CREATE TABLE "post_rate_limits" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"user_id" integer NOT NULL,
+	"subreddit" text NOT NULL,
+	"posts_count" integer DEFAULT 1 NOT NULL,
+	"window_start" timestamp with time zone NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now(),
+	"updated_at" timestamp with time zone DEFAULT now(),
+	CONSTRAINT "post_rate_limits_user_id_subreddit_window_start_key" UNIQUE("user_id","subreddit","window_start")
+);
+CREATE TABLE "subreddit_rules" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"subreddit" varchar(100) NOT NULL,
+	"rules_json" jsonb NOT NULL,
+	"created_at" timestamp DEFAULT now(),
+	"updated_at" timestamp DEFAULT now(),
+	CONSTRAINT "subreddit_rules_subreddit_key" UNIQUE("subreddit")
+);
+CREATE TABLE "user_samples" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"user_id" integer NOT NULL,
+	"title" varchar(255) NOT NULL,
+	"content" text NOT NULL,
+	"platform" varchar(50) NOT NULL,
+	"style" varchar(50),
+	"performance_score" integer,
+	"tags" jsonb,
+	"image_urls" jsonb,
+	"metadata" jsonb,
+	"created_at" timestamp DEFAULT CURRENT_TIMESTAMP,
+	"updated_at" timestamp DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE "queue_jobs" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"queue_name" text NOT NULL,
+	"payload" jsonb NOT NULL,
+	"status" text DEFAULT 'pending' NOT NULL,
+	"attempts" integer DEFAULT 0 NOT NULL,
+	"max_attempts" integer DEFAULT 3 NOT NULL,
+	"delay_until" timestamp with time zone,
+	"processed_at" timestamp with time zone,
+	"completed_at" timestamp with time zone,
+	"failed_at" timestamp with time zone,
+	"error" text,
+	"created_at" timestamp with time zone DEFAULT now(),
+	"updated_at" timestamp with time zone DEFAULT now(),
+	CONSTRAINT "queue_jobs_status_check" CHECK (status = ANY (ARRAY['pending'::text, 'active'::text, 'completed'::text, 'failed'::text, 'delayed'::text]))
+);
+CREATE TABLE "post_previews" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"user_id" integer NOT NULL,
+	"subreddit" varchar(100) NOT NULL,
+	"title_preview" text NOT NULL,
+	"body_preview" text NOT NULL,
+	"policy_state" varchar(10) NOT NULL,
+	"warnings" text[] DEFAULT '{}',
+	"created_at" timestamp DEFAULT now(),
+	CONSTRAINT "post_previews_policy_state_check" CHECK ((policy_state)::text = ANY ((ARRAY['ok'::character varying, 'warn'::character varying, 'block'::character varying])::text[]))
+);
+CREATE TABLE "feature_flags" (
+	"key" varchar(100) PRIMARY KEY NOT NULL,
+	"enabled" boolean DEFAULT false NOT NULL,
+	"meta" jsonb DEFAULT '{}'::jsonb,
+	"created_at" timestamp DEFAULT now(),
+	"updated_at" timestamp DEFAULT now()
+);
+CREATE TABLE "user_preferences" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"user_id" integer NOT NULL,
+	"writing_style" jsonb,
+	"content_preferences" jsonb,
+	"prohibited_words" jsonb,
+	"photo_style" jsonb,
+	"platform_settings" jsonb,
+	"fine_tuning_enabled" boolean DEFAULT false,
+	"created_at" timestamp DEFAULT CURRENT_TIMESTAMP,
+	"updated_at" timestamp DEFAULT CURRENT_TIMESTAMP,
+	CONSTRAINT "user_preferences_user_id_key" UNIQUE("user_id")
+);
+CREATE TABLE "post_duplicates" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"user_id" integer NOT NULL,
+	"content_hash" text NOT NULL,
+	"subreddit" text NOT NULL,
+	"title" text NOT NULL,
+	"posted_at" timestamp with time zone NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now()
+);
+ALTER TABLE "saved_content" DISABLE ROW LEVEL SECURITY;
+DROP TABLE "saved_content" CASCADE;
+ALTER TABLE "users" DROP CONSTRAINT "users_username_unique";
+ALTER TABLE "users" DROP CONSTRAINT "users_email_unique";
+ALTER TABLE "user_images" DROP CONSTRAINT "user_images_user_id_users_id_fk";
+ALTER TABLE "content_generations" DROP CONSTRAINT "content_generations_image_id_user_images_id_fk";
+ALTER TABLE "content_generations" DROP CONSTRAINT "content_generations_user_id_users_id_fk";
+ALTER TABLE "users" ALTER COLUMN "id" SET DATA TYPE serial;
+ALTER TABLE "users" ALTER COLUMN "id" DROP DEFAULT;
+ALTER TABLE "users" ALTER COLUMN "username" SET DATA TYPE varchar(255);
+ALTER TABLE "users" ALTER COLUMN "username" SET NOT NULL;
+ALTER TABLE "users" ALTER COLUMN "password" SET DATA TYPE varchar(255);
+ALTER TABLE "users" ALTER COLUMN "password" SET DEFAULT '';
+ALTER TABLE "users" ALTER COLUMN "created_at" SET DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE "users" ALTER COLUMN "created_at" DROP NOT NULL;
+ALTER TABLE "users" ALTER COLUMN "email" SET DATA TYPE varchar(255);
+ALTER TABLE "users" ALTER COLUMN "email" DROP NOT NULL;
+ALTER TABLE "user_images" ALTER COLUMN "id" SET DATA TYPE serial;
+ALTER TABLE "user_images" ALTER COLUMN "id" DROP DEFAULT;
+ALTER TABLE "user_images" ALTER COLUMN "user_id" SET DATA TYPE integer;
+ALTER TABLE "user_images" ALTER COLUMN "tags" DROP DEFAULT;
+ALTER TABLE "user_images" ALTER COLUMN "is_protected" SET DATA TYPE boolean;
+ALTER TABLE "user_images" ALTER COLUMN "created_at" SET DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE "user_images" ALTER COLUMN "created_at" DROP NOT NULL;
+ALTER TABLE "content_generations" ALTER COLUMN "id" SET DATA TYPE serial;
+ALTER TABLE "content_generations" ALTER COLUMN "id" DROP DEFAULT;
+ALTER TABLE "content_generations" ALTER COLUMN "user_id" SET DATA TYPE integer;
+ALTER TABLE "content_generations" ALTER COLUMN "platform" SET DATA TYPE varchar(50);
+ALTER TABLE "content_generations" ALTER COLUMN "style" SET DATA TYPE varchar(50);
+ALTER TABLE "content_generations" ALTER COLUMN "theme" SET DATA TYPE varchar(50);
+ALTER TABLE "content_generations" ALTER COLUMN "photo_instructions" SET NOT NULL;
+ALTER TABLE "content_generations" ALTER COLUMN "subreddit" SET DATA TYPE varchar(100);
+ALTER TABLE "content_generations" ALTER COLUMN "allows_promotion" SET DATA TYPE boolean;
+ALTER TABLE "content_generations" ALTER COLUMN "created_at" SET DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE "content_generations" ALTER COLUMN "created_at" DROP NOT NULL;
+ALTER TABLE "users" ADD COLUMN "tier" varchar(50) DEFAULT 'free' NOT NULL;
+ALTER TABLE "users" ADD COLUMN "provider" varchar(50);
+ALTER TABLE "users" ADD COLUMN "provider_id" varchar(255);
+ALTER TABLE "users" ADD COLUMN "avatar" varchar(500);
+ALTER TABLE "users" ADD COLUMN "referral_code_id" text;
+ALTER TABLE "user_images" ADD COLUMN "filename" varchar(255) NOT NULL;
+ALTER TABLE "user_images" ADD COLUMN "original_name" varchar(255) NOT NULL;
+ALTER TABLE "user_images" ADD COLUMN "url" varchar(500) NOT NULL;
+ALTER TABLE "user_images" ADD COLUMN "mime_type" varchar(100) NOT NULL;
+ALTER TABLE "user_images" ADD COLUMN "size" integer NOT NULL;
+ALTER TABLE "user_images" ADD COLUMN "protection_level" varchar(50) DEFAULT 'none';
+ALTER TABLE "user_images" ADD COLUMN "metadata" jsonb;
+ALTER TABLE "user_images" ADD COLUMN "updated_at" timestamp DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE "post_rate_limits" ADD CONSTRAINT "post_rate_limits_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "user_samples" ADD CONSTRAINT "user_samples_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+ALTER TABLE "user_preferences" ADD CONSTRAINT "user_preferences_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+ALTER TABLE "post_duplicates" ADD CONSTRAINT "post_duplicates_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
+CREATE INDEX "idx_post_rate_limits_user_subreddit" ON "post_rate_limits" USING btree ("user_id","subreddit");
+CREATE INDEX "idx_queue_jobs_delay_until" ON "queue_jobs" USING btree ("delay_until") WHERE (delay_until IS NOT NULL);
+CREATE INDEX "idx_queue_jobs_queue_status" ON "queue_jobs" USING btree ("queue_name","status");
+CREATE INDEX "idx_post_duplicates_subreddit" ON "post_duplicates" USING btree ("subreddit","content_hash");
+CREATE INDEX "idx_post_duplicates_user_hash" ON "post_duplicates" USING btree ("user_id","content_hash");
+ALTER TABLE "user_images" ADD CONSTRAINT "user_images_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+ALTER TABLE "content_generations" ADD CONSTRAINT "content_generations_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+CREATE INDEX "idx_users_referral_code" ON "users" USING btree ("referral_code_id") WHERE (referral_code_id IS NOT NULL);
+ALTER TABLE "users" DROP COLUMN "display_name";
+ALTER TABLE "users" DROP COLUMN "bio";
+ALTER TABLE "users" DROP COLUMN "personality_profile";
+ALTER TABLE "users" DROP COLUMN "preferences";
+ALTER TABLE "users" DROP COLUMN "subscription";
+ALTER TABLE "users" DROP COLUMN "is_active";
+ALTER TABLE "users" DROP COLUMN "last_login_at";
+ALTER TABLE "user_images" DROP COLUMN "original_file_name";
+ALTER TABLE "user_images" DROP COLUMN "protected_file_name";
+ALTER TABLE "user_images" DROP COLUMN "original_url";
+ALTER TABLE "user_images" DROP COLUMN "protected_url";
+ALTER TABLE "user_images" DROP COLUMN "protection_settings";
+ALTER TABLE "content_generations" DROP COLUMN "image_id";
+ALTER TABLE "content_generations" DROP COLUMN "generation_type";
+ALTER TABLE "content_generations" DROP COLUMN "is_saved";
+ALTER TABLE "users" ADD CONSTRAINT "users_username_key" UNIQUE("username");
+ALTER TABLE "users" ADD CONSTRAINT "users_referral_code_id_key" UNIQUE("referral_code_id");
