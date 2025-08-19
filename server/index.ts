@@ -1,6 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { initializeQueue } from "./lib/queue-factory";
+import { initializePostWorker } from "./lib/workers/post-worker";
 
 const app = express();
 app.use(express.json());
@@ -37,6 +39,12 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Initialize Phase 5 queue system
+  await initializeQueue();
+  
+  // Initialize workers
+  await initializePostWorker();
+  
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

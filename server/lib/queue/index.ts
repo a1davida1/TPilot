@@ -1,37 +1,19 @@
-import { Queue, Worker, Job } from "bullmq";
-import IORedis from "ioredis";
-import { env } from "../config.js";
+/**
+ * Phase 5: Modern Queue System
+ * Uses abstracted queue interface with Redis/PostgreSQL fallback
+ */
 
-// Redis connection
-export const redis = new IORedis(env.REDIS_URL, {
-  connectTimeout: 10000,
-  retryDelayOnError: 100,
-  maxRetriesPerRequest: 3,
-});
+import { getQueueBackend, enqueue, registerProcessor } from "../queue-factory.js";
 
-// Queue configuration
-const queueConfig = {
-  connection: redis,
-  defaultJobOptions: {
-    removeOnComplete: 50,
-    removeOnFail: 100,
-    attempts: 3,
-    backoff: {
-      type: 'exponential',
-      delay: 2000,
-    },
-  },
-};
-
-// Queue definitions
-export const queues = {
-  post: new Queue('post-queue', queueConfig),
-  metrics: new Queue('metrics-queue', queueConfig),
-  aiPromo: new Queue('ai-promo-queue', queueConfig),
-  dunning: new Queue('dunning-queue', queueConfig),
+// Queue names for type safety
+export const QUEUE_NAMES = {
+  POST: 'post-queue',
+  METRICS: 'metrics-queue', 
+  AI_PROMO: 'ai-promo-queue',
+  DUNNING: 'dunning-queue',
 } as const;
 
-export type QueueNames = keyof typeof queues;
+export type QueueNames = typeof QUEUE_NAMES[keyof typeof QUEUE_NAMES];
 
 // Job data types
 export interface PostJobData {
@@ -72,28 +54,31 @@ export async function addJob<T>(
   options?: {
     delay?: number;
     priority?: number;
-    repeat?: { pattern: string };
+    attempts?: number;
   }
 ) {
-  return queues[queueName].add(`${queueName}-job`, jobData, options);
+  return enqueue(queueName, jobData, options);
 }
 
 // Queue health check
 export async function getQueueHealth() {
+  const queue = getQueueBackend();
   const health: Record<string, any> = {};
   
-  for (const [name, queue] of Object.entries(queues)) {
-    const waiting = await queue.getWaiting();
-    const active = await queue.getActive();
-    const completed = await queue.getCompleted();
-    const failed = await queue.getFailed();
-    
-    health[name] = {
-      waiting: waiting.length,
-      active: active.length,
-      completed: completed.length,
-      failed: failed.length,
-    };
+  for (const queueName of Object.values(QUEUE_NAMES)) {
+    try {
+      const pending = await queue.getPendingCount(queueName);
+      const failureStats = await queue.getFailureRate(queueName, 60); // Last hour
+      
+      health[queueName] = {
+        pending,
+        failureRate: failureStats.failureRate,
+        totalJobs: failureStats.totalJobs,
+        failedJobs: failureStats.failedJobs,
+      };
+    } catch (error) {
+      health[queueName] = { error: error instanceof Error ? error.message : 'Unknown error' };
+    }
   }
   
   return health;
@@ -101,8 +86,6 @@ export async function getQueueHealth() {
 
 // Graceful shutdown
 export async function closeQueues() {
-  await Promise.all([
-    ...Object.values(queues).map(queue => queue.close()),
-    redis.quit(),
-  ]);
+  const queue = getQueueBackend();
+  await queue.close();
 }

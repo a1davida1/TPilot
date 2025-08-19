@@ -1,5 +1,5 @@
-import { Worker } from "bullmq";
-import { redis, type PostJobData } from "../queue/index.js";
+import { registerProcessor } from "../queue-factory.js";
+import { QUEUE_NAMES, type PostJobData } from "../queue/index.js";
 import { db } from "../../db.js";
 import { postJobs, eventLogs } from "@shared/schema.js";
 import { eq } from "drizzle-orm";
@@ -7,25 +7,23 @@ import { RedditManager } from "../reddit.js";
 import { MediaManager } from "../media.js";
 
 export class PostWorker {
-  private worker: Worker;
+  private initialized = false;
 
-  constructor() {
-    this.worker = new Worker('post-queue', this.processJob.bind(this), {
-      connection: redis,
-      concurrency: 2, // Process 2 posts at once max
-    });
-
-    this.worker.on('completed', (job) => {
-      console.log(`Post job completed: ${job.id}`);
-    });
-
-    this.worker.on('failed', (job, err) => {
-      console.error(`Post job failed: ${job?.id}`, err);
-    });
+  async initialize() {
+    if (this.initialized) return;
+    
+    await registerProcessor<PostJobData>(
+      QUEUE_NAMES.POST,
+      this.processJob.bind(this),
+      { concurrency: 2 } // Process 2 posts at once max
+    );
+    
+    this.initialized = true;
+    console.log('✅ Post worker initialized with queue abstraction');
   }
 
-  private async processJob(job: any) {
-    const { userId, postJobId, subreddit, titleFinal, bodyFinal, mediaKey }: PostJobData = job.data;
+  private async processJob(jobData: unknown, jobId: string) {
+    const { userId, postJobId, subreddit, titleFinal, bodyFinal, mediaKey } = jobData as PostJobData;
 
     try {
       console.log(`Processing post job ${postJobId} for user ${userId}`);
@@ -145,9 +143,15 @@ export class PostWorker {
   }
 
   async close() {
-    await this.worker.close();
+    // Queue cleanup is handled by the queue factory
+    this.initialized = false;
   }
 }
 
 // Export singleton instance
 export const postWorker = new PostWorker();
+
+// Initialize the post worker (async function for proper setup)
+export async function initializePostWorker() {
+  await postWorker.initialize();
+}

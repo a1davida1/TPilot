@@ -9,11 +9,12 @@ export const users = pgTable("users", {
   password: varchar("password", { length: 255 }).notNull().default(''),
   email: varchar("email", { length: 255 }),
   emailVerified: boolean("email_verified").default(false).notNull(),
-  tier: varchar("tier", { length: 50 }).default("free").notNull(), // free, pro, premium
+  tier: varchar("tier", { length: 50 }).default("free").notNull(), // free, pro, premium, pro_plus
   trialEndsAt: timestamp("trial_ends_at"), // For trial management
   provider: varchar("provider", { length: 50 }), // google, facebook, reddit
   providerId: varchar("provider_id", { length: 255 }),
   avatar: varchar("avatar", { length: 500 }),
+  referralCodeId: integer("referral_code_id").references(() => referralCodes.id), // Phase 5: Referral simplification
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -154,6 +155,7 @@ export const invoices = pgTable("invoices", {
   status: varchar("status", { length: 20 }).notNull(), // "paid" | "failed" | "refunded"
   processor: varchar("processor", { length: 20 }).notNull(),
   processorRef: varchar("processor_ref", { length: 255 }),
+  referralCodeId: integer("referral_code_id").references(() => referralCodes.id), // Phase 5: Referral simplification
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -198,8 +200,11 @@ export const mediaAssets = pgTable("media_assets", {
   mime: varchar("mime", { length: 100 }).notNull(),
   sha256: varchar("sha256", { length: 64 }).notNull(),
   visibility: varchar("visibility", { length: 30 }).default("private").notNull(), // "private" | "preview-watermarked"
+  lastUsedAt: timestamp("last_used_at").defaultNow(), // Phase 5: For auto-pruning unused assets
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  sha256Idx: unique("media_sha256_idx").on(table.sha256), // Phase 5: Deduplication
+}));
 
 export const mediaUsages = pgTable("media_usages", {
   id: serial("id").primaryKey(),
@@ -220,6 +225,47 @@ export const aiGenerations = pgTable("ai_generations", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Phase 5: Queue abstraction - PgQueue implementation
+export const queueJobs = pgTable("queue_jobs", {
+  id: serial("id").primaryKey(),
+  queueName: varchar("queue_name", { length: 100 }).notNull(),
+  payload: jsonb("payload").notNull(),
+  status: varchar("status", { length: 20 }).default("pending").notNull(), // "pending" | "active" | "completed" | "failed" | "delayed"
+  attempts: integer("attempts").default(0).notNull(),
+  maxAttempts: integer("max_attempts").default(3).notNull(),
+  delayUntil: timestamp("delay_until"),
+  processedAt: timestamp("processed_at"),
+  completedAt: timestamp("completed_at"),
+  failedAt: timestamp("failed_at"),
+  error: text("error"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Phase 5: Rate limiting per subreddit
+export const postRateLimits = pgTable("post_rate_limits", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  subreddit: varchar("subreddit", { length: 100 }).notNull(),
+  lastPostAt: timestamp("last_post_at").notNull(),
+  postCount24h: integer("post_count_24h").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  userSubredditIdx: unique("post_rate_limits_user_subreddit_idx").on(table.userId, table.subreddit),
+}));
+
+// Phase 5: Near-duplicate detection
+export const postDuplicates = pgTable("post_duplicates", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  contentHash: varchar("content_hash", { length: 64 }).notNull(), // MinHash or Levenshtein-based hash
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  subreddit: varchar("subreddit", { length: 100 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Insert schemas for new tables
 export const insertCreatorAccountSchema = createInsertSchema(creatorAccounts).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertSubredditRuleSchema = createInsertSchema(subredditRules).omit({ id: true, createdAt: true, updatedAt: true });
@@ -235,6 +281,11 @@ export const insertFeatureFlagSchema = createInsertSchema(featureFlags).omit({ u
 export const insertMediaAssetSchema = createInsertSchema(mediaAssets).omit({ id: true, createdAt: true });
 export const insertMediaUsageSchema = createInsertSchema(mediaUsages).omit({ id: true, createdAt: true });
 export const insertAiGenerationSchema = createInsertSchema(aiGenerations).omit({ id: true, createdAt: true });
+
+// Phase 5: Insert schemas for new tables
+export const insertQueueJobSchema = createInsertSchema(queueJobs).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertPostRateLimitSchema = createInsertSchema(postRateLimits).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertPostDuplicateSchema = createInsertSchema(postDuplicates).omit({ id: true, createdAt: true });
 
 // Insert schemas for existing tables
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
@@ -301,3 +352,13 @@ export type InsertMediaUsage = z.infer<typeof insertMediaUsageSchema>;
 
 export type AiGeneration = typeof aiGenerations.$inferSelect;
 export type InsertAiGeneration = z.infer<typeof insertAiGenerationSchema>;
+
+// Phase 5: Types for new tables
+export type QueueJob = typeof queueJobs.$inferSelect;
+export type InsertQueueJob = z.infer<typeof insertQueueJobSchema>;
+
+export type PostRateLimit = typeof postRateLimits.$inferSelect;
+export type InsertPostRateLimit = z.infer<typeof insertPostRateLimitSchema>;
+
+export type PostDuplicate = typeof postDuplicates.$inferSelect;
+export type InsertPostDuplicate = z.infer<typeof insertPostDuplicateSchema>;

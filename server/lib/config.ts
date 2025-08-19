@@ -20,8 +20,8 @@ export const envSchema = z.object({
   S3_BUCKET_MEDIA: z.string().min(1),
   S3_PUBLIC_CDN_DOMAIN: z.string().url().optional(),
   
-  // Redis
-  REDIS_URL: z.string().min(1),
+  // Redis (Optional for Phase 5)
+  REDIS_URL: z.string().optional(),
   
   // App Configuration
   APP_BASE_URL: z.string().url(),
@@ -33,13 +33,28 @@ export const envSchema = z.object({
   CCBILL_FLEXFORM_ID: z.string().min(1),
   CCBILL_SALT: z.string().min(1),
   
-  // Media Configuration
-  MEDIA_MAX_BYTES_FREE: z.coerce.number().default(524288000), // 500MB
-  MEDIA_MAX_BYTES_PRO: z.coerce.number().default(10737418240), // 10GB
-  MEDIA_SIGNED_TTL_SECONDS: z.coerce.number().default(600),
+  // Media Configuration (Phase 5: Updated quotas)
+  PLAN_STORAGE_BYTES_FREE: z.coerce.number().default(2147483648), // 2GB
+  PLAN_STORAGE_BYTES_PRO: z.coerce.number().default(26843545600), // 25GB
+  PLAN_STORAGE_BYTES_PRO_PLUS: z.coerce.number().optional().default(53687091200), // 50GB
+  MEDIA_SIGNED_TTL_SECONDS: z.coerce.number().default(900), // 15 minutes
   WATERMARK_ENABLED: z.coerce.boolean().default(true),
   WATERMARK_TEXT: z.string().default("ThottoPilot"),
   WATERMARK_OPACITY: z.coerce.number().min(0).max(1).default(0.18),
+  
+  // Queue Configuration (Phase 5)
+  USE_PG_QUEUE: z.coerce.boolean().default(false), // Auto-enable when no REDIS_URL
+  
+  // Rate Limiting (Phase 5)
+  MAX_POSTS_PER_SUBREDDIT_24H: z.coerce.number().default(1),
+  
+  // Payment Providers (Phase 5)
+  SEGPAY_MERCHANT_ID: z.string().optional(),
+  SEGPAY_API_KEY: z.string().optional(),
+  EPOCH_MERCHANT_ID: z.string().optional(),
+  EPOCH_API_KEY: z.string().optional(),
+  PAXUM_API_KEY: z.string().optional(),
+  COINBASE_COMMERCE_KEY: z.string().optional(),
 });
 
 export type Environment = z.infer<typeof envSchema>;
@@ -60,10 +75,7 @@ try {
     }
     // Create minimal config for development
     env = {
-      NODE_ENV: 'development',
-      PORT: parseInt(process.env.PORT || '5000'),
       DATABASE_URL: process.env.DATABASE_URL || '',
-      OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
       REDDIT_CLIENT_ID: '',
       REDDIT_CLIENT_SECRET: '',
       REDDIT_REDIRECT_URI: '',
@@ -72,7 +84,22 @@ try {
       AWS_SECRET_ACCESS_KEY: '',
       AWS_REGION: 'us-east-1',
       S3_BUCKET_MEDIA: '',
-      REDIS_URL: '',
+      REDIS_URL: process.env.REDIS_URL || undefined,
+      APP_BASE_URL: 'http://localhost:5000',
+      CRON_TZ: 'America/Chicago',
+      CCBILL_CLIENT_ACCOUNT: '',
+      CCBILL_SUBACCOUNT: '',
+      CCBILL_FLEXFORM_ID: '',
+      CCBILL_SALT: '',
+      PLAN_STORAGE_BYTES_FREE: 2147483648,
+      PLAN_STORAGE_BYTES_PRO: 26843545600,
+      PLAN_STORAGE_BYTES_PRO_PLUS: 53687091200,
+      MEDIA_SIGNED_TTL_SECONDS: 900,
+      WATERMARK_ENABLED: true,
+      WATERMARK_TEXT: 'ThottoPilot',
+      WATERMARK_OPACITY: 0.18,
+      USE_PG_QUEUE: !process.env.REDIS_URL, // Auto-enable when no Redis
+      MAX_POSTS_PER_SUBREDDIT_24H: 1,
       APP_BASE_URL: 'http://localhost:5000',
       CCBILL_CLIENT_ACCOUNT: '',
       CCBILL_SUBACCOUNT: '',
