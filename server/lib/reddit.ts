@@ -52,15 +52,15 @@ export class RedditManager {
           and(
             eq(creatorAccounts.userId, userId),
             eq(creatorAccounts.platform, 'reddit'),
-            eq(creatorAccounts.isActive, true)
+            eq(creatorAccounts.status, 'ok')
           )
         );
 
-      if (!account || !account.accessToken || !account.refreshToken) {
+      if (!account || !account.oauthToken || !account.oauthRefresh) {
         return null;
       }
 
-      return new RedditManager(account.accessToken, account.refreshToken, userId);
+      return new RedditManager(account.oauthToken, account.oauthRefresh, userId);
     } catch (error) {
       console.error('Failed to create Reddit manager for user:', error);
       return null;
@@ -90,6 +90,7 @@ export class RedditManager {
         submission = await this.reddit
           .getSubreddit(options.subreddit)
           .submitLink({
+            subredditName: options.subreddit,
             title: options.title,
             url: options.url,
             nsfw: options.nsfw || false,
@@ -100,6 +101,7 @@ export class RedditManager {
         submission = await this.reddit
           .getSubreddit(options.subreddit)
           .submitSelfpost({
+            subredditName: options.subreddit,
             title: options.title,
             text: options.body || '',
             nsfw: options.nsfw || false,

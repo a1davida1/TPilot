@@ -354,9 +354,9 @@ export function registerApiRoutes(app: Express) {
       const reddit = new RedditManager(
         account.oauthToken,
         account.oauthRefresh,
-        account.handle
+        userId
       );
-      const info = await reddit.getAccountInfo();
+      const info = await reddit.getProfile();
 
       res.json(info);
     } catch (error: any) {
