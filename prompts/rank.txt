@@ -1,0 +1,9 @@
+Rank the 5 candidates for: Relevance(40), Voice(25), Originality(20), CTA(10), Safety(5).
+Return JSON only:
+{
+  "winner_index": 0-4,
+  "scores": [5 ints],
+  "reason": "<240 chars",
+  "final": { "caption":"", "alt":"", "hashtags":[], "cta":"", "mood":"", "style":"", "safety_level":"" }
+}
+Trim hashtags to platform limits.

@@ -1,0 +1,173 @@
+You are a full-stack engineer. Add a Gemini Flash vision extractor and a 2-pass caption pipeline with JSON-only outputs and quality gates.
+
+### 0) Dependencies & env
+- Add deps:
+  npm i @google/generative-ai zod
+- Ensure env:
+  - Add GEMINI_API_KEY in Replit Secrets.
+
+### 1) Minimal Gemini SDK wrapper
+- Create: src/lib/gemini.ts
+--------------------------------------------------
+import { GoogleGenerativeAI } from "@google/generative-ai";
+const apiKey = process.env.GEMINI_API_KEY!;
+export const genAI = new GoogleGenerativeAI(apiKey);
+export const visionModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+export const textModel   = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+--------------------------------------------------
+
+### 2) Prompts (create ./prompts folder)
+- ./prompts/system.txt
+--------------------------------------------------
+You are a senior social copywriter. Use IMAGE_FACTS as ground truth. Match VOICE and PLATFORM constraints. No placeholders or meta text. Return valid JSON only when asked.
+--------------------------------------------------
+- ./prompts/guard.txt
+--------------------------------------------------
+Never output: "generated content", "placeholder", "N/A", or meta-text. If info is missing, infer conservatively from IMAGE_FACTS (objects, colors, setting).
+--------------------------------------------------
+- ./prompts/extract.txt
+--------------------------------------------------
+Task: Extract image facts. Return JSON only:
+{"objects":[],"colors":[],"vibe":"","setting":"","wardrobe":"","angles":[]}
+Use concise, literal nouns/colors. No extra text.
+--------------------------------------------------
+- ./prompts/variants.txt
+--------------------------------------------------
+Given:
+PLATFORM: <instagram|x|reddit|tiktok>
+VOICE: <flirty_playful|gamer_nerdy|luxury_minimal|arts_muse|gym_energy|cozy_girl>
+IMAGE_FACTS: <json>
+
+Write 5 options. Return JSON array of 5 objects ONLY:
+{"caption":"","alt":"","hashtags":[],"cta":"","mood":"","style":"","safety_level":""}
+
+Rules:
+- 5 different angles; include 1 short/punchy, 1 CTA-forward, 1 aesthetic/poetic.
+- Use nouns/colors/setting from IMAGE_FACTS.
+- Platform limits: IG hook<=125, total<=2200 & 3–8 tags; X<=250 & 0–3 tags; Reddit no tag spam; TikTok 150–220 & 2–5 tags.
+--------------------------------------------------
+- ./prompts/rank.txt
+--------------------------------------------------
+Rank the 5 for Relevance(40), Voice(25), Originality(20), CTA(10), Safety(5).
+Return JSON:
+{"winner_index":0,"scores":[0,0,0,0,0],"reason":"<240 chars","final":{"caption":"","alt":"","hashtags":[],"cta":"","mood":"","style":"","safety_level":""}}
+Trim hashtags to platform limits.
+--------------------------------------------------
+
+### 3) Schemas & checks
+- Create: src/caption/schema.ts
+--------------------------------------------------
+import { z } from "zod";
+
+export const CaptionItem = z.object({
+  caption: z.string().min(1),
+  alt: z.string().min(20).max(200),
+  hashtags: z.array(z.string()).min(1).max(10),
+  cta: z.string().min(2),
+  mood: z.string().min(2),
+  style: z.string().min(2),
+  safety_level: z.enum(["normal","spicy_safe","needs_review"])
+});
+export const CaptionArray = z.array(CaptionItem).length(5);
+export const RankResult = z.object({
+  winner_index: z.number().min(0).max(4),
+  scores: z.array(z.number()).length(5),
+  reason: z.string().min(1).max(240),
+  final: CaptionItem
+});
+
+export function platformChecks(p: "instagram"|"x"|"reddit"|"tiktok", item: z.infer<typeof CaptionItem>) {
+  const len = item.caption.length, tags = item.hashtags.length;
+  if (p==="x" && len>250) return "X caption too long";
+  if (p==="tiktok" && (len<150 || len>220)) return "TikTok length 150–220";
+  if (p==="instagram" && len>2200) return "Instagram too long";
+  if (p==="reddit" && item.hashtags.some(h=>h.startsWith("#"))) return "Reddit no hashtag spam";
+  if (p==="instagram" && (tags<3 || tags>8)) return "IG hashtags 3–8";
+  if (p==="x" && tags>3) return "X hashtags 0–3";
+  if (p==="tiktok" && (tags<2 || tags>5)) return "TikTok hashtags 2–5";
+  const banned = new Set(["#love","#follow","#like","#instagood"]);
+  if (item.hashtags.some(h=>banned.has(h.toLowerCase()))) return "Generic hashtags banned";
+  if (item.caption.toLowerCase().includes("generated content")) return "Placeholder text";
+  return null;
+}
+--------------------------------------------------
+
+### 4) Pipeline
+- Create: src/caption/geminiPipeline.ts
+--------------------------------------------------
+import fs from "node:fs/promises";
+import path from "node:path";
+import { visionModel, textModel } from "../lib/gemini";
+import { CaptionArray, RankResult, platformChecks } from "./schema";
+
+async function load(p:string){ return fs.readFile(path.join(process.cwd(),"prompts",p),"utf8"); }
+async function b64(url:string){ const r=await fetch(url); if(!r.ok) throw new Error("fetch failed"); const b=Buffer.from(await r.arrayBuffer()); return b.toString("base64"); }
+function stripToJSON(txt:string){ const i=Math.min(...[txt.indexOf("{"),txt.indexOf("[")].filter(x=>x>=0));
+  const j=Math.max(txt.lastIndexOf("}"),txt.lastIndexOf("]")); return JSON.parse((i>=0&&j>=0)?txt.slice(i,j+1):txt); }
+
+export async function extractFacts(imageUrl:string){
+  const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("extract.txt");
+  const img={ inlineData:{ data: await b64(imageUrl), mimeType:"image/jpeg" } };
+  const res=await visionModel.generateContent([{text:sys+"\n"+guard+"\n"+prompt}, img]);
+  return stripToJSON(res.response.text());
+}
+
+export async function generateVariants(params:{platform:"instagram"|"x"|"reddit"|"tiktok", voice:string, facts:any, hint?:string}){
+  const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("variants.txt");
+  const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\nIMAGE_FACTS: ${JSON.stringify(params.facts)}\n${params.hint?`HINT:${params.hint}`:""}`;
+  const res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+user }]);
+  const json=stripToJSON(res.response.text());
+  return CaptionArray.parse(json);
+}
+
+export async function rankAndSelect(variants:any){
+  const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rank.txt");
+  const res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+JSON.stringify(variants) }]);
+  const json=stripToJSON(res.response.text());
+  return RankResult.parse(json);
+}
+
+export async function pipeline({ imageUrl, platform, voice="flirty_playful" }:{
+  imageUrl:string, platform:"instagram"|"x"|"reddit"|"tiktok", voice?:string }){
+  const facts = await extractFacts(imageUrl);
+  let variants = await generateVariants({ platform, voice, facts });
+  let ranked = await rankAndSelect(variants);
+  let out = ranked.final;
+
+  const err = platformChecks(platform, out);
+  if (err) {
+    variants = await generateVariants({ platform, voice, facts, hint:`Fix: ${err}. Use IMAGE_FACTS nouns/colors/setting explicitly.` });
+    ranked = await rankAndSelect(variants);
+    out = ranked.final;
+  }
+
+  return { facts, variants, ranked, final: out };
+}
+--------------------------------------------------
+
+### 5) API route
+- If Next.js: create src/pages/api/caption/generate.ts
+--------------------------------------------------
+import type { NextApiRequest, NextApiResponse } from "next";
+import { pipeline } from "../../../caption/geminiPipeline";
+export default async function handler(req:NextApiRequest,res:NextApiResponse){
+  try{
+    if(req.method!=="POST") return res.status(405).json({error:"Method not allowed"});
+    const { imageUrl, platform, voice } = req.body||{};
+    if(!imageUrl||!platform) return res.status(400).json({error:"imageUrl and platform are required"});
+    const result = await pipeline({ imageUrl, platform, voice });
+    res.status(200).json(result);
+  }catch(e:any){ console.error(e); res.status(500).json({error:e.message||"generation failed"}); }
+}
+--------------------------------------------------
+- If Express: create routes/caption.ts and mount at POST /api/caption/generate with same logic.
+
+### 6) Smoke test (print to console)
+- Add npm script:
+  "test:caption": "node -e \"(async()=>{const r=await fetch('http://localhost:3000/api/caption/generate',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({imageUrl:'https://images.unsplash.com/photo-1517849845537-4d257902454a?q=80&w=1200',platform:'instagram',voice:'luxury_minimal'})}); console.log(await r.json());})()\""
+
+### 7) Acceptance criteria
+- POST /api/caption/generate returns JSON with keys: facts, variants[5], ranked, final.
+- No placeholders (“generated content”) in caption.
+- Caption respects platform limits (auto-regens once if not).
+- If model outputs non-JSON

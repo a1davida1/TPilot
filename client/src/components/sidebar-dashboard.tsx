@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LoginModal } from "./login-modal";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { useLocation } from "wouter";
 import { 
   Brain, 
   Sparkles, 
@@ -82,6 +83,7 @@ const getPageTitle = () => {
 };
 
 export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps) {
+  const [location, setLocation] = useLocation();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [userTier, setUserTier] = useState<'guest' | 'free' | 'pro' | 'premium'>('guest');
@@ -135,6 +137,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
       icon: <PenTool className="h-4 w-4" />,
       items: [
         { id: 'generator', label: 'Content Creator', icon: <Brain className="h-4 w-4" />, badge: 'Popular' },
+        { id: 'caption-ai', label: 'AI Caption Generator', icon: <Sparkles className="h-4 w-4" />, badge: '2-Pass AI', link: '/caption-generator' },
         { id: 'gallery', label: 'Image Gallery', icon: <ImageIcon className="h-4 w-4" /> },
         { id: 'protect', label: 'Image Shield', icon: <Shield className="h-4 w-4" /> },
         { id: 'history', label: 'Generation History', icon: <History className="h-4 w-4" /> },
@@ -572,7 +575,13 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
                                   ? "bg-purple-600/20 text-purple-400 border-l-2 border-purple-400" 
                                   : "text-gray-400 hover:text-white hover:bg-purple-600/10"
                               )}
-                              onClick={() => setActiveSection(item.id)}
+                              onClick={() => {
+                                if ((item as any).link) {
+                                  setLocation((item as any).link);
+                                } else {
+                                  setActiveSection(item.id);
+                                }
+                              }}
                               disabled={item.proOnly && userTier === 'guest'}
                             >
                               <div className="flex items-center justify-between w-full">

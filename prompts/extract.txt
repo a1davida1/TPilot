@@ -1,0 +1,3 @@
+Task: Extract concrete facts from the image. Return JSON only:
+{"objects":[],"colors":[],"vibe":"","setting":"","wardrobe":"","angles":[]}
+Rules: Use concise, literal nouns/colors; no extra text.

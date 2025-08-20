@@ -28,6 +28,7 @@ import { registerPolicyRoutes } from "./policy-routes";
 import { registerRedditRoutes } from "./reddit-routes";
 import { createLead, confirmLead } from "./api/leads";
 import { getLeads } from "./api/admin-leads";
+import { captionRouter } from "./routes/caption";
 
 // Configure multer for file uploads
 const storage_config = multer.diskStorage({
@@ -1194,6 +1195,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register Reddit Routes  
   registerRedditRoutes(app);
+
+  // Register Caption Routes (2-pass Gemini pipeline)
+  app.use('/api/caption', captionRouter);
 
   const httpServer = createServer(app);
   return httpServer;

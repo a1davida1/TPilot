@@ -1,0 +1,18 @@
+Given:
+PLATFORM: <instagram|x|reddit|tiktok>
+VOICE: <flirty_playful|gamer_nerdy|luxury_minimal|arts_muse|gym_energy|cozy_girl>
+IMAGE_FACTS: <json>
+
+Write 5 caption options. Return JSON array of 5 objects ONLY with this schema:
+{
+  "caption":"", "alt":"", "hashtags":[], "cta":"", "mood":"", "style":"", "safety_level":""
+}
+
+Requirements:
+- 5 different angles; 1 short & punchy, 1 CTA-forward, 1 aesthetic/poetic.
+- Use nouns/colors/setting from IMAGE_FACTS so it obviously matches the picture.
+- Platform limits:
+  * Instagram: hook <=125 chars, total <=2200; 3–8 targeted hashtags.
+  * X: <=250 chars; 1–3 hashtags.
+  * Reddit: conversational, no hashtag spam.
+  * TikTok: 150–220 chars; 2–5 hashtags.

@@ -21,12 +21,14 @@ import Phase4Dashboard from "@/pages/phase4";
 import { AdminDashboard } from "@/pages/admin";
 import { AdminLeadsPage } from "@/pages/admin-leads";
 import PolicyDemo from "@/pages/PolicyDemo";
+import CaptionGeneratorPage from "@/pages/caption-generator";
 
 function AuthenticatedRoutes() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/caption-generator" component={CaptionGeneratorPage} />
       <Route path="/enterprise" component={Enterprise} />
       <Route path="/phase4" component={Phase4Dashboard} />
       <Route path="/history" component={History} />
@@ -41,6 +43,7 @@ function UnauthenticatedRoutes() {
     <Switch>
       <Route path="/login" component={Login} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/caption-generator" component={CaptionGeneratorPage} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/leads" component={AdminLeadsPage} />
       <Route path="/policy-demo" component={PolicyDemo} />
