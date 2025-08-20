@@ -146,9 +146,8 @@ function setupAuthRoutes(app: Express) {
   // Reddit routes
   app.get('/api/auth/reddit',
     passport.authenticate('reddit', { 
-      state: Math.random().toString(36).substring(7),
-      duration: 'permanent'
-    })
+      state: Math.random().toString(36).substring(7)
+    } as any)
   );
 
   app.get('/api/auth/reddit/callback',
