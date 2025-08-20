@@ -297,34 +297,34 @@ export const postDuplicates = pgTable("post_duplicates", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Insert schemas for new tables
-export const insertCreatorAccountSchema = createInsertSchema(creatorAccounts).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertSubredditRuleSchema = createInsertSchema(subredditRules).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertPostTemplateSchema = createInsertSchema(postTemplates).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertPostPreviewSchema = createInsertSchema(postPreviews).omit({ id: true, createdAt: true });
-export const insertPostJobSchema = createInsertSchema(postJobs).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertSubscriptionSchema = createInsertSchema(subscriptions).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertInvoiceSchema = createInsertSchema(invoices).omit({ id: true, createdAt: true });
-export const insertReferralCodeSchema = createInsertSchema(referralCodes).omit({ id: true, createdAt: true });
-export const insertReferralSchema = createInsertSchema(referrals).omit({ id: true, createdAt: true });
-export const insertEventLogSchema = createInsertSchema(eventLogs).omit({ id: true, createdAt: true });
-export const insertFeatureFlagSchema = createInsertSchema(featureFlags).omit({ updatedAt: true });
-export const insertMediaAssetSchema = createInsertSchema(mediaAssets).omit({ id: true, createdAt: true });
-export const insertMediaUsageSchema = createInsertSchema(mediaUsages).omit({ id: true, createdAt: true });
-export const insertAiGenerationSchema = createInsertSchema(aiGenerations).omit({ id: true, createdAt: true });
-export const insertQueueJobSchema = createInsertSchema(queueJobs).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertPostRateLimitSchema = createInsertSchema(postRateLimits).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertPostDuplicateSchema = createInsertSchema(postDuplicates).omit({ id: true, createdAt: true });
+// Insert schemas for new tables  
+export const insertCreatorAccountSchema = createInsertSchema(creatorAccounts);
+export const insertSubredditRuleSchema = createInsertSchema(subredditRules);
+export const insertPostTemplateSchema = createInsertSchema(postTemplates);
+export const insertPostPreviewSchema = createInsertSchema(postPreviews);
+export const insertPostJobSchema = createInsertSchema(postJobs);
+export const insertSubscriptionSchema = createInsertSchema(subscriptions);
+export const insertInvoiceSchema = createInsertSchema(invoices);
+export const insertReferralCodeSchema = createInsertSchema(referralCodes);
+export const insertReferralSchema = createInsertSchema(referrals);
+export const insertEventLogSchema = createInsertSchema(eventLogs);
+export const insertFeatureFlagSchema = createInsertSchema(featureFlags);
+export const insertMediaAssetSchema = createInsertSchema(mediaAssets);
+export const insertMediaUsageSchema = createInsertSchema(mediaUsages);
+export const insertAiGenerationSchema = createInsertSchema(aiGenerations);
+export const insertQueueJobSchema = createInsertSchema(queueJobs);
+export const insertPostRateLimitSchema = createInsertSchema(postRateLimits);
+export const insertPostDuplicateSchema = createInsertSchema(postDuplicates);
 
 // Phase 5 schemas already included above
 
 // Insert schemas for existing tables
-export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
-export const insertContentGenerationSchema = createInsertSchema(contentGenerations).omit({ id: true, createdAt: true });
-export const insertUserSampleSchema = createInsertSchema(userSamples).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertUserPreferenceSchema = createInsertSchema(userPreferences).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertUserImageSchema = createInsertSchema(userImages).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertLeadSchema = createInsertSchema(leads).omit({ createdAt: true, confirmedAt: true });
+export const insertUserSchema = createInsertSchema(users);
+export const insertContentGenerationSchema = createInsertSchema(contentGenerations);
+export const insertUserSampleSchema = createInsertSchema(userSamples);
+export const insertUserPreferenceSchema = createInsertSchema(userPreferences);
+export const insertUserImageSchema = createInsertSchema(userImages);
+export const insertLeadSchema = createInsertSchema(leads);
 
 // Types
 export type User = typeof users.$inferSelect;

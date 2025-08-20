@@ -10,7 +10,11 @@ import { trackEvent } from '../lib/analytics';
 import { eq } from 'drizzle-orm';
 
 // Validation schema for lead creation
-const createLeadSchema = insertLeadSchema.extend({
+const createLeadSchema = insertLeadSchema.pick({
+  email: true,
+  platformTags: true,  
+  painPoint: true,
+}).extend({
   turnstileToken: z.string().min(1, 'Anti-bot verification required'),
   currentUrl: z.string().url().optional(),
 });

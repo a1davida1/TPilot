@@ -122,6 +122,7 @@ try {
       AWS_SECRET_ACCESS_KEY: '',
       AWS_REGION: 'us-east-1',
       S3_BUCKET_MEDIA: '',
+      S3_PUBLIC_CDN_DOMAIN: process.env.S3_PUBLIC_CDN_DOMAIN || undefined,
       REDIS_URL: process.env.REDIS_URL || undefined,
       APP_BASE_URL: 'http://localhost:5000',
       CRON_TZ: 'America/Chicago',
@@ -147,6 +148,12 @@ try {
       EPOCH_API_KEY: '',
       PAXUM_API_KEY: '',
       COINBASE_COMMERCE_KEY: '',
+      RESEND_API_KEY: process.env.RESEND_API_KEY || '',
+      SENDGRID_API_KEY: process.env.SENDGRID_API_KEY || '',
+      TURNSTILE_SITE_KEY: process.env.TURNSTILE_SITE_KEY || '',
+      TURNSTILE_SECRET_KEY: process.env.TURNSTILE_SECRET_KEY || '',
+      ANALYTICS_WRITE_KEY: process.env.ANALYTICS_WRITE_KEY || '',
+      ADMIN_EMAIL_WHITELIST: process.env.ADMIN_EMAIL_WHITELIST || '',
     } as any;
   } else {
     console.error("❌ Environment validation failed:");

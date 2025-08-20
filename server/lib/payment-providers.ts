@@ -60,7 +60,9 @@ export class SegPayProvider extends BasePaymentProvider {
   name = 'SegPay';
   
   get isConfigured(): boolean {
-    return !!(env.SEGPAY_MERCHANT_ID && env.SEGPAY_API_KEY);
+    return !!(env.SEGPAY_MERCHANT_ID && env.SEGPAY_API_KEY && 
+      typeof env.SEGPAY_MERCHANT_ID === 'string' && env.SEGPAY_MERCHANT_ID.length > 0 &&
+      typeof env.SEGPAY_API_KEY === 'string' && env.SEGPAY_API_KEY.length > 0);
   }
 
   async generatePaymentLink(options: PaymentLinkOptions): Promise<PaymentResult> {
@@ -115,7 +117,9 @@ export class EpochProvider extends BasePaymentProvider {
   name = 'Epoch';
   
   get isConfigured(): boolean {
-    return !!(env.EPOCH_MERCHANT_ID && env.EPOCH_API_KEY);
+    return !!(env.EPOCH_MERCHANT_ID && env.EPOCH_API_KEY && 
+      typeof env.EPOCH_MERCHANT_ID === 'string' && env.EPOCH_MERCHANT_ID.length > 0 &&
+      typeof env.EPOCH_API_KEY === 'string' && env.EPOCH_API_KEY.length > 0);
   }
 
   async generatePaymentLink(options: PaymentLinkOptions): Promise<PaymentResult> {
@@ -167,7 +171,8 @@ export class PaxumProvider extends BasePaymentProvider {
   name = 'Paxum';
   
   get isConfigured(): boolean {
-    return !!(env.PAXUM_API_KEY && env.PAXUM_API_KEY.length > 0);
+    return !!(env.PAXUM_API_KEY && 
+      typeof env.PAXUM_API_KEY === 'string' && env.PAXUM_API_KEY.length > 0);
   }
 
   async generatePaymentLink(options: PaymentLinkOptions): Promise<PaymentResult> {
@@ -219,7 +224,8 @@ export class CoinbaseProvider extends BasePaymentProvider {
   name = 'Coinbase Commerce';
   
   get isConfigured(): boolean {
-    return !!(env.COINBASE_COMMERCE_KEY && env.COINBASE_COMMERCE_KEY.length > 0);
+    return !!(env.COINBASE_COMMERCE_KEY && 
+      typeof env.COINBASE_COMMERCE_KEY === 'string' && env.COINBASE_COMMERCE_KEY.length > 0);
   }
 
   async generatePaymentLink(options: PaymentLinkOptions): Promise<PaymentResult> {
