@@ -143,6 +143,8 @@ export class AiService {
     
     return `You are a social media content expert specializing in adult content creation.
     
+CRITICAL: You must respond with ONLY valid JSON. No explanations, no markdown, no code blocks.
+
 Generate content for platforms: ${platforms.join(", ")}
 Style preferences: ${style}
 
@@ -160,7 +162,7 @@ Rules:
 - Include engagement hooks (questions, calls to action)
 - Respect platform guidelines while maximizing appeal
 
-Return JSON format:
+RESPONSE FORMAT (valid JSON only):
 {
   "content": [
     {
@@ -173,29 +175,77 @@ Return JSON format:
       "confidence": 0.9
     }
   ]
-}`;
+}
+
+Return ONLY the JSON object above with actual content. No other text.`;
   }
   
   private static parseGeminiResponse(text: string, platforms: string[]): GeneratedContent[] {
     try {
-      // Try to extract JSON from Gemini response
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        return parsed.content || [];
+      // Clean the response text
+      let cleanText = text.trim();
+      
+      // Try multiple JSON extraction strategies
+      let jsonStr = null;
+      
+      // Strategy 1: Look for complete JSON object
+      const fullJsonMatch = cleanText.match(/\{[\s\S]*\}/);
+      if (fullJsonMatch) {
+        jsonStr = fullJsonMatch[0];
       }
       
-      // Fallback: create basic content from text
+      // Strategy 2: Extract from code blocks
+      if (!jsonStr) {
+        const codeBlockMatch = cleanText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/i);
+        if (codeBlockMatch) {
+          jsonStr = codeBlockMatch[1];
+        }
+      }
+      
+      // Strategy 3: Find JSON between certain markers
+      if (!jsonStr) {
+        const markerMatch = cleanText.match(/(?:json|response|result)?\s*[:\-]?\s*(\{[\s\S]*\})/i);
+        if (markerMatch) {
+          jsonStr = markerMatch[1];
+        }
+      }
+      
+      if (jsonStr) {
+        // Clean up common JSON issues
+        jsonStr = jsonStr
+          .replace(/,\s*}/g, '}')  // Remove trailing commas
+          .replace(/,\s*]/g, ']')   // Remove trailing commas in arrays
+          .replace(/\n/g, ' ')      // Replace newlines with spaces
+          .replace(/\t/g, ' ')      // Replace tabs with spaces
+          .replace(/\s+/g, ' ');    // Normalize whitespace
+        
+        try {
+          const parsed = JSON.parse(jsonStr);
+          if (parsed.content && Array.isArray(parsed.content)) {
+            return parsed.content;
+          }
+        } catch (parseError) {
+          console.warn('JSON parse failed, trying text extraction:', parseError);
+        }
+      }
+      
+      // Fallback: extract content from text structure
+      const lines = cleanText.split('\n').filter(line => line.trim());
+      const firstLine = lines[0] || "Check out my latest content!";
+      
       return platforms.map(platform => ({
         platform,
-        titles: [text.split('\n')[0] || "Check out my latest content!"],
-        body: text.slice(0, 500),
+        titles: [firstLine, "Something special for you", "New content is here!"],
+        body: cleanText.slice(0, 500) || "I've been working on something special and can't wait to share it with you all!",
+        photoInstructions: "Natural lighting, confident pose, genuine expression",
+        hashtags: ["#authentic", "#content", "#creator"],
         style: "authentic",
-        confidence: 0.7,
+        confidence: 0.6,
       }));
       
     } catch (error) {
       console.error('Failed to parse Gemini response:', error);
+      console.log('Raw response text:', text.slice(0, 200) + '...');
       return this.createFallbackContent(platforms);
     }
   }
@@ -258,6 +308,17 @@ Return JSON format:
         return;
       }
 
+      // Check if user exists before trying to cache
+      const userExists = await db.query.users.findFirst({
+        where: (users, { eq }) => eq(users.id, userId),
+        columns: { id: true }
+      });
+
+      if (!userExists) {
+        console.warn(`User ID ${userId} not found in database, skipping cache`);
+        return;
+      }
+
       await db.insert(aiGenerations).values({
         userId,
         provider,
@@ -267,7 +328,7 @@ Return JSON format:
         outputJson: result,
       });
     } catch (error: any) {
-      console.error('Failed to cache AI result:', error);
+      console.warn('Failed to cache AI result (non-fatal):', error.message);
       // Check for foreign key constraint violation
       if (error?.code === '23503' && error?.constraint?.includes('user_id')) {
         console.warn(`User ID ${userId} not found in database, skipping cache`);

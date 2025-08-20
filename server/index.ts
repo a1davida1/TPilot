@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeQueue } from "./lib/queue-factory";
 import { initializePostWorker } from "./lib/workers/post-worker";
+import { seedDemoUser } from "./seed-demo-user.js";
 
 const app = express();
 app.use(express.json());
@@ -39,6 +40,13 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Ensure demo user exists for development
+  try {
+    await seedDemoUser();
+  } catch (error) {
+    console.warn('Demo user seeding failed:', error);
+  }
+  
   // Initialize Phase 5 queue system
   await initializeQueue();
   
