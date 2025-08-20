@@ -9,12 +9,16 @@ export const users = pgTable("users", {
   password: varchar("password", { length: 255 }).notNull().default(''),
   email: varchar("email", { length: 255 }),
   emailVerified: boolean("email_verified").default(false).notNull(),
+  firstName: varchar("first_name", { length: 255 }), // Added missing column
+  lastName: varchar("last_name", { length: 255 }), // Added missing column
   tier: varchar("tier", { length: 50 }).default("free").notNull(), // free, pro, premium, pro_plus
+  subscriptionStatus: varchar("subscription_status", { length: 50 }).default("free").notNull(), // Added missing column
   trialEndsAt: timestamp("trial_ends_at"), // For trial management
   provider: varchar("provider", { length: 50 }), // google, facebook, reddit
   providerId: varchar("provider_id", { length: 255 }),
   avatar: varchar("avatar", { length: 500 }),
   referralCodeId: integer("referral_code_id"), // Will reference referralCodes.id
+  referredBy: integer("referred_by"), // Added missing column
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -108,9 +112,12 @@ export const creatorAccounts = pgTable("creator_accounts", {
   userId: integer("user_id").references(() => users.id).notNull(),
   platform: varchar("platform", { length: 50 }).notNull(), // "reddit"
   handle: varchar("handle", { length: 100 }).notNull(),
+  platformUsername: varchar("platform_username", { length: 255 }), // Added missing column
   oauthToken: text("oauth_token").notNull(),
   oauthRefresh: text("oauth_refresh").notNull(),
   status: varchar("status", { length: 20 }).default("ok").notNull(), // "ok" | "limited" | "banned"
+  isActive: boolean("is_active").default(true).notNull(), // Added missing column
+  metadata: jsonb("metadata"), // Added missing column
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
