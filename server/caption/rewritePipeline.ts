@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { visionModel, textModel } from "../lib/gemini";
+import { textModel, visionModel } from "../lib/gemini";
 import { CaptionArray, RankResult, platformChecks } from "./schema";
 
 async function load(p:string){ return fs.readFile(path.join(process.cwd(),"prompts",p),"utf8"); }
@@ -15,12 +15,12 @@ export async function extractFacts(imageUrl:string){
   return stripToJSON(res.response.text());
 }
 
-export async function generateVariants(params:{platform:"instagram"|"x"|"reddit"|"tiktok", voice:string, facts:any, hint?:string}){
-  const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("variants.txt");
-  const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\nIMAGE_FACTS: ${JSON.stringify(params.facts)}\n${params.hint?`HINT:${params.hint}`:""}`;
+export async function variantsRewrite(params:{platform:"instagram"|"x"|"reddit"|"tiktok", voice:string, existingCaption:string, facts?:any, hint?:string}){
+  const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rewrite.txt");
+  const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\nEXISTING_CAPTION: "${params.existingCaption}"${params.facts?`\nIMAGE_FACTS: ${JSON.stringify(params.facts)}`:""}${params.hint?`\nHINT:${params.hint}`:""}`;
   const res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+user }]);
   const json=stripToJSON(res.response.text());
-  // Fix common safety_level values
+  // Fix common safety_level values and missing fields
   if(Array.isArray(json)){
     json.forEach((item:any)=>{
       // Fix safety_level variations
@@ -31,6 +31,9 @@ export async function generateVariants(params:{platform:"instagram"|"x"|"reddit"
       if(!item.mood || item.mood.length<2) item.mood="engaging";
       if(!item.style || item.style.length<2) item.style="authentic";
       if(!item.cta || item.cta.length<2) item.cta="Check it out";
+      if(!item.alt || item.alt.length<20) item.alt="Engaging social media content";
+      if(!item.hashtags || !Array.isArray(item.hashtags)) item.hashtags=["#content"];
+      if(!item.caption || item.caption.length<1) item.caption="Check out this amazing content!";
     });
   }
   return CaptionArray.parse(json);
@@ -48,20 +51,23 @@ export async function rankAndSelect(variants:any){
     if(!json.final.mood || json.final.mood.length<2) json.final.mood="engaging";
     if(!json.final.style || json.final.style.length<2) json.final.style="authentic";
     if(!json.final.cta || json.final.cta.length<2) json.final.cta="Check it out";
+    if(!json.final.alt || json.final.alt.length<20) json.final.alt="Engaging social media content";
+    if(!json.final.hashtags || !Array.isArray(json.final.hashtags)) json.final.hashtags=["#content"];
+    if(!json.final.caption || json.final.caption.length<1) json.final.caption="Check out this amazing content!";
   }
   return RankResult.parse(json);
 }
 
-export async function pipeline({ imageUrl, platform, voice="flirty_playful" }:{
-  imageUrl:string, platform:"instagram"|"x"|"reddit"|"tiktok", voice?:string }){
-  const facts = await extractFacts(imageUrl);
-  let variants = await generateVariants({ platform, voice, facts });
+export async function pipelineRewrite({ platform, voice="flirty_playful", existingCaption, imageUrl }:{
+  platform:"instagram"|"x"|"reddit"|"tiktok", voice?:string, existingCaption:string, imageUrl?:string }){
+  let facts = imageUrl ? await extractFacts(imageUrl) : undefined;
+  let variants = await variantsRewrite({ platform, voice, existingCaption, facts });
   let ranked = await rankAndSelect(variants);
   let out = ranked.final;
 
   const err = platformChecks(platform, out);
   if (err) {
-    variants = await generateVariants({ platform, voice, facts, hint:`Fix: ${err}. Use IMAGE_FACTS nouns/colors/setting explicitly.` });
+    variants = await variantsRewrite({ platform, voice, existingCaption, facts, hint:`Fix: ${err}. Be specific and engaging.` });
     ranked = await rankAndSelect(variants);
     out = ranked.final;
   }

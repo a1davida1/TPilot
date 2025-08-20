@@ -1,4 +1,4 @@
-import { GeminiCaptionGenerator } from "@/components/GeminiCaptionGenerator";
+import { GeminiCaptionGeneratorTabs } from "@/components/GeminiCaptionGeneratorTabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
@@ -23,7 +23,7 @@ export default function CaptionGeneratorPage() {
           <CardHeader>
             <CardTitle className="text-2xl flex items-center gap-2">
               <Sparkles className="h-6 w-6" />
-              AI Image Caption Generator
+              AI Caption Generator Suite
             </CardTitle>
             <CardDescription className="text-pink-100">
               Advanced 2-pass Gemini pipeline with quality gates for perfect captions every time
@@ -32,8 +32,8 @@ export default function CaptionGeneratorPage() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
               <div className="bg-white/20 backdrop-blur rounded-lg p-3">
-                <div className="font-semibold mb-1">🎯 Platform Optimized</div>
-                <div className="text-pink-100">Tailored for Instagram, X, Reddit & TikTok</div>
+                <div className="font-semibold mb-1">📸 Multi-Mode</div>
+                <div className="text-pink-100">Image, Text, or Rewrite existing captions</div>
               </div>
               <div className="bg-white/20 backdrop-blur rounded-lg p-3">
                 <div className="font-semibold mb-1">🎨 6 Voice Styles</div>
@@ -48,7 +48,7 @@ export default function CaptionGeneratorPage() {
         </Card>
 
         {/* Main Content */}
-        <GeminiCaptionGenerator />
+        <GeminiCaptionGeneratorTabs />
       </div>
     </div>
   );

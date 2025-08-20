@@ -1,0 +1,1 @@
+Given an EXISTING_CAPTION and (optional) IMAGE_FACTS, rewrite into 5 options that fix clarity, voice, platform limits, and add targeted hashtags. Return JSON array of 5 objects using the same schema.
