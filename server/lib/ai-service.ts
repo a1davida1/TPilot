@@ -252,6 +252,12 @@ Return JSON format:
     result: Omit<AiResponse, 'cached'>
   ) {
     try {
+      // Validate userId exists and is a valid number
+      if (!userId || typeof userId !== 'number' || userId <= 0) {
+        console.warn('Invalid userId provided for caching, skipping cache');
+        return;
+      }
+
       await db.insert(aiGenerations).values({
         userId,
         provider,
@@ -260,8 +266,12 @@ Return JSON format:
         inputJson: inputData,
         outputJson: result,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to cache AI result:', error);
+      // Check for foreign key constraint violation
+      if (error?.code === '23503' && error?.constraint?.includes('user_id')) {
+        console.warn(`User ID ${userId} not found in database, skipping cache`);
+      }
       // Non-fatal error, continue without caching
     }
   }
@@ -317,12 +327,22 @@ Return JSON format:
   
   // Get user's generation history
   static async getUserHistory(userId: number, limit: number = 10) {
-    return db
-      .select()
-      .from(aiGenerations)
-      .where(eq(aiGenerations.userId, userId))
-      .orderBy(aiGenerations.createdAt)
-      .limit(limit);
+    try {
+      // Validate userId
+      if (!userId || typeof userId !== 'number' || userId <= 0) {
+        throw new Error('Invalid user ID provided');
+      }
+
+      return db
+        .select()
+        .from(aiGenerations)
+        .where(eq(aiGenerations.userId, userId))
+        .orderBy(aiGenerations.createdAt)
+        .limit(limit);
+    } catch (error) {
+      console.error('Failed to get user history:', error);
+      return [];
+    }
   }
   
   // Clean old cache entries

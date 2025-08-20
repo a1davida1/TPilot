@@ -33,10 +33,14 @@ export function registerApiRoutes(app: Express) {
       });
 
       const data = schema.parse(req.body);
-      const userId = (req as any).user?.id || 1; // TODO: Get from session
+      const user = (req as any).user;
+      
+      if (!user?.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
 
       const result = await AiService.generateContent({
-        userId,
+        userId: user.id,
         ...data,
       });
 
@@ -54,7 +58,13 @@ export function registerApiRoutes(app: Express) {
         return res.status(400).json({ error: 'No file provided' });
       }
 
-      const userId = (req as any).user?.id || 1; // TODO: Get from session
+      const user = (req as any).user;
+      
+      if (!user?.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      const userId = user.id;
       const applyWatermark = req.body.watermark === 'true';
 
       const result = await MediaManager.uploadFile(req.file.buffer, {
@@ -74,7 +84,13 @@ export function registerApiRoutes(app: Express) {
   // Get User Media
   app.get('/api/media', async (req, res) => {
     try {
-      const userId = (req as any).user?.id || 1; // TODO: Get from session
+      const user = (req as any).user;
+      
+      if (!user?.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      const userId = user.id;
       const limit = parseInt(req.query.limit as string) || 20;
 
       const assets = await MediaManager.getUserAssets(userId, limit);
@@ -88,7 +104,13 @@ export function registerApiRoutes(app: Express) {
   // Delete Media
   app.delete('/api/media/:id', async (req, res) => {
     try {
-      const userId = (req as any).user?.id || 1; // TODO: Get from session
+      const user = (req as any).user;
+      
+      if (!user?.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      const userId = user.id;
       const mediaId = parseInt(req.params.id);
 
       const success = await MediaManager.deleteAsset(mediaId, userId);
@@ -137,7 +159,13 @@ export function registerApiRoutes(app: Express) {
       });
 
       const data = schema.parse(req.body);
-      const userId = (req as any).user?.id || 1; // TODO: Get from session
+      const user = (req as any).user;
+      
+      if (!user?.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      const userId = user.id;
 
       // Schedule the post
       const scheduledAt = data.scheduledAt 
@@ -180,7 +208,13 @@ export function registerApiRoutes(app: Express) {
   // Get Scheduled Posts
   app.get('/api/posts/scheduled', async (req, res) => {
     try {
-      const userId = (req as any).user?.id || 1; // TODO: Get from session
+      const user = (req as any).user;
+      
+      if (!user?.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      const userId = user.id;
 
       const jobs = await db
         .select()
@@ -199,7 +233,13 @@ export function registerApiRoutes(app: Express) {
   // Billing - Generate Payment Link
   app.post('/api/billing/payment-link', async (req, res) => {
     try {
-      const userId = (req as any).user?.id || 1; // TODO: Get from session
+      const user = (req as any).user;
+      
+      if (!user?.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      const userId = user.id;
       const plan = req.body.plan || 'pro';
 
       const formData = CCBillProcessor.generateFormData(userId, plan);
@@ -238,7 +278,13 @@ export function registerApiRoutes(app: Express) {
   // Get User Subscription
   app.get('/api/subscription', async (req, res) => {
     try {
-      const userId = (req as any).user?.id || 1; // TODO: Get from session
+      const user = (req as any).user;
+      
+      if (!user?.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      const userId = user.id;
 
       const subscription = await CCBillProcessor.getUserSubscription(userId);
       const isPro = await CCBillProcessor.isUserPro(userId);
@@ -257,7 +303,13 @@ export function registerApiRoutes(app: Express) {
   // Reddit Account Management
   app.get('/api/reddit/accounts', async (req, res) => {
     try {
-      const userId = (req as any).user?.id || 1; // TODO: Get from session
+      const user = (req as any).user;
+      
+      if (!user?.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      const userId = user.id;
 
       const accounts = await db
         .select()
@@ -280,7 +332,13 @@ export function registerApiRoutes(app: Express) {
   // Reddit Account Info
   app.get('/api/reddit/account/:accountId/info', async (req, res) => {
     try {
-      const userId = (req as any).user?.id || 1; // TODO: Get from session
+      const user = (req as any).user;
+      
+      if (!user?.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      const userId = user.id;
       const accountId = parseInt(req.params.accountId);
 
       const [account] = await db
@@ -294,11 +352,11 @@ export function registerApiRoutes(app: Express) {
       }
 
       const reddit = new RedditManager(
-        parseInt(account.oauthToken),
+        account.oauthToken,
         account.oauthRefresh,
         account.handle
       );
-      const info = await reddit.getUserInfo();
+      const info = await reddit.getAccountInfo();
 
       res.json(info);
     } catch (error: any) {
@@ -310,7 +368,13 @@ export function registerApiRoutes(app: Express) {
   // Storage Usage
   app.get('/api/storage/usage', async (req, res) => {
     try {
-      const userId = (req as any).user?.id || 1; // TODO: Get from session
+      const user = (req as any).user;
+      
+      if (!user?.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      const userId = user.id;
       
       const usage = await MediaManager.getUserStorageUsage(userId);
       res.json(usage);
@@ -323,7 +387,13 @@ export function registerApiRoutes(app: Express) {
   // AI Generation History
   app.get('/api/ai/history', async (req, res) => {
     try {
-      const userId = (req as any).user?.id || 1; // TODO: Get from session
+      const user = (req as any).user;
+      
+      if (!user?.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      const userId = user.id;
       const limit = parseInt(req.query.limit as string) || 20;
 
       const history = await AiService.getUserHistory(userId, limit);

@@ -43,6 +43,8 @@ export const envSchema = z.object({
   WATERMARK_ENABLED: z.coerce.boolean().default(true),
   WATERMARK_TEXT: z.string().default("ThottoPilot"),
   WATERMARK_OPACITY: z.coerce.number().min(0).max(1).default(0.18),
+  MEDIA_MAX_BYTES_FREE: z.coerce.number().default(524288000), // 500MB
+  MEDIA_MAX_BYTES_PRO: z.coerce.number().default(10737418240), // 10GB
   
   // Queue Configuration (Phase 5)
   USE_PG_QUEUE: z.coerce.boolean().default(false), // Auto-enable when no REDIS_URL
@@ -71,11 +73,7 @@ export const envSchema = z.object({
   UTM_COOKIE_TTL_DAYS: z.coerce.number().default(30),
   
   // Admin Configuration
-  ADMIN_EMAIL_WHITELIST: z.string().optional(),
-  
-  // Media Configuration (missing properties)
-  MEDIA_MAX_BYTES_FREE: z.coerce.number().default(524288000), // 500MB
-  MEDIA_MAX_BYTES_PRO: z.coerce.number().default(10737418240), // 10GB
+  ADMIN_EMAIL_WHITELIST: z.string().optional()
 });
 
 export function getEnvConfig() {
