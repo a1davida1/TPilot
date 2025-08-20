@@ -1,2 +1,1 @@
-Never output: "generated content", "placeholder", "N/A", or meta-text.
-If info is missing, infer from IMAGE_FACTS cues conservatively.
+Never output: "generated content", "placeholder", "N/A", or meta-text. If info is missing, infer conservatively from IMAGE_FACTS (objects, colors, setting).
