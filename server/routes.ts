@@ -619,12 +619,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         titles: generatedContent.titles,
         content: generatedContent.content,
         photoInstructions: {
-          lighting: generatedContent.photoInstructions?.lighting || '',
-          cameraAngle: generatedContent.photoInstructions?.cameraAngle || generatedContent.photoInstructions?.angles || '',
-          composition: generatedContent.photoInstructions?.composition || '',
-          styling: generatedContent.photoInstructions?.styling || '',
-          mood: generatedContent.photoInstructions?.mood || 'Natural',
-          technicalSettings: generatedContent.photoInstructions?.technicalSettings || generatedContent.photoInstructions?.technical || ''
+          lighting: Array.isArray(generatedContent.photoInstructions?.lighting) ? generatedContent.photoInstructions.lighting[0] || '' : generatedContent.photoInstructions?.lighting || '',
+          cameraAngle: Array.isArray(generatedContent.photoInstructions?.angles) ? generatedContent.photoInstructions.angles[0] || '' : '',
+          composition: Array.isArray(generatedContent.photoInstructions?.composition) ? generatedContent.photoInstructions.composition[0] || '' : generatedContent.photoInstructions?.composition || '',
+          styling: Array.isArray(generatedContent.photoInstructions?.styling) ? generatedContent.photoInstructions.styling[0] || '' : generatedContent.photoInstructions?.styling || '',
+          mood: 'Natural',
+          technicalSettings: Array.isArray(generatedContent.photoInstructions?.technical) ? generatedContent.photoInstructions.technical[0] || '' : ''
         },
         prompt: validatedData.prompt || '',
         subreddit: validatedData.subreddit,
@@ -804,7 +804,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             cameraAngle: generatedContent.photoInstructions.angles || '',
             composition: generatedContent.photoInstructions.composition || '',
             styling: generatedContent.photoInstructions.styling || '',
-            mood: generatedContent.photoInstructions.mood || 'Natural',
+            mood: 'Natural',
             technicalSettings: generatedContent.photoInstructions.technical || ''
           },
           prompt: customPrompt || `${contentParams.photoType} content with ${contentParams.textTone} tone`,

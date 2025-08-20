@@ -29,7 +29,7 @@ export class ReferralManager {
   /**
    * Generate a unique referral code for a user
    */
-  static async generateReferralCode(userId: string): Promise<string> {
+  static async generateReferralCode(userId: number): Promise<string> {
     let attempts = 0;
     const maxAttempts = 10;
 
@@ -40,14 +40,14 @@ export class ReferralManager {
       const existing = await db
         .select({ id: users.id })
         .from(users)
-        .where(eq(users.referralCodeId, code))
+        .where(eq(users.referralCodeId, parseInt(code)))
         .limit(1);
 
       if (existing.length === 0) {
         // Update user with the new referral code
         await db
           .update(users)
-          .set({ referralCodeId: code })
+          .set({ referralCodeId: parseInt(code) })
           .where(eq(users.id, userId));
 
         return code;
@@ -62,7 +62,7 @@ export class ReferralManager {
   /**
    * Get or create referral code for a user
    */
-  static async getUserReferralCode(userId: string): Promise<string> {
+  static async getUserReferralCode(userId: number): Promise<string> {
     const [user] = await db
       .select({ referralCodeId: users.referralCodeId })
       .from(users)
@@ -73,7 +73,7 @@ export class ReferralManager {
     }
 
     if (user.referralCodeId) {
-      return user.referralCodeId;
+      return user.referralCodeId.toString();
     }
 
     // Generate new code if user doesn't have one
@@ -83,9 +83,9 @@ export class ReferralManager {
   /**
    * Apply referral code when user signs up
    */
-  static async applyReferralCode(newUserId: string, referralCode: string): Promise<{
+  static async applyReferralCode(newUserId: number, referralCode: string): Promise<{
     success: boolean;
-    referrerId?: string;
+    referrerId?: number;
     error?: string;
   }> {
     try {
@@ -93,7 +93,7 @@ export class ReferralManager {
       const [referrer] = await db
         .select({ id: users.id, subscriptionStatus: users.subscriptionStatus })
         .from(users)
-        .where(eq(users.referralCodeId, referralCode));
+        .where(eq(users.referralCodeId, parseInt(referralCode)));
 
       if (!referrer) {
         return {
@@ -115,7 +115,7 @@ export class ReferralManager {
         .update(users)
         .set({ 
           referredBy: referrer.id,
-          updatedAt: new Date(),
+          createdAt: new Date(),
         })
         .where(eq(users.id, newUserId));
 
@@ -135,7 +135,7 @@ export class ReferralManager {
   /**
    * Get referral statistics for a user
    */
-  static async getReferralInfo(userId: string): Promise<ReferralInfo> {
+  static async getReferralInfo(userId: number): Promise<ReferralInfo> {
     // Get user's referral code
     const code = await this.getUserReferralCode(userId);
 
@@ -169,8 +169,8 @@ export class ReferralManager {
   /**
    * Get all users referred by a specific user
    */
-  static async getReferredUsers(userId: string): Promise<Array<{
-    id: string;
+  static async getReferredUsers(userId: number): Promise<Array<{
+    id: number;
     email: string | null;
     firstName: string | null;
     lastName: string | null;
@@ -193,7 +193,7 @@ export class ReferralManager {
   /**
    * Process referral rewards when a referred user subscribes
    */
-  static async processReferralReward(subscribingUserId: string): Promise<ReferralReward | null> {
+  static async processReferralReward(subscribingUserId: number): Promise<ReferralReward | null> {
     // Find who referred this user
     const [user] = await db
       .select({ referredBy: users.referredBy })
@@ -220,7 +220,7 @@ export class ReferralManager {
   /**
    * Generate referral link for sharing
    */
-  static async generateReferralLink(userId: string, baseUrl: string): Promise<string> {
+  static async generateReferralLink(userId: number, baseUrl: string): Promise<string> {
     const code = await this.getUserReferralCode(userId);
     return `${baseUrl}/register?ref=${code}`;
   }
@@ -237,7 +237,7 @@ export class ReferralManager {
    * Get referral leaderboard (top referrers)
    */
   static async getReferralLeaderboard(limit: number = 10): Promise<Array<{
-    userId: string;
+    userId: number;
     firstName: string | null;
     totalReferrals: number;
     activeReferrals: number;
