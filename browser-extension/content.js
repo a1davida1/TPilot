@@ -48,37 +48,96 @@
 
     const helper = document.createElement('div');
     helper.id = 'promotionpro-helper';
-    helper.innerHTML = `
-      <div class="pp-helper-card">
-        <div class="pp-helper-header">
-          <div class="pp-helper-logo">
-            <span class="pp-shield">🛡️</span>
-            <span class="pp-title">PromotionPro</span>
-          </div>
-          <button class="pp-toggle" id="pp-toggle">−</button>
-        </div>
-        <div class="pp-helper-content" id="pp-content">
-          <div class="pp-status" id="pp-status">
-            Ready to auto-fill from PromotionPro
-          </div>
-          <div class="pp-controls">
-            <button class="pp-btn pp-btn-primary" id="pp-fill-last">
-              Fill Last Generated
-            </button>
-            <button class="pp-btn pp-btn-secondary" id="pp-clear">
-              Clear Fields
-            </button>
-          </div>
-          <div class="pp-subreddit-info">
-            <span class="pp-sub-label">Subreddit:</span>
-            <span class="pp-sub-name" id="pp-subreddit">${getCurrentSubreddit() || 'Unknown'}</span>
-          </div>
-          <div class="pp-tips">
-            <small>💡 Generate content in PromotionPro, then click "Fill Last Generated" here</small>
-          </div>
-        </div>
-      </div>
-    `;
+    
+    // Create safe DOM structure
+    const card = document.createElement('div');
+    card.className = 'pp-helper-card';
+    
+    // Header section
+    const header = document.createElement('div');
+    header.className = 'pp-helper-header';
+    
+    const logo = document.createElement('div');
+    logo.className = 'pp-helper-logo';
+    
+    const shield = document.createElement('span');
+    shield.className = 'pp-shield';
+    shield.textContent = '🛡️';
+    
+    const title = document.createElement('span');
+    title.className = 'pp-title';
+    title.textContent = 'PromotionPro';
+    
+    const toggle = document.createElement('button');
+    toggle.className = 'pp-toggle';
+    toggle.id = 'pp-toggle';
+    toggle.textContent = '−';
+    
+    logo.appendChild(shield);
+    logo.appendChild(title);
+    header.appendChild(logo);
+    header.appendChild(toggle);
+    
+    // Content section
+    const content = document.createElement('div');
+    content.className = 'pp-helper-content';
+    content.id = 'pp-content';
+    
+    const status = document.createElement('div');
+    status.className = 'pp-status';
+    status.id = 'pp-status';
+    status.textContent = 'Ready to auto-fill from PromotionPro';
+    
+    const controls = document.createElement('div');
+    controls.className = 'pp-controls';
+    
+    const fillBtn = document.createElement('button');
+    fillBtn.className = 'pp-btn pp-btn-primary';
+    fillBtn.id = 'pp-fill-last';
+    fillBtn.textContent = 'Fill Last Generated';
+    
+    const clearBtn = document.createElement('button');
+    clearBtn.className = 'pp-btn pp-btn-secondary';
+    clearBtn.id = 'pp-clear';
+    clearBtn.textContent = 'Clear Fields';
+    
+    controls.appendChild(fillBtn);
+    controls.appendChild(clearBtn);
+    
+    // Subreddit info - using safe textContent for user data
+    const subredditInfo = document.createElement('div');
+    subredditInfo.className = 'pp-subreddit-info';
+    
+    const subLabel = document.createElement('span');
+    subLabel.className = 'pp-sub-label';
+    subLabel.textContent = 'Subreddit:';
+    
+    const subName = document.createElement('span');
+    subName.className = 'pp-sub-name';
+    subName.id = 'pp-subreddit';
+    subName.textContent = getCurrentSubreddit() || 'Unknown'; // Safe text insertion
+    
+    subredditInfo.appendChild(subLabel);
+    subredditInfo.appendChild(subName);
+    
+    const tips = document.createElement('div');
+    tips.className = 'pp-tips';
+    
+    const tipsText = document.createElement('small');
+    tipsText.textContent = '💡 Generate content in PromotionPro, then click "Fill Last Generated" here';
+    
+    tips.appendChild(tipsText);
+    
+    // Assemble the content section
+    content.appendChild(status);
+    content.appendChild(controls);
+    content.appendChild(subredditInfo);
+    content.appendChild(tips);
+    
+    // Assemble the card
+    card.appendChild(header);
+    card.appendChild(content);
+    helper.appendChild(card);
 
     // Position the helper
     helper.style.cssText = `
