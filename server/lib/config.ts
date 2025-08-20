@@ -57,6 +57,8 @@ export const envSchema = z.object({
   SEGPAY_API_KEY: z.string().optional(),
   EPOCH_MERCHANT_ID: z.string().optional(),
   EPOCH_API_KEY: z.string().optional(),
+  PAXUM_API_KEY: z.string().optional(),
+  COINBASE_COMMERCE_KEY: z.string().optional(),
   
   // Email Service
   RESEND_API_KEY: z.string().optional(),
@@ -139,6 +141,12 @@ try {
       UTM_COOKIE_TTL_DAYS: 30,
       MEDIA_MAX_BYTES_FREE: 524288000,
       MEDIA_MAX_BYTES_PRO: 10737418240,
+      SEGPAY_MERCHANT_ID: '',
+      SEGPAY_API_KEY: '',
+      EPOCH_MERCHANT_ID: '',
+      EPOCH_API_KEY: '',
+      PAXUM_API_KEY: '',
+      COINBASE_COMMERCE_KEY: '',
     } as any;
   } else {
     console.error("❌ Environment validation failed:");

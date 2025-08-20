@@ -167,7 +167,7 @@ export class PaxumProvider extends BasePaymentProvider {
   name = 'Paxum';
   
   get isConfigured(): boolean {
-    return !!env.PAXUM_API_KEY;
+    return !!(env.PAXUM_API_KEY && env.PAXUM_API_KEY.length > 0);
   }
 
   async generatePaymentLink(options: PaymentLinkOptions): Promise<PaymentResult> {
@@ -181,7 +181,7 @@ export class PaxumProvider extends BasePaymentProvider {
 
     try {
       // Paxum API integration would go here
-      const paymentUrl = `https://paxum.com/payment?api_key=${env.PAXUM_API_KEY}&amount=${options.amount}&user=${options.userId}`;
+      const paymentUrl = `https://paxum.com/payment?api_key=${env.PAXUM_API_KEY || ''}&amount=${options.amount}&user=${options.userId}`;
       
       return {
         success: true,
@@ -219,7 +219,7 @@ export class CoinbaseProvider extends BasePaymentProvider {
   name = 'Coinbase Commerce';
   
   get isConfigured(): boolean {
-    return !!env.COINBASE_COMMERCE_KEY;
+    return !!(env.COINBASE_COMMERCE_KEY && env.COINBASE_COMMERCE_KEY.length > 0);
   }
 
   async generatePaymentLink(options: PaymentLinkOptions): Promise<PaymentResult> {
@@ -233,7 +233,7 @@ export class CoinbaseProvider extends BasePaymentProvider {
 
     try {
       // Coinbase Commerce API integration would go here
-      const paymentUrl = `https://commerce.coinbase.com/checkout?key=${env.COINBASE_COMMERCE_KEY}&amount=${options.amount}&user=${options.userId}`;
+      const paymentUrl = `https://commerce.coinbase.com/checkout?key=${env.COINBASE_COMMERCE_KEY || ''}&amount=${options.amount}&user=${options.userId}`;
       
       return {
         success: true,
