@@ -71,36 +71,24 @@ export function registerRedditRoutes(app: Express) {
         .values({
           userId,
           platform: 'reddit',
-          platformUsername: profile.username,
-          accessToken: tokenData.accessToken,
-          refreshToken: tokenData.refreshToken,
-          tokenExpiresAt: new Date(Date.now() + tokenData.expiresIn * 1000),
+          handle: profile.username,
+          oauthToken: tokenData.accessToken,
+          oauthRefresh: tokenData.refreshToken,
           isActive: true,
-          metadata: {
-            karma: profile.karma,
-            verified: profile.verified,
-            created: profile.created,
-          }
         })
         .onConflictDoUpdate({
           target: [creatorAccounts.userId, creatorAccounts.platform],
           set: {
-            platformUsername: profile.username,
-            accessToken: tokenData.accessToken,
-            refreshToken: tokenData.refreshToken,
-            tokenExpiresAt: new Date(Date.now() + tokenData.expiresIn * 1000),
+            handle: profile.username,
+            oauthToken: tokenData.accessToken,
+            oauthRefresh: tokenData.refreshToken,
             isActive: true,
             updatedAt: new Date(),
-            metadata: {
-              karma: profile.karma,
-              verified: profile.verified,
-              created: profile.created,
-            }
           }
         });
 
       // Clear OAuth state
-      delete req.session.redditOAuthState;
+      delete (req.session as any).redditOAuthState;
 
       res.redirect('/dashboard?connected=reddit&username=' + encodeURIComponent(profile.username));
       
@@ -130,8 +118,8 @@ export function registerRedditRoutes(app: Express) {
         username: account.platformUsername,
         isActive: account.isActive,
         connectedAt: account.createdAt,
-        karma: account.metadata?.karma || 0,
-        verified: account.metadata?.verified || false,
+        karma: (account.metadata as any)?.karma || 0,
+        verified: (account.metadata as any)?.verified || false,
       })));
 
     } catch (error) {

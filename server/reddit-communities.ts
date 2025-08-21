@@ -1765,8 +1765,8 @@ export function getCommunityInsights(communityId: string): {
   const community = redditCommunitiesDatabase.find(c => c.id === communityId);
   if (!community) return { bestTimes: [], successTips: [], warnings: [] };
 
-  const successTips = [];
-  const warnings = [];
+  const successTips: string[] = [];
+  const warnings: string[] = [];
 
   // Generate success tips
   if (community.successProbability > 85) {

@@ -16,7 +16,6 @@ export class RedisBullQueue implements IQueue {
   constructor(redisUrl: string) {
     this.redis = new IORedis(redisUrl, {
       maxRetriesPerRequest: 3,
-      retryDelayOnClusterDown: 100,
     });
   }
 
