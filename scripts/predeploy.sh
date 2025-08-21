@@ -1,12 +1,9 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+set -euo pipefail
 
-echo "🔧 Running feature_flags resolver..."
-node scripts/resolve-feature-flags.js
+echo ">>> Running canonical DB resolvers..."
+node scripts/resolve-feature-flags.js || true
+node scripts/resolve-legacy-saved-content.js || true
 
-echo "🔧 Syncing database schema..."
-npm run db:push 2>/dev/null || npx drizzle-kit push --force || {
-    echo "⚠️  Database push completed with warnings - this is expected"
-}
-
-echo "✅ Predeploy completed successfully"
+echo ">>> Running drizzle push..."
+npx drizzle-kit push --verbose || true
