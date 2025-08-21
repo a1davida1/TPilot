@@ -843,7 +843,7 @@ export const redditCommunitiesDatabase: RedditCommunity[] = [
       watermarksAllowed: true,
       sellingAllowed: false,
       titleRules: ['Hip area focus'],
-      content: ['Show hip/pelvis area', 'Low-rise clothing']
+      contentRules: ['Show hip/pelvis area', 'Low-rise clothing']
     },
     bestPostingTimes: ['Monday 8pm EST', 'Wednesday 9pm EST', 'Friday 7pm EST'],
     averageUpvotes: 1250,

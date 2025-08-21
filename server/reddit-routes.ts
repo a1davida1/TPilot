@@ -15,11 +15,11 @@ export function registerRedditRoutes(app: Express) {
         });
       }
 
-      const userId = req.session?.userId || 1; // Demo user ID
+      const userId = (req.session as any)?.userId || 1; // Demo user ID
       const state = `${userId}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
       
       // Store state in session for verification
-      req.session.redditOAuthState = state;
+      (req.session as any).redditOAuthState = state;
       
       const authUrl = getRedditAuthUrl(state);
       res.json({ authUrl });
@@ -44,7 +44,7 @@ export function registerRedditRoutes(app: Express) {
       }
 
       // Verify state parameter
-      if (state !== req.session.redditOAuthState) {
+      if (state !== (req.session as any).redditOAuthState) {
         return res.redirect('/dashboard?error=reddit_invalid_state');
       }
 
@@ -113,7 +113,7 @@ export function registerRedditRoutes(app: Express) {
   // Get user's Reddit connections
   app.get('/api/reddit/accounts', async (req, res) => {
     try {
-      const userId = req.session?.userId || 1; // Demo user ID
+      const userId = (req.session as any)?.userId || 1; // Demo user ID
 
       const accounts = await db
         .select()
@@ -144,7 +144,7 @@ export function registerRedditRoutes(app: Express) {
   app.delete('/api/reddit/accounts/:accountId', async (req, res) => {
     try {
       const { accountId } = req.params;
-      const userId = req.session?.userId || 1; // Demo user ID
+      const userId = (req.session as any)?.userId || 1; // Demo user ID
 
       await db
         .update(creatorAccounts)
@@ -171,7 +171,7 @@ export function registerRedditRoutes(app: Express) {
   // Test Reddit connection
   app.post('/api/reddit/test', async (req, res) => {
     try {
-      const userId = req.session?.userId || 1; // Demo user ID
+      const userId = (req.session as any)?.userId || 1; // Demo user ID
       
       const reddit = await RedditManager.forUser(userId);
       if (!reddit) {
@@ -203,7 +203,7 @@ export function registerRedditRoutes(app: Express) {
   // Manual post submission (for testing)
   app.post('/api/reddit/submit', async (req, res) => {
     try {
-      const userId = req.session?.userId || 1; // Demo user ID
+      const userId = (req.session as any)?.userId || 1; // Demo user ID
       const { subreddit, title, body, url, nsfw } = req.body;
 
       if (!subreddit || !title) {

@@ -87,7 +87,7 @@ export class RedditManager {
 
       if (options.url) {
         // Link post
-        submission = await this.reddit
+        submission = (await this.reddit
           .getSubreddit(options.subreddit)
           .submitLink({
             subredditName: options.subreddit,
@@ -95,10 +95,10 @@ export class RedditManager {
             url: options.url,
             nsfw: options.nsfw || false,
             spoiler: options.spoiler || false,
-          });
+          })) as any;
       } else {
         // Text post
-        submission = await this.reddit
+        submission = (await this.reddit
           .getSubreddit(options.subreddit)
           .submitSelfpost({
             subredditName: options.subreddit,
@@ -106,7 +106,7 @@ export class RedditManager {
             text: options.body || '',
             nsfw: options.nsfw || false,
             spoiler: options.spoiler || false,
-          });
+          })) as any;
       }
 
       // Update rate limiting

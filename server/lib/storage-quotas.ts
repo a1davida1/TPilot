@@ -25,7 +25,7 @@ export class StorageQuotaManager {
     const [user] = await db
       .select({ subscriptionStatus: users.subscriptionStatus })
       .from(users)
-      .where(eq(users.id, userId));
+      .where(eq(users.id, parseInt(userId.toString(), 10)));
 
     if (!user) {
       throw new Error('User not found');

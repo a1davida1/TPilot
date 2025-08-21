@@ -43,7 +43,11 @@ export default function SettingsPage() {
     queryKey: ['/api/user/settings'],
   });
 
-  const { data: subscriptionData } = useQuery({
+  const { data: subscriptionData } = useQuery<{
+    subscription: any;
+    isPro: boolean;
+    tier: string;
+  }>({
     queryKey: ['/api/subscription'],
   });
 

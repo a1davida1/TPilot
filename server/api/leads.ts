@@ -63,11 +63,11 @@ export async function createLead(req: Request, res: Response) {
     // Generate unique ID for lead
     const leadId = `lead_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-    // Prepare lead data
+    // Prepare lead data - ensure platformTags is proper string array
     const leadData = {
       id: leadId,
       email,
-      platformTags: Array.isArray(platformTags) ? platformTags : (platformTags ? [String(platformTags)] : []),
+      platformTags: Array.isArray(platformTags) ? [...platformTags] : (platformTags ? [String(platformTags)] : []),
       painPoint,
       ...mergedUTM,
     };

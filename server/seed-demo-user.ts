@@ -21,13 +21,9 @@ export async function seedDemoUser() {
     const [demoUser] = await db
       .insert(users)
       .values({
-        id: 1,
         email: 'demo@thottopilot.com',
         username: 'demo',
-        passwordHash: '$2b$10$dummy.hash.for.demo.user.only',
-        planType: 'free',
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        password: '$2b$10$dummy.hash.for.demo.user.only',
       })
       .returning();
 
