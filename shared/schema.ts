@@ -217,6 +217,7 @@ export const eventLogs = pgTable("event_logs", {
 export const featureFlags = pgTable("feature_flags", {
   key: varchar("key", { length: 100 }).primaryKey(),
   enabled: boolean("enabled").default(true).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   threshold: integer("threshold"), // Use integer for percentage (0-100)
   meta: jsonb("meta"),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
