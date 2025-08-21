@@ -1,0 +1,118 @@
+You are a release engineer. Goal: permanently eliminate the interactive “Is feature_flags created or renamed?” prompt.
+
+Do the following:
+
+### 0) Setup
+- Ensure Node + pg are available:
+  npm i pg --silent || true
+- Create a scripts folder: mkdir -p scripts migrations/sql
+
+### 1) Create a deterministic fixer script (Node + SQL)
+- Write scripts/resolve-feature-flags.js with:
+
+--------------------------------------------------
+import "dotenv/config";
+import { Client } from "pg";
+const sql = String.raw;
+
+const MIGRATION_SQL = sql`
+BEGIN;
+
+-- A) If feature_flags missing and saved_content exists → RENAME
+DO $$
+BEGIN
+  IF to_regclass('public.feature_flags') IS NULL
+     AND to_regclass('public.saved_content') IS NOT NULL THEN
+    ALTER TABLE public.saved_content RENAME TO feature_flags;
+    RAISE NOTICE 'Renamed saved_content -> feature_flags';
+  END IF;
+END $$;
+
+-- B) If neither exists → CREATE
+CREATE TABLE IF NOT EXISTS public.feature_flags (
+  id BIGSERIAL PRIMARY KEY,
+  key TEXT UNIQUE,
+  enabled BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- C) If both exist and feature_flags is empty → backfill from saved_content
+DO $$
+DECLARE ff_rows BIGINT := 0;
+BEGIN
+  IF to_regclass('public.saved_content') IS NOT NULL
+     AND to_regclass('public.feature_flags') IS NOT NULL THEN
+    SELECT count(*) INTO ff_rows FROM public.feature_flags;
+    IF ff_rows = 0 THEN
+      INSERT INTO public.feature_flags (key, enabled, created_at)
+      SELECT sc.key, COALESCE(sc.enabled, false), COALESCE(sc.created_at, now())
+      FROM public.saved_content sc
+      ON CONFLICT (key) DO NOTHING;
+      RAISE NOTICE 'Backfilled feature_flags from saved_content';
+    END IF;
+  END IF;
+END $$;
+
+-- D) Ensure required columns exist (idempotent)
+ALTER TABLE public.feature_flags
+  ADD COLUMN IF NOT EXISTS id BIGSERIAL PRIMARY KEY,
+  ADD COLUMN IF NOT EXISTS key TEXT UNIQUE,
+  ADD COLUMN IF NOT EXISTS enabled BOOLEAN NOT NULL DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now();
+
+COMMIT;
+`;
+
+async function main() {
+  const client = new Client({ connectionString: process.env.DATABASE_URL });
+  await client.connect();
+
+  // Execute the deterministic migration against the DB (so there is no ambiguity)
+  await client.query(MIGRATION_SQL);
+
+  // Write the same SQL into a migration file that your tool will see
+  const fs = await import("node:fs/promises");
+  const path = `migrations/sql/${Date.now()}_feature_flags_fix.sql`;
+  await fs.writeFile(path, MIGRATION_SQL);
+  console.log("Wrote migration:", path);
+
+  // Print verification
+  const tables = await client.query(`
+    SELECT tablename FROM pg_tables
+    WHERE schemaname='public' AND tablename IN ('feature_flags','saved_content','saved_content_old')
+    ORDER BY tablename;`);
+  console.table(tables.rows);
+
+  const counts = await client.query(`
+    SELECT 'feature_flags' AS table, count(*)::int AS rows
+    FROM public.feature_flags
+    UNION ALL
+    SELECT 'saved_content', count(*)::int FROM public.saved_content
+    WHERE to_regclass('public.saved_content') IS NOT NULL;`);
+  console.table(counts.rows);
+
+  await client.end();
+}
+main().catch(e => { console.error(e); process.exit(1); });
+--------------------------------------------------
+
+### 2) (Optional) Quarantine old conflicting migrations
+- If you have previous SQL/ORM migrations that also create/rename feature_flags, move them aside so the tool doesn’t re-introduce ambiguity:
+  - Find files whose name or contents mention "feature_flags" or "saved_content".
+  - For each, rename to *.bak (do not delete). Just print what you changed.
+
+### 3) Run the resolver, then sync
+node scripts/resolve-feature-flags.js
+
+# If you use Drizzle:
+#  - If you have a push step, run it now; it should see no ambiguity.
+npm run db:push || npx drizzle-kit push || true
+
+# If you use Prisma instead, skip Drizzle and just ensure Prisma model maps @@map("feature_flags").
+
+### 4) Final verification (fail if wrong)
+# 1) Only feature_flags should matter now
+node -e "import('pg').then(async({Client})=>{const c=new Client({connectionString:process.env.DATABASE_URL});await c.connect();const r=await c.query(`SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename IN ('feature_flags','saved_content');`);console.table(r.rows);const r2=await c.query(`SELECT count(*) FROM public.feature_flags;`);console.log('feature_flags rows:', r2.rows[0].count);await c.end();})"
+
+# 2) Print the migration file path so CI picks it up
+ls -1 migrations/sql | grep feature_flags_fix
