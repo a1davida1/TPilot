@@ -3,10 +3,10 @@
  * Creates appropriate queue backend based on environment configuration
  */
 
-import type { IQueue } from './queue-interface';
-import { RedisBullQueue } from './queue-redis';
-import { PgQueue } from './queue-pg';
-import { env } from './config';
+import type { IQueue } from './queue-interface.js';
+import { RedisBullQueue } from './queue-redis.js';
+import { PgQueue } from './queue-pg.js';
+import { env } from './config.js';
 
 let queueInstance: IQueue | null = null;
 

@@ -1,12 +1,12 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
-import { db } from '../db';
+import { db } from '../db.js';
 import { leads, insertLeadSchema } from '@shared/schema';
-import { verifyTurnstileToken } from '../lib/turnstile';
-import { parseUTMFromCookie, parseUTMFromURL, mergeUTMParams } from '../lib/utm';
-import { sendDoubleOptInEmail } from '../lib/mailer';
-import { createConfirmToken, verifyConfirmToken } from '../lib/tokens';
-import { trackEvent } from '../lib/analytics';
+import { verifyTurnstileToken } from '../lib/turnstile.js';
+import { parseUTMFromCookie, parseUTMFromURL, mergeUTMParams } from '../lib/utm.js';
+import { sendDoubleOptInEmail } from '../lib/mailer.js';
+import { createConfirmToken, verifyConfirmToken } from '../lib/tokens.js';
+import { trackEvent } from '../lib/analytics.js';
 import { eq } from 'drizzle-orm';
 
 // Validation schema for lead creation

@@ -16,7 +16,7 @@ import {
   userPreferences,
   userImages
 } from "@shared/schema";
-import { db } from "./db";
+import { db } from "./db.js";
 import { eq, desc, and, gte, sql, count } from "drizzle-orm";
 
 export interface IStorage {

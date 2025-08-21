@@ -1,8 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
-import { initializeQueue } from "./lib/queue-factory";
-import { initializePostWorker } from "./lib/workers/post-worker";
+import { registerRoutes } from "./routes.js";
+import { setupVite, serveStatic, log } from "./vite.js";
+import { initializeQueue } from "./lib/queue-factory.js";
+import { initializePostWorker } from "./lib/workers/post-worker.js";
 import { seedDemoUser } from "./seed-demo-user.js";
 
 const app = express();

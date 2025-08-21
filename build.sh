@@ -1,17 +1,19 @@
 #!/bin/bash
 
-# Build script that only builds frontend, skips TypeScript compilation
 echo "Building frontend assets..."
 npx vite build
 
 echo "Frontend build complete!"
 
-# Create dist directory for server if it doesn't exist
-mkdir -p dist/server
+# Create dist directories
+mkdir -p dist/server dist/shared
 
-# Copy server files without TypeScript compilation
-echo "Preparing server files..."
-cp -r server/* dist/server/ 2>/dev/null || true
-cp -r shared dist/ 2>/dev/null || true
+echo "Building server TypeScript files..."
+# Compile server TypeScript files to JavaScript with ES modules
+npx tsc --project server/tsconfig.json
+
+echo "Building shared TypeScript files..."
+# Compile shared files
+npx tsc --project tsconfig.json --outDir dist/shared shared/**/*.ts
 
 echo "Build complete!"
