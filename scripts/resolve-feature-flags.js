@@ -67,11 +67,8 @@ async function main() {
   // Execute the deterministic migration against the DB (so there is no ambiguity)
   await client.query(MIGRATION_SQL);
 
-  // Write the same SQL into a migration file that your tool will see
-  const fs = await import("node:fs/promises");
-  const path = `migrations/sql/${Date.now()}_feature_flags_fix.sql`;
-  await fs.writeFile(path, MIGRATION_SQL);
-  console.log("Wrote migration:", path);
+  // Execute only - don't write to migrations directory to avoid future conflicts
+  console.log("✅ Feature flags resolved successfully");
 
   // Print verification
   const tables = await client.query(`
