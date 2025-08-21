@@ -1,0 +1,254 @@
+You are a full-stack engineer. Fix build failures by:
+1) Adding env-safe payment providers (no compile crash if keys missing).
+2) Normalizing DB types (TEXT user_id everywhere; JSONB arrays).
+3) Tightening tsconfig to reduce noise without masking app errors.
+4) Rebuilding and printing a crisp status.
+
+### 0) Assumptions
+- Next.js or Node/Express app with TypeScript.
+- Drizzle ORM (if Prisma exists, leave it alone; we execute raw SQL fix script).
+- Postgres at $DATABASE_URL.
+
+### 1) Payments: safe providers (no secrets → disabled, but build passes)
+- Create/overwrite src/payments/payment-providers.ts with:
+
+--------------------------------------------------
+export interface PaymentProvider {
+  name: "paxum" | "coinbase";
+  enabled: boolean;
+  createCheckout(params: { userId: string; planId: string; amountCents?: number; returnUrl?: string }): Promise<{ url: string }>;
+}
+
+function disabled(name: PaymentProvider["name"]): PaymentProvider {
+  return {
+    name,
+    enabled: false,
+    async createCheckout() {
+      throw new Error(`Payment provider "${name}" is disabled (missing secrets).`);
+    },
+  };
+}
+
+// Paxum
+export function makePaxum(): PaymentProvider {
+  const key = process.env.PAXUM_API_KEY;
+  if (!key) return disabled("paxum");
+  return {
+    name: "paxum",
+    enabled: true,
+    async createCheckout({ userId, planId, amountCents = 0, returnUrl }) {
+      // TODO: real Paxum API call. Keep typed return.
+      // Placeholder reachable only when enabled:
+      const q = new URLSearchParams({ userId, planId, amountCents: String(amountCents), returnUrl: returnUrl || "" });
+      return { url: `https://paxum.example/checkout?${q.toString()}` };
+    },
+  };
+}
+
+// Coinbase Commerce
+export function makeCoinbase(): PaymentProvider {
+  const key = process.env.COINBASE_COMMERCE_KEY;
+  if (!key) return disabled("coinbase");
+  return {
+    name: "coinbase",
+    enabled: true,
+    async createCheckout({ userId, planId, amountCents = 0, returnUrl }) {
+      // TODO: real Coinbase Commerce API call.
+      const q = new URLSearchParams({ userId, planId, amountCents: String(amountCents), returnUrl: returnUrl || "" });
+      return { url: `https://commerce.coinbase.com/checkout?${q.toString()}` };
+    },
+  };
+}
+
+export const providers: PaymentProvider[] = [makePaxum(), makeCoinbase()].filter(p => p.enabled);
+export const anyProviderEnabled = providers.length > 0;
+--------------------------------------------------
+
+- Create/overwrite src/payments/index.ts with:
+
+--------------------------------------------------
+import { providers, anyProviderEnabled, type PaymentProvider } from "./payment-providers";
+
+export function getDefaultProvider(): PaymentProvider | null {
+  return providers[0] ?? null;
+}
+
+export async function createCheckoutOrExplain(args: Parameters<PaymentProvider["createCheckout"]>[0]) {
+  const p = getDefaultProvider();
+  if (!p) {
+    return {
+      ok: false as const,
+      reason: "no-provider",
+      message: "No payment provider is configured. Add PAXUM_API_KEY or COINBASE_COMMERCE_KEY.",
+    };
+  }
+  const { url } = await p.createCheckout(args);
+  return { ok: true as const, url };
+}
+
+export { anyProviderEnabled };
+--------------------------------------------------
+
+- If any import sites referenced specific provider types, refactor them to call `createCheckoutOrExplain()` and check `.ok`.
+
+### 2) DB schema: normalize user_id to TEXT; arrays to JSONB (string[])
+- Create scripts/fix-db-types.ts (Node pg script, idempotent):
+
+--------------------------------------------------
+import "dotenv/config";
+import { Client } from "pg";
+
+const sql = String.raw;
+
+const FIX = sql`
+DO $$
+BEGIN
+  -- USERS.id to TEXT (if not already)
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='users' AND column_name='id' AND data_type <> 'text') THEN
+    BEGIN
+      ALTER TABLE public.users ALTER COLUMN id TYPE TEXT USING id::text;
+      RAISE NOTICE 'users.id -> TEXT';
+    EXCEPTION WHEN others THEN
+      RAISE NOTICE 'users.id change skipped (may already be TEXT or has deps)';
+    END;
+  END IF;
+
+  -- Any table.user_id -> TEXT
+  FOR r IN
+    SELECT table_name FROM information_schema.columns
+    WHERE table_schema='public' AND column_name='user_id' AND data_type <> 'text'
+  LOOP
+    BEGIN
+      EXECUTE format('ALTER TABLE public.%I ALTER COLUMN user_id TYPE TEXT USING user_id::text', r.table_name);
+      RAISE NOTICE '%.user_id -> TEXT', r.table_name;
+    EXCEPTION WHEN others THEN
+      RAISE NOTICE '%.user_id change skipped', r.table_name;
+    END;
+  END LOOP;
+
+  -- Common arrays to JSONB: captions.hashtags, feature_flags.tags etc. (extend as needed)
+  IF to_regclass('public.captions') IS NOT NULL THEN
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='captions' AND column_name='hashtags') THEN
+      IF (SELECT data_type FROM information_schema.columns WHERE table_schema='public' AND table_name='captions' AND column_name='hashtags') <> 'jsonb' THEN
+        ALTER TABLE public.captions ADD COLUMN IF NOT EXISTS hashtags_json JSONB DEFAULT '[]'::jsonb;
+        BEGIN
+          -- text[] or varchar[] -> jsonb
+          EXECUTE $conv$UPDATE public.captions SET hashtags_json = to_jsonb(hashtags)$conv$;
+        EXCEPTION WHEN undefined_column THEN
+          -- If it was JSON already with wrong type name, ignore
+          RAISE NOTICE 'captions.hashtags conversion skipped';
+        END;
+        ALTER TABLE public.captions DROP COLUMN hashtags;
+        ALTER TABLE public.captions RENAME COLUMN hashtags_json TO hashtags;
+      END IF;
+    END IF;
+  END IF;
+
+END $$;
+`;
+
+async function main() {
+  const client = new Client({ connectionString: process.env.DATABASE_URL });
+  await client.connect();
+  await client.query(FIX);
+  await client.end();
+  console.log("DB type normalization executed.");
+}
+
+main().catch((e) => { console.error(e); process.exit(1); });
+--------------------------------------------------
+
+- Add npm scripts to package.json (append/merge, don’t remove existing):
+--------------------------------------------------
+"scripts": {
+  "db:types": "ts-node --transpile-only scripts/fix-db-types.ts || node --loader ts-node/esm scripts/fix-db-types.ts || node scripts/fix-db-types.js",
+  "build:strict": "tsc -p tsconfig.json --noEmit",
+  "build": "next build || tsc -p tsconfig.json"
+}
+--------------------------------------------------
+
+(If ts-node isn’t installed, the agent should `npm i -D ts-node typescript @types/node`.)
+
+### 3) TypeScript: reduce noise + fix platform types
+- Open/patch tsconfig.json:
+  - Ensure:
+    --------------------------------------------------
+    {
+      "compilerOptions": {
+        "target": "ES2022",
+        "module": "ESNext",
+        "moduleResolution": "Node",
+        "strict": true,
+        "skipLibCheck": true,
+        "resolveJsonModule": true,
+        "esModuleInterop": true,
+        "jsx": "react-jsx",
+        "types": ["node", "jest"]
+      }
+    }
+    --------------------------------------------------
+  - Do **not** disable `strict`; `skipLibCheck` removes 3rd-party noise.
+  - If using Next.js with App Router, leave Next’s defaults and only add `"skipLibCheck": true`.
+
+- Create a tiny ambient type for env to quiet “possibly undefined”:
+  - src/types/env.d.ts
+    --------------------------------------------------
+    declare namespace NodeJS {
+      interface ProcessEnv {
+        DATABASE_URL?: string;
+        PAXUM_API_KEY?: string;
+        COINBASE_COMMERCE_KEY?: string;
+        GEMINI_API_KEY?: string;
+        NEXT_PUBLIC_GA_MEASUREMENT_ID?: string;
+      }
+    }
+    --------------------------------------------------
+
+### 4) Drizzle schema (optional but recommended to match DB)
+- If file exists at src/db/schema.ts, patch common fields:
+
+  - User ID fields → TEXT:
+    --------------------------------------------------
+    import { pgTable, text, jsonb, timestamp } from "drizzle-orm/pg-core";
+    import { sql } from "drizzle-orm";
+
+    export const users = pgTable("users", {
+      id: text("id").primaryKey(),
+      // ...
+    });
+
+    export const captions = pgTable("captions", {
+      id: text("id").primaryKey(),
+      userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+      hashtags: jsonb("hashtags").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+      createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+      // ...
+    });
+    --------------------------------------------------
+
+  - If you previously used `uuid("id")`, leave it if DB is actually UUID. If not sure, TEXT is safest and matches the migration above.
+
+### 5) Build + verify
+- Run:
+  1) npm i -D ts-node typescript @types/node
+  2) node -e "console.log('PAXUM:',!!process.env.PAXUM_API_KEY,'COINBASE:',!!process.env.COINBASE_COMMERCE_KEY)"
+  3) npm run db:types
+  4) npm run build:strict || true
+  5) npm run build
+
+- Expected:
+  - Build compiles (no cascade of 30+ errors).  
+  - If payments keys are missing, app still builds; use `anyProviderEnabled` to hide pay buttons.
+
+### 6) UI guard (optional, tiny)
+- Wherever you show a “Subscribe/Buy” button:
+  --------------------------------------------------
+  import { anyProviderEnabled } from "@/payments";
+  // if SSR, check at request time; if CSR, mirror via an API flag.
+  --------------------------------------------------
+
+### 7) Output
+- Print:
+  - Which payment providers are enabled.
+  - DB normalization log lines (users.id, *.user_id, captions.hashtags).
+  - Final `tsc` summary (or Next build output).
