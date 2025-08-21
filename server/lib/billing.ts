@@ -48,9 +48,9 @@ export class CCBillProcessor {
       .digest('hex');
     
     return {
-      clientAccnum: env.CCBILL_CLIENT_ACCOUNT,
-      clientSubacc: env.CCBILL_SUBACCOUNT,
-      formName: env.CCBILL_FLEXFORM_ID,
+      clientAccnum: env.CCBILL_CLIENT_ACCOUNT || '',
+      clientSubacc: env.CCBILL_SUBACCOUNT || '',
+      formName: env.CCBILL_FLEXFORM_ID || '',
       currencyCode,
       formPrice: price,
       formPeriod: period,

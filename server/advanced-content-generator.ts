@@ -153,8 +153,8 @@ const textToneStyles = {
 
 // Generate content based on all parameters
 export function generateAdvancedContent(params: ContentParameters): GeneratedContent {
-  const photoConfig = photoTypeVariations[params.photoType];
-  const toneStyle = textToneStyles[params.textTone];
+  const photoConfig = photoTypeVariations[params.photoType] || photoTypeVariations['casual'];
+  const toneStyle = textToneStyles[params.textTone] || textToneStyles['authentic'];
   
   // Generate titles with variation
   const titles = generateTitles(params, photoConfig, toneStyle);
@@ -177,23 +177,23 @@ export function generateAdvancedContent(params: ContentParameters): GeneratedCon
 }
 
 function generateTitles(params: ContentParameters, photoConfig: any, toneStyle: any): string[] {
-  const titles = [];
-  const themes = photoConfig.themes;
-  const starters = toneStyle.starters;
-  const emojis = toneStyle.emojis;
+  const titles: string[] = [];
+  const themes = photoConfig?.themes || ['casual', 'fun', 'spontaneous', 'authentic'];
+  const starters = toneStyle?.starters || ['Hey', 'Just', 'So', 'Well'];
+  const emojis = toneStyle?.emojis || ['✨', '💕', '🌟', '💫', '🔥'];
   
   // Generate 3-5 varied titles
-  titles.push(`${starters[0]} what happened during my ${themes[0]} session ${emojis[0]}`);
-  titles.push(`${starters[1]} ${themes[1]} content just dropped ${emojis[1]}`);
-  titles.push(`${themes[2]} vibes hit different today ${emojis[2]}`);
+  titles.push(`${starters[0] || 'Hey'} what happened during my ${themes[0] || 'photo'} session ${emojis[0] || '💫'}`);
+  titles.push(`${starters[1] || 'Just'} ${themes[1] || 'content'} content just dropped ${emojis[1] || '🔥'}`);
+  titles.push(`${themes[2] || 'Creative'} vibes hit different today ${emojis[2] || '✨'}`);
   
   if (params.photoType === 'all-xs') {
-    titles.push(`Warning: ${themes[3]} content ahead - not for everyone ${emojis[3]}`);
-    titles.push(`${starters[2]} the limits have been removed ${emojis[4]}`);
+    titles.push(`Warning: ${themes[3] || 'exclusive'} content ahead - not for everyone ${emojis[3] || '🔞'}`);
+    titles.push(`${starters[2] || 'Finally'} the limits have been removed ${emojis[4] || '💎'}`);
   } else if (params.photoType === 'very-spicy') {
-    titles.push(`${starters[3]} intense ${themes[3]} content ${emojis[3]}`);
+    titles.push(`${starters[3] || 'Here is'} intense ${themes[3] || 'exclusive'} content ${emojis[3] || '🔥'}`);
   } else if (params.photoType === 'spicy') {
-    titles.push(`${themes[3]} mood activated ${emojis[3]}`);
+    titles.push(`${themes[3] || 'Spicy'} mood activated ${emojis[3] || '🔥'}`);
   }
   
   return titles.slice(0, Math.random() > 0.5 ? 3 : 4);
@@ -201,24 +201,29 @@ function generateTitles(params: ContentParameters, photoConfig: any, toneStyle: 
 
 function generateMainContent(params: ContentParameters, photoConfig: any, toneStyle: any): string {
   let content = "";
-  const themes = photoConfig.themes;
-  const settings = photoConfig.settings;
-  const mood = photoConfig.mood;
-  const descriptors = toneStyle.descriptors;
-  const endings = toneStyle.endings;
-  const emojis = toneStyle.emojis;
+  const themes = photoConfig?.themes || ['casual', 'fun', 'spontaneous'];
+  const settings = photoConfig?.settings || ['bedroom', 'living room', 'cozy space'];
+  const mood = photoConfig?.mood || 'authentic';
+  const descriptors = toneStyle?.descriptors || ['amazing', 'beautiful', 'stunning'];
+  const endings = toneStyle?.endings || ['hope you enjoy!', 'let me know what you think!'];
+  const emojis = toneStyle?.emojis || ['✨', '💕', '🌟'];
   
   // Opening based on tone and photo type
   if (params.textTone === 'confident') {
-    content = `${toneStyle.starters[Math.floor(Math.random() * toneStyle.starters.length)]} ${descriptors[0]} content I just created. `;
+    const randomStarter = (toneStyle?.starters || ['Here is'])[Math.floor(Math.random() * (toneStyle?.starters?.length || 1))];
+    content = `${randomStarter} ${descriptors[0]} content I just created. `;
   } else if (params.textTone === 'playful') {
-    content = `${toneStyle.starters[Math.floor(Math.random() * toneStyle.starters.length)]} I had the most ${descriptors[0]} photoshoot in my ${settings[0]} today! `;
+    const randomStarter = (toneStyle?.starters || ['Hey'])[Math.floor(Math.random() * (toneStyle?.starters?.length || 1))];
+    content = `${randomStarter} I had the most ${descriptors[0]} photoshoot in my ${settings[0]} today! `;
   } else if (params.textTone === 'mysterious') {
-    content = `${toneStyle.starters[Math.floor(Math.random() * toneStyle.starters.length)]} in my ${settings[0]}... `;
+    const randomStarter = (toneStyle?.starters || ['Something happened'])[Math.floor(Math.random() * (toneStyle?.starters?.length || 1))];
+    content = `${randomStarter} in my ${settings[0]}... `;
   } else if (params.textTone === 'sassy') {
-    content = `${toneStyle.starters[Math.floor(Math.random() * toneStyle.starters.length)]}, your girl just dropped some ${descriptors[0]} content. `;
+    const randomStarter = (toneStyle?.starters || ['Listen up'])[Math.floor(Math.random() * (toneStyle?.starters?.length || 1))];
+    content = `${randomStarter}, your girl just dropped some ${descriptors[0]} content. `;
   } else {
-    content = `${toneStyle.starters[Math.floor(Math.random() * toneStyle.starters.length)]}, this ${themes[0]} session was ${descriptors[0]}. `;
+    const randomStarter = (toneStyle?.starters || ['Hey there'])[Math.floor(Math.random() * (toneStyle?.starters?.length || 1))];
+    content = `${randomStarter}, this ${themes[0]} session was ${descriptors[0]}. `;
   }
   
   // Middle content based on photo type

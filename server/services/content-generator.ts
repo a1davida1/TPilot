@@ -182,8 +182,8 @@ export async function generateContent(
   await new Promise(resolve => setTimeout(resolve, 1000));
 
   // Choose content based on whether promotion is allowed
-  const finalContent = allowsPromotion === "yes" && styleTemplate.contentWithPromo 
-    ? styleTemplate.contentWithPromo 
+  const finalContent = allowsPromotion === "yes" && (styleTemplate as any).contentWithPromo 
+    ? (styleTemplate as any).contentWithPromo 
     : styleTemplate.content;
 
   return {

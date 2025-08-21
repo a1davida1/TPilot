@@ -139,7 +139,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
         { id: 'generator', label: 'Content Creator', icon: <Brain className="h-4 w-4" />, badge: 'Popular' },
         { id: 'caption-ai', label: 'AI Caption Generator', icon: <Sparkles className="h-4 w-4" />, badge: '2-Pass AI', link: '/caption-generator' },
         { id: 'gallery', label: 'Image Gallery', icon: <ImageIcon className="h-4 w-4" /> },
-        { id: 'protect', label: 'Image Shield', icon: <Shield className="h-4 w-4" /> },
+        { id: 'protect', label: 'Image Shield', icon: <Shield className="h-4 w-4" />, proOnly: true },
         { id: 'history', label: 'Generation History', icon: <History className="h-4 w-4" /> },
       ]
     },
@@ -149,7 +149,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
       icon: <Sparkles className="h-4 w-4" />,
       items: [
         { id: 'templates', label: 'Style Presets', icon: <FileText className="h-4 w-4" />, badge: '8 Styles' },
-        { id: 'customization', label: 'Personalization', icon: <Settings className="h-4 w-4" /> },
+        { id: 'customization', label: 'Personalization', icon: <Settings className="h-4 w-4" />, proOnly: true },
         { id: 'export', label: 'Export Tools', icon: <FileText className="h-4 w-4" /> },
       ]
     },
@@ -160,8 +160,8 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
       items: [
         { id: 'reddit', label: 'Reddit Communities', icon: <Users className="h-4 w-4" />, badge: 'New' },
         { id: 'trending', label: 'Trending Tags', icon: <Hash className="h-4 w-4" /> },
-        { id: 'audience', label: 'Audience Insights', icon: <BarChart className="h-4 w-4" /> },
-        { id: 'analytics', label: 'Performance', icon: <Zap className="h-4 w-4" /> },
+        { id: 'audience', label: 'Audience Insights', icon: <BarChart className="h-4 w-4" />, proOnly: true },
+        { id: 'analytics', label: 'Performance', icon: <Zap className="h-4 w-4" />, proOnly: true },
       ]
     },
     {

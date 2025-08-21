@@ -186,7 +186,7 @@ Return ONLY the JSON object above with actual content. No other text.`;
       let cleanText = text.trim();
       
       // Try multiple JSON extraction strategies
-      let jsonStr = null;
+      let jsonStr: string | null = null;
       
       // Strategy 1: Look for complete JSON object
       const fullJsonMatch = cleanText.match(/\{[\s\S]*\}/);
@@ -212,7 +212,7 @@ Return ONLY the JSON object above with actual content. No other text.`;
       
       if (jsonStr) {
         // Clean up common JSON issues
-        jsonStr = jsonStr
+        jsonStr = jsonStr!
           .replace(/,\s*}/g, '}')  // Remove trailing commas
           .replace(/,\s*]/g, ']')   // Remove trailing commas in arrays
           .replace(/\n/g, ' ')      // Replace newlines with spaces

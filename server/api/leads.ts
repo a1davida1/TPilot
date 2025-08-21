@@ -67,7 +67,7 @@ export async function createLead(req: Request, res: Response) {
     const leadData = {
       id: leadId,
       email,
-      platformTags: Array.isArray(platformTags) ? platformTags : [],
+      platformTags: Array.isArray(platformTags) ? platformTags : (platformTags ? [String(platformTags)] : []),
       painPoint,
       ...mergedUTM,
     };
@@ -75,11 +75,11 @@ export async function createLead(req: Request, res: Response) {
     // Upsert lead (update if exists, create if not)
     const [lead] = await db
       .insert(leads)
-      .values([leadData])
+      .values(leadData)
       .onConflictDoUpdate({
         target: leads.email,
         set: {
-          platformTags: leadData.platformTags,
+          platformTags: Array.isArray(leadData.platformTags) ? leadData.platformTags as string[] : [],
           painPoint: leadData.painPoint || null,
           utmSource: leadData.utmSource || null,
           utmMedium: leadData.utmMedium || null,

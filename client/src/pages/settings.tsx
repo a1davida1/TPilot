@@ -43,8 +43,8 @@ export default function SettingsPage() {
     queryKey: ['/api/user/settings'],
   });
 
-  const { data: subscription } = useQuery({
-    queryKey: ['/api/user/subscription'],
+  const { data: subscriptionData } = useQuery({
+    queryKey: ['/api/subscription'],
   });
 
   const updateSettingsMutation = useMutation({
@@ -156,12 +156,12 @@ export default function SettingsPage() {
                 <div>
                   <h3 className="font-medium">Current Plan</h3>
                   <p className="text-sm text-gray-600">
-                    {subscription?.plan || 'Free'} Plan
+                    {subscriptionData?.subscription?.plan || 'Free'} Plan
                   </p>
                 </div>
                 <div className="text-right">
-                  <Badge variant={subscription?.plan === 'free' ? 'secondary' : 'default'} className="mb-2">
-                    {subscription?.plan === 'free' ? 'Free' : subscription?.plan || 'Free'}
+                  <Badge variant={subscriptionData?.subscription?.plan === 'free' ? 'secondary' : 'default'} className="mb-2">
+                    {subscriptionData?.subscription?.plan === 'free' ? 'Free' : subscriptionData?.subscription?.plan || 'Free'}
                   </Badge>
                   <br />
                   <Button onClick={handleUpgrade} className="bg-gradient-to-r from-purple-600 to-blue-600">

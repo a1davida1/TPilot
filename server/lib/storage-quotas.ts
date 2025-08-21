@@ -41,7 +41,7 @@ export class StorageQuotaManager {
         used: sql<number>`COALESCE(SUM(bytes), 0)`.as('used'),
       })
       .from(mediaAssets)
-      .where(eq(mediaAssets.userId, userId));
+      .where(eq(mediaAssets.userId, parseInt(userId.toString(), 10)));
 
     const used = Number(usage?.used || 0);
     const available = Math.max(0, limit - used);
@@ -109,7 +109,7 @@ export class StorageQuotaManager {
         fileCount: sql<number>`COUNT(*)`.as('fileCount'),
       })
       .from(mediaAssets)
-      .where(eq(mediaAssets.userId, userId));
+      .where(eq(mediaAssets.userId, parseInt(userId.toString(), 10)));
 
     return {
       images: Number(breakdown?.images || 0),
@@ -136,7 +136,7 @@ export class StorageQuotaManager {
       .from(mediaAssets)
       .where(
         and(
-          eq(mediaAssets.userId, userId),
+          eq(mediaAssets.userId, parseInt(userId.toString(), 10)),
           sql`${mediaAssets.lastUsedAt} < ${thirtyDaysAgo}`
         )
       )

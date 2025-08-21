@@ -30,7 +30,7 @@ export const PerformanceOptimization = memo(() => {
     const navigationTiming = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
     
     if (navigationTiming) {
-      const loadTime = navigationTiming.loadEventEnd - navigationTiming.navigationStart;
+      const loadTime = navigationTiming.loadEventEnd - (navigationTiming.fetchStart || 0);
       setMetrics(prev => ({
         ...prev,
         loadTime: Math.round(loadTime),

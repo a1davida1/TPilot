@@ -165,14 +165,14 @@ export default function MobilePWA() {
         });
       } catch (error) {
         // Fallback to clipboard
-        navigator.clipboard.writeText(window.location.href);
+        (navigator as any).clipboard.writeText(window.location.href);
         toast({
           title: "Link Copied",
           description: "App URL has been copied to your clipboard.",
         });
       }
     } else {
-      navigator.clipboard.writeText(window.location.href);
+      (navigator as any).clipboard.writeText(window.location.href);
       toast({
         title: "Link Copied",
         description: "App URL has been copied to your clipboard.",

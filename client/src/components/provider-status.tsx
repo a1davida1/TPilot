@@ -84,7 +84,7 @@ export function ProviderStatus() {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {providers && Array.isArray(providers) && providers.map((provider: ProviderInfo, index: number) => (
+          {providers && Array.isArray(providers) && (providers as ProviderInfo[]).map((provider: ProviderInfo, index: number) => (
             <div key={provider.name || index} className="flex items-center justify-between p-4 border rounded-lg">
               <div className="flex items-center space-x-3">
                 {getStatusIcon(provider.status)}
