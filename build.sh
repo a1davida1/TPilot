@@ -8,12 +8,39 @@ echo "Frontend build complete!"
 # Create dist directories
 mkdir -p dist/server dist/shared
 
-echo "Building server TypeScript files..."
-# Compile server TypeScript files to JavaScript with ES modules
-npx tsc --project server/tsconfig.json
-
 echo "Building shared TypeScript files..."
+# Create a temporary tsconfig for shared files
+cat > temp-shared-tsconfig.json << EOF
+{
+  "compilerOptions": {
+    "module": "ESNext",
+    "target": "ES2022",
+    "moduleResolution": "Node",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "outDir": "dist/shared",
+    "declaration": false,
+    "sourceMap": false
+  },
+  "include": ["shared/**/*"]
+}
+EOF
+
 # Compile shared files
-npx tsc --project tsconfig.json --outDir dist/shared shared/**/*.ts
+npx tsc --project temp-shared-tsconfig.json
+
+# Clean up temporary config
+rm temp-shared-tsconfig.json
+
+echo "Building server TypeScript files..."
+# Compile server TypeScript files with shared dependencies
+cd server
+npx tsc --project tsconfig.json
+cd ..
+
+echo "Resolving path mappings in compiled server files..."
+# Use tsc-alias to resolve @shared/* imports to proper relative paths
+npx tsc-alias -p server/tsconfig.json
 
 echo "Build complete!"
