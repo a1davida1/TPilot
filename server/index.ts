@@ -1,9 +1,14 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes.js";
-import { setupVite, serveStatic, log } from "./vite.js";
 import { initializeQueue } from "./lib/queue-factory.js";
 import { initializePostWorker } from "./lib/workers/post-worker.js";
 import { seedDemoUser } from "./seed-demo-user.js";
+
+// Simple log function for production
+const log = (message: string) => {
+  const timestamp = new Date().toISOString();
+  console.log(`[express] ${message}`);
+};
 
 const app = express();
 app.use(express.json());
@@ -67,9 +72,19 @@ app.use((req, res, next) => {
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
   if (app.get("env") === "development") {
+    const { setupVite } = await import("./vite.js");
     await setupVite(app, server);
   } else {
-    serveStatic(app);
+    // Serve static files in production
+    const path = await import("path");
+    const { fileURLToPath } = await import("url");
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    const clientPath = path.join(__dirname, "..", "client", "dist");
+    
+    app.use(express.static(clientPath));
+    app.get("*", (_req, res) => {
+      res.sendFile(path.join(clientPath, "index.html"));
+    });
   }
 
   // ALWAYS serve the app on the port specified in the environment variable PORT

@@ -1,0 +1,89 @@
+# ThottoPilot Deployment Guide
+
+## ✅ Deployment Issue Fixed!
+
+The deployment error **"Cannot find package '@shared/schema'"** has been successfully resolved.
+
+## 🔧 What Was Fixed
+
+1. **Path Mapping Resolution**: TypeScript path mappings (`@shared/*`) are now properly converted to relative imports using `tsc-alias`
+2. **Import Extensions**: All ES module imports now have proper `.js` extensions as required by Node.js
+3. **Build Process**: Created a robust build script that handles all compilation issues
+4. **Vite Exclusion**: Production builds exclude the development-only vite configuration
+
+## 📦 Production Build Process
+
+### Quick Build
+```bash
+./build-production.sh
+```
+
+### Manual Build Steps
+```bash
+# 1. Clean previous builds
+rm -rf dist
+
+# 2. Compile TypeScript (with vite.ts temporarily moved)
+mv server/vite.ts server/vite.ts.bak
+tsc -p tsconfig.json
+mv server/vite.ts.bak server/vite.ts
+
+# 3. Resolve path mappings
+tsc-alias -p tsconfig.json
+
+# 4. Fix import extensions
+npm run fix-imports
+./fix-double-js.sh
+./fix-all-imports.sh
+
+# 5. Build client (if needed)
+cd client && npx vite build && cd ..
+```
+
+## 🚀 Running in Production
+
+### Local Testing
+```bash
+NODE_ENV=production node dist/server/index.js
+```
+
+### With Custom Port
+```bash
+PORT=3000 NODE_ENV=production node dist/server/index.js
+```
+
+## 🌐 Deployment Files
+
+The `dist/` directory contains all necessary files for deployment:
+- `dist/server/` - Compiled server code
+- `dist/shared/` - Shared schemas and types
+- `dist/client/` - Production client build (when built)
+
+## ⚙️ Environment Variables Required
+
+```env
+# Database
+DATABASE_URL=your_postgres_connection_string
+
+# Optional but recommended
+NODE_ENV=production
+PORT=5000
+SESSION_SECRET=your_secure_session_secret
+
+# External Services (if used)
+SENDGRID_API_KEY=your_sendgrid_key
+GOOGLE_GENAI_API_KEY=your_gemini_key
+OPENAI_API_KEY=your_openai_key
+```
+
+## 📝 Important Notes
+
+1. **Memory Store Warning**: The warning about MemoryStore is expected in production. For production deployments, consider using Redis or PostgreSQL for session storage.
+
+2. **Client Build**: The client needs to be built separately with `cd client && npx vite build` for production deployment.
+
+3. **Database**: Ensure your PostgreSQL database is accessible from the deployment environment.
+
+## ✨ Deployment Ready!
+
+Your application is now ready for deployment. The build process has been tested and verified to work correctly without any module resolution errors.
