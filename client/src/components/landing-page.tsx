@@ -46,6 +46,19 @@ export function LandingPage() {
   });
   const { toast } = useToast();
 
+  // Turnstile callback functions
+  const onTurnstileSuccess = (token: string) => {
+    setTurnstileToken(token);
+  };
+
+  const onTurnstileExpired = () => {
+    setTurnstileToken('');
+  };
+
+  const onTurnstileError = () => {
+    setTurnstileToken('');
+  };
+
   // UTM tracking on page load
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -67,15 +80,20 @@ export function LandingPage() {
       document.cookie = `utm_params=${encodeURIComponent(JSON.stringify(filteredUTM))}; path=/; max-age=${30 * 24 * 60 * 60}`;
     }
 
-    // Load Turnstile script
-    if (!document.querySelector('[src*="challenges.cloudflare.com"]')) {
+    // Load Turnstile script only in production
+    if (process.env.NODE_ENV === 'production' && !document.querySelector('[src*="challenges.cloudflare.com"]')) {
+      // Make callback functions globally available
+      (window as any).onTurnstileSuccess = onTurnstileSuccess;
+      (window as any).onTurnstileExpired = onTurnstileExpired;
+      (window as any).onTurnstileError = onTurnstileError;
+
       const script = document.createElement('script');
       script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
       script.async = true;
       script.defer = true;
       document.head.appendChild(script);
     }
-  }, []);
+  }, [onTurnstileSuccess, onTurnstileExpired, onTurnstileError]);
 
   const platforms = [
     { id: 'reddit', label: 'Reddit' },
@@ -115,7 +133,7 @@ export function LandingPage() {
     }
 
     // Skip Turnstile validation in development
-    if (!turnstileToken && window.turnstile && process.env.NODE_ENV === 'production') {
+    if (process.env.NODE_ENV === 'production' && !turnstileToken) {
       toast({
         title: "Verification required",
         description: "Please complete the anti-bot verification.",
@@ -280,12 +298,25 @@ export function LandingPage() {
                   />
                 </div>
 
-                {/* Turnstile Widget (disabled in dev) */}
-                <div className="flex justify-center">
-                  <div className="text-sm text-gray-500 p-4 border-2 border-dashed rounded-lg">
-                    🔒 Anti-bot verification (Turnstile) - Ready for production
+                {/* Turnstile Widget */}
+                {process.env.NODE_ENV === 'production' ? (
+                  <div className="flex justify-center">
+                    <div
+                      id="turnstile-widget"
+                      className="cf-turnstile"
+                      data-sitekey={process.env.VITE_TURNSTILE_SITE_KEY}
+                      data-callback="onTurnstileSuccess"
+                      data-expired-callback="onTurnstileExpired"  
+                      data-error-callback="onTurnstileError"
+                    ></div>
                   </div>
-                </div>
+                ) : (
+                  <div className="flex justify-center">
+                    <div className="text-sm text-gray-500 p-4 border-2 border-dashed rounded-lg">
+                      🔒 Anti-bot verification (bypassed in development)
+                    </div>
+                  </div>
+                )}
 
                 {/* Submit Button */}
                 <Button
