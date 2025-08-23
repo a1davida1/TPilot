@@ -94,34 +94,56 @@ export async function generateWithMultiProvider(request: MultiAIRequest): Promis
 async function generateWithGemini(prompt: string) {
   if (!gemini) return null;
   
-  const response = await gemini.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: "object",
-        properties: {
-          titles: { type: "array", items: { type: "string" } },
-          content: { type: "string" },
-          photoInstructions: {
-            type: "object",
-            properties: {
-              lighting: { type: "string" },
-              cameraAngle: { type: "string" },
-              composition: { type: "string" },
-              styling: { type: "string" },
-              mood: { type: "string" },
-              technicalSettings: { type: "string" }
+  try {
+    // Add timeout wrapper
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Gemini request timeout')), 15000); // 15 second timeout
+    });
+    
+    const generationPromise = gemini.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "object",
+          properties: {
+            titles: { type: "array", items: { type: "string" } },
+            content: { type: "string" },
+            photoInstructions: {
+              type: "object",
+              properties: {
+                lighting: { type: "string" },
+                cameraAngle: { type: "string" },
+                composition: { type: "string" },
+                styling: { type: "string" },
+                mood: { type: "string" },
+                technicalSettings: { type: "string" }
+              }
             }
           }
         }
       }
+    });
+    
+    const response = await Promise.race([generationPromise, timeoutPromise]);
+    
+    if (!response || !response.response) {
+      throw new Error('Empty response from Gemini');
     }
-  });
-  
-  const result = JSON.parse(response.text || '{}');
-  return validateAndFormatResponse(result);
+    
+    const text = response.response.text();
+    if (!text) {
+      throw new Error('No text in Gemini response');
+    }
+    
+    const result = JSON.parse(text);
+    console.log('Gemini generated successfully:', Object.keys(result));
+    return validateAndFormatResponse(result);
+  } catch (error) {
+    console.error('Gemini generation failed:', error instanceof Error ? error.message : String(error));
+    throw error; // Let the multi-provider system try the next provider
+  }
 }
 
 async function generateWithClaude(prompt: string) {
