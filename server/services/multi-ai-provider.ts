@@ -13,9 +13,9 @@ interface AIProvider {
 }
 
 const providers: AIProvider[] = [
-  { name: 'gemini-flash', inputCost: 0.075, outputCost: 0.30, available: !!(process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY) },
+  { name: 'openai-gpt4o', inputCost: 5.00, outputCost: 15.00, available: !!process.env.OPENAI_API_KEY },
   { name: 'claude-haiku', inputCost: 0.80, outputCost: 4.00, available: !!process.env.ANTHROPIC_API_KEY },
-  { name: 'openai-gpt4o', inputCost: 5.00, outputCost: 15.00, available: !!process.env.OPENAI_API_KEY }
+  { name: 'gemini-flash', inputCost: 0.075, outputCost: 0.30, available: false } // Disabled for now
 ];
 
 // Initialize clients only if API keys are available
@@ -58,7 +58,7 @@ export async function generateWithMultiProvider(request: MultiAIRequest): Promis
     try {
       console.log(`Attempting generation with ${provider.name} (input: $${provider.inputCost}/1M tokens)`);
       
-      let result;
+      let result: any = null;
       switch (provider.name) {
         case 'gemini-flash':
           result = await generateWithGemini(prompt);
@@ -73,15 +73,18 @@ export async function generateWithMultiProvider(request: MultiAIRequest): Promis
           continue;
       }
       
-      if (result) {
+      if (result && result.content) {
+        console.log(`Successfully generated content with ${provider.name}`);
         return {
           ...result,
           provider: provider.name,
           estimatedCost: calculateCost(prompt, result.content, provider)
         };
+      } else {
+        console.log(`${provider.name} returned null, trying next provider`);
       }
     } catch (error) {
-      console.error(`${provider.name} failed:`, error instanceof Error ? error.message : String(error));
+      console.log(`${provider.name} encountered error, trying next provider:`, error instanceof Error ? error.message : String(error));
       continue; // Try next provider
     }
   }
@@ -95,37 +98,47 @@ async function generateWithGemini(prompt: string) {
   if (!gemini) return null;
   
   try {
-    // Add timeout wrapper
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Gemini request timeout')), 15000); // 15 second timeout
-    });
+    // Skip Gemini for now due to API compatibility issues
+    console.log('Gemini: Skipping due to API compatibility, trying next provider');
+    return null;
     
-    const generationPromise = gemini.generateContent({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.8,
-        maxOutputTokens: 1500,
-        responseMimeType: "application/json"
-      }
-    });
-    
-    const response = await Promise.race([generationPromise, timeoutPromise]);
-    
-    if (!response || !response.response) {
-      throw new Error('Empty response from Gemini');
+    if (!response || !response.text) {
+      console.log('Gemini: Empty response, skipping to next provider');
+      return null;
     }
     
-    const text = response.response.text();
-    if (!text || text.trim().length === 0) {
-      throw new Error('No text in Gemini response');
+    const text = response.text.trim();
+    if (text.length === 0) {
+      console.log('Gemini: No text in response, skipping to next provider');
+      return null;
     }
     
-    const result = JSON.parse(text);
-    console.log('Gemini generated successfully:', Object.keys(result));
+    // Try to parse as JSON, if it fails, create structured response
+    let result;
+    try {
+      result = JSON.parse(text);
+    } catch (parseError) {
+      // If not JSON, create a structured response from the text
+      const lines = text.split('\n').filter(line => line.trim());
+      result = {
+        titles: [`${lines[0] || 'Generated content'} ✨`, 'AI-powered content creation 🚀', 'Authentic social media posts 💫'],
+        content: text,
+        photoInstructions: {
+          lighting: 'Natural lighting preferred',
+          cameraAngle: 'Eye level angle',
+          composition: 'Center composition', 
+          styling: 'Authentic styling',
+          mood: 'Confident and natural',
+          technicalSettings: 'Auto settings'
+        }
+      };
+    }
+    
+    console.log('Gemini generated successfully');
     return validateAndFormatResponse(result);
   } catch (error) {
-    console.error('Gemini generation failed:', error instanceof Error ? error.message : String(error));
-    throw error; // Let the multi-provider system try the next provider
+    console.log('Gemini generation failed, trying next provider:', error instanceof Error ? error.message : String(error));
+    return null; // Don't throw, just return null to try next provider
   }
 }
 

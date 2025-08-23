@@ -60,71 +60,71 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
     '#natural', '#authentic', '#stunning', '#goddess', '#empowered'
   ];
 
-  // Preset style definitions matching unified content creator
+  // Quick Style Presets - Easy to Read & Select
   const contentPresets = [
     {
       id: 'nude-photos',
-      title: 'Nude Photos',
-      icon: '🔥',
+      title: 'Artistic Nude',
+      icon: '🎨',
       prompt: 'Confident and natural nude photo content with artistic flair',
-      description: 'Tasteful nude photography content',
-      color: 'bg-red-100 hover:bg-red-200 text-red-800 border-red-300'
+      description: 'Elegant artistic nude photography',
+      color: 'bg-gradient-to-br from-rose-50 to-pink-100 hover:from-rose-100 hover:to-pink-200 text-rose-900 border-2 border-rose-200 hover:border-rose-300 shadow-sm hover:shadow-md'
     },
     {
       id: 'shower-content',
-      title: 'Shower Scene',
+      title: 'Shower Fresh',
       icon: '🚿',
       prompt: 'Steamy shower content with water droplets and sultry mood',
-      description: 'Sensual shower photography',
-      color: 'bg-blue-100 hover:bg-blue-200 text-blue-800 border-blue-300'
+      description: 'Fresh, steamy shower content',
+      color: 'bg-gradient-to-br from-blue-50 to-cyan-100 hover:from-blue-100 hover:to-cyan-200 text-blue-900 border-2 border-blue-200 hover:border-blue-300 shadow-sm hover:shadow-md'
     },
     {
       id: 'workout-clothes',
-      title: 'Workout Gear',
+      title: 'Fitness Power',
       icon: '💪',
       prompt: 'Athletic and fit workout clothes content showing strength and curves',
-      description: 'Fitness and athletic wear',
-      color: 'bg-green-100 hover:bg-green-200 text-green-800 border-green-300'
+      description: 'Strong, confident fitness content',
+      color: 'bg-gradient-to-br from-green-50 to-emerald-100 hover:from-green-100 hover:to-emerald-200 text-green-900 border-2 border-green-200 hover:border-green-300 shadow-sm hover:shadow-md'
     },
     {
       id: 'lingerie',
-      title: 'Lingerie',
-      icon: '👙',
+      title: 'Elegant Lingerie',
+      icon: '💎',
       prompt: 'Elegant lingerie content with sophisticated and alluring appeal',
-      description: 'Beautiful lingerie photography',
-      color: 'bg-pink-100 hover:bg-pink-200 text-pink-800 border-pink-300'
+      description: 'Beautiful, elegant lingerie shots',
+      color: 'bg-gradient-to-br from-pink-50 to-rose-100 hover:from-pink-100 hover:to-rose-200 text-pink-900 border-2 border-pink-200 hover:border-pink-300 shadow-sm hover:shadow-md'
     },
     {
       id: 'casual-tease',
-      title: 'Casual Tease',
+      title: 'Casual & Cute',
       icon: '😉',
       prompt: 'Playful and casual teasing content with everyday charm',
-      description: 'Everyday casual content',
-      color: 'bg-purple-100 hover:bg-purple-200 text-purple-800 border-purple-300'
+      description: 'Playful everyday content',
+      color: 'bg-gradient-to-br from-purple-50 to-violet-100 hover:from-purple-100 hover:to-violet-200 text-purple-900 border-2 border-purple-200 hover:border-purple-300 shadow-sm hover:shadow-md'
     },
     {
       id: 'bedroom-scene',
-      title: 'Bedroom Scene',
+      title: 'Cozy Bedroom',
       icon: '🛏️',
       prompt: 'Intimate bedroom content with cozy and inviting atmosphere',
-      description: 'Bedroom photography',
-      color: 'bg-amber-100 hover:bg-amber-200 text-amber-800 border-amber-300'
+      description: 'Intimate, cozy bedroom vibes',
+      color: 'bg-gradient-to-br from-amber-50 to-orange-100 hover:from-amber-100 hover:to-orange-200 text-amber-900 border-2 border-amber-200 hover:border-amber-300 shadow-sm hover:shadow-md'
     },
     {
       id: 'outdoor-adventure',
-      title: 'Outdoor Fun',
-      icon: '🌳',
+      title: 'Nature Beauty',
+      icon: '🌸',
       prompt: 'Adventurous outdoor content with natural beauty and freedom',
-      description: 'Outdoor and nature content',
-      color: 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border-emerald-300'
+      description: 'Beautiful outdoor & nature shots',
+      color: 'bg-gradient-to-br from-emerald-50 to-teal-100 hover:from-emerald-100 hover:to-teal-200 text-emerald-900 border-2 border-emerald-200 hover:border-emerald-300 shadow-sm hover:shadow-md'
     },
     {
       id: 'professional-tease',
-      title: 'Professional',
-      icon: '👔',
+      title: 'Office Chic',
+      icon: '💼',
       prompt: 'Professional yet seductive content balancing sophistication with allure',
-      description: 'Professional/office content',
-      color: 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
+      description: 'Sophisticated office/professional looks',
+      color: 'bg-gradient-to-br from-slate-50 to-gray-100 hover:from-slate-100 hover:to-gray-200 text-slate-900 border-2 border-slate-200 hover:border-slate-300 shadow-sm hover:shadow-md'
     }
   ];
 
