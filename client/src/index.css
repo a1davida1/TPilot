@@ -778,7 +778,7 @@ input:focus, textarea:focus, select:focus {
     0 0 0 3px hsl(var(--primary) / 0.1) !important,
     0 4px 15px rgba(236, 72, 153, 0.15) !important,
     inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
-  transform: translateY(-1px);
+  transform: translateY(-1px) !important;
 }
 
 /* Premium Badge Styling */

@@ -105,17 +105,17 @@ export function AdminDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white p-6">
+    <div className="min-h-screen bg-white text-gray-900 p-6">
       {/* Admin Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-300 via-pink-300 to-blue-300 bg-clip-text text-transparent">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-800 via-pink-800 to-purple-900 bg-clip-text text-transparent">
               Admin Portal
             </h1>
-            <p className="text-slate-300 mt-2 text-lg">System overview and management</p>
+            <p className="text-gray-600 mt-2 text-lg">System overview and management</p>
           </div>
-          <Badge variant="outline" className="text-emerald-300 border-emerald-300 bg-emerald-500/10 px-4 py-2">
+          <Badge variant="outline" className="text-emerald-700 border-emerald-700 bg-emerald-50 px-4 py-2">
             <Shield className="h-4 w-4 mr-2" />
             Admin Access
           </Badge>
@@ -125,7 +125,7 @@ export function AdminDashboard() {
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {adminStats.map((stat, index) => (
-          <Card key={index} className="bg-white/5 backdrop-blur-xl border-white/20 hover:bg-white/10 transition-all duration-300 shadow-2xl">
+          <Card key={index} className="bg-white border-gray-200 hover:bg-gray-50 transition-all duration-300 shadow-lg">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className={`p-3 rounded-xl bg-gradient-to-br ${
@@ -136,12 +136,12 @@ export function AdminDashboard() {
                 }`}>
                   <span className={`${stat.color} text-lg`}>{stat.icon}</span>
                 </div>
-                <Badge variant="secondary" className="bg-white/10 text-white border-white/20 text-xs font-medium">
+                <Badge variant="secondary" className="bg-gray-100 text-gray-900 border-gray-300 text-xs font-medium">
                   {stat.change}
                 </Badge>
               </div>
-              <p className="text-3xl font-bold text-white mb-1">{stat.value}</p>
-              <p className="text-sm text-slate-300">{stat.label}</p>
+              <p className="text-3xl font-bold text-gray-900 mb-1">{stat.value}</p>
+              <p className="text-sm text-gray-600">{stat.label}</p>
             </CardContent>
           </Card>
         ))}
@@ -149,22 +149,22 @@ export function AdminDashboard() {
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="bg-white/10 backdrop-blur-xl border-white/20 p-1 rounded-xl">
-          <TabsTrigger value="overview" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-slate-300 rounded-lg transition-all duration-200">Overview</TabsTrigger>
-          <TabsTrigger value="analytics" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-slate-300 rounded-lg transition-all duration-200">Analytics</TabsTrigger>
-          <TabsTrigger value="users" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-slate-300 rounded-lg transition-all duration-200">Users</TabsTrigger>
-          <TabsTrigger value="providers" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-slate-300 rounded-lg transition-all duration-200">Providers</TabsTrigger>
-          <TabsTrigger value="revenue" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-slate-300 rounded-lg transition-all duration-200">Revenue</TabsTrigger>
-          <TabsTrigger value="roadmap" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-slate-300 rounded-lg transition-all duration-200">Roadmap</TabsTrigger>
-          <TabsTrigger value="system" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-slate-300 rounded-lg transition-all duration-200">System</TabsTrigger>
-          <TabsTrigger value="status" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-slate-300 rounded-lg transition-all duration-200">Status</TabsTrigger>
+        <TabsList className="bg-gray-100 border-gray-200 p-1 rounded-xl">
+          <TabsTrigger value="overview" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Overview</TabsTrigger>
+          <TabsTrigger value="analytics" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Analytics</TabsTrigger>
+          <TabsTrigger value="users" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Users</TabsTrigger>
+          <TabsTrigger value="providers" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Providers</TabsTrigger>
+          <TabsTrigger value="revenue" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Revenue</TabsTrigger>
+          <TabsTrigger value="roadmap" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Roadmap</TabsTrigger>
+          <TabsTrigger value="system" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">System</TabsTrigger>
+          <TabsTrigger value="status" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Status</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
           <div className="grid lg:grid-cols-2 gap-6">
             {/* User Activity Chart */}
-            <Card className="bg-white/5 backdrop-blur-xl border-white/20 shadow-2xl">
+            <Card className="bg-white border-gray-200 shadow-lg">
               <CardHeader>
                 <CardTitle>User Activity</CardTitle>
                 <CardDescription>User registrations and activity trends</CardDescription>
@@ -184,7 +184,7 @@ export function AdminDashboard() {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-400">Free Users</span>
-                      <span className="text-white">{(stats as any)?.freeUsers || 0}</span>
+                      <span className="text-gray-900">{(stats as any)?.freeUsers || 0}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-400">Pro Users</span>
@@ -200,7 +200,7 @@ export function AdminDashboard() {
             </Card>
 
             {/* Content Generation Stats */}
-            <Card className="bg-white/5 backdrop-blur-xl border-white/20 shadow-2xl">
+            <Card className="bg-white border-gray-200 shadow-lg">
               <CardHeader>
                 <CardTitle>System Status</CardTitle>
                 <CardDescription>Service availability and configuration</CardDescription>
@@ -227,7 +227,7 @@ export function AdminDashboard() {
                   </div>
                   <div className="mt-4 p-3 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg">
                     <p className="text-sm text-gray-300">Total Content Generated</p>
-                    <p className="text-3xl font-bold text-white">{(stats as any)?.contentGenerated || 0}</p>
+                    <p className="text-3xl font-bold text-gray-900">{(stats as any)?.contentGenerated || 0}</p>
                     <p className="text-xs text-gray-400 mt-1">Across all users and platforms</p>
                   </div>
                 </div>
@@ -238,7 +238,7 @@ export function AdminDashboard() {
 
         {/* Users Tab */}
         <TabsContent value="users" className="space-y-6">
-          <Card className="bg-white/5 backdrop-blur-xl border-white/20 shadow-2xl">
+          <Card className="bg-white border-gray-200 shadow-lg">
             <CardHeader>
               <CardTitle>User Management</CardTitle>
               <CardDescription>View and manage platform users</CardDescription>
@@ -318,7 +318,7 @@ export function AdminDashboard() {
 
         {/* Providers Tab */}
         <TabsContent value="providers" className="space-y-6">
-          <Card className="bg-white/5 backdrop-blur-xl border-white/20 shadow-2xl">
+          <Card className="bg-white border-gray-200 shadow-lg">
             <CardHeader>
               <CardTitle>Provider Costs & Status</CardTitle>
               <CardDescription>Monitor service usage and costs</CardDescription>
@@ -360,7 +360,7 @@ export function AdminDashboard() {
         {/* Revenue Tab */}
         <TabsContent value="revenue" className="space-y-6">
           <div className="grid lg:grid-cols-3 gap-6">
-            <Card className="bg-white/5 backdrop-blur-xl border-white/20 shadow-2xl">
+            <Card className="bg-white border-gray-200 shadow-lg">
               <CardHeader>
                 <CardTitle>Monthly Revenue</CardTitle>
               </CardHeader>
@@ -370,7 +370,7 @@ export function AdminDashboard() {
               </CardContent>
             </Card>
 
-            <Card className="bg-white/5 backdrop-blur-xl border-white/20 shadow-2xl">
+            <Card className="bg-white border-gray-200 shadow-lg">
               <CardHeader>
                 <CardTitle>Active Subscriptions</CardTitle>
               </CardHeader>
@@ -390,7 +390,7 @@ export function AdminDashboard() {
                   </div>
                   <div className="border-t border-white/10 pt-2 mt-2">
                     <div className="flex justify-between font-medium">
-                      <span className="text-white">Monthly Revenue</span>
+                      <span className="text-gray-900">Monthly Revenue</span>
                       <span className="text-green-400">${((stats as any)?.proUsers || 0) * 20 + ((stats as any)?.premiumUsers || 0) * 50}</span>
                     </div>
                   </div>
@@ -398,7 +398,7 @@ export function AdminDashboard() {
               </CardContent>
             </Card>
 
-            <Card className="bg-white/5 backdrop-blur-xl border-white/20 shadow-2xl">
+            <Card className="bg-white border-gray-200 shadow-lg">
               <CardHeader>
                 <CardTitle>Service Costs</CardTitle>
               </CardHeader>
@@ -412,7 +412,7 @@ export function AdminDashboard() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Content Generated</span>
-                    <span className="text-white">{(stats as any)?.contentGenerated || 0}</span>
+                    <span className="text-gray-900">{(stats as any)?.contentGenerated || 0}</span>
                   </div>
                 </div>
               </CardContent>
@@ -422,7 +422,7 @@ export function AdminDashboard() {
 
         {/* System Tab */}
         <TabsContent value="system" className="space-y-6">
-          <Card className="bg-white/5 backdrop-blur-xl border-white/20 shadow-2xl">
+          <Card className="bg-white border-gray-200 shadow-lg">
             <CardHeader>
               <CardTitle>System Health</CardTitle>
               <CardDescription>Monitor system status and performance</CardDescription>
@@ -472,7 +472,7 @@ export function AdminDashboard() {
                 
                 {/* Performance Metrics */}
                 <div className="mt-6 p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg">
-                  <h4 className="text-sm font-medium text-white mb-3">Performance Metrics</h4>
+                  <h4 className="text-sm font-medium text-gray-900 mb-3">Performance Metrics</h4>
                   <div className="grid grid-cols-3 gap-4 text-sm">
                     <div>
                       <p className="text-gray-400">Response Time</p>
@@ -496,7 +496,7 @@ export function AdminDashboard() {
         {/* Visitor Analytics Tab */}
         <TabsContent value="analytics" className="space-y-6">
           <div className="grid lg:grid-cols-3 gap-6 mb-6">
-            <Card className="bg-white/5 backdrop-blur-xl border-white/20 shadow-2xl">
+            <Card className="bg-white border-gray-200 shadow-lg">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -508,7 +508,7 @@ export function AdminDashboard() {
               </CardContent>
             </Card>
             
-            <Card className="bg-white/5 backdrop-blur-xl border-white/20 shadow-2xl">
+            <Card className="bg-white border-gray-200 shadow-lg">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -520,7 +520,7 @@ export function AdminDashboard() {
               </CardContent>
             </Card>
             
-            <Card className="bg-white/5 backdrop-blur-xl border-white/20 shadow-2xl">
+            <Card className="bg-white border-gray-200 shadow-lg">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -535,7 +535,7 @@ export function AdminDashboard() {
 
           <div className="grid lg:grid-cols-2 gap-6">
             {/* Top Pages */}
-            <Card className="bg-white/5 backdrop-blur-xl border-white/20 shadow-2xl">
+            <Card className="bg-white border-gray-200 shadow-lg">
               <CardHeader>
                 <CardTitle>Top Pages</CardTitle>
                 <CardDescription>Most visited pages</CardDescription>
@@ -557,7 +557,7 @@ export function AdminDashboard() {
             </Card>
 
             {/* Traffic Sources */}
-            <Card className="bg-white/5 backdrop-blur-xl border-white/20 shadow-2xl">
+            <Card className="bg-white border-gray-200 shadow-lg">
               <CardHeader>
                 <CardTitle>Traffic Sources</CardTitle>
                 <CardDescription>Where visitors come from</CardDescription>
@@ -584,7 +584,7 @@ export function AdminDashboard() {
         <TabsContent value="roadmap" className="space-y-6">
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Immediate Priority (Q1) */}
-            <Card className="bg-white/5 backdrop-blur-xl border-white/20 shadow-2xl">
+            <Card className="bg-white border-gray-200 shadow-lg">
               <CardHeader>
                 <CardTitle className="text-red-400">🔥 Immediate Priority</CardTitle>
                 <CardDescription>Q1 2025 - Critical features</CardDescription>
@@ -620,7 +620,7 @@ export function AdminDashboard() {
             </Card>
 
             {/* Short Term (Q2) */}
-            <Card className="bg-white/5 backdrop-blur-xl border-white/20 shadow-2xl">
+            <Card className="bg-white border-gray-200 shadow-lg">
               <CardHeader>
                 <CardTitle className="text-yellow-400">⚡ Short Term</CardTitle>
                 <CardDescription>Q2 2025 - Enhancement features</CardDescription>
@@ -665,7 +665,7 @@ export function AdminDashboard() {
             </Card>
 
             {/* Long Term (Q3-Q4) */}
-            <Card className="bg-white/5 backdrop-blur-xl border-white/20 shadow-2xl">
+            <Card className="bg-white border-gray-200 shadow-lg">
               <CardHeader>
                 <CardTitle className="text-green-400">🚀 Long Term</CardTitle>
                 <CardDescription>Q3-Q4 2025 - Innovation features</CardDescription>
@@ -711,7 +711,7 @@ export function AdminDashboard() {
           </div>
 
           {/* Development Progress Overview */}
-          <Card className="bg-white/5 backdrop-blur-xl border-white/20 shadow-2xl">
+          <Card className="bg-white border-gray-200 shadow-lg">
             <CardHeader>
               <CardTitle>📊 Development Progress Overview</CardTitle>
               <CardDescription>Track feature completion and timeline</CardDescription>
@@ -752,7 +752,7 @@ export function AdminDashboard() {
         <TabsContent value="status" className="space-y-6">
           <div className="grid lg:grid-cols-2 gap-6">
             {/* Platform Completeness */}
-            <Card className="bg-white/5 backdrop-blur-xl border-white/20 shadow-2xl">
+            <Card className="bg-white border-gray-200 shadow-lg">
               <CardHeader>
                 <CardTitle>Platform Completeness</CardTitle>
                 <CardDescription>Feature implementation status</CardDescription>
@@ -809,7 +809,7 @@ export function AdminDashboard() {
             </Card>
             
             {/* Quick Actions */}
-            <Card className="bg-white/5 backdrop-blur-xl border-white/20 shadow-2xl">
+            <Card className="bg-white border-gray-200 shadow-lg">
               <CardHeader>
                 <CardTitle>Admin Actions</CardTitle>
                 <CardDescription>Quick management operations</CardDescription>
@@ -817,7 +817,7 @@ export function AdminDashboard() {
               <CardContent>
                 <div className="space-y-3">
                   <Button 
-                    className="w-full justify-start bg-blue-500/20 hover:bg-blue-500/30 border-blue-500/30 text-blue-300"
+                    className="w-full justify-start bg-blue-100 hover:bg-blue-200 border-blue-300 text-blue-800"
                     onClick={() => {
                       toast({
                         title: "User Management",
@@ -830,7 +830,7 @@ export function AdminDashboard() {
                   </Button>
                   
                   <Button 
-                    className="w-full justify-start bg-green-500/20 hover:bg-green-500/30 border-green-500/30 text-green-300"
+                    className="w-full justify-start bg-green-100 hover:bg-green-200 border-green-300 text-green-800"
                     onClick={() => {
                       toast({
                         title: "Revenue Tracking",
@@ -843,7 +843,7 @@ export function AdminDashboard() {
                   </Button>
                   
                   <Button 
-                    className="w-full justify-start bg-purple-500/20 hover:bg-purple-500/30 border-purple-500/30 text-purple-300"
+                    className="w-full justify-start bg-purple-100 hover:bg-purple-200 border-purple-300 text-purple-800"
                     onClick={() => {
                       toast({
                         title: "System Status",
@@ -856,7 +856,7 @@ export function AdminDashboard() {
                   </Button>
                   
                   <Button 
-                    className="w-full justify-start bg-pink-500/20 hover:bg-pink-500/30 border-pink-500/30 text-pink-300"
+                    className="w-full justify-start bg-pink-100 hover:bg-pink-200 border-pink-300 text-pink-800"
                     onClick={() => {
                       toast({
                         title: "Provider Analytics",
