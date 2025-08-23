@@ -38,6 +38,7 @@ export interface IStorage {
   getGenerationsByUserId(userId: number): Promise<ContentGeneration[]>;
   createContentGeneration(gen: InsertContentGeneration): Promise<ContentGeneration>;
   getUserContentGenerations(userId: number): Promise<ContentGeneration[]>;
+  getContentGenerationCount(): Promise<number>;
   getContentGenerationStats(userId: number): Promise<{ total: number; thisWeek: number; thisMonth: number; totalGenerations?: number }>;
   getLastGenerated(userId: number): Promise<ContentGeneration | undefined>;
 
@@ -211,6 +212,18 @@ class PostgreSQLStorage implements IStorage {
 
   async getUserContentGenerations(userId: number): Promise<ContentGeneration[]> {
     return this.getGenerationsByUserId(userId);
+  }
+
+  async getContentGenerationCount(): Promise<number> {
+    try {
+      const result = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(contentGenerations);
+      return result[0]?.count || 0;
+    } catch (error) {
+      console.error('Error getting content generation count:', error);
+      return 0;
+    }
   }
 
   async getContentGenerationStats(userId: number): Promise<{ total: number; thisWeek: number; thisMonth: number; totalGenerations?: number }> {
