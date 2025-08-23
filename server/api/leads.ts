@@ -60,8 +60,8 @@ export async function createLead(req: Request, res: Response) {
 
     const mergedUTM = mergeUTMParams(cookieUTM, urlUTM);
 
-    // Generate unique ID for lead
-    const leadId = `lead_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // Generate unique ID for lead (under 25 chars for DB)
+    const leadId = `L${Date.now().toString(36).substr(-8)}${Math.random().toString(36).substr(2, 4)}`;
     
     // Prepare lead data - ensure platformTags is proper string array
     const leadData = {
