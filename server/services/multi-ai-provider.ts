@@ -98,9 +98,12 @@ async function generateWithGemini(prompt: string) {
   if (!gemini) return null;
   
   try {
-    // Skip Gemini for now due to API compatibility issues
-    console.log('Gemini: Skipping due to API compatibility, trying next provider');
-    return null;
+    // Use the text generation method for @google/genai
+    const response = await gemini.generateText({
+      prompt: prompt,
+      temperature: 0.8,
+      maxOutputTokens: 1500
+    });
     
     if (!response || !response.text) {
       console.log('Gemini: Empty response, skipping to next provider');
@@ -121,7 +124,7 @@ async function generateWithGemini(prompt: string) {
       // If not JSON, create a structured response from the text
       const lines = text.split('\n').filter(line => line.trim());
       result = {
-        titles: [`${lines[0] || 'Generated content'} ✨`, 'AI-powered content creation 🚀', 'Authentic social media posts 💫'],
+        titles: [`${lines[0] || 'Generated content'} ✨`, 'Creative content generation 🚀', 'Authentic social media posts 💫'],
         content: text,
         photoInstructions: {
           lighting: 'Natural lighting preferred',

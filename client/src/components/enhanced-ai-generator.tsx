@@ -130,17 +130,14 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
 
   const generateContentMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest("POST", "/api/generate-ai", {
-        ...data,
-        generationType: "prompt",
-        userProfile: {
-          toneOfVoice: "confident",
-          contentStyle: "authentic",
-          personalBrand: "girl-next-door",
-          contentLength: "medium",
-          includeEmojis: true,
-          promotionLevel: allowsPromotion
-        }
+      const response = await apiRequest("POST", "/api/generate-unified", {
+        mode: 'text',
+        platform: data.platform || 'reddit',
+        style: data.style || 'confident',
+        theme: data.theme || 'general',
+        prompt: data.customPrompt || data.prompt,
+        customInstructions: data.customPrompt || data.prompt,
+        includePromotion: data.includePromotion || data.allowsPromotion
       });
       return await response.json();
     },
@@ -236,6 +233,7 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
         : [...prev, hashtag]
     );
   };
+
 
   const copyToClipboard = async (text: string, type: string) => {
     try {
