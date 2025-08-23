@@ -99,10 +99,10 @@ ${customInstructions ? `Additional instructions: ${customInstructions}` : ''}
 Please respond with JSON in this exact format:
 {
   "titles": ["title1", "title2", "title3"],
-  "content": "main post content that's engaging and authentic",
+  "content": "Write a full engaging social media post (2-4 sentences) that matches the style and platform. Make it authentic and personality-driven with proper flow between sentences.",
   "photoInstructions": {
     "lighting": "detailed lighting recommendation",
-    "cameraAngle": "best camera angles to use",
+    "cameraAngle": "best camera angles to use", 
     "composition": "composition and framing advice",
     "styling": "outfit and styling suggestions",
     "mood": "mood and expression guidance",

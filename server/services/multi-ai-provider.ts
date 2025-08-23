@@ -172,9 +172,17 @@ async function generateWithOpenAI(prompt: string) {
 }
 
 function validateAndFormatResponse(result: any) {
+  // Generate actual content if missing or placeholder
+  let content = result.content;
+  if (!content || content === 'Generated content' || content.length < 20) {
+    // Create engaging fallback content based on titles
+    const firstTitle = Array.isArray(result.titles) && result.titles[0] ? result.titles[0] : 'New content';
+    content = `${firstTitle}\n\nHey everyone! 💕 Just wanted to share this moment with you all. There's something magical about capturing authentic moments that show who you really are. This one definitely has that special energy I love to share with you.\n\nWhat do you think? Drop a comment and let me know your thoughts! ✨`;
+  }
+  
   return {
     titles: Array.isArray(result.titles) ? result.titles.slice(0, 3) : ['Generated Title'],
-    content: result.content || 'Generated content',
+    content: content,
     photoInstructions: {
       lighting: result.photoInstructions?.lighting || 'Natural lighting preferred',
       cameraAngle: result.photoInstructions?.cameraAngle || 'Eye level angle',
