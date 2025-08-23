@@ -7,66 +7,66 @@
 
 @layer base {
   :root {
-    /* Light Mode - Bubblegum Theme with WCAG AA Compliance */
-    --background: 330 40 98;
-    --foreground: 320 30 10;
+    /* Light Mode - Clean White Background with Dark Purple/Pink Text */
+    --background: 0 0 100;
+    --foreground: 320 60 15;
     
-    /* Card colors with guaranteed contrast */
-    --card: 330 50 97;
-    --card-foreground: 320 30 15;
-    --card-border: 325 30 85;
+    /* Card colors with high contrast */
+    --card: 0 0 100;
+    --card-foreground: 320 60 15;
+    --card-border: 320 30 85;
     
     /* Popover colors */
-    --popover: 330 40 98;
-    --popover-foreground: 320 30 10;
+    --popover: 0 0 100;
+    --popover-foreground: 320 60 15;
     
-    /* Primary brand colors - Pink/Rose scale */
-    --primary: 320 85 60;
-    --primary-foreground: 330 40 98;
-    --primary-50: 320 60 97;
-    --primary-100: 320 55 94;
-    --primary-200: 320 60 87;
-    --primary-300: 320 70 80;
-    --primary-400: 320 80 70;
-    --primary-500: 320 85 60;
-    --primary-600: 320 90 50;
-    --primary-700: 320 85 40;
-    --primary-800: 320 80 30;
-    --primary-900: 320 75 20;
+    /* Primary brand colors - Dark Purple/Pink scale */
+    --primary: 320 70 25;
+    --primary-foreground: 0 0 100;
+    --primary-50: 320 40 95;
+    --primary-100: 320 45 90;
+    --primary-200: 320 50 80;
+    --primary-300: 320 55 70;
+    --primary-400: 320 60 60;
+    --primary-500: 320 65 50;
+    --primary-600: 320 70 40;
+    --primary-700: 320 70 25;
+    --primary-800: 320 70 20;
+    --primary-900: 320 70 15;
     --primary-950: 320 70 10;
     
     /* Secondary colors */
-    --secondary: 280 30 85;
-    --secondary-foreground: 280 30 20;
+    --secondary: 320 20 95;
+    --secondary-foreground: 320 60 20;
     
-    /* Muted colors with guaranteed 4.5:1 contrast */
-    --muted: 325 20 88;
-    --muted-foreground: 325 25 25;
+    /* Muted colors with high contrast */
+    --muted: 320 15 95;
+    --muted-foreground: 320 50 30;
     
-    /* Accent colors - Bubblegum palette */
-    --accent: 45 100 70;
-    --accent-foreground: 45 100 15;
-    --accent-pink: 320 85 60;
-    --accent-rose: 330 80 65;
-    --accent-yellow: 45 100 70;
+    /* Accent colors - Dark Purple/Pink palette */
+    --accent: 280 60 30;
+    --accent-foreground: 0 0 100;
+    --accent-pink: 320 70 25;
+    --accent-rose: 330 65 30;
+    --accent-yellow: 45 80 35;
     
-    /* State colors with proper contrast */
-    --destructive: 0 84 60;
-    --destructive-foreground: 0 0 98;
-    --success: 120 60 50;
-    --success-foreground: 120 10 98;
-    --warning: 35 90 60;
-    --warning-foreground: 35 20 10;
+    /* State colors with high contrast */
+    --destructive: 0 70 40;
+    --destructive-foreground: 0 0 100;
+    --success: 120 50 30;
+    --success-foreground: 0 0 100;
+    --warning: 35 70 35;
+    --warning-foreground: 0 0 100;
     
     /* Form and interaction colors */
-    --border: 325 30 80;
-    --input: 330 40 96;
-    --ring: 320 85 60;
+    --border: 320 25 85;
+    --input: 0 0 100;
+    --ring: 320 70 25;
     
     /* Interactive states */
-    --hover: 325 25 92;
-    --active: 325 30 85;
-    --focus: 320 85 60;
+    --hover: 320 20 97;
+    --active: 320 30 95;
+    --focus: 320 70 25;
     
     /* Chart colors */
     --chart-1: 320 85 60;
@@ -76,14 +76,14 @@
     --chart-5: 160 70 50;
     
     /* Sidebar colors */
-    --sidebar-background: 330 45 96;
-    --sidebar-foreground: 320 30 15;
-    --sidebar-primary: 320 85 60;
-    --sidebar-primary-foreground: 330 40 98;
-    --sidebar-accent: 45 100 70;
-    --sidebar-accent-foreground: 45 100 15;
-    --sidebar-border: 325 30 85;
-    --sidebar-ring: 320 85 60;
+    --sidebar-background: 0 0 100;
+    --sidebar-foreground: 320 60 15;
+    --sidebar-primary: 320 70 25;
+    --sidebar-primary-foreground: 0 0 100;
+    --sidebar-accent: 280 60 30;
+    --sidebar-accent-foreground: 0 0 100;
+    --sidebar-border: 320 25 85;
+    --sidebar-ring: 320 70 25;
     
     --radius: 1rem;
   }
@@ -216,19 +216,20 @@
   /* Force readable text everywhere */
   .text-muted-foreground {
     color: hsl(var(--muted-foreground)) !important;
-    font-weight: 500;
+    font-weight: 600 !important;
   }
   
   /* Ensure card text is always readable */
   .card *, .card-content *, .card-header * {
     color: hsl(var(--card-foreground)) !important;
-    font-weight: 500;
+    font-weight: 600 !important;
   }
   
   /* Button text - always readable */
   button, .btn, .button {
-    font-weight: 600 !important;
+    font-weight: 700 !important;
     letter-spacing: -0.01em !important;
+    color: inherit !important;
   }
 
   /* Selection colors - Bubblegum */
