@@ -283,14 +283,81 @@ export function UnifiedContentCreator({
       setImageFile(file);
       const reader = new FileReader();
       reader.onload = (e) => {
-        setUploadedImage(e.target?.result as string);
+        const uploadedImageUrl = e.target?.result as string;
+        setUploadedImage(uploadedImageUrl);
+        
+        // Auto-apply image protection
+        applyImageProtection(uploadedImageUrl);
       };
       reader.readAsDataURL(file);
 
       toast({
         title: "Image Uploaded",
-        description: "Your image has been uploaded successfully!"
+        description: "Image uploaded and protection applied automatically!"
       });
+    }
+  };
+
+  const applyImageProtection = (imageUrl: string) => {
+    try {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const img = new Image();
+      img.onload = () => {
+        // Set canvas dimensions
+        canvas.width = img.width;
+        canvas.height = img.height;
+        
+        // Draw original image
+        ctx.drawImage(img, 0, 0);
+        
+        // Get image data for manipulation
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+
+        // Apply light protection (noise + subtle blur)
+        const noiseLevel = 8;
+        const blurLevel = 1;
+
+        // Apply noise injection
+        for (let i = 0; i < data.length; i += 4) {
+          const noise = (Math.random() - 0.5) * noiseLevel;
+          data[i] = Math.max(0, Math.min(255, data[i] + noise));     // R
+          data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + noise)); // G
+          data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + noise)); // B
+        }
+
+        // Apply subtle color shift
+        for (let i = 0; i < data.length; i += 4) {
+          const shift = (Math.random() - 0.5) * 3;
+          data[i] = Math.max(0, Math.min(255, data[i] + shift));
+          data[i + 1] = Math.max(0, Math.min(255, data[i + 1] - shift));
+          data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + shift));
+        }
+
+        // Put processed data back
+        ctx.putImageData(imageData, 0, 0);
+
+        // Apply subtle blur
+        if (blurLevel > 0) {
+          ctx.filter = `blur(${blurLevel}px)`;
+          ctx.drawImage(canvas, 0, 0);
+          ctx.filter = 'none';
+        }
+
+        // Convert to protected data URL and update the displayed image
+        const protectedDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+        setUploadedImage(protectedDataUrl);
+
+        console.log('Image protection applied automatically');
+      };
+
+      img.src = imageUrl;
+    } catch (error) {
+      console.error('Auto protection failed:', error);
+      // Continue with original image if protection fails
     }
   };
 

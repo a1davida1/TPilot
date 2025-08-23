@@ -493,6 +493,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Clean up uploaded file after converting to base64
         await fs.unlink(req.file.path).catch(console.error);
       }
+      
+      console.log('Generate unified request:', { mode, imageBase64: !!imageBase64, platform, style, theme });
 
       const result = await generateUnifiedAIContent({
         mode: mode || 'text',
