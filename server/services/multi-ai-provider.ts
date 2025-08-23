@@ -100,29 +100,12 @@ async function generateWithGemini(prompt: string) {
       setTimeout(() => reject(new Error('Gemini request timeout')), 15000); // 15 second timeout
     });
     
-    const generationPromise = gemini.models.generateContent({
-      model: "gemini-2.5-flash",
+    const generationPromise = gemini.generateContent({
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: "object",
-          properties: {
-            titles: { type: "array", items: { type: "string" } },
-            content: { type: "string" },
-            photoInstructions: {
-              type: "object",
-              properties: {
-                lighting: { type: "string" },
-                cameraAngle: { type: "string" },
-                composition: { type: "string" },
-                styling: { type: "string" },
-                mood: { type: "string" },
-                technicalSettings: { type: "string" }
-              }
-            }
-          }
-        }
+        temperature: 0.8,
+        maxOutputTokens: 1500,
+        responseMimeType: "application/json"
       }
     });
     
@@ -133,7 +116,7 @@ async function generateWithGemini(prompt: string) {
     }
     
     const text = response.response.text();
-    if (!text) {
+    if (!text || text.trim().length === 0) {
       throw new Error('No text in Gemini response');
     }
     
@@ -274,15 +257,32 @@ function calculateCost(prompt: string, content: string, provider: AIProvider): n
 function generateDemoContent(request: MultiAIRequest): MultiAIResponse {
   const { customPrompt, platform, allowsPromotion } = request;
   
-  const demoTitles = [
-    "Just had the most amazing day! ✨",
-    "Feeling confident and loving life 💫",
-    "Sometimes you just gotta shine your own light ✨"
-  ];
+  // Create context-aware demo titles based on the request
+  let demoTitles: string[];
+  let demoContent: string;
   
-  const demoContent = customPrompt 
-    ? `Here's some engaging content based on your prompt: "${customPrompt}"\n\nThis is a demo of what ThottoPilot can create for you! The actual AI would generate personalized content that matches your voice and style perfectly. ${allowsPromotion === 'yes' ? 'With promotion-friendly messaging included!' : 'Keeping things subtle and authentic.'}\n\nSign up to unlock the full AI generator with real integration! 🚀`
-    : `This is a demo of ThottoPilot's AI content generation! 🎉\n\nIn the full version, I would create personalized ${platform} content that matches your exact voice, style, and brand. Every post would be tailored to your personality profile and optimized for maximum engagement.\n\nReady to see what real AI-generated content can do for your growth? Sign up now! ✨`;
+  if (customPrompt?.includes('workout') || customPrompt?.includes('athletic') || customPrompt?.includes('fit')) {
+    demoTitles = [
+      'Post-workout glow hitting different today 💪✨',
+      'When your gym clothes make you feel unstoppable 🔥',
+      'Sweaty, strong, and feeling absolutely amazing 💦'
+    ];
+    demoContent = `Post-workout glow hitting different today 💪✨\n\nJust finished an incredible workout session and I'm feeling so strong and confident! There's something about pushing your limits that makes you appreciate what your body can do. This activewear is making me feel like I can conquer the world.\n\nWho else is feeling that post-gym high today? Drop a 💪 if you crushed your workout too!`;
+  } else if (customPrompt?.includes('shower') || customPrompt?.includes('steam')) {
+    demoTitles = [
+      'Steamy shower vibes, who\'s joining? 😉',
+      'Just me, the steam, and pure relaxation 💦',
+      'Fresh out of the shower and feeling amazing ✨'
+    ];
+    demoContent = `Steamy shower vibes, who's joining? 😉\n\nThere's something so therapeutic about a long, hot shower after a busy day. The steam, the warmth, the moment of pure relaxation - it's like hitting the reset button on everything.\n\nWhat's your favorite way to unwind? Tell me in the comments! 💭`;
+  } else {
+    demoTitles = [
+      'Feeling confident and loving every moment ✨',
+      'Just being authentically me, hope you love it 💕',
+      'Living my best life, one post at a time 🌟'
+    ];
+    demoContent = `Feeling confident and loving every moment ✨\n\nHey beautiful souls! Just wanted to share this moment with you all. There's something magical about embracing who you are and sharing that energy with people who appreciate authenticity.\n\nWhat's making you feel confident today? Let's spread some positive vibes! 💫`;
+  }
 
   return {
     titles: demoTitles,
