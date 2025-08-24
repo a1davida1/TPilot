@@ -92,8 +92,8 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
   const [user, setUser] = useState<any>(null);
   const [userTier, setUserTier] = useState<'guest' | 'free' | 'pro' | 'premium'>('guest');
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeSection, setActiveSection] = useState('generator');
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['content', 'creator-tools']));
+  const [activeSection, setActiveSection] = useState('analytics');
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['growth', 'creator-tools']));
 
   // Load user from localStorage on mount
   useEffect(() => {
