@@ -221,7 +221,7 @@ export function UnifiedContentCreator({
       const response = await fetch('/api/generate-unified', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
         },
         body: formData
       });

@@ -476,8 +476,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   // Generate content endpoint
 
+  // JWT auth middleware for generation endpoint
+  const authenticateToken = (req: any, res: any, next: any) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    try {
+      const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
+      const decoded = jwt.verify(token, JWT_SECRET);
+      req.user = decoded;
+      next();
+    } catch (error) {
+      return res.status(403).json({ error: 'Invalid token' });
+    }
+  };
+
   // Unified AI generation endpoint - handles both text and image
-  app.post('/api/generate-unified', upload.single('image'), async (req: AuthRequest, res) => {
+  app.post('/api/generate-unified', authenticateToken, upload.single('image'), async (req: AuthRequest, res) => {
     try {
       const { mode, prompt, platform, style, theme, includePromotion, customInstructions } = req.body;
       
