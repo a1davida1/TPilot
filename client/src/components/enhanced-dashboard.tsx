@@ -366,7 +366,7 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Quick Stats Dashboard */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Card className="card-hover animate-fadeIn animate-glow" style={{ animationDelay: '0.1s' }}>
+            <Card className="card-hover animate-fadeIn card-3d shimmer-overlay neon-glow stagger-1">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -386,7 +386,7 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
               </CardContent>
             </Card>
 
-            <Card className="card-hover animate-fadeIn" style={{ animationDelay: '0.2s' }}>
+            <Card className="card-hover animate-fadeIn card-3d shimmer-overlay neon-glow stagger-2">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -408,7 +408,7 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
               </CardContent>
             </Card>
 
-            <Card className="card-hover animate-fadeIn" style={{ animationDelay: '0.4s' }}>
+            <Card className="card-hover animate-fadeIn card-3d shimmer-overlay neon-glow stagger-3">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -428,7 +428,7 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
               </CardContent>
             </Card>
 
-            <Card className="card-hover animate-fadeIn" style={{ animationDelay: '0.4s' }}>
+            <Card className="card-hover animate-fadeIn card-3d shimmer-overlay neon-glow stagger-3">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>

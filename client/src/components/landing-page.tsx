@@ -346,7 +346,7 @@ export function LandingPage() {
                   type="submit"
                   disabled={isSubmitting}
                   size="lg"
-                  className="w-full btn-premium text-white font-bold text-lg py-6"
+                  className="w-full btn-premium text-white font-bold text-lg py-6 ripple-button premium-micro"
                   data-testid="button-submit"
                 >
                   {isSubmitting ? (
