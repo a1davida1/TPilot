@@ -348,7 +348,8 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
           <div data-testid="content-getting-started">
             <GettingStarted 
               userTier={userTier} 
-              onSectionSelect={(section) => setActiveSection(section)} 
+              onSectionSelect={(section) => setActiveSection(section)}
+              onSetupLater={() => setActiveSection('analytics')}
             />
           </div>
         );
