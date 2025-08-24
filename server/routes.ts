@@ -30,6 +30,7 @@ import { registerAnalyticsRoutes } from "./analytics-routes.js";
 import { createLead, confirmLead } from "./api/leads.js";
 import { getLeads } from "./api/admin-leads.js";
 import { captionRouter } from "./routes/caption.js";
+import { registerSocialMediaRoutes } from "./social-media-routes.js";
 
 // IP logging middleware
 const logUserIP = (req: any, res: any, next: any) => {
@@ -90,7 +91,7 @@ interface AuthRequest extends express.Request {
   user?: any;
 }
 
-const authenticateToken = async (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
+export const authenticateToken = async (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
@@ -1859,6 +1860,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register Analytics Routes (Phase 1)
   registerAnalyticsRoutes(app);
+
+  // Register Social Media Routes (Phase 2)
+  registerSocialMediaRoutes(app);
 
   // Register Caption Routes (2-pass Gemini pipeline)
   app.use('/api/caption', captionRouter);

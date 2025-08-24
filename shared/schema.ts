@@ -452,6 +452,87 @@ export const taxDeductionInfo = pgTable("tax_deduction_info", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// PHASE 2: Social Media Integration Tables
+export const socialMediaAccounts = pgTable("social_media_accounts", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  platform: varchar("platform", { length: 50 }).notNull(), // instagram, twitter, tiktok, youtube
+  accountId: varchar("account_id", { length: 255 }).notNull(), // Platform account ID
+  username: varchar("username", { length: 255 }).notNull(),
+  displayName: varchar("display_name", { length: 255 }),
+  profilePicture: varchar("profile_picture", { length: 500 }),
+  accessToken: varchar("access_token", { length: 1000 }),
+  refreshToken: varchar("refresh_token", { length: 1000 }),
+  tokenExpiresAt: timestamp("token_expires_at"),
+  isActive: boolean("is_active").default(true).notNull(),
+  lastSyncAt: timestamp("last_sync_at"),
+  metadata: jsonb("metadata"), // Platform-specific data
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const socialMediaPosts = pgTable("social_media_posts", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  accountId: integer("account_id").references(() => socialMediaAccounts.id).notNull(),
+  contentGenerationId: integer("content_generation_id").references(() => contentGenerations.id),
+  platform: varchar("platform", { length: 50 }).notNull(),
+  platformPostId: varchar("platform_post_id", { length: 255 }), // ID from the platform
+  content: text("content").notNull(),
+  mediaUrls: jsonb("media_urls").$type<string[]>(), // Array of media URLs
+  hashtags: jsonb("hashtags").$type<string[]>(), // Array of hashtags
+  status: varchar("status", { length: 50 }).default("draft").notNull(), // draft, scheduled, published, failed
+  scheduledAt: timestamp("scheduled_at"),
+  publishedAt: timestamp("published_at"),
+  errorMessage: text("error_message"),
+  engagement: jsonb("engagement").$type<{
+    likes: number;
+    comments: number;
+    shares: number;
+    views: number;
+    retweets?: number;
+    quotes?: number;
+  }>(),
+  lastEngagementSync: timestamp("last_engagement_sync"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const platformEngagement = pgTable("platform_engagement", {
+  id: serial("id").primaryKey(),
+  accountId: integer("account_id").references(() => socialMediaAccounts.id).notNull(),
+  platform: varchar("platform", { length: 50 }).notNull(),
+  date: timestamp("date").notNull(),
+  followers: integer("followers").default(0),
+  following: integer("following").default(0),
+  totalLikes: integer("total_likes").default(0),
+  totalComments: integer("total_comments").default(0),
+  totalShares: integer("total_shares").default(0),
+  totalViews: integer("total_views").default(0),
+  impressions: integer("impressions").default(0),
+  reach: integer("reach").default(0),
+  engagementRate: integer("engagement_rate").default(0), // Percentage * 100
+  profileViews: integer("profile_views").default(0),
+  metadata: jsonb("metadata"), // Platform-specific metrics
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const postSchedule = pgTable("post_schedule", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  contentGenerationId: integer("content_generation_id").references(() => contentGenerations.id),
+  platforms: jsonb("platforms").$type<string[]>().notNull(), // Array of platform names
+  scheduledTime: timestamp("scheduled_time").notNull(),
+  timezone: varchar("timezone", { length: 100 }).default("UTC"),
+  recurrence: varchar("recurrence", { length: 50 }), // none, daily, weekly, monthly
+  status: varchar("status", { length: 50 }).default("pending").notNull(), // pending, processing, completed, failed
+  lastExecuted: timestamp("last_executed"),
+  nextExecution: timestamp("next_execution"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // PHASE 1: Comprehensive Analytics & Tracking Tables
 
 export const userSessions = pgTable("user_sessions", {
@@ -562,6 +643,12 @@ export const expensesRelations = relations(expenses, ({ one }) => ({
   category: one(expenseCategories, { fields: [expenses.categoryId], references: [expenseCategories.id] }),
 }));
 
+// PHASE 2: Social Media Schema Validation
+export const insertSocialMediaAccountSchema = createInsertSchema(socialMediaAccounts);
+export const insertSocialMediaPostSchema = createInsertSchema(socialMediaPosts);
+export const insertPlatformEngagementSchema = createInsertSchema(platformEngagement);
+export const insertPostScheduleSchema = createInsertSchema(postSchedule);
+
 // PHASE 1: Analytics Schema Validation
 export const insertUserSessionSchema = createInsertSchema(userSessions);
 export const insertPageViewSchema = createInsertSchema(pageViews);
@@ -595,3 +682,13 @@ export type InsertExpense = z.infer<typeof insertExpenseSchema>;
 export type Expense = typeof expenses.$inferSelect;
 export type InsertTaxDeductionInfo = z.infer<typeof insertTaxDeductionInfoSchema>;
 export type TaxDeductionInfo = typeof taxDeductionInfo.$inferSelect;
+
+// PHASE 2: Social Media Types
+export type SocialMediaAccount = typeof socialMediaAccounts.$inferSelect;
+export type InsertSocialMediaAccount = z.infer<typeof insertSocialMediaAccountSchema>;
+export type SocialMediaPost = typeof socialMediaPosts.$inferSelect;
+export type InsertSocialMediaPost = z.infer<typeof insertSocialMediaPostSchema>;
+export type PlatformEngagement = typeof platformEngagement.$inferSelect;
+export type InsertPlatformEngagement = z.infer<typeof insertPlatformEngagementSchema>;
+export type PostSchedule = typeof postSchedule.$inferSelect;
+export type InsertPostSchedule = z.infer<typeof insertPostScheduleSchema>;

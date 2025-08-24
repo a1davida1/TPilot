@@ -16,6 +16,14 @@ import {
   type InsertExpense,
   type TaxDeductionInfo,
   type InsertTaxDeductionInfo,
+  type SocialMediaAccount,
+  type InsertSocialMediaAccount,
+  type SocialMediaPost,
+  type InsertSocialMediaPost,
+  type PlatformEngagement,
+  type InsertPlatformEngagement,
+  type PostSchedule,
+  type InsertPostSchedule,
   users,
   contentGenerations,
   userSamples,
@@ -23,7 +31,11 @@ import {
   userImages,
   expenseCategories,
   expenses,
-  taxDeductionInfo
+  taxDeductionInfo,
+  socialMediaAccounts,
+  socialMediaPosts,
+  platformEngagement,
+  postSchedule
 } from "@shared/schema";
 import { db } from "./db.js";
 import { eq, desc, and, gte, sql, count } from "drizzle-orm";
@@ -97,6 +109,28 @@ export interface IStorage {
   getTaxDeductionInfo(): Promise<TaxDeductionInfo[]>;
   getTaxDeductionInfoByCategory(category: string): Promise<TaxDeductionInfo[]>;
   createTaxDeductionInfo(info: InsertTaxDeductionInfo): Promise<TaxDeductionInfo>;
+
+  // Social Media operations
+  createSocialMediaAccount(account: InsertSocialMediaAccount): Promise<SocialMediaAccount>;
+  getUserSocialMediaAccounts(userId: number): Promise<SocialMediaAccount[]>;
+  getSocialMediaAccount(accountId: number): Promise<SocialMediaAccount | undefined>;
+  updateSocialMediaAccount(accountId: number, updates: Partial<SocialMediaAccount>): Promise<SocialMediaAccount>;
+  deleteSocialMediaAccount(accountId: number): Promise<void>;
+  
+  createSocialMediaPost(post: InsertSocialMediaPost): Promise<SocialMediaPost>;
+  getUserSocialMediaPosts(userId: number, filters?: { platform?: string; status?: string; limit?: number; offset?: number }): Promise<SocialMediaPost[]>;
+  getSocialMediaPost(postId: number): Promise<SocialMediaPost | undefined>;
+  updateSocialMediaPost(postId: number, updates: Partial<SocialMediaPost>): Promise<SocialMediaPost>;
+  deleteSocialMediaPost(postId: number): Promise<void>;
+  
+  createPlatformEngagement(engagement: InsertPlatformEngagement): Promise<PlatformEngagement>;
+  getPlatformEngagement(accountId: number, date?: Date): Promise<PlatformEngagement[]>;
+  
+  createPostSchedule(schedule: InsertPostSchedule): Promise<PostSchedule>;
+  getUserScheduledPosts(userId: number): Promise<PostSchedule[]>;
+  getPostSchedule(scheduleId: number): Promise<PostSchedule | undefined>;
+  updatePostSchedule(scheduleId: number, updates: Partial<PostSchedule>): Promise<PostSchedule>;
+  deletePostSchedule(scheduleId: number): Promise<void>;
 }
 
 class PostgreSQLStorage implements IStorage {
@@ -647,20 +681,17 @@ class PostgreSQLStorage implements IStorage {
 
   async getUserExpenses(userId: number, taxYear?: number): Promise<Expense[]> {
     try {
-      let query = db.select({
+      const query = db.select({
         expense: expenses,
         category: expenseCategories
       })
       .from(expenses)
       .leftJoin(expenseCategories, eq(expenses.categoryId, expenseCategories.id))
-      .where(eq(expenses.userId, userId));
-
-      if (taxYear) {
-        query = query.where(and(
-          eq(expenses.userId, userId),
-          eq(expenses.taxYear, taxYear)
-        ));
-      }
+      .where(
+        taxYear 
+          ? and(eq(expenses.userId, userId), eq(expenses.taxYear, taxYear))
+          : eq(expenses.userId, userId)
+      );
 
       const results = await query.orderBy(desc(expenses.expenseDate));
       return results.map(r => ({
@@ -709,21 +740,18 @@ class PostgreSQLStorage implements IStorage {
 
   async getExpensesByCategory(userId: number, categoryId: number, taxYear?: number): Promise<Expense[]> {
     try {
-      let query = db.select().from(expenses)
-        .where(and(
-          eq(expenses.userId, userId),
-          eq(expenses.categoryId, categoryId)
-        ));
-
+      const conditions = [
+        eq(expenses.userId, userId),
+        eq(expenses.categoryId, categoryId)
+      ];
+      
       if (taxYear) {
-        query = query.where(and(
-          eq(expenses.userId, userId),
-          eq(expenses.categoryId, categoryId),
-          eq(expenses.taxYear, taxYear)
-        ));
+        conditions.push(eq(expenses.taxYear, taxYear));
       }
 
-      return await query.orderBy(desc(expenses.expenseDate));
+      return await db.select().from(expenses)
+        .where(and(...conditions))
+        .orderBy(desc(expenses.expenseDate));
     } catch (error) {
       console.error('Error getting expenses by category:', error);
       return [];
@@ -747,21 +775,18 @@ class PostgreSQLStorage implements IStorage {
 
   async getExpenseTotals(userId: number, taxYear?: number): Promise<{ total: number; deductible: number; byCategory: { [key: string]: number } }> {
     try {
-      let query = db.select({
+      const query = db.select({
         categoryName: expenseCategories.name,
         amount: expenses.amount,
         deductionPercentage: expenses.deductionPercentage
       })
       .from(expenses)
       .leftJoin(expenseCategories, eq(expenses.categoryId, expenseCategories.id))
-      .where(eq(expenses.userId, userId));
-
-      if (taxYear) {
-        query = query.where(and(
-          eq(expenses.userId, userId),
-          eq(expenses.taxYear, taxYear)
-        ));
-      }
+      .where(
+        taxYear 
+          ? and(eq(expenses.userId, userId), eq(expenses.taxYear, taxYear))
+          : eq(expenses.userId, userId)
+      );
 
       const results = await query;
       
@@ -814,6 +839,215 @@ class PostgreSQLStorage implements IStorage {
       return result;
     } catch (error) {
       console.error('Error creating tax deduction info:', error);
+      throw error;
+    }
+  }
+
+  // Social Media operations
+  async createSocialMediaAccount(account: InsertSocialMediaAccount): Promise<SocialMediaAccount> {
+    try {
+      const [result] = await db.insert(socialMediaAccounts).values(account).returning();
+      return result;
+    } catch (error) {
+      console.error('Error creating social media account:', error);
+      throw error;
+    }
+  }
+
+  async getUserSocialMediaAccounts(userId: number): Promise<SocialMediaAccount[]> {
+    try {
+      return await db.select().from(socialMediaAccounts)
+        .where(eq(socialMediaAccounts.userId, userId))
+        .orderBy(desc(socialMediaAccounts.createdAt));
+    } catch (error) {
+      console.error('Error getting user social media accounts:', error);
+      return [];
+    }
+  }
+
+  async getSocialMediaAccount(accountId: number): Promise<SocialMediaAccount | undefined> {
+    try {
+      const [result] = await db.select().from(socialMediaAccounts)
+        .where(eq(socialMediaAccounts.id, accountId))
+        .limit(1);
+      return result;
+    } catch (error) {
+      console.error('Error getting social media account:', error);
+      return undefined;
+    }
+  }
+
+  async updateSocialMediaAccount(accountId: number, updates: Partial<SocialMediaAccount>): Promise<SocialMediaAccount> {
+    try {
+      const [result] = await db.update(socialMediaAccounts)
+        .set({ ...updates, updatedAt: new Date() })
+        .where(eq(socialMediaAccounts.id, accountId))
+        .returning();
+      return result;
+    } catch (error) {
+      console.error('Error updating social media account:', error);
+      throw error;
+    }
+  }
+
+  async deleteSocialMediaAccount(accountId: number): Promise<void> {
+    try {
+      await db.delete(socialMediaAccounts).where(eq(socialMediaAccounts.id, accountId));
+    } catch (error) {
+      console.error('Error deleting social media account:', error);
+      throw error;
+    }
+  }
+
+  async createSocialMediaPost(post: InsertSocialMediaPost): Promise<SocialMediaPost> {
+    try {
+      const [result] = await db.insert(socialMediaPosts).values(post).returning();
+      return result;
+    } catch (error) {
+      console.error('Error creating social media post:', error);
+      throw error;
+    }
+  }
+
+  async getUserSocialMediaPosts(
+    userId: number, 
+    filters?: { platform?: string; status?: string; limit?: number; offset?: number }
+  ): Promise<SocialMediaPost[]> {
+    try {
+      const { platform, status, limit = 50, offset = 0 } = filters || {};
+      
+      let query = db.select().from(socialMediaPosts)
+        .where(eq(socialMediaPosts.userId, userId));
+
+      if (platform) {
+        query = query.where(eq(socialMediaPosts.platform, platform));
+      }
+      
+      if (status) {
+        query = query.where(eq(socialMediaPosts.status, status));
+      }
+
+      return await query
+        .orderBy(desc(socialMediaPosts.createdAt))
+        .limit(limit)
+        .offset(offset);
+    } catch (error) {
+      console.error('Error getting user social media posts:', error);
+      return [];
+    }
+  }
+
+  async getSocialMediaPost(postId: number): Promise<SocialMediaPost | undefined> {
+    try {
+      const [result] = await db.select().from(socialMediaPosts)
+        .where(eq(socialMediaPosts.id, postId))
+        .limit(1);
+      return result;
+    } catch (error) {
+      console.error('Error getting social media post:', error);
+      return undefined;
+    }
+  }
+
+  async updateSocialMediaPost(postId: number, updates: Partial<SocialMediaPost>): Promise<SocialMediaPost> {
+    try {
+      const [result] = await db.update(socialMediaPosts)
+        .set({ ...updates, updatedAt: new Date() })
+        .where(eq(socialMediaPosts.id, postId))
+        .returning();
+      return result;
+    } catch (error) {
+      console.error('Error updating social media post:', error);
+      throw error;
+    }
+  }
+
+  async deleteSocialMediaPost(postId: number): Promise<void> {
+    try {
+      await db.delete(socialMediaPosts).where(eq(socialMediaPosts.id, postId));
+    } catch (error) {
+      console.error('Error deleting social media post:', error);
+      throw error;
+    }
+  }
+
+  async createPlatformEngagement(engagement: InsertPlatformEngagement): Promise<PlatformEngagement> {
+    try {
+      const [result] = await db.insert(platformEngagement).values(engagement).returning();
+      return result;
+    } catch (error) {
+      console.error('Error creating platform engagement:', error);
+      throw error;
+    }
+  }
+
+  async getPlatformEngagement(accountId: number, date?: Date): Promise<PlatformEngagement[]> {
+    try {
+      let query = db.select().from(platformEngagement)
+        .where(eq(platformEngagement.accountId, accountId));
+
+      if (date) {
+        query = query.where(eq(platformEngagement.date, date));
+      }
+
+      return await query.orderBy(desc(platformEngagement.date));
+    } catch (error) {
+      console.error('Error getting platform engagement:', error);
+      return [];
+    }
+  }
+
+  async createPostSchedule(schedule: InsertPostSchedule): Promise<PostSchedule> {
+    try {
+      const [result] = await db.insert(postSchedule).values(schedule).returning();
+      return result;
+    } catch (error) {
+      console.error('Error creating post schedule:', error);
+      throw error;
+    }
+  }
+
+  async getUserScheduledPosts(userId: number): Promise<PostSchedule[]> {
+    try {
+      return await db.select().from(postSchedule)
+        .where(eq(postSchedule.userId, userId))
+        .orderBy(desc(postSchedule.scheduledTime));
+    } catch (error) {
+      console.error('Error getting user scheduled posts:', error);
+      return [];
+    }
+  }
+
+  async getPostSchedule(scheduleId: number): Promise<PostSchedule | undefined> {
+    try {
+      const [result] = await db.select().from(postSchedule)
+        .where(eq(postSchedule.id, scheduleId))
+        .limit(1);
+      return result;
+    } catch (error) {
+      console.error('Error getting post schedule:', error);
+      return undefined;
+    }
+  }
+
+  async updatePostSchedule(scheduleId: number, updates: Partial<PostSchedule>): Promise<PostSchedule> {
+    try {
+      const [result] = await db.update(postSchedule)
+        .set({ ...updates, updatedAt: new Date() })
+        .where(eq(postSchedule.id, scheduleId))
+        .returning();
+      return result;
+    } catch (error) {
+      console.error('Error updating post schedule:', error);
+      throw error;
+    }
+  }
+
+  async deletePostSchedule(scheduleId: number): Promise<void> {
+    try {
+      await db.delete(postSchedule).where(eq(postSchedule.id, scheduleId));
+    } catch (error) {
+      console.error('Error deleting post schedule:', error);
       throw error;
     }
   }
