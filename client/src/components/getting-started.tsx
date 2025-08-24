@@ -19,6 +19,7 @@ import {
   FileText,
   Camera
 } from 'lucide-react';
+import { ThottoPilotLogo } from '@/components/thottopilot-logo';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface GettingStartedProps {
@@ -192,9 +193,12 @@ export function GettingStarted({ userTier = 'free', onSectionSelect }: GettingSt
           <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl shadow-lg">
             <Sparkles className="h-8 w-8 text-white" />
           </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-            Welcome to ThottoPilot
-          </h1>
+          <div className="flex items-center space-x-3">
+            <ThottoPilotLogo size="lg" className="h-10 w-10" />
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              Welcome to ThottoPilot
+            </h1>
+          </div>
         </div>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
           Your complete platform for content creation, protection, and monetization. Let's get you started!
