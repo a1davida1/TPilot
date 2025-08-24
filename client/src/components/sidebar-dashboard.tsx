@@ -46,7 +46,8 @@ import {
   FileText,
   Calculator,
   Globe,
-  Smartphone
+  Smartphone,
+  PlayCircle
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UnifiedContentCreator } from "@/components/unified-content-creator";
@@ -62,6 +63,7 @@ import { ProPerks } from "@/components/pro-perks";
 import { ImageProtector } from "@/components/image-protector";
 import { AdminPortal } from "@/components/admin-portal";
 import TaxTracker from "@/pages/tax-tracker";
+import { GettingStarted } from "@/components/getting-started";
 import { cn } from "@/lib/utils";
 import {
   Breadcrumb,
@@ -133,6 +135,16 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
   const isAdmin = user?.username === 'admin' || user?.isAdmin || user?.email === 'admin@thottopilot.com';
 
   const menuItems = [
+    {
+      id: 'getting-started',
+      label: 'Getting Started',
+      icon: <BookOpen className="h-4 w-4" />,
+      items: [
+        { id: 'getting-started', label: 'Setup Guide', icon: <Sparkles className="h-4 w-4" />, badge: 'Start Here' },
+        { id: 'tutorials', label: 'Video Tutorials', icon: <PlayCircle className="h-4 w-4" />, badge: 'Learn' },
+        { id: 'quick-start', label: 'Quick Actions', icon: <Zap className="h-4 w-4" />, badge: 'Fast' },
+      ]
+    },
     {
       id: 'creator-tools',
       label: 'Creator Tools',
@@ -332,6 +344,16 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
       case 'perks':
         return <ProPerks userTier={userTier} />;
 
+      case 'getting-started':
+        return (
+          <div data-testid="content-getting-started">
+            <GettingStarted 
+              userTier={userTier} 
+              onSectionSelect={(section) => setActiveTab(section)} 
+            />
+          </div>
+        );
+      
       case 'tax':
         return <TaxTracker />;
 
