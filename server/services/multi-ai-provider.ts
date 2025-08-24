@@ -282,8 +282,6 @@ function generateDemoContent(request: MultiAIRequest): MultiAIResponse {
   // Use the style parameter sent from the frontend (preset ID) as the primary source
   const contentStyle = requestStyle || user?.personalityProfile?.contentStyle || '';
   
-  console.log('generateDemoContent - contentStyle:', contentStyle, 'requestStyle:', requestStyle);
-  
   // Create context-aware demo titles based on the preset style
   let demoTitles: string[];
   let demoContent: string;
