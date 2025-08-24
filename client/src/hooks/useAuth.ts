@@ -13,24 +13,18 @@ interface User {
 
 export function useAuth() {
   const [token, setToken] = useState<string | null>(
-    () => localStorage.getItem('authToken')
+    () => {
+      const storedToken = localStorage.getItem('authToken');
+      console.log('Stored auth token:', storedToken ? 'Found' : 'Not found');
+      return storedToken;
+    }
   );
 
   const { data: user, isLoading, error, refetch } = useQuery<User>({
     queryKey: ['/api/auth/user'],
     queryFn: async () => {
-      // Try session-based auth first (for existing users)
-      const response = await fetch('/api/auth/user', {
-        credentials: 'include' // Include cookies for session-based auth
-      });
-      
-      if (response.ok) {
-        const userData = await response.json();
-        return userData;
-      }
-      
-      // If session auth fails and we have a token, try token-based auth
-      if (token && response.status === 401) {
+      // If we have a token, try token-based auth first
+      if (token) {
         const tokenResponse = await fetch('/api/auth/user', {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -48,6 +42,16 @@ export function useAuth() {
           setToken(null);
           throw new Error('Token expired');
         }
+      }
+      
+      // Try session-based auth as fallback
+      const response = await fetch('/api/auth/user', {
+        credentials: 'include' // Include cookies for session-based auth
+      });
+      
+      if (response.ok) {
+        const userData = await response.json();
+        return userData;
       }
       
       throw new Error('Not authenticated');
@@ -79,12 +83,36 @@ export function useAuth() {
     }
   };
 
+  // Quick admin login function for testing
+  const quickAdminLogin = async () => {
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: 'admin@thottopilot.com',
+          password: 'admin123'
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        login(data.token, data.user);
+      }
+    } catch (error) {
+      console.error('Quick login failed:', error);
+    }
+  };
+
   return {
     user,
     isLoading,
     isAuthenticated: !!user && !error,
     login,
     logout,
-    token
+    token,
+    quickAdminLogin
   };
 }
