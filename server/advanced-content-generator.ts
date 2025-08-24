@@ -153,6 +153,26 @@ const textToneStyles = {
 
 // Generate content based on all parameters
 export function generateAdvancedContent(params: ContentParameters): GeneratedContent {
+  // Check if this is a preset request and use preset variations
+  const presetVariation = getRandomPresetVariation(params.style);
+  if (presetVariation) {
+    console.log(`🎯 Using preset variation for: ${params.style}`);
+    return {
+      titles: presetVariation.titles,
+      content: presetVariation.content,
+      photoInstructions: {
+        lighting: presetVariation.photoInstructions.lighting,
+        angles: presetVariation.photoInstructions.cameraAngle,
+        composition: presetVariation.photoInstructions.composition,
+        styling: presetVariation.photoInstructions.styling,
+        technical: presetVariation.photoInstructions.technicalSettings,
+        sceneSetup: presetVariation.photoInstructions.mood
+      },
+      tags: ['preset-content', params.style, params.platform]
+    };
+  }
+
+  // Fallback to existing system for non-preset requests
   const photoConfig = photoTypeVariations[params.photoType] || photoTypeVariations['casual'];
   const toneStyle = textToneStyles[params.textTone] || textToneStyles['authentic'];
   
@@ -174,6 +194,264 @@ export function generateAdvancedContent(params: ContentParameters): GeneratedCon
     photoInstructions,
     tags
   };
+}
+
+// Helper function to get random preset variation
+function getRandomPresetVariation(presetId: string): any {
+  const presetVariations: Record<string, any[]> = {
+    'nude-photos': [
+      {
+        titles: ["Embracing my natural beauty today 💋", "Confidence level: absolutely stunning ✨", "Art meets body, beauty meets soul 🌸"],
+        content: "There's something incredibly empowering about celebrating your natural form. Today I'm embracing every curve, every line, and feeling absolutely radiant. Art has always been about truth, and this is mine.",
+        photoInstructions: {
+          lighting: "Soft, flattering natural light or warm studio lighting",
+          cameraAngle: "Artistic angles that celebrate the human form",
+          composition: "Classical art-inspired compositions with tasteful framing",
+          styling: "Natural beauty with minimal styling - let authenticity shine",
+          mood: "Confident, artistic, and genuinely empowered",
+          technicalSettings: "Shallow depth of field with artistic bokeh"
+        }
+      },
+      {
+        titles: ["Golden hour goddess energy ☀️", "When light meets skin perfectly ✨", "Natural beauty in its purest form 🌅"],
+        content: "The golden hour brings out something magical - that perfect interplay of light and shadow that makes everything feel ethereal. Capturing these moments of pure, unfiltered beauty.",
+        photoInstructions: {
+          lighting: "Golden hour or warm sunset lighting",
+          cameraAngle: "Silhouette and rim lighting focused angles",
+          composition: "Backlit compositions with dramatic lighting effects",
+          styling: "Minimal styling to showcase natural beauty",
+          mood: "Ethereal, goddess-like, and naturally radiant",
+          technicalSettings: "Backlit settings with controlled exposure"
+        }
+      },
+      {
+        titles: ["Artistic expression knows no bounds 🎨", "When photography becomes pure art ✨", "Creative freedom and beautiful forms 💫"],
+        content: "Art doesn't follow rules - it creates them. This is about pushing creative boundaries and celebrating the human form as the masterpiece it is. Every shot tells a story of confidence and artistic vision.",
+        photoInstructions: {
+          lighting: "Dramatic artistic lighting with creative shadows",
+          cameraAngle: "Avant-garde and experimental perspectives",
+          composition: "Rule-breaking artistic compositions",
+          styling: "Artistic expression through minimal styling",
+          mood: "Creatively bold and artistically free",
+          technicalSettings: "Creative lighting and shadow play techniques"
+        }
+      },
+      {
+        titles: ["Vulnerability is strength ✨", "Raw beauty and honest moments 💕", "Authentic self-expression at its finest 🌸"],
+        content: "There's incredible strength in vulnerability. These intimate moments capture something real and honest - no masks, no pretense, just authentic beauty and genuine confidence.",
+        photoInstructions: {
+          lighting: "Soft, intimate lighting that enhances vulnerability",
+          cameraAngle: "Close, intimate angles that show genuine emotion",
+          composition: "Honest, authentic compositions",
+          styling: "Natural, unposed styling that feels genuine",
+          mood: "Vulnerable, honest, and beautifully authentic",
+          technicalSettings: "Soft focus with warm, intimate tones"
+        }
+      },
+      {
+        titles: ["Celebrating feminine power 👑", "Strong, beautiful, and unapologetic 💪", "Owning my space and loving it ✨"],
+        content: "Femininity is power. These shots celebrate everything that makes us strong, beautiful, and uniquely ourselves. No apologies, no compromises - just pure feminine energy.",
+        photoInstructions: {
+          lighting: "Strong, empowering lighting that shows confidence",
+          cameraAngle: "Powerful angles that emphasize strength",
+          composition: "Bold compositions showing feminine power",
+          styling: "Confident styling that showcases strength",
+          mood: "Powerfully feminine and unapologetically bold",
+          technicalSettings: "High contrast lighting for dramatic impact"
+        }
+      },
+      {
+        titles: ["Morning light and gentle moments ☀️", "Soft skin, softer light, purest beauty 💕", "When daybreak meets natural grace ✨"],
+        content: "Morning light has this magical quality - it's gentle, honest, and incredibly flattering. These quiet dawn moments capture beauty in its most natural, unguarded state.",
+        photoInstructions: {
+          lighting: "Soft morning light through windows",
+          cameraAngle: "Gentle, flattering morning angles",
+          composition: "Peaceful, serene compositions",
+          styling: "Natural morning beauty with minimal styling",
+          mood: "Serene, peaceful, and naturally beautiful",
+          technicalSettings: "Soft, natural light with warm tones"
+        }
+      },
+      {
+        titles: ["Shadow and light dance together 🌙", "Mysterious beauty in black and white ✨", "When darkness meets luminescence 🖤"],
+        content: "There's something captivating about the interplay of shadow and light. These moody shots explore the mysterious side of beauty - what's hidden can be just as powerful as what's revealed.",
+        photoInstructions: {
+          lighting: "Dramatic low-key lighting with strategic shadows",
+          cameraAngle: "Mysterious angles that play with light and shadow",
+          composition: "Chiaroscuro-inspired compositions",
+          styling: "Minimal styling that emphasizes light and shadow",
+          mood: "Mysterious, dramatic, and captivatingly moody",
+          technicalSettings: "Low-key lighting with high contrast"
+        }
+      },
+      {
+        titles: ["Timeless elegance never fades 💎", "Classic beauty meets modern confidence ✨", "Sophistication in its purest form 👑"],
+        content: "Some things never go out of style. These shots capture timeless elegance - the kind of beauty that transcends trends and speaks to something deeper and more enduring.",
+        photoInstructions: {
+          lighting: "Classic, elegant lighting schemes",
+          cameraAngle: "Timeless portrait angles with modern flair",
+          composition: "Classical compositions with contemporary edge",
+          styling: "Elegant, sophisticated minimal styling",
+          mood: "Timelessly elegant and sophisticatedly beautiful",
+          technicalSettings: "Classic portraiture with modern technique"
+        }
+      },
+      {
+        titles: ["Free spirit, wild heart 🦋", "Untamed beauty in natural settings ✨", "When wilderness meets feminine grace 🌿"],
+        content: "Breaking free from conventions and embracing the wild side of beauty. These natural moments capture something untamed and authentic - beauty without boundaries.",
+        photoInstructions: {
+          lighting: "Natural outdoor lighting in wild settings",
+          cameraAngle: "Free-flowing, natural angles",
+          composition: "Organic, unposed compositions in nature",
+          styling: "Natural, free-spirited minimal styling",
+          mood: "Wild, free, and naturally uninhibited",
+          technicalSettings: "Natural light with organic, flowing compositions"
+        }
+      },
+      {
+        titles: ["Confidence is my best accessory 💋", "Owning every moment with style ✨", "Self-love looks good on me 💕"],
+        content: "The best outfit is confidence, and I wear it well. These shots are about celebrating self-love, body positivity, and the incredible power of knowing your worth.",
+        photoInstructions: {
+          lighting: "Confident, flattering lighting that enhances self-assurance",
+          cameraAngle: "Strong, confident angles that show self-possession",
+          composition: "Bold compositions that command attention",
+          styling: "Confident minimal styling that lets personality shine",
+          mood: "Confidently self-assured and positively radiant",
+          technicalSettings: "Bold, clear lighting with strong presence"
+        }
+      }
+    ],
+    'shower-content': [
+      {
+        titles: ["Steam, skin, and pure relaxation 💦", "Washing away the day in style ✨", "Hot water and hotter vibes 🔥"],
+        content: "There's something incredibly therapeutic about a steamy shower - the warmth, the steam, the moment of pure relaxation. These intimate bathroom moments capture that perfect blend of sensuality and serenity.",
+        photoInstructions: {
+          lighting: "Soft, steamy bathroom lighting with warm tones",
+          cameraAngle: "Intimate angles through steam and water droplets",
+          composition: "Steam-enhanced compositions with water elements",
+          styling: "Natural wet-hair styling with minimal makeup",
+          mood: "Sensual, relaxed, and intimately peaceful",
+          technicalSettings: "Soft focus through steam with warm color temperature"
+        }
+      },
+      {
+        titles: ["Water droplets and morning rituals ☀️", "Fresh start, fresh skin, fresh energy 💧", "Morning shower = instant glow-up ✨"],
+        content: "Morning showers hit different - they're about renewal, fresh starts, and that incredible feeling of being completely clean and ready for anything. Pure morning energy.",
+        photoInstructions: {
+          lighting: "Bright morning light in clean bathroom setting",
+          cameraAngle: "Fresh, energizing angles showing morning routine",
+          composition: "Clean, bright compositions with water elements",
+          styling: "Fresh-faced morning styling",
+          mood: "Energetic, fresh, and morning-bright",
+          technicalSettings: "Clean, bright lighting with crisp details"
+        }
+      },
+      {
+        titles: ["Candlelit baths and wine nights 🕯️", "Self-care Sunday in full effect 🛁", "Bubbles, candles, and me time ✨"],
+        content: "Self-care isn't selfish - it's essential. These luxurious bath moments are about taking time for yourself, creating that perfect atmosphere of relaxation and indulgence.",
+        photoInstructions: {
+          lighting: "Warm candlelight with soft ambient lighting",
+          cameraAngle: "Luxurious angles showing self-care rituals",
+          composition: "Spa-like compositions with candles and bubbles",
+          styling: "Relaxed, pampered styling",
+          mood: "Luxurious, self-caring, and indulgently peaceful",
+          technicalSettings: "Warm, soft lighting with romantic ambiance"
+        }
+      },
+      {
+        titles: ["After-workout shower bliss 💪", "Sweaty to sparkling in 10 minutes ✨", "Post-gym glow-up in progress 🚿"],
+        content: "That post-workout shower is pure heaven - washing away the sweat and feeling that incredible post-exercise endorphin rush. Clean skin, clear mind, unstoppable energy.",
+        photoInstructions: {
+          lighting: "Clean, energizing lighting showing post-workout freshness",
+          cameraAngle: "Athletic angles showing fitness and cleanliness",
+          composition: "Energetic compositions with water and movement",
+          styling: "Athletic, post-workout natural styling",
+          mood: "Energetic, accomplished, and athletically fresh",
+          technicalSettings: "Dynamic lighting capturing energy and movement"
+        }
+      },
+      {
+        titles: ["Glass doors and artistic reflections 🪞", "When shower becomes art installation ✨", "Reflections of beauty through steam 💧"],
+        content: "Sometimes the most artistic shots happen in unexpected places. These glass shower moments play with reflections, steam, and transparency to create something truly artistic.",
+        photoInstructions: {
+          lighting: "Artistic lighting playing with glass and reflections",
+          cameraAngle: "Creative angles using glass doors and mirrors",
+          composition: "Artistic compositions with reflections and transparency",
+          styling: "Artistically minimal styling",
+          mood: "Artistically creative and visually stunning",
+          technicalSettings: "Creative lighting with reflection and transparency effects"
+        }
+      },
+      {
+        titles: ["Rainfall shower = pure heaven ☔", "When water pressure meets pure bliss 💆", "Natural waterfall vibes at home ✨"],
+        content: "There's nothing quite like a powerful rainfall shower - it's like standing under a gentle waterfall, letting all the stress wash away. Pure hydrotherapy at its finest.",
+        photoInstructions: {
+          lighting: "Natural lighting simulating outdoor rainfall",
+          cameraAngle: "Angles that show the cascade of water",
+          composition: "Waterfall-inspired compositions",
+          styling: "Natural, water-enhanced styling",
+          mood: "Naturally refreshing and waterfall-peaceful",
+          technicalSettings: "Lighting that enhances water cascade effects"
+        }
+      },
+      {
+        titles: ["Midnight shower confessions 🌙", "3am thoughts and hot water therapy 💭", "When darkness meets cleansing rituals ✨"],
+        content: "Late-night showers hit different - they're contemplative, peaceful, and somehow more intimate. These quiet midnight moments are about solitude and self-reflection.",
+        photoInstructions: {
+          lighting: "Moody, low-key nighttime bathroom lighting",
+          cameraAngle: "Contemplative angles in dim lighting",
+          composition: "Moody, nighttime compositions",
+          styling: "Natural, nighttime minimal styling",
+          mood: "Contemplative, peaceful, and midnight-intimate",
+          technicalSettings: "Low-key lighting with mysterious atmosphere"
+        }
+      },
+      {
+        titles: ["Luxury spa vibes at home 🧖‍♀️", "5-star treatment in my own bathroom ✨", "Hotel suite energy, home comfort 🏨"],
+        content: "Creating that luxury spa experience at home - high-end bath products, perfect lighting, and that feeling of complete indulgence. Sometimes you just need to treat yourself like royalty.",
+        photoInstructions: {
+          lighting: "Luxury spa-style lighting",
+          cameraAngle: "High-end, luxurious angles",
+          composition: "Spa-like compositions with luxury elements",
+          styling: "Luxurious, spa-quality styling",
+          mood: "Luxuriously pampered and spa-serene",
+          technicalSettings: "High-end lighting creating luxury atmosphere"
+        }
+      },
+      {
+        titles: ["Ocean vibes in my shower 🌊", "Salt scrubs and sea-inspired rituals ✨", "Bringing the beach to my bathroom 🏖️"],
+        content: "Channeling those ocean vibes with sea salt scrubs and marine-inspired bath rituals. Sometimes you need to bring the beach to you - salt, steam, and sea goddess energy.",
+        photoInstructions: {
+          lighting: "Ocean-inspired lighting with blue and aqua tones",
+          cameraAngle: "Flowing, wave-like angles",
+          composition: "Ocean-inspired compositions with flowing water",
+          styling: "Beach-goddess natural styling",
+          mood: "Ocean-peaceful and sea-goddess divine",
+          technicalSettings: "Blue-toned lighting with flowing water effects"
+        }
+      },
+      {
+        titles: ["Quick rinse, major glow-up ✨", "5-minute shower, 100% refreshed 💦", "Efficiency meets luxury perfectly 🚿"],
+        content: "Sometimes you only have 5 minutes, but that doesn't mean you can't make it count. These quick shower moments are about maximum refreshment in minimum time - efficient luxury.",
+        photoInstructions: {
+          lighting: "Quick, efficient yet flattering lighting",
+          cameraAngle: "Dynamic angles showing speed and efficiency",
+          composition: "Fast-paced yet beautiful compositions",
+          styling: "Quick, efficient natural styling",
+          mood: "Efficiently refreshed and quickly beautiful",
+          technicalSettings: "Dynamic lighting capturing swift beauty"
+        }
+      }
+    ]
+    // ... Continue with remaining presets (workout-clothes, lingerie, casual-tease, bedroom-scene, outdoor-adventure, professional-tease)
+  };
+  
+  const variations = presetVariations[presetId];
+  if (!variations || variations.length === 0) {
+    return null;
+  }
+  const randomIndex = Math.floor(Math.random() * variations.length);
+  return variations[randomIndex];
 }
 
 function generateTitles(params: ContentParameters, photoConfig: any, toneStyle: any): string[] {
