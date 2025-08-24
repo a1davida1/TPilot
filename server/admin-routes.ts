@@ -9,25 +9,17 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-i
 export function setupAdminRoutes(app: Express) {
   // Admin middleware to check if user is admin
   const requireAdmin = (req: any, res: any, next: any) => {
-    const token = req.headers.authorization?.split(' ')[1];
-    
-    if (!token) {
+    // Check if user is authenticated via session (same as other protected routes)
+    if (!req.isAuthenticated || !req.isAuthenticated()) {
       return res.status(401).json({ message: 'Admin access required' });
     }
 
-    try {
-      const decoded = jwt.verify(token, JWT_SECRET) as any;
-      
-      // Check if user is admin (ID 999 or has admin role)
-      if (decoded.id !== 999 && decoded.username !== 'admin') {
-        return res.status(403).json({ message: 'Admin access required' });
-      }
-      
-      req.admin = decoded;
-      next();
-    } catch (error) {
-      return res.status(401).json({ message: 'Invalid token' });
+    // Check if user is admin (ID 999 or username 'admin')
+    if (req.user?.id !== 999 && req.user?.username !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
     }
+
+    next();
   };
 
   // Get platform statistics
