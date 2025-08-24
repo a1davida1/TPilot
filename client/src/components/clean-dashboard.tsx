@@ -81,13 +81,6 @@ export function CleanDashboard({ isGuestMode = false, user, userTier = 'free' }:
               </div>
             )}
             
-            {/* Classic Engagement Stats - Restore the classic look */}
-            {!isGuestMode && (
-              <div className="mb-8">
-                <EngagementStats />
-              </div>
-            )}
-            
             <GettingStarted 
               userTier={userTier} 
               onSectionSelect={(section) => setActiveSection(section)} 
