@@ -28,9 +28,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface GettingStartedProps {
   userTier?: 'guest' | 'free' | 'pro' | 'premium';
   onSectionSelect?: (section: string) => void;
+  isAtBottom?: boolean;
+  onSetupLater?: () => void;
 }
 
-export function GettingStarted({ userTier = 'free', onSectionSelect }: GettingStartedProps) {
+export function GettingStarted({ userTier = 'free', onSectionSelect, isAtBottom = false, onSetupLater }: GettingStartedProps) {
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
   const [activeStep, setActiveStep] = useState<string | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
@@ -222,7 +224,18 @@ export function GettingStarted({ userTier = 'free', onSectionSelect }: GettingSt
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-8">
+    <motion.div 
+      className="max-w-4xl mx-auto p-6 space-y-8"
+      layout
+      initial={false}
+      animate={{
+        y: isAtBottom ? 0 : 0,
+      }}
+      transition={{
+        duration: 0.5,
+        ease: "easeInOut"
+      }}
+    >
       {/* Welcome Header */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
@@ -264,7 +277,9 @@ export function GettingStarted({ userTier = 'free', onSectionSelect }: GettingSt
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setIsMinimized(true)}
+                  onClick={() => {
+                    onSetupLater?.();
+                  }}
                   className="h-8 px-3 text-xs hover:bg-purple-100 flex items-center space-x-1"
                 >
                   <EyeOff className="h-3 w-3" />
@@ -445,6 +460,6 @@ export function GettingStarted({ userTier = 'free', onSectionSelect }: GettingSt
           </Card>
         </motion.div>
       )}
-    </div>
+    </motion.div>
   );
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from "react";
+import { motion } from "framer-motion";
 import { GenerationPanel } from "@/components/generation-panel";
 import { PhotoInstructions } from "@/components/photo-instructions";
 import { AIGenerator } from "@/components/ai-generator";
@@ -18,6 +19,7 @@ import { ConversionOptimization } from "@/components/conversion-optimization";
 import { EnhancedDashboard } from "@/components/enhanced-dashboard";
 import { OnboardingWalkthrough } from "@/components/onboarding-walkthrough";
 import { useOnboarding } from "@/hooks/useOnboarding";
+import { GettingStarted } from "@/components/getting-started";
 
 export default function Dashboard() {
   const [currentGeneration, setCurrentGeneration] = useState<ContentGeneration | null>(null);
@@ -25,6 +27,8 @@ export default function Dashboard() {
   const [location] = useLocation();
   const { user, isLoading, isAuthenticated } = useAuth();
   const { shouldShowOnboarding, markWalkthroughCompleted, showOnboarding } = useOnboarding();
+  const [gettingStartedAtBottom, setGettingStartedAtBottom] = useState(false);
+  const [showGettingStarted, setShowGettingStarted] = useState(true);
 
   // Check for guest mode
   useEffect(() => {
@@ -69,6 +73,23 @@ export default function Dashboard() {
           </div>
         }>
           <div className="space-y-8">
+            {/* Getting Started - Top Position */}
+            {showGettingStarted && !gettingStartedAtBottom && !isGuestMode && (
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                transition={{ duration: 0.5 }}
+              >
+                <GettingStarted 
+                  userTier={user?.tier || 'free'}
+                  onSetupLater={() => {
+                    setGettingStartedAtBottom(true);
+                  }}
+                />
+              </motion.div>
+            )}
+
             {/* Generation Counter */}
             {!isGuestMode && (
               <div className="w-fit">
@@ -140,6 +161,23 @@ export default function Dashboard() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Getting Started - Bottom Position */}
+            {showGettingStarted && gettingStartedAtBottom && !isGuestMode && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+              >
+                <GettingStarted 
+                  userTier={user?.tier || 'free'}
+                  isAtBottom={true}
+                  onSetupLater={() => {
+                    setShowGettingStarted(false);
+                  }}
+                />
+              </motion.div>
+            )}
           </div>
         </Suspense>
       </div>
