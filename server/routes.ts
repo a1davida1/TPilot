@@ -242,42 +242,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/auth/user", authenticateToken, async (req: AuthRequest, res) => {
+  app.get("/api/auth/user", async (req: any, res) => {
     try {
       console.log('Auth user request - req.user:', req.user);
       
-      // Handle admin user case
-      if (req.user?.isAdmin || req.user?.id === 999) {
-        console.log('Returning admin user');
+      // Try session-based authentication first (Passport.js)
+      if (req.isAuthenticated && req.isAuthenticated()) {
+        console.log('User authenticated via session:', req.user);
+        
+        // Handle admin user case
+        if (req.user?.isAdmin || req.user?.id === 999) {
+          return res.json({
+            id: 999,
+            email: 'admin@thottopilot.com',
+            username: 'admin',
+            tier: 'pro',
+            isAdmin: true
+          });
+        }
+
+        // Handle regular session user
+        const userId = req.user?.userId || req.user?.id;
+        if (userId) {
+          const user = await storage.getUser(userId);
+          if (user) {
+            const { password: _, ...userResponse } = user;
+            return res.json({
+              ...userResponse,
+              tier: userResponse.tier || 'free'
+            });
+          }
+        }
+        
+        // Fallback to session user data if storage lookup fails
         return res.json({
-          id: 999,
-          email: 'admin@thottopilot.com',
-          username: 'admin',
-          tier: 'pro',
-          isAdmin: true
+          ...req.user,
+          tier: req.user?.tier || 'free'
         });
       }
-
-      // Handle regular user - JWT token contains either 'id' or 'userId'
-      const userId = req.user?.userId || req.user?.id;
-      console.log('Looking for regular user with ID:', userId);
       
-      if (!userId) {
-        return res.status(400).json({ message: 'No user ID in token' });
+      // Try JWT token authentication as fallback
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        
+        try {
+          const decoded = jwt.verify(token, JWT_SECRET) as any;
+          console.log('JWT token verified:', decoded);
+          
+          // Handle admin user case
+          if (decoded?.isAdmin || decoded?.id === 999) {
+            return res.json({
+              id: 999,
+              email: 'admin@thottopilot.com',
+              username: 'admin',
+              tier: 'pro',
+              isAdmin: true
+            });
+          }
+
+          // Handle regular user - JWT token contains either 'id' or 'userId'
+          const userId = decoded?.userId || decoded?.id;
+          if (userId) {
+            const user = await storage.getUser(userId);
+            if (user) {
+              const { password: _, ...userResponse } = user;
+              return res.json({
+                ...userResponse,
+                tier: userResponse.tier || 'free'
+              });
+            }
+          }
+        } catch (jwtError) {
+          console.log('JWT verification failed:', jwtError);
+        }
       }
       
-      const user = await storage.getUser(userId);
-      if (!user) {
-        console.log('User not found in storage for ID:', userId);
-        return res.status(404).json({ message: 'User not found' });
-      }
-
-      // Remove password from response and add default tier
-      const { password: _, ...userResponse } = user;
-      res.json({
-        ...userResponse,
-        tier: userResponse.tier || 'free'
-      });
+      // Neither session nor token authentication worked
+      return res.status(401).json({ message: 'Access token required' });
+      
     } catch (error) {
       console.error('Get user error:', error);
       res.status(500).json({ message: 'Error fetching user' });

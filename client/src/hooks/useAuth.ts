@@ -3,10 +3,11 @@ import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 
 interface User {
-  id: string;
+  id: number;
   email: string;
   username?: string;
   displayName?: string;
+  tier?: 'guest' | 'free' | 'basic' | 'pro' | 'premium';
   subscription?: string;
 }
 
@@ -18,27 +19,39 @@ export function useAuth() {
   const { data: user, isLoading, error, refetch } = useQuery<User>({
     queryKey: ['/api/auth/user'],
     queryFn: async () => {
-      if (!token) throw new Error('No token');
-      
+      // Try session-based auth first (for existing users)
       const response = await fetch('/api/auth/user', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        credentials: 'include' // Include cookies for session-based auth
       });
       
-      if (!response.ok) {
-        if (response.status === 401 || response.status === 403) {
+      if (response.ok) {
+        const userData = await response.json();
+        return userData;
+      }
+      
+      // If session auth fails and we have a token, try token-based auth
+      if (token && response.status === 401) {
+        const tokenResponse = await fetch('/api/auth/user', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          credentials: 'include'
+        });
+        
+        if (tokenResponse.ok) {
+          return tokenResponse.json();
+        }
+        
+        if (tokenResponse.status === 401 || tokenResponse.status === 403) {
           localStorage.removeItem('authToken');
           localStorage.removeItem('user');
           setToken(null);
           throw new Error('Token expired');
         }
-        throw new Error('Failed to fetch user');
       }
       
-      return response.json();
+      throw new Error('Not authenticated');
     },
-    enabled: !!token,
     retry: false,
   });
 
@@ -49,16 +62,27 @@ export function useAuth() {
     refetch();
   };
 
-  const logout = () => {
+  const logout = async () => {
+    // Clear local storage
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
     setToken(null);
+    
+    // Also try to logout from session
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+    } catch (error) {
+      console.log('Session logout failed:', error);
+    }
   };
 
   return {
     user,
     isLoading,
-    isAuthenticated: !!token && !!user && !error,
+    isAuthenticated: !!user && !error,
     login,
     logout,
     token
