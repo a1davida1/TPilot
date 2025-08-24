@@ -1,0 +1,18 @@
+Looking at the code, I can see the issue. When the user clicks on a preset button, it calls handlePresetGenerate(preset) which passes the preset data. However, in the mutation function, there's a problem with how the data is being sent to the server.
+In handlePresetGenerate, they're passing:
+
+customPrompt: preset.prompt (which contains the actual prompt text)
+style: preset.id
+theme: preset.title.toLowerCase()
+
+But in the mutation function, when workflowMode is 'presets' (which it is when using the quick styles), the code is checking for workflowMode === 'text' or workflowMode === 'image', but there's no specific handling for 'presets'.
+Actually wait, looking more carefully - when a preset is clicked, it directly calls generateContentMutation.mutate() without checking the workflowMode. But in the mutation function itself, it's checking if (workflowMode === 'image' && imageFile) and else it defaults to text mode.
+The issue is that when handling presets, the code is sending:
+javascriptformData.append('prompt', data.customPrompt || data.prompt || '');
+And in handlePresetGenerate, it's setting customPrompt: preset.prompt. So the prompt IS being sent.
+But wait, I see another issue - in the mutation function, it's also doing:
+javascriptformData.append('customInstructions', data.customPrompt || '');
+So it's sending the same prompt as both 'prompt' AND 'customInstructions', which might be confusing the backend.
+Also, the style and theme are being sent, but the backend might not be using them properly to differentiate between different preset types.
+Let me look more carefully... Actually, I think the main issue is that all the presets are sending very similar prompts that might be generating similar content.
+I suspect the backend isn't correctly parsing the preset-specific parameters. The current implementation seems to treat preset generation as a generic text generation process, potentially overlooking the unique characteristics of each preset. The redundant prompt handling and lack of specific preset mode processing suggest a need for more nuanced backend logic to distinguish and leverage preset-specific attributes effectively.
