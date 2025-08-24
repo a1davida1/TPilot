@@ -200,9 +200,23 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
 
   return (
     <MobileOptimization>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 relative overflow-hidden">
+        {/* Floating Particles Background */}
+        <div className="particles-background">
+          {[...Array(8)].map((_, i) => (
+            <div
+              key={i}
+              className={`particle particle-${(i % 3) + 1}`}
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 3}s`,
+              }}
+            />
+          ))}
+        </div>
         {/* Enhanced Header */}
-        <header className="bg-white/80 backdrop-blur-lg border-b border-gray-200/50 sticky top-0 z-50">
+        <header className="glass-panel sticky top-0 z-50 border-b-0 animate-slideIn">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
               <div className="flex items-center space-x-4">

@@ -215,7 +215,22 @@ export function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-yellow-50 dark:from-pink-950/20 dark:via-rose-950/20 dark:to-yellow-950/20">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-yellow-50 dark:from-pink-950/20 dark:via-rose-950/20 dark:to-yellow-950/20 relative overflow-hidden">
+      {/* Floating Particles Background */}
+      <div className="particles-background">
+        {[...Array(12)].map((_, i) => (
+          <div
+            key={i}
+            className={`particle particle-${(i % 3) + 1}`}
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 5}s`,
+            }}
+          />
+        ))}
+      </div>
+      
       {/* Theme Toggle - Fixed Position */}
       <div className="fixed top-4 right-4 z-50">
         <ThemeToggle />
@@ -245,7 +260,7 @@ export function LandingPage() {
           </p>
           
           {/* Waitlist Form */}
-          <Card className="max-w-2xl mx-auto mb-12 bg-card backdrop-blur-xl border-2 border-pink-200/50 dark:border-pink-500/30 shadow-2xl card-hover">
+          <Card className="max-w-2xl mx-auto mb-12 glass-panel card-hover animate-fadeIn">
             <CardHeader>
               <CardTitle className="text-2xl text-center">Join the Waitlist</CardTitle>
               <CardDescription className="text-center">
