@@ -16,6 +16,7 @@ import {
   Zap
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { safeNumber, safeGet, safeArray, safeLocaleString } from "@/utils/safeDataAccess";
 
 interface AnalyticsDashboardProps {
   isGuestMode?: boolean;
@@ -48,33 +49,47 @@ export function AnalyticsDashboard({ isGuestMode = false }: AnalyticsDashboardPr
     ]
   };
 
-  const data = isGuestMode ? demoAnalytics : (analytics as typeof demoAnalytics) || demoAnalytics;
+  // Safe data access without unsafe type casting
+  const data = isGuestMode ? demoAnalytics : {
+    totalPosts: safeNumber(analytics?.totalPosts, 0),
+    totalViews: safeNumber(analytics?.totalViews, 0),
+    totalEngagement: safeNumber(analytics?.totalEngagement, 0),
+    averageEngagementRate: safeNumber(analytics?.averageEngagementRate, 0),
+    topPerformingPosts: safeArray(analytics?.topPerformingPosts, []),
+    growthMetrics: {
+      viewsGrowth: safeNumber(safeGet(analytics, 'growthMetrics.viewsGrowth', 0), 0),
+      engagementGrowth: safeNumber(safeGet(analytics, 'growthMetrics.engagementGrowth', 0), 0),
+      followerGrowth: safeNumber(safeGet(analytics, 'growthMetrics.followerGrowth', 0), 0)
+    },
+    bestPostingTimes: safeArray(analytics?.bestPostingTimes, demoAnalytics.bestPostingTimes)
+  };
 
+  // Safe metrics calculation with proper null handling
   const metrics = [
     {
       label: "Total Posts",
-      value: data.totalPosts,
+      value: safeNumber(data.totalPosts, 0),
       icon: <Calendar className="h-4 w-4" />,
       trend: "+12%",
       color: "text-blue-600"
     },
     {
       label: "Total Views",
-      value: data.totalViews.toLocaleString(),
+      value: safeLocaleString(data.totalViews, 0),
       icon: <Eye className="h-4 w-4" />,
-      trend: `+${data.growthMetrics.viewsGrowth}%`,
+      trend: `+${safeNumber(data.growthMetrics.viewsGrowth, 0)}%`,
       color: "text-green-600"
     },
     {
       label: "Engagement",
-      value: data.totalEngagement.toLocaleString(),
+      value: safeLocaleString(data.totalEngagement, 0),
       icon: <Heart className="h-4 w-4" />,
-      trend: `+${data.growthMetrics.engagementGrowth}%`,
+      trend: `+${safeNumber(data.growthMetrics.engagementGrowth, 0)}%`,
       color: "text-pink-600"
     },
     {
       label: "Avg. Rate",
-      value: `${data.averageEngagementRate}%`,
+      value: `${safeNumber(data.averageEngagementRate, 0).toFixed(1)}%`,
       icon: <TrendingUp className="h-4 w-4" />,
       trend: "+2.1%",
       color: "text-purple-600"

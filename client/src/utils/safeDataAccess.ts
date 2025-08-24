@@ -1,0 +1,62 @@
+// Comprehensive safe data access utilities for robustness across the app
+
+// Safe number formatting with fallbacks
+export const safeNumber = (value: any, fallback: number = 0): number => {
+  if (value === null || value === undefined) return fallback;
+  const num = Number(value);
+  return isNaN(num) ? fallback : num;
+};
+
+// Safe division to prevent division by zero
+export const safeDivide = (numerator: number, denominator: number, fallback: number = 0): number => {
+  return denominator === 0 ? fallback : numerator / denominator;
+};
+
+// Safe array access
+export const safeArrayAccess = <T>(array: T[] | undefined | null, index: number, fallback: T): T => {
+  return Array.isArray(array) && array.length > index && index >= 0 ? array[index] : fallback;
+};
+
+// Safe object property access
+export const safeGet = <T>(obj: any, path: string, fallback: T): T => {
+  if (!obj) return fallback;
+  const keys = path.split('.');
+  let current = obj;
+  
+  for (const key of keys) {
+    if (current === null || current === undefined || !(key in current)) {
+      return fallback;
+    }
+    current = current[key];
+  }
+  
+  return current === null || current === undefined ? fallback : current;
+};
+
+// Safe string conversion with fallback
+export const safeString = (value: any, fallback: string = ''): string => {
+  if (value === null || value === undefined) return fallback;
+  return String(value);
+};
+
+// Safe array validation
+export const safeArray = <T>(value: any, fallback: T[] = []): T[] => {
+  return Array.isArray(value) ? value : fallback;
+};
+
+// Safe object validation
+export const safeObject = <T>(value: any, fallback: T): T => {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value : fallback;
+};
+
+// Safe percentage formatting
+export const safePercentage = (value: any, fallback: number = 0): string => {
+  const num = safeNumber(value, fallback);
+  return `${num.toFixed(1)}%`;
+};
+
+// Safe locale string formatting for numbers
+export const safeLocaleString = (value: any, fallback: number = 0): string => {
+  const num = safeNumber(value, fallback);
+  return num.toLocaleString();
+};

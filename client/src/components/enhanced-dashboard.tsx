@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { safeNumber, safeArray, safeGet } from "@/utils/safeDataAccess";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -111,8 +112,8 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
           const analytics = await analyticsRes.json();
           const stats = await statsRes.json();
           
-          // Calculate streak based on recent activity
-          const recentDays = stats.activityTimeline || [];
+          // Calculate streak based on recent activity with safe data access
+          const recentDays = safeArray(stats.activityTimeline, []);
           let currentStreak = 0;
           const today = new Date().toISOString().split('T')[0];
           
@@ -122,7 +123,12 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
             checkDate.setDate(checkDate.getDate() - i);
             const dateStr = checkDate.toISOString().split('T')[0];
             
-            const hasActivity = recentDays.some((day: any) => day.date === dateStr && day.generations > 0);
+            // Safe check for activity with proper null validation
+            const hasActivity = recentDays.some((day: any) => {
+              if (!day || typeof day !== 'object') return false;
+              return day.date === dateStr && safeNumber(day.generations, 0) > 0;
+            });
+            
             if (hasActivity) {
               currentStreak++;
             } else if (i > 0) { // Allow today to be inactive
@@ -130,10 +136,11 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
             }
           }
 
+          // Safe data extraction with proper fallbacks
           setUserStats({
-            postsCreated: stats.totalGenerations || 0,
-            totalViews: analytics.totalViews || 0,
-            engagementRate: analytics.averageEngagementRate || 0,
+            postsCreated: safeNumber(stats.totalGenerations, 0),
+            totalViews: safeNumber(analytics.totalViews, 0),
+            engagementRate: safeNumber(analytics.averageEngagementRate, 0),
             streak: currentStreak
           });
         }

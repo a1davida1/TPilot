@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, DollarSign, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { safeArray, safeString } from "@/utils/safeDataAccess";
 
 interface ProviderInfo {
   name: string;
@@ -84,32 +85,42 @@ export function ProviderStatus() {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {(providers && Array.isArray(providers) && (providers as ProviderInfo[]).map((provider: ProviderInfo, index: number) => (
-            <div key={provider.name || index} className="flex items-center justify-between p-4 border rounded-lg">
-              <div className="flex items-center space-x-3">
-                {getStatusIcon(provider.status)}
-                <div>
-                  <h4 className="font-medium">{provider.name}</h4>
-                  <p className="text-sm text-gray-600">{provider.description}</p>
+          {safeArray(providers, []).map((provider: any, index: number) => {
+            // Safe provider data extraction
+            const providerName = safeString(provider?.name, `Provider ${index + 1}`);
+            const providerDescription = safeString(provider?.description, 'AI content generation provider');
+            const providerStatus = provider?.status || 'unknown';
+            const inputCost = safeString(provider?.inputCost, 'N/A');
+            const outputCost = safeString(provider?.outputCost, 'N/A');
+            const savings = safeString(provider?.savings, '0%');
+            
+            return (
+              <div key={providerName + index} className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center space-x-3">
+                  {getStatusIcon(providerStatus)}
+                  <div>
+                    <h4 className="font-medium">{providerName}</h4>
+                    <p className="text-sm text-gray-600">{providerDescription}</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-4">
+                  <div className="text-right">
+                    <div className="text-sm font-medium">
+                      Input: {inputCost} | Output: {outputCost}
+                    </div>
+                    <div className="text-xs text-green-600 font-medium">
+                      {savings} vs OpenAI
+                    </div>
+                  </div>
+                  <Badge className={getStatusColor(providerStatus)}>
+                    {String(providerStatus).replace('_', ' ')}
+                  </Badge>
                 </div>
               </div>
-              <div className="flex items-center space-x-4">
-                <div className="text-right">
-                  <div className="text-sm font-medium">
-                    Input: {provider.inputCost || 'N/A'} | Output: {provider.outputCost || 'N/A'}
-                  </div>
-                  <div className="text-xs text-green-600 font-medium">
-                    {provider.savings || '0%'} vs OpenAI
-                  </div>
-                </div>
-                <Badge className={getStatusColor(provider.status)}>
-                  {provider.status ? String(provider.status).replace('_', ' ') : 'Unknown'}
-                </Badge>
-              </div>
-            </div>
-          ))) as any}
+            );
+          })}
           
-          {(!providers || !Array.isArray(providers) || providers.length === 0) && (
+          {safeArray(providers, []).length === 0 && (
             <div className="text-center py-8 text-gray-500">
               <AlertCircle className="mx-auto h-12 w-12 mb-4" />
               <p>Provider status information unavailable</p>
