@@ -58,9 +58,8 @@ import { RedditCommunities } from "@/components/reddit-communities";
 import { RedditAccounts } from "@/components/reddit-accounts";
 import { TrendingTags } from "@/components/trending-tags";
 import { AudienceInsights } from "@/components/audience-insights";
-import { ImageGallery } from "@/components/image-gallery";
 import { ProPerks } from "@/components/pro-perks";
-import { ImageProtector } from "@/components/image-protector";
+import { ImageShieldUnified } from "@/components/image-shield-unified";
 import { AdminPortal } from "@/components/admin-portal";
 import TaxTracker from "@/pages/tax-tracker";
 import { GettingStarted } from "@/components/getting-started";
@@ -152,8 +151,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
       items: [
         { id: 'generator', label: 'Content Creator', icon: <Brain className="h-4 w-4" />, badge: 'Popular' },
         { id: 'caption-ai', label: 'AI Caption Generator', icon: <Sparkles className="h-4 w-4" />, badge: '2-Pass AI', link: '/caption-generator' },
-        { id: 'gallery', label: 'Image Gallery', icon: <ImageIcon className="h-4 w-4" /> },
-        { id: 'protect', label: 'Image Shield', icon: <Shield className="h-4 w-4" />, proOnly: true },
+        { id: 'protect', label: 'ImageShield & Gallery', icon: <Shield className="h-4 w-4" />, badge: 'Unified' },
         { id: 'history', label: 'Generation History', icon: <History className="h-4 w-4" /> },
       ]
     },
@@ -340,11 +338,8 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
       case 'audience':
         return <AudienceInsights />;
 
-      case 'gallery':
-        return <ImageGallery />;
-
       case 'protect':
-        return <ImageProtector userTier={userTier} />;
+        return <ImageShieldUnified userTier={userTier} />;
 
       case 'analytics':
         return <AnalyticsDashboard isGuestMode={userTier === 'guest'} />;
