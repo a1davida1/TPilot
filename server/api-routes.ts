@@ -11,6 +11,33 @@ import { RedditManager } from "./lib/reddit.js";
 import { postJobs, subscriptions, mediaAssets, creatorAccounts } from "@shared/schema.js";
 import { eq, desc } from "drizzle-orm";
 import multer from "multer";
+// Import from routes.ts where authenticateToken is defined
+// We'll create a separate auth helper file for this
+import jwt from 'jsonwebtoken';
+import type { Request, Response, NextFunction } from 'express';
+
+interface AuthRequest extends Request {
+  user?: any;
+}
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
+
+const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+  if (!token) {
+    return res.sendStatus(401);
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    return res.sendStatus(403);
+  }
+};
 
 // Multer configuration for file uploads
 const upload = multer({
@@ -23,7 +50,7 @@ const upload = multer({
 export function registerApiRoutes(app: Express) {
   
   // AI Content Generation
-  app.post('/api/ai/generate', async (req, res) => {
+  app.post('/api/ai/generate', authenticateToken, async (req: AuthRequest, res) => {
     try {
       const schema = z.object({
         prompt: z.string().optional(),
@@ -33,14 +60,13 @@ export function registerApiRoutes(app: Express) {
       });
 
       const data = schema.parse(req.body);
-      const user = (req as any).user;
       
-      if (!user?.id) {
+      if (!req.user?.id) {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
       const result = await AiService.generateContent({
-        userId: user.id,
+        userId: req.user.id,
         ...data,
       });
 
@@ -52,19 +78,17 @@ export function registerApiRoutes(app: Express) {
   });
 
   // Media Upload
-  app.post('/api/media/upload', upload.single('file'), async (req, res) => {
+  app.post('/api/media/upload', authenticateToken, upload.single('file'), async (req: AuthRequest, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ error: 'No file provided' });
       }
 
-      const user = (req as any).user;
-      
-      if (!user?.id) {
+      if (!req.user?.id) {
         return res.status(401).json({ error: 'Authentication required' });
       }
       
-      const userId = user.id;
+      const userId = req.user.id;
       const applyWatermark = req.body.watermark === 'true';
 
       const result = await MediaManager.uploadFile(req.file.buffer, {
