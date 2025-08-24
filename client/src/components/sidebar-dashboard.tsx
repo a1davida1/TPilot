@@ -54,6 +54,7 @@ import { AnalyticsDashboard } from "@/components/analytics-dashboard";
 import { PerformanceOptimization } from "@/components/performance-optimization";
 import { MobileOptimization } from "@/components/mobile-optimization";
 import { RedditCommunities } from "@/components/reddit-communities";
+import { RedditAccounts } from "@/components/reddit-accounts";
 import { TrendingTags } from "@/components/trending-tags";
 import { AudienceInsights } from "@/components/audience-insights";
 import { ImageGallery } from "@/components/image-gallery";
@@ -159,6 +160,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
       icon: <TrendingUp className="h-4 w-4" />,
       items: [
         { id: 'reddit', label: 'Reddit Communities', icon: <Users className="h-4 w-4" />, badge: 'New' },
+        { id: 'reddit-accounts', label: 'Connect Reddit', icon: <Globe className="h-4 w-4" />, badge: 'Setup' },
         { id: 'trending', label: 'Trending Tags', icon: <Hash className="h-4 w-4" /> },
         { id: 'audience', label: 'Audience Insights', icon: <BarChart className="h-4 w-4" />, proOnly: true },
         { id: 'analytics', label: 'Performance', icon: <Zap className="h-4 w-4" />, proOnly: true },
@@ -292,6 +294,9 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
 
       case 'reddit':
         return <RedditCommunities />;
+
+      case 'reddit-accounts':
+        return <RedditAccounts />;
 
       case 'trending':
         return <TrendingTags />;
