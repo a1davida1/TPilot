@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import type { ContentGeneration } from "@shared/schema";
-import { Sparkles, User, History, Settings, Shield, Brain, ImageIcon, LogOut, UserPlus } from "lucide-react";
+import { Sparkles, User, History, Settings, Shield, Brain, ImageIcon, LogOut, UserPlus, PlayCircle, TrendingUp } from "lucide-react";
 import { ImageProtector } from "@/components/image-protector";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link, useLocation } from "wouter";
@@ -16,12 +16,15 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ProviderStatus } from "@/components/provider-status";
 import { ConversionOptimization } from "@/components/conversion-optimization";
 import { EnhancedDashboard } from "@/components/enhanced-dashboard";
+import { OnboardingWalkthrough } from "@/components/onboarding-walkthrough";
+import { useOnboarding } from "@/hooks/useOnboarding";
 
 export default function Dashboard() {
   const [currentGeneration, setCurrentGeneration] = useState<ContentGeneration | null>(null);
   const [isGuestMode, setIsGuestMode] = useState(false);
   const [location] = useLocation();
   const { user, isLoading, isAuthenticated } = useAuth();
+  const { shouldShowOnboarding, markWalkthroughCompleted, showOnboarding } = useOnboarding();
 
   // Check for guest mode
   useEffect(() => {
@@ -44,23 +47,109 @@ export default function Dashboard() {
     );
   }
 
-  // Use clean dashboard for elegant interface
-  const CleanDashboard = lazy(() => import("@/components/clean-dashboard").then(module => ({ default: module.CleanDashboard })));
+  // Load analytics dashboard for proper dashboard view
+  const AnalyticsDashboard = lazy(() => import("@/components/analytics-dashboard").then(module => ({ default: module.AnalyticsDashboard })));
+  const EngagementStats = lazy(() => import("@/components/engagement-stats").then(module => ({ default: module.EngagementStats })));
+  const GenerationCounter = lazy(() => import("@/components/generation-counter").then(module => ({ default: module.GenerationCounter })));
+  const ProviderStatus = lazy(() => import("@/components/provider-status").then(module => ({ default: module.ProviderStatus })));
   
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Dashboard Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-gray-600">Track your content creation performance and statistics</p>
         </div>
+
+        <Suspense fallback={
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading...</p>
+          </div>
+        }>
+          <div className="space-y-8">
+            {/* Generation Counter */}
+            {!isGuestMode && (
+              <div className="w-fit">
+                <GenerationCounter />
+              </div>
+            )}
+
+            {/* Engagement Statistics */}
+            {!isGuestMode && (
+              <EngagementStats />
+            )}
+
+            {/* Analytics Dashboard */}
+            <AnalyticsDashboard isGuestMode={isGuestMode} />
+
+            {/* Provider Status */}
+            <ProviderStatus />
+
+            {/* Quick Actions */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5" />
+                  Quick Actions
+                </CardTitle>
+                <CardDescription>
+                  Jump to your most used features
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <Link href="/caption-generator">
+                    <Button variant="outline" className="w-full h-20 flex flex-col gap-2" data-testid="nav-content-creator">
+                      <Brain className="h-6 w-6" />
+                      <span>Generate Content</span>
+                    </Button>
+                  </Link>
+                  <Link href="/dashboard?section=protect">
+                    <Button variant="outline" className="w-full h-20 flex flex-col gap-2" data-testid="nav-image-shield">
+                      <Shield className="h-6 w-6" />
+                      <span>Protect Images</span>
+                    </Button>
+                  </Link>
+                  <Link href="/history">
+                    <Button variant="outline" className="w-full h-20 flex flex-col gap-2" data-testid="nav-analytics">
+                      <History className="h-6 w-6" />
+                      <span>View History</span>
+                    </Button>
+                  </Link>
+                  <Link href="/reddit">
+                    <Button variant="outline" className="w-full h-20 flex flex-col gap-2" data-testid="nav-reddit-communities">
+                      <TrendingUp className="h-6 w-6" />
+                      <span>Reddit Communities</span>
+                    </Button>
+                  </Link>
+                </div>
+                
+                {/* Onboarding Test Button */}
+                <div className="mt-4">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={showOnboarding}
+                    className="w-full"
+                  >
+                    <PlayCircle className="h-4 w-4 mr-2" />
+                    Start Interactive Tutorial
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </Suspense>
       </div>
-    }>
-      <CleanDashboard 
-        isGuestMode={isGuestMode} 
-        user={user}
-        userTier={user?.tier || (isGuestMode ? 'guest' : 'free')}
+      
+      {/* Onboarding Walkthrough */}
+      <OnboardingWalkthrough
+        isOpen={shouldShowOnboarding}
+        onClose={markWalkthroughCompleted}
+        onComplete={markWalkthroughCompleted}
       />
-    </Suspense>
+    </div>
   );
 }

@@ -42,7 +42,7 @@ export function GenerationCounter({ className }: GenerationCounterProps) {
   const isAtLimit = !isUnlimited && currentCount >= limit;
 
   return (
-    <Card className={`border-0 bg-gradient-to-r from-purple-500/10 to-pink-500/10 ${className}`}>
+    <Card className={`border-0 bg-gradient-to-r from-purple-500/10 to-pink-500/10 ${className}`} data-testid="generation-counter">
       <CardContent className="p-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">

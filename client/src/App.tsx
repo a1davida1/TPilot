@@ -10,6 +10,8 @@ import { Header } from "@/components/header";
 import { useAuth } from "@/hooks/useAuth";
 import { SEOOptimization, seoConfigs } from "@/components/seo-optimization";
 import { LandingPage } from "@/components/landing-page";
+import { OnboardingWalkthrough } from "@/components/onboarding-walkthrough";
+import { useOnboarding } from "@/hooks/useOnboarding";
 import { PremiumLanding } from "./components/premium-landing";
 import { AestheticLanding } from "./components/aesthetic-landing";
 import { AppleInspiredApp } from "./components/apple-inspired-app";
@@ -29,7 +31,7 @@ import RedditPostingPage from "@/pages/reddit-posting";
 function AuthenticatedRoutes() {
   return (
     <Switch>
-      <Route path="/" component={Dashboard} />
+      <Route path="/" component={Phase4Dashboard} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/caption-generator" component={CaptionGeneratorPage} />
       <Route path="/enterprise" component={Enterprise} />
@@ -68,6 +70,7 @@ function UnauthenticatedRoutes() {
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
+  const { shouldShowOnboarding, markWalkthroughCompleted, showOnboarding } = useOnboarding();
 
   if (isLoading) {
     return (
@@ -86,6 +89,13 @@ function Router() {
       <main>
         {isAuthenticated ? <AuthenticatedRoutes /> : <UnauthenticatedRoutes />}
       </main>
+      
+      {/* Onboarding Walkthrough */}
+      <OnboardingWalkthrough
+        isOpen={shouldShowOnboarding}
+        onClose={markWalkthroughCompleted}
+        onComplete={markWalkthroughCompleted}
+      />
     </div>
   );
 }

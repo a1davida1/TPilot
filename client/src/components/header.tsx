@@ -86,6 +86,7 @@ export function Header() {
                         ? 'bg-pink-100 text-pink-700' 
                         : 'text-gray-700 hover:text-pink-600 hover:bg-pink-50'
                     }`}
+                    data-testid={`nav-${item.label.toLowerCase().replace(' ', '-')}`}
                   >
                     {item.label}
                   </span>
