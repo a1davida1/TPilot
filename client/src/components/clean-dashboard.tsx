@@ -59,7 +59,7 @@ export function CleanDashboard({ isGuestMode = false, user, userTier = 'free' }:
     { id: 'getting-started', label: 'Getting Started', icon: BookOpen, badge: 'NEW' },
     { id: 'generator', label: 'Content Creator', icon: PenTool, badge: null },
     { id: 'gallery', label: 'Image Gallery', icon: ImageIcon, badge: null },
-    { id: 'protect', label: 'Image Shield', icon: Shield, badge: 'PRO', proOnly: true },
+    { id: 'protect', label: 'Image Shield', icon: Shield, badge: 'FREE', proOnly: false },
     { id: 'reddit', label: 'Reddit Communities', icon: TrendingUp, badge: null },
     { id: 'reddit-accounts', label: 'Connect Reddit', icon: PlayCircle, badge: null },
     { id: 'trending', label: 'Trending Tags', icon: Zap, badge: null },
