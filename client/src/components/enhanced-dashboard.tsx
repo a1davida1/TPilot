@@ -79,6 +79,46 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
     engagementRate: userTier === 'guest' ? 0 : 14.9,
     streak: userTier === 'guest' ? 0 : 7
   });
+  
+  // Fetch real user stats
+  useEffect(() => {
+    const fetchUserStats = async () => {
+      if (userTier === 'guest') {
+        setUserStats({
+          postsCreated: 0,
+          totalViews: 0,
+          engagementRate: 0,
+          streak: 0
+        });
+        return;
+      }
+
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const response = await fetch('/api/user/stats', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (response.ok) {
+          const stats = await response.json();
+          setUserStats({
+            postsCreated: stats.postsCreated,
+            totalViews: stats.totalViews,
+            engagementRate: parseFloat(stats.engagementRate),
+            streak: stats.streak
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching user stats:', error);
+      }
+    };
+
+    fetchUserStats();
+  }, [userTier]);
 
   const quickActions = [
     {

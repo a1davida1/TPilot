@@ -56,6 +56,9 @@ export interface IStorage {
   getUserImages(userId: number): Promise<UserImage[]>;
   getUserImage(imageId: number, userId: number): Promise<UserImage | undefined>;
   deleteUserImage(imageId: number, userId: number): Promise<void>;
+  
+  // Streak operations
+  calculateDailyStreak(userId: number): Promise<number>;
 }
 
 class PostgreSQLStorage implements IStorage {
@@ -226,29 +229,31 @@ class PostgreSQLStorage implements IStorage {
     }
   }
 
-  async getContentGenerationStats(userId: number): Promise<{ total: number; thisWeek: number; thisMonth: number; totalGenerations?: number }> {
+  async getContentGenerationStats(userId: number): Promise<{ total: number; thisWeek: number; thisMonth: number; totalGenerations?: number; dailyStreak?: number }> {
     try {
       const now = new Date();
       const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-      const [totalResult, weekResult, monthResult] = await Promise.all([
+      const [totalResult, weekResult, monthResult, dailyStreak] = await Promise.all([
         db.select({ count: count() }).from(contentGenerations).where(eq(contentGenerations.userId, userId)),
         db.select({ count: count() }).from(contentGenerations)
           .where(and(eq(contentGenerations.userId, userId), gte(contentGenerations.createdAt, oneWeekAgo))),
         db.select({ count: count() }).from(contentGenerations)
-          .where(and(eq(contentGenerations.userId, userId), gte(contentGenerations.createdAt, oneMonthAgo)))
+          .where(and(eq(contentGenerations.userId, userId), gte(contentGenerations.createdAt, oneMonthAgo))),
+        this.calculateDailyStreak(userId)
       ]);
 
       return {
         total: totalResult[0]?.count || 0,
         thisWeek: weekResult[0]?.count || 0,
         thisMonth: monthResult[0]?.count || 0,
-        totalGenerations: totalResult[0]?.count || 0
+        totalGenerations: totalResult[0]?.count || 0,
+        dailyStreak: dailyStreak
       };
     } catch (error) {
       console.error('Storage: Error getting content generation stats:', error);
-      return { total: 0, thisWeek: 0, thisMonth: 0 };
+      return { total: 0, thisWeek: 0, thisMonth: 0, dailyStreak: 0 };
     }
   }
 
@@ -262,6 +267,64 @@ class PostgreSQLStorage implements IStorage {
     } catch (error) {
       console.error('Storage: Error getting last generated:', error);
       return undefined;
+    }
+  }
+
+  async calculateDailyStreak(userId: number): Promise<number> {
+    try {
+      // Get all generations for this user ordered by date (most recent first)
+      const generations = await db.select({ createdAt: contentGenerations.createdAt })
+        .from(contentGenerations)
+        .where(eq(contentGenerations.userId, userId))
+        .orderBy(desc(contentGenerations.createdAt));
+
+      if (generations.length === 0) {
+        return 0;
+      }
+
+      // Group generations by date (ignoring time)
+      const generationsByDate = new Map<string, boolean>();
+      for (const gen of generations) {
+        const date = gen.createdAt?.toISOString().split('T')[0];
+        if (date) {
+          generationsByDate.set(date, true);
+        }
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+      let streak = 0;
+      let currentDate = new Date();
+
+      // Check if user generated content today or yesterday to start streak
+      const todayKey = currentDate.toISOString().split('T')[0];
+      const yesterdayKey = new Date(currentDate.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+      // If no activity today or yesterday, streak is 0
+      if (!generationsByDate.has(todayKey) && !generationsByDate.has(yesterdayKey)) {
+        return 0;
+      }
+
+      // Start checking from yesterday if no activity today, otherwise from today
+      if (!generationsByDate.has(todayKey)) {
+        currentDate = new Date(currentDate.getTime() - 24 * 60 * 60 * 1000);
+      }
+
+      // Count consecutive days with activity
+      while (true) {
+        const dateKey = currentDate.toISOString().split('T')[0];
+        if (generationsByDate.has(dateKey)) {
+          streak++;
+          // Go back one day
+          currentDate = new Date(currentDate.getTime() - 24 * 60 * 60 * 1000);
+        } else {
+          break;
+        }
+      }
+
+      return streak;
+    } catch (error) {
+      console.error('Storage: Error calculating daily streak:', error);
+      return 0;
     }
   }
 
