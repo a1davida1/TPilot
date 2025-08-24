@@ -332,8 +332,8 @@ export function UnifiedContentCreator({
   const applyImageShieldProtection = async (file: File) => {
     try {
       const settings = protectionPresets[protectionLevel];
-      // No watermark needed - ImageShield is free for all users
-      const shouldAddWatermark = false;
+      // Apply watermark for free users (Pro/Premium users get watermark-free)
+      const shouldAddWatermark = userTier === 'free' || userTier === 'guest';
       const protectedBlob = await protectImage(file, settings, shouldAddWatermark);
       
       // Create preview URL for protected image

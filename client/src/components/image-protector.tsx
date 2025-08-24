@@ -96,8 +96,8 @@ export function ImageProtector({ userTier = 'guest' }: ImageProtectorProps) {
     setIsProcessing(true);
     try {
       const settings = useCustom ? customSettings : protectionPresets[preset];
-      // No watermark needed - ImageShield is free for all users
-      const shouldAddWatermark = false;
+      // Apply watermark for free users (Pro/Premium users get watermark-free)
+      const shouldAddWatermark = userTier === 'free' || userTier === 'guest';
       const protectedBlob = await protectImage(selectedFile, settings, shouldAddWatermark);
       
       // Create preview URL
@@ -105,7 +105,9 @@ export function ImageProtector({ userTier = 'guest' }: ImageProtectorProps) {
       setProtectedImageUrl(url);
       setShowComparison(true);
       
-      const successMessage = "Your image is now protected against reverse search with no watermarks!";
+      const successMessage = shouldAddWatermark 
+        ? "Your image is now protected! Upgrade to Pro to remove watermarks."
+        : "Your image is now protected against reverse search with no watermarks!";
       
       toast({
         title: "Image protected successfully!",
