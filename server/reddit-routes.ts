@@ -15,7 +15,10 @@ export function registerRedditRoutes(app: Express) {
         });
       }
 
-      const userId = (req.session as any)?.userId || 1; // Demo user ID
+      const userId = (req.session as any)?.userId || (req.user as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
       const state = `${userId}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
       
       // Store state in session for verification
@@ -101,7 +104,10 @@ export function registerRedditRoutes(app: Express) {
   // Get user's Reddit connections
   app.get('/api/reddit/accounts', async (req, res) => {
     try {
-      const userId = (req.session as any)?.userId || 1; // Demo user ID
+      const userId = (req.session as any)?.userId || (req.user as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
 
       const accounts = await db
         .select()
@@ -132,7 +138,10 @@ export function registerRedditRoutes(app: Express) {
   app.delete('/api/reddit/accounts/:accountId', async (req, res) => {
     try {
       const { accountId } = req.params;
-      const userId = (req.session as any)?.userId || 1; // Demo user ID
+      const userId = (req.session as any)?.userId || (req.user as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
 
       await db
         .update(creatorAccounts)
@@ -159,7 +168,10 @@ export function registerRedditRoutes(app: Express) {
   // Test Reddit connection
   app.post('/api/reddit/test', async (req, res) => {
     try {
-      const userId = (req.session as any)?.userId || 1; // Demo user ID
+      const userId = (req.session as any)?.userId || (req.user as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
       
       const reddit = await RedditManager.forUser(userId);
       if (!reddit) {
@@ -191,7 +203,10 @@ export function registerRedditRoutes(app: Express) {
   // Manual post submission (for testing)
   app.post('/api/reddit/submit', async (req, res) => {
     try {
-      const userId = (req.session as any)?.userId || 1; // Demo user ID
+      const userId = (req.session as any)?.userId || (req.user as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
       const { subreddit, title, body, url, nsfw } = req.body;
 
       if (!subreddit || !title) {

@@ -19,7 +19,10 @@ export function registerPolicyRoutes(app: Express) {
   app.post("/api/preview", async (req, res) => {
     try {
       // Authentication check - get userId from session or auth middleware
-      const userId = (req.session as any)?.userId || (req.user as any)?.userId || 1; // Fallback to demo user
+      const userId = (req.session as any)?.userId || (req.user as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
       
       if (!userId) {
         return res.status(401).json({ message: "Authentication required" });
@@ -75,7 +78,10 @@ export function registerPolicyRoutes(app: Express) {
   app.get("/api/user/previewStats", async (req, res) => {
     try {
       // Authentication check - get userId from session or auth middleware
-      const userId = (req.session as any)?.userId || (req.user as any)?.userId || 1; // Fallback to demo user
+      const userId = (req.session as any)?.userId || (req.user as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
       
       if (!userId) {
         return res.status(401).json({ message: "Authentication required" });
@@ -96,7 +102,10 @@ export function registerPolicyRoutes(app: Express) {
   app.get("/api/policy/gate/check", async (req, res) => {
     try {
       // Authentication check - get userId from session or auth middleware
-      const userId = (req.session as any)?.userId || (req.user as any)?.userId || 1; // Fallback to demo user
+      const userId = (req.session as any)?.userId || (req.user as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
       
       if (!userId) {
         return res.status(401).json({ message: "Authentication required" });

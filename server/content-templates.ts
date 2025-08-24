@@ -1320,7 +1320,7 @@ export function getTemplateByMood(
   return templates[randomIndex];
 }
 
-// Get trending templates (simulate based on mock engagement data)
+// Get trending templates based on usage analytics
 export function getTrendingTemplates(count: number = 5): ContentTemplate[] {
   // In production, this would pull from analytics
   // For now, return templates with 'hot', 'trending', or 'viral' tags

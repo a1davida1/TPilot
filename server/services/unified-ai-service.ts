@@ -147,25 +147,11 @@ Create content that's perfect for ${platform}.`;
     const errorMessage = error instanceof Error ? error.message : String(error);
     const isQuotaError = errorMessage.includes('quota') || errorMessage.includes('billing');
     
-    // Return clearly marked demo content as fallback
-    return {
-      titles: [
-        `[DEMO] Feeling ${style} today 💕`,
-        `[DEMO] New ${theme || 'content'} just dropped!`,
-        '[DEMO] You won\'t want to miss this 😘'
-      ],
-      content: `[DEMO CONTENT] ${isQuotaError ? 'OpenAI API quota exceeded - using demo content.' : 'AI service temporarily unavailable - using demo content.'}\n\nThis would normally be personalized AI-generated content based on your prompt: "${prompt || customInstructions || 'Generate content'}"\n\nStyle: ${style} | Platform: ${platform} | ${includePromotion ? 'With promotion' : 'No promotion'}\n\nTo enable real AI generation, the OpenAI API key needs to be configured with available credits.`,
-      photoInstructions: {
-        lighting: '[DEMO] Golden hour lighting or soft window light',
-        cameraAngle: '[DEMO] Eye level for connection, slightly above for flattering angles',
-        composition: '[DEMO] Rule of thirds with subject off-center',
-        styling: '[DEMO] Casual elegance - comfortable but put-together look',
-        mood: '[DEMO] Natural and confident with genuine expressions',
-        technicalSettings: '[DEMO] Portrait mode f/1.8-2.8, ISO 100-400, warm white balance'
-      },
-      hashtags: ['#demo', '#contentcreator', '#aiunavailable', '#placeholder', '#test'],
-      caption: '[DEMO] This would be AI-generated content!'
-    };
+    // Don't return demo content - throw proper error for production
+    throw new Error(isQuotaError ? 
+      'AI service quota exceeded. Please upgrade your plan or try again later.' : 
+      'AI content generation temporarily unavailable. Please try again in a few moments.'
+    );
   }
 }
 

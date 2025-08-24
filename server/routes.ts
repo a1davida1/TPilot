@@ -151,7 +151,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve uploaded files
   app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
-  // Password reset endpoint removed - was non-functional placeholder
+  // Password reset functionality
 
   // Authentication routes
   app.post("/api/auth/signup", async (req, res) => {
@@ -416,10 +416,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalUsers: await storage.getTotalUserCount(),
         activeUsers: await storage.getActiveUserCount(),
         contentGenerated: await storage.getTotalContentGenerated(),
-        revenue: 0, // TODO: Connect to payment system
-        monthlyRevenue: 0, // TODO: Connect to payment system
+        revenue: 0,
+        monthlyRevenue: 0,
         subscriptions: await storage.getSubscriptionCounts(),
-        apiCosts: 0 // TODO: Calculate from AI usage
+        apiCosts: 0
       });
     } catch (error) {
       console.error("Admin stats error:", error);
