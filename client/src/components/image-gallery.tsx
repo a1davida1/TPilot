@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import { useAuth } from '@/hooks/useAuth';
 import { protectImage, downloadProtectedImage } from '@/lib/image-protection';
 import { Upload, Shield, Download, Trash2, Eye, Tag, Plus } from 'lucide-react';
 
@@ -33,14 +34,53 @@ export function ImageGallery() {
   const [selectedImage, setSelectedImage] = useState<UserImage | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { token } = useAuth();
+  
+  // Authenticated API request with JWT token
+  const authenticatedRequest = async (url: string, method: string = 'GET', data?: any) => {
+    let body: FormData | string | undefined;
+    const headers: { [key: string]: string } = {
+      'Authorization': `Bearer ${token}`
+    };
+    
+    if (data instanceof FormData) {
+      body = data;
+      // Don't set Content-Type for FormData, browser sets it with boundary
+    } else if (data) {
+      headers['Content-Type'] = 'application/json';
+      body = JSON.stringify(data);
+    }
+    
+    const response = await fetch(url, {
+      method,
+      headers,
+      body
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorText;
+      } catch {
+        errorMessage = errorText || response.statusText;
+      }
+      throw new Error(errorMessage);
+    }
+    
+    return response.json();
+  };
 
   const { data: images = [] } = useQuery<UserImage[]>({
     queryKey: ['/api/user-images'],
+    queryFn: () => authenticatedRequest('/api/user-images'),
+    enabled: !!token
   });
 
   const uploadMutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      return apiRequest('POST', '/api/upload-image', formData);
+      return authenticatedRequest('/api/upload-image', 'POST', formData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/user-images'] });
@@ -60,7 +100,7 @@ export function ImageGallery() {
 
   const protectMutation = useMutation({
     mutationFn: async ({ imageId, protectionLevel }: { imageId: string, protectionLevel: string }) => {
-      return apiRequest('POST', `/api/protect-image/${imageId}`, { protectionLevel });
+      return authenticatedRequest(`/api/protect-image/${imageId}`, 'POST', { protectionLevel });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/user-images'] });
@@ -73,7 +113,7 @@ export function ImageGallery() {
 
   const deleteMutation = useMutation({
     mutationFn: async (imageId: string) => {
-      return apiRequest('DELETE', `/api/user-images/${imageId}`);
+      return authenticatedRequest(`/api/user-images/${imageId}`, 'DELETE');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/user-images'] });

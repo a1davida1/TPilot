@@ -940,17 +940,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Upload user image
-  app.post("/api/upload-image", upload.single('image'), async (req, res) => {
+  app.post("/api/upload-image", upload.single('image'), authenticateToken, async (req: AuthRequest, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "No image file provided" });
+      }
+      
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
       }
       
       const { tags } = req.body;
       const imageUrl = `/uploads/${req.file.filename}`;
       
       const userImage = await storage.createUserImage({
-        userId: 1, // Demo user ID, would come from auth in production
+        userId: req.user.id,
         filename: req.file.filename,
         originalName: req.file.originalname,
         url: imageUrl,
@@ -978,9 +982,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get user images
-  app.get("/api/user-images", async (req, res) => {
+  app.get("/api/user-images", authenticateToken, async (req: AuthRequest, res) => {
     try {
-      const images = await storage.getUserImages(1); // Demo user ID
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const images = await storage.getUserImages(req.user.id);
       res.json(images);
     } catch (error) {
       console.error("Error fetching user images:", error);
@@ -989,12 +997,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Protect image
-  app.post("/api/protect-image/:imageId", async (req, res) => {
+  app.post("/api/protect-image/:imageId", authenticateToken, async (req: AuthRequest, res) => {
     try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
       const { imageId } = req.params;
       const { protectionLevel } = req.body;
       
-      const image = await storage.getUserImage(parseInt(imageId), 1); // Demo user ID
+      const image = await storage.getUserImage(parseInt(imageId), req.user.id);
       if (!image) {
         return res.status(404).json({ message: "Image not found" });
       }
@@ -1015,10 +1027,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete user image
-  app.delete("/api/user-images/:imageId", async (req, res) => {
+  app.delete("/api/user-images/:imageId", authenticateToken, async (req: AuthRequest, res) => {
     try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
       const { imageId } = req.params;
-      await storage.deleteUserImage(parseInt(imageId), 1); // Demo user ID
+      await storage.deleteUserImage(parseInt(imageId), req.user.id);
       res.json({ message: "Image deleted successfully" });
     } catch (error) {
       console.error("Image deletion error:", error);
