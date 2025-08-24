@@ -34,64 +34,103 @@ export function GettingStarted({ userTier = 'free', onSectionSelect }: GettingSt
     {
       id: 'profile',
       title: 'Set Up Your Profile',
-      description: 'Complete your creator profile and preferences',
+      description: 'Complete your creator profile, set preferences, and personalize your workspace for optimal content creation',
       icon: Users,
       action: 'Go to Profile',
       section: 'profile',
       difficulty: 'Easy',
-      time: '2 min'
+      time: '2 min',
+      details: 'Add your username, bio, preferred platforms, and content style preferences to help our system generate better content for you.'
     },
     {
       id: 'first-content',
       title: 'Create Your First Content',
-      description: 'Generate engaging posts with our content creator',
+      description: 'Learn to generate engaging posts with our content creator using templates or custom prompts',
       icon: Sparkles,
       action: 'Start Creating',
       section: 'generator',
       difficulty: 'Easy',
-      time: '3 min'
+      time: '3 min',
+      details: 'Choose from Quick Styles for instant content or use Custom mode to write your own prompts. Try different text tones and photo types.'
     },
     {
       id: 'image-protection',
       title: 'Protect Your Images',
-      description: 'Use ImageShield to protect your content from theft',
+      description: 'Use ImageShield to protect your content from theft with advanced anti-reverse search algorithms',
       icon: Shield,
       action: 'Protect Images',
       section: 'protect',
       difficulty: 'Easy',
       time: '1 min',
-      proOnly: true
+      proOnly: true,
+      details: 'Upload images and apply protection levels (Light, Standard, Heavy). Pro users get watermark-free protected images.'
     },
     {
       id: 'reddit-connect',
       title: 'Connect Reddit Accounts',
-      description: 'Link your Reddit accounts for automated posting',
+      description: 'Link your Reddit accounts for automated posting and community discovery',
       icon: TrendingUp,
       action: 'Connect Reddit',
       section: 'reddit-accounts',
       difficulty: 'Medium',
-      time: '5 min'
+      time: '5 min',
+      details: 'Connect multiple Reddit accounts, discover relevant subreddits, and automate your posting schedule across communities.'
     },
     {
       id: 'tax-setup',
       title: 'Set Up Tax Tracking',
-      description: 'Start tracking business expenses for tax deductions',
+      description: 'Start tracking business expenses, receipts, and income for accurate tax deductions',
       icon: Calculator,
       action: 'Setup Taxes',
       section: 'tax',
       difficulty: 'Easy',
-      time: '3 min'
+      time: '3 min',
+      details: 'Add your first business expense, upload receipts, and set up expense categories. View calendar and analytics.'
     },
     {
       id: 'analytics',
       title: 'View Your Analytics',
-      description: 'Monitor your content performance and growth',
+      description: 'Monitor your content performance, growth metrics, and revenue tracking across platforms',
       icon: TrendingUp,
       action: 'View Analytics',
       section: 'analytics',
       difficulty: 'Easy',
       time: '2 min',
-      proOnly: true
+      proOnly: true,
+      details: 'Track post engagement, follower growth, revenue trends, and optimize your content strategy with detailed insights.'
+    },
+    {
+      id: 'reddit-communities',
+      title: 'Discover Reddit Communities',
+      description: 'Find and join relevant subreddits for your content niche and understand posting rules',
+      icon: TrendingUp,
+      action: 'Find Communities',
+      section: 'reddit',
+      difficulty: 'Medium',
+      time: '10 min',
+      details: 'Browse curated subreddit lists, understand community rules, and identify the best posting times for maximum engagement.'
+    },
+    {
+      id: 'trending-tags',
+      title: 'Explore Trending Tags',
+      description: 'Research popular hashtags and trending topics to maximize your content reach',
+      icon: Zap,
+      action: 'View Trends',
+      section: 'trending',
+      difficulty: 'Easy',
+      time: '5 min',
+      details: 'See trending hashtags, popular topics, and seasonal content ideas to stay ahead of the curve.'
+    },
+    {
+      id: 'perks-setup',
+      title: 'Explore Pro Perks',
+      description: 'Discover monetization opportunities, affiliate programs, and growth strategies worth $1,247+',
+      icon: Crown,
+      action: 'View Perks',
+      section: 'perks',
+      difficulty: 'Easy',
+      time: '10 min',
+      details: 'Learn about payment platforms, affiliate programs, content protection tools, and business growth strategies.'
     }
   ];
 
@@ -251,10 +290,13 @@ export function GettingStarted({ userTier = 'free', onSectionSelect }: GettingSt
                         <div className="flex items-center space-x-2">
                           <h3 className="font-semibold text-gray-900">{step.title}</h3>
                           {step.proOnly && (
-                            <Crown className="h-4 w-4 text-yellow-500" />
+                            <Badge className="bg-yellow-100 text-yellow-700 text-xs">Pro Feature</Badge>
                           )}
                         </div>
-                        <p className="text-sm text-gray-600">{step.description}</p>
+                        <p className="text-sm text-gray-600 mb-2">{step.description}</p>
+                        {(step as any).details && (
+                          <p className="text-xs text-gray-500 mb-2 italic">{(step as any).details}</p>
+                        )}
                         <div className="flex items-center space-x-2 mt-1">
                           <Badge variant="outline" className="text-xs">
                             {step.difficulty}
@@ -324,65 +366,13 @@ export function GettingStarted({ userTier = 'free', onSectionSelect }: GettingSt
         </Card>
       </motion.div>
 
-      {/* Quick Actions */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-        className="grid grid-cols-1 md:grid-cols-3 gap-4"
-      >
-        <Card className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-          <CardContent className="p-6 text-center">
-            <FileText className="h-8 w-8 mx-auto mb-3" />
-            <h3 className="font-bold mb-2">Create Content</h3>
-            <p className="text-sm opacity-90 mb-4">Start generating engaging posts</p>
-            <Button 
-              variant="outline" 
-              className="text-purple-600 bg-white hover:bg-gray-100"
-              onClick={() => onSectionSelect?.('generator')}
-            >
-              Get Started
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white">
-          <CardContent className="p-6 text-center">
-            <BookOpen className="h-8 w-8 mx-auto mb-3" />
-            <h3 className="font-bold mb-2">Documentation</h3>
-            <p className="text-sm opacity-90 mb-4">Learn all features and tips</p>
-            <Button 
-              variant="outline" 
-              className="text-blue-600 bg-white hover:bg-gray-100"
-              onClick={() => onSectionSelect?.('guides')}
-            >
-              Read Guides
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-r from-green-500 to-emerald-500 text-white">
-          <CardContent className="p-6 text-center">
-            <Users className="h-8 w-8 mx-auto mb-3" />
-            <h3 className="font-bold mb-2">Community</h3>
-            <p className="text-sm opacity-90 mb-4">Connect with other creators</p>
-            <Button 
-              variant="outline" 
-              className="text-green-600 bg-white hover:bg-gray-100"
-              onClick={() => onSectionSelect?.('community')}
-            >
-              Join Now
-            </Button>
-          </CardContent>
-        </Card>
-      </motion.div>
 
       {/* Pro Upgrade CTA for Free Users */}
       {(userTier === 'free' || userTier === 'guest') && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
+          transition={{ delay: 0.4 }}
         >
           <Card className="bg-gradient-to-r from-yellow-400 via-orange-500 to-pink-500 text-white">
             <CardContent className="p-6">
