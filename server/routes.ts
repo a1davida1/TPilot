@@ -1684,6 +1684,155 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register Caption Routes (2-pass Gemini pipeline)
   app.use('/api/caption', captionRouter);
 
+  // Tax & Expense Tracking API Routes
+  
+  // Get all expense categories
+  app.get("/api/expense-categories", async (req, res) => {
+    try {
+      const categories = await storage.getExpenseCategories();
+      res.json(categories);
+    } catch (error) {
+      console.error("Error fetching expense categories:", error);
+      res.status(500).json({ message: "Failed to fetch expense categories" });
+    }
+  });
+
+  // Get user expenses
+  app.get("/api/expenses", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const taxYear = req.query.taxYear ? parseInt(req.query.taxYear as string) : undefined;
+      const expenses = await storage.getUserExpenses(req.user.id, taxYear);
+      res.json(expenses);
+    } catch (error) {
+      console.error("Error fetching expenses:", error);
+      res.status(500).json({ message: "Failed to fetch expenses" });
+    }
+  });
+
+  // Create new expense
+  app.post("/api/expenses", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const currentYear = new Date().getFullYear();
+      const expenseData = {
+        ...req.body,
+        userId: req.user.id,
+        taxYear: req.body.taxYear || currentYear,
+        amount: Math.round(parseFloat(req.body.amount) * 100), // Convert to cents
+      };
+
+      const expense = await storage.createExpense(expenseData);
+      res.status(201).json(expense);
+    } catch (error) {
+      console.error("Error creating expense:", error);
+      res.status(500).json({ message: "Failed to create expense" });
+    }
+  });
+
+  // Update expense
+  app.put("/api/expenses/:id", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const expenseId = parseInt(req.params.id);
+      const updates = {
+        ...req.body,
+        amount: req.body.amount ? Math.round(parseFloat(req.body.amount) * 100) : undefined
+      };
+
+      const expense = await storage.updateExpense(expenseId, req.user.id, updates);
+      res.json(expense);
+    } catch (error) {
+      console.error("Error updating expense:", error);
+      res.status(500).json({ message: "Failed to update expense" });
+    }
+  });
+
+  // Delete expense
+  app.delete("/api/expenses/:id", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const expenseId = parseInt(req.params.id);
+      await storage.deleteExpense(expenseId, req.user.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting expense:", error);
+      res.status(500).json({ message: "Failed to delete expense" });
+    }
+  });
+
+  // Get expense totals and analytics
+  app.get("/api/expenses/totals", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const taxYear = req.query.taxYear ? parseInt(req.query.taxYear as string) : undefined;
+      const totals = await storage.getExpenseTotals(req.user.id, taxYear);
+      res.json(totals);
+    } catch (error) {
+      console.error("Error fetching expense totals:", error);
+      res.status(500).json({ message: "Failed to fetch expense totals" });
+    }
+  });
+
+  // Get expenses by date range for calendar view
+  app.get("/api/expenses/range", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const startDate = new Date(req.query.startDate as string);
+      const endDate = new Date(req.query.endDate as string);
+      
+      const expenses = await storage.getExpensesByDateRange(req.user.id, startDate, endDate);
+      res.json(expenses);
+    } catch (error) {
+      console.error("Error fetching expenses by date range:", error);
+      res.status(500).json({ message: "Failed to fetch expenses by date range" });
+    }
+  });
+
+  // Get tax deduction information
+  app.get("/api/tax-deductions", async (req, res) => {
+    try {
+      const category = req.query.category as string;
+      const deductions = category 
+        ? await storage.getTaxDeductionInfoByCategory(category)
+        : await storage.getTaxDeductionInfo();
+      res.json(deductions);
+    } catch (error) {
+      console.error("Error fetching tax deduction info:", error);
+      res.status(500).json({ message: "Failed to fetch tax deduction info" });
+    }
+  });
+
+  // Seed tax data (admin only)
+  app.post("/api/admin/seed-tax-data", async (req, res) => {
+    try {
+      const { seedTaxData } = await import('./seeds/expense-categories.js');
+      await seedTaxData();
+      res.json({ message: "Tax data seeded successfully" });
+    } catch (error) {
+      console.error("Error seeding tax data:", error);
+      res.status(500).json({ message: "Failed to seed tax data" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

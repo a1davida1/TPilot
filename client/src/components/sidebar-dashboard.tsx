@@ -61,6 +61,7 @@ import { ImageGallery } from "@/components/image-gallery";
 import { ProPerks } from "@/components/pro-perks";
 import { ImageProtector } from "@/components/image-protector";
 import { AdminPortal } from "@/components/admin-portal";
+import TaxTracker from "@/pages/tax-tracker";
 import { cn } from "@/lib/utils";
 import {
   Breadcrumb,
@@ -330,6 +331,9 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
 
       case 'perks':
         return <ProPerks userTier={userTier} />;
+
+      case 'tax':
+        return <TaxTracker />;
 
       case 'admin-portal':
         return isAdmin ? <AdminPortal /> : null;

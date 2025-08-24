@@ -10,11 +10,20 @@ import {
   type InsertUserPreference,
   type UserImage,
   type InsertUserImage,
+  type ExpenseCategory,
+  type InsertExpenseCategory,
+  type Expense,
+  type InsertExpense,
+  type TaxDeductionInfo,
+  type InsertTaxDeductionInfo,
   users,
   contentGenerations,
   userSamples,
   userPreferences,
-  userImages
+  userImages,
+  expenseCategories,
+  expenses,
+  taxDeductionInfo
 } from "@shared/schema";
 import { db } from "./db.js";
 import { eq, desc, and, gte, sql, count } from "drizzle-orm";
@@ -68,6 +77,26 @@ export interface IStorage {
   
   // Generation limit operations
   getDailyGenerationCount(userId: number): Promise<number>;
+  
+  // Expense operations
+  createExpenseCategory(category: InsertExpenseCategory): Promise<ExpenseCategory>;
+  getExpenseCategories(): Promise<ExpenseCategory[]>;
+  getExpenseCategory(id: number): Promise<ExpenseCategory | undefined>;
+  updateExpenseCategory(id: number, updates: Partial<ExpenseCategory>): Promise<ExpenseCategory>;
+  deleteExpenseCategory(id: number): Promise<void>;
+  
+  createExpense(expense: InsertExpense): Promise<Expense>;
+  getUserExpenses(userId: number, taxYear?: number): Promise<Expense[]>;
+  getExpense(id: number, userId: number): Promise<Expense | undefined>;
+  updateExpense(id: number, userId: number, updates: Partial<Expense>): Promise<Expense>;
+  deleteExpense(id: number, userId: number): Promise<void>;
+  getExpensesByCategory(userId: number, categoryId: number, taxYear?: number): Promise<Expense[]>;
+  getExpensesByDateRange(userId: number, startDate: Date, endDate: Date): Promise<Expense[]>;
+  getExpenseTotals(userId: number, taxYear?: number): Promise<{ total: number; deductible: number; byCategory: { [key: string]: number } }>;
+  
+  getTaxDeductionInfo(): Promise<TaxDeductionInfo[]>;
+  getTaxDeductionInfoByCategory(category: string): Promise<TaxDeductionInfo[]>;
+  createTaxDeductionInfo(info: InsertTaxDeductionInfo): Promise<TaxDeductionInfo>;
 }
 
 class PostgreSQLStorage implements IStorage {
@@ -530,6 +559,247 @@ class PostgreSQLStorage implements IStorage {
     } catch (error) {
       console.error('Error getting daily generation count:', error);
       return 0;
+    }
+  }
+
+  // Expense Category operations
+  async createExpenseCategory(category: InsertExpenseCategory): Promise<ExpenseCategory> {
+    try {
+      const [result] = await db.insert(expenseCategories).values(category).returning();
+      return result;
+    } catch (error) {
+      console.error('Error creating expense category:', error);
+      throw error;
+    }
+  }
+
+  async getExpenseCategories(): Promise<ExpenseCategory[]> {
+    try {
+      return await db.select().from(expenseCategories)
+        .where(eq(expenseCategories.isActive, true))
+        .orderBy(expenseCategories.sortOrder, expenseCategories.name);
+    } catch (error) {
+      console.error('Error getting expense categories:', error);
+      return [];
+    }
+  }
+
+  async getExpenseCategory(id: number): Promise<ExpenseCategory | undefined> {
+    try {
+      const [result] = await db.select().from(expenseCategories)
+        .where(eq(expenseCategories.id, id));
+      return result;
+    } catch (error) {
+      console.error('Error getting expense category:', error);
+      return undefined;
+    }
+  }
+
+  async updateExpenseCategory(id: number, updates: Partial<ExpenseCategory>): Promise<ExpenseCategory> {
+    try {
+      const [result] = await db.update(expenseCategories)
+        .set(updates)
+        .where(eq(expenseCategories.id, id))
+        .returning();
+      return result;
+    } catch (error) {
+      console.error('Error updating expense category:', error);
+      throw error;
+    }
+  }
+
+  async deleteExpenseCategory(id: number): Promise<void> {
+    try {
+      await db.update(expenseCategories)
+        .set({ isActive: false })
+        .where(eq(expenseCategories.id, id));
+    } catch (error) {
+      console.error('Error deleting expense category:', error);
+      throw error;
+    }
+  }
+
+  // Expense operations
+  async createExpense(expense: InsertExpense): Promise<Expense> {
+    try {
+      const [result] = await db.insert(expenses).values(expense).returning();
+      return result;
+    } catch (error) {
+      console.error('Error creating expense:', error);
+      throw error;
+    }
+  }
+
+  async getUserExpenses(userId: number, taxYear?: number): Promise<Expense[]> {
+    try {
+      let query = db.select({
+        expense: expenses,
+        category: expenseCategories
+      })
+      .from(expenses)
+      .leftJoin(expenseCategories, eq(expenses.categoryId, expenseCategories.id))
+      .where(eq(expenses.userId, userId));
+
+      if (taxYear) {
+        query = query.where(and(
+          eq(expenses.userId, userId),
+          eq(expenses.taxYear, taxYear)
+        ));
+      }
+
+      const results = await query.orderBy(desc(expenses.expenseDate));
+      return results.map(r => ({
+        ...r.expense,
+        category: r.category
+      })) as any;
+    } catch (error) {
+      console.error('Error getting user expenses:', error);
+      return [];
+    }
+  }
+
+  async getExpense(id: number, userId: number): Promise<Expense | undefined> {
+    try {
+      const [result] = await db.select().from(expenses)
+        .where(and(eq(expenses.id, id), eq(expenses.userId, userId)));
+      return result;
+    } catch (error) {
+      console.error('Error getting expense:', error);
+      return undefined;
+    }
+  }
+
+  async updateExpense(id: number, userId: number, updates: Partial<Expense>): Promise<Expense> {
+    try {
+      const [result] = await db.update(expenses)
+        .set({ ...updates, updatedAt: new Date() })
+        .where(and(eq(expenses.id, id), eq(expenses.userId, userId)))
+        .returning();
+      return result;
+    } catch (error) {
+      console.error('Error updating expense:', error);
+      throw error;
+    }
+  }
+
+  async deleteExpense(id: number, userId: number): Promise<void> {
+    try {
+      await db.delete(expenses)
+        .where(and(eq(expenses.id, id), eq(expenses.userId, userId)));
+    } catch (error) {
+      console.error('Error deleting expense:', error);
+      throw error;
+    }
+  }
+
+  async getExpensesByCategory(userId: number, categoryId: number, taxYear?: number): Promise<Expense[]> {
+    try {
+      let query = db.select().from(expenses)
+        .where(and(
+          eq(expenses.userId, userId),
+          eq(expenses.categoryId, categoryId)
+        ));
+
+      if (taxYear) {
+        query = query.where(and(
+          eq(expenses.userId, userId),
+          eq(expenses.categoryId, categoryId),
+          eq(expenses.taxYear, taxYear)
+        ));
+      }
+
+      return await query.orderBy(desc(expenses.expenseDate));
+    } catch (error) {
+      console.error('Error getting expenses by category:', error);
+      return [];
+    }
+  }
+
+  async getExpensesByDateRange(userId: number, startDate: Date, endDate: Date): Promise<Expense[]> {
+    try {
+      return await db.select().from(expenses)
+        .where(and(
+          eq(expenses.userId, userId),
+          gte(expenses.expenseDate, startDate),
+          sql`${expenses.expenseDate} <= ${endDate}`
+        ))
+        .orderBy(desc(expenses.expenseDate));
+    } catch (error) {
+      console.error('Error getting expenses by date range:', error);
+      return [];
+    }
+  }
+
+  async getExpenseTotals(userId: number, taxYear?: number): Promise<{ total: number; deductible: number; byCategory: { [key: string]: number } }> {
+    try {
+      let query = db.select({
+        categoryName: expenseCategories.name,
+        amount: expenses.amount,
+        deductionPercentage: expenses.deductionPercentage
+      })
+      .from(expenses)
+      .leftJoin(expenseCategories, eq(expenses.categoryId, expenseCategories.id))
+      .where(eq(expenses.userId, userId));
+
+      if (taxYear) {
+        query = query.where(and(
+          eq(expenses.userId, userId),
+          eq(expenses.taxYear, taxYear)
+        ));
+      }
+
+      const results = await query;
+      
+      let total = 0;
+      let deductible = 0;
+      const byCategory: { [key: string]: number } = {};
+
+      for (const result of results) {
+        const amount = result.amount;
+        const deductionAmount = Math.round(amount * (result.deductionPercentage / 100));
+        const categoryName = result.categoryName || 'Other';
+
+        total += amount;
+        deductible += deductionAmount;
+        byCategory[categoryName] = (byCategory[categoryName] || 0) + deductionAmount;
+      }
+
+      return { total, deductible, byCategory };
+    } catch (error) {
+      console.error('Error getting expense totals:', error);
+      return { total: 0, deductible: 0, byCategory: {} };
+    }
+  }
+
+  // Tax deduction info operations
+  async getTaxDeductionInfo(): Promise<TaxDeductionInfo[]> {
+    try {
+      return await db.select().from(taxDeductionInfo)
+        .orderBy(taxDeductionInfo.category, taxDeductionInfo.title);
+    } catch (error) {
+      console.error('Error getting tax deduction info:', error);
+      return [];
+    }
+  }
+
+  async getTaxDeductionInfoByCategory(category: string): Promise<TaxDeductionInfo[]> {
+    try {
+      return await db.select().from(taxDeductionInfo)
+        .where(eq(taxDeductionInfo.category, category))
+        .orderBy(taxDeductionInfo.title);
+    } catch (error) {
+      console.error('Error getting tax deduction info by category:', error);
+      return [];
+    }
+  }
+
+  async createTaxDeductionInfo(info: InsertTaxDeductionInfo): Promise<TaxDeductionInfo> {
+    try {
+      const [result] = await db.insert(taxDeductionInfo).values(info).returning();
+      return result;
+    } catch (error) {
+      console.error('Error creating tax deduction info:', error);
+      throw error;
     }
   }
 }

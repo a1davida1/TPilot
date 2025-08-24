@@ -398,3 +398,78 @@ export type InsertPostRateLimit = z.infer<typeof insertPostRateLimitSchema>;
 
 export type PostDuplicate = typeof postDuplicates.$inferSelect;
 export type InsertPostDuplicate = z.infer<typeof insertPostDuplicateSchema>;
+
+// Tax & Expense Tracking Tables
+export const expenseCategories = pgTable("expense_categories", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description").notNull(),
+  legalExplanation: text("legal_explanation").notNull(),
+  deductionPercentage: integer("deduction_percentage").default(100).notNull(), // 0-100
+  itsDeductionCode: varchar("its_deduction_code", { length: 50 }), // IRS code reference
+  examples: jsonb("examples").$type<string[]>().notNull(),
+  icon: varchar("icon", { length: 50 }).notNull(),
+  color: varchar("color", { length: 20 }).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const expenses = pgTable("expenses", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  categoryId: integer("category_id").references(() => expenseCategories.id).notNull(),
+  amount: integer("amount").notNull(), // in cents
+  description: text("description").notNull(),
+  vendor: varchar("vendor", { length: 255 }),
+  expenseDate: timestamp("expense_date").notNull(),
+  receiptUrl: varchar("receipt_url", { length: 500 }),
+  receiptFileName: varchar("receipt_file_name", { length: 255 }),
+  businessPurpose: text("business_purpose"), // Required for deduction
+  deductionPercentage: integer("deduction_percentage").default(100).notNull(),
+  tags: jsonb("tags").$type<string[]>(),
+  isRecurring: boolean("is_recurring").default(false),
+  recurringPeriod: varchar("recurring_period", { length: 20 }), // monthly, quarterly, yearly
+  taxYear: integer("tax_year").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const taxDeductionInfo = pgTable("tax_deduction_info", {
+  id: serial("id").primaryKey(),
+  title: varchar("title", { length: 200 }).notNull(),
+  category: varchar("category", { length: 100 }).notNull(),
+  description: text("description").notNull(),
+  legalBasis: text("legal_basis").notNull(),
+  requirements: jsonb("requirements").$type<string[]>().notNull(),
+  limitations: text("limitations"),
+  examples: jsonb("examples").$type<string[]>().notNull(),
+  itsReference: varchar("its_reference", { length: 100 }),
+  applicableFor: jsonb("applicable_for").$type<string[]>().notNull(), // content creators, influencers, etc.
+  riskLevel: varchar("risk_level", { length: 20 }).default("low").notNull(), // low, medium, high
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Relations
+export const expenseCategoriesRelations = relations(expenseCategories, ({ many }) => ({
+  expenses: many(expenses),
+}));
+
+export const expensesRelations = relations(expenses, ({ one }) => ({
+  user: one(users, { fields: [expenses.userId], references: [users.id] }),
+  category: one(expenseCategories, { fields: [expenses.categoryId], references: [expenseCategories.id] }),
+}));
+
+// Schemas for validation
+export const insertExpenseCategorySchema = createInsertSchema(expenseCategories);
+export const insertExpenseSchema = createInsertSchema(expenses);
+export const insertTaxDeductionInfoSchema = createInsertSchema(taxDeductionInfo);
+
+export type InsertExpenseCategory = z.infer<typeof insertExpenseCategorySchema>;
+export type ExpenseCategory = typeof expenseCategories.$inferSelect;
+export type InsertExpense = z.infer<typeof insertExpenseSchema>;
+export type Expense = typeof expenses.$inferSelect;
+export type InsertTaxDeductionInfo = z.infer<typeof insertTaxDeductionInfoSchema>;
+export type TaxDeductionInfo = typeof taxDeductionInfo.$inferSelect;
