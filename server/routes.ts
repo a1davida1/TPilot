@@ -30,6 +30,28 @@ import { createLead, confirmLead } from "./api/leads.js";
 import { getLeads } from "./api/admin-leads.js";
 import { captionRouter } from "./routes/caption.js";
 
+// IP logging middleware
+const logUserIP = (req: any, res: any, next: any) => {
+  const userIP = req.headers['x-forwarded-for'] || 
+                 req.headers['x-real-ip'] || 
+                 req.connection.remoteAddress || 
+                 req.socket.remoteAddress ||
+                 (req.connection.socket ? req.connection.socket.remoteAddress : null) ||
+                 req.ip;
+  
+  const userAgent = req.headers['user-agent'] || 'Unknown';
+  const timestamp = new Date().toISOString();
+  
+  // Log to console for now (could be extended to database logging)
+  console.log(`[${timestamp}] IP: ${userIP} | User-Agent: ${userAgent} | Route: ${req.method} ${req.originalUrl}`);
+  
+  // Attach IP to request for later use
+  req.userIP = userIP;
+  req.userAgent = userAgent;
+  
+  next();
+};
+
 // Configure multer for file uploads
 const storage_config = multer.diskStorage({
   destination: async (req, file, cb) => {
@@ -93,6 +115,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     next();
   });
+
+  // Add IP logging middleware
+  app.use(logUserIP);
 
   // Session configuration
   app.use(session({
