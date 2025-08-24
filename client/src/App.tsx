@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { Header } from "@/components/header";
 import { useAuth } from "@/hooks/useAuth";
 import { SEOOptimization, seoConfigs } from "@/components/seo-optimization";
 import { LandingPage } from "@/components/landing-page";
@@ -79,7 +80,14 @@ function Router() {
     );
   }
 
-  return isAuthenticated ? <AuthenticatedRoutes /> : <UnauthenticatedRoutes />;
+  return (
+    <div className="min-h-screen bg-background">
+      <Header />
+      <main>
+        {isAuthenticated ? <AuthenticatedRoutes /> : <UnauthenticatedRoutes />}
+      </main>
+    </div>
+  );
 }
 
 function App() {
