@@ -197,7 +197,7 @@ export function LandingPage() {
     {
       icon: <Calendar className="h-6 w-6" />,
       title: "Caption + Schedule with Rule Checks",
-      description: "AI-generated captions and smart scheduling that automatically checks subreddit rules to prevent violations",
+      description: "Smart captions and scheduling that automatically checks platform rules to prevent violations",
       benefit: "Zero rule violations"
     },
     {
@@ -239,17 +239,17 @@ export function LandingPage() {
       {/* Hero Section with Waitlist */}
       <section className="relative py-20 px-4 text-center">
         <div className="max-w-6xl mx-auto">
-          {/* Logo */}
-          <div className="flex justify-center mb-8">
+          {/* Logo + Badge */}
+          <div className="flex justify-center items-center gap-4 mb-8">
             <img 
               src="/logo.png" 
               alt="ThottoPilot" 
-              className="h-32 w-32 md:h-40 md:w-40 rounded-full shadow-2xl hover:scale-105 transition-transform duration-300"
+              className="h-16 w-16 md:h-20 md:w-20 rounded-full shadow-2xl hover:scale-105 transition-transform duration-300"
             />
+            <Badge className="bg-gradient-to-r from-pink-500 to-rose-500 text-white border-0 text-lg px-6 py-3 font-bold tracking-tight shadow-lg hover:shadow-xl transition-all duration-300 animate-pulse-slow animate-glow" variant="secondary">
+              🚀 Content Copilot for Creators
+            </Badge>
           </div>
-          <Badge className="mb-8 bg-gradient-to-r from-pink-500 to-rose-500 text-white border-0 text-lg px-6 py-3 font-bold tracking-tight shadow-lg hover:shadow-xl transition-all duration-300 animate-pulse-slow animate-glow" variant="secondary">
-            🚀 Content Copilot for Creators
-          </Badge>
           
           <h1 className="text-7xl md:text-9xl font-black text-gradient-animate mb-8 leading-tight tracking-tighter animate-float">
             ThottoPilot
@@ -313,7 +313,7 @@ export function LandingPage() {
                   </Label>
                   <Textarea
                     id="painPoint"
-                    placeholder="e.g., Takes too long to create posts, hard to find good hashtags, getting banned from subreddits..."
+                    placeholder="e.g., Takes too long to create posts, hard to find good hashtags, managing multiple platforms..."
                     value={formData.painPoint}
                     onChange={(e) => setFormData(prev => ({ ...prev, painPoint: e.target.value }))}
                     rows={3}
