@@ -20,7 +20,7 @@ export function AudienceInsights() {
   const { data: insightsData, isLoading } = useQuery({
     queryKey: ['audience-insights'],
     queryFn: async () => {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('authToken');
       if (!token) {
         return { audienceData: [], topSubreddits: [] };
       }

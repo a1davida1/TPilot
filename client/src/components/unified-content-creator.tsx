@@ -225,7 +225,7 @@ export function UnifiedContentCreator({
 
 
       // Send to unified endpoint  
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('authToken');
       console.log('Sending request with token:', token ? 'Token present' : 'No token');
       
       const response = await fetch('/api/generate-unified', {

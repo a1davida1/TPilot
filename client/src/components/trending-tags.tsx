@@ -29,7 +29,7 @@ export function TrendingTags() {
   const { data: trendingData, isLoading } = useQuery({
     queryKey: ['trending-tags', timeRange, categoryFilter],
     queryFn: async () => {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('authToken');
       const response = await fetch(`/api/trending-tags?timeRange=${timeRange}&category=${categoryFilter}`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });

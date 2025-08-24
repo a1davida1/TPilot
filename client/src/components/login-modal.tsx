@@ -35,7 +35,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
       });
       const data = await response.json();
 
-      localStorage.setItem("token", data.token);
+      localStorage.setItem("authToken", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
       
       toast({
@@ -73,7 +73,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
       });
       const data = await response.json();
 
-      localStorage.setItem("token", data.token);
+      localStorage.setItem("authToken", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
       
       toast({

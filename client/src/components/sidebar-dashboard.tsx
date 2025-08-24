@@ -105,7 +105,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
   }, [isGuestMode]);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    localStorage.removeItem('authToken');
     localStorage.removeItem('user');
     setUser(null);
     setUserTier('guest');
@@ -236,7 +236,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
       }
 
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('authToken');
         if (!token) return;
 
         const response = await fetch('/api/user/stats', {

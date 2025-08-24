@@ -60,7 +60,7 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
   }, [isGuestMode]);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    localStorage.removeItem('authToken');
     localStorage.removeItem('user');
     setUser(null);
     setUserTier('guest');
@@ -94,7 +94,7 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
       }
 
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('authToken');
         if (!token) return;
 
         // Fetch analytics and stats in parallel

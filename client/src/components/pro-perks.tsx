@@ -72,7 +72,7 @@ export function ProPerks({ userTier = 'pro' }: ProPerksProps) {
   const { data: resourcesData, isLoading: resourcesLoading } = useQuery({
     queryKey: ['pro-resources'],
     queryFn: async () => {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('authToken');
       if (!token) return { resources: [] };
       
       try {

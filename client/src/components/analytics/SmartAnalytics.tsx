@@ -64,12 +64,12 @@ export default function SmartAnalytics() {
       const [analyticsRes, statsRes] = await Promise.all([
         fetch(`/api/analytics/${timeRange}`, {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
           }
         }),
         fetch('/api/stats', {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
           }
         })
       ]);
