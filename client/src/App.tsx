@@ -23,6 +23,7 @@ import { AdminDashboard } from "@/pages/admin";
 import { AdminLeadsPage } from "@/pages/admin-leads";
 import PolicyDemo from "@/pages/PolicyDemo";
 import CaptionGeneratorPage from "@/pages/caption-generator";
+import RedditPostingPage from "@/pages/reddit-posting";
 
 function AuthenticatedRoutes() {
   return (
@@ -32,6 +33,7 @@ function AuthenticatedRoutes() {
       <Route path="/caption-generator" component={CaptionGeneratorPage} />
       <Route path="/enterprise" component={Enterprise} />
       <Route path="/phase4" component={Phase4Dashboard} />
+      <Route path="/reddit" component={RedditPostingPage} />
       <Route path="/history" component={History} />
       <Route path="/settings" component={Settings} />
       <Route component={NotFound} />
@@ -48,6 +50,7 @@ function UnauthenticatedRoutes() {
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/leads" component={AdminLeadsPage} />
       <Route path="/policy-demo" component={PolicyDemo} />
+      <Route path="/reddit" component={RedditPostingPage} />
       <Route path="/demo">
         <AppleInspiredApp />
       </Route>
