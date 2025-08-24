@@ -26,6 +26,7 @@ import { getAvailablePerks, getPerksByCategory, generateReferralCode, getSignupI
 import { registerApiRoutes } from "./api-routes.js";
 import { registerPolicyRoutes } from "./policy-routes.js";
 import { registerRedditRoutes } from "./reddit-routes.js";
+import { registerAnalyticsRoutes } from "./analytics-routes.js";
 import { createLead, confirmLead } from "./api/leads.js";
 import { getLeads } from "./api/admin-leads.js";
 import { captionRouter } from "./routes/caption.js";
@@ -1855,6 +1856,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register Reddit Routes  
   registerRedditRoutes(app);
+  
+  // Register Analytics Routes (Phase 1)
+  registerAnalyticsRoutes(app);
 
   // Register Caption Routes (2-pass Gemini pipeline)
   app.use('/api/caption', captionRouter);

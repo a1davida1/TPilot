@@ -452,6 +452,106 @@ export const taxDeductionInfo = pgTable("tax_deduction_info", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// PHASE 1: Comprehensive Analytics & Tracking Tables
+
+export const userSessions = pgTable("user_sessions", {
+  id: serial("id").primaryKey(),
+  sessionId: varchar("session_id", { length: 255 }).unique().notNull(),
+  userId: integer("user_id").references(() => users.id),
+  ipAddress: varchar("ip_address", { length: 45 }),
+  userAgent: text("user_agent"),
+  referrer: varchar("referrer", { length: 500 }),
+  utmSource: varchar("utm_source", { length: 255 }),
+  utmMedium: varchar("utm_medium", { length: 255 }),
+  utmCampaign: varchar("utm_campaign", { length: 255 }),
+  deviceType: varchar("device_type", { length: 50 }), // mobile, desktop, tablet
+  browser: varchar("browser", { length: 100 }),
+  os: varchar("os", { length: 100 }),
+  country: varchar("country", { length: 100 }),
+  city: varchar("city", { length: 100 }),
+  startedAt: timestamp("started_at").defaultNow().notNull(),
+  endedAt: timestamp("ended_at"),
+  duration: integer("duration"), // seconds
+  pageCount: integer("page_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const pageViews = pgTable("page_views", {
+  id: serial("id").primaryKey(),
+  sessionId: varchar("session_id", { length: 255 }).references(() => userSessions.sessionId).notNull(),
+  userId: integer("user_id").references(() => users.id),
+  path: varchar("path", { length: 500 }).notNull(),
+  title: varchar("title", { length: 500 }),
+  referrer: varchar("referrer", { length: 500 }),
+  timeOnPage: integer("time_on_page"), // seconds
+  scrollDepth: integer("scroll_depth"), // percentage 0-100
+  exitPage: boolean("exit_page").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const contentViews = pgTable("content_views", {
+  id: serial("id").primaryKey(),
+  contentId: integer("content_id").references(() => contentGenerations.id).notNull(),
+  sessionId: varchar("session_id", { length: 255 }).references(() => userSessions.sessionId),
+  userId: integer("user_id").references(() => users.id),
+  platform: varchar("platform", { length: 50 }).notNull(),
+  subreddit: varchar("subreddit", { length: 100 }),
+  viewType: varchar("view_type", { length: 50 }).notNull(), // internal, external, shared
+  ipAddress: varchar("ip_address", { length: 45 }),
+  userAgent: text("user_agent"),
+  referrer: varchar("referrer", { length: 500 }),
+  timeSpent: integer("time_spent"), // seconds viewing content
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const engagementEvents = pgTable("engagement_events", {
+  id: serial("id").primaryKey(),
+  sessionId: varchar("session_id", { length: 255 }).references(() => userSessions.sessionId),
+  userId: integer("user_id").references(() => users.id),
+  eventType: varchar("event_type", { length: 100 }).notNull(), // click, hover, scroll, form_submit, etc.
+  element: varchar("element", { length: 255 }), // button ID, link text, etc.
+  page: varchar("page", { length: 500 }).notNull(),
+  metadata: jsonb("metadata"), // additional event data
+  value: integer("value"), // numeric value if applicable
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const socialMetrics = pgTable("social_metrics", {
+  id: serial("id").primaryKey(),
+  contentId: integer("content_id").references(() => contentGenerations.id).notNull(),
+  platform: varchar("platform", { length: 50 }).notNull(),
+  platformPostId: varchar("platform_post_id", { length: 255 }),
+  views: integer("views").default(0),
+  likes: integer("likes").default(0),
+  comments: integer("comments").default(0),
+  shares: integer("shares").default(0),
+  saves: integer("saves").default(0),
+  clicks: integer("clicks").default(0),
+  engagementRate: integer("engagement_rate").default(0), // percentage * 100
+  reach: integer("reach").default(0),
+  impressions: integer("impressions").default(0),
+  lastUpdated: timestamp("last_updated").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const analyticsMetrics = pgTable("analytics_metrics", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  metricType: varchar("metric_type", { length: 100 }).notNull(), // daily, weekly, monthly
+  date: timestamp("date").notNull(),
+  totalViews: integer("total_views").default(0),
+  totalEngagement: integer("total_engagement").default(0),
+  contentGenerated: integer("content_generated").default(0),
+  platformViews: jsonb("platform_views"), // {reddit: 100, instagram: 50}
+  topContent: jsonb("top_content"), // [{id: 1, views: 100}]
+  engagementRate: integer("engagement_rate").default(0), // percentage * 100
+  growth: jsonb("growth"), // growth metrics compared to previous period
+  revenue: integer("revenue").default(0), // cents
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userDateIdx: unique("analytics_metrics_user_date_idx").on(table.userId, table.date, table.metricType),
+}));
+
 // Relations
 export const expenseCategoriesRelations = relations(expenseCategories, ({ many }) => ({
   expenses: many(expenses),
@@ -462,10 +562,32 @@ export const expensesRelations = relations(expenses, ({ one }) => ({
   category: one(expenseCategories, { fields: [expenses.categoryId], references: [expenseCategories.id] }),
 }));
 
+// PHASE 1: Analytics Schema Validation
+export const insertUserSessionSchema = createInsertSchema(userSessions);
+export const insertPageViewSchema = createInsertSchema(pageViews);
+export const insertContentViewSchema = createInsertSchema(contentViews);
+export const insertEngagementEventSchema = createInsertSchema(engagementEvents);
+export const insertSocialMetricSchema = createInsertSchema(socialMetrics);
+export const insertAnalyticsMetricSchema = createInsertSchema(analyticsMetrics);
+
 // Schemas for validation
 export const insertExpenseCategorySchema = createInsertSchema(expenseCategories);
 export const insertExpenseSchema = createInsertSchema(expenses);
 export const insertTaxDeductionInfoSchema = createInsertSchema(taxDeductionInfo);
+
+// PHASE 1: Analytics Types
+export type UserSession = typeof userSessions.$inferSelect;
+export type InsertUserSession = z.infer<typeof insertUserSessionSchema>;
+export type PageView = typeof pageViews.$inferSelect;
+export type InsertPageView = z.infer<typeof insertPageViewSchema>;
+export type ContentView = typeof contentViews.$inferSelect;
+export type InsertContentView = z.infer<typeof insertContentViewSchema>;
+export type EngagementEvent = typeof engagementEvents.$inferSelect;
+export type InsertEngagementEvent = z.infer<typeof insertEngagementEventSchema>;
+export type SocialMetric = typeof socialMetrics.$inferSelect;
+export type InsertSocialMetric = z.infer<typeof insertSocialMetricSchema>;
+export type AnalyticsMetric = typeof analyticsMetrics.$inferSelect;
+export type InsertAnalyticsMetric = z.infer<typeof insertAnalyticsMetricSchema>;
 
 export type InsertExpenseCategory = z.infer<typeof insertExpenseCategorySchema>;
 export type ExpenseCategory = typeof expenseCategories.$inferSelect;

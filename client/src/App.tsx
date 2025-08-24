@@ -1,5 +1,5 @@
-import React from "react";
-import { Switch, Route, Redirect } from "wouter";
+import React, { useEffect } from "react";
+import { Switch, Route, Redirect, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -27,6 +27,8 @@ import { AdminLeadsPage } from "@/pages/admin-leads";
 import PolicyDemo from "@/pages/PolicyDemo";
 import CaptionGeneratorPage from "@/pages/caption-generator";
 import RedditPostingPage from "@/pages/reddit-posting";
+// Phase 1: Real Analytics Tracking
+import { trackPageView, setUserId, trackFeatureUsage } from "@/lib/analytics-tracker";
 
 function AuthenticatedRoutes() {
   return (
@@ -69,8 +71,20 @@ function UnauthenticatedRoutes() {
 }
 
 function Router() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const { shouldShowOnboarding, markWalkthroughCompleted, showOnboarding } = useOnboarding();
+  const [location] = useLocation();
+
+  // Phase 1: Track page views and user authentication
+  useEffect(() => {
+    trackPageView(location, document.title);
+  }, [location]);
+
+  useEffect(() => {
+    if (user?.id) {
+      setUserId(user.id.toString());
+    }
+  }, [user]);
 
   if (isLoading) {
     return (
@@ -101,6 +115,11 @@ function Router() {
 }
 
 function App() {
+  // Phase 1: Initialize analytics on app startup
+  useEffect(() => {
+    trackFeatureUsage('app', 'startup', { timestamp: new Date().toISOString() });
+  }, []);
+
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
