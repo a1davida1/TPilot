@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Clock, Copy, Check, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
