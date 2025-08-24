@@ -9,16 +9,38 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-i
 export function setupAdminRoutes(app: Express) {
   // Admin middleware to check if user is admin
   const requireAdmin = (req: any, res: any, next: any) => {
-    // Check if user is authenticated via session (same as other protected routes)
-    if (!req.isAuthenticated || !req.isAuthenticated()) {
+    // Check if user is authenticated via session OR JWT
+    let user = null;
+    
+    // Try session-based authentication first
+    if (req.isAuthenticated && req.isAuthenticated()) {
+      user = req.user;
+    } else {
+      // Try JWT authentication
+      const authHeader = req.headers['authorization'];
+      const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+      
+      if (token) {
+        try {
+          const decoded = jwt.verify(token, JWT_SECRET) as any;
+          user = decoded;
+        } catch (error) {
+          // JWT is invalid, continue to check session
+        }
+      }
+    }
+
+    if (!user) {
       return res.status(401).json({ message: 'Admin access required' });
     }
 
     // Check if user is admin (ID 999 or username 'admin')
-    if (req.user?.id !== 999 && req.user?.username !== 'admin') {
+    if (user.id !== 999 && user.username !== 'admin') {
       return res.status(403).json({ message: 'Admin access required' });
     }
 
+    // Set user on request for later use
+    req.user = user;
     next();
   };
 

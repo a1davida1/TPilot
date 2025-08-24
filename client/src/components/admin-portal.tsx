@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
+import { useAuth } from '@/hooks/useAuth';
 import {
   Users,
   Gift,
@@ -62,6 +63,33 @@ export function AdminPortal() {
   });
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const { toast } = useToast();
+  const { token } = useAuth();
+  
+  // Authenticated API request with JWT token
+  const authenticatedRequest = async (url: string, method: string = 'GET', data?: any) => {
+    const response = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: data ? JSON.stringify(data) : undefined
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorText;
+      } catch {
+        errorMessage = errorText || response.statusText;
+      }
+      throw new Error(errorMessage);
+    }
+    
+    return response.json();
+  };
 
   // Fetch user statistics
   const { data: stats, isLoading: statsLoading } = useQuery({
@@ -76,7 +104,7 @@ export function AdminPortal() {
 
   // Create trial user mutation
   const createTrialMutation = useMutation({
-    mutationFn: (data: TrialRequest) => apiRequest('/api/admin/create-trial', 'POST', data),
+    mutationFn: (data: TrialRequest) => authenticatedRequest('/api/admin/create-trial', 'POST', data),
     onSuccess: () => {
       toast({
         title: "Trial Created Successfully",
@@ -99,7 +127,7 @@ export function AdminPortal() {
   // Upgrade user mutation
   const upgradeUserMutation = useMutation({
     mutationFn: (data: { userId: number; tier: string }) => 
-      apiRequest('/api/admin/upgrade-user', 'POST', data),
+      authenticatedRequest('/api/admin/upgrade-user', 'POST', data),
     onSuccess: () => {
       toast({
         title: "User Upgraded",
