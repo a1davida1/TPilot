@@ -244,14 +244,14 @@ export function LandingPage() {
             <img 
               src="/logo.png" 
               alt="ThottoPilot" 
-              className="h-24 w-24 md:h-32 md:w-32 rounded-full shadow-2xl hover:scale-105 transition-transform duration-300"
+              className="h-32 w-32 md:h-40 md:w-40 rounded-full shadow-2xl hover:scale-105 transition-transform duration-300"
             />
           </div>
           <Badge className="mb-8 bg-gradient-to-r from-pink-500 to-rose-500 text-white border-0 text-lg px-6 py-3 font-bold tracking-tight shadow-lg hover:shadow-xl transition-all duration-300 animate-pulse-slow animate-glow" variant="secondary">
             🚀 Content Copilot for Creators
           </Badge>
           
-          <h1 className="text-6xl md:text-8xl font-black text-gradient-animate mb-8 leading-tight tracking-tighter animate-float">
+          <h1 className="text-7xl md:text-9xl font-black text-gradient-animate mb-8 leading-tight tracking-tighter animate-float">
             ThottoPilot
           </h1>
           
@@ -427,7 +427,7 @@ export function LandingPage() {
       {/* Footer */}
       <footer className="bg-gradient-to-r from-pink-900 via-rose-900 to-pink-800 dark:from-pink-950 dark:via-rose-950 dark:to-pink-900 text-white py-16 px-4">
         <div className="max-w-6xl mx-auto text-center">
-          <h3 className="text-3xl font-black mb-6 text-gradient-animate">ThottoPilot</h3>
+          <h3 className="text-4xl font-black mb-6 text-gradient-animate">ThottoPilot</h3>
           <p className="text-pink-100 mb-8 text-lg font-medium">
             The ultimate content copilot for creators
           </p>

@@ -106,7 +106,7 @@ export default function Login() {
                   <Sparkles className="h-12 w-12 text-white" />
                 </div>
               </div>
-              <h1 className="text-6xl font-bold bg-gradient-to-r from-indigo-700 to-purple-700 bg-clip-text text-transparent mb-6">
+              <h1 className="text-7xl font-bold bg-gradient-to-r from-indigo-700 to-purple-700 bg-clip-text text-transparent mb-6">
                 ThottoPilot
               </h1>
               <p className="text-xl text-gray-700 font-medium mb-8 max-w-3xl mx-auto">
