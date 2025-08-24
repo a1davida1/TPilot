@@ -191,8 +191,8 @@ export function CleanDashboard({ isGuestMode = false, user, userTier = 'free' }:
         return (
           <div className="max-w-2xl mx-auto text-center py-16">
             <div className="mb-8">
-              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Sparkles className="w-8 h-8 text-purple-600" />
+              <div className="w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <ThottoPilotLogo size="lg" className="h-16 w-16" />
               </div>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">Welcome to ThottoPilot</h2>
               <p className="text-gray-600 mb-8">
