@@ -42,7 +42,6 @@ export function Header() {
   };
 
   const navigationItems = [
-    { href: '/', label: 'Home', authenticated: null },
     { href: '/dashboard', label: 'Dashboard', authenticated: true },
     { href: '/reddit', label: 'Reddit', authenticated: null },
     { href: '/caption-generator', label: 'Generator', authenticated: null },

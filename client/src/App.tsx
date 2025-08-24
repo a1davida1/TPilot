@@ -31,7 +31,7 @@ import RedditPostingPage from "@/pages/reddit-posting";
 function AuthenticatedRoutes() {
   return (
     <Switch>
-      <Route path="/" component={Phase4Dashboard} />
+      <Route path="/" component={Dashboard} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/caption-generator" component={CaptionGeneratorPage} />
       <Route path="/enterprise" component={Enterprise} />
@@ -48,7 +48,6 @@ function UnauthenticatedRoutes() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
-      <Route path="/dashboard" component={Dashboard} />
       <Route path="/caption-generator" component={CaptionGeneratorPage} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/leads" component={AdminLeadsPage} />
