@@ -5,29 +5,62 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // Demo content generator for when API is unavailable
 function generateDemoContent(request: AIGenerationRequest): AIContentResponse {
-  const { customPrompt, platform, allowsPromotion } = request;
+  const { customPrompt, platform, allowsPromotion, style, theme } = request;
   
-  const demoTitles = [
-    "Just had the most amazing day! ✨",
-    "Feeling confident and loving life 💫",
-    "Sometimes you just gotta shine your own light ✨"
-  ];
+  // Generate content based on style and theme
+  let demoTitles: string[];
+  let demoContent: string;
+  let photoInstructions: any;
   
-  const demoContent = customPrompt 
-    ? `Here's some engaging content based on your prompt: "${customPrompt}"\n\nThis is a demo of what ThottoPilot can create for you! The actual AI would generate personalized content that matches your voice and style perfectly. ${allowsPromotion === 'yes' ? 'With promotion-friendly messaging included!' : 'Keeping things subtle and authentic.'}\n\nSign up to unlock the full AI generator with real OpenAI integration! 🚀`
-    : `This is a demo of ThottoPilot's AI content generation! 🎉\n\nIn the full version, I would create personalized ${platform} content that matches your exact voice, style, and brand. Every post would be tailored to your personality profile and optimized for maximum engagement.\n\nReady to see what real AI-generated content can do for your growth? Sign up now! ✨`;
-
-  return {
-    titles: demoTitles,
-    content: demoContent,
-    photoInstructions: {
+  // Check if this is adult/nude content style
+  const isAdultContent = style?.includes('nude') || theme?.includes('nude') || 
+                         style?.includes('sexy') || theme?.includes('sexy') ||
+                         style?.includes('sensual') || theme?.includes('sensual');
+  
+  if (isAdultContent) {
+    demoTitles = [
+      "Feeling absolutely stunning today 💋",
+      "When confidence meets beauty ✨",
+      "Natural beauty at its finest 🌸"
+    ];
+    
+    demoContent = customPrompt 
+      ? `[AI QUOTA EXCEEDED - Demo Content]\n\nThis would be personalized content for: "${customPrompt}"\n\nStyle: ${style || 'sensual'}\nPlatform: ${platform}\n\nThe full AI would create engaging, authentic content that matches your exact style and voice. ${allowsPromotion === 'high' ? 'With subtle promotional elements included.' : 'Focused on genuine connection.'}\n\nUpgrade your OpenAI plan to enable real AI generation! 🚀`
+      : `[AI QUOTA EXCEEDED - Demo Content]\n\nThis would be personalized ${platform} content in ${style || 'sensual'} style.\n\nThe AI would craft authentic, engaging posts that feel genuinely you - never generic or robotic. Each post would be optimized for your audience and platform.\n\nReady for real AI-powered content creation? ✨`;
+    
+    photoInstructions = {
+      lighting: "Soft, flattering lighting - golden hour or warm indoor lighting works beautifully",
+      cameraAngle: "Eye level or slightly above - creates intimate connection while remaining flattering",
+      composition: "Focus on natural poses and authentic expressions that showcase your personality",
+      styling: "Whatever makes you feel confident and beautiful - authenticity is most important",
+      mood: "Confident, alluring, and genuinely comfortable in your own skin",
+      technicalSettings: "Good focus with soft background - keep attention on you as the subject"
+    };
+  } else {
+    demoTitles = [
+      "Just had the most amazing day! ✨",
+      "Feeling confident and loving life 💫",
+      "Sometimes you just gotta shine your own light ✨"
+    ];
+    
+    demoContent = customPrompt 
+      ? `[AI QUOTA EXCEEDED - Demo Content]\n\nThis would be engaging content for: "${customPrompt}"\n\nStyle: ${style || 'casual'}\nPlatform: ${platform}\n\nThe actual AI would generate personalized content that matches your voice and style perfectly. ${allowsPromotion === 'high' ? 'With promotion-friendly messaging included!' : 'Keeping things subtle and authentic.'}\n\nUpgrade your OpenAI plan to unlock full AI generation! 🚀`
+      : `[AI QUOTA EXCEEDED - Demo Content]\n\nThis would be personalized ${platform} content that matches your exact voice, style, and brand. Every post would be tailored to your personality profile and optimized for maximum engagement.\n\nReady to see what real AI-generated content can do for your growth? Sign up now! ✨`;
+    
+    photoInstructions = {
       lighting: "Soft natural light from a window - creates a warm, inviting glow that's flattering and professional",
       cameraAngle: "Slightly above eye level - this angle is universally flattering and creates connection with viewers",
       composition: "Rule of thirds with you positioned off-center - creates visual interest and professional-looking shots",
       styling: "Your signature style with a touch of confidence - wear what makes you feel amazing and authentic",
       mood: "Confident, approachable, and genuinely happy - let your personality shine through naturally",
       technicalSettings: "Portrait mode with soft background blur - keeps focus on you while creating depth"
-    }
+    };
+  }
+
+  return {
+    titles: demoTitles,
+    content: demoContent,
+    photoInstructions
   };
 }
 
@@ -49,8 +82,10 @@ interface AIGenerationRequest {
   imageDescription?: string;
   customPrompt?: string;
   subreddit?: string;
-  allowsPromotion: 'yes' | 'no';
+  allowsPromotion: 'yes' | 'no' | 'high';
   baseImageUrl?: string;
+  style?: string;
+  theme?: string;
 }
 
 interface AIContentResponse {

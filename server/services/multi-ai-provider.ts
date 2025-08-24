@@ -91,7 +91,13 @@ export async function generateWithMultiProvider(request: MultiAIRequest): Promis
   
   // If all providers fail, return demo content
   console.log('All AI providers failed, using demo content');
-  return generateDemoContent(request);
+  // Pass style and theme from unified request to demo generator
+  const demoRequest = {
+    ...request,
+    style: (request as any).style,
+    theme: (request as any).theme
+  };
+  return generateDemoContent(demoRequest);
 }
 
 async function generateWithGemini(prompt: string) {
