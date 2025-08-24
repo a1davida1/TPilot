@@ -5,6 +5,7 @@ import { leads, insertLeadSchema } from '@shared/schema';
 import { verifyTurnstileToken } from '../lib/turnstile.js';
 import { parseUTMFromCookie, parseUTMFromURL, mergeUTMParams } from '../lib/utm.js';
 import { sendDoubleOptInEmail } from '../lib/mailer.js';
+import { emailService } from '../services/email-service.js';
 import { createConfirmToken, verifyConfirmToken } from '../lib/tokens.js';
 import { trackEvent } from '../lib/analytics.js';
 import { eq } from 'drizzle-orm';
@@ -101,6 +102,14 @@ export async function createLead(req: Request, res: Response) {
       console.error('Failed to send confirmation email for:', email);
     }
 
+    // Send admin notification
+    const adminNotificationSent = await emailService.sendAdminWaitlistNotification(
+      email,
+      leadData.platformTags,
+      painPoint || null,
+      mergedUTM
+    );
+
     // Track analytics event
     trackEvent('lead_created', {
       email,
@@ -110,6 +119,7 @@ export async function createLead(req: Request, res: Response) {
       utmMedium: mergedUTM.utmMedium,
       utmCampaign: mergedUTM.utmCampaign,
       emailSent,
+      adminNotificationSent,
     });
 
     res.json({

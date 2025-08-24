@@ -150,6 +150,52 @@ const emailTemplates = {
       </div>
     `,
     textContent: `Hi ${username}! Your ${platform} content is ready. View it at ${APP_URL}/dashboard`
+  }),
+
+  adminWaitlistNotification: (email: string, platformTags: string[], painPoint: string | null, utmData: any): EmailTemplate => ({
+    subject: '🚨 New Waitlist Signup - ThottoPilot',
+    htmlContent: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%); padding: 30px; border-radius: 10px 10px 0 0;">
+          <h1 style="color: white; margin: 0; text-align: center;">🎯 New Waitlist Signup!</h1>
+        </div>
+        <div style="padding: 30px; background: #f7f7f7;">
+          <h2 style="color: #333;">New User Joined ThottoPilot Waitlist</h2>
+          
+          <div style="background: white; padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 4px solid #ff6b35;">
+            <h3 style="color: #333; margin: 0 0 15px 0;">Contact Information</h3>
+            <p style="color: #666; margin: 5px 0;"><strong>Email:</strong> ${email}</p>
+            <p style="color: #666; margin: 5px 0;"><strong>Signup Time:</strong> ${new Date().toLocaleString()}</p>
+          </div>
+
+          <div style="background: white; padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 4px solid #667eea;">
+            <h3 style="color: #333; margin: 0 0 15px 0;">User Interests</h3>
+            <p style="color: #666; margin: 5px 0;"><strong>Platforms:</strong> ${platformTags.length > 0 ? platformTags.join(', ') : 'Not specified'}</p>
+            <p style="color: #666; margin: 5px 0;"><strong>Pain Point:</strong> ${painPoint || 'Not provided'}</p>
+          </div>
+
+          ${utmData.utmSource || utmData.utmMedium || utmData.utmCampaign ? `
+          <div style="background: white; padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 4px solid #764ba2;">
+            <h3 style="color: #333; margin: 0 0 15px 0;">Marketing Attribution</h3>
+            ${utmData.utmSource ? `<p style="color: #666; margin: 5px 0;"><strong>Source:</strong> ${utmData.utmSource}</p>` : ''}
+            ${utmData.utmMedium ? `<p style="color: #666; margin: 5px 0;"><strong>Medium:</strong> ${utmData.utmMedium}</p>` : ''}
+            ${utmData.utmCampaign ? `<p style="color: #666; margin: 5px 0;"><strong>Campaign:</strong> ${utmData.utmCampaign}</p>` : ''}
+            ${utmData.referrer ? `<p style="color: #666; margin: 5px 0;"><strong>Referrer:</strong> ${utmData.referrer}</p>` : ''}
+          </div>
+          ` : ''}
+
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${APP_URL}/admin/leads" style="background: linear-gradient(90deg, #ff6b35, #f7931e); color: white; padding: 15px 40px; text-decoration: none; border-radius: 25px; display: inline-block;">
+              View All Leads
+            </a>
+          </div>
+        </div>
+        <div style="background: #333; color: #999; padding: 20px; text-align: center; font-size: 12px;">
+          ThottoPilot Admin Notification System
+        </div>
+      </div>
+    `,
+    textContent: `New waitlist signup: ${email}. Platforms: ${platformTags.join(', ')}. Pain point: ${painPoint || 'Not provided'}. View details at ${APP_URL}/admin/leads`
   })
 };
 
@@ -304,6 +350,38 @@ export class EmailService {
       return true;
     } catch (error) {
       console.error('❌ Failed to send verification email:', error);
+      return false;
+    }
+  }
+
+  // Send admin notification for new waitlist signup
+  async sendAdminWaitlistNotification(
+    userEmail: string, 
+    platformTags: string[], 
+    painPoint: string | null, 
+    utmData: any
+  ): Promise<boolean> {
+    if (!this.isConfigured) {
+      console.log(`📧 [Mock] Admin waitlist notification would be sent for ${userEmail}`);
+      return true;
+    }
+
+    // Admin email from environment variable, fallback to default
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@thottopilot.com';
+    
+    try {
+      const template = emailTemplates.adminWaitlistNotification(userEmail, platformTags, painPoint, utmData);
+      await sgMail.send({
+        to: adminEmail,
+        from: 'noreply@thottopilot.com',
+        subject: template.subject,
+        html: template.htmlContent,
+        text: template.textContent
+      });
+      console.log(`✅ Admin waitlist notification sent to ${adminEmail} for user: ${userEmail}`);
+      return true;
+    } catch (error) {
+      console.error('❌ Failed to send admin waitlist notification:', error);
       return false;
     }
   }
