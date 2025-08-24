@@ -94,6 +94,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeSection, setActiveSection] = useState('analytics');
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['creator-tools']));
+  const [setupLater, setSetupLater] = useState(false);
 
   // Load user from localStorage on mount
   useEffect(() => {
@@ -134,13 +135,16 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
   // Check if user is admin
   const isAdmin = user?.username === 'admin' || user?.isAdmin || user?.email === 'admin@thottopilot.com';
 
-  const menuItems = [
-    {
-      id: 'getting-started',
-      label: 'Getting Started',
-      icon: <BookOpen className="h-4 w-4" />,
-      badge: 'Setup Guide'
-    },
+  // Getting Started menu item
+  const gettingStartedItem = {
+    id: 'getting-started',
+    label: 'Getting Started',
+    icon: <BookOpen className="h-4 w-4" />,
+    badge: 'Setup Guide'
+  };
+
+  // Base menu items without Getting Started
+  const baseMenuItems = [
     {
       id: 'creator-tools',
       label: 'Creator Tools',
@@ -226,6 +230,11 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
       ]
     }] : [])
   ];
+
+  // Arrange menu items based on setupLater state
+  const menuItems = setupLater 
+    ? [...baseMenuItems, gettingStartedItem] // Getting Started at the bottom
+    : [gettingStartedItem, ...baseMenuItems]; // Getting Started at the top
 
   const [userStats, setUserStats] = useState({
     postsCreated: 0,
@@ -349,7 +358,10 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
             <GettingStarted 
               userTier={userTier} 
               onSectionSelect={(section) => setActiveSection(section)}
-              onSetupLater={() => setActiveSection('analytics')}
+              onSetupLater={() => {
+                setSetupLater(true);
+                setActiveSection('analytics');
+              }}
             />
           </div>
         );
