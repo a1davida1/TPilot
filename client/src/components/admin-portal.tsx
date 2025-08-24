@@ -94,12 +94,16 @@ export function AdminPortal() {
   // Fetch user statistics
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['/api/admin/stats'],
-    refetchInterval: 30000 // Refresh every 30 seconds
+    queryFn: () => authenticatedRequest('/api/admin/stats'),
+    refetchInterval: 30000, // Refresh every 30 seconds
+    enabled: !!token
   });
 
   // Fetch all users
   const { data: users, isLoading: usersLoading } = useQuery({
-    queryKey: ['/api/admin/users']
+    queryKey: ['/api/admin/users'],
+    queryFn: () => authenticatedRequest('/api/admin/users'),
+    enabled: !!token
   });
 
   // Create trial user mutation
