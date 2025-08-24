@@ -157,11 +157,7 @@ export function CleanDashboard({ isGuestMode = false, user, userTier = 'free' }:
       
       case 'tax':
         return (
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-4">Tax Tracker</h1>
-              <p className="text-gray-600">Track business expenses and tax deductions</p>
-            </div>
+          <div className="w-full">
             <TaxTracker userTier={userTier} />
           </div>
         );

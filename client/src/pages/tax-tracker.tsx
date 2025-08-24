@@ -1,10 +1,18 @@
 import React, { useState } from 'react';
-import { Calendar, Plus, TrendingUp, FileText, Calculator, Info, DollarSign, Receipt, Sparkles } from 'lucide-react';
+import { Calendar, Plus, TrendingUp, FileText, Calculator, Info, DollarSign, Receipt, Sparkles, Upload, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
 
 // Apple-inspired color palette
 const colors = {
@@ -83,13 +91,100 @@ const expenseCategories = [
   }
 ];
 
-const TaxTracker: React.FC = () => {
+interface TaxTrackerProps {
+  userTier?: 'guest' | 'free' | 'pro' | 'premium';
+}
+
+const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
   const [selectedCategory, setSelectedCategory] = useState(expenseCategories[0]);
   const [activeTab, setActiveTab] = useState('overview');
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [calendarDate, setCalendarDate] = useState<Date>(new Date());
+  const [expenseForm, setExpenseForm] = useState({
+    description: '',
+    amount: '',
+    category: '',
+    date: format(new Date(), 'yyyy-MM-dd'),
+    notes: ''
+  });
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  
+  const queryClient = useQueryClient();
 
-  const totalExpenses = 15420; // This would come from API
-  const totalDeductions = 15420;
-  const estimatedSavings = 4626; // Assuming 30% tax rate
+  // Fetch expense totals
+  const { data: expenseTotals = { totalExpenses: 0, totalDeductions: 0, estimatedSavings: 0 } } = useQuery({
+    queryKey: ['/api/expenses/totals'],
+  });
+
+  // Fetch recent expenses
+  const { data: recentExpenses = [] } = useQuery({
+    queryKey: ['/api/expenses'],
+  });
+
+  // Fetch calendar expenses
+  const { data: calendarExpenses = [] } = useQuery({
+    queryKey: ['/api/expenses/range', format(startOfMonth(calendarDate), 'yyyy-MM-dd'), format(endOfMonth(calendarDate), 'yyyy-MM-dd')],
+    enabled: activeTab === 'calendar'
+  });
+
+  // Create expense mutation
+  const createExpenseMutation = useMutation({
+    mutationFn: async (expenseData: any) => {
+      const response = await fetch('/api/expenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(expenseData)
+      });
+      if (!response.ok) throw new Error('Failed to create expense');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/expenses/totals'] });
+      setShowExpenseModal(false);
+      setExpenseForm({ description: '', amount: '', category: '', date: format(new Date(), 'yyyy-MM-dd'), notes: '' });
+    }
+  });
+
+  const handleCreateExpense = () => {
+    if (!expenseForm.description || !expenseForm.amount || !expenseForm.category) return;
+    
+    createExpenseMutation.mutate({
+      description: expenseForm.description,
+      amount: parseFloat(expenseForm.amount),
+      category: expenseForm.category,
+      date: expenseForm.date,
+      notes: expenseForm.notes
+    });
+  };
+
+  const handleReceiptUpload = () => {
+    if (!receiptFile) return;
+    // For now, just close the modal - receipt upload can be enhanced later
+    setShowReceiptModal(false);
+    setReceiptFile(null);
+  };
+
+  const getDaysWithExpenses = () => {
+    const daysInMonth = eachDayOfInterval({
+      start: startOfMonth(calendarDate),
+      end: endOfMonth(calendarDate)
+    });
+    
+    return daysInMonth.map(day => {
+      const dayExpenses = calendarExpenses.filter((expense: any) => 
+        isSameDay(parseISO(expense.date), day)
+      );
+      const totalAmount = dayExpenses.reduce((sum: number, expense: any) => sum + expense.amount, 0);
+      
+      return {
+        date: day,
+        expenses: dayExpenses,
+        totalAmount
+      };
+    });
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-purple-50">
@@ -130,7 +225,7 @@ const TaxTracker: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-500">Total Expenses</p>
-                  <p className="text-2xl font-bold text-gray-900">${totalExpenses.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-gray-900">${expenseTotals.totalExpenses.toLocaleString()}</p>
                 </div>
               </div>
             </CardContent>
@@ -144,7 +239,7 @@ const TaxTracker: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-500">Tax Deductions</p>
-                  <p className="text-2xl font-bold text-gray-900">${totalDeductions.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-gray-900">${expenseTotals.totalDeductions.toLocaleString()}</p>
                 </div>
               </div>
             </CardContent>
@@ -158,7 +253,7 @@ const TaxTracker: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-500">Estimated Savings</p>
-                  <p className="text-2xl font-bold text-gray-900">${estimatedSavings.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-gray-900">${expenseTotals.estimatedSavings.toLocaleString()}</p>
                 </div>
               </div>
             </CardContent>
@@ -197,15 +292,29 @@ const TaxTracker: React.FC = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <Button className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg">
+                  <Button 
+                    onClick={() => setShowExpenseModal(true)}
+                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg"
+                    data-testid="button-add-expense"
+                  >
                     <Plus className="mr-2 h-4 w-4" />
                     Add New Expense
                   </Button>
-                  <Button variant="outline" className="w-full border-purple-200 hover:bg-purple-50">
+                  <Button 
+                    onClick={() => setShowReceiptModal(true)}
+                    variant="outline" 
+                    className="w-full border-purple-200 hover:bg-purple-50"
+                    data-testid="button-upload-receipt"
+                  >
                     <Receipt className="mr-2 h-4 w-4" />
                     Upload Receipt
                   </Button>
-                  <Button variant="outline" className="w-full border-purple-200 hover:bg-purple-50">
+                  <Button 
+                    onClick={() => setActiveTab('calendar')}
+                    variant="outline" 
+                    className="w-full border-purple-200 hover:bg-purple-50"
+                    data-testid="button-view-calendar"
+                  >
                     <Calendar className="mr-2 h-4 w-4" />
                     View Calendar
                   </Button>
@@ -218,30 +327,40 @@ const TaxTracker: React.FC = () => {
                   <CardTitle>Recent Expenses</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {[
-                    { description: 'Professional makeup session', amount: 250, category: 'Beauty & Wellness', date: '2 days ago' },
-                    { description: 'Ring light & camera', amount: 450, category: 'Technology & Equipment', date: '1 week ago' },
-                    { description: 'Designer outfit collection', amount: 680, category: 'Wardrobe & Fashion', date: '1 week ago' }
-                  ].map((expense, index) => (
-                    <motion.div 
-                      key={index}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
-                    >
-                      <div>
-                        <p className="font-medium text-gray-900">{expense.description}</p>
-                        <p className="text-sm text-gray-500">{expense.category} • {expense.date}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-gray-900">${expense.amount}</p>
-                        <Badge variant="secondary" className="bg-green-100 text-green-700">
-                          100% Deductible
-                        </Badge>
-                      </div>
-                    </motion.div>
-                  ))}
+                  {recentExpenses.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Receipt className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-500 mb-4">No expenses tracked yet</p>
+                      <Button 
+                        onClick={() => setShowExpenseModal(true)}
+                        size="sm"
+                        className="bg-gradient-to-r from-purple-500 to-pink-500"
+                      >
+                        Add Your First Expense
+                      </Button>
+                    </div>
+                  ) : (
+                    recentExpenses.slice(0, 3).map((expense: any, index: number) => (
+                      <motion.div 
+                        key={expense.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        className="flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
+                      >
+                        <div>
+                          <p className="font-medium text-gray-900">{expense.description}</p>
+                          <p className="text-sm text-gray-500">{expense.category} • {format(parseISO(expense.date), 'MMM d, yyyy')}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-gray-900">${expense.amount}</p>
+                          <Badge variant="secondary" className="bg-green-100 text-green-700">
+                            100% Deductible
+                          </Badge>
+                        </div>
+                      </motion.div>
+                    ))
+                  )}
                 </CardContent>
               </Card>
             </motion.div>
@@ -368,16 +487,65 @@ const TaxTracker: React.FC = () => {
           <TabsContent value="calendar" className="space-y-6">
             <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Calendar className="h-5 w-5 text-purple-600" />
-                  <span>Expense Calendar</span>
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="h-5 w-5 text-purple-600" />
+                    <span>Expense Calendar</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1))}
+                    >
+                      Previous
+                    </Button>
+                    <span className="text-sm font-medium min-w-[120px] text-center">
+                      {format(calendarDate, 'MMMM yyyy')}
+                    </span>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1))}
+                    >
+                      Next
+                    </Button>
+                  </div>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-12">
-                  <Calendar className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Calendar View Coming Soon</h3>
-                  <p className="text-gray-600">Interactive calendar for expense tracking and planning</p>
+                <div className="grid grid-cols-7 gap-2 mb-4">
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                    <div key={day} className="text-center text-sm font-medium text-gray-500 py-2">
+                      {day}
+                    </div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-7 gap-2">
+                  {getDaysWithExpenses().map((dayData, index) => (
+                    <div 
+                      key={index}
+                      className={`
+                        min-h-[80px] p-2 border border-gray-200 rounded-lg cursor-pointer
+                        hover:bg-gray-50 transition-colors
+                        ${isSameDay(dayData.date, new Date()) ? 'bg-purple-50 border-purple-200' : 'bg-white'}
+                      `}
+                    >
+                      <div className="text-sm font-medium text-gray-900 mb-1">
+                        {format(dayData.date, 'd')}
+                      </div>
+                      {dayData.totalAmount > 0 && (
+                        <div className="space-y-1">
+                          <div className="text-xs font-medium text-green-600">
+                            ${dayData.totalAmount.toLocaleString()}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {dayData.expenses.length} expense{dayData.expenses.length !== 1 ? 's' : ''}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
@@ -429,6 +597,174 @@ const TaxTracker: React.FC = () => {
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Add Expense Modal */}
+        <Dialog open={showExpenseModal} onOpenChange={setShowExpenseModal}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2">
+                <Plus className="h-5 w-5 text-purple-600" />
+                <span>Add New Expense</span>
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Input
+                  id="description"
+                  value={expenseForm.description}
+                  onChange={(e) => setExpenseForm({...expenseForm, description: e.target.value})}
+                  placeholder="e.g., Professional makeup session"
+                  data-testid="input-expense-description"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="amount">Amount</Label>
+                <Input
+                  id="amount"
+                  type="number"
+                  step="0.01"
+                  value={expenseForm.amount}
+                  onChange={(e) => setExpenseForm({...expenseForm, amount: e.target.value})}
+                  placeholder="0.00"
+                  data-testid="input-expense-amount"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="category">Category</Label>
+                <Select 
+                  value={expenseForm.category} 
+                  onValueChange={(value) => setExpenseForm({...expenseForm, category: value})}
+                >
+                  <SelectTrigger data-testid="select-expense-category">
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {expenseCategories.map(category => (
+                      <SelectItem key={category.id} value={category.name}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="date">Date</Label>
+                <Input
+                  id="date"
+                  type="date"
+                  value={expenseForm.date}
+                  onChange={(e) => setExpenseForm({...expenseForm, date: e.target.value})}
+                  data-testid="input-expense-date"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="notes">Notes (Optional)</Label>
+                <Textarea
+                  id="notes"
+                  value={expenseForm.notes}
+                  onChange={(e) => setExpenseForm({...expenseForm, notes: e.target.value})}
+                  placeholder="Additional details about this expense"
+                  data-testid="textarea-expense-notes"
+                />
+              </div>
+              
+              <div className="flex space-x-2 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowExpenseModal(false)}
+                  className="flex-1"
+                  data-testid="button-cancel-expense"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleCreateExpense}
+                  disabled={!expenseForm.description || !expenseForm.amount || !expenseForm.category || createExpenseMutation.isPending}
+                  className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500"
+                  data-testid="button-create-expense"
+                >
+                  {createExpenseMutation.isPending ? 'Adding...' : 'Add Expense'}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Upload Receipt Modal */}
+        <Dialog open={showReceiptModal} onOpenChange={setShowReceiptModal}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2">
+                <Upload className="h-5 w-5 text-purple-600" />
+                <span>Upload Receipt</span>
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                {receiptFile ? (
+                  <div className="space-y-2">
+                    <Receipt className="h-12 w-12 text-green-600 mx-auto" />
+                    <p className="text-sm font-medium text-gray-900">{receiptFile.name}</p>
+                    <p className="text-xs text-gray-500">{(receiptFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setReceiptFile(null)}
+                      data-testid="button-remove-receipt"
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Remove
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Upload className="h-12 w-12 text-gray-400 mx-auto" />
+                    <p className="text-sm text-gray-600">Drag and drop your receipt here</p>
+                    <p className="text-xs text-gray-500">or click to browse</p>
+                    <Input
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
+                      className="hidden"
+                      id="receipt-upload"
+                      data-testid="input-receipt-file"
+                    />
+                    <Label 
+                      htmlFor="receipt-upload"
+                      className="cursor-pointer inline-block px-4 py-2 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 transition-colors"
+                    >
+                      Choose File
+                    </Label>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex space-x-2 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowReceiptModal(false)}
+                  className="flex-1"
+                  data-testid="button-cancel-receipt"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleReceiptUpload}
+                  disabled={!receiptFile}
+                  className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500"
+                  data-testid="button-upload-receipt"
+                >
+                  Upload Receipt
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
