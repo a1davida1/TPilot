@@ -26,6 +26,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { ContentGeneration } from "@shared/schema";
+import { GenerationHistory } from "./generation-history";
 
 // Assuming ThemeToggle and other necessary components/hooks are imported correctly.
 // For example: import ThemeToggle from "@/components/ThemeToggle";
@@ -233,6 +234,9 @@ export function UnifiedContentCreator({
       return await response.json();
     },
     onSuccess: (data) => {
+      // Clear existing content first to ensure overwrite
+      setGeneratedContent(null);
+      
       // Ensure proper data structure for display
       const displayData: GeneratedContentDisplay = {
         ...data,
@@ -362,6 +366,9 @@ export function UnifiedContentCreator({
   };
 
   const handleGenerate = () => {
+    // Clear existing content before new generation
+    setGeneratedContent(null);
+    
     if (workflowMode === 'text') {
       if (!customPrompt.trim()) {
         toast({
@@ -407,6 +414,9 @@ export function UnifiedContentCreator({
   };
 
   const handlePresetGenerate = (preset: typeof contentPresets[0]) => {
+    // Clear existing content before new generation
+    setGeneratedContent(null);
+    
     generateContentMutation.mutate({
       platform,
       customPrompt: preset.prompt,
@@ -458,8 +468,8 @@ export function UnifiedContentCreator({
 
       <CardContent className="space-y-6">
         {/* Workflow Mode Selector */}
-        <Tabs value={workflowMode} onValueChange={(value) => setWorkflowMode(value as 'text' | 'image' | 'presets')}>
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs value={workflowMode} onValueChange={(value) => setWorkflowMode(value as 'text' | 'image' | 'presets' | 'history')}>
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="presets" className="flex items-center">
               <Zap className="mr-2 h-4 w-4" />
               Quick Styles
@@ -472,6 +482,10 @@ export function UnifiedContentCreator({
               <Camera className="mr-2 h-4 w-4" />
               Image-First
               {!canUseImageWorkflow && <Lock className="ml-2 h-3 w-3" />}
+            </TabsTrigger>
+            <TabsTrigger value="history" className="flex items-center">
+              <RefreshCw className="mr-2 h-4 w-4" />
+              History
             </TabsTrigger>
           </TabsList>
 
@@ -585,6 +599,25 @@ export function UnifiedContentCreator({
                 </div>
               </div>
             )}
+          </TabsContent>
+
+          {/* Generation History */}
+          <TabsContent value="history" className="space-y-4">
+            <GenerationHistory 
+              onSelectGeneration={(generation) => {
+                // Load selected generation as current content
+                const displayData = {
+                  ...generation,
+                  titles: generation.titles || [],
+                  photoInstructions: generation.photoInstructions || {}
+                };
+                setGeneratedContent(displayData);
+                toast({
+                  title: "Generation Loaded",
+                  description: "Previous content loaded successfully"
+                });
+              }}
+            />
           </TabsContent>
         </Tabs>
 

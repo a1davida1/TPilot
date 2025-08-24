@@ -1008,6 +1008,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get content generation history
+  app.get("/api/content-generation-history", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const limit = parseInt(req.query.limit as string) || 20;
+      const history = await storage.getGenerationsByUserId(req.user.id);
+      
+      // Limit results and format for frontend
+      const formattedHistory = history.slice(0, limit).map(gen => ({
+        ...gen,
+        titles: Array.isArray(gen.titles) ? gen.titles : 
+                typeof gen.titles === 'string' ? JSON.parse(gen.titles || '[]') : []
+      }));
+
+      res.json(formattedHistory);
+    } catch (error) {
+      console.error("Generation history error:", error);
+      res.status(500).json({ message: "Failed to get generation history" });
+    }
+  });
+
   // Get user images
   app.get("/api/user-images", authenticateToken, async (req: AuthRequest, res) => {
     try {
