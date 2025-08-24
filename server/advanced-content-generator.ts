@@ -442,8 +442,739 @@ function getRandomPresetVariation(presetId: string): any {
           technicalSettings: "Dynamic lighting capturing swift beauty"
         }
       }
+    ],
+    'workout-clothes': [
+      {
+        titles: ["Post-gym glow hitting different 💪", "Sweat equity paying dividends ✨", "When endorphins meet confidence 🔥"],
+        content: "That post-workout feeling is unmatched - endorphins flowing, muscles pumped, and that incredible sense of accomplishment. This is what strength looks like, and it's beautiful.",
+        photoInstructions: {
+          lighting: "Energetic gym lighting or natural post-workout glow",
+          cameraAngle: "Strong, athletic angles showing fitness",
+          composition: "Dynamic compositions showcasing strength",
+          styling: "Athletic wear that shows off hard work",
+          mood: "Strong, accomplished, and athletically confident",
+          technicalSettings: "High-energy lighting capturing athletic power"
+        }
+      },
+      {
+        titles: ["Gym fit = confidence fit 💯", "When your workout clothes work overtime ✨", "Athletic wear, athletic attitude 👟"],
+        content: "The right workout gear doesn't just perform - it makes you feel unstoppable. These athletic moments capture that perfect blend of function and fierce confidence.",
+        photoInstructions: {
+          lighting: "Clean, athletic lighting showing gear details",
+          cameraAngle: "Fashion-forward athletic angles",
+          composition: "Sportswear-focused compositions",
+          styling: "Athletic fashion styling",
+          mood: "Fashionably athletic and confidently sporty",
+          technicalSettings: "Clean lighting highlighting athletic wear"
+        }
+      },
+      {
+        titles: ["Yoga flow and inner peace 🧘‍♀️", "Flexibility of body, strength of spirit ✨", "Zen mode: activated 🌸"],
+        content: "Yoga isn't just exercise - it's meditation in motion. These peaceful moments capture the grace, flexibility, and inner strength that comes from mindful movement.",
+        photoInstructions: {
+          lighting: "Soft, peaceful lighting for yoga ambiance",
+          cameraAngle: "Graceful angles showing yoga poses",
+          composition: "Zen-like compositions with balance",
+          styling: "Comfortable yoga wear",
+          mood: "Peacefully centered and gracefully strong",
+          technicalSettings: "Soft, calming lighting for peaceful atmosphere"
+        }
+      },
+      {
+        titles: ["Running wild and free 🏃‍♀️", "Miles logged, spirit soaring ✨", "Pavement princess energy 👑"],
+        content: "There's nothing like that runner's high - the rhythm, the freedom, the feeling that you could conquer the world one mile at a time. This is pure athletic poetry.",
+        photoInstructions: {
+          lighting: "Dynamic outdoor lighting capturing movement",
+          cameraAngle: "Action angles showing running motion",
+          composition: "Movement-focused compositions",
+          styling: "Performance running gear",
+          mood: "Energetically free and athletically unstoppable",
+          technicalSettings: "Motion-capturing lighting with dynamic effects"
+        }
+      },
+      {
+        titles: ["Weight room warrior mode 🏋️‍♀️", "Iron therapy in session ✨", "Building strength, one rep at a time 💪"],
+        content: "The weight room is my therapy session - every lift builds not just muscle, but confidence. These powerful moments capture the raw strength and determination it takes to grow.",
+        photoInstructions: {
+          lighting: "Dramatic gym lighting with strong contrasts",
+          cameraAngle: "Powerful angles emphasizing strength",
+          composition: "Strength-focused compositions with equipment",
+          styling: "Serious weightlifting gear",
+          mood: "Powerfully determined and strength-focused",
+          technicalSettings: "Dramatic lighting highlighting muscle definition"
+        }
+      },
+      {
+        titles: ["Pre-workout ritual complete ⚡", "Game face on, let's do this 🔥", "Energy levels: maximum overdrive ✨"],
+        content: "That pre-workout energy is electric - the anticipation, the focus, the feeling that you're about to conquer your goals. This is the moment before magic happens.",
+        photoInstructions: {
+          lighting: "High-energy lighting building anticipation",
+          cameraAngle: "Focused, determined angles",
+          composition: "Pre-action compositions showing readiness",
+          styling: "Fresh, ready-to-work athletic wear",
+          mood: "Energetically focused and ready for action",
+          technicalSettings: "Bright, energizing lighting for motivation"
+        }
+      },
+      {
+        titles: ["Home gym, hotel vibes 🏠", "No excuses, just results ✨", "Convenience meets commitment 💯"],
+        content: "You don't need a fancy gym to get results - just dedication and creativity. These home workout moments prove that fitness is about mindset, not location.",
+        photoInstructions: {
+          lighting: "Clean home lighting optimized for workouts",
+          cameraAngle: "Creative home gym angles",
+          composition: "Home fitness compositions",
+          styling: "Comfortable home workout attire",
+          mood: "Creatively committed and home-fitness focused",
+          technicalSettings: "Adaptable lighting for home workout spaces"
+        }
+      },
+      {
+        titles: ["Team spirit, personal goals 👯‍♀️", "Better together, stronger apart ✨", "Squad fitness energy 🤝"],
+        content: "Working out with friends brings a different energy - accountability, motivation, and those moments when you push each other to be better. Fitness is more fun with friends.",
+        photoInstructions: {
+          lighting: "Group-friendly lighting for multiple people",
+          cameraAngle: "Group fitness angles showing teamwork",
+          composition: "Team-focused compositions",
+          styling: "Coordinated group athletic wear",
+          mood: "Collaboratively energetic and team-spirited",
+          technicalSettings: "Group lighting optimized for multiple subjects"
+        }
+      },
+      {
+        titles: ["Outdoor training, natural gym 🌳", "Fresh air fuel for fitness ✨", "Nature's playground activated 🏞️"],
+        content: "Sometimes the best gym is the great outdoors - fresh air, natural terrain, and that connection with nature that makes every workout feel like an adventure.",
+        photoInstructions: {
+          lighting: "Natural outdoor lighting",
+          cameraAngle: "Outdoor fitness angles with nature backdrop",
+          composition: "Nature-integrated fitness compositions",
+          styling: "Outdoor-appropriate athletic wear",
+          mood: "Naturally energetic and outdoors-adventurous",
+          technicalSettings: "Natural lighting with outdoor elements"
+        }
+      },
+      {
+        titles: ["Recovery day = self-care day 🛁", "Rest is part of the process ✨", "Muscles healing, spirit growing 💆‍♀️"],
+        content: "Recovery isn't weakness - it's wisdom. These gentle moments capture the importance of rest, stretching, and giving your body the care it needs to come back stronger.",
+        photoInstructions: {
+          lighting: "Soft, recovery-focused lighting",
+          cameraAngle: "Gentle, self-care angles",
+          composition: "Recovery and stretching compositions",
+          styling: "Comfortable recovery wear",
+          mood: "Peacefully recovering and self-caring",
+          technicalSettings: "Soft, healing lighting for recovery atmosphere"
+        }
+      }
+    ],
+    'lingerie': [
+      {
+        titles: ["Elegance in silk and lace 💎", "When luxury meets femininity ✨", "Sophisticated allure at its finest 👑"],
+        content: "There's an art to lingerie - the delicate fabrics, the careful construction, the way it makes you feel powerful and feminine at once. This is elegance embodied.",
+        photoInstructions: {
+          lighting: "Soft, luxurious lighting that enhances fabric textures",
+          cameraAngle: "Elegant angles that show sophistication",
+          composition: "Refined compositions focusing on luxury details",
+          styling: "High-end lingerie with tasteful accessories",
+          mood: "Sophisticatedly elegant and luxuriously feminine",
+          technicalSettings: "Soft lighting that highlights fabric details and textures"
+        }
+      },
+      {
+        titles: ["Boudoir vibes and bedroom eyes 😍", "Intimate moments, infinite beauty ✨", "Bedroom confessions in silk 💋"],
+        content: "The bedroom is a sanctuary, and these intimate moments capture that private elegance - soft fabrics, gentle lighting, and the kind of beauty that's meant for special eyes only.",
+        photoInstructions: {
+          lighting: "Intimate boudoir lighting with warm tones",
+          cameraAngle: "Close, intimate angles for boudoir effect",
+          composition: "Intimate bedroom compositions",
+          styling: "Romantic lingerie in bedroom setting",
+          mood: "Intimately romantic and boudoir-elegant",
+          technicalSettings: "Warm, intimate lighting for boudoir atmosphere"
+        }
+      },
+      {
+        titles: ["Lace details and delicate beauty 🌸", "Craftsmanship meets feminine grace ✨", "When artistry adorns the body 💕"],
+        content: "Every piece of lace tells a story - the intricate patterns, the delicate craftsmanship, the way it frames and enhances natural beauty. This is wearable art.",
+        photoInstructions: {
+          lighting: "Detail-focused lighting showing lace patterns",
+          cameraAngle: "Close-up angles highlighting lace details",
+          composition: "Detail-focused compositions showing craftsmanship",
+          styling: "Lace-focused lingerie styling",
+          mood: "Delicately artistic and craft-appreciating",
+          technicalSettings: "Macro-style lighting for intricate detail capture"
+        }
+      },
+      {
+        titles: ["Satin dreams and silk fantasies ✨", "Smooth textures, smoother confidence 💫", "Luxury fabric, luxurious feelings 🌙"],
+        content: "Satin and silk have this magical quality - they feel incredible against the skin and somehow make everything more elegant. These luxurious moments celebrate texture and touch.",
+        photoInstructions: {
+          lighting: "Luxury lighting that enhances satin and silk",
+          cameraAngle: "Texture-emphasizing angles",
+          composition: "Fabric-focused luxury compositions",
+          styling: "High-end satin and silk pieces",
+          mood: "Luxuriously textured and silk-smooth confident",
+          technicalSettings: "Lighting that captures fabric luster and smoothness"
+        }
+      },
+      {
+        titles: ["Vintage romance meets modern confidence 🌹", "Timeless pieces, contemporary attitude ✨", "Classic beauty with bold spirit 💄"],
+        content: "Vintage-inspired lingerie has this incredible romance to it - classic cuts, timeless elegance, but worn with modern confidence. Old-school glamour meets new-school attitude.",
+        photoInstructions: {
+          lighting: "Vintage-inspired lighting with modern clarity",
+          cameraAngle: "Classic vintage angles with contemporary flair",
+          composition: "Retro-inspired compositions",
+          styling: "Vintage-style lingerie with modern confidence",
+          mood: "Vintage-romantic yet modern-confident",
+          technicalSettings: "Classic lighting with contemporary technique"
+        }
+      },
+      {
+        titles: ["Black lace and bold statements 🖤", "Dark elegance, bright confidence ✨", "When mystery meets unmistakable allure 🌙"],
+        content: "Black lace is classic for a reason - it's mysterious, elegant, and undeniably powerful. These dark elegance moments capture that timeless appeal of sophisticated allure.",
+        photoInstructions: {
+          lighting: "Dramatic lighting that complements black lace",
+          cameraAngle: "Bold angles that show dramatic elegance",
+          composition: "High-contrast compositions with black lace",
+          styling: "Statement black lace pieces",
+          mood: "Dramatically elegant and mysteriously confident",
+          technicalSettings: "High-contrast lighting for dramatic black lace"
+        }
+      },
+      {
+        titles: ["Pastel pretty and soft femininity 🌸", "Sweet colors, strong confidence ✨", "Gentle hues, powerful presence 💕"],
+        content: "Soft pastels have their own power - they're gentle but confident, sweet but strong. These delicate moments prove that femininity comes in many beautiful forms.",
+        photoInstructions: {
+          lighting: "Soft, pastel-enhancing lighting",
+          cameraAngle: "Gentle angles that complement soft colors",
+          composition: "Soft, feminine compositions",
+          styling: "Pastel lingerie with delicate accessories",
+          mood: "Softly feminine yet confidently strong",
+          technicalSettings: "Soft lighting that enhances pastel colors"
+        }
+      },
+      {
+        titles: ["Mix and match, style and sass 💫", "Personal style has no rules ✨", "Creating looks that feel uniquely me 🎨"],
+        content: "The best lingerie style is your own style - mixing pieces, creating unique combinations, and wearing what makes you feel incredible. Personal expression through beautiful pieces.",
+        photoInstructions: {
+          lighting: "Creative lighting for unique styling",
+          cameraAngle: "Style-focused angles showing creativity",
+          composition: "Creative styling compositions",
+          styling: "Mixed and matched pieces showing personal style",
+          mood: "Creatively confident and personally stylish",
+          technicalSettings: "Versatile lighting for creative styling"
+        }
+      },
+      {
+        titles: ["Special occasion, special pieces ✨", "When the moment calls for luxury 💎", "Celebration-worthy elegance 🥂"],
+        content: "Some moments deserve the special pieces - anniversaries, celebrations, or just because you want to feel extraordinary. These are the pieces that make ordinary moments magical.",
+        photoInstructions: {
+          lighting: "Celebratory lighting for special occasions",
+          cameraAngle: "Special occasion angles showing luxury",
+          composition: "Celebration-worthy compositions",
+          styling: "Special occasion luxury lingerie",
+          mood: "Celebratorily elegant and special-occasion confident",
+          technicalSettings: "Luxury lighting for special occasion feel"
+        }
+      },
+      {
+        titles: ["Comfort meets beauty perfectly 💕", "All-day elegance that feels amazing ✨", "Beautiful AND comfortable - possible! 🌟"],
+        content: "The best lingerie doesn't make you choose between comfort and beauty - it gives you both. These everyday luxury pieces prove you can feel amazing and look incredible.",
+        photoInstructions: {
+          lighting: "Comfortable, everyday lighting",
+          cameraAngle: "Comfortable, natural angles",
+          composition: "Everyday comfort compositions",
+          styling: "Comfortable yet beautiful lingerie",
+          mood: "Comfortably confident and beautifully relaxed",
+          technicalSettings: "Natural lighting for comfortable elegance"
+        }
+      }
+    ],
+    'casual-tease': [
+      {
+        titles: ["Oops, did I leave this unbuttoned? 😇", "Accident or strategy? You decide 😉", "Sometimes subtle is sexiest ✨"],
+        content: "The best teasing is accidental-on-purpose - that perfectly imperfect moment when something slips, gaps, or reveals just enough to make you wonder. Casual never felt so intentional.",
+        photoInstructions: {
+          lighting: "Natural, casual lighting with soft shadows",
+          cameraAngle: "Candid angles that feel unposed",
+          composition: "Casual compositions with subtle reveals",
+          styling: "Everyday clothes with strategic styling",
+          mood: "Casually flirty and subtly teasing",
+          technicalSettings: "Natural lighting for authentic casual feel"
+        }
+      },
+      {
+        titles: ["Morning coffee, evening thoughts ☕", "Oversized shirt, undersized inhibitions ✨", "Lazy morning, deliberate choices 😏"],
+        content: "Morning routines have never looked so good - oversized shirts, messy hair, and that perfect combination of comfortable and captivating. Some accidents are happy ones.",
+        photoInstructions: {
+          lighting: "Soft morning light through windows",
+          cameraAngle: "Intimate morning angles",
+          composition: "Cozy morning compositions",
+          styling: "Oversized shirts and morning casual wear",
+          mood: "Morning-intimate and casually comfortable",
+          technicalSettings: "Warm morning lighting for cozy atmosphere"
+        }
+      },
+      {
+        titles: ["Study break, distraction included 📚", "When homework gets interesting ✨", "Academic focus, wandering mind 😉"],
+        content: "Study sessions just got a lot more interesting. Sometimes the best way to take a break from the books is to create a different kind of education entirely.",
+        photoInstructions: {
+          lighting: "Study lighting with intimate shadows",
+          cameraAngle: "Study space angles with casual reveals",
+          composition: "Academic setting with playful elements",
+          styling: "Casual study wear with subtle styling",
+          mood: "Studious yet playfully distracted",
+          technicalSettings: "Desk lighting with warm intimate tones"
+        }
+      },
+      {
+        titles: ["Girl next door with a secret 🏠", "Wholesome vibes, hidden depths ✨", "Sweet smile, naughty thoughts 😇"],
+        content: "The girl next door always has the most interesting secrets. These wholesome moments hide something deeper - that perfect combination of sweet and slightly wicked.",
+        photoInstructions: {
+          lighting: "Wholesome yet intriguing lighting",
+          cameraAngle: "Girl-next-door angles with hidden depth",
+          composition: "Innocent compositions with subtle intrigue",
+          styling: "Sweet, everyday styling with hints of mischief",
+          mood: "Wholesomely sweet with hidden mischief",
+          technicalSettings: "Clean lighting with mysterious undertones"
+        }
+      },
+      {
+        titles: ["Cooking class just got spicy 🔥", "Kitchen heat, different kind of fire ✨", "Recipe for distraction included 👨‍🍳"],
+        content: "Cooking just became a lot more interesting. When the kitchen heats up in more ways than one, everyday activities take on a whole new flavor.",
+        photoInstructions: {
+          lighting: "Warm kitchen lighting",
+          cameraAngle: "Kitchen activity angles with playful reveals",
+          composition: "Cooking compositions with casual teasing",
+          styling: "Kitchen casual wear with strategic styling",
+          mood: "Domestically playful and kitchen-confident",
+          technicalSettings: "Warm, homey lighting for kitchen setting"
+        }
+      },
+      {
+        titles: ["Netflix and... well, you know 📺", "Couch potato with benefits ✨", "Binge watching, strategic positioning 😉"],
+        content: "Movie nights just got an upgrade. Sometimes the best entertainment isn't on the screen - it's in how you arrange yourself to watch it.",
+        photoInstructions: {
+          lighting: "Cozy TV lighting with intimate ambiance",
+          cameraAngle: "Relaxed couch angles with casual positioning",
+          composition: "Living room compositions with comfortable reveals",
+          styling: "Comfy couch wear with strategic arrangement",
+          mood: "Cozily intimate and casually arranged",
+          technicalSettings: "Ambient lighting for cozy evening atmosphere"
+        }
+      },
+      {
+        titles: ["Workout gear, working it out 💪", "Gym clothes, bedroom energy ✨", "Athletic wear, athletic attractions 🏃‍♀️"],
+        content: "Athletic wear has this amazing quality - it's practical but somehow incredibly attractive. These workout moments prove that fitness fashion can be functionally flirty.",
+        photoInstructions: {
+          lighting: "Athletic lighting with casual intimacy",
+          cameraAngle: "Fitness angles with casual appeal",
+          composition: "Athletic compositions with casual allure",
+          styling: "Workout gear with casually attractive styling",
+          mood: "Athletically casual and fitness-flirty",
+          technicalSettings: "Energetic lighting with casual warmth"
+        }
+      },
+      {
+        titles: ["Getting ready, getting ideas 💭", "Mirror check, double take ✨", "Dressing room discoveries 👗"],
+        content: "Getting ready is an art form - especially when you catch yourself in the mirror and realize how good this outfit makes you feel. Some discoveries are worth sharing.",
+        photoInstructions: {
+          lighting: "Dressing room lighting with mirror reflections",
+          cameraAngle: "Getting-ready angles with mirror work",
+          composition: "Dressing compositions with reflection elements",
+          styling: "Mid-dressing casual styling",
+          mood: "Preparation-confident and mirror-pleased",
+          technicalSettings: "Mirror lighting for dressing room atmosphere"
+        }
+      },
+      {
+        titles: ["Work from home, working it out 💻", "Professional top, casual bottom ✨", "Video call ready, everything else optional 😉"],
+        content: "Work from home has its perks - professional on top, comfortable everywhere else. These behind-the-scenes moments show what really happens off-camera.",
+        photoInstructions: {
+          lighting: "Home office lighting with casual intimacy",
+          cameraAngle: "Work-from-home angles showing contrasts",
+          composition: "Home office compositions with casual reveals",
+          styling: "Professional/casual hybrid styling",
+          mood: "Professionally casual and work-from-home relaxed",
+          technicalSettings: "Office lighting with comfortable home atmosphere"
+        }
+      },
+      {
+        titles: ["Sleepy vibes, wide awake thoughts 😴", "Pajama party for one ✨", "Bedtime stories, adult edition 📖"],
+        content: "Bedtime routines have never been so interesting. Sometimes the best stories happen when you're supposed to be sleeping, and pajamas have never looked so good.",
+        photoInstructions: {
+          lighting: "Soft bedtime lighting with intimate warmth",
+          cameraAngle: "Bedtime angles with comfortable positioning",
+          composition: "Bedroom compositions with sleepy comfort",
+          styling: "Pajama styling with comfortable appeal",
+          mood: "Sleepily comfortable and bedtime-intimate",
+          technicalSettings: "Soft evening lighting for bedtime atmosphere"
+        }
+      }
+    ],
+    'bedroom-scene': [
+      {
+        titles: ["Sheets, skin, and Sunday mornings ☀️", "Lazy bed days, purposeful moments ✨", "When comfort meets confidence 🛏️"],
+        content: "Sunday mornings in bed are sacred - soft sheets, gentle light, and that perfect feeling of having nowhere else to be. These intimate bedroom moments capture pure comfort and quiet confidence.",
+        photoInstructions: {
+          lighting: "Soft morning light filtering through bedroom windows",
+          cameraAngle: "Intimate bedroom angles with comfortable positioning",
+          composition: "Bed-focused compositions with soft textures",
+          styling: "Comfortable bedroom wear with natural styling",
+          mood: "Intimately comfortable and bedroom-peaceful",
+          technicalSettings: "Soft, natural lighting for intimate bedroom atmosphere"
+        }
+      },
+      {
+        titles: ["Silk pillowcases and satin dreams 💭", "Luxury textures, luxurious feelings ✨", "Bedroom upgrade, confidence upgrade 💫"],
+        content: "Upgrading your bedroom is upgrading your whole mood - silk pillowcases, satin sheets, and that feeling of sleeping in luxury every night. These moments celebrate bedroom elegance.",
+        photoInstructions: {
+          lighting: "Luxurious bedroom lighting emphasizing textures",
+          cameraAngle: "Luxury angles showing high-end bedroom details",
+          composition: "Elegant bedroom compositions with luxury elements",
+          styling: "Luxury sleepwear with elegant bedroom styling",
+          mood: "Luxuriously comfortable and elegantly intimate",
+          technicalSettings: "Rich lighting that highlights luxury textures"
+        }
+      },
+      {
+        titles: ["Reading nook, writing fantasies 📚", "Books, bed, and beautiful thoughts ✨", "Literary lounging at its finest 💭"],
+        content: "The bedroom isn't just for sleeping - it's for reading, dreaming, and letting your imagination wander. These cozy literary moments capture the intellectual side of intimate spaces.",
+        photoInstructions: {
+          lighting: "Cozy reading light in bedroom setting",
+          cameraAngle: "Literary angles with books and comfortable positioning",
+          composition: "Reading-focused bedroom compositions",
+          styling: "Comfortable reading attire in bedroom setting",
+          mood: "Intellectually intimate and literarily cozy",
+          technicalSettings: "Warm reading light for cozy literary atmosphere"
+        }
+      },
+      {
+        titles: ["Candlelit confessions and whispered secrets 🕯️", "Romantic lighting, intimate moments ✨", "When atmosphere meets authenticity 🌙"],
+        content: "Candlelight transforms everything - suddenly the bedroom becomes a sanctuary of romance and intimacy. These atmospheric moments capture the magic of soft lighting and quiet confidences.",
+        photoInstructions: {
+          lighting: "Warm candlelight creating romantic bedroom ambiance",
+          cameraAngle: "Romantic angles enhanced by candlelight",
+          composition: "Candle-lit bedroom compositions with intimate atmosphere",
+          styling: "Romantic bedroom wear in candlelit setting",
+          mood: "Romantically intimate and candle-warm",
+          technicalSettings: "Candlelight photography with warm romantic tones"
+        }
+      },
+      {
+        titles: ["Mirror, mirror, bedroom wall 🪞", "Reflections of beauty and confidence ✨", "When vanity meets vulnerability 💕"],
+        content: "Bedroom mirrors catch the most honest moments - getting ready, unwinding, and those private seconds when you see yourself truly. These reflection moments capture authentic beauty.",
+        photoInstructions: {
+          lighting: "Vanity lighting with bedroom mirror reflections",
+          cameraAngle: "Mirror angles showing bedroom reflections",
+          composition: "Mirror-focused bedroom compositions",
+          styling: "Vanity styling in bedroom mirror setting",
+          mood: "Reflectively confident and mirror-honest",
+          technicalSettings: "Mirror lighting for clear reflections and intimate atmosphere"
+        }
+      },
+      {
+        titles: ["Fresh sheets, fresh start 🌟", "Clean bed, clear mind ✨", "New linens, new possibilities 💫"],
+        content: "There's something magical about fresh sheets - they smell like possibility and feel like a fresh start. These clean bedroom moments celebrate the simple luxury of pristine linens.",
+        photoInstructions: {
+          lighting: "Clean, fresh lighting for crisp bedroom feel",
+          cameraAngle: "Fresh angles emphasizing clean lines",
+          composition: "Clean bedroom compositions with fresh elements",
+          styling: "Fresh, clean bedroom styling",
+          mood: "Freshly clean and crisply comfortable",
+          technicalSettings: "Bright, clean lighting for fresh bedroom atmosphere"
+        }
+      },
+      {
+        titles: ["Pillow fort architect at work 🏰", "Adult blanket forts and childhood dreams ✨", "Cozy construction projects 🛠️"],
+        content: "Who says pillow forts are just for kids? These cozy construction moments prove that sometimes the best architecture is soft, comfortable, and built for maximum cuddle potential.",
+        photoInstructions: {
+          lighting: "Playful lighting for cozy fort atmosphere",
+          cameraAngle: "Cozy angles within pillow fort structures",
+          composition: "Fort-building compositions with soft textures",
+          styling: "Comfortable fort-building attire",
+          mood: "Playfully cozy and architecturally comfortable",
+          technicalSettings: "Soft, enclosed lighting for cozy fort feeling"
+        }
+      },
+      {
+        titles: ["Window seat wisdom 🪟", "Natural light, natural beauty ✨", "Bedroom views and inner reflections 🌅"],
+        content: "The bedroom window seat is where the best thinking happens - natural light, comfortable cushions, and that perfect view of the world outside. These contemplative moments capture quiet wisdom.",
+        photoInstructions: {
+          lighting: "Natural window light in bedroom setting",
+          cameraAngle: "Window seat angles with natural light",
+          composition: "Window-focused bedroom compositions",
+          styling: "Natural window light styling",
+          mood: "Contemplatively peaceful and naturally lit",
+          technicalSettings: "Natural window lighting for contemplative atmosphere"
+        }
+      },
+      {
+        titles: ["Breakfast in bed, luxury served 🥐", "Room service to the heart ✨", "When the bedroom becomes a restaurant 🍳"],
+        content: "Breakfast in bed isn't just about food - it's about luxury, indulgence, and treating yourself like royalty. These decadent morning moments celebrate bedroom dining at its finest.",
+        photoInstructions: {
+          lighting: "Morning dining light in bedroom setting",
+          cameraAngle: "Breakfast-in-bed angles with food styling",
+          composition: "Dining compositions in bedroom setting",
+          styling: "Breakfast dining attire in bedroom",
+          mood: "Luxuriously indulgent and breakfast-happy",
+          technicalSettings: "Appetizing lighting for bedroom dining atmosphere"
+        }
+      },
+      {
+        titles: ["Midnight journaling sessions 🌙", "Late night thoughts, early morning clarity ✨", "When darkness inspires light 💭"],
+        content: "The best thoughts often come at midnight - when the world is quiet and your mind is free to wander. These late-night bedroom moments capture the magic of midnight inspiration.",
+        photoInstructions: {
+          lighting: "Soft midnight lighting for journaling",
+          cameraAngle: "Late-night contemplative angles",
+          composition: "Midnight bedroom compositions with writing elements",
+          styling: "Comfortable late-night attire",
+          mood: "Midnight-contemplative and journaling-focused",
+          technicalSettings: "Gentle nighttime lighting for late-night atmosphere"
+        }
+      }
+    ],
+    'outdoor-adventure': [
+      {
+        titles: ["Mother Nature and natural beauty 🌿", "Wild spaces, wild spirit ✨", "Adventure calls, confidence answers 🏔️"],
+        content: "There's something magical about connecting with nature - the fresh air, the open spaces, and that feeling of freedom that only comes from wild places. These adventure moments capture pure natural beauty.",
+        photoInstructions: {
+          lighting: "Natural outdoor lighting with landscape elements",
+          cameraAngle: "Adventure angles with natural backdrop",
+          composition: "Nature-integrated compositions with outdoor elements",
+          styling: "Adventure-appropriate styling with natural elements",
+          mood: "Adventurously free and naturally confident",
+          technicalSettings: "Outdoor lighting optimized for natural settings"
+        }
+      },
+      {
+        titles: ["Beach vibes and ocean energy 🌊", "Salt air, sun-kissed skin ✨", "Mermaid mode activated 🧜‍♀️"],
+        content: "The beach brings out something primal and free - the endless horizon, the rhythmic waves, and that sun-kissed glow that makes everything feel magical. These oceanic moments capture coastal confidence.",
+        photoInstructions: {
+          lighting: "Golden beach lighting with ocean backdrop",
+          cameraAngle: "Coastal angles with water elements",
+          composition: "Beach compositions with ocean integration",
+          styling: "Beach-appropriate styling with coastal elements",
+          mood: "Ocean-free and beach-confident",
+          technicalSettings: "Beach lighting with water and sand reflections"
+        }
+      },
+      {
+        titles: ["Mountain high, spirit higher 🏔️", "Peak experiences, peak confidence ✨", "Summit views, summit feelings ⛰️"],
+        content: "Mountains have a way of putting everything in perspective - the climb, the view, and that incredible feeling of accomplishment when you reach the top. These elevated moments capture mountain magic.",
+        photoInstructions: {
+          lighting: "Mountain lighting with elevation effects",
+          cameraAngle: "Summit angles with mountain backdrop",
+          composition: "Mountain compositions with peak elements",
+          styling: "Mountain adventure styling",
+          mood: "Peak-accomplished and mountain-strong",
+          technicalSettings: "High-altitude lighting with mountain atmosphere"
+        }
+      },
+      {
+        titles: ["Forest bathing and tree therapy 🌲", "Woodland wandering and natural healing ✨", "Tree hugger and proud of it 🌳"],
+        content: "Forest bathing is real therapy - the green canopy, the filtered light, and that ancient energy that comes from being among old trees. These woodland moments capture forest peace.",
+        photoInstructions: {
+          lighting: "Filtered forest lighting through tree canopy",
+          cameraAngle: "Forest angles with tree integration",
+          composition: "Woodland compositions with tree elements",
+          styling: "Forest-appropriate natural styling",
+          mood: "Forest-peaceful and tree-connected",
+          technicalSettings: "Dappled forest lighting with natural green tones"
+        }
+      },
+      {
+        titles: ["Desert dreams and cactus courage 🌵", "Arid beauty, abundant spirit ✨", "Blooming where I'm planted 🌸"],
+        content: "The desert teaches resilience - beauty in harsh conditions, strength in solitude, and the incredible power of blooming wherever you're planted. These desert moments capture arid elegance.",
+        photoInstructions: {
+          lighting: "Desert lighting with arid landscape elements",
+          cameraAngle: "Desert angles with landscape integration",
+          composition: "Arid compositions with desert elements",
+          styling: "Desert-appropriate adventure styling",
+          mood: "Desert-strong and arid-beautiful",
+          technicalSettings: "Desert lighting with warm, dry atmosphere"
+        }
+      },
+      {
+        titles: ["Waterfall wishes and cascade dreams 💦", "Natural power, natural beauty ✨", "Where water meets wonder 🌈"],
+        content: "Waterfalls are nature's power displayed - the rush of water, the mist in the air, and that incredible energy that comes from witnessing natural force. These cascade moments capture water magic.",
+        photoInstructions: {
+          lighting: "Waterfall lighting with mist and water effects",
+          cameraAngle: "Cascade angles with water movement",
+          composition: "Waterfall compositions with flowing elements",
+          styling: "Water-adventure appropriate styling",
+          mood: "Waterfall-powerful and cascade-refreshed",
+          technicalSettings: "Water lighting with mist and movement effects"
+        }
+      },
+      {
+        titles: ["Sunrise hikes and dawn discoveries ☀️", "Early bird, early rewards ✨", "Dawn patrol and morning magic 🌅"],
+        content: "Sunrise hikes are worth the early alarm - the quiet trails, the emerging light, and that incredible feeling of having the world to yourself. These dawn moments capture morning magic.",
+        photoInstructions: {
+          lighting: "Sunrise lighting with dawn colors",
+          cameraAngle: "Dawn angles with early morning elements",
+          composition: "Sunrise compositions with morning landscape",
+          styling: "Early morning adventure styling",
+          mood: "Dawn-energized and sunrise-inspired",
+          technicalSettings: "Golden hour lighting with sunrise colors"
+        }
+      },
+      {
+        titles: ["Camping vibes and starlit nights ⭐", "Under canvas, under stars ✨", "Wilderness luxury at its finest 🏕️"],
+        content: "Camping brings out your primal side - simple pleasures, starlit nights, and that incredible connection with the natural world. These wilderness moments capture outdoor elegance.",
+        photoInstructions: {
+          lighting: "Campfire and starlight camping atmosphere",
+          cameraAngle: "Camping angles with outdoor elements",
+          composition: "Wilderness compositions with camping integration",
+          styling: "Outdoor camping adventure styling",
+          mood: "Wilderness-connected and camping-comfortable",
+          technicalSettings: "Campfire lighting with natural night atmosphere"
+        }
+      },
+      {
+        titles: ["Rock climbing and vertical challenges 🧗‍♀️", "Defying gravity, embracing strength ✨", "When the wall becomes the way 💪"],
+        content: "Rock climbing is meditation in motion - the focus, the strength, and that incredible trust in your own ability to reach new heights. These vertical moments capture climbing courage.",
+        photoInstructions: {
+          lighting: "Climbing lighting with rock face elements",
+          cameraAngle: "Vertical angles with climbing action",
+          composition: "Rock climbing compositions with height elements",
+          styling: "Climbing gear and adventure styling",
+          mood: "Vertically challenged and climbing-strong",
+          technicalSettings: "Action lighting for climbing movement and strength"
+        }
+      },
+      {
+        titles: ["River running and water dancing 🌊", "Liquid highways and flowing freedom ✨", "Where current meets courage 🚣‍♀️"],
+        content: "Rivers are liquid highways to adventure - the flowing water, the changing scenery, and that incredible feeling of moving with natural current. These flowing moments capture water freedom.",
+        photoInstructions: {
+          lighting: "River lighting with flowing water elements",
+          cameraAngle: "Water angles with river movement",
+          composition: "River compositions with flowing elements",
+          styling: "Water adventure appropriate styling",
+          mood: "River-free and water-adventurous",
+          technicalSettings: "Flowing water lighting with movement and reflection"
+        }
+      }
+    ],
+    'professional-tease': [
+      {
+        titles: ["Office hours, after hours thoughts 💼", "Professional by day, playful by choice ✨", "When business meets pleasure 😉"],
+        content: "The office doesn't have to be boring - especially when you know how to work a blazer, make meetings interesting, and turn professional attire into something unexpectedly captivating.",
+        photoInstructions: {
+          lighting: "Professional office lighting with intimate undertones",
+          cameraAngle: "Business angles with subtle personal elements",
+          composition: "Office compositions with professional and personal blend",
+          styling: "Professional attire with strategic styling",
+          mood: "Professionally confident with personal intrigue",
+          technicalSettings: "Office lighting with warm personal touches"
+        }
+      },
+      {
+        titles: ["Conference room confessions 📊", "Boardroom strategy, bedroom energy ✨", "When presentations get personal 💋"],
+        content: "Conference rooms after hours have a different energy - the empty boardroom, the city lights, and that powerful feeling of owning your professional space in your own personal way.",
+        photoInstructions: {
+          lighting: "Conference room lighting with after-hours ambiance",
+          cameraAngle: "Boardroom angles with personal confidence",
+          composition: "Professional meeting space with personal elements",
+          styling: "Business formal with confident personal touches",
+          mood: "Board-room confident and after-hours bold",
+          technicalSettings: "Professional lighting with evening executive atmosphere"
+        }
+      },
+      {
+        titles: ["Executive decisions, personal preferences 👑", "Corner office, cornerstone confidence ✨", "When leadership looks this good 💼"],
+        content: "The corner office isn't just about the view - it's about the power, the confidence, and the way success looks when you're comfortable in your own skin and your own space.",
+        photoInstructions: {
+          lighting: "Executive lighting with power dynamics",
+          cameraAngle: "Authority angles with executive presence",
+          composition: "Corner office compositions with leadership elements",
+          styling: "Executive attire with authority styling",
+          mood: "Executive-powerful and leadership-confident",
+          technicalSettings: "Professional executive lighting with authority presence"
+        }
+      },
+      {
+        titles: ["Desk drawer secrets and office mysteries 🗄️", "Professional facade, personal reality ✨", "What happens behind closed doors 🚪"],
+        content: "Every professional has their secrets - the personality behind the protocol, the person behind the position. These office moments capture what happens when professional meets personal.",
+        photoInstructions: {
+          lighting: "Office lighting with mysterious personal elements",
+          cameraAngle: "Behind-the-scenes professional angles",
+          composition: "Office compositions with hidden personal elements",
+          styling: "Professional with revealing personal touches",
+          mood: "Professionally mysterious and personally intriguing",
+          technicalSettings: "Office lighting with personal mystery atmosphere"
+        }
+      },
+      {
+        titles: ["Business lunch, personal menu 🥂", "Networking with extra benefits ✨", "When dining becomes designing 🍷"],
+        content: "Business lunches just got more interesting - the sophisticated setting, the professional conversation, and that underlying current of something more than just business being discussed.",
+        photoInstructions: {
+          lighting: "Upscale restaurant lighting with business ambiance",
+          cameraAngle: "Professional dining angles with personal chemistry",
+          composition: "Business dining compositions with personal undertones",
+          styling: "Business dining attire with subtle allure",
+          mood: "Business-sophisticated with dining-intimate",
+          technicalSettings: "Restaurant lighting with professional dining atmosphere"
+        }
+      },
+      {
+        titles: ["Home office, personal policies 💻", "Remote work, intimate perks ✨", "When WFH means working from hot 🔥"],
+        content: "Working from home has its advantages - professional on camera, personal below the desk, and the freedom to conduct business exactly how you want to conduct it.",
+        photoInstructions: {
+          lighting: "Home office lighting with personal comfort",
+          cameraAngle: "Work-from-home angles with personal elements",
+          composition: "Home office compositions with intimate workspace",
+          styling: "Professional/casual hybrid with home comfort",
+          mood: "Work-from-home comfortable and professionally personal",
+          technicalSettings: "Home office lighting with comfortable professional atmosphere"
+        }
+      },
+      {
+        titles: ["Travel business, pleasure principle ✈️", "Hotel rooms and room service ✨", "When business trips get personal 🏨"],
+        content: "Business travel isn't all airports and meetings - there are hotel rooms, room service, and those private moments when the business day ends and personal time begins.",
+        photoInstructions: {
+          lighting: "Hotel lighting with business travel ambiance",
+          cameraAngle: "Business travel angles with hotel intimacy",
+          composition: "Hotel room compositions with business travel elements",
+          styling: "Business travel attire with hotel comfort",
+          mood: "Business-travel sophisticated and hotel-intimate",
+          technicalSettings: "Hotel lighting with business travel atmosphere"
+        }
+      },
+      {
+        titles: ["Lawyer by day, lawless by night ⚖️", "Legal expertise, illegal thoughts ✨", "When justice meets just right 💋"],
+        content: "The law is about order, but sometimes the most interesting moments happen in the gray areas - after hours, behind closed doors, when professional boundaries become personal choices.",
+        photoInstructions: {
+          lighting: "Law office lighting with after-hours atmosphere",
+          cameraAngle: "Legal professional angles with personal confidence",
+          composition: "Law office compositions with personal elements",
+          styling: "Legal professional attire with confident styling",
+          mood: "Legally professional and personally confident",
+          technicalSettings: "Professional legal lighting with personal authority"
+        }
+      },
+      {
+        titles: ["Doctor's orders, patient preferences 🩺", "Medical expertise, bedside manner ✨", "When healthcare becomes self-care 💊"],
+        content: "Medical professionals know bodies better than anyone - anatomy, physiology, and exactly what it takes to make someone feel better in every possible way.",
+        photoInstructions: {
+          lighting: "Medical office lighting with care provider ambiance",
+          cameraAngle: "Healthcare professional angles with caring confidence",
+          composition: "Medical setting compositions with personal care elements",
+          styling: "Medical professional attire with caring styling",
+          mood: "Medically professional and caringly confident",
+          technicalSettings: "Healthcare lighting with professional care atmosphere"
+        }
+      },
+      {
+        titles: ["Teaching moments, learning experiences 📚", "Academic authority, personal curriculum ✨", "When education gets experiential 🎓"],
+        content: "Education is about opening minds, and sometimes the most valuable lessons happen outside the classroom - where professional knowledge meets personal experience.",
+        photoInstructions: {
+          lighting: "Academic lighting with educational authority",
+          cameraAngle: "Educational professional angles with teaching confidence",
+          composition: "Academic setting compositions with learning elements",
+          styling: "Academic professional attire with teaching authority",
+          mood: "Academically professional and educationally confident",
+          technicalSettings: "Educational lighting with academic authority atmosphere"
+        }
+      }
     ]
-    // ... Continue with remaining presets (workout-clothes, lingerie, casual-tease, bedroom-scene, outdoor-adventure, professional-tease)
   };
   
   const variations = presetVariations[presetId];
