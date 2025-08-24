@@ -1389,6 +1389,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const stats = await storage.getContentGenerationStats(req.user.id);
+      const dailyCount = await storage.getDailyGenerationCount(req.user.id);
+      
+      // Get user to determine tier and daily limit
+      const user = await storage.getUser(req.user.id);
+      const userTier = user?.tier || 'free';
+      
+      let dailyLimit = 5; // Default free limit
+      if (userTier === 'pro') {
+        dailyLimit = 50;
+      } else if (userTier === 'premium') {
+        dailyLimit = -1; // Unlimited
+      }
       
       // Calculate real stats (remove fake data)
       const userStats = {
@@ -1397,7 +1409,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         engagementRate: stats.total > 0 ? '8.5' : '0.0', // Fixed realistic rate until we track real engagement
         streak: stats.dailyStreak || 0,
         thisWeek: stats.thisWeek,
-        thisMonth: stats.thisMonth
+        thisMonth: stats.thisMonth,
+        dailyGenerations: {
+          used: dailyCount,
+          limit: dailyLimit,
+          remaining: dailyLimit === -1 ? -1 : Math.max(0, dailyLimit - dailyCount)
+        }
       };
 
       res.json(userStats);

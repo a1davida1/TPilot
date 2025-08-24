@@ -219,7 +219,12 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
     postsCreated: 0,
     totalViews: 0,
     engagementRate: 0,
-    streak: 0
+    streak: 0,
+    dailyGenerations: {
+      used: 0,
+      limit: 5,
+      remaining: 5
+    }
   });
   
   // Fetch real user stats
@@ -230,7 +235,12 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
           postsCreated: 0,
           totalViews: 0,
           engagementRate: 0,
-          streak: 0
+          streak: 0,
+          dailyGenerations: {
+            used: 0,
+            limit: 5,
+            remaining: 5
+          }
         });
         return;
       }
@@ -251,7 +261,12 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
             postsCreated: stats.postsCreated,
             totalViews: stats.totalViews,
             engagementRate: parseFloat(stats.engagementRate),
-            streak: stats.streak
+            streak: stats.streak,
+            dailyGenerations: stats.dailyGenerations || {
+              used: 0,
+              limit: 5,
+              remaining: 5
+            }
           });
         }
       } catch (error) {
@@ -585,6 +600,21 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
                         <span className="text-sm font-bold text-orange-400">{userStats.streak}</span>
                       </div>
                     </div>
+                    {userTier !== 'guest' && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-600">Daily Generations</span>
+                        <div className="flex items-center space-x-1">
+                          <span className={`text-sm font-bold ${
+                            userStats.dailyGenerations.remaining === 0 ? 'text-red-400' :
+                            userStats.dailyGenerations.remaining <= 1 ? 'text-orange-400' :
+                            'text-purple-400'
+                          }`}>
+                            {userStats.dailyGenerations.limit === -1 ? '∞' : 
+                             `${userStats.dailyGenerations.used}/${userStats.dailyGenerations.limit}`}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 

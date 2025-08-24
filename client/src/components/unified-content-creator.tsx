@@ -247,6 +247,9 @@ export function UnifiedContentCreator({
       // Clear existing content first to ensure overwrite
       setGeneratedContent(null);
       
+      // Invalidate user stats to refresh daily generation counter
+      queryClient.invalidateQueries({ queryKey: ['/api/user/stats'] });
+      
       // Ensure proper data structure for display
       const displayData: GeneratedContentDisplay = {
         ...data,
