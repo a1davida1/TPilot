@@ -3,8 +3,8 @@
 
 export interface ContentTemplate {
   id: string;
-  category: 'teasing' | 'promotional' | 'engagement' | 'lifestyle' | 'announcement';
-  style: 'playful' | 'confident' | 'mysterious' | 'casual' | 'direct';
+  category: 'teasing' | 'promotional' | 'engagement' | 'lifestyle' | 'announcement' | 'shower';
+  style: 'playful' | 'confident' | 'mysterious' | 'casual' | 'direct' | 'relaxed' | 'peaceful' | 'glowing' | 'magical' | 'refreshing' | 'blissful' | 'dreamy' | 'soft' | 'warm' | 'natural' | 'brave';
   promotionLevel?: 'none' | 'subtle' | 'moderate' | 'direct';
   subCategory?: 'flash-sale' | 'new-content' | 'discount' | 'exclusive-offer' | 'custom-request' | 'bundle' | 'limited-time';
   title: string;
@@ -41,6 +41,458 @@ export const preGeneratedTemplates: ContentTemplate[] = [
     content: "Steam, water droplets, and a camera... That's all I'm saying here 🚿 The rest of the story? Well, that's reserved for my special fans. Trust me, you haven't seen anything like this before 💦",
     tags: ['shower', 'mysterious', 'exclusive'],
     photoInstructions: "Steamy bathroom, water droplets, silhouette shots"
+  },
+
+  // SHOWER SCENE CONTENT - 50 HIGH-QUALITY PRESETS
+  {
+    id: 'shower_001',
+    category: 'shower',
+    style: 'relaxed',
+    title: "Long day officially rinsed away ✨",
+    content: "Long day officially rinsed away. The water's just hot enough to fog the glass and melt the stress, and I'm taking my time with it. If you listen closely, you can almost hear the sigh of relief.",
+    tags: ['shower', 'relaxation', 'steam'],
+    photoInstructions: "Steamy glass, soft lighting, relaxed expression"
+  },
+  {
+    id: 'shower_002',
+    category: 'shower',
+    style: 'peaceful',
+    title: "Steam curling around like a soft blanket 🤍",
+    content: "Steam curling around my shoulders like a soft blanket, and suddenly the world feels quieter. Ten minutes in here and I remember what calm feels like again. How long is too long for a 'quick' shower?",
+    tags: ['steam', 'peaceful', 'calm'],
+    photoInstructions: "Steam wisps, shoulder shots, serene expression"
+  },
+  {
+    id: 'shower_003',
+    category: 'shower',
+    style: 'glowing',
+    title: "Turned the nozzle to 'perfect' 💫",
+    content: "I forgot how good it feels to turn the nozzle to 'perfect' and let the day slide off my skin. The mirror fogged, the thoughts slowed, and I came out glowing.",
+    tags: ['perfect', 'glowing', 'thoughts'],
+    photoInstructions: "Fogged mirror background, natural glow, content expression"
+  },
+  {
+    id: 'shower_004',
+    category: 'shower',
+    style: 'playful',
+    title: "Brought warm rain indoors 🌧️",
+    content: "I brought the warm rain indoors and let it kiss every inch of tension goodbye. Now I'm wrapped in steam, wrapped in softness, and maybe wrapped in a little mischief, too.",
+    tags: ['rain', 'tension', 'mischief'],
+    photoInstructions: "Playful pose, steam effects, hint of mischief in expression"
+  },
+  {
+    id: 'shower_005',
+    category: 'shower',
+    style: 'magical',
+    title: "A certain magic when the glass fogs ✨",
+    content: "There's a certain magic when the glass fogs and the lights dim just a bit. The rest of the world fades out, and it's just me, warm water, and unrushed breaths.",
+    tags: ['magic', 'glass', 'unrushed'],
+    photoInstructions: "Dimmed lighting, fogged glass, mystical atmosphere"
+  },
+  {
+    id: 'shower_006',
+    category: 'shower',
+    style: 'peaceful',
+    title: "Clean slate activated ✨",
+    content: "Clean slate activated. A little soap, a lot of steam, and a promise to move a touch slower tonight. If peace had a soundtrack, it'd be water dancing on tile.",
+    tags: ['clean slate', 'peace', 'dancing water'],
+    photoInstructions: "Soap bubbles, peaceful expression, water droplets"
+  },
+  {
+    id: 'shower_007',
+    category: 'shower',
+    style: 'glowing',
+    title: "Temperature set to 'cuddle' 🤗",
+    content: "Temperature set to 'cuddle,' playlist on 'repeat,' and I'm letting the steam paint its own filter. No edits needed when the whole room is glowing.",
+    tags: ['cuddle', 'playlist', 'natural filter'],
+    photoInstructions: "Natural steam filter, warm lighting, cozy atmosphere"
+  },
+  {
+    id: 'shower_008',
+    category: 'shower',
+    style: 'refreshing',
+    title: "Left worries in a puddle on the floor 💧",
+    content: "I left my worries in a puddle on the floor and kept only the glow. It's wild how a simple shower can feel like a small reset button for the soul.",
+    tags: ['worries', 'reset', 'soul'],
+    photoInstructions: "Floor water effects, refreshed expression, soul-cleansing vibe"
+  },
+  {
+    id: 'shower_009',
+    category: 'shower',
+    style: 'blissful',
+    title: "Found that perfect moment 💫",
+    content: "There's a moment between 'almost warm' and 'just right' where everything else disappears. I found it, and I think I'll stay here a minute longer.",
+    tags: ['perfect moment', 'just right', 'disappear'],
+    photoInstructions: "Blissful expression, perfect lighting, timeless moment"
+  },
+  {
+    id: 'shower_010',
+    category: 'shower',
+    style: 'dreamy',
+    title: "Mirror blurred, mind cleared 🌸",
+    content: "The mirror blurred, my mind cleared, and my shoulders dropped an inch. If you need me, I'm still in here pretending time doesn't exist.",
+    tags: ['blurred', 'cleared', 'timeless'],
+    photoInstructions: "Blurred mirror, relaxed shoulders, dreamy atmosphere"
+  },
+  {
+    id: 'shower_011',
+    category: 'shower',
+    style: 'soft',
+    title: "Steam makes everything softer 💨",
+    content: "I swear steam makes every curve softer and every thought kinder. If you can read this, the room isn't foggy enough yet.",
+    tags: ['curves', 'kinder thoughts', 'foggy'],
+    photoInstructions: "Soft curves highlighted, gentle steam, kind expression"
+  },
+  {
+    id: 'shower_012',
+    category: 'shower',
+    style: 'confident',
+    title: "Confidence lives in warm water 💫",
+    content: "Shower thoughts: maybe confidence lives somewhere between warm water and soft lighting. Either way, I found a whole lot of it tonight.",
+    tags: ['confidence', 'warm water', 'soft lighting'],
+    photoInstructions: "Confident pose, warm lighting, steam backdrop"
+  },
+  {
+    id: 'shower_013',
+    category: 'shower',
+    style: 'teasing',
+    title: "Post-shower glow hits different ✨",
+    content: "Just me, a teasing trail of water, and that post-shower glow that always hits a little different. The towel can wait—this moment is too good.",
+    tags: ['teasing', 'trail', 'towel wait'],
+    photoInstructions: "Water trails, post-shower glow, teasing pose"
+  },
+  {
+    id: 'shower_014',
+    category: 'shower',
+    style: 'playful',
+    title: "Glass steamed over in seconds 💨",
+    content: "The glass steamed over in seconds, which feels like permission to be extra. I obliged, and the camera caught me mid-smirk.",
+    tags: ['permission', 'extra', 'mid-smirk'],
+    photoInstructions: "Steamed glass, playful smirk, extra pose"
+  },
+  {
+    id: 'shower_015',
+    category: 'shower',
+    style: 'warm',
+    title: "Warm drops, cool tiles 💧",
+    content: "Warm drops, cool tiles, and a grin that kept sneaking back into the frame. I'm not sure which I loved more—the heat or the hush.",
+    tags: ['warm drops', 'cool tiles', 'sneaking grin'],
+    photoInstructions: "Temperature contrast, natural grin, tile details"
+  },
+  {
+    id: 'shower_016',
+    category: 'shower',
+    style: 'glowing',
+    title: "Rinsed the day, kept the sparkle ✨",
+    content: "I rinsed the day away and kept only the sparkle. Funny how a little steam can be the best filter, and a little glow can be the best outfit.",
+    tags: ['sparkle', 'steam filter', 'glow outfit'],
+    photoInstructions: "Sparkling effects, steam filter, natural glow"
+  },
+  {
+    id: 'shower_017',
+    category: 'shower',
+    style: 'mysterious',
+    title: "If the water could talk... 💭",
+    content: "If the water could talk, it would tell you I lingered. If the steam could gossip, it would say I did it on purpose.",
+    tags: ['water talk', 'lingered', 'purpose'],
+    photoInstructions: "Mysterious steam, lingering pose, purposeful expression"
+  },
+  {
+    id: 'shower_018',
+    category: 'shower',
+    style: 'peaceful',
+    title: "That silent moment under the stream 🌊",
+    content: "That pause when you turn your face to the stream and the world goes silent? I want to live there a little longer.",
+    tags: ['silent', 'stream', 'live there'],
+    photoInstructions: "Face to stream, silent expression, peaceful moment"
+  },
+  {
+    id: 'shower_019',
+    category: 'shower',
+    style: 'natural',
+    title: "Minimal makeup, maximum mood 💄",
+    content: "Minimal makeup, maximum mood. I think the steam did more for me than any ring light ever could.",
+    tags: ['minimal', 'maximum mood', 'natural beauty'],
+    photoInstructions: "Natural makeup, steam lighting, authentic mood"
+  },
+  {
+    id: 'shower_020',
+    category: 'shower',
+    style: 'brave',
+    title: "Tiny universe of bravery 🌍",
+    content: "Between the curtain and the fog is a tiny universe where I feel brave and unbothered. I took a few photos there for proof.",
+    tags: ['tiny universe', 'brave', 'unbothered'],
+    photoInstructions: "Curtain backdrop, brave pose, proof-like candid shots"
+  },
+  {
+    id: 'shower_021',
+    category: 'shower',
+    style: 'warm',
+    title: "Warmth traced a perfect line 💫",
+    content: "I let the warmth trace a little line down my back and told the rest of the day to wait its turn. Priorities: glow first, everything else later.",
+    tags: ['warmth', 'priorities', 'glow first'],
+    photoInstructions: "Back shot with water trails, warm lighting, priority pose"
+  },
+  {
+    id: 'shower_022',
+    category: 'shower',
+    style: 'soft',
+    title: "Water whispered 'stay' 💧",
+    content: "The water whispered 'stay,' and I did—until my fingers pruned and my smile wouldn't leave. Worth it.",
+    tags: ['whispered', 'pruned fingers', 'smile'],
+    photoInstructions: "Gentle water effects, pruned hands visible, permanent smile"
+  },
+  {
+    id: 'shower_023',
+    category: 'shower',
+    style: 'glowing',
+    title: "Before and after in one shower ✨",
+    content: "I walked in as the 'before' and stepped out as the 'after.' The secret? Steam, patience, and a towel I still haven't reached for.",
+    tags: ['before after', 'patience', 'towel wait'],
+    photoInstructions: "Transformation lighting, patient pose, towel out of reach"
+  },
+  {
+    id: 'shower_024',
+    category: 'shower',
+    style: 'mysterious',
+    title: "Only thing in focus 📸",
+    content: "The room turned to mist and suddenly I was the only thing in focus. Maybe that's why I couldn't stop posing.",
+    tags: ['mist', 'focus', 'posing'],
+    photoInstructions: "Mist background, sharp focus subject, natural posing"
+  },
+  {
+    id: 'shower_025',
+    category: 'shower',
+    style: 'peaceful',
+    title: "Reminder to take your time tonight 🌙",
+    content: "Consider this your reminder to take your time tonight. Let the steam rise, let your shoulders drop, and let the glow do the talking.",
+    tags: ['reminder', 'shoulders drop', 'glow talking'],
+    photoInstructions: "Rising steam, dropped shoulders, glowing skin"
+  },
+  {
+    id: 'shower_026',
+    category: 'shower',
+    style: 'confident',
+    title: "Heat up one notch, confidence up two 🔥",
+    content: "I put the heat up one notch and the confidence up two. Apparently, steam and a little laughter is a powerful combo.",
+    tags: ['heat notch', 'confidence boost', 'laughter'],
+    photoInstructions: "Confident heat pose, laughing expression, powerful stance"
+  },
+  {
+    id: 'shower_027',
+    category: 'shower',
+    style: 'playful',
+    title: "Best kind of filter you can feel 💨",
+    content: "The best kind of filter is the one you can feel—soft, warm, and a little playful. I might make this a nightly ritual.",
+    tags: ['feel filter', 'nightly ritual', 'playful'],
+    photoInstructions: "Soft filter effects, warm touch, playful ritual vibe"
+  },
+  {
+    id: 'shower_028',
+    category: 'shower',
+    style: 'glowing',
+    title: "Shower scene unlocked 🔓",
+    content: "Shower scene unlocked: fogged edges, candlelight, and a grin I couldn't quite hide. Ten out of ten, would rinse and repeat.",
+    tags: ['scene unlocked', 'candlelight', 'repeat'],
+    photoInstructions: "Fogged edges, candle lighting, barely hidden grin"
+  },
+  {
+    id: 'shower_029',
+    category: 'shower',
+    style: 'soft',
+    title: "Fresh out and feeling dangerous 💫",
+    content: "Fresh out and feeling a tiny bit dangerous—in the sweet, slow way that only warm water can inspire.",
+    tags: ['fresh out', 'dangerous', 'sweet slow'],
+    photoInstructions: "Fresh from shower, subtly dangerous pose, sweet expression"
+  },
+  {
+    id: 'shower_030',
+    category: 'shower',
+    style: 'teasing',
+    title: "Curtain slipped, steam wrapped tighter 😏",
+    content: "The curtain slipped a touch, the steam wrapped tighter, and my mood turned to 'tease.' Accidents? None. Choices? Absolutely.",
+    tags: ['curtain slip', 'steam wrap', 'mood tease'],
+    photoInstructions: "Curtain slip moment, steam wrapping, teasing mood"
+  },
+  {
+    id: 'shower_031',
+    category: 'shower',
+    style: 'dreamy',
+    title: "Glass blurs, imagination fills 💭",
+    content: "I love when the glass blurs just enough to leave room for imagination. The rest is all glow and giggles.",
+    tags: ['glass blur', 'imagination', 'giggles'],
+    photoInstructions: "Blurred glass effect, imaginative pose, giggly expression"
+  },
+  {
+    id: 'shower_032',
+    category: 'shower',
+    style: 'playful',
+    title: "Tell me your shower playlist 🎵",
+    content: "Tell me your best shower playlist, because mine had me swaying and smiling like the steam was a spotlight.",
+    tags: ['playlist', 'swaying', 'spotlight'],
+    photoInstructions: "Musical swaying, steam spotlight, performance pose"
+  },
+  {
+    id: 'shower_033',
+    category: 'shower',
+    style: 'soft',
+    title: "Water beads follow the camera 📸",
+    content: "I let the water bead where it wanted and the camera follow. Sometimes the softest details do the loudest talking.",
+    tags: ['water beads', 'camera follow', 'soft details'],
+    photoInstructions: "Water bead details, camera following water, soft close-ups"
+  },
+  {
+    id: 'shower_034',
+    category: 'shower',
+    style: 'brave',
+    title: "Bravery in bare shoulders 💪",
+    content: "There's bravery in bare shoulders and quiet rooms. Tonight I found both, and the mirror agreed.",
+    tags: ['bravery', 'bare shoulders', 'mirror agreed'],
+    photoInstructions: "Bare shoulders, brave pose, mirror reflection"
+  },
+  {
+    id: 'shower_035',
+    category: 'shower',
+    style: 'peaceful',
+    title: "Serenity has a scent 🌸",
+    content: "If serenity had a scent, it would be warm soap and new towels. If it had a look, it would be this exact glow.",
+    tags: ['serenity scent', 'warm soap', 'exact glow'],
+    photoInstructions: "Serene expression, soap bubbles, towel textures"
+  },
+  {
+    id: 'shower_036',
+    category: 'shower',
+    style: 'playful',
+    title: "Called it self-care, steam called it showtime 🎭",
+    content: "I called it 'self-care,' but the steam called it 'showtime.' Either way, I'm not arguing with the results.",
+    tags: ['self-care', 'showtime', 'results'],
+    photoInstructions: "Self-care props, showtime lighting, result showcase"
+  },
+  {
+    id: 'shower_037',
+    category: 'shower',
+    style: 'teasing',
+    title: "Over-shoulder or close-up glow? 🤔",
+    content: "Do you like the over-the-shoulder shot or the close-up glow more? I took both and made the steam choose.",
+    tags: ['over-shoulder', 'close-up', 'steam choose'],
+    photoInstructions: "Over-shoulder angle, close-up glow shots, steam decision"
+  },
+  {
+    id: 'shower_038',
+    category: 'shower',
+    style: 'mysterious',
+    title: "Timed the water perfectly 💫",
+    content: "I timed the water perfectly and let the world blur. The photos feel like a secret I'm letting you in on.",
+    tags: ['perfect timing', 'world blur', 'secret sharing'],
+    photoInstructions: "Perfect timing capture, blurred world, secret-sharing vibe"
+  },
+  {
+    id: 'shower_039',
+    category: 'shower',
+    style: 'glowing',
+    title: "Glass fogged, cheeks flushed 🌹",
+    content: "The glass fogged, my cheeks flushed, and I remembered what softness feels like. Highly recommend this ritual.",
+    tags: ['glass fog', 'cheeks flush', 'softness ritual'],
+    photoInstructions: "Fogged glass, flushed cheeks, soft texture focus"
+  },
+  {
+    id: 'shower_040',
+    category: 'shower',
+    style: 'dreamy',
+    title: "Tonight's agenda: slow everything 📝",
+    content: "Tonight's agenda: hot water, slower breathing, and a towel that keeps pretending it isn't needed yet.",
+    tags: ['agenda', 'slower breathing', 'pretending towel'],
+    photoInstructions: "Agenda-setting pose, breathing focus, towel placement"
+  },
+  {
+    id: 'shower_041',
+    category: 'shower',
+    style: 'playful',
+    title: "Tried to be quick... steam flirted 💕",
+    content: "I tried to be quick… then the steam started flirting. Fifteen extra minutes happened.",
+    tags: ['tried quick', 'steam flirt', 'extra minutes'],
+    photoInstructions: "Quick attempt pose, flirting steam, time-extended vibe"
+  },
+  {
+    id: 'shower_042',
+    category: 'shower',
+    style: 'confident',
+    title: "Post-shower me is braver 💪",
+    content: "Post-shower me is just a little braver, a little warmer, and a lot more likely to smile for no reason.",
+    tags: ['post-shower', 'braver', 'smile no reason'],
+    photoInstructions: "Post-shower confidence, brave warmth, unreasonable smile"
+  },
+  {
+    id: 'shower_043',
+    category: 'shower',
+    style: 'soft',
+    title: "Glow setting: gentle tease 😌",
+    content: "If this glow were a setting, it would be 'gentle tease.' Consider this your preview before the mirror clears.",
+    tags: ['glow setting', 'gentle tease', 'preview'],
+    photoInstructions: "Gentle tease lighting, preview mood, mirror clearing moment"
+  },
+  {
+    id: 'shower_044',
+    category: 'shower',
+    style: 'natural',
+    title: "Droplets trace tiny paths 💧",
+    content: "I love the way droplets trace tiny paths like they're in on the plan. The camera caught them—so did my smile.",
+    tags: ['droplets trace', 'tiny paths', 'caught smile'],
+    photoInstructions: "Droplet paths, traced routes, camera-caught smile"
+  },
+  {
+    id: 'shower_045',
+    category: 'shower',
+    style: 'confident',
+    title: "Rinse and repeat applies to confidence 🔄",
+    content: "I don't know who needs to hear this, but 'rinse and repeat' applies to confidence, too. I'm on repeat.",
+    tags: ['rinse repeat', 'confidence repeat', 'repeat mode'],
+    photoInstructions: "Repeat confidence pose, cycling confidence, repeat energy"
+  },
+  {
+    id: 'shower_046',
+    category: 'shower',
+    style: 'peaceful',
+    title: "Quiet hum makes days feel small 🎵",
+    content: "The quiet hum of water can make a whole day feel small. I let it, and the photos kept the peace.",
+    tags: ['quiet hum', 'day small', 'kept peace'],
+    photoInstructions: "Quiet water sounds, peaceful proportions, peace-keeping shots"
+  },
+  {
+    id: 'shower_047',
+    category: 'shower',
+    style: 'teasing',
+    title: "Little lace, lot of steam 💨",
+    content: "A little lace, a lot of steam, and just enough mystery to keep things interesting. You can fill in the blanks.",
+    tags: ['little lace', 'lot steam', 'fill blanks'],
+    photoInstructions: "Lace details, steam abundance, mystery gaps"
+  },
+  {
+    id: 'shower_048',
+    category: 'shower',
+    style: 'soft',
+    title: "Soft focus, softer towel 🤍",
+    content: "Soft focus, softer towel, and a look that says, 'I'm keeping this glow a while.'",
+    tags: ['soft focus', 'softer towel', 'keeping glow'],
+    photoInstructions: "Soft focus lens, ultra-soft towel, glow-keeping expression"
+  },
+  {
+    id: 'shower_049',
+    category: 'shower',
+    style: 'playful',
+    title: "Five-minute reset became full mood 😅",
+    content: "I promised myself a five-minute reset and delivered a full-on mood. Oops. The steam made me do it.",
+    tags: ['five minute', 'full mood', 'steam blame'],
+    photoInstructions: "Reset timer, full mood delivery, steam accomplice"
+  },
+  {
+    id: 'shower_050',
+    category: 'shower',
+    style: 'glowing',
+    title: "Shower time turned showtime ✨",
+    content: "Shower time turned into showtime when the mirror fogged and the lights got warm. I let the moment linger, then captured it—just for us.",
+    tags: ['shower showtime', 'mirror fog', 'moment linger'],
+    photoInstructions: "Showtime transformation, fogged mirror, lingering capture"
   },
 
   // PROMOTIONAL CONTENT - 50+ VARIATIONS WITH STYLE & PROMOTION MATCHING
