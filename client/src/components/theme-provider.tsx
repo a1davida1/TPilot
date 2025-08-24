@@ -6,6 +6,7 @@ type ThemeProviderProps = {
   children: React.ReactNode
   defaultTheme?: Theme
   storageKey?: string
+  forcedTheme?: "light" | "dark"
 }
 
 type ThemeProviderState = {
@@ -26,12 +27,13 @@ export function ThemeProvider({
   children,
   defaultTheme = "system",
   storageKey = "thottopilot-ui-theme",
+  forcedTheme,
   ...props
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(
-    () => (localStorage?.getItem(storageKey) as Theme) || defaultTheme
+    () => forcedTheme || (localStorage?.getItem(storageKey) as Theme) || defaultTheme
   )
-  const [resolvedTheme, setResolvedTheme] = useState<"dark" | "light">("light")
+  const [resolvedTheme, setResolvedTheme] = useState<"dark" | "light">(forcedTheme || "light")
 
   useEffect(() => {
     const root = window.document.documentElement
@@ -47,10 +49,10 @@ export function ThemeProvider({
         : "light"
     }
 
-    const resolvedTheme = theme === "system" ? systemTheme : theme
-    setResolvedTheme(resolvedTheme)
-    root.classList.add(resolvedTheme)
-  }, [theme])
+    const finalResolvedTheme = forcedTheme || (theme === "system" ? systemTheme : theme)
+    setResolvedTheme(finalResolvedTheme)
+    root.classList.add(finalResolvedTheme)
+  }, [theme, forcedTheme])
 
   const value = {
     theme,

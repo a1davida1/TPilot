@@ -232,11 +232,11 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
               userTier={userTier === 'guest' ? "free" : userTier}
             />
             {userTier === 'guest' && (
-              <Card className="bg-gray-800 border-purple-500/20">
+              <Card className="bg-white border-gray-200">
                 <CardContent className="p-4 text-center space-y-2">
                   <Sparkles className="h-8 w-8 mx-auto text-purple-400" />
-                  <h4 className="text-sm font-medium text-white">Unlock Full Access</h4>
-                  <p className="text-xs text-gray-400">Get unlimited generations and premium features</p>
+                  <h4 className="text-sm font-medium text-gray-900">Unlock Full Access</h4>
+                  <p className="text-xs text-gray-600">Get unlimited generations and premium features</p>
                   <Button 
                     size="sm" 
                     className="w-full bg-gradient-to-r from-purple-600 to-pink-600"
@@ -279,46 +279,46 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-bold text-white">Enterprise Dashboard</h1>
-                <p className="text-gray-400">Advanced AI content creation and automation</p>
+                <h1 className="text-2xl font-bold text-gray-900">Enterprise Dashboard</h1>
+                <p className="text-gray-600">Advanced AI content creation and automation</p>
               </div>
               <Badge className="bg-gradient-to-r from-purple-500 to-pink-500">Phase 2</Badge>
             </div>
-            <div className="rounded-lg bg-gray-800 border border-purple-500/20 p-6">
+            <div className="rounded-lg bg-white border border-gray-200 p-6">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
-                <Card className="bg-gray-700 border-purple-500/20">
+                <Card className="bg-gray-700 border-gray-200">
                   <CardContent className="p-4 text-center">
                     <Crown className="h-8 w-8 mx-auto text-yellow-500 mb-2" />
-                    <h4 className="font-semibold text-white">AI Studio</h4>
-                    <p className="text-xs text-gray-400">Multi-platform content generation</p>
+                    <h4 className="font-semibold text-gray-900">AI Studio</h4>
+                    <p className="text-xs text-gray-600">Multi-platform content generation</p>
                   </CardContent>
                 </Card>
-                <Card className="bg-gray-700 border-purple-500/20">
+                <Card className="bg-gray-700 border-gray-200">
                   <CardContent className="p-4 text-center">
                     <ImageIcon className="h-8 w-8 mx-auto text-blue-500 mb-2" />
-                    <h4 className="font-semibold text-white">Media Library</h4>
-                    <p className="text-xs text-gray-400">S3 storage + watermarking</p>
+                    <h4 className="font-semibold text-gray-900">Media Library</h4>
+                    <p className="text-xs text-gray-600">S3 storage + watermarking</p>
                   </CardContent>
                 </Card>
-                <Card className="bg-gray-700 border-purple-500/20">
+                <Card className="bg-gray-700 border-gray-200">
                   <CardContent className="p-4 text-center">
                     <Clock className="h-8 w-8 mx-auto text-green-500 mb-2" />
-                    <h4 className="font-semibold text-white">Post Scheduler</h4>
-                    <p className="text-xs text-gray-400">Reddit automation + timing</p>
+                    <h4 className="font-semibold text-gray-900">Post Scheduler</h4>
+                    <p className="text-xs text-gray-600">Reddit automation + timing</p>
                   </CardContent>
                 </Card>
-                <Card className="bg-gray-700 border-purple-500/20">
+                <Card className="bg-gray-700 border-gray-200">
                   <CardContent className="p-4 text-center">
                     <DollarSign className="h-8 w-8 mx-auto text-purple-500 mb-2" />
-                    <h4 className="font-semibold text-white">Billing</h4>
-                    <p className="text-xs text-gray-400">CCBill integration</p>
+                    <h4 className="font-semibold text-gray-900">Billing</h4>
+                    <p className="text-xs text-gray-600">CCBill integration</p>
                   </CardContent>
                 </Card>
               </div>
               
               <div className="text-center space-y-4">
                 <p className="text-gray-300">Access the full Enterprise Dashboard with all advanced features:</p>
-                <ul className="text-sm text-gray-400 space-y-1">
+                <ul className="text-sm text-gray-600 space-y-1">
                   <li>• Advanced AI content studio with Gemini + OpenAI integration</li>
                   <li>• Secure media library with AWS S3 storage and watermarking</li>
                   <li>• Intelligent Reddit post scheduling with BullMQ queues</li>
@@ -344,46 +344,46 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-bold text-white">Phase 4: Advanced Automation</h1>
-                <p className="text-gray-400">AI-powered automation, trend intelligence, and community management</p>
+                <h1 className="text-2xl font-bold text-gray-900">Phase 4: Advanced Automation</h1>
+                <p className="text-gray-600">AI-powered automation, trend intelligence, and community management</p>
               </div>
               <Badge className="bg-gradient-to-r from-purple-500 to-pink-500">Phase 4</Badge>
             </div>
-            <div className="rounded-lg bg-gray-800 border border-purple-500/20 p-6">
+            <div className="rounded-lg bg-white border border-gray-200 p-6">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
-                <Card className="bg-gray-700 border-purple-500/20">
+                <Card className="bg-gray-700 border-gray-200">
                   <CardContent className="p-4 text-center">
                     <Zap className="h-8 w-8 mx-auto text-blue-500 mb-2" />
-                    <h4 className="font-semibold text-white">Social Automation</h4>
-                    <p className="text-xs text-gray-400">Smart posting & engagement</p>
+                    <h4 className="font-semibold text-gray-900">Social Automation</h4>
+                    <p className="text-xs text-gray-600">Smart posting & engagement</p>
                   </CardContent>
                 </Card>
-                <Card className="bg-gray-700 border-purple-500/20">
+                <Card className="bg-gray-700 border-gray-200">
                   <CardContent className="p-4 text-center">
                     <Brain className="h-8 w-8 mx-auto text-purple-500 mb-2" />
-                    <h4 className="font-semibold text-white">Trend Intelligence</h4>
-                    <p className="text-xs text-gray-400">AI-powered trend analysis</p>
+                    <h4 className="font-semibold text-gray-900">Trend Intelligence</h4>
+                    <p className="text-xs text-gray-600">AI-powered trend analysis</p>
                   </CardContent>
                 </Card>
-                <Card className="bg-gray-700 border-purple-500/20">
+                <Card className="bg-gray-700 border-gray-200">
                   <CardContent className="p-4 text-center">
                     <Users className="h-8 w-8 mx-auto text-green-500 mb-2" />
-                    <h4 className="font-semibold text-white">Community Manager</h4>
-                    <p className="text-xs text-gray-400">Auto-replies & engagement</p>
+                    <h4 className="font-semibold text-gray-900">Community Manager</h4>
+                    <p className="text-xs text-gray-600">Auto-replies & engagement</p>
                   </CardContent>
                 </Card>
-                <Card className="bg-gray-700 border-purple-500/20">
+                <Card className="bg-gray-700 border-gray-200">
                   <CardContent className="p-4 text-center">
                     <Target className="h-8 w-8 mx-auto text-pink-500 mb-2" />
-                    <h4 className="font-semibold text-white">Content Optimizer</h4>
-                    <p className="text-xs text-gray-400">A/B testing & optimization</p>
+                    <h4 className="font-semibold text-gray-900">Content Optimizer</h4>
+                    <p className="text-xs text-gray-600">A/B testing & optimization</p>
                   </CardContent>
                 </Card>
               </div>
               
               <div className="text-center space-y-4">
                 <p className="text-gray-300">Access the full Phase 4 automation and intelligence suite:</p>
-                <ul className="text-sm text-gray-400 space-y-1">
+                <ul className="text-sm text-gray-600 space-y-1">
                   <li>• Advanced social media automation with smart posting schedules</li>
                   <li>• AI-powered trend detection and content suggestions</li>
                   <li>• Intelligent community management with auto-responses</li>
@@ -408,7 +408,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
         return (
           <Card className="min-h-[400px] flex items-center justify-center">
             <div className="text-center space-y-4">
-              <Sparkles className="h-16 w-16 mx-auto text-gray-400" />
+              <Sparkles className="h-16 w-16 mx-auto text-gray-600" />
               <h3 className="text-xl font-medium text-gray-600">Coming Soon</h3>
               <p className="text-gray-500">This feature is under development</p>
             </div>
@@ -419,23 +419,23 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
 
   return (
     <MobileOptimization>
-      <div className="min-h-screen bg-black">
+      <div className="min-h-screen bg-white">
         {/* Header */}
-        <header className="bg-gray-900 border-b border-purple-500/20 sticky top-0 z-50">
+        <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
           <div className="flex items-center justify-between px-4 h-16">
             <div className="flex items-center space-x-4">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="text-gray-400 hover:text-white"
+                className="text-gray-600 hover:text-gray-900"
               >
                 {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </Button>
 
               <div className="flex items-center space-x-2">
                 <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
-                  <Sparkles className="h-5 w-5 text-white" />
+                  <Sparkles className="h-5 w-5 text-gray-900" />
                 </div>
                 <h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
                   ThottoPilot
@@ -463,7 +463,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
                   <Button 
                     variant="outline"
                     onClick={() => setShowLoginModal(true)}
-                    className="border-purple-500/20 hover:border-purple-500/40 text-gray-300"
+                    className="border-gray-200 hover:border-purple-500/40 text-gray-300"
                   >
                     <LogIn className="mr-2 h-4 w-4" />
                     Login
@@ -488,7 +488,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
                     <Button 
                       variant="outline" 
                       size="sm"
-                      className="border-purple-500/20 hover:border-purple-500/40 text-purple-400"
+                      className="border-gray-200 hover:border-purple-500/40 text-purple-400"
                       onClick={() => setShowLoginModal(true)}
                     >
                       <Crown className="mr-1 h-3 w-3" />
@@ -499,7 +499,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
                     variant="ghost" 
                     size="icon"
                     onClick={handleLogout}
-                    className="text-gray-400 hover:text-white"
+                    className="text-gray-600 hover:text-gray-900"
                   >
                     <LogOut className="h-4 w-4" />
                   </Button>
@@ -512,29 +512,29 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
         <div className="flex">
           {/* Sidebar */}
           <aside className={cn(
-            "bg-gray-900 border-r border-purple-500/20 transition-all duration-300",
+            "bg-white border-r border-gray-200 transition-all duration-300",
             sidebarOpen ? "w-64" : "w-0 overflow-hidden"
           )}>
             <ScrollArea className="h-[calc(100vh-4rem)]">
               <div className="p-4 space-y-4">
                 {/* Quick Stats */}
-                <Card className="bg-gray-800 border-purple-500/20">
+                <Card className="bg-white border-gray-200">
                   <CardContent className="p-4 space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-400">Posts Created</span>
-                      <span className="text-sm font-bold text-white">{userStats.postsCreated}</span>
+                      <span className="text-xs text-gray-600">Posts Created</span>
+                      <span className="text-sm font-bold text-gray-900">{userStats.postsCreated}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-400">Total Views</span>
-                      <span className="text-sm font-bold text-white">{userStats.totalViews.toLocaleString()}</span>
+                      <span className="text-xs text-gray-600">Total Views</span>
+                      <span className="text-sm font-bold text-gray-900">{userStats.totalViews.toLocaleString()}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-400">Engagement</span>
+                      <span className="text-xs text-gray-600">Engagement</span>
                       <span className="text-sm font-bold text-green-400">{userStats.engagementRate}%</span>
                     </div>
                     <Separator className="bg-purple-500/20" />
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-400">Daily Streak</span>
+                      <span className="text-xs text-gray-600">Daily Streak</span>
                       <div className="flex items-center space-x-1">
                         <Zap className="h-3 w-3 text-orange-400" />
                         <span className="text-sm font-bold text-orange-400">{userStats.streak}</span>
@@ -549,7 +549,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
                     <div key={section.id} className="space-y-1">
                       <Button
                         variant="ghost"
-                        className="w-full justify-between text-gray-300 hover:text-white hover:bg-purple-600/10"
+                        className="w-full justify-between text-gray-300 hover:text-gray-900 hover:bg-purple-600/10"
                         onClick={() => toggleSection(section.id)}
                       >
                         <div className="flex items-center space-x-2">
@@ -573,7 +573,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
                                 "w-full justify-start text-sm",
                                 activeSection === item.id 
                                   ? "bg-purple-600/20 text-purple-400 border-l-2 border-purple-400" 
-                                  : "text-gray-400 hover:text-white hover:bg-purple-600/10"
+                                  : "text-gray-600 hover:text-gray-900 hover:bg-purple-600/10"
                               )}
                               onClick={() => {
                                 if ((item as any).link) {
@@ -611,8 +611,8 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
                   <Card className="bg-gradient-to-r from-purple-600/20 to-pink-600/20 border-purple-500/30">
                     <CardContent className="p-4 text-center space-y-2">
                       <Crown className="h-8 w-8 mx-auto text-yellow-400" />
-                      <h4 className="text-sm font-medium text-white">Upgrade to Pro</h4>
-                      <p className="text-xs text-gray-400">Unlock all features and remove limits</p>
+                      <h4 className="text-sm font-medium text-gray-900">Upgrade to Pro</h4>
+                      <p className="text-xs text-gray-600">Unlock all features and remove limits</p>
                       <Button 
                         size="sm" 
                         className="w-full bg-gradient-to-r from-purple-600 to-pink-600"
@@ -652,7 +652,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
 
             {/* Free User Banner */}
             {userTier === 'free' && (
-              <Alert className="mb-6 bg-purple-600/10 border-purple-500/20">
+              <Alert className="mb-6 bg-purple-600/10 border-gray-200">
                 <Crown className="h-4 w-4 text-purple-400" />
                 <AlertDescription className="text-gray-300">
                   <div className="flex items-center justify-between">
