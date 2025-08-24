@@ -279,7 +279,8 @@ function calculateCost(prompt: string, content: string, provider: AIProvider): n
 function generateDemoContent(request: MultiAIRequest): MultiAIResponse {
   const { customPrompt, platform, allowsPromotion, user } = request;
   
-  // Create content based on style/preset ID from user profile
+  // Create content based on the actual prompt/preset being used
+  // Check the customPrompt first, then fall back to user profile style
   const style = user?.personalityProfile?.contentStyle || '';
   
   // Create context-aware demo titles based on the preset style
@@ -287,8 +288,8 @@ function generateDemoContent(request: MultiAIRequest): MultiAIResponse {
   let demoContent: string;
   let photoInstructions: any;
   
-  // Handle each preset type specifically
-  if (style === 'nude-photos' || customPrompt?.includes('nude') || customPrompt?.includes('artistic flair')) {
+  // Handle each preset type specifically - check customPrompt first
+  if (customPrompt?.includes('nude') || customPrompt?.includes('artistic flair') || style === 'nude-photos') {
     demoTitles = [
       'Confidence in its purest form 🔥',
       'Art meets authenticity in this moment ✨',
@@ -303,7 +304,7 @@ function generateDemoContent(request: MultiAIRequest): MultiAIResponse {
       mood: "Confident, artistic, and authentically beautiful - let natural beauty shine",
       technicalSettings: "Portrait mode with dramatic lighting - f/1.4-2.0 for beautiful background separation"
     };
-  } else if (style === 'shower-content' || customPrompt?.includes('shower') || customPrompt?.includes('steam')) {
+  } else if (customPrompt?.includes('shower') || customPrompt?.includes('steam') || style === 'shower-content') {
     demoTitles = [
       'Steamy shower vibes, who\'s joining? 😉',
       'Just me, the steam, and pure relaxation 💦',
@@ -318,7 +319,7 @@ function generateDemoContent(request: MultiAIRequest): MultiAIResponse {
       mood: "Relaxed, fresh, and naturally beautiful - post-shower glow",
       technicalSettings: "Soft focus through steam - use bathroom lighting creatively"
     };
-  } else if (style === 'workout-clothes' || customPrompt?.includes('workout') || customPrompt?.includes('athletic') || customPrompt?.includes('fit')) {
+  } else if (customPrompt?.includes('workout') || customPrompt?.includes('athletic') || customPrompt?.includes('fit') || style === 'workout-clothes') {
     demoTitles = [
       'Post-workout glow hitting different today 💪✨',
       'When your gym clothes make you feel unstoppable 🔥',
@@ -333,7 +334,7 @@ function generateDemoContent(request: MultiAIRequest): MultiAIResponse {
       mood: "Strong, energetic, and accomplished - post-workout confidence",
       technicalSettings: "Clear, bright shots - f/2.8-4.0 with good lighting"
     };
-  } else if (style === 'lingerie' || customPrompt?.includes('lingerie') || customPrompt?.includes('elegant')) {
+  } else if (customPrompt?.includes('lingerie') || customPrompt?.includes('elegant') || customPrompt?.includes('sophisticated and alluring') || style === 'lingerie') {
     demoTitles = [
       'Elegance meets allure in perfect harmony 💋',
       'Sometimes the most beautiful art is you ✨',
@@ -348,7 +349,7 @@ function generateDemoContent(request: MultiAIRequest): MultiAIResponse {
       mood: "Sophisticated, elegant, and confidently beautiful - refined allure",
       technicalSettings: "Portrait mode with soft bokeh - f/1.8-2.8 for romantic depth"
     };
-  } else if (style === 'casual-tease' || customPrompt?.includes('casual') || customPrompt?.includes('playful')) {
+  } else if (customPrompt?.includes('casual') || customPrompt?.includes('playful') || customPrompt?.includes('everyday charm') || style === 'casual-tease') {
     demoTitles = [
       'Just being my playfully authentic self 😉',
       'Casual vibes but make it irresistible 💕',
@@ -363,7 +364,7 @@ function generateDemoContent(request: MultiAIRequest): MultiAIResponse {
       mood: "Playful, natural, and charmingly authentic - casual confidence",
       technicalSettings: "Natural lighting with casual feel - f/2.0-2.8 for soft natural look"
     };
-  } else if (style === 'bedroom-scene' || customPrompt?.includes('bedroom') || customPrompt?.includes('intimate')) {
+  } else if (customPrompt?.includes('bedroom') || customPrompt?.includes('intimate') || customPrompt?.includes('cozy and inviting') || style === 'bedroom-scene') {
     demoTitles = [
       'Cozy bedroom vibes and intimate moments 🛏️',
       'Sometimes the most beautiful spaces are personal ✨',
@@ -378,7 +379,7 @@ function generateDemoContent(request: MultiAIRequest): MultiAIResponse {
       mood: "Intimate, cozy, and beautifully personal - bedroom confidence",
       technicalSettings: "Warm white balance with soft lighting - f/1.8-2.4 for intimate depth"
     };
-  } else if (style === 'outdoor-adventure' || customPrompt?.includes('outdoor') || customPrompt?.includes('nature')) {
+  } else if (customPrompt?.includes('outdoor') || customPrompt?.includes('nature') || customPrompt?.includes('natural beauty and freedom') || style === 'outdoor-adventure') {
     demoTitles = [
       'Nature brings out my wild side 🌳✨',
       'Adventure mode: ON! Who\'s joining me? 🏞️',
@@ -393,7 +394,7 @@ function generateDemoContent(request: MultiAIRequest): MultiAIResponse {
       mood: "Adventurous, free-spirited, and naturally beautiful - outdoor confidence",
       technicalSettings: "Natural outdoor lighting - f/4.0-8.0 for landscape depth"
     };
-  } else if (style === 'professional-tease' || customPrompt?.includes('professional') || customPrompt?.includes('sophisticated')) {
+  } else if (customPrompt?.includes('professional') || customPrompt?.includes('sophisticated') || customPrompt?.includes('balancing sophistication with allure') || style === 'professional-tease') {
     demoTitles = [
       'Professional by day, irresistible always 💼✨',
       'When business meets pleasure perfectly 👔',
