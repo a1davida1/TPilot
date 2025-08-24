@@ -37,12 +37,18 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
   const authMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
       const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/signup';
+      
+      // Prepare request data - exclude email for login mode
+      const requestData = mode === 'login' 
+        ? { username: data.username, password: data.password }
+        : data;
+        
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(data)
+        body: JSON.stringify(requestData)
       });
 
       if (!response.ok) {
@@ -53,7 +59,15 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
       return response.json();
     },
     onSuccess: (data) => {
+      if (!data.token) {
+        throw new Error('No authentication token received');
+      }
+      
       localStorage.setItem('authToken', data.token);
+      if (data.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
+      
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       toast({
         title: mode === 'login' ? 'Welcome back!' : 'Account created!',
@@ -61,6 +75,9 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
           ? 'You have successfully logged in.' 
           : 'Your account has been created successfully.'
       });
+      
+      // Reset form
+      setFormData({ username: '', email: '', password: '' });
       onSuccess();
     },
     onError: (error: any) => {
@@ -96,12 +113,53 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
     }
   ];
 
+  // Validation functions
+  const validateForm = () => {
+    const errors: string[] = [];
+    
+    if (!formData.username.trim()) {
+      errors.push('Username is required');
+    } else if (formData.username.length < 3) {
+      errors.push('Username must be at least 3 characters');
+    }
+    
+    if (mode === 'signup') {
+      if (!formData.email.trim()) {
+        errors.push('Email is required');
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        errors.push('Please enter a valid email address');
+      }
+    }
+    
+    if (!formData.password.trim()) {
+      errors.push('Password is required');
+    } else if (formData.password.length < 6) {
+      errors.push('Password must be at least 6 characters');
+    }
+    
+    return errors;
+  };
+  
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const validationErrors = validateForm();
+    if (validationErrors.length > 0) {
+      toast({
+        title: 'Validation Error',
+        description: validationErrors[0],
+        variant: 'destructive'
+      });
+      return;
+    }
+    
     authMutation.mutate(formData);
   };
 
   const handleSocialAuth = (url: string) => {
+    // Store auth intent for callback handling
+    localStorage.setItem('authIntent', 'social');
+    localStorage.setItem('authReturnUrl', window.location.pathname);
     window.location.href = url;
   };
 
@@ -180,7 +238,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
             {mode === 'signup' && (
               <div>
                 <Label htmlFor="email" className="text-gray-300">
-                  Email (optional)
+                  Email
                 </Label>
                 <div className="relative mt-1">
                   <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
