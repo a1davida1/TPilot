@@ -225,7 +225,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-500">Total Expenses</p>
-                  <p className="text-2xl font-bold text-gray-900">${expenseTotals.totalExpenses.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-gray-900">${(expenseTotals?.totalExpenses || 0).toLocaleString()}</p>
                 </div>
               </div>
             </CardContent>
@@ -239,7 +239,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-500">Tax Deductions</p>
-                  <p className="text-2xl font-bold text-gray-900">${expenseTotals.totalDeductions.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-gray-900">${(expenseTotals?.totalDeductions || 0).toLocaleString()}</p>
                 </div>
               </div>
             </CardContent>
@@ -253,7 +253,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-500">Estimated Savings</p>
-                  <p className="text-2xl font-bold text-gray-900">${expenseTotals.estimatedSavings.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-gray-900">${(expenseTotals?.estimatedSavings || 0).toLocaleString()}</p>
                 </div>
               </div>
             </CardContent>
