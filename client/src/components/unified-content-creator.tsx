@@ -167,7 +167,7 @@ export function UnifiedContentCreator({
       icon: '👔',
       prompt: 'Professional yet seductive content balancing sophistication with allure',
       description: 'Professional/office content',
-      color: 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
+      color: 'bg-white hover:bg-gray-50 text-gray-800 border-gray-300'
     }
   ];
 
@@ -438,7 +438,7 @@ export function UnifiedContentCreator({
   };
 
   return (
-    <Card className="w-full">
+    <Card className="w-full bg-white border-gray-200 shadow-lg">
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center">
@@ -446,7 +446,7 @@ export function UnifiedContentCreator({
             Content Creator
           </div>
           {isGuestMode && (
-            <Badge variant="secondary" className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
+            <Badge variant="secondary" className="bg-orange-100 text-orange-800">
               Guest Mode
             </Badge>
           )}
@@ -529,10 +529,10 @@ export function UnifiedContentCreator({
           {/* Image-First Workflow */}
           <TabsContent value="image" className="space-y-4">
             {!canUseImageWorkflow ? (
-              <div className="text-center p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
+              <div className="text-center p-8 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
                 <Crown className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Pro Feature</h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                <h3 className="text-lg font-semibold mb-2 text-gray-900">Pro Feature</h3>
+                <p className="text-gray-600 mb-4">
                   Image-based content generation is available for Pro and Premium users
                 </p>
                 <Button onClick={handleUpgradePrompt} className="bg-primary hover:bg-primary/90">
@@ -544,7 +544,7 @@ export function UnifiedContentCreator({
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Upload Image</Label>
-                  <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6">
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50">
                     {uploadedImage ? (
                       <div className="space-y-4">
                         <img
@@ -565,7 +565,7 @@ export function UnifiedContentCreator({
                     ) : (
                       <div className="text-center">
                         <Upload className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                        <p className="text-sm text-gray-600 mb-4">
                           Upload an image to generate captions and content
                         </p>
                         <Button onClick={() => fileInputRef.current?.click()}>
