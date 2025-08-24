@@ -575,6 +575,233 @@ export const preGeneratedTemplates: ContentTemplate[] = [
     content: "Curious minds want to know! 💭 Drop a ❤️ if I'm your type, or tell me what would make me perfect for you. Most interesting answer gets a special surprise in their inbox...",
     tags: ['question', 'type', 'interaction'],
     photoInstructions: "Direct gaze, confident stance, alluring outfit"
+  },
+
+  // SHOWER SCENE TEMPLATES - Natural & Engaging
+  {
+    id: 'shower_001',
+    category: 'lifestyle',
+    style: 'playful',
+    title: "Just got out of the shower and feeling amazing",
+    content: "There's something about that post-shower glow that just hits different ✨ Fresh, clean, and ready to take on the world. Hope everyone's having a beautiful day!",
+    tags: ['shower', 'fresh', 'glow', 'lifestyle'],
+    photoInstructions: "Post-shower glow, natural lighting, towel or robe"
+  },
+  {
+    id: 'shower_002',
+    category: 'lifestyle',
+    style: 'casual',
+    title: "Steam and good vibes only",
+    content: "Nothing beats a hot shower after a long day. The steam, the warmth, the moment of peace... it's like hitting the reset button on life ☁️",
+    tags: ['steam', 'relaxation', 'reset', 'selfcare'],
+    photoInstructions: "Steamy bathroom, soft lighting, relaxed expression"
+  },
+  {
+    id: 'shower_003',
+    category: 'lifestyle',
+    style: 'confident',
+    title: "Golden hour shower = perfect timing",
+    content: "Caught the most beautiful light streaming through the bathroom window during my evening shower. Sometimes the universe just gets the timing right ✨",
+    tags: ['golden-hour', 'perfect-timing', 'natural-light'],
+    photoInstructions: "Golden hour lighting through window, warm tones"
+  },
+  {
+    id: 'shower_004',
+    category: 'lifestyle',
+    style: 'casual',
+    title: "Taking my time with my evening routine",
+    content: "No rush tonight. Just me, hot water, and my favorite playlist. These quiet moments are everything 🎵",
+    tags: ['evening-routine', 'quiet-moments', 'selfcare'],
+    photoInstructions: "Relaxed shower scene, peaceful atmosphere"
+  },
+  {
+    id: 'shower_005',
+    category: 'lifestyle',
+    style: 'playful',
+    title: "That feeling when the water temperature is just right",
+    content: "You know that perfect moment when you get the water temperature exactly right? That's where I'm at right now and I'm not moving 😌",
+    tags: ['perfect-temperature', 'comfort', 'bliss'],
+    photoInstructions: "Content expression, steam, comfortable shower setting"
+  },
+  {
+    id: 'shower_006',
+    category: 'teasing',
+    style: 'mysterious',
+    title: "Some of my best thinking happens in the shower",
+    content: "Something about the sound of water and the steam just clears my mind... and gives me the most interesting ideas 💭",
+    tags: ['shower-thoughts', 'mysterious', 'contemplative'],
+    photoInstructions: "Thoughtful pose, steamy atmosphere, artistic shots"
+  },
+  {
+    id: 'shower_007',
+    category: 'lifestyle',
+    style: 'casual',
+    title: "Starting the day with good energy",
+    content: "Morning showers just hit different. Washing away yesterday and getting ready for whatever today brings ☀️",
+    tags: ['morning-shower', 'fresh-start', 'positive-energy'],
+    photoInstructions: "Bright morning light, energetic vibe, fresh look"
+  },
+  {
+    id: 'shower_008',
+    category: 'lifestyle',
+    style: 'confident',
+    title: "Self-care Sunday done right",
+    content: "Extended everything today - longer shower, better products, extra time for me. This is what Sundays are for 💆‍♀️",
+    tags: ['self-care-sunday', 'extended-routine', 'pampering'],
+    photoInstructions: "Luxurious bathroom setting, self-care products visible"
+  },
+  {
+    id: 'shower_009',
+    category: 'lifestyle',
+    style: 'playful',
+    title: "When you find the perfect shower playlist",
+    content: "Currently having my own private concert in here and the acoustics are incredible 🎤 Who else sings in the shower?",
+    tags: ['shower-singing', 'music', 'fun'],
+    photoInstructions: "Playful singing pose, shower setting, joyful expression"
+  },
+  {
+    id: 'shower_010',
+    category: 'teasing',
+    style: 'confident',
+    title: "The steam is perfect for mysterious photos",
+    content: "There's something about steamy mirrors and soft lighting that creates the most beautiful shots... just saying 📸",
+    tags: ['steamy-mirrors', 'artistic', 'photography'],
+    photoInstructions: "Steamy mirror reflections, artistic composition, soft focus"
+  },
+  {
+    id: 'shower_011',
+    category: 'lifestyle',
+    style: 'casual',
+    title: "Taking a moment to appreciate the little things",
+    content: "Hot water, good lighting, and nowhere else to be. Sometimes the simplest moments are the best ones 🌿",
+    tags: ['gratitude', 'simple-moments', 'mindfulness'],
+    photoInstructions: "Peaceful expression, natural elements, serene atmosphere"
+  },
+  {
+    id: 'shower_012',
+    category: 'lifestyle',
+    style: 'playful',
+    title: "That post-workout shower feeling",
+    content: "Nothing beats washing off a good workout. Feeling strong, clean, and ready for whatever's next 💪",
+    tags: ['post-workout', 'strength', 'accomplishment'],
+    photoInstructions: "Athletic aesthetic, post-exercise glow, confident pose"
+  },
+  {
+    id: 'shower_013',
+    category: 'teasing',
+    style: 'mysterious',
+    title: "Some moments are too beautiful not to capture",
+    content: "The light, the steam, the way everything comes together... had to document this perfect moment ✨",
+    tags: ['perfect-moment', 'beautiful', 'artistic'],
+    photoInstructions: "Artistic composition, perfect lighting, aesthetic appeal"
+  },
+  {
+    id: 'shower_014',
+    category: 'lifestyle',
+    style: 'confident',
+    title: "Taking my time because I deserve it",
+    content: "No rushing today. This is my time, my space, my moment of peace. We all need these little luxuries 🛁",
+    tags: ['taking-time', 'deserving', 'luxury'],
+    photoInstructions: "Luxurious bathroom setting, confident pose, self-assured expression"
+  },
+  {
+    id: 'shower_015',
+    category: 'lifestyle',
+    style: 'casual',
+    title: "The universe gave me perfect lighting today",
+    content: "Sometimes everything just aligns - the time, the light, the mood. Today was one of those days 🌅",
+    tags: ['perfect-lighting', 'alignment', 'serendipity'],
+    photoInstructions: "Beautiful natural lighting, perfect timing capture"
+  },
+  {
+    id: 'shower_016',
+    category: 'teasing',
+    style: 'playful',
+    title: "Creating some magic behind the curtain",
+    content: "They say the best things happen when no one's watching... but maybe just this once, someone should be 😉",
+    tags: ['behind-curtain', 'magic', 'playful-tease'],
+    photoInstructions: "Shower curtain silhouettes, playful shadows, teasing composition"
+  },
+  {
+    id: 'shower_017',
+    category: 'lifestyle',
+    style: 'casual',
+    title: "Finding peace in the everyday moments",
+    content: "It's amazing how something as simple as a shower can feel like meditation. Water therapy is real 🧘‍♀️",
+    tags: ['meditation', 'water-therapy', 'peace'],
+    photoInstructions: "Meditative pose, tranquil water, peaceful atmosphere"
+  },
+  {
+    id: 'shower_018',
+    category: 'lifestyle',
+    style: 'confident',
+    title: "Treating myself to an extra-long shower today",
+    content: "Sometimes you need to be generous with yourself. Today that means unlimited hot water and no time limits ⏰",
+    tags: ['generous-self-care', 'unlimited', 'indulgence'],
+    photoInstructions: "Indulgent bathroom setting, relaxed confidence, luxury feel"
+  },
+  {
+    id: 'shower_019',
+    category: 'teasing',
+    style: 'mysterious',
+    title: "The best views happen when you're not looking for them",
+    content: "Wasn't planning on taking photos today, but sometimes the moment is too perfect to pass up... 📷",
+    tags: ['spontaneous', 'perfect-moment', 'unexpected'],
+    photoInstructions: "Candid-style shot, natural spontaneous pose, perfect timing"
+  },
+  {
+    id: 'shower_020',
+    category: 'lifestyle',
+    style: 'playful',
+    title: "Living my best life one shower at a time",
+    content: "If this is self-care, I'm doing it right. Hot water, good vibes, and absolutely no worries allowed 🚫😤",
+    tags: ['best-life', 'no-worries', 'good-vibes'],
+    photoInstructions: "Carefree expression, joyful energy, positive atmosphere"
+  },
+  {
+    id: 'shower_021',
+    category: 'lifestyle',
+    style: 'casual',
+    title: "Sometimes you need to wash more than just your hair",
+    content: "Washing away the stress, the doubts, the long day... emerging feeling like a completely new person ✨",
+    tags: ['washing-stress', 'renewal', 'transformation'],
+    photoInstructions: "Transformative lighting, renewal theme, fresh perspective"
+  },
+  {
+    id: 'shower_022',
+    category: 'teasing',
+    style: 'confident',
+    title: "Creating art with steam and shadows",
+    content: "Who knew a bathroom could become a photography studio? The right light and a little creativity goes a long way 🎨",
+    tags: ['art-creation', 'creativity', 'photography'],
+    photoInstructions: "Artistic shadows, creative composition, professional quality"
+  },
+  {
+    id: 'shower_023',
+    category: 'lifestyle',
+    style: 'casual',
+    title: "This is what happiness looks like",
+    content: "Simple moments, perfect temperature, and nowhere else I'd rather be. Sometimes happiness is just hot water and peace ☮️",
+    tags: ['happiness', 'simple-moments', 'contentment'],
+    photoInstructions: "Genuine happiness, peaceful contentment, natural joy"
+  },
+  {
+    id: 'shower_024',
+    category: 'lifestyle',
+    style: 'confident',
+    title: "Making the ordinary feel extraordinary",
+    content: "Same shower, same routine, but today feels different. Maybe it's the lighting, maybe it's my mood, maybe it's both ✨",
+    tags: ['extraordinary-ordinary', 'mood', 'transformation'],
+    photoInstructions: "Elevated everyday moment, special atmosphere, confident energy"
+  },
+  {
+    id: 'shower_025',
+    category: 'teasing',
+    style: 'playful',
+    title: "Some secrets are worth keeping... almost",
+    content: "What happens in the shower usually stays in the shower, but today might be an exception... if you're lucky 🍀",
+    tags: ['secrets', 'exceptions', 'lucky'],
+    photoInstructions: "Mysterious but playful, teasing composition, hint of revelation"
   }
 ];
 
