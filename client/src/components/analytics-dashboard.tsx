@@ -29,26 +29,22 @@ export function AnalyticsDashboard({ isGuestMode = false }: AnalyticsDashboardPr
     enabled: !isGuestMode,
   });
 
-  // Demo data for guest mode
+  // Demo data for guest mode - minimal showcase
   const demoAnalytics = {
-    totalPosts: 47,
-    totalViews: 12840,
-    totalEngagement: 1920,
-    averageEngagementRate: 14.9,
-    topPerformingPosts: [
-      { title: "Cozy morning selfie ☀️", views: 2400, engagement: 360 },
-      { title: "New outfit vibes ✨", views: 1950, engagement: 292 },
-      { title: "Workout complete! 💪", views: 1680, engagement: 252 }
-    ],
+    totalPosts: 0,
+    totalViews: 0,
+    totalEngagement: 0,
+    averageEngagementRate: 0,
+    topPerformingPosts: [],
     growthMetrics: {
-      viewsGrowth: 24.5,
-      engagementGrowth: 18.2,
-      followerGrowth: 12.3
+      viewsGrowth: 0,
+      engagementGrowth: 0,
+      followerGrowth: 0
     },
     bestPostingTimes: [
-      { time: "9:00 AM", score: 95 },
-      { time: "7:00 PM", score: 88 },
-      { time: "12:00 PM", score: 73 }
+      { time: "09:00", score: 0 },
+      { time: "19:00", score: 0 },
+      { time: "12:00", score: 0 }
     ]
   };
 

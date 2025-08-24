@@ -74,13 +74,13 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
   };
   const [activeTab, setActiveTab] = useState("ai-content");
   const [userStats, setUserStats] = useState({
-    postsCreated: userTier === 'guest' ? 0 : 47,
-    totalViews: userTier === 'guest' ? 0 : 12840,
-    engagementRate: userTier === 'guest' ? 0 : 14.9,
-    streak: userTier === 'guest' ? 0 : 7
+    postsCreated: 0,
+    totalViews: 0,
+    engagementRate: 0,
+    streak: 0
   });
   
-  // Fetch real user stats
+  // Fetch real user stats from multiple sources
   useEffect(() => {
     const fetchUserStats = async () => {
       if (userTier === 'guest') {
@@ -97,23 +97,55 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
         const token = localStorage.getItem('token');
         if (!token) return;
 
-        const response = await fetch('/api/user/stats', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
+        // Fetch analytics and stats in parallel
+        const [analyticsRes, statsRes] = await Promise.all([
+          fetch('/api/analytics/7d', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          }),
+          fetch('/api/stats', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          })
+        ]);
 
-        if (response.ok) {
-          const stats = await response.json();
+        if (analyticsRes.ok && statsRes.ok) {
+          const analytics = await analyticsRes.json();
+          const stats = await statsRes.json();
+          
+          // Calculate streak based on recent activity
+          const recentDays = stats.activityTimeline || [];
+          let currentStreak = 0;
+          const today = new Date().toISOString().split('T')[0];
+          
+          // Count consecutive days from today backwards
+          for (let i = 0; i < 7; i++) {
+            const checkDate = new Date();
+            checkDate.setDate(checkDate.getDate() - i);
+            const dateStr = checkDate.toISOString().split('T')[0];
+            
+            const hasActivity = recentDays.some((day: any) => day.date === dateStr && day.generations > 0);
+            if (hasActivity) {
+              currentStreak++;
+            } else if (i > 0) { // Allow today to be inactive
+              break;
+            }
+          }
+
           setUserStats({
-            postsCreated: stats.postsCreated,
-            totalViews: stats.totalViews,
-            engagementRate: parseFloat(stats.engagementRate),
-            streak: stats.streak
+            postsCreated: stats.totalGenerations || 0,
+            totalViews: analytics.totalViews || 0,
+            engagementRate: analytics.averageEngagementRate || 0,
+            streak: currentStreak
           });
         }
       } catch (error) {
         console.error('Error fetching user stats:', error);
+        // Fallback to empty stats on error
+        setUserStats({
+          postsCreated: 0,
+          totalViews: 0,
+          engagementRate: 0,
+          streak: 0
+        });
       }
     };
 
