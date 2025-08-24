@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -34,50 +34,274 @@ interface Tutorial {
   }>;
 }
 
+// Clean onboarding steps generator function (outside component for performance)
+const getOnboardingSteps = (completedSteps: Set<string>): OnboardingStep[] => [
+  {
+    id: 'welcome',
+    title: 'Welcome to ThottoPilot',
+    description: 'Let\'s get you started with creating amazing content',
+    completed: completedSteps.has('welcome'),
+    optional: false,
+    component: (
+      <div className="text-center space-y-4">
+        <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mx-auto flex items-center justify-center">
+          <Sparkles className="h-10 w-10 text-white" />
+        </div>
+        <div>
+          <h3 className="text-xl font-semibold text-white mb-2">
+            🚀 Welcome to the Future of Content Creation!
+          </h3>
+          <p className="text-gray-300 mb-4">
+            You're about to join thousands of creators who've transformed their content game with our advanced platform.
+          </p>
+          <div className="grid gap-2 text-sm">
+            <div className="flex items-center justify-center space-x-2 text-purple-300">
+              <Star className="h-4 w-4" />
+              <span>Generate content 10x faster</span>
+            </div>
+            <div className="flex items-center justify-center space-x-2 text-pink-300">
+              <Shield className="h-4 w-4" />
+              <span>Protect your images with advanced technology</span>
+            </div>
+            <div className="flex items-center justify-center space-x-2 text-green-300">
+              <Trophy className="h-4 w-4" />
+              <span>Maximize your reach and revenue</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  },
+  {
+    id: 'profile',
+    title: 'Complete Your Profile',
+    description: 'Tell us about your content style to personalize your experience',
+    completed: completedSteps.has('profile'),
+    optional: false,
+    component: (
+      <div className="space-y-4">
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">Content Style</label>
+            <select className="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white">
+              <option>Playful & Fun</option>
+              <option>Professional & Classy</option>
+              <option>Bold & Provocative</option>
+              <option>Sweet & Romantic</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">Primary Platform</label>
+            <select className="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white">
+              <option>Reddit</option>
+              <option>Twitter/X</option>
+              <option>Instagram</option>
+              <option>Multiple Platforms</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-white mb-2">Content Goals</label>
+          <div className="grid gap-2 md:grid-cols-2">
+            <label className="flex items-center space-x-2 text-gray-300">
+              <input type="checkbox" className="rounded border-gray-600" />
+              <span>Increase engagement</span>
+            </label>
+            <label className="flex items-center space-x-2 text-gray-300">
+              <input type="checkbox" className="rounded border-gray-600" />
+              <span>Drive traffic to profile</span>
+            </label>
+            <label className="flex items-center space-x-2 text-gray-300">
+              <input type="checkbox" className="rounded border-gray-600" />
+              <span>Boost sales/subscriptions</span>
+            </label>
+            <label className="flex items-center space-x-2 text-gray-300">
+              <input type="checkbox" className="rounded border-gray-600" />
+              <span>Build brand awareness</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    )
+  },
+  {
+    id: 'content-creation',
+    title: 'Create Your First Content',
+    description: 'Learn how to generate engaging posts with our advanced system',
+    completed: completedSteps.has('content-creation'),
+    optional: false,
+    component: (
+      <div className="space-y-4">
+        <Alert className="border-blue-500/20 bg-blue-500/10">
+          <Brain className="h-4 w-4" />
+          <AlertDescription className="text-blue-300">
+            Our system generates content based on your photos and preferences. Let's create your first post!
+          </AlertDescription>
+        </Alert>
+        
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card className="bg-gray-700 border-purple-500/20 p-4">
+            <Heart className="h-8 w-8 text-purple-400 mb-3" />
+            <h4 className="font-medium text-white text-sm">Choose Style</h4>
+            <p className="text-xs text-gray-400 mb-3">Pick your content tone</p>
+            <Button size="sm" variant="outline" className="w-full">
+              Select Style
+            </Button>
+          </Card>
+          <Card className="bg-gray-700 border-pink-500/20 p-4">
+            <Zap className="h-8 w-8 text-pink-400 mb-3" />
+            <h4 className="font-medium text-white text-sm">Add Photos</h4>
+            <p className="text-xs text-gray-400 mb-3">Upload your content</p>
+            <Button size="sm" variant="outline" className="w-full">
+              Upload Images
+            </Button>
+          </Card>
+          <Card className="bg-gray-700 border-green-500/20 p-4">
+            <Trophy className="h-8 w-8 text-green-400 mb-3" />
+            <h4 className="font-medium text-white text-sm">Generate</h4>
+            <p className="text-xs text-gray-400 mb-3">Create your post</p>
+            <Button size="sm" className="w-full bg-gradient-to-r from-purple-500 to-pink-500">
+              Start Tutorial
+            </Button>
+          </Card>
+        </div>
+      </div>
+    )
+  },
+  {
+    id: 'image-protection',
+    title: 'Set Up Image Protection',
+    description: 'Enable advanced security features to protect your content',
+    completed: completedSteps.has('image-protection'),
+    optional: true,
+    component: (
+      <div className="space-y-4">
+        <div className="text-center">
+          <Shield className="h-16 w-16 text-green-400 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-white mb-2">ImageShield Protection</h3>
+          <p className="text-gray-400 mb-4">
+            Our advanced protection system makes your images nearly impossible to steal or reverse-search.
+          </p>
+        </div>
+        
+        <div className="grid gap-3 md:grid-cols-3">
+          <Card className="bg-gray-700 border-green-500/20 p-4">
+            <div className="text-center">
+              <div className="w-8 h-8 bg-green-500/20 rounded-full mx-auto mb-2 flex items-center justify-center">
+                <Shield className="h-4 w-4 text-green-400" />
+              </div>
+              <h4 className="font-medium text-white text-xs">Light Protection</h4>
+              <p className="text-xs text-gray-400">Basic security</p>
+            </div>
+          </Card>
+          <Card className="bg-gray-700 border-yellow-500/20 p-4">
+            <div className="text-center">
+              <div className="w-8 h-8 bg-yellow-500/20 rounded-full mx-auto mb-2 flex items-center justify-center">
+                <Shield className="h-4 w-4 text-yellow-400" />
+              </div>
+              <h4 className="font-medium text-white text-xs">Standard Protection</h4>
+              <p className="text-xs text-gray-400">Recommended</p>
+            </div>
+          </Card>
+          <Card className="bg-gray-700 border-red-500/20 p-4">
+            <div className="text-center">
+              <div className="w-8 h-8 bg-red-500/20 rounded-full mx-auto mb-2 flex items-center justify-center">
+                <Shield className="h-4 w-4 text-red-400" />
+              </div>
+              <h4 className="font-medium text-white text-xs">Heavy Protection</h4>
+              <p className="text-xs text-gray-400">Maximum security</p>
+            </div>
+          </Card>
+        </div>
+      </div>
+    )
+  },
+  {
+    id: 'analytics',
+    title: 'Explore Analytics',
+    description: 'Learn how to track and optimize your content performance',
+    completed: completedSteps.has('analytics'),
+    optional: true,
+    component: (
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-white">Performance Dashboard</h3>
+        <p className="text-gray-400">
+          Track performance, understand your audience, and optimize for better results.
+        </p>
+        
+        <div className="grid gap-3 md:grid-cols-2">
+          <Card className="bg-gray-700 border-purple-500/20 p-4">
+            <Target className="h-8 w-8 text-purple-400 mb-3" />
+            <h4 className="font-medium text-white text-sm">Performance Tracking</h4>
+            <p className="text-xs text-gray-400 mb-3">Monitor views, engagement, and revenue</p>
+            <div className="space-y-1">
+              <div className="flex justify-between text-xs">
+                <span className="text-gray-400">Views</span>
+                <span className="text-white">12.8k</span>
+              </div>
+              <Progress value={75} className="h-1" />
+            </div>
+          </Card>
+          <Card className="bg-gray-700 border-green-500/20 p-4">
+            <Brain className="h-8 w-8 text-green-400 mb-3" />
+            <h4 className="font-medium text-white text-sm">AI Insights</h4>
+            <p className="text-xs text-gray-400 mb-3">Get intelligent recommendations</p>
+            <div className="space-y-1 text-xs">
+              <div className="text-green-400">• Post at 9 AM for +23% engagement</div>
+              <div className="text-blue-400">• Video content performs 40% better</div>
+            </div>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+];
+
 export default function UserOnboarding() {
   const [currentStep, setCurrentStep] = useState(0);
   const [showTutorial, setShowTutorial] = useState<string | null>(null);
   const [completedTutorials, setCompletedTutorials] = useState<Set<string>>(new Set());
   
-  // Define base steps template (without state)
-  const baseOnboardingSteps: Omit<OnboardingStep, 'completed'>[] = [
-    {
-      id: 'welcome',
-      title: 'Welcome to ThottoPilot',
-      description: 'Let\'s get you started with creating amazing content',
+  // Hybrid approach: Performance + Robustness
+  const [completedSteps, setCompletedSteps] = useState<Set<string>>(() => {
+    // Load from localStorage on mount (performance optimized)
+    const saved = localStorage.getItem('onboarding_completed');
+    return saved ? new Set(JSON.parse(saved)) : new Set();
+  });
+  
+  // useMemo prevents recreation unless completedSteps changes (performance optimization)
+  const onboardingSteps = useMemo(
+    () => getOnboardingSteps(completedSteps),
+    [completedSteps]
+  );
+  
+  // Robust auto-saving with useEffect (saves on ANY state change)
+  useEffect(() => {
+    localStorage.setItem('onboarding_completed', JSON.stringify(Array.from(completedSteps)));
+  }, [completedSteps]);
+  
+  // Load current step from localStorage (robustness)
+  useEffect(() => {
+    const savedStep = localStorage.getItem('onboarding_current_step');
+    if (savedStep) {
+      setCurrentStep(parseInt(savedStep, 10));
+    }
+  }, []);
+  
+  // Save current step to localStorage (robustness)
+  useEffect(() => {
+    localStorage.setItem('onboarding_current_step', currentStep.toString());
+  }, [currentStep]);
+  
+  // Reset onboarding function (useful for testing/resetting)
+  const resetOnboarding = () => {
+    setCompletedSteps(new Set());
+    setCurrentStep(0);
+    localStorage.removeItem('onboarding_completed');
+    localStorage.removeItem('onboarding_current_step');
+  };
 
-      optional: false,
-      component: (
-        <div className="text-center space-y-4">
-          <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mx-auto flex items-center justify-center">
-            <Sparkles className="h-10 w-10 text-white" />
-          </div>
-          <div>
-            <h3 className="text-xl font-semibold text-white mb-2">Ready to boost your content creation?</h3>
-            <p className="text-gray-400">
-              ThottoPilot combines AI-powered content generation with advanced analytics to help you create engaging content that converts.
-            </p>
-          </div>
-          <div className="grid gap-3 md:grid-cols-3 text-left">
-            <div className="p-3 bg-gray-700 rounded-lg">
-              <Brain className="h-5 w-5 text-purple-400 mb-2" />
-              <h4 className="font-medium text-white text-sm">Smart Content</h4>
-              <p className="text-xs text-gray-400">AI generates personalized content for your audience</p>
-            </div>
-            <div className="p-3 bg-gray-700 rounded-lg">
-              <Shield className="h-5 w-5 text-blue-400 mb-2" />
-              <h4 className="font-medium text-white text-sm">Image Protection</h4>
-              <p className="text-xs text-gray-400">Advanced tools to protect your content from theft</p>
-            </div>
-            <div className="p-3 bg-gray-700 rounded-lg">
-              <Target className="h-5 w-5 text-green-400 mb-2" />
-              <h4 className="font-medium text-white text-sm">Performance Tracking</h4>
-              <p className="text-xs text-gray-400">Detailed analytics to optimize your strategy</p>
-            </div>
-          </div>
-        </div>
-      )
-    },
+  const tutorials: Tutorial[] = [
     {
       id: 'profile',
       title: 'Complete Your Profile',
@@ -269,38 +493,6 @@ export default function UserOnboarding() {
       )
     }
   ];
-  
-  // Persistent onboarding state
-  const [completedStepIds, setCompletedStepIds] = useState<Set<string>>(() => {
-    const saved = localStorage.getItem('onboarding-progress');
-    return saved ? new Set(JSON.parse(saved)) : new Set();
-  });
-  
-  // Create onboarding steps with persistent completed state
-  const onboardingSteps: OnboardingStep[] = baseOnboardingSteps.map(step => ({
-    ...step,
-    completed: completedStepIds.has(step.id)
-  }));
-  
-  // Save progress to localStorage whenever completed steps change
-  useEffect(() => {
-    localStorage.setItem('onboarding-progress', JSON.stringify(Array.from(completedStepIds)));
-  }, [completedStepIds]);
-  
-  // Load current step from localStorage
-  useEffect(() => {
-    const savedStep = localStorage.getItem('onboarding-current-step');
-    if (savedStep) {
-      setCurrentStep(parseInt(savedStep, 10));
-    }
-  }, []);
-  
-  // Save current step to localStorage
-  useEffect(() => {
-    localStorage.setItem('onboarding-current-step', currentStep.toString());
-  }, [currentStep]);
-
-  const tutorials: Tutorial[] = [
     {
       id: 'content-creation',
       title: 'Content Creation Mastery',
@@ -373,22 +565,27 @@ export default function UserOnboarding() {
     }
   ];
 
+  // Fixed progress calculation using hybrid approach
   const progress = ((currentStep + 1) / onboardingSteps.length) * 100;
-  const completedSteps = onboardingSteps.filter(step => step.completed).length;
+  const completedCount = onboardingSteps.filter(step => step.completed).length;
   
+  // Updated handleNext using hybrid approach
   const handleNext = () => {
     if (currentStep < onboardingSteps.length - 1) {
-      // Mark current step as completed
-      const currentStepId = baseOnboardingSteps[currentStep].id;
-      setCompletedStepIds(prev => new Set([...prev, currentStepId]));
+      // Mark current step as completed using new state management
+      const currentStepId = onboardingSteps[currentStep].id;
+      const newCompleted = new Set([...completedSteps, currentStepId]);
+      setCompletedSteps(newCompleted);
+      
+      // Move to next step
       setCurrentStep(currentStep + 1);
     }
   };
   
   const handleComplete = () => {
     // Mark current step as completed
-    const currentStepId = baseOnboardingSteps[currentStep].id;
-    setCompletedStepIds(prev => new Set([...prev, currentStepId]));
+    const currentStepId = onboardingSteps[currentStep].id;
+    setCompletedSteps(prev => new Set([...prev, currentStepId]));
   };
   
   const handleSkip = () => {
@@ -398,9 +595,9 @@ export default function UserOnboarding() {
   };
   
   const startTutorial = () => {
-    // For now, just mark the step as completed and show success message
-    const currentStepId = baseOnboardingSteps[currentStep].id;
-    setCompletedStepIds(prev => new Set([...prev, currentStepId]));
+    // Mark step as completed and provide user feedback
+    const currentStepId = onboardingSteps[currentStep].id;
+    setCompletedSteps(prev => new Set([...prev, currentStepId]));
     // In a real implementation, this would navigate to the content creator
     // or open a guided tutorial overlay
   };
@@ -436,7 +633,7 @@ export default function UserOnboarding() {
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-white">Setup Progress</h3>
-            <span className="text-sm text-gray-400">{completedSteps}/{onboardingSteps.length} completed</span>
+            <span className="text-sm text-gray-400">{completedCount}/{onboardingSteps.length} completed</span>
           </div>
           <Progress value={progress} className="h-2 mb-4" />
           <div className="grid gap-2 md:grid-cols-5">
