@@ -70,7 +70,7 @@ export function AnalyticsDashboard({ isGuestMode = false }: AnalyticsDashboardPr
       label: "Total Posts",
       value: safeNumber(data.totalPosts, 0),
       icon: <Calendar className="h-4 w-4" />,
-      trend: "+12%",
+      trend: "+0%",
       color: "text-blue-600"
     },
     {
@@ -91,7 +91,7 @@ export function AnalyticsDashboard({ isGuestMode = false }: AnalyticsDashboardPr
       label: "Avg. Rate",
       value: `${safeNumber(data.averageEngagementRate, 0).toFixed(1)}%`,
       icon: <TrendingUp className="h-4 w-4" />,
-      trend: "+2.1%",
+      trend: "+0%",
       color: "text-purple-600"
     }
   ];
@@ -111,11 +111,11 @@ export function AnalyticsDashboard({ isGuestMode = false }: AnalyticsDashboardPr
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">47</div>
+              <div className="text-2xl font-bold text-orange-600">0</div>
               <div className="text-sm text-orange-700">Posts Created</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">14.9%</div>
+              <div className="text-2xl font-bold text-orange-600">0.0%</div>
               <div className="text-sm text-orange-700">Avg. Engagement</div>
             </div>
           </div>

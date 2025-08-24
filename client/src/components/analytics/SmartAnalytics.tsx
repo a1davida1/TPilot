@@ -109,9 +109,9 @@ export default function SmartAnalytics() {
         const averageEngagementRate = safeNumber(analytics.averageEngagementRate, 0);
         const successRate = safeNumber(stats.successRate, 0);
         
-        // Revenue calculation with configurable multiplier (instead of hardcoded)
-        const REVENUE_MULTIPLIER = 0.05; // This should come from config/settings
-        const REVENUE_PER_GENERATION = 150;
+        // Revenue calculation (real revenue tracking not implemented yet)
+        const REVENUE_MULTIPLIER = 0; // No revenue tracking yet
+        const REVENUE_PER_GENERATION = 0; // No revenue tracking yet
         
         // Transform the data to match our interface with safe operations
         return {

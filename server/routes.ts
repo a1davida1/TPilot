@@ -794,15 +794,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const avgContentLength = periodHistory.length > 0 ? 
         periodHistory.reduce((sum, gen) => sum + (gen.content?.length || 0), 0) / periodHistory.length : 0;
 
-      // Simulated engagement based on content quality
-      const totalEngagement = periodHistory.reduce((sum, gen) => {
-        const contentScore = (gen.content?.length || 0) > 100 ? 2 : 1;
-        const titleScore = (gen.titles?.length || 0) > 0 ? 1.5 : 1;
-        const photoScore = gen.photoInstructions ? 1.3 : 1;
-        return sum + (contentScore * titleScore * photoScore * 15); // Base engagement
-      }, 0);
-
-      const totalViews = Math.round(totalEngagement * 6.7); // Typical view-to-engagement ratio
+      // Real engagement and views (no fake multipliers)
+      const totalEngagement = 0; // Real engagement tracking not implemented yet
+      const totalViews = 0; // Real view tracking not implemented yet
 
       // Calculate growth (compare to previous period)
       const prevStartDate = new Date(startDate);
@@ -837,21 +831,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalPosts,
         totalViews,
         totalEngagement: Math.round(totalEngagement),
-        averageEngagementRate: totalViews > 0 ? Number(((totalEngagement / totalViews) * 100).toFixed(1)) : 0,
+        averageEngagementRate: 0, // Real engagement rate not tracked yet
         topPerformingPosts: periodHistory
           .sort((a, b) => (b.content?.length || 0) - (a.content?.length || 0))
           .slice(0, 3)
           .map(gen => ({
             title: gen.titles?.[0] || 'Generated Content',
-            views: Math.round(((gen.content?.length || 0) / 10) * 12),
-            engagement: Math.round(((gen.content?.length || 0) / 10) * 1.8),
+            views: 0, // Real views not tracked yet
+            engagement: 0, // Real engagement not tracked yet
             platform: gen.platform,
             createdAt: gen.createdAt
           })),
         growthMetrics: {
-          viewsGrowth: Number((postsGrowth * 1.2).toFixed(1)),
-          engagementGrowth: Number((postsGrowth * 0.8).toFixed(1)),
-          followerGrowth: Number((postsGrowth * 0.6).toFixed(1))
+          viewsGrowth: 0, // Real views growth not tracked yet
+          engagementGrowth: 0, // Real engagement growth not tracked yet
+          followerGrowth: 0 // Real follower growth not tracked yet
         },
         bestPostingTimes: bestTimes.length > 0 ? bestTimes : [
           { time: "09:00", score: 85 },
@@ -1586,8 +1580,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate real stats (remove fake data)
       const userStats = {
         postsCreated: stats.total,
-        totalViews: stats.total > 0 ? stats.total * 150 : 0, // Conservative estimate until we track real views
-        engagementRate: stats.total > 0 ? '8.5' : '0.0', // Fixed realistic rate until we track real engagement
+        totalViews: 0, // Real views not tracked yet - show 0
+        engagementRate: '0.0', // Real engagement not tracked yet - show 0
         streak: stats.dailyStreak || 0,
         thisWeek: stats.thisWeek,
         thisMonth: stats.thisMonth,
