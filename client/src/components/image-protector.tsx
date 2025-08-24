@@ -96,8 +96,8 @@ export function ImageProtector({ userTier = 'guest' }: ImageProtectorProps) {
     setIsProcessing(true);
     try {
       const settings = useCustom ? customSettings : protectionPresets[preset];
-      // Add watermark for free and guest users
-      const shouldAddWatermark = userTier === 'guest' || userTier === 'free';
+      // No watermark needed - ImageShield is free for all users
+      const shouldAddWatermark = false;
       const protectedBlob = await protectImage(selectedFile, settings, shouldAddWatermark);
       
       // Create preview URL
@@ -105,9 +105,7 @@ export function ImageProtector({ userTier = 'guest' }: ImageProtectorProps) {
       setProtectedImageUrl(url);
       setShowComparison(true);
       
-      const successMessage = shouldAddWatermark 
-        ? "Image protected! Upgrade to Pro to remove watermarks."
-        : "Your image is now protected against reverse search.";
+      const successMessage = "Your image is now protected against reverse search with no watermarks!";
       
       toast({
         title: "Image protected successfully!",
@@ -201,23 +199,13 @@ export function ImageProtector({ userTier = 'guest' }: ImageProtectorProps) {
         </CardHeader>
       </Card>
       
-      {/* Watermark Notice for Free Users */}
-      {(userTier === 'guest' || userTier === 'free') && (
-        <Alert className="border-orange-500/30 bg-orange-500/5">
-          <AlertCircle className="h-4 w-4 text-orange-600" />
-          <AlertDescription className="text-sm">
-            <span className="font-medium">Free Tier Notice:</span> Protected images will include a subtle "Protected by ThottoPilot™" watermark. 
-            <Button 
-              variant="link" 
-              className="px-2 h-auto py-0 text-purple-600"
-              onClick={() => window.location.href = '/pricing'}
-            >
-              Upgrade to Pro
-            </Button>
-            to remove watermarks and unlock advanced features.
-          </AlertDescription>
-        </Alert>
-      )}
+      {/* Free Protection Notice */}
+      <Alert className="border-green-500/30 bg-green-500/5">
+        <CheckCircle className="h-4 w-4 text-green-600" />
+        <AlertDescription className="text-sm">
+          <span className="font-medium">Free Protection:</span> All users get watermark-free protected images with ImageShield!
+        </AlertDescription>
+      </Alert>
 
       {/* Main Content */}
       <div className="grid md:grid-cols-2 gap-6">

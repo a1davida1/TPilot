@@ -43,7 +43,7 @@ export function ImageShield({ isGuestMode = false, userTier = "free" }: ImageShi
   const protectionLevels = {
     light: { blur: 1, noise: 8, color: 2, description: "Subtle protection, maintains visual quality" },
     standard: { blur: 2, noise: 15, color: 5, description: "Balanced protection and quality" },
-    heavy: { blur: 4, noise: 25, color: 10, description: "Maximum protection (Pro/Premium only)" }
+    heavy: { blur: 4, noise: 25, color: 10, description: "Maximum protection available for all users" }
   };
 
   const handleImageUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -92,9 +92,9 @@ export function ImageShield({ isGuestMode = false, userTier = "free" }: ImageShi
 
         // Apply protection algorithms
         const settings = protectionLevels[protectionLevel];
-        const actualBlur = userTier === "free" ? Math.min(settings.blur, 2) : blurStrength[0];
-        const actualNoise = userTier === "free" ? Math.min(settings.noise, 15) : noiseLevel[0];
-        const actualColor = userTier === "free" ? Math.min(settings.color, 5) : colorShift[0];
+        const actualBlur = blurStrength[0];
+        const actualNoise = noiseLevel[0];
+        const actualColor = colorShift[0];
 
         // Apply noise injection
         for (let i = 0; i < data.length; i += 4) {
@@ -162,7 +162,7 @@ export function ImageShield({ isGuestMode = false, userTier = "free" }: ImageShi
     });
   }, [protectedImage, toast]);
 
-  const canUseAdvanced = userTier === "pro" || userTier === "premium";
+  const canUseAdvanced = true; // ImageShield available for all users
 
   return (
     <div className="space-y-6">
@@ -171,7 +171,7 @@ export function ImageShield({ isGuestMode = false, userTier = "free" }: ImageShi
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center">
               <Shield className="mr-2 h-5 w-5" />
-              ImageShield - Free Protection
+              ImageShield - Advanced Protection
             </div>
             <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
               Client-Side Processing
@@ -257,14 +257,6 @@ export function ImageShield({ isGuestMode = false, userTier = "free" }: ImageShi
                 <Select 
                   value={protectionLevel} 
                   onValueChange={(value: "light" | "standard" | "heavy") => {
-                    if (value === "heavy" && !canUseAdvanced) {
-                      toast({
-                        title: "Pro Feature",
-                        description: "Heavy protection requires Pro tier",
-                        variant: "default"
-                      });
-                      return;
-                    }
                     setProtectionLevel(value);
                   }}
                 >
@@ -278,17 +270,15 @@ export function ImageShield({ isGuestMode = false, userTier = "free" }: ImageShi
                     <SelectItem value="standard">
                       Standard Protection - {protectionLevels.standard.description}
                     </SelectItem>
-                    <SelectItem value="heavy" disabled={!canUseAdvanced}>
-                      Heavy Protection - {protectionLevels.heavy.description}
-                      {!canUseAdvanced && <Lock className="ml-2 h-3 w-3" />}
+                    <SelectItem value="heavy">
+                      Heavy Protection - Maximum protection available for all users
                     </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              {canUseAdvanced && (
-                <div className="space-y-4 p-4 border rounded-lg">
-                  <Label>Advanced Settings (Pro)</Label>
+              <div className="space-y-4 p-4 border rounded-lg">
+                <Label>Advanced Settings</Label>
                   
                   <div className="space-y-2">
                     <Label>Blur Strength: {blurStrength[0]}px</Label>
@@ -323,7 +313,6 @@ export function ImageShield({ isGuestMode = false, userTier = "free" }: ImageShi
                     />
                   </div>
                 </div>
-              )}
 
               {/* Action Buttons */}
               <div className="flex space-x-2">

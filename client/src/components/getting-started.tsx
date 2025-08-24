@@ -62,8 +62,8 @@ export function GettingStarted({ userTier = 'free', onSectionSelect }: GettingSt
       section: 'protect',
       difficulty: 'Easy',
       time: '1 min',
-      proOnly: true,
-      details: 'Upload images and apply protection levels (Light, Standard, Heavy). Pro users get watermark-free protected images.'
+      proOnly: false,
+      details: 'Upload images and apply protection levels (Light, Standard, Heavy). All users get watermark-free protected images.'
     },
     {
       id: 'reddit-connect',
@@ -96,7 +96,7 @@ export function GettingStarted({ userTier = 'free', onSectionSelect }: GettingSt
       section: 'analytics',
       difficulty: 'Easy',
       time: '2 min',
-      proOnly: true,
+      proOnly: false,
       details: 'Track post engagement, follower growth, revenue trends, and optimize your content strategy with detailed insights.'
     },
     {

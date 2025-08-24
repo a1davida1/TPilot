@@ -21,10 +21,11 @@ export function useAuth() {
   );
 
   const { data: user, isLoading, error, refetch } = useQuery<User>({
-    queryKey: ['/api/auth/user'],
+    queryKey: ['/api/auth/user', token],
     queryFn: async () => {
       // If we have a token, try token-based auth first
       if (token) {
+        console.log('Sending request with token:', token ? 'Token present' : 'No token');
         const tokenResponse = await fetch('/api/auth/user', {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -32,11 +33,16 @@ export function useAuth() {
           credentials: 'include'
         });
         
+        console.log('Token response status:', tokenResponse.status);
+        
         if (tokenResponse.ok) {
-          return tokenResponse.json();
+          const userData = await tokenResponse.json();
+          console.log('Token auth successful:', userData.username);
+          return userData;
         }
         
         if (tokenResponse.status === 401 || tokenResponse.status === 403) {
+          console.log('Token expired or invalid, clearing...');
           localStorage.removeItem('authToken');
           localStorage.removeItem('user');
           setToken(null);
@@ -57,13 +63,14 @@ export function useAuth() {
       throw new Error('Not authenticated');
     },
     retry: false,
+    enabled: true, // Always try to fetch
   });
 
   const login = (newToken: string, userData: User) => {
     localStorage.setItem('authToken', newToken);
     localStorage.setItem('user', JSON.stringify(userData));
     setToken(newToken);
-    refetch();
+    setTimeout(() => refetch(), 100); // Small delay to ensure token is set
   };
 
   const logout = async () => {

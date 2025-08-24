@@ -109,7 +109,7 @@ export function UnifiedContentCreator({
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const canUseImageWorkflow = userTier === "pro" || userTier === "premium";
+  const canUseImageWorkflow = true; // Image workflow available for all users
 
   // Preset style definitions
   const contentPresets = [
@@ -332,8 +332,8 @@ export function UnifiedContentCreator({
   const applyImageShieldProtection = async (file: File) => {
     try {
       const settings = protectionPresets[protectionLevel];
-      // Add watermark for free and guest users
-      const shouldAddWatermark = userTier === 'guest' || userTier === 'free';
+      // No watermark needed - ImageShield is free for all users
+      const shouldAddWatermark = false;
       const protectedBlob = await protectImage(file, settings, shouldAddWatermark);
       
       // Create preview URL for protected image
