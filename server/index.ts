@@ -1,7 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes.js";
 import { initializeQueue } from "./lib/queue-factory.js";
-import { initializePostWorker } from "./lib/workers/post-worker.js";
+import { initializeWorkers } from "./lib/workers/index.js";
 import { seedDemoUser } from "./seed-demo-user.js";
 
 // Simple log function for production
@@ -55,8 +55,16 @@ app.use((req, res, next) => {
   // Initialize Phase 5 queue system
   await initializeQueue();
   
-  // Initialize workers
-  await initializePostWorker();
+  // Initialize all workers
+  await initializeWorkers();
+
+  // Start queue monitoring
+  const { queueMonitor } = await import("./lib/queue-monitor.js");
+  await queueMonitor.startMonitoring(30000); // Monitor every 30 seconds
+
+  // Start worker auto-scaling
+  const { workerScaler } = await import("./lib/worker-scaler.js");
+  await workerScaler.startScaling(60000); // Scale every minute
   
   const server = await registerRoutes(app);
 

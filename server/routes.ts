@@ -338,6 +338,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Queue monitoring admin routes
+  app.get("/api/admin/queue-metrics", async (req, res) => {
+    try {
+      const { queueMonitor } = await import("./lib/queue-monitor.js");
+      const metrics = queueMonitor.getQueueMetrics();
+      res.json(metrics);
+    } catch (error) {
+      console.error("Queue metrics error:", error);
+      res.status(500).json({ message: "Failed to fetch queue metrics" });
+    }
+  });
+
+  app.get("/api/admin/worker-metrics", async (req, res) => {
+    try {
+      const { queueMonitor } = await import("./lib/queue-monitor.js");
+      const metrics = queueMonitor.getWorkerMetrics();
+      res.json(metrics);
+    } catch (error) {
+      console.error("Worker metrics error:", error);
+      res.status(500).json({ message: "Failed to fetch worker metrics" });
+    }
+  });
+
+  app.get("/api/admin/system-health", async (req, res) => {
+    try {
+      const { queueMonitor } = await import("./lib/queue-monitor.js");
+      const health = queueMonitor.getSystemHealth();
+      res.json(health);
+    } catch (error) {
+      console.error("System health error:", error);
+      res.status(500).json({ message: "Failed to fetch system health" });
+    }
+  });
+
+  app.post("/api/admin/queue-action", async (req, res) => {
+    try {
+      const { queueName, action } = req.body;
+      const { queueMonitor } = await import("./lib/queue-monitor.js");
+      
+      let result = false;
+      switch (action) {
+        case 'pause':
+          result = await queueMonitor.pauseQueue(queueName);
+          break;
+        case 'resume':
+          result = await queueMonitor.resumeQueue(queueName);
+          break;
+        case 'retry':
+          const retried = await queueMonitor.retryFailedJobs(queueName);
+          result = retried > 0;
+          break;
+        case 'clear':
+          result = await queueMonitor.clearQueue(queueName);
+          break;
+        default:
+          return res.status(400).json({ message: 'Invalid action' });
+      }
+
+      res.json({ success: result });
+    } catch (error: any) {
+      console.error("Queue action error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/admin/scaling-status", async (req, res) => {
+    try {
+      const { workerScaler } = await import("./lib/worker-scaler.js");
+      const states = workerScaler.getScalingStates();
+      res.json(states);
+    } catch (error) {
+      console.error("Scaling status error:", error);
+      res.status(500).json({ message: "Failed to fetch scaling status" });
+    }
+  });
+
+  app.post("/api/admin/manual-scale", async (req, res) => {
+    try {
+      const { queueName, targetConcurrency } = req.body;
+      const { workerScaler } = await import("./lib/worker-scaler.js");
+      
+      const result = await workerScaler.manualScale(queueName, targetConcurrency);
+      res.json({ success: result });
+    } catch (error: any) {
+      console.error("Manual scaling error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.get("/api/admin/users", async (req, res) => {
     try {
       const users = await storage.getAllUsers();

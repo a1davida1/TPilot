@@ -1,0 +1,158 @@
+import { registerProcessor } from "../queue-factory.js";
+import { QUEUE_NAMES, type AiPromoJobData } from "../queue/index.js";
+import { db } from "../../db.js";
+import { contentGenerations, eventLogs } from "@shared/schema.js";
+import { eq } from "drizzle-orm";
+import { AiService } from "../ai-service.js";
+
+export class AiPromoWorker {
+  private initialized = false;
+
+  async initialize() {
+    if (this.initialized) return;
+    
+    await registerProcessor<AiPromoJobData>(
+      QUEUE_NAMES.AI_PROMO,
+      this.processJob.bind(this),
+      { concurrency: 1 } // Process 1 AI job at a time to avoid rate limits
+    );
+    
+    this.initialized = true;
+    console.log('✅ AI Promo worker initialized with queue abstraction');
+  }
+
+  private async processJob(jobData: unknown, jobId: string) {
+    const { userId, generationId, promptText, imageKey, platforms, styleHints, variants = 1 } = jobData as AiPromoJobData;
+
+    try {
+      console.log(`Processing AI promo job for generation ${generationId}`);
+
+      // Generate promotional content variants
+      const results = [];
+      
+      for (let i = 0; i < variants; i++) {
+        console.log(`Generating variant ${i + 1}/${variants}`);
+        
+        const aiRequest = {
+          userId,
+          platforms,
+          styleHints: styleHints || [],
+          prompt: promptText,
+          imageContext: imageKey ? await this.getImageContext(imageKey) : undefined,
+          variant: i + 1,
+        };
+
+        const content = await AiService.generateContent(aiRequest);
+        results.push(content);
+
+        // Add delay between variants to avoid rate limits
+        if (i < variants - 1) {
+          await this.sleep(2000); // 2 second delay
+        }
+      }
+
+      // Update generation record with results
+      await this.updateGenerationResults(generationId, results);
+
+      // Log success event
+      await this.logEvent(userId, 'ai_promo.completed', {
+        generationId,
+        variantsGenerated: results.length,
+        platforms,
+      });
+
+      return { success: true, results };
+
+    } catch (error: any) {
+      console.error(`AI promo job for generation ${generationId} failed:`, error);
+
+      // Update generation status to failed
+      await this.updateGenerationStatus(generationId, 'failed', error.message);
+
+      // Log failure event
+      await this.logEvent(userId, 'ai_promo.failed', {
+        generationId,
+        error: error.message,
+      });
+
+      throw error;
+    }
+  }
+
+  private async getImageContext(imageKey: string) {
+    try {
+      // In a real implementation, this would analyze the image to provide context
+      // For now, return basic context
+      return {
+        hasImage: true,
+        imageKey,
+        description: 'User uploaded image for promotional content',
+      };
+    } catch (error) {
+      console.error('Failed to get image context:', error);
+      return null;
+    }
+  }
+
+  private async updateGenerationResults(generationId: number, results: any[]) {
+    try {
+      await db
+        .update(contentGenerations)
+        .set({
+          resultJson: {
+            status: 'completed',
+            variants: results,
+            completedAt: new Date().toISOString(),
+          },
+          updatedAt: new Date(),
+        })
+        .where(eq(contentGenerations.id, generationId));
+
+    } catch (error) {
+      console.error('Failed to update generation results:', error);
+    }
+  }
+
+  private async updateGenerationStatus(generationId: number, status: string, error?: string) {
+    try {
+      await db
+        .update(contentGenerations)
+        .set({
+          resultJson: error ? { status, error, failedAt: new Date().toISOString() } : { status },
+          updatedAt: new Date(),
+        })
+        .where(eq(contentGenerations.id, generationId));
+
+    } catch (error) {
+      console.error('Failed to update generation status:', error);
+    }
+  }
+
+  private async logEvent(userId: number, type: string, meta: any) {
+    try {
+      await db.insert(eventLogs).values({
+        userId,
+        type,
+        meta,
+      });
+    } catch (error) {
+      console.error('Failed to log AI promo event:', error);
+    }
+  }
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  async close() {
+    this.initialized = false;
+  }
+}
+
+// Export singleton instance
+export const aiPromoWorker = new AiPromoWorker();
+
+// Initialize the AI promo worker
+export async function initializeAiPromoWorker() {
+  await aiPromoWorker.initialize();
+}
