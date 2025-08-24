@@ -558,7 +558,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
           {/* Sidebar */}
           <aside className={cn(
             "bg-white border-r border-gray-200 transition-all duration-300",
-            sidebarOpen ? "w-64" : "w-0 overflow-hidden"
+            sidebarOpen ? "w-80" : "w-0 overflow-hidden"
           )}>
             <ScrollArea className="h-[calc(100vh-4rem)]">
               <div className="p-4 space-y-4">
@@ -597,9 +597,9 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
                         className="w-full justify-between text-gray-300 hover:text-gray-900 hover:bg-purple-600/10"
                         onClick={() => toggleSection(section.id)}
                       >
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-2 min-w-0 flex-1">
                           {section.icon}
-                          <span className="text-sm font-medium">{section.label}</span>
+                          <span className="text-sm font-medium truncate">{section.label}</span>
                         </div>
                         {expandedSections.has(section.id) ? (
                           <ChevronDown className="h-4 w-4" />
@@ -629,19 +629,21 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
                               }}
                               disabled={item.proOnly && userTier === 'guest'}
                             >
-                              <div className="flex items-center justify-between w-full">
-                                <div className="flex items-center space-x-2">
+                              <div className="flex items-center justify-between w-full min-w-0">
+                                <div className="flex items-center space-x-2 min-w-0 flex-1">
                                   {item.icon}
-                                  <span>{item.label}</span>
+                                  <span className="truncate">{item.label}</span>
                                 </div>
-                                {item.badge && (
-                                  <Badge className="bg-purple-600/20 text-purple-400 text-xs">
-                                    {item.badge}
-                                  </Badge>
-                                )}
-                                {item.proOnly && userTier === 'guest' && (
-                                  <Crown className="h-3 w-3 text-yellow-400" />
-                                )}
+                                <div className="flex items-center space-x-1 flex-shrink-0">
+                                  {item.badge && (
+                                    <Badge className="bg-purple-600/20 text-purple-400 text-xs whitespace-nowrap">
+                                      {item.badge}
+                                    </Badge>
+                                  )}
+                                  {item.proOnly && userTier === 'guest' && (
+                                    <Crown className="h-3 w-3 text-yellow-400" />
+                                  )}
+                                </div>
                               </div>
                             </Button>
                           ))}
