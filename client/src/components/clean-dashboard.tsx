@@ -36,6 +36,7 @@ import { TrendingTags } from '@/components/trending-tags';
 import { ProPerks } from '@/components/pro-perks';
 import { EngagementStats } from '@/components/engagement-stats';
 import { GenerationCounter } from '@/components/generation-counter';
+import { ThottoPilotLogo } from '@/components/thottopilot-logo';
 
 interface CleanDashboardProps {
   isGuestMode?: boolean;
@@ -232,9 +233,7 @@ export function CleanDashboard({ isGuestMode = false, user, userTier = 'free' }:
           <div className="p-6 border-b border-gray-100">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                  <Sparkles className="h-5 w-5 text-white" />
-                </div>
+                <ThottoPilotLogo size="md" />
                 <span className="text-gray-900 font-semibold text-lg">ThottoPilot</span>
               </div>
               {isMobile && (

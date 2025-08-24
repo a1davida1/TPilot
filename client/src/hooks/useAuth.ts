@@ -46,7 +46,8 @@ export function useAuth() {
           localStorage.removeItem('authToken');
           localStorage.removeItem('user');
           setToken(null);
-          throw new Error('Token expired');
+          // Return null instead of throwing to prevent endless retry loop
+          return null;
         }
       }
       
@@ -60,10 +61,13 @@ export function useAuth() {
         return userData;
       }
       
-      throw new Error('Not authenticated');
+      // Return null instead of throwing error to allow guest mode
+      return null;
     },
     retry: false,
-    enabled: true, // Always try to fetch
+    enabled: true,
+    refetchOnWindowFocus: false,
+    refetchInterval: false,
   });
 
   const login = (newToken: string, userData: User) => {
@@ -116,7 +120,7 @@ export function useAuth() {
   return {
     user,
     isLoading,
-    isAuthenticated: !!user && !error,
+    isAuthenticated: !!user,
     login,
     logout,
     token,

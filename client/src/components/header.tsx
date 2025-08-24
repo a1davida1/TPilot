@@ -63,10 +63,9 @@ export function Header() {
             {/* Logo */}
             <Link href="/">
               <div className="flex items-center gap-3 cursor-pointer h-16">
-                <img 
-                  src="/logo.png" 
-                  alt="ThottoPilot" 
-                  className="h-8 w-8 rounded-full shadow-lg hover:scale-105 transition-transform duration-200"
+                <ThottoPilotLogo 
+                  size="lg" 
+                  className="hover:scale-105 transition-transform duration-200"
                 />
                 <span className="text-xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
                   ThottoPilot
