@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -38,13 +38,14 @@ export default function UserOnboarding() {
   const [currentStep, setCurrentStep] = useState(0);
   const [showTutorial, setShowTutorial] = useState<string | null>(null);
   const [completedTutorials, setCompletedTutorials] = useState<Set<string>>(new Set());
-
-  const onboardingSteps: OnboardingStep[] = [
+  
+  // Define base steps template (without state)
+  const baseOnboardingSteps: Omit<OnboardingStep, 'completed'>[] = [
     {
       id: 'welcome',
       title: 'Welcome to ThottoPilot',
       description: 'Let\'s get you started with creating amazing content',
-      completed: false,
+
       optional: false,
       component: (
         <div className="text-center space-y-4">
@@ -81,7 +82,7 @@ export default function UserOnboarding() {
       id: 'profile',
       title: 'Complete Your Profile',
       description: 'Tell us about your content style to personalize your experience',
-      completed: false,
+
       optional: false,
       component: (
         <div className="space-y-4">
@@ -137,7 +138,7 @@ export default function UserOnboarding() {
       id: 'first-content',
       title: 'Create Your First Content',
       description: 'Let\'s generate your first piece of content together',
-      completed: false,
+
       optional: false,
       component: (
         <div className="space-y-4">
@@ -156,6 +157,7 @@ export default function UserOnboarding() {
               <Button 
                 size="sm"
                 className="bg-gradient-to-r from-purple-500 to-pink-500"
+                onClick={startTutorial}
               >
                 Start Tutorial
               </Button>
@@ -191,7 +193,7 @@ export default function UserOnboarding() {
       id: 'image-protection',
       title: 'Protect Your Images',
       description: 'Learn how to use ImageShield to protect your content',
-      completed: false,
+
       optional: true,
       component: (
         <div className="space-y-4">
@@ -231,7 +233,7 @@ export default function UserOnboarding() {
       id: 'analytics',
       title: 'Understanding Analytics',
       description: 'Learn how to track and improve your content performance',
-      completed: false,
+
       optional: true,
       component: (
         <div className="space-y-4">
@@ -267,6 +269,36 @@ export default function UserOnboarding() {
       )
     }
   ];
+  
+  // Persistent onboarding state
+  const [completedStepIds, setCompletedStepIds] = useState<Set<string>>(() => {
+    const saved = localStorage.getItem('onboarding-progress');
+    return saved ? new Set(JSON.parse(saved)) : new Set();
+  });
+  
+  // Create onboarding steps with persistent completed state
+  const onboardingSteps: OnboardingStep[] = baseOnboardingSteps.map(step => ({
+    ...step,
+    completed: completedStepIds.has(step.id)
+  }));
+  
+  // Save progress to localStorage whenever completed steps change
+  useEffect(() => {
+    localStorage.setItem('onboarding-progress', JSON.stringify(Array.from(completedStepIds)));
+  }, [completedStepIds]);
+  
+  // Load current step from localStorage
+  useEffect(() => {
+    const savedStep = localStorage.getItem('onboarding-current-step');
+    if (savedStep) {
+      setCurrentStep(parseInt(savedStep, 10));
+    }
+  }, []);
+  
+  // Save current step to localStorage
+  useEffect(() => {
+    localStorage.setItem('onboarding-current-step', currentStep.toString());
+  }, [currentStep]);
 
   const tutorials: Tutorial[] = [
     {
@@ -346,10 +378,31 @@ export default function UserOnboarding() {
   
   const handleNext = () => {
     if (currentStep < onboardingSteps.length - 1) {
-      const updatedSteps = [...onboardingSteps];
-      updatedSteps[currentStep].completed = true;
+      // Mark current step as completed
+      const currentStepId = baseOnboardingSteps[currentStep].id;
+      setCompletedStepIds(prev => new Set([...prev, currentStepId]));
       setCurrentStep(currentStep + 1);
     }
+  };
+  
+  const handleComplete = () => {
+    // Mark current step as completed
+    const currentStepId = baseOnboardingSteps[currentStep].id;
+    setCompletedStepIds(prev => new Set([...prev, currentStepId]));
+  };
+  
+  const handleSkip = () => {
+    if (currentStep < onboardingSteps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+  
+  const startTutorial = () => {
+    // For now, just mark the step as completed and show success message
+    const currentStepId = baseOnboardingSteps[currentStep].id;
+    setCompletedStepIds(prev => new Set([...prev, currentStepId]));
+    // In a real implementation, this would navigate to the content creator
+    // or open a guided tutorial overlay
   };
 
   const handlePrevious = () => {
