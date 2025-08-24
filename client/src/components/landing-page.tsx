@@ -247,11 +247,11 @@ export function LandingPage() {
               className="h-24 w-24 md:h-32 md:w-32 rounded-full shadow-2xl hover:scale-105 transition-transform duration-300"
             />
           </div>
-          <Badge className="mb-8 bg-gradient-to-r from-pink-500 to-rose-500 text-white border-0 text-lg px-6 py-3 font-bold tracking-tight shadow-lg hover:shadow-xl transition-all duration-300" variant="secondary">
+          <Badge className="mb-8 bg-gradient-to-r from-pink-500 to-rose-500 text-white border-0 text-lg px-6 py-3 font-bold tracking-tight shadow-lg hover:shadow-xl transition-all duration-300 animate-pulse-slow animate-glow" variant="secondary">
             🚀 Content Copilot for Creators
           </Badge>
           
-          <h1 className="text-6xl md:text-8xl font-black text-gradient-animate mb-8 leading-tight tracking-tighter">
+          <h1 className="text-6xl md:text-8xl font-black text-gradient-animate mb-8 leading-tight tracking-tighter animate-float">
             ThottoPilot
           </h1>
           
@@ -393,7 +393,8 @@ export function LandingPage() {
             {features.map((feature, index) => (
               <Card
                 key={index}
-                className="group card-hover bg-card backdrop-blur-xl border-2 border-pink-200/50 dark:border-pink-500/30"
+                className="group glass-panel card-hover animate-fadeIn"
+                style={{ animationDelay: `${index * 0.2}s` }}
                 onMouseEnter={() => setIsHovered(index.toString())}
                 onMouseLeave={() => setIsHovered(null)}
               >

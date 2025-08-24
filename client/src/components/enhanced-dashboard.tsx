@@ -366,7 +366,7 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Quick Stats Dashboard */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Card className="hover-lift transition-all-smooth">
+            <Card className="card-hover animate-fadeIn animate-glow" style={{ animationDelay: '0.1s' }}>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -386,7 +386,7 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
               </CardContent>
             </Card>
 
-            <Card className="hover-lift transition-all-smooth">
+            <Card className="card-hover animate-fadeIn" style={{ animationDelay: '0.2s' }}>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -408,7 +408,7 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
               </CardContent>
             </Card>
 
-            <Card className="hover-lift transition-all-smooth">
+            <Card className="card-hover animate-fadeIn" style={{ animationDelay: '0.4s' }}>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -428,7 +428,7 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
               </CardContent>
             </Card>
 
-            <Card className="hover-lift transition-all-smooth">
+            <Card className="card-hover animate-fadeIn" style={{ animationDelay: '0.4s' }}>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -450,7 +450,7 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
           </div>
 
           {/* Quick Actions */}
-          <Card className="mb-8 shadow-premium">
+          <Card className="mb-8 glass-panel card-hover animate-slideIn">
             <CardHeader>
               <CardTitle className="flex items-center">
                 <Rocket className="mr-2 h-5 w-5" />
@@ -466,10 +466,8 @@ export function EnhancedDashboard({ isGuestMode = false }: EnhancedDashboardProp
                   <Button
                     key={index}
                     variant="outline"
-                    className={`
-                      h-20 flex-col space-y-2 relative overflow-hidden group
-                      border-2 hover:border-transparent hover:shadow-glow transition-all-smooth
-                    `}
+                    className="h-20 flex-col space-y-2 relative overflow-hidden group border-2 hover:border-transparent animate-glow transition-all duration-300 card-hover"
+                    style={{ animationDelay: `${index * 0.1}s` }}
                     onClick={action.action}
                   >
                     <div className={`absolute inset-0 bg-gradient-to-r ${action.gradient} opacity-0 group-hover:opacity-10 transition-opacity`} />
