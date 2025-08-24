@@ -245,30 +245,37 @@ export function CleanDashboard({ isGuestMode = false, user, userTier = 'free' }:
                     activeSection === item.id 
                       ? "bg-purple-50 text-purple-700 border-r-2 border-purple-600" 
                       : "text-gray-700 hover:bg-gray-50 hover:text-gray-900",
-                    isDisabled && "opacity-60 cursor-not-allowed"
+                    isDisabled && "opacity-60 cursor-not-allowed bg-gray-50"
                   )}
                   onClick={() => !isDisabled && setActiveSection(item.id)}
                   disabled={isDisabled}
+                  data-testid={`nav-${item.id}`}
                 >
                   <div className="flex items-center justify-between w-full">
                     <div className="flex items-center space-x-3">
                       <IconComponent className="h-5 w-5" />
                       <span>{item.label}</span>
                     </div>
-                    {item.badge && (
-                      <Badge 
-                        variant="secondary" 
-                        className={cn(
-                          "text-xs",
-                          item.badge === 'PRO' ? "bg-purple-100 text-purple-700" :
-                          item.badge === 'NEW' ? "bg-green-100 text-green-700" :
-                          "bg-gray-100 text-gray-600"
-                        )}
-                      >
-                        {item.badge}
-                      </Badge>
-                    )}
-                    {isDisabled && <Crown className="h-4 w-4 text-yellow-500" />}
+                    <div className="flex items-center space-x-2">
+                      {isDisabled ? (
+                        <Badge className="bg-yellow-100 text-yellow-700 text-xs">
+                          Pro Feature
+                        </Badge>
+                      ) : item.badge && (
+                        <Badge 
+                          variant="secondary" 
+                          className={cn(
+                            "text-xs",
+                            item.badge === 'PRO' ? "bg-purple-100 text-purple-700" :
+                            item.badge === 'NEW' ? "bg-green-100 text-green-700" :
+                            "bg-gray-100 text-gray-600"
+                          )}
+                        >
+                          {item.badge}
+                        </Badge>
+                      )}
+                      {isDisabled && <Crown className="h-4 w-4 text-yellow-500" />}
+                    </div>
                   </div>
                 </Button>
               );

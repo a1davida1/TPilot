@@ -506,7 +506,12 @@ export function UnifiedContentCreator({
             <TabsTrigger value="image" className="flex items-center" disabled={!canUseImageWorkflow}>
               <Camera className="mr-2 h-4 w-4" />
               Image-First
-              {!canUseImageWorkflow && <Lock className="ml-2 h-3 w-3" />}
+              {!canUseImageWorkflow && (
+                <div className="flex items-center ml-2">
+                  <Badge className="bg-yellow-100 text-yellow-700 text-xs">Pro Feature</Badge>
+                  <Lock className="ml-1 h-3 w-3" />
+                </div>
+              )}
             </TabsTrigger>
             <TabsTrigger value="history" className="flex items-center">
               <RefreshCw className="mr-2 h-4 w-4" />
