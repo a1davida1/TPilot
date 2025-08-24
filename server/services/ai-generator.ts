@@ -8,9 +8,7 @@ function generateDemoContent(request: AIGenerationRequest): AIContentResponse {
   const { customPrompt, platform, allowsPromotion, style, theme } = request;
   
   // Generate content based on style and theme
-  let demoTitles: string[];
-  let demoContent: string;
-  let photoInstructions: any;
+  let demoVariations: any[];
   
   // Check if this is adult/nude content style
   const isAdultContent = style?.includes('nude') || theme?.includes('nude') || 
@@ -18,50 +16,265 @@ function generateDemoContent(request: AIGenerationRequest): AIContentResponse {
                          style?.includes('sensual') || theme?.includes('sensual');
   
   if (isAdultContent) {
-    demoTitles = [
-      "Feeling absolutely stunning today 💋",
-      "When confidence meets beauty ✨",
-      "Natural beauty at its finest 🌸"
+    demoVariations = [
+      {
+        titles: ["Feeling absolutely stunning today 💋", "When confidence meets beauty ✨", "Natural beauty at its finest 🌸"],
+        content: "Embracing my natural beauty and feeling incredibly confident today. There's something so empowering about feeling comfortable in your own skin and celebrating who you are.",
+        photoInstructions: {
+          lighting: "Soft, flattering lighting - golden hour or warm indoor lighting works beautifully",
+          cameraAngle: "Eye level or slightly above - creates intimate connection while remaining flattering",
+          composition: "Focus on natural poses and authentic expressions that showcase your personality",
+          styling: "Whatever makes you feel confident and beautiful - authenticity is most important",
+          mood: "Confident, alluring, and genuinely comfortable in your own skin",
+          technicalSettings: "Good focus with soft background - keep attention on you as the subject"
+        }
+      },
+      {
+        titles: ["Sunset vibes and good energy ☀️", "Golden hour goddess moments ✨", "Chasing light and feeling divine 🌅"],
+        content: "There's magic in these golden hour moments when everything feels perfect. Capturing the light, the mood, and this feeling of pure confidence.",
+        photoInstructions: {
+          lighting: "Golden hour lighting for that warm, ethereal glow",
+          cameraAngle: "Slightly below eye level for an empowering perspective",
+          composition: "Silhouettes and backlighting for dramatic effect",
+          styling: "Flowing fabrics that catch the light beautifully",
+          mood: "Dreamy, ethereal, and goddess-like",
+          technicalSettings: "Shoot into the light for that magical rim lighting effect"
+        }
+      },
+      {
+        titles: ["Bedroom eyes and morning light 😍", "Lazy Sunday vibes and soft skin ☁️", "Intimate moments and gentle touches 💕"],
+        content: "These quiet, intimate moments are my favorite to capture. When the light is soft and everything feels gentle and peaceful.",
+        photoInstructions: {
+          lighting: "Soft morning light through sheer curtains",
+          cameraAngle: "Close-up and intimate angles",
+          composition: "Focus on details - curves, textures, gentle expressions",
+          styling: "Minimal, comfortable pieces that feel natural",
+          mood: "Intimate, soft, and genuinely relaxed",
+          technicalSettings: "Shallow depth of field for dreamy bokeh"
+        }
+      },
+      {
+        titles: ["Confidence level: unstoppable 🔥", "Owning my power and loving it 💪", "Boss energy in full effect ⚡"],
+        content: "Feeling incredibly empowered and confident today. There's something so beautiful about knowing your worth and owning your space.",
+        photoInstructions: {
+          lighting: "Bold, dramatic lighting with strong shadows",
+          cameraAngle: "Powerful angles that emphasize strength",
+          composition: "Strong poses that show confidence and authority",
+          styling: "Statement pieces that make you feel powerful",
+          mood: "Bold, confident, and commanding",
+          technicalSettings: "High contrast for dramatic impact"
+        }
+      },
+      {
+        titles: ["Artistic mood and creative energy 🎨", "When art meets beauty perfectly ✨", "Creative souls and expressive moments 🌙"],
+        content: "Exploring the artistic side of photography and self-expression. These creative moments where everything comes together beautifully.",
+        photoInstructions: {
+          lighting: "Creative lighting setups with colored gels or shadows",
+          cameraAngle: "Unique perspectives and artistic compositions",
+          composition: "Rule-breaking compositions for artistic effect",
+          styling: "Avant-garde or artistic styling choices",
+          mood: "Creative, expressive, and artistically inspired",
+          technicalSettings: "Experimental settings for artistic effects"
+        }
+      },
+      {
+        titles: ["Midnight muse and moonlight magic 🌙", "Dark romance and mysterious vibes ✨", "Shadow play and secret moments 🖤"],
+        content: "There's something captivating about these darker, more mysterious moments. Playing with shadows and embracing the night.",
+        photoInstructions: {
+          lighting: "Low-key lighting with dramatic shadows",
+          cameraAngle: "Mysterious angles that hide and reveal",
+          composition: "Shadow play and negative space",
+          styling: "Dark, romantic, or mysterious styling",
+          mood: "Mysterious, romantic, and alluring",
+          technicalSettings: "Low light techniques for moody atmosphere"
+        }
+      },
+      {
+        titles: ["Pure joy and authentic smiles 😊", "Happiness looks good on me ✨", "Genuine moments of pure bliss 💫"],
+        content: "Sometimes the most beautiful content comes from genuine happiness and joy. These are the moments that feel most authentically me.",
+        photoInstructions: {
+          lighting: "Bright, cheerful lighting that matches the mood",
+          cameraAngle: "Angles that capture genuine emotion",
+          composition: "Candid-feeling shots that show real joy",
+          styling: "Comfortable, happy styling that feels authentic",
+          mood: "Joyful, authentic, and genuinely happy",
+          technicalSettings: "Settings that capture the energy and movement"
+        }
+      },
+      {
+        titles: ["Elegance meets sensuality perfectly 💎", "Sophisticated vibes and timeless beauty ✨", "Classic beauty with modern edge 🌹"],
+        content: "Combining elegance with allure for that perfect balance. These sophisticated moments that feel both timeless and modern.",
+        photoInstructions: {
+          lighting: "Elegant, sophisticated lighting schemes",
+          cameraAngle: "Classic portrait angles with modern flair",
+          composition: "Timeless compositions with contemporary edge",
+          styling: "Elegant pieces that enhance natural beauty",
+          mood: "Sophisticated, elegant, and refined",
+          technicalSettings: "Crisp, clean technical execution"
+        }
+      },
+      {
+        titles: ["Wild spirit and free soul 🦋", "Untamed beauty and natural grace ✨", "Free-spirited moments and wild hearts 🌿"],
+        content: "Embracing my wild, free spirit and celebrating the beauty of being unapologetically myself. These untamed moments feel so authentic.",
+        photoInstructions: {
+          lighting: "Natural, uncontrolled lighting for authenticity",
+          cameraAngle: "Free-flowing angles that capture movement",
+          composition: "Organic compositions that feel unposed",
+          styling: "Bohemian or free-spirited styling choices",
+          mood: "Wild, free, and authentically unrestrained",
+          technicalSettings: "Capturing movement and spontaneity"
+        }
+      },
+      {
+        titles: ["Dreamy afternoons and soft moments ☁️", "Ethereal beauty and gentle vibes ✨", "Soft focus and tender feelings 💕"],
+        content: "These dreamy, soft moments where everything feels gentle and beautiful. Capturing the ethereal side of beauty and self-expression.",
+        photoInstructions: {
+          lighting: "Soft, diffused lighting for ethereal effect",
+          cameraAngle: "Gentle angles that enhance softness",
+          composition: "Dreamy compositions with soft focus elements",
+          styling: "Flowing, soft fabrics and gentle styling",
+          mood: "Dreamy, soft, and ethereally beautiful",
+          technicalSettings: "Soft focus techniques for dreamy atmosphere"
+        }
+      }
     ];
-    
-    demoContent = customPrompt 
-      ? `[AI QUOTA EXCEEDED - Demo Content]\n\nThis would be personalized content for: "${customPrompt}"\n\nStyle: ${style || 'sensual'}\nPlatform: ${platform}\n\nThe full AI would create engaging, authentic content that matches your exact style and voice. ${allowsPromotion === 'high' ? 'With subtle promotional elements included.' : 'Focused on genuine connection.'}\n\nUpgrade your OpenAI plan to enable real AI generation! 🚀`
-      : `[AI QUOTA EXCEEDED - Demo Content]\n\nThis would be personalized ${platform} content in ${style || 'sensual'} style.\n\nThe AI would craft authentic, engaging posts that feel genuinely you - never generic or robotic. Each post would be optimized for your audience and platform.\n\nReady for real AI-powered content creation? ✨`;
-    
-    photoInstructions = {
-      lighting: "Soft, flattering lighting - golden hour or warm indoor lighting works beautifully",
-      cameraAngle: "Eye level or slightly above - creates intimate connection while remaining flattering",
-      composition: "Focus on natural poses and authentic expressions that showcase your personality",
-      styling: "Whatever makes you feel confident and beautiful - authenticity is most important",
-      mood: "Confident, alluring, and genuinely comfortable in your own skin",
-      technicalSettings: "Good focus with soft background - keep attention on you as the subject"
-    };
   } else {
-    demoTitles = [
-      "Just had the most amazing day! ✨",
-      "Feeling confident and loving life 💫",
-      "Sometimes you just gotta shine your own light ✨"
+    demoVariations = [
+      {
+        titles: ["Just had the most amazing day! ✨", "Feeling confident and loving life 💫", "Sometimes you just gotta shine your own light ✨"],
+        content: "Today was absolutely incredible! Sometimes you just have those days where everything feels perfect and you're reminded of how amazing life can be.",
+        photoInstructions: {
+          lighting: "Soft natural light from a window - creates a warm, inviting glow",
+          cameraAngle: "Slightly above eye level - universally flattering angle",
+          composition: "Rule of thirds with you positioned off-center",
+          styling: "Your signature style with confidence",
+          mood: "Happy, confident, and genuinely joyful",
+          technicalSettings: "Portrait mode with soft background blur"
+        }
+      },
+      {
+        titles: ["Coffee dates with myself ☕", "Morning rituals and good vibes ✨", "Starting the day with intention 🌅"],
+        content: "There's something so peaceful about morning coffee and taking time for yourself. These quiet moments set the tone for the entire day.",
+        photoInstructions: {
+          lighting: "Soft morning light with warm tones",
+          cameraAngle: "Casual, lifestyle angles",
+          composition: "Include props like coffee cups for storytelling",
+          styling: "Comfortable, cozy morning wear",
+          mood: "Peaceful, centered, and content",
+          technicalSettings: "Natural lighting with warm white balance"
+        }
+      },
+      {
+        titles: ["Adventure calls and I answer 🏔️", "Exploring new places and finding magic ✨", "Wanderlust and wonderful discoveries 🗺️"],
+        content: "Always ready for the next adventure! There's so much beauty in exploring new places and pushing your comfort zone.",
+        photoInstructions: {
+          lighting: "Natural outdoor lighting",
+          cameraAngle: "Environmental shots showing scale and adventure",
+          composition: "Include landscape elements for context",
+          styling: "Adventure-appropriate clothing",
+          mood: "Adventurous, excited, and free-spirited",
+          technicalSettings: "Wide-angle shots to capture the environment"
+        }
+      },
+      {
+        titles: ["Cozy nights and good books 📚", "Home is where the heart is 🏠", "Simple pleasures and peaceful moments ✨"],
+        content: "Finding joy in the simple things - cozy nights at home, good books, and peaceful moments. These are the times that recharge my soul.",
+        photoInstructions: {
+          lighting: "Warm, cozy indoor lighting",
+          cameraAngle: "Intimate, close-up angles",
+          composition: "Include cozy elements like books, blankets",
+          styling: "Comfortable, homey clothing",
+          mood: "Cozy, peaceful, and content",
+          technicalSettings: "Warm lighting to enhance the cozy feeling"
+        }
+      },
+      {
+        titles: ["Friendship and laughter therapy 😂", "Good friends make everything better ✨", "Squad goals and endless giggles 👯"],
+        content: "Spending time with amazing friends who make you laugh until your cheeks hurt. These are the moments that matter most.",
+        photoInstructions: {
+          lighting: "Bright, cheerful lighting",
+          cameraAngle: "Group shots and candid moments",
+          composition: "Include friends and capture interactions",
+          styling: "Fun, casual group styling",
+          mood: "Joyful, social, and energetic",
+          technicalSettings: "Fast shutter to capture candid laughter"
+        }
+      },
+      {
+        titles: ["Creative projects and artistic flow 🎨", "When inspiration strikes perfectly ✨", "Making something beautiful today 💫"],
+        content: "Lost in a creative project and loving every minute of it. There's something magical about when inspiration hits and everything flows.",
+        photoInstructions: {
+          lighting: "Bright, inspiring lighting for creativity",
+          cameraAngle: "Process shots showing creativity in action",
+          composition: "Include creative tools and works in progress",
+          styling: "Comfortable clothes for creating",
+          mood: "Inspired, focused, and creatively energized",
+          technicalSettings: "Good lighting to show creative details"
+        }
+      },
+      {
+        titles: ["Fitness goals and feeling strong 💪", "Healthy body, happy mind ✨", "Celebrating what my body can do 🏃‍♀️"],
+        content: "Feeling strong and celebrating everything my body can do. Fitness isn't just about appearance - it's about feeling powerful and healthy.",
+        photoInstructions: {
+          lighting: "Energetic, motivating lighting",
+          cameraAngle: "Action shots that show strength",
+          composition: "Dynamic compositions showing movement",
+          styling: "Athletic wear that makes you feel strong",
+          mood: "Powerful, energetic, and motivated",
+          technicalSettings: "Fast shutter to capture movement"
+        }
+      },
+      {
+        titles: ["Learning new things and growing 📖", "Personal growth and good choices ✨", "Investing in myself every day 🌱"],
+        content: "Always learning, always growing. Investing time in personal development and celebrating the journey of becoming your best self.",
+        photoInstructions: {
+          lighting: "Clean, focused lighting",
+          cameraAngle: "Thoughtful, contemplative angles",
+          composition: "Include learning materials or growth symbols",
+          styling: "Professional or study-appropriate clothing",
+          mood: "Thoughtful, determined, and growth-oriented",
+          technicalSettings: "Clear, sharp focus for professional feel"
+        }
+      },
+      {
+        titles: ["Nature therapy and fresh air 🌳", "Finding peace in green spaces ✨", "Earth connection and natural beauty 🌿"],
+        content: "Nothing beats time in nature for clearing the mind and finding peace. These outdoor moments remind me what really matters.",
+        photoInstructions: {
+          lighting: "Natural outdoor lighting",
+          cameraAngle: "Environmental portraits in nature",
+          composition: "Include natural elements like trees, flowers",
+          styling: "Outdoor-appropriate, natural styling",
+          mood: "Peaceful, grounded, and naturally beautiful",
+          technicalSettings: "Natural lighting with nature backgrounds"
+        }
+      },
+      {
+        titles: ["Celebrating small wins today 🎉", "Progress over perfection always ✨", "Grateful for how far I've come 🙏"],
+        content: "Taking time to celebrate the small victories and acknowledge progress. Every step forward is worth celebrating, no matter how small.",
+        photoInstructions: {
+          lighting: "Celebratory, uplifting lighting",
+          cameraAngle: "Confident, celebratory angles",
+          composition: "Positive, uplifting compositions",
+          styling: "Styling that makes you feel accomplished",
+          mood: "Celebratory, grateful, and accomplished",
+          technicalSettings: "Bright, positive lighting setup"
+        }
+      }
     ];
-    
-    demoContent = customPrompt 
-      ? `[AI QUOTA EXCEEDED - Demo Content]\n\nThis would be engaging content for: "${customPrompt}"\n\nStyle: ${style || 'casual'}\nPlatform: ${platform}\n\nThe actual AI would generate personalized content that matches your voice and style perfectly. ${allowsPromotion === 'high' ? 'With promotion-friendly messaging included!' : 'Keeping things subtle and authentic.'}\n\nUpgrade your OpenAI plan to unlock full AI generation! 🚀`
-      : `[AI QUOTA EXCEEDED - Demo Content]\n\nThis would be personalized ${platform} content that matches your exact voice, style, and brand. Every post would be tailored to your personality profile and optimized for maximum engagement.\n\nReady to see what real AI-generated content can do for your growth? Sign up now! ✨`;
-    
-    photoInstructions = {
-      lighting: "Soft natural light from a window - creates a warm, inviting glow that's flattering and professional",
-      cameraAngle: "Slightly above eye level - this angle is universally flattering and creates connection with viewers",
-      composition: "Rule of thirds with you positioned off-center - creates visual interest and professional-looking shots",
-      styling: "Your signature style with a touch of confidence - wear what makes you feel amazing and authentic",
-      mood: "Confident, approachable, and genuinely happy - let your personality shine through naturally",
-      technicalSettings: "Portrait mode with soft background blur - keeps focus on you while creating depth"
-    };
   }
 
-  return {
-    titles: demoTitles,
-    content: demoContent,
-    photoInstructions
-  };
+  // Randomly select one of the 10 variations
+  const randomIndex = Math.floor(Math.random() * demoVariations.length);
+  const selectedVariation = demoVariations[randomIndex];
+  
+  // If user provided a custom prompt, modify the content
+  if (customPrompt) {
+    selectedVariation.content = `[AI QUOTA EXCEEDED - Demo Content]\n\nThis would be personalized content for: "${customPrompt}"\n\nStyle: ${style || (isAdultContent ? 'sensual' : 'casual')}\nPlatform: ${platform}\n\nThe full AI would create engaging, authentic content that matches your exact style and voice. ${allowsPromotion === 'high' ? 'With subtle promotional elements included.' : 'Focused on genuine connection.'}\n\nUpgrade your OpenAI plan to enable real AI generation! 🚀`;
+  } else {
+    selectedVariation.content = `[AI QUOTA EXCEEDED - Demo Content]\n\n${selectedVariation.content}\n\nThis is demo content #${randomIndex + 1} of 10 variations. The full AI would create personalized ${platform} content that matches your exact voice, style, and brand.\n\nReady for real AI-powered content creation? ✨`;
+  }
+
+  return selectedVariation;
 }
 
 interface User {
