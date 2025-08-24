@@ -216,10 +216,10 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
   ];
 
   const [userStats, setUserStats] = useState({
-    postsCreated: userTier === 'guest' ? 0 : 47,
-    totalViews: userTier === 'guest' ? 0 : 12840,
-    engagementRate: userTier === 'guest' ? 0 : 14.9,
-    streak: userTier === 'guest' ? 0 : 7
+    postsCreated: 0,
+    totalViews: 0,
+    engagementRate: 0,
+    streak: 0
   });
   
   // Fetch real user stats

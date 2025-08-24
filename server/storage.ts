@@ -59,6 +59,12 @@ export interface IStorage {
   
   // Streak operations
   calculateDailyStreak(userId: number): Promise<number>;
+
+  // Admin operations
+  getTotalUserCount(): Promise<number>;
+  getActiveUserCount(): Promise<number>;
+  getTotalContentGenerated(): Promise<number>;
+  getSubscriptionCounts(): Promise<{ free: number; pro: number; premium: number; }>;
 }
 
 class PostgreSQLStorage implements IStorage {
@@ -433,6 +439,112 @@ class PostgreSQLStorage implements IStorage {
     } catch (error) {
       console.error('Storage: Error deleting user image:', error);
       throw error;
+    }
+  }
+
+  // Streak operations
+  async calculateDailyStreak(userId: number): Promise<number> {
+    try {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+      const recentGenerations = await db
+        .select()
+        .from(contentGenerations)
+        .where(
+          and(
+            eq(contentGenerations.userId, userId),
+            gte(contentGenerations.createdAt, sevenDaysAgo)
+          )
+        )
+        .orderBy(desc(contentGenerations.createdAt));
+
+      // Group by date and calculate consecutive days
+      const dateGroups = new Map<string, number>();
+      for (const gen of recentGenerations) {
+        const date = gen.createdAt.toISOString().split('T')[0];
+        dateGroups.set(date, (dateGroups.get(date) || 0) + 1);
+      }
+
+      // Calculate streak
+      let streak = 0;
+      const today = new Date();
+      for (let i = 0; i < 7; i++) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        
+        if (dateGroups.has(dateStr)) {
+          streak++;
+        } else {
+          break;
+        }
+      }
+
+      return streak;
+    } catch (error) {
+      console.error('Error calculating daily streak:', error);
+      return 0;
+    }
+  }
+
+  // Admin operations
+  async getTotalUserCount(): Promise<number> {
+    try {
+      const result = await db.select({ count: count() }).from(users);
+      return result[0]?.count || 0;
+    } catch (error) {
+      console.error('Error getting total user count:', error);
+      return 0;
+    }
+  }
+
+  async getActiveUserCount(): Promise<number> {
+    try {
+      // Users who have generated content in the last 7 days
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      
+      const result = await db
+        .selectDistinct({ userId: contentGenerations.userId })
+        .from(contentGenerations)
+        .where(gte(contentGenerations.createdAt, sevenDaysAgo));
+      
+      return result.length;
+    } catch (error) {
+      console.error('Error getting active user count:', error);
+      return 0;
+    }
+  }
+
+  async getTotalContentGenerated(): Promise<number> {
+    try {
+      const result = await db.select({ count: count() }).from(contentGenerations);
+      return result[0]?.count || 0;
+    } catch (error) {
+      console.error('Error getting total content generated:', error);
+      return 0;
+    }
+  }
+
+  async getSubscriptionCounts(): Promise<{ free: number; pro: number; premium: number; }> {
+    try {
+      const allUsers = await this.getAllUsers();
+      const counts = { free: 0, pro: 0, premium: 0 };
+      
+      for (const user of allUsers) {
+        const tier = user.tier || 'free';
+        if (tier in counts) {
+          (counts as any)[tier]++;
+        } else {
+          counts.free++; // Default to free if tier is unknown
+        }
+      }
+      
+      return counts;
+    } catch (error) {
+      console.error('Error getting subscription counts:', error);
+      return { free: 0, pro: 0, premium: 0 };
     }
   }
 }
