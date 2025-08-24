@@ -53,7 +53,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
       return response.json();
     },
     onSuccess: (data) => {
-      localStorage.setItem('token', data.token);
+      localStorage.setItem('authToken', data.token);
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       toast({
         title: mode === 'login' ? 'Welcome back!' : 'Account created!',
