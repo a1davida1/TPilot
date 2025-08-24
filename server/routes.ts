@@ -477,7 +477,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate content endpoint
 
   // JWT auth middleware for generation endpoint
-  const authenticateToken = (req: any, res: any, next: any) => {
+  const authMiddleware = (req: any, res: any, next: any) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
@@ -496,7 +496,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   // Unified AI generation endpoint - handles both text and image
-  app.post('/api/generate-unified', authenticateToken, upload.single('image'), async (req: AuthRequest, res) => {
+  app.post('/api/generate-unified', authMiddleware, upload.single('image'), async (req: AuthRequest, res) => {
     try {
       const { mode, prompt, platform, style, theme, includePromotion, customInstructions } = req.body;
       

@@ -23,7 +23,7 @@ export default function CaptionGeneratorPage() {
           <CardHeader>
             <CardTitle className="text-2xl flex items-center gap-2">
               <Sparkles className="h-6 w-6" />
-              AI Caption Generator Suite
+              Advanced Caption Generator Suite
             </CardTitle>
             <CardDescription className="text-pink-100">
               Advanced 2-pass Gemini pipeline with quality gates for perfect captions every time

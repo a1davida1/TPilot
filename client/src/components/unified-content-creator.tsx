@@ -27,6 +27,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { ContentGeneration } from "@shared/schema";
 import { GenerationHistory } from "./generation-history";
+import { protectImage, protectionPresets, downloadProtectedImage } from "@/lib/image-protection";
 
 // Assuming ThemeToggle and other necessary components/hooks are imported correctly.
 // For example: import ThemeToggle from "@/components/ThemeToggle";
@@ -77,7 +78,7 @@ export function UnifiedContentCreator({
   isGuestMode = false,
   userTier = "free" 
 }: UnifiedContentCreatorProps) {
-  const [workflowMode, setWorkflowMode] = useState<'text' | 'image' | 'presets'>('presets');
+  const [workflowMode, setWorkflowMode] = useState<'text' | 'image' | 'presets' | 'history'>('presets');
   const [customPrompt, setCustomPrompt] = useState("");
   const [platform, setPlatform] = useState("reddit");
   const [subreddit, setSubreddit] = useState("");
@@ -94,6 +95,12 @@ export function UnifiedContentCreator({
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // ImageShield protection states
+  const [autoProtect, setAutoProtect] = useState(false);
+  const [protectionLevel, setProtectionLevel] = useState<'light' | 'standard' | 'heavy'>('standard');
+  const [protectedImageUrl, setProtectedImageUrl] = useState<string | null>(null);
+  const [showProtectionComparison, setShowProtectionComparison] = useState(false);
 
   // Output display states
   const [generatedContent, setGeneratedContent] = useState<GeneratedContentDisplay | null>(null);
@@ -290,8 +297,10 @@ export function UnifiedContentCreator({
         const uploadedImageUrl = e.target?.result as string;
         setUploadedImage(uploadedImageUrl);
         
-        // Auto-apply image protection
-        applyImageProtection(uploadedImageUrl);
+        // Auto-apply image protection if enabled
+        if (autoProtect) {
+          applyImageShieldProtection(file);
+        }
       };
       reader.readAsDataURL(file);
 
@@ -302,67 +311,66 @@ export function UnifiedContentCreator({
     }
   };
 
-  const applyImageProtection = (imageUrl: string) => {
+  // Apply ImageShield protection using the full protection system
+  const applyImageShieldProtection = async (file: File) => {
     try {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-
-      const img = new Image();
-      img.onload = () => {
-        // Set canvas dimensions
-        canvas.width = img.width;
-        canvas.height = img.height;
-        
-        // Draw original image
-        ctx.drawImage(img, 0, 0);
-        
-        // Get image data for manipulation
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imageData.data;
-
-        // Apply light protection (noise + subtle blur)
-        const noiseLevel = 8;
-        const blurLevel = 1;
-
-        // Apply noise injection
-        for (let i = 0; i < data.length; i += 4) {
-          const noise = (Math.random() - 0.5) * noiseLevel;
-          data[i] = Math.max(0, Math.min(255, data[i] + noise));     // R
-          data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + noise)); // G
-          data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + noise)); // B
-        }
-
-        // Apply subtle color shift
-        for (let i = 0; i < data.length; i += 4) {
-          const shift = (Math.random() - 0.5) * 3;
-          data[i] = Math.max(0, Math.min(255, data[i] + shift));
-          data[i + 1] = Math.max(0, Math.min(255, data[i + 1] - shift));
-          data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + shift));
-        }
-
-        // Put processed data back
-        ctx.putImageData(imageData, 0, 0);
-
-        // Apply subtle blur
-        if (blurLevel > 0) {
-          ctx.filter = `blur(${blurLevel}px)`;
-          ctx.drawImage(canvas, 0, 0);
-          ctx.filter = 'none';
-        }
-
-        // Convert to protected data URL and update the displayed image
-        const protectedDataUrl = canvas.toDataURL('image/jpeg', 0.92);
-        setUploadedImage(protectedDataUrl);
-
-        console.log('Image protection applied automatically');
-      };
-
-      img.src = imageUrl;
+      const settings = protectionPresets[protectionLevel];
+      // Add watermark for free and guest users
+      const shouldAddWatermark = userTier === 'guest' || userTier === 'free';
+      const protectedBlob = await protectImage(file, settings, shouldAddWatermark);
+      
+      // Create preview URL for protected image
+      const protectedUrl = URL.createObjectURL(protectedBlob);
+      setProtectedImageUrl(protectedUrl);
+      setShowProtectionComparison(true);
+      
+      toast({
+        title: "Image Protected!",
+        description: `${protectionLevel} protection applied${shouldAddWatermark ? ' with watermark' : ''}`,
+      });
     } catch (error) {
-      console.error('Auto protection failed:', error);
-      // Continue with original image if protection fails
+      toast({
+        title: "Protection Failed",
+        description: "Failed to protect the image. Please try again.",
+        variant: "destructive"
+      });
+      console.error('ImageShield protection failed:', error);
     }
+  };
+
+  // Manual protection function for user-triggered protection
+  const protectCurrentImage = async () => {
+    if (!imageFile) {
+      toast({
+        title: "No Image",
+        description: "Please upload an image first",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    await applyImageShieldProtection(imageFile);
+  };
+
+  // Download protected image
+  const downloadCurrentProtectedImage = () => {
+    if (!protectedImageUrl || !imageFile) return;
+    
+    fetch(protectedImageUrl)
+      .then(response => response.blob())
+      .then(blob => {
+        const originalFileName = imageFile.name;
+        const timestamp = new Date().toISOString().slice(0, 10);
+        const filename = `protected_${timestamp}_${originalFileName}`;
+        downloadProtectedImage(blob, filename);
+      })
+      .catch(error => {
+        toast({
+          title: "Download Failed",
+          description: "Failed to download protected image",
+          variant: "destructive"
+        });
+      });
   };
 
   const handleGenerate = () => {
@@ -597,6 +605,120 @@ export function UnifiedContentCreator({
                     />
                   </div>
                 </div>
+
+                {/* ImageShield Protection Controls */}
+                {uploadedImage && (
+                  <Card className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/20">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-purple-600">
+                          🛡️
+                        </div>
+                        ImageShield™ Protection
+                      </CardTitle>
+                      <CardDescription>
+                        Protect your image from reverse searches with advanced anti-detection technology
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {/* Auto-protect toggle */}
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <Label className="text-sm font-medium">Auto-Protect Images</Label>
+                          <p className="text-xs text-muted-foreground">
+                            Automatically apply protection when uploading images
+                          </p>
+                        </div>
+                        <Switch
+                          checked={autoProtect}
+                          onCheckedChange={setAutoProtect}
+                        />
+                      </div>
+
+                      {/* Protection level selector */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Protection Level</Label>
+                        <Select value={protectionLevel} onValueChange={setProtectionLevel}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="light">
+                              <div className="flex items-center gap-2">
+                                <span className="text-yellow-500">⚡</span>
+                                <span>Light - Minimal changes, fast processing</span>
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="standard">
+                              <div className="flex items-center gap-2">
+                                <span className="text-blue-500">🛡️</span>
+                                <span>Standard - Balanced protection (Recommended)</span>
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="heavy">
+                              <div className="flex items-center gap-2">
+                                <span className="text-red-500">🔒</span>
+                                <span>Heavy - Maximum security</span>
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Protection actions */}
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={protectCurrentImage}
+                          className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                        >
+                          <div className="flex items-center justify-center w-4 h-4 mr-2">🛡️</div>
+                          Protect Image
+                        </Button>
+                        
+                        {protectedImageUrl && (
+                          <Button
+                            onClick={downloadCurrentProtectedImage}
+                            variant="outline"
+                            className="border-purple-500 text-purple-600 hover:bg-purple-50"
+                          >
+                            <ArrowRight className="h-4 w-4 mr-2" />
+                            Download
+                          </Button>
+                        )}
+                      </div>
+
+                      {/* Protection comparison */}
+                      {showProtectionComparison && protectedImageUrl && (
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Before vs After</Label>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <p className="text-xs text-muted-foreground text-center">Original</p>
+                              <img
+                                src={uploadedImage}
+                                alt="Original"
+                                className="w-full h-32 object-cover rounded-lg border"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <p className="text-xs text-muted-foreground text-center">Protected</p>
+                              <img
+                                src={protectedImageUrl}
+                                alt="Protected"
+                                className="w-full h-32 object-cover rounded-lg border border-purple-500"
+                              />
+                            </div>
+                          </div>
+                          {(userTier === 'guest' || userTier === 'free') && (
+                            <p className="text-xs text-orange-600 text-center">
+                              ⚠️ Watermark applied - Upgrade to Pro to remove
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             )}
           </TabsContent>
