@@ -57,7 +57,6 @@ export function CleanDashboard({ isGuestMode = false, user, userTier = 'free' }:
 
   // Clean navigation structure matching the trial UI
   const navigationItems = [
-    { id: 'getting-started', label: 'Getting Started', icon: BookOpen, badge: 'NEW' },
     { id: 'generator', label: 'Content Creator', icon: PenTool, badge: null },
     { id: 'gallery', label: 'Image Gallery', icon: ImageIcon, badge: null },
     { id: 'protect', label: 'Image Shield', icon: Shield, badge: 'FREE', proOnly: false },
@@ -67,6 +66,7 @@ export function CleanDashboard({ isGuestMode = false, user, userTier = 'free' }:
     { id: 'analytics', label: 'Analytics', icon: BarChart, badge: 'PRO', proOnly: true },
     { id: 'tax', label: 'Tax Tracker', icon: Calculator, badge: null },
     { id: 'perks', label: 'Pro Perks', icon: Crown, badge: '$1,247 Value' },
+    { id: 'getting-started', label: 'Getting Started', icon: BookOpen, badge: 'NEW' },
   ];
 
   const renderContent = () => {
