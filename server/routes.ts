@@ -805,6 +805,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { mode, prompt, platform, style, theme, includePromotion, customInstructions } = req.body;
       
+      // Check daily generation limit for authenticated users
+      if (req.user?.id) {
+        const user = await storage.getUser(req.user.id);
+        if (!user) {
+          return res.status(401).json({ error: 'User not found' });
+        }
+        
+        const userTier = user.tier || 'free';
+        const dailyCount = await storage.getDailyGenerationCount(req.user.id);
+        
+        // Get limit based on tier
+        let dailyLimit = 5; // Default free limit
+        if (userTier === 'pro') {
+          dailyLimit = 50;
+        } else if (userTier === 'premium') {
+          dailyLimit = -1; // Unlimited
+        }
+        
+        // Check if user has exceeded their daily limit
+        if (dailyLimit !== -1 && dailyCount >= dailyLimit) {
+          return res.status(429).json({ 
+            error: 'Daily generation limit reached',
+            limit: dailyLimit,
+            used: dailyCount,
+            tier: userTier,
+            message: `You've reached your daily limit of ${dailyLimit} generations. ${userTier === 'free' ? 'Upgrade to Pro for 50 daily generations!' : 'Your limit resets tomorrow.'}`
+          });
+        }
+      }
+      
       let imageBase64: string | undefined;
       
       // Handle image upload if present

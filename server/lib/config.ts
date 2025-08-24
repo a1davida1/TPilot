@@ -52,6 +52,11 @@ export const envSchema = z.object({
   // Rate Limiting (Phase 5)
   MAX_POSTS_PER_SUBREDDIT_24H: z.coerce.number().default(1),
   
+  // Daily Generation Limits by Tier
+  DAILY_GENERATIONS_FREE: z.coerce.number().default(5),
+  DAILY_GENERATIONS_PRO: z.coerce.number().default(50),
+  DAILY_GENERATIONS_PREMIUM: z.coerce.number().default(-1), // -1 = unlimited
+  
   // Payment Providers (Phase 5)
   SEGPAY_MERCHANT_ID: z.string().optional(),
   SEGPAY_API_KEY: z.string().optional(),
@@ -139,6 +144,9 @@ try {
       WATERMARK_OPACITY: 0.18,
       USE_PG_QUEUE: !process.env.REDIS_URL, // Auto-enable when no Redis
       MAX_POSTS_PER_SUBREDDIT_24H: 1,
+      DAILY_GENERATIONS_FREE: 5,
+      DAILY_GENERATIONS_PRO: 50,
+      DAILY_GENERATIONS_PREMIUM: -1,
       UTM_COOKIE_TTL_DAYS: 30,
       MEDIA_MAX_BYTES_FREE: 524288000,
       MEDIA_MAX_BYTES_PRO: 10737418240,
@@ -186,6 +194,13 @@ export const config = {
   
   // Signed URL TTL
   signedUrlTTL: env.MEDIA_SIGNED_TTL_SECONDS,
+  
+  // Generation limits by tier
+  generationLimits: {
+    free: env.DAILY_GENERATIONS_FREE,
+    pro: env.DAILY_GENERATIONS_PRO,
+    premium: env.DAILY_GENERATIONS_PREMIUM,
+  },
   
   // App settings
   timezone: env.CRON_TZ,
