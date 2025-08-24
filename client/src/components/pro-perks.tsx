@@ -68,10 +68,53 @@ export function ProPerks({ userTier = 'pro' }: ProPerksProps) {
   const [recentActivity, setRecentActivity] = useState<Array<{id: string, action: string, timestamp: Date}>>([]);
   const { toast } = useToast();
 
-  // Sample resources - in production these would come from an API
-  const resources: Resource[] = [
-    // PDFs & Ebooks
-    {
+  // Fetch real resources from API
+  const { data: resourcesData, isLoading: resourcesLoading } = useQuery({
+    queryKey: ['pro-resources'],
+    queryFn: async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return { resources: [] };
+      
+      try {
+        const response = await fetch('/api/pro-resources', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error('Failed to fetch resources');
+        return response.json();
+      } catch (error) {
+        return { resources: [] };
+      }
+    }
+  });
+
+  const resources: Resource[] = resourcesData?.resources || [
+  ];
+
+  // Show empty state when no resources available
+  if (!resourcesLoading && resources.length === 0) {
+    return (
+      <Card className="bg-gray-900/50 backdrop-blur-xl border-white/10">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Gift className="h-5 w-5 text-purple-400" />
+            Pro Perks & Resources
+          </CardTitle>
+          <CardDescription>
+            Exclusive resources and discounts for Pro users
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <Gift className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-400">Resources coming soon!</p>
+            <p className="text-sm text-gray-500 mt-2">We're partnering with top platforms to bring you exclusive discounts</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const sampleForDevelopment = [{
       id: '1',
       title: 'Content Creator Tax Guide 2025',
       description: 'Complete guide to managing taxes as an adult content creator, including deductions and quarterly payments',

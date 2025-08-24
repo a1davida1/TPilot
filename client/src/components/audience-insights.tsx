@@ -16,50 +16,58 @@ interface AudienceData {
 }
 
 export function AudienceInsights() {
-  // Real audience data based on adult content creator analytics
-  const audienceData: AudienceData[] = [
-    {
-      platform: "Reddit",
-      bestTime: "9PM-12AM EST",
-      activeUsers: "2.5M+",
-      engagement: 85,
-      demographics: {
-        age: "25-34",
-        location: "USA/UK",
-        interests: ["NSFW", "Amateur", "Verified"]
+  // Fetch real audience insights from analytics
+  const { data: insightsData, isLoading } = useQuery({
+    queryKey: ['audience-insights'],
+    queryFn: async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        return { audienceData: [], topSubreddits: [] };
       }
-    },
-    {
-      platform: "OnlyFans",
-      bestTime: "8PM-11PM EST",
-      activeUsers: "180K+",
-      engagement: 92,
-      demographics: {
-        age: "30-45",
-        location: "Global",
-        interests: ["Premium", "Exclusive", "Custom"]
-      }
-    },
-    {
-      platform: "Twitter",
-      bestTime: "10PM-1AM EST",
-      activeUsers: "450K+",
-      engagement: 78,
-      demographics: {
-        age: "21-35",
-        location: "USA/Europe",
-        interests: ["Adult", "Content", "Links"]
+      
+      try {
+        const response = await fetch('/api/audience-insights', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) {
+          throw new Error('Failed to fetch insights');
+        }
+        return response.json();
+      } catch (error) {
+        // Return empty data instead of mock data
+        return { audienceData: [], topSubreddits: [] };
       }
     }
-  ];
+  });
 
-  const topSubreddits = [
-    { name: "r/OnlyFans", members: "2.1M", growth: "+12%" },
-    { name: "r/GoneWild", members: "3.2M", growth: "+8%" },
-    { name: "r/RealGirls", members: "2.8M", growth: "+10%" },
-    { name: "r/NSFW", members: "3.5M", growth: "+15%" },
-    { name: "r/AdorableOnlyfans", members: "450K", growth: "+25%" }
-  ];
+  const audienceData: AudienceData[] = insightsData?.audienceData || [];
+  const topSubreddits = insightsData?.topSubreddits || [];
+
+  // Show message when no data is available
+  if (!isLoading && audienceData.length === 0) {
+    return (
+      <div className="space-y-6">
+        <Card className="bg-gray-900/50 backdrop-blur-xl border-white/10">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-purple-400" />
+              Audience Insights
+            </CardTitle>
+            <CardDescription>
+              Generate content to see audience analytics and insights
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-8">
+              <Eye className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-400">No audience data available yet</p>
+              <p className="text-sm text-gray-500 mt-2">Start creating content to see insights about your audience</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

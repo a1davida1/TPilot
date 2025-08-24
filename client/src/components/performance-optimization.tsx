@@ -52,7 +52,7 @@ export const PerformanceOptimization = memo(() => {
         apiResponseTime: Math.round(apiResponseTime),
         memoryUsage: (performance as any).memory ? 
           Math.round(((performance as any).memory.usedJSHeapSize / (performance as any).memory.totalJSHeapSize) * 100) : 
-          Math.round(Math.random() * 20 + 30), // Realistic fallback range
+          null, // Show N/A when browser doesn't support memory API
         cacheHitRate: prev.cacheHitRate // Keep existing cache hit rate
       }));
     }
@@ -256,7 +256,7 @@ export const PerformanceOptimization = memo(() => {
           <ul className="text-sm text-blue-800 space-y-1">
             <li>• Load time: {metrics.loadTime < 3000 ? 'Excellent' : metrics.loadTime < 5000 ? 'Good' : 'Needs improvement'}</li>
             <li>• API response: {metrics.apiResponseTime < 200 ? 'Fast' : metrics.apiResponseTime < 500 ? 'Good' : 'Slow'}</li>
-            <li>• Memory usage: {metrics.memoryUsage < 60 ? 'Optimal' : metrics.memoryUsage < 80 ? 'Good' : 'High'}</li>
+            <li>• Memory usage: {metrics.memoryUsage !== null ? (metrics.memoryUsage < 60 ? 'Optimal' : metrics.memoryUsage < 80 ? 'Good' : 'High') : 'N/A'}</li>
             <li>• Network: {metrics.networkStatus === 'excellent' ? 'Perfect connection' : `${metrics.networkStatus} connection`}</li>
           </ul>
         </div>

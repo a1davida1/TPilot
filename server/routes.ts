@@ -381,6 +381,118 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Trending tags endpoint - returns actual trending tags based on user content generations
+  app.get("/api/trending-tags", async (req, res) => {
+    try {
+      const { timeRange = '7d', category = 'all' } = req.query;
+      
+      // Calculate date range
+      const now = new Date();
+      let startDate = new Date();
+      switch (timeRange) {
+        case '24h':
+          startDate.setHours(now.getHours() - 24);
+          break;
+        case '7d':
+          startDate.setDate(now.getDate() - 7);
+          break;
+        case '30d':
+          startDate.setDate(now.getDate() - 30);
+          break;
+        default:
+          startDate.setDate(now.getDate() - 7);
+      }
+
+      // Get all content generations in the time range
+      const allGenerations = await storage.getAllContentGenerations?.() || [];
+      const periodGenerations = allGenerations.filter((gen: any) => {
+        const generatedAt = new Date(gen.createdAt);
+        return generatedAt >= startDate;
+      });
+
+      // Extract and count hashtags from generated content
+      const tagCounts: Record<string, { count: number, subreddits: Set<string> }> = {};
+      periodGenerations.forEach((gen: any) => {
+        if (gen.content) {
+          // Extract hashtags from content
+          const hashtags = gen.content.match(/#\\w+/g) || [];
+          hashtags.forEach((tag: string) => {
+            const cleanTag = tag.toLowerCase().replace('#', '');
+            if (!tagCounts[cleanTag]) {
+              tagCounts[cleanTag] = { count: 0, subreddits: new Set() };
+            }
+            tagCounts[cleanTag].count++;
+            tagCounts[cleanTag].subreddits.add(gen.platform || 'reddit');
+          });
+        }
+      });
+
+      // Convert to trending tags format
+      const trendingTags = Object.entries(tagCounts)
+        .map(([tag, data], index) => ({
+          tag,
+          posts: data.count,
+          growth: '+0%', // Would need historical data to calculate
+          subreddit: Array.from(data.subreddits)[0] || 'reddit',
+          heat: data.count > 10 ? 'hot' : data.count > 5 ? 'warm' : 'rising',
+          category: 'content',
+          rank: index + 1
+        }))
+        .sort((a, b) => b.posts - a.posts)
+        .slice(0, 20);
+
+      // Add some fallback popular tags if no user data
+      const fallbackTags = [
+        { tag: 'content', posts: 0, growth: '+0%', subreddit: 'reddit', heat: 'stable', category: 'general', rank: 1 },
+        { tag: 'creator', posts: 0, growth: '+0%', subreddit: 'reddit', heat: 'stable', category: 'general', rank: 2 },
+        { tag: 'original', posts: 0, growth: '+0%', subreddit: 'reddit', heat: 'stable', category: 'general', rank: 3 }
+      ];
+
+      const finalTags = trendingTags.length > 0 ? trendingTags : fallbackTags;
+
+      res.json({
+        tags: finalTags,
+        lastUpdated: new Date().toISOString(),
+        totalTags: finalTags.length,
+        timeRange
+      });
+    } catch (error) {
+      console.error('Error fetching trending tags:', error);
+      res.status(500).json({ message: 'Failed to fetch trending tags' });
+    }
+  });
+
+  // Audience insights endpoint - currently returns empty until platform integrations added
+  app.get("/api/audience-insights", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      // For production launch, return empty data until platform integrations are implemented
+      // This prevents showing fake metrics to users
+      res.json({
+        audienceData: [],
+        topSubreddits: [],
+        message: "Platform integrations coming soon"
+      });
+    } catch (error) {
+      console.error('Error fetching audience insights:', error);
+      res.status(500).json({ message: 'Failed to fetch audience insights' });
+    }
+  });
+
+  // Pro resources endpoint - returns empty until partnerships established
+  app.get("/api/pro-resources", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      // For production launch, return empty until real partnerships are established
+      // This prevents showing fake discount codes to users
+      res.json({
+        resources: [],
+        message: "Partnership integrations coming soon"
+      });
+    } catch (error) {
+      console.error('Error fetching pro resources:', error);
+      res.status(500).json({ message: 'Failed to fetch pro resources' });
+    }
+  });
+
   // Real analytics endpoints for user performance data
   app.get("/api/analytics/:timeRange", authenticateToken, async (req: AuthRequest, res) => {
     try {
