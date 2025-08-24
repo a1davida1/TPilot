@@ -13,6 +13,8 @@ import {
   Menu,
   X
 } from 'lucide-react';
+import { GenerationCounter } from '@/components/generation-counter';
+import { ThottoPilotLogo } from '@/components/thottopilot-logo';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -91,6 +93,8 @@ export function Header() {
                 </Link>
               ))}
             </nav>
+
+{/* Generation Counter will be added to dashboard instead */}
 
             {/* Desktop Auth Controls */}
             <div className="hidden md:flex items-center gap-3">

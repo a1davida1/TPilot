@@ -34,6 +34,8 @@ import { RedditAccounts } from '@/components/reddit-accounts';
 import { ImageGallery } from '@/components/image-gallery';
 import { TrendingTags } from '@/components/trending-tags';
 import { ProPerks } from '@/components/pro-perks';
+import { EngagementStats } from '@/components/engagement-stats';
+import { GenerationCounter } from '@/components/generation-counter';
 
 interface CleanDashboardProps {
   isGuestMode?: boolean;
@@ -71,6 +73,12 @@ export function CleanDashboard({ isGuestMode = false, user, userTier = 'free' }:
       case 'getting-started':
         return (
           <div className="max-w-4xl mx-auto">
+            {/* Top-left generation counter */}
+            {!isGuestMode && (
+              <div className="fixed top-20 left-4 z-40">
+                <GenerationCounter />
+              </div>
+            )}
             <GettingStarted 
               userTier={userTier} 
               onSectionSelect={(section) => setActiveSection(section)} 
@@ -117,6 +125,10 @@ export function CleanDashboard({ isGuestMode = false, user, userTier = 'free' }:
             <div className="text-center mb-8">
               <h1 className="text-3xl font-bold text-gray-900 mb-4">Analytics</h1>
               <p className="text-gray-600">Track your content performance and engagement</p>
+            </div>
+            {/* Add engagement statistics and generation counter */}
+            <div className="mb-8">
+              <EngagementStats />
             </div>
             <AnalyticsDashboard isGuestMode={userTier === 'guest'} />
           </div>

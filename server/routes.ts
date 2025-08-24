@@ -327,6 +327,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User statistics endpoints
+  app.get('/api/user/generation-stats', authenticateToken, async (req: any, res) => {
+    try {
+      const userId = req.user.userId || req.user.id;
+      const stats = await storage.getContentGenerationStats(userId);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching generation stats:", error);
+      res.status(500).json({ message: "Failed to fetch generation stats" });
+    }
+  });
+
+  app.get('/api/user/daily-generation-count', authenticateToken, async (req: any, res) => {
+    try {
+      const userId = req.user.userId || req.user.id;
+      const count = await storage.getDailyGenerationCount(userId);
+      res.json({ count });
+    } catch (error) {
+      console.error("Error fetching daily generation count:", error);
+      res.status(500).json({ message: "Failed to fetch daily generation count" });
+    }
+  });
+
   app.patch("/api/user/settings", authenticateToken, async (req: AuthRequest, res) => {
     try {
       const updates = req.body;

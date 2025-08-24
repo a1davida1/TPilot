@@ -10,6 +10,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { History, Search, Filter, Calendar, Download, Share2, Trash2, Star, Copy, ArrowLeft } from 'lucide-react';
 import { Link } from 'wouter';
 import type { ContentGeneration } from '@shared/schema';
+import { ThottoPilotLogo } from '@/components/thottopilot-logo';
 
 export default function HistoryPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -238,7 +239,7 @@ export default function HistoryPage() {
                         onClick={() => saveMutation.mutate(generation)}
                         disabled={saveMutation.isPending}
                       >
-                        <Star className="h-4 w-4" />
+                        <ThottoPilotLogo size="sm" />
                       </Button>
                       <Button
                         size="sm"
