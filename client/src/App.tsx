@@ -35,7 +35,8 @@ function AuthenticatedRoutes() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/caption-generator" component={CaptionGeneratorPage} />
       <Route path="/enterprise" component={Enterprise} />
-      <Route path="/phase4" component={Phase4Dashboard} />
+      {/* ULTRA PREMIUM ROUTE - Hidden for now */}
+      {/* <Route path="/phase4" component={Phase4Dashboard} /> */}
       <Route path="/reddit" component={RedditPostingPage} />
       <Route path="/history" component={History} />
       <Route path="/settings" component={Settings} />

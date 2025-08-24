@@ -198,6 +198,8 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
         { id: 'enterprise-dashboard', label: 'Enterprise Dashboard', icon: <Crown className="h-4 w-4" />, badge: 'Phase 2' },
       ]
     },
+    // ULTRA PREMIUM FEATURES - Hidden for now, will be enabled for ultra premium tier later
+    /*
     {
       id: 'phase3',
       label: 'Advanced Experience',
@@ -217,6 +219,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
         { id: 'phase4-dashboard', label: 'Phase 4 Dashboard', icon: <Rocket className="h-4 w-4" />, badge: 'Phase 4' },
       ]
     },
+    */
     // Admin-only section
     ...(isAdmin ? [{
       id: 'admin',
