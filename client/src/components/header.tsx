@@ -60,10 +60,12 @@ export function Header() {
             
             {/* Logo */}
             <Link href="/">
-              <div className="flex items-center gap-2 cursor-pointer">
-                <div className="p-2 bg-gradient-to-r from-pink-500 to-purple-500 rounded-lg shadow-lg">
-                  <Sparkles className="h-6 w-6 text-white" />
-                </div>
+              <div className="flex items-center gap-3 cursor-pointer">
+                <img 
+                  src="/logo.png" 
+                  alt="ThottoPilot" 
+                  className="h-10 w-10 rounded-full shadow-lg hover:scale-105 transition-transform duration-200"
+                />
                 <span className="text-xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
                   ThottoPilot
                 </span>

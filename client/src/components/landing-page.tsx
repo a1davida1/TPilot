@@ -224,6 +224,14 @@ export function LandingPage() {
       {/* Hero Section with Waitlist */}
       <section className="relative py-20 px-4 text-center">
         <div className="max-w-6xl mx-auto">
+          {/* Logo */}
+          <div className="flex justify-center mb-8">
+            <img 
+              src="/logo.png" 
+              alt="ThottoPilot" 
+              className="h-24 w-24 md:h-32 md:w-32 rounded-full shadow-2xl hover:scale-105 transition-transform duration-300"
+            />
+          </div>
           <Badge className="mb-8 bg-gradient-to-r from-pink-500 to-rose-500 text-white border-0 text-lg px-6 py-3 font-bold tracking-tight shadow-lg hover:shadow-xl transition-all duration-300" variant="secondary">
             🚀 Content Copilot for Creators
           </Badge>
