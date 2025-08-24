@@ -33,14 +33,20 @@ export function setupSocialAuth(app: Express) {
       callbackURL: "/api/auth/google/callback"
     }, async (accessToken, refreshToken, profile, done) => {
       try {
-        // Check if user exists
-        let user = await storage.getUserByEmail(profile.emails?.[0]?.value || '');
+        // Check if user exists by email OR username
+        const email = profile.emails?.[0]?.value || '';
+        const username = profile.displayName || email || '';
+        
+        let user = await storage.getUserByEmail(email);
+        if (!user) {
+          user = await storage.getUserByUsername(username);
+        }
         
         if (!user) {
-          // Create new user
+          // Create new user only if not found by email OR username
           user = await storage.createUser({
-            email: profile.emails?.[0]?.value || '',
-            username: profile.displayName || profile.emails?.[0]?.value || '',
+            email,
+            username,
             password: '', // No password for social auth
             provider: 'google',
             providerId: profile.id,
@@ -64,12 +70,20 @@ export function setupSocialAuth(app: Express) {
       profileFields: ['id', 'emails', 'name', 'picture']
     }, async (accessToken, refreshToken, profile, done) => {
       try {
-        let user = await storage.getUserByEmail(profile.emails?.[0]?.value || '');
+        // Check if user exists by email OR username  
+        const email = profile.emails?.[0]?.value || '';
+        const username = `${profile.name?.givenName || ''} ${profile.name?.familyName || ''}`.trim() || email || '';
+        
+        let user = await storage.getUserByEmail(email);
+        if (!user) {
+          user = await storage.getUserByUsername(username);
+        }
         
         if (!user) {
+          // Create new user only if not found by email OR username
           user = await storage.createUser({
-            email: profile.emails?.[0]?.value || '',
-            username: `${profile.name?.givenName || ''} ${profile.name?.familyName || ''}`.trim() || profile.emails?.[0]?.value || '',
+            email,
+            username,
             password: '',
             provider: 'facebook',
             providerId: profile.id,

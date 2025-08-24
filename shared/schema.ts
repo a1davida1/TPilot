@@ -7,7 +7,7 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: varchar("username", { length: 255 }).unique().notNull(),
   password: varchar("password", { length: 255 }).notNull().default(''),
-  email: varchar("email", { length: 255 }),
+  email: varchar("email", { length: 255 }).unique(),
   emailVerified: boolean("email_verified").default(false).notNull(),
   firstName: varchar("first_name", { length: 255 }), // Added missing column
   lastName: varchar("last_name", { length: 255 }), // Added missing column
