@@ -240,12 +240,10 @@ export function getRedditAuthUrl(state: string): string {
     throw new Error('Reddit OAuth credentials not configured');
   }
 
-  // Use the explicit REDDIT_REDIRECT_URI if set, otherwise build it dynamically
-  const redirectUri = process.env.REDDIT_REDIRECT_URI || 
-    (() => {
-      const domain = process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000';
-      return `https://${domain}/api/reddit/callback`;
-    })();
+  // Always use the current Replit domain for development, ignore REDDIT_REDIRECT_URI
+  const domain = process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000';
+  const protocol = domain.includes('localhost') ? 'http' : 'https';
+  const redirectUri = `${protocol}://${domain}/api/reddit/callback`;
   
   console.log('Reddit OAuth redirect URI:', redirectUri);
 
@@ -274,12 +272,10 @@ export async function exchangeRedditCode(code: string): Promise<{
     throw new Error('Reddit OAuth credentials not configured');
   }
 
-  // Use the explicit REDDIT_REDIRECT_URI if set, otherwise build it dynamically
-  const redirectUri = process.env.REDDIT_REDIRECT_URI || 
-    (() => {
-      const domain = process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000';
-      return `https://${domain}/api/reddit/callback`;
-    })();
+  // Always use the current Replit domain for development
+  const domain = process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000';
+  const protocol = domain.includes('localhost') ? 'http' : 'https';
+  const redirectUri = `${protocol}://${domain}/api/reddit/callback`;
 
   const response = await fetch('https://www.reddit.com/api/v1/access_token', {
     method: 'POST',
