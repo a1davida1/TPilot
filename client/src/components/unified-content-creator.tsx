@@ -224,11 +224,14 @@ export function UnifiedContentCreator({
       formData.append('hashtags', data.hashtags?.join(',') || selectedHashtags.join(','));
 
 
-      // Send to unified endpoint
+      // Send to unified endpoint  
+      const token = localStorage.getItem('token');
+      console.log('Sending request with token:', token ? 'Token present' : 'No token');
+      
       const response = await fetch('/api/generate-unified', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
+          'Authorization': `Bearer ${token || ''}`,
         },
         body: formData
       });
@@ -280,11 +283,22 @@ export function UnifiedContentCreator({
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
     },
     onError: (error) => {
+      console.error('Generation failed with error:', error);
       toast({
-        title: "Generation Failed",
-        description: error.message,
+        title: "Generation Failed", 
+        description: error.message || 'Failed to generate content',
         variant: "destructive"
       });
+      
+      // If auth error, suggest login
+      if (error.message?.includes('Authentication') || error.message?.includes('Invalid token')) {
+        setTimeout(() => {
+          toast({
+            title: "Please Login",
+            description: "Sign in with admin@thottopilot.com / admin123 to test features",
+          });
+        }, 1500);
+      }
     }
   });
 
