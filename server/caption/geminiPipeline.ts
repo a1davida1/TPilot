@@ -4,15 +4,49 @@ import { visionModel, textModel } from "../lib/gemini";
 import { CaptionArray, RankResult, platformChecks } from "./schema";
 
 async function load(p:string){ return fs.readFile(path.join(process.cwd(),"prompts",p),"utf8"); }
-async function b64(url:string){ const r=await fetch(url); if(!r.ok) throw new Error("fetch failed"); const b=Buffer.from(await r.arrayBuffer()); return b.toString("base64"); }
+async function b64(url:string){ 
+  try {
+    const r=await fetch(url, { timeout: 10000 }); 
+    if(!r.ok) throw new Error(`fetch failed: ${r.status} ${r.statusText}`); 
+    const b=Buffer.from(await r.arrayBuffer()); 
+    return b.toString("base64"); 
+  } catch (error) {
+    console.error('Error fetching image:', error);
+    throw new Error(`Failed to fetch image: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
 function stripToJSON(txt:string){ const i=Math.min(...[txt.indexOf("{"),txt.indexOf("[")].filter(x=>x>=0));
   const j=Math.max(txt.lastIndexOf("}"),txt.lastIndexOf("]")); return JSON.parse((i>=0&&j>=0)?txt.slice(i,j+1):txt); }
 
 export async function extractFacts(imageUrl:string){
-  const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("extract.txt");
-  const img={ inlineData:{ data: await b64(imageUrl), mimeType:"image/jpeg" } };
-  const res=await visionModel.generateContent([{text:sys+"\n"+guard+"\n"+prompt}, img]);
-  return stripToJSON(res.response.text());
+  try {
+    console.log('Starting fact extraction for image:', imageUrl.substring(0, 100) + '...');
+    const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("extract.txt");
+    
+    // Handle data URLs differently from regular URLs
+    let imageData: string;
+    let mimeType = "image/jpeg";
+    
+    if (imageUrl.startsWith('data:')) {
+      // Extract base64 data from data URL
+      const [header, data] = imageUrl.split(',');
+      imageData = data;
+      const mimeMatch = header.match(/data:([^;]+)/);
+      if (mimeMatch) mimeType = mimeMatch[1];
+    } else {
+      imageData = await b64(imageUrl);
+    }
+    
+    const img={ inlineData:{ data: imageData, mimeType } };
+    console.log('Sending to Gemini for fact extraction...');
+    const res=await visionModel.generateContent([{text:sys+"\n"+guard+"\n"+prompt}, img]);
+    const result = stripToJSON(res.response.text());
+    console.log('Fact extraction completed successfully');
+    return result;
+  } catch (error) {
+    console.error('Error in extractFacts:', error);
+    throw new Error(`Failed to extract facts: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }
 
 export async function generateVariants(params:{platform:"instagram"|"x"|"reddit"|"tiktok", voice:string, facts:any, hint?:string}){
