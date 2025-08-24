@@ -44,19 +44,23 @@ export default function Dashboard() {
     );
   }
 
-  // Use sidebar dashboard for cleaner navigation
-  const SidebarDashboard = lazy(() => import("@/components/sidebar-dashboard").then(module => ({ default: module.SidebarDashboard })));
+  // Use clean dashboard for elegant interface
+  const CleanDashboard = lazy(() => import("@/components/clean-dashboard").then(module => ({ default: module.CleanDashboard })));
   
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
     }>
-      <SidebarDashboard isGuestMode={isGuestMode} />
+      <CleanDashboard 
+        isGuestMode={isGuestMode} 
+        user={user}
+        userTier={user?.tier || (isGuestMode ? 'guest' : 'free')}
+      />
     </Suspense>
   );
 }
