@@ -17,7 +17,10 @@ import {
   Users,
   Crown,
   FileText,
-  Camera
+  Camera,
+  ChevronDown,
+  ChevronUp,
+  EyeOff
 } from 'lucide-react';
 import { ThottoPilotLogo } from '@/components/thottopilot-logo';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -30,6 +33,7 @@ interface GettingStartedProps {
 export function GettingStarted({ userTier = 'free', onSectionSelect }: GettingStartedProps) {
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
   const [activeStep, setActiveStep] = useState<string | null>(null);
+  const [isMinimized, setIsMinimized] = useState(false);
 
   const steps = [
     {
@@ -181,6 +185,42 @@ export function GettingStarted({ userTier = 'free', onSectionSelect }: GettingSt
     }
   ];
 
+  // Minimized version for experienced users
+  if (isMinimized) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="fixed bottom-4 left-4 z-30"
+      >
+        <Card className="bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200 shadow-lg max-w-xs">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <ThottoPilotLogo size="sm" />
+                <div>
+                  <h4 className="font-semibold text-sm text-gray-900">Setup Guide</h4>
+                  <p className="text-xs text-gray-600">
+                    {completedCount} of {steps.length} completed
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsMinimized(false)}
+                className="h-8 w-8 p-0 hover:bg-purple-100"
+              >
+                <ChevronUp className="h-4 w-4" />
+              </Button>
+            </div>
+            <Progress value={progressPercentage} className="h-2 mt-2" />
+          </CardContent>
+        </Card>
+      </motion.div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-8">
       {/* Welcome Header */}
@@ -225,9 +265,20 @@ export function GettingStarted({ userTier = 'free', onSectionSelect }: GettingSt
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>Your Setup Progress</span>
-              <span className="text-sm font-normal text-gray-600">
-                {completedCount} of {steps.length} completed
-              </span>
+              <div className="flex items-center space-x-3">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsMinimized(true)}
+                  className="h-8 px-3 text-xs hover:bg-purple-100 flex items-center space-x-1"
+                >
+                  <EyeOff className="h-3 w-3" />
+                  <span>Setup Later</span>
+                </Button>
+                <span className="text-sm font-normal text-gray-600">
+                  {completedCount} of {steps.length} completed
+                </span>
+              </div>
             </CardTitle>
             <Progress value={progressPercentage} className="h-3" />
           </CardHeader>
