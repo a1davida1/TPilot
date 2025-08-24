@@ -93,7 +93,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
   const [userTier, setUserTier] = useState<'guest' | 'free' | 'pro' | 'premium'>('guest');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeSection, setActiveSection] = useState('analytics');
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['growth', 'creator-tools']));
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['creator-tools']));
 
   // Load user from localStorage on mount
   useEffect(() => {
@@ -139,11 +139,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
       id: 'getting-started',
       label: 'Getting Started',
       icon: <BookOpen className="h-4 w-4" />,
-      items: [
-        { id: 'getting-started', label: 'Setup Guide', icon: <Sparkles className="h-4 w-4" />, badge: 'Start Here' },
-        { id: 'tutorials', label: 'Video Tutorials', icon: <PlayCircle className="h-4 w-4" />, badge: 'Learn' },
-        { id: 'quick-start', label: 'Quick Actions', icon: <Zap className="h-4 w-4" />, badge: 'Fast' },
-      ]
+      badge: 'Setup Guide'
     },
     {
       id: 'creator-tools',
@@ -352,7 +348,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
           <div data-testid="content-getting-started">
             <GettingStarted 
               userTier={userTier} 
-              onSectionSelect={(section) => setActiveTab(section)} 
+              onSectionSelect={(section) => setActiveSection(section)} 
             />
           </div>
         );
@@ -651,25 +647,52 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
                 <div className="space-y-2">
                   {menuItems.map((section) => (
                     <div key={section.id} className="space-y-1">
-                      <Button
-                        variant="ghost"
-                        className="w-full justify-between text-gray-300 hover:text-gray-900 hover:bg-purple-600/10"
-                        onClick={() => toggleSection(section.id)}
-                      >
-                        <div className="flex items-center space-x-2 min-w-0 flex-1">
-                          {section.icon}
-                          <span className="text-sm font-medium truncate">{section.label}</span>
-                        </div>
-                        {expandedSections.has(section.id) ? (
-                          <ChevronDown className="h-4 w-4" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4" />
-                        )}
-                      </Button>
+                      {/* Single item without subitems */}
+                      {!section.items ? (
+                        <Button
+                          variant="ghost"
+                          className={cn(
+                            "w-full justify-start text-sm",
+                            activeSection === section.id 
+                              ? "bg-purple-600/20 text-purple-400 border-l-2 border-purple-400" 
+                              : "text-gray-300 hover:text-gray-900 hover:bg-purple-600/10"
+                          )}
+                          onClick={() => setActiveSection(section.id)}
+                        >
+                          <div className="flex items-center justify-between w-full min-w-0">
+                            <div className="flex items-center space-x-2 min-w-0 flex-1">
+                              {section.icon}
+                              <span className="truncate">{section.label}</span>
+                            </div>
+                            {section.badge && (
+                              <span className="px-2 py-1 text-xs bg-purple-600/20 text-purple-400 rounded-full flex-shrink-0">
+                                {section.badge}
+                              </span>
+                            )}
+                          </div>
+                        </Button>
+                      ) : (
+                        /* Section with dropdown items */
+                        <>
+                          <Button
+                            variant="ghost"
+                            className="w-full justify-between text-gray-300 hover:text-gray-900 hover:bg-purple-600/10"
+                            onClick={() => toggleSection(section.id)}
+                          >
+                            <div className="flex items-center space-x-2 min-w-0 flex-1">
+                              {section.icon}
+                              <span className="text-sm font-medium truncate">{section.label}</span>
+                            </div>
+                            {expandedSections.has(section.id) ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
+                          </Button>
 
-                      {expandedSections.has(section.id) && (
-                        <div className="ml-4 space-y-1">
-                          {section.items.map((item) => (
+                          {expandedSections.has(section.id) && (
+                            <div className="ml-4 space-y-1">
+                              {section.items.map((item) => (
                             <Button
                               key={item.id}
                               variant="ghost"
@@ -705,8 +728,10 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
                                 </div>
                               </div>
                             </Button>
-                          ))}
-                        </div>
+                                ))}
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
                   ))}
