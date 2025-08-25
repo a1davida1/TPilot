@@ -55,7 +55,7 @@ export function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-pink-100 shadow-sm">
+      <header className="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-pink-200/50 dark:border-pink-800/30 shadow-lg shadow-pink-500/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             
@@ -66,24 +66,24 @@ export function Header() {
                   size="lg" 
                   className="hover:scale-105 transition-transform duration-200"
                 />
-                <span className="text-xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
+                <span className="text-xl font-bold bg-gradient-to-r from-pink-600 via-rose-500 to-purple-600 bg-clip-text text-transparent drop-shadow-sm">
                   ThottoPilot
                 </span>
               </div>
             </Link>
 
-            {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-6">
+            {/* Desktop Navigation - Glass Morphism Style */}
+            <nav className="hidden md:flex items-center gap-2 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-full px-4 py-2 border border-pink-200/50 dark:border-pink-800/30 shadow-lg shadow-pink-500/10">
               {visibleItems.map((item) => (
                 <Link 
                   key={item.href}
                   href={item.href}
                 >
                   <span 
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                    className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 cursor-pointer transform hover:scale-105 ${
                       location === item.href 
-                        ? 'bg-pink-100 text-pink-700' 
-                        : 'text-gray-700 hover:text-pink-600 hover:bg-pink-50'
+                        ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg shadow-pink-500/30' 
+                        : 'text-gray-700 dark:text-gray-300 hover:text-pink-600 hover:bg-pink-100/80 dark:hover:bg-pink-900/30'
                     }`}
                     data-testid={`nav-${item.label.toLowerCase().replace(' ', '-')}`}
                   >

@@ -1011,9 +1011,110 @@ td {
   }
 }
 
+/* ✨ VENTURE CAPITAL LEVEL POLISH ✨ */
+
+/* Animated Background Gradients */
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes glass-float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(1deg); }
+}
+
+@keyframes premium-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(236, 72, 153, 0.3); }
+  50% { box-shadow: 0 0 30px rgba(236, 72, 153, 0.5), 0 0 40px rgba(167, 56, 202, 0.3); }
+}
+
+/* Premium Glass Morphism Classes */
+.glass-card {
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(20px);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 
+    0 8px 32px rgba(236, 72, 153, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 
+    0 16px 48px rgba(236, 72, 153, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.dark .glass-card {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Premium Button Animations */
+.btn-premium {
+  background: linear-gradient(135deg, #ec4899, #a855f7, #ec4899);
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+  border-radius: 16px;
+  padding: 12px 24px;
+  font-weight: 600;
+  color: white;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-premium:hover {
+  transform: translateY(-2px);
+  animation: premium-glow 2s ease infinite;
+}
+
+.btn-premium:active {
+  transform: translateY(0px);
+}
+
+/* Premium Text Gradients */
+.text-gradient-premium {
+  background: linear-gradient(135deg, #ec4899, #a855f7, #f59e0b);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradient-shift 4s ease infinite;
+  font-weight: 700;
+}
+
 /* Venture Capital Level Polish */
 
-/* Premium Input Styling */
+/* Floating Elements */
+.float-gentle {
+  animation: glass-float 6s ease-in-out infinite;
+}
+
+/* Premium Shadows */
+.shadow-premium {
+  box-shadow: 
+    0 4px 20px rgba(236, 72, 153, 0.15),
+    0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.shadow-premium-lg {
+  box-shadow: 
+    0 20px 60px rgba(236, 72, 153, 0.2),
+    0 8px 25px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* Premium Input Styling with Glass Effects */
 input, textarea, select {
   @apply transition-all duration-300 ease-out;
   border-radius: 1rem !important;
@@ -1032,9 +1133,9 @@ input:focus, textarea:focus, select:focus {
   outline: none !important;
   border-color: hsl(var(--primary)) !important;
   box-shadow: 
-    0 0 0 3px hsl(var(--primary) / 0.1) !important,
-    0 4px 15px rgba(236, 72, 153, 0.15) !important,
-    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+    0 0 0 3px hsl(var(--primary) / 0.1),
+    0 4px 15px rgba(236, 72, 153, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
   transform: translateY(-1px) !important;
 }
 

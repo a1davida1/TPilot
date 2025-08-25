@@ -23,10 +23,10 @@ export default function CaptionGeneratorPage() {
           <CardHeader>
             <CardTitle className="text-2xl flex items-center gap-2">
               <Sparkles className="h-6 w-6" />
-              Advanced Caption Generator Suite
+              Professional Caption Studio
             </CardTitle>
             <CardDescription className="text-pink-100">
-              Advanced 2-pass Gemini pipeline with quality gates for perfect captions every time
+              Professional-grade caption creation with quality assurance for perfect results every time
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -41,7 +41,7 @@ export default function CaptionGeneratorPage() {
               </div>
               <div className="bg-white/20 backdrop-blur rounded-lg p-3">
                 <div className="font-semibold mb-1">✨ Quality Assured</div>
-                <div className="text-pink-100">2-pass generation with auto-fixes</div>
+                <div className="text-pink-100">Professional editing with auto-enhancement</div>
               </div>
             </div>
           </CardContent>

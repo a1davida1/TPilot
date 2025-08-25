@@ -149,25 +149,25 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
       label: 'Creator Tools',
       icon: <PenTool className="h-4 w-4" />,
       items: [
-        { id: 'generator', label: 'Content Creator', icon: <Brain className="h-4 w-4" />, badge: 'Popular' },
-        { id: 'caption-ai', label: 'AI Caption Generator', icon: <Sparkles className="h-4 w-4" />, badge: '2-Pass AI', link: '/caption-generator' },
-        { id: 'protect', label: 'ImageShield & Gallery', icon: <Shield className="h-4 w-4" />, badge: 'Unified' },
+        { id: 'generator', label: 'Content Creator', icon: <PenTool className="h-4 w-4" />, badge: 'Popular' },
+        { id: 'caption-ai', label: 'Caption Studio', icon: <Sparkles className="h-4 w-4" />, badge: 'Pro Quality', link: '/caption-generator' },
+        { id: 'protect', label: 'Image Protection & Gallery', icon: <Shield className="h-4 w-4" />, badge: 'Advanced' },
         { id: 'history', label: 'Generation History', icon: <History className="h-4 w-4" /> },
       ]
     },
     {
       id: 'content',
-      label: 'Content Templates',
+      label: 'Style Library',
       icon: <Sparkles className="h-4 w-4" />,
       items: [
-        { id: 'templates', label: 'Style Presets', icon: <FileText className="h-4 w-4" />, badge: '8 Styles' },
-        { id: 'customization', label: 'Personalization', icon: <Settings className="h-4 w-4" />, proOnly: true },
+        { id: 'templates', label: 'Premium Templates', icon: <FileText className="h-4 w-4" />, badge: 'Pro Collection' },
+        { id: 'customization', label: 'Brand Customization', icon: <Settings className="h-4 w-4" />, proOnly: true },
         { id: 'export', label: 'Export Tools', icon: <FileText className="h-4 w-4" /> },
       ]
     },
     {
       id: 'growth',
-      label: 'Growth & Analytics',
+      label: 'Growth Hub',
       icon: <TrendingUp className="h-4 w-4" />,
       items: [
         { id: 'reddit', label: 'Reddit Communities', icon: <Users className="h-4 w-4" />, badge: 'New' },
@@ -412,7 +412,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
               <div className="text-center space-y-4">
                 <p className="text-gray-300">Access the full Enterprise Dashboard with all advanced features:</p>
                 <ul className="text-sm text-gray-600 space-y-1">
-                  <li>• Advanced AI content studio with Gemini + OpenAI integration</li>
+                  <li>• Professional content studio with premium integrations</li>
                   <li>• Secure media library with AWS S3 storage and watermarking</li>
                   <li>• Intelligent Reddit post scheduling with BullMQ queues</li>
                   <li>• CCBill billing integration with Pro/Premium subscriptions</li>
@@ -455,7 +455,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
                   <CardContent className="p-4 text-center">
                     <Brain className="h-8 w-8 mx-auto text-purple-500 mb-2" />
                     <h4 className="font-semibold text-gray-900">Trend Intelligence</h4>
-                    <p className="text-xs text-gray-600">AI-powered trend analysis</p>
+                    <p className="text-xs text-gray-600">Smart trend analysis</p>
                   </CardContent>
                 </Card>
                 <Card className="bg-gray-700 border-gray-200">
@@ -478,7 +478,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
                 <p className="text-gray-300">Access the full Phase 4 automation and intelligence suite:</p>
                 <ul className="text-sm text-gray-600 space-y-1">
                   <li>• Advanced social media automation with smart posting schedules</li>
-                  <li>• AI-powered trend detection and content suggestions</li>
+                  <li>• Smart trend detection and content suggestions</li>
                   <li>• Intelligent community management with auto-responses</li>
                   <li>• Content optimization through A/B testing and performance analysis</li>
                   <li>• Cross-platform automation with sophisticated targeting</li>
@@ -513,8 +513,8 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
   return (
     <MobileOptimization>
       <div className="min-h-screen bg-white">
-        {/* Header */}
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+        {/* Premium Glass Header */}
+        <header className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-pink-200/50 dark:border-pink-800/30 sticky top-0 z-50 shadow-lg shadow-pink-500/10">
           <div className="flex items-center justify-between px-4 h-16">
             <div className="flex items-center space-x-4">
               <Button
@@ -526,11 +526,11 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
                 {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </Button>
 
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
-                  <Sparkles className="h-5 w-5 text-gray-900" />
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-pink-500/30 float-gentle">
+                  <Sparkles className="h-6 w-6 text-white" />
                 </div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                <h1 className="text-xl font-bold text-gradient-premium">
                   ThottoPilot
                 </h1>
               </div>
@@ -656,7 +656,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
                   {menuItems.map((section) => (
                     <div key={section.id} className="space-y-1">
                       {/* Single item without subitems */}
-                      {!section.items ? (
+                      {!(section as any).items ? (
                         <Button
                           variant="ghost"
                           className={cn(
@@ -672,9 +672,9 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
                               {section.icon}
                               <span className="truncate">{section.label}</span>
                             </div>
-                            {section.badge && (
+                            {(section as any).badge && (
                               <span className="px-2 py-1 text-xs bg-purple-600/20 text-purple-400 rounded-full flex-shrink-0">
-                                {section.badge}
+                                {(section as any).badge}
                               </span>
                             )}
                           </div>
@@ -700,7 +700,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
 
                           {expandedSections.has(section.id) && (
                             <div className="ml-4 space-y-1">
-                              {section.items.map((item) => (
+                              {(section as any).items.map((item: any) => (
                             <Button
                               key={item.id}
                               variant="ghost"
