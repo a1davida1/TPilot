@@ -31,6 +31,7 @@ import { createLead, confirmLead } from "./api/leads.js";
 import { getLeads } from "./api/admin-leads.js";
 import { captionRouter } from "./routes/caption.js";
 import { registerSocialMediaRoutes } from "./social-media-routes.js";
+import { registerApiRoutes } from "./api-routes.js";
 
 // IP logging middleware
 const logUserIP = (req: any, res: any, next: any) => {

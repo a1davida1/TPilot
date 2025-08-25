@@ -39,9 +39,12 @@ export function ImageGallery() {
   // Authenticated API request with JWT token
   const authenticatedRequest = async (url: string, method: string = 'GET', data?: any) => {
     let body: FormData | string | undefined;
-    const headers: { [key: string]: string } = {
-      'Authorization': `Bearer ${token}`
-    };
+    const authToken = localStorage.getItem('authToken');
+    const headers: { [key: string]: string } = {};
+    
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`;
+    }
     
     if (data instanceof FormData) {
       body = data;
@@ -73,17 +76,17 @@ export function ImageGallery() {
   };
 
   const { data: images = [] } = useQuery<UserImage[]>({
-    queryKey: ['/api/user-images'],
-    queryFn: () => authenticatedRequest('/api/user-images'),
-    enabled: !!token
+    queryKey: ['/api/media'],
+    queryFn: () => authenticatedRequest('/api/media'),
+    enabled: !!localStorage.getItem('authToken')
   });
 
   const uploadMutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      return authenticatedRequest('/api/upload-image', 'POST', formData);
+      return authenticatedRequest('/api/media/upload', 'POST', formData);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/user-images'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/media'] });
       toast({
         title: "Image uploaded",
         description: "Your image has been saved to your gallery."
@@ -103,7 +106,7 @@ export function ImageGallery() {
       return authenticatedRequest(`/api/protect-image/${imageId}`, 'POST', { protectionLevel });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/user-images'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/media'] });
       toast({
         title: "Image protected",
         description: "Your image has been protected against reverse searches."
@@ -113,10 +116,10 @@ export function ImageGallery() {
 
   const deleteMutation = useMutation({
     mutationFn: async (imageId: string) => {
-      return authenticatedRequest(`/api/user-images/${imageId}`, 'DELETE');
+      return authenticatedRequest(`/api/media/${imageId}`, 'DELETE');
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/user-images'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/media'] });
       toast({
         title: "Image deleted",
         description: "Image has been removed from your gallery."
@@ -130,8 +133,10 @@ export function ImageGallery() {
 
     for (const file of Array.from(files)) {
       const formData = new FormData();
-      formData.append('image', file);
-      formData.append('tags', selectedTags);
+      formData.append('file', file); // Match backend field name
+      if (selectedTags) {
+        formData.append('tags', selectedTags);
+      }
       
       uploadMutation.mutate(formData);
     }
