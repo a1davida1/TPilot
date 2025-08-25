@@ -242,8 +242,12 @@ export function GettingStarted({ userTier = 'free', onSectionSelect, isAtBottom 
         animate={{ opacity: 1, y: 0 }}
         className="text-center space-y-4"
       >
-        <div className="flex items-center justify-center space-x-3">
-          <ThottoPilotLogo size="lg" className="h-12 w-12" />
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <img 
+            src="/thottopilot-full-logo.png" 
+            alt="ThottoPilot" 
+            className="h-16 w-16 object-contain"
+          />
           <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
             Welcome to ThottoPilot
           </h1>

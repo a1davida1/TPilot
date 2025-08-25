@@ -62,9 +62,10 @@ export function Header() {
             {/* Logo - Always goes to dashboard */}
             <Link href="/dashboard">
               <div className="flex items-center gap-3 cursor-pointer h-16">
-                <ThottoPilotLogo 
-                  size="lg" 
-                  className="hover:scale-105 transition-transform duration-200"
+                <img 
+                  src="/thottopilot-full-logo.png" 
+                  alt="ThottoPilot" 
+                  className="h-12 w-12 object-contain hover:scale-105 transition-transform duration-200"
                 />
                 <span className="text-xl font-bold bg-gradient-to-r from-pink-600 via-rose-500 to-purple-600 bg-clip-text text-transparent drop-shadow-sm">
                   ThottoPilot

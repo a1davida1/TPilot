@@ -191,8 +191,12 @@ export function CleanDashboard({ isGuestMode = false, user, userTier = 'free' }:
         return (
           <div className="max-w-2xl mx-auto text-center py-16">
             <div className="mb-8">
-              <div className="w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <ThottoPilotLogo size="lg" className="h-16 w-16" />
+              <div className="w-20 h-20 flex items-center justify-center mx-auto mb-4">
+                <img 
+                  src="/thottopilot-full-logo.png" 
+                  alt="ThottoPilot" 
+                  className="h-20 w-20 object-contain"
+                />
               </div>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">Welcome to ThottoPilot</h2>
               <p className="text-gray-600 mb-8">
@@ -226,7 +230,11 @@ export function CleanDashboard({ isGuestMode = false, user, userTier = 'free' }:
           <div className="p-6 border-b border-gray-100">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <ThottoPilotLogo size="md" />
+                <img 
+                  src="/thottopilot-full-logo.png" 
+                  alt="ThottoPilot" 
+                  className="h-8 w-8 object-contain"
+                />
                 <span className="text-gray-900 font-semibold text-lg">ThottoPilot</span>
               </div>
               {isMobile && (

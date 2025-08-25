@@ -291,9 +291,11 @@ export function AppleInspiredApp() {
         <div className="p-6 border-b border-gray-200/50">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg">
-                <Sparkles className="h-5 w-5 text-white" />
-              </div>
+              <img 
+                src="/thottopilot-full-logo.png" 
+                alt="ThottoPilot" 
+                className="h-10 w-10 object-contain"
+              />
               <div>
                 <h1 className="text-lg font-semibold text-gray-900">ThottoPilot</h1>
                 <p className="text-xs text-gray-500">Content Suite</p>
