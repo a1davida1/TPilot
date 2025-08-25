@@ -44,8 +44,12 @@ const getOnboardingSteps = (completedSteps: Set<string>): OnboardingStep[] => [
     optional: false,
     component: (
       <div className="text-center space-y-4">
-        <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mx-auto flex items-center justify-center">
-          <Sparkles className="h-10 w-10 text-white" />
+        <div className="w-20 h-20 rounded-full mx-auto flex items-center justify-center bg-gradient-to-r from-purple-500 to-pink-500 p-2">
+          <img 
+            src="/thottopilot-logo.png" 
+            alt="ThottoPilot Logo" 
+            className="h-16 w-16 object-contain filter brightness-0 invert"
+          />
         </div>
         <div>
           <h3 className="text-xl font-semibold text-white mb-2">

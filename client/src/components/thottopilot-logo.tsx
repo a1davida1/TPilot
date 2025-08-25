@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
-import logoImage from "@assets/ChatGPT Image Aug 8, 2025, 07_52_23 AM_1754881852507.png";
+// Use the actual ThottoPilot logo from public directory
+const logoImage = "/thottopilot-logo.png";
 
 interface ThottoPilotLogoProps {
   className?: string;
