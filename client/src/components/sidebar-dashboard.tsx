@@ -527,8 +527,12 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
               </Button>
 
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-pink-500/30 float-gentle">
-                  <Sparkles className="h-6 w-6 text-white" />
+                <div className="w-10 h-10 rounded-xl shadow-lg shadow-pink-500/30 float-gentle overflow-hidden">
+                  <img 
+                    src="/attached_assets/image_1756094615707.png" 
+                    alt="ThottoPilot Logo" 
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <h1 className="text-xl font-bold text-gradient-premium">
                   ThottoPilot
