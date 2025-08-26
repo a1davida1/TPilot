@@ -1,5 +1,5 @@
-import { db } from "../db.js";
-import { eventLogs } from "../../shared/schema.js";
+import { db } from "@server/db";
+import { eventLogs } from "@shared/schema";
 
 export async function trackEvent(userId: number | null, type: string, meta: any = {}) {
   try {
