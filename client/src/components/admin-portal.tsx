@@ -33,7 +33,20 @@ import {
   Target,
   Rocket,
   CheckSquare,
-  Square
+  Square,
+  Eye,
+  Monitor,
+  UserX,
+  Flag,
+  BarChart3,
+  MapPin,
+  Wifi,
+  Database,
+  Server,
+  AlertTriangle,
+  Ban,
+  Trash2,
+  Clock3
 } from 'lucide-react';
 
 interface UserStats {
@@ -253,11 +266,27 @@ export function AdminPortal() {
       </div>
 
       {/* Management Tabs */}
-      <Tabs defaultValue="roadmap" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="roadmap" className="flex items-center gap-2">
-            <Target className="h-4 w-4" />
-            Roadmap
+      <Tabs defaultValue="live-dashboard" className="w-full">
+        <TabsList className="grid w-full grid-cols-8">
+          <TabsTrigger value="live-dashboard" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Live Dashboard
+          </TabsTrigger>
+          <TabsTrigger value="ip-tracking" className="flex items-center gap-2">
+            <Eye className="h-4 w-4" />
+            IP Tracking
+          </TabsTrigger>
+          <TabsTrigger value="system-monitor" className="flex items-center gap-2">
+            <Monitor className="h-4 w-4" />
+            System
+          </TabsTrigger>
+          <TabsTrigger value="user-management" className="flex items-center gap-2">
+            <UserX className="h-4 w-4" />
+            User Actions
+          </TabsTrigger>
+          <TabsTrigger value="moderation" className="flex items-center gap-2">
+            <Flag className="h-4 w-4" />
+            Moderation
           </TabsTrigger>
           <TabsTrigger value="trials" className="flex items-center gap-2">
             <Gift className="h-4 w-4" />
@@ -272,6 +301,31 @@ export function AdminPortal() {
             Settings
           </TabsTrigger>
         </TabsList>
+
+        {/* FEATURE 5: Live Dashboard Tab */}
+        <TabsContent value="live-dashboard" className="space-y-4">
+          <LiveDashboardTab authenticatedRequest={authenticatedRequest} />
+        </TabsContent>
+
+        {/* FEATURE 1: IP Tracking Tab */}
+        <TabsContent value="ip-tracking" className="space-y-4">
+          <IPTrackingTab authenticatedRequest={authenticatedRequest} />
+        </TabsContent>
+
+        {/* FEATURE 2: System Monitoring Tab */}
+        <TabsContent value="system-monitor" className="space-y-4">
+          <SystemMonitorTab authenticatedRequest={authenticatedRequest} />
+        </TabsContent>
+
+        {/* FEATURE 3: User Management Tab */}
+        <TabsContent value="user-management" className="space-y-4">
+          <UserManagementTab authenticatedRequest={authenticatedRequest} users={users} />
+        </TabsContent>
+
+        {/* FEATURE 4: Content Moderation Tab */}
+        <TabsContent value="moderation" className="space-y-4">
+          <ContentModerationTab authenticatedRequest={authenticatedRequest} />
+        </TabsContent>
 
         {/* Roadmap Tab */}
         <TabsContent value="roadmap" className="space-y-4">
@@ -667,6 +721,721 @@ export function AdminPortal() {
           </Card>
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+// ============================================================================
+// ADMIN FEATURE COMPONENTS
+// ============================================================================
+
+// FEATURE 5: Live Dashboard Component
+function LiveDashboardTab({ authenticatedRequest }: { authenticatedRequest: any }) {
+  const { data: liveData, refetch } = useQuery({
+    queryKey: ['/api/admin/live-dashboard'],
+    queryFn: () => authenticatedRequest('/api/admin/live-dashboard'),
+    refetchInterval: 5000, // Refresh every 5 seconds
+  });
+
+  const { toast } = useToast();
+
+  const acknowledgeAlert = useMutation({
+    mutationFn: (alertId: number) => authenticatedRequest('/api/admin/acknowledge-alert', 'POST', { alertId }),
+    onSuccess: () => {
+      toast({ title: "Alert acknowledged" });
+      refetch();
+    }
+  });
+
+  return (
+    <div className="space-y-6">
+      {/* Real-time Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/20">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Active Users</p>
+                <p className="text-2xl font-bold text-green-600">{liveData?.realTime?.activeUsers || 0}</p>
+                <div className="flex items-center text-xs text-green-600">
+                  <Wifi className="h-3 w-3 mr-1" />
+                  {liveData?.realTime?.onlineNow || 0} online now
+                </div>
+              </div>
+              <Activity className="h-8 w-8 text-green-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border-blue-500/20">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Content Gen</p>
+                <p className="text-2xl font-bold text-blue-600">{liveData?.realTime?.contentBeingGenerated || 0}</p>
+                <p className="text-xs text-blue-600">Active processes</p>
+              </div>
+              <Zap className="h-8 w-8 text-blue-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/20">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">API Calls/Min</p>
+                <p className="text-2xl font-bold text-purple-600">{liveData?.realTime?.apiCallsPerMinute || 0}</p>
+                <p className="text-xs text-purple-600">Real-time load</p>
+              </div>
+              <BarChart3 className="h-8 w-8 text-purple-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-orange-500/10 to-red-500/10 border-orange-500/20">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">System Health</p>
+                <div className="flex gap-1 mt-1">
+                  <div className={`w-2 h-2 rounded-full ${liveData?.systemHealth?.database === 'healthy' ? 'bg-green-500' : 'bg-red-500'}`} />
+                  <div className={`w-2 h-2 rounded-full ${liveData?.systemHealth?.ai === 'healthy' ? 'bg-green-500' : 'bg-yellow-500'}`} />
+                  <div className={`w-2 h-2 rounded-full ${liveData?.systemHealth?.storage === 'healthy' ? 'bg-green-500' : 'bg-red-500'}`} />
+                  <div className={`w-2 h-2 rounded-full ${liveData?.systemHealth?.api === 'healthy' ? 'bg-green-500' : 'bg-red-500'}`} />
+                </div>
+                <p className="text-xs text-orange-600">DB • AI • Storage • API</p>
+              </div>
+              <Server className="h-8 w-8 text-orange-500" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Alerts & Activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              System Alerts
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {liveData?.alerts?.map((alert: any) => (
+                <div key={alert.id} className={`p-3 rounded-lg border ${
+                  alert.type === 'warning' ? 'bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20' : 'bg-blue-50 border-blue-200 dark:bg-blue-900/20'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-sm">{alert.title}</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">{alert.message}</p>
+                    </div>
+                    {!alert.acknowledged && (
+                      <Button size="sm" variant="outline" onClick={() => acknowledgeAlert.mutate(alert.id)}
+                        data-testid={`button-acknowledge-alert-${alert.id}`}>
+                        ✓
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock3 className="h-5 w-5 text-blue-500" />
+              Recent Activity
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {liveData?.recentActivity?.map((activity: any, index: number) => (
+                <div key={index} className="flex items-center justify-between py-2 border-b last:border-b-0">
+                  <div>
+                    <p className="text-sm font-medium">{activity.user}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                      {activity.action} {activity.target ? `• ${activity.target}` : ''} {activity.platform ? `on ${activity.platform}` : ''}
+                    </p>
+                  </div>
+                  <p className="text-xs text-gray-500">{new Date(activity.time).toLocaleTimeString()}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+// FEATURE 1: IP Tracking Component
+function IPTrackingTab({ authenticatedRequest }: { authenticatedRequest: any }) {
+  const { data: ipData } = useQuery({
+    queryKey: ['/api/admin/ip-tracking'],
+    queryFn: () => authenticatedRequest('/api/admin/ip-tracking'),
+  });
+
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const { data: userActivity } = useQuery({
+    queryKey: ['/api/admin/user-activity', selectedUserId],
+    queryFn: () => authenticatedRequest(`/api/admin/user-activity/${selectedUserId}`),
+    enabled: !!selectedUserId
+  });
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Eye className="h-5 w-5 text-blue-500" />
+            IP Address Tracking
+          </CardTitle>
+          <CardDescription>Monitor user IP addresses and suspicious activity</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left p-2">IP Address</th>
+                  <th className="text-left p-2">Users</th>
+                  <th className="text-left p-2">Location</th>
+                  <th className="text-left p-2">Last Seen</th>
+                  <th className="text-left p-2">Status</th>
+                  <th className="text-left p-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ipData?.map((ip: any) => (
+                  <tr key={ip.ip} className="border-b hover:bg-gray-50 dark:hover:bg-gray-800">
+                    <td className="p-2 font-mono text-sm">{ip.ip}</td>
+                    <td className="p-2">{ip.users}</td>
+                    <td className="p-2">
+                      <div className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3 text-gray-500" />
+                        {ip.location}
+                      </div>
+                    </td>
+                    <td className="p-2">{new Date(ip.lastSeen).toLocaleDateString()}</td>
+                    <td className="p-2">
+                      <Badge className={ip.flagged ? 'bg-red-500' : 'bg-green-500'}>
+                        {ip.flagged ? 'Flagged' : 'Clean'}
+                      </Badge>
+                    </td>
+                    <td className="p-2">
+                      <Button size="sm" variant="outline"
+                        data-testid={`button-view-activity-${ip.ip.replace(/\./g, '-')}`}>
+                        View Activity
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* User Session Details */}
+      {selectedUserId && (
+        <Card>
+          <CardHeader>
+            <CardTitle>User Session Details</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {userActivity?.map((session: any) => (
+                <div key={session.id} className="p-3 border rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-sm">{session.ipAddress}</span>
+                        <Badge className={session.isActive ? 'bg-green-500' : 'bg-gray-500'}>
+                          {session.isActive ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {session.deviceType} • {session.browser} • {session.os}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {session.location?.city}, {session.location?.country}
+                      </p>
+                    </div>
+                    <div className="text-right text-xs text-gray-500">
+                      <p>Login: {new Date(session.loginAt).toLocaleString()}</p>
+                      <p>Last: {new Date(session.lastActivity).toLocaleString()}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+// FEATURE 2: System Monitoring Component
+function SystemMonitorTab({ authenticatedRequest }: { authenticatedRequest: any }) {
+  const { data: metrics, refetch: refetchMetrics } = useQuery({
+    queryKey: ['/api/admin/system-metrics'],
+    queryFn: () => authenticatedRequest('/api/admin/system-metrics'),
+    refetchInterval: 10000,
+  });
+
+  const { data: logs } = useQuery({
+    queryKey: ['/api/admin/system-logs'],
+    queryFn: () => authenticatedRequest('/api/admin/system-logs?limit=20'),
+    refetchInterval: 15000,
+  });
+
+  const formatUptime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return `${hours}h ${minutes}m`;
+  };
+
+  const formatMemory = (bytes: number) => {
+    return `${Math.round(bytes / 1024 / 1024)}MB`;
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* System Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Server className="h-4 w-4 text-blue-500" />
+              Server Status
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-sm text-gray-600">Uptime</span>
+              <span className="text-sm font-medium">{formatUptime(metrics?.uptime || 0)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm text-gray-600">Memory</span>
+              <span className="text-sm font-medium">{formatMemory(metrics?.memoryUsage?.heapUsed || 0)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm text-gray-600">Status</span>
+              <Badge className="bg-green-500">Healthy</Badge>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Database className="h-4 w-4 text-purple-500" />
+              Database
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-sm text-gray-600">Connections</span>
+              <span className="text-sm font-medium">{metrics?.database?.connections}/100</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm text-gray-600">Avg Query</span>
+              <span className="text-sm font-medium">{metrics?.database?.avgQueryTime}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm text-gray-600">Status</span>
+              <Badge className="bg-green-500">Healthy</Badge>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Activity className="h-4 w-4 text-orange-500" />
+              API Performance
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-sm text-gray-600">Requests</span>
+              <span className="text-sm font-medium">{metrics?.api?.totalRequests}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm text-gray-600">Avg Response</span>
+              <span className="text-sm font-medium">{metrics?.api?.avgResponseTime}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm text-gray-600">Error Rate</span>
+              <span className="text-sm font-medium text-green-600">{metrics?.api?.errorRate}</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* System Logs */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Monitor className="h-5 w-5 text-green-500" />
+            System Logs
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {logs?.map((log: any) => (
+              <div key={log.id} className={`p-2 rounded text-sm border-l-4 ${
+                log.level === 'error' ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : 
+                log.level === 'warn' ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20' : 
+                'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+              }`}>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="font-medium">{log.message}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                      {log.service} • {log.level.toUpperCase()} 
+                      {log.ipAddress && ` • ${log.ipAddress}`}
+                    </p>
+                  </div>
+                  <span className="text-xs text-gray-500">
+                    {new Date(log.createdAt).toLocaleTimeString()}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Service Status */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Service Status</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center p-3 border rounded">
+              <div className={`w-3 h-3 rounded-full mx-auto mb-2 ${metrics?.services?.ai?.gemini ? 'bg-green-500' : 'bg-red-500'}`} />
+              <p className="text-sm font-medium">Gemini AI</p>
+              <p className="text-xs text-gray-600">{metrics?.services?.ai?.gemini ? 'Connected' : 'Offline'}</p>
+            </div>
+            <div className="text-center p-3 border rounded">
+              <div className={`w-3 h-3 rounded-full mx-auto mb-2 ${metrics?.services?.ai?.openai ? 'bg-green-500' : 'bg-red-500'}`} />
+              <p className="text-sm font-medium">OpenAI</p>
+              <p className="text-xs text-gray-600">{metrics?.services?.ai?.openai ? 'Connected' : 'Offline'}</p>
+            </div>
+            <div className="text-center p-3 border rounded">
+              <div className={`w-3 h-3 rounded-full mx-auto mb-2 ${metrics?.services?.email ? 'bg-green-500' : 'bg-red-500'}`} />
+              <p className="text-sm font-medium">Email</p>
+              <p className="text-xs text-gray-600">{metrics?.services?.email ? 'Connected' : 'Offline'}</p>
+            </div>
+            <div className="text-center p-3 border rounded">
+              <div className={`w-3 h-3 rounded-full mx-auto mb-2 ${metrics?.services?.storage ? 'bg-green-500' : 'bg-red-500'}`} />
+              <p className="text-sm font-medium">Storage</p>
+              <p className="text-xs text-gray-600">{metrics?.services?.storage ? 'Connected' : 'Offline'}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// FEATURE 3: User Management Component
+function UserManagementTab({ authenticatedRequest, users }: { authenticatedRequest: any, users: any[] }) {
+  const { toast } = useToast();
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [actionType, setActionType] = useState<'ban' | 'suspend' | 'unban' | null>(null);
+  const [reason, setReason] = useState('');
+  const [duration, setDuration] = useState('24');
+
+  const actionMutation = useMutation({
+    mutationFn: async (data: any) => {
+      switch (data.action) {
+        case 'ban':
+          return authenticatedRequest('/api/admin/ban-user', 'POST', data);
+        case 'unban':
+          return authenticatedRequest('/api/admin/unban-user', 'POST', data);
+        case 'suspend':
+          return authenticatedRequest('/api/admin/suspend-user', 'POST', data);
+        case 'force-logout':
+          return authenticatedRequest('/api/admin/force-logout', 'POST', data);
+      }
+    },
+    onSuccess: (_, variables) => {
+      toast({ title: `User ${variables.action} successful` });
+      setSelectedUser(null);
+      setActionType(null);
+      setReason('');
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Action Failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleAction = () => {
+    if (!selectedUser || !actionType || !reason) return;
+    
+    const actionData: any = {
+      userId: selectedUser.id,
+      action: actionType,
+      reason
+    };
+
+    if (actionType === 'suspend') {
+      actionData.hours = parseInt(duration);
+    }
+
+    actionMutation.mutate(actionData);
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <UserX className="h-5 w-5 text-red-500" />
+            User Management Actions
+          </CardTitle>
+          <CardDescription>Ban, suspend, or manage user accounts</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left p-2">User</th>
+                  <th className="text-left p-2">Email</th>
+                  <th className="text-left p-2">Tier</th>
+                  <th className="text-left p-2">Status</th>
+                  <th className="text-left p-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.isArray(users) ? users.slice(0, 10).map((user: any) => (
+                  <tr key={user.id} className="border-b hover:bg-gray-50 dark:hover:bg-gray-800">
+                    <td className="p-2">
+                      <div>
+                        <p className="font-medium">{user.username}</p>
+                        <p className="text-xs text-gray-500">ID: {user.id}</p>
+                      </div>
+                    </td>
+                    <td className="p-2">{user.email}</td>
+                    <td className="p-2">
+                      <Badge className={getTierColor(user.tier)}>
+                        {user.tier.toUpperCase()}
+                      </Badge>
+                    </td>
+                    <td className="p-2">
+                      <Badge className={user.tier === 'banned' ? 'bg-red-500' : 'bg-green-500'}>
+                        {user.tier === 'banned' ? 'Banned' : 'Active'}
+                      </Badge>
+                    </td>
+                    <td className="p-2">
+                      <div className="flex gap-2">
+                        {user.tier !== 'banned' ? (
+                          <>
+                            <Button size="sm" variant="destructive" 
+                              onClick={() => { setSelectedUser(user); setActionType('ban'); }}
+                              data-testid={`button-ban-user-${user.id}`}>
+                              <Ban className="h-3 w-3 mr-1" />
+                              Ban
+                            </Button>
+                            <Button size="sm" variant="outline"
+                              onClick={() => { setSelectedUser(user); setActionType('suspend'); }}
+                              data-testid={`button-suspend-user-${user.id}`}>
+                              <Clock3 className="h-3 w-3 mr-1" />
+                              Suspend
+                            </Button>
+                          </>
+                        ) : (
+                          <Button size="sm" variant="outline"
+                            onClick={() => { setSelectedUser(user); setActionType('unban'); }}
+                            data-testid={`button-unban-user-${user.id}`}>
+                            Unban
+                          </Button>
+                        )}
+                        <Button size="sm" variant="outline"
+                          onClick={() => actionMutation.mutate({ userId: user.id, action: 'force-logout' })}
+                          data-testid={`button-logout-user-${user.id}`}>
+                          Force Logout
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                )) : []}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Action Modal */}
+      {selectedUser && actionType && (
+        <Card className="border-2 border-red-500/50">
+          <CardHeader>
+            <CardTitle className="text-red-600">
+              {actionType.toUpperCase()} User: {selectedUser.username}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {actionType === 'suspend' && (
+              <div className="space-y-2">
+                <Label>Duration (hours)</Label>
+                <Select value={duration} onValueChange={setDuration}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1 Hour</SelectItem>
+                    <SelectItem value="6">6 Hours</SelectItem>
+                    <SelectItem value="24">24 Hours</SelectItem>
+                    <SelectItem value="72">72 Hours</SelectItem>
+                    <SelectItem value="168">1 Week</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label>Reason *</Label>
+              <textarea 
+                className="w-full p-2 border rounded" 
+                placeholder="Explain the reason for this action..."
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                rows={3}
+                data-testid="textarea-action-reason"
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => { setSelectedUser(null); setActionType(null); setReason(''); }}
+                data-testid="button-cancel-action">
+                Cancel
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={handleAction}
+                disabled={!reason || actionMutation.isPending}
+                data-testid="button-confirm-action">
+                {actionMutation.isPending ? 'Processing...' : `Confirm ${actionType.toUpperCase()}`}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+// FEATURE 4: Content Moderation Component
+function ContentModerationTab({ authenticatedRequest }: { authenticatedRequest: any }) {
+  const { toast } = useToast();
+  const [statusFilter, setStatusFilter] = useState('pending');
+
+  const { data: flaggedContent, refetch } = useQuery({
+    queryKey: ['/api/admin/flagged-content', statusFilter],
+    queryFn: () => authenticatedRequest(`/api/admin/flagged-content?status=${statusFilter}`),
+  });
+
+  const moderateMutation = useMutation({
+    mutationFn: (data: any) => authenticatedRequest('/api/admin/moderate-content', 'POST', data),
+    onSuccess: (_, variables) => {
+      toast({ title: `Content ${variables.action}d successfully` });
+      refetch();
+    }
+  });
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Flag className="h-5 w-5 text-orange-500" />
+                Content Moderation
+              </CardTitle>
+              <CardDescription>Review and moderate flagged content</CardDescription>
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="approved">Approved</SelectItem>
+                <SelectItem value="removed">Removed</SelectItem>
+                <SelectItem value="all">All</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {flaggedContent?.map((flag: any) => (
+              <div key={flag.id} className="border rounded-lg p-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-gray-500">{flag.content.platform}</Badge>
+                      <Badge className={
+                        flag.reason === 'inappropriate' ? 'bg-red-500' :
+                        flag.reason === 'spam' ? 'bg-yellow-500' : 'bg-blue-500'
+                      }>
+                        {flag.reason}
+                      </Badge>
+                      <span className="text-sm text-gray-500">
+                        Reported by {flag.reportedBy}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="font-medium">{flag.content.titles[0]}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        {flag.content.preview}
+                      </p>
+                    </div>
+                    <p className="text-sm">
+                      <strong>Reason:</strong> {flag.description}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Flagged {new Date(flag.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="flex gap-2 ml-4">
+                    <Button size="sm" variant="outline"
+                      onClick={() => moderateMutation.mutate({ flagId: flag.id, action: 'approve', reason: 'Content approved after review' })}
+                      data-testid={`button-approve-content-${flag.id}`}>
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      Approve
+                    </Button>
+                    <Button size="sm" variant="destructive"
+                      onClick={() => moderateMutation.mutate({ flagId: flag.id, action: 'remove', reason: 'Content removed for policy violation' })}
+                      data-testid={`button-remove-content-${flag.id}`}>
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      Remove
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {!flaggedContent?.length && (
+              <div className="text-center py-8 text-gray-500">
+                No {statusFilter === 'all' ? '' : statusFilter} content flags found
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

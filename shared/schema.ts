@@ -692,3 +692,85 @@ export type PlatformEngagement = typeof platformEngagement.$inferSelect;
 export type InsertPlatformEngagement = z.infer<typeof insertPlatformEngagementSchema>;
 export type PostSchedule = typeof postSchedule.$inferSelect;
 export type InsertPostSchedule = z.infer<typeof insertPostScheduleSchema>;
+
+// Admin Portal Enhancement Tables
+
+// System monitoring and health logs
+export const systemLogs = pgTable("system_logs", {
+  id: serial("id").primaryKey(),
+  level: varchar("level", { length: 20 }).notNull(), // info, warn, error, critical
+  service: varchar("service", { length: 100 }).notNull(), // api, database, queue, auth
+  message: text("message").notNull(),
+  metadata: jsonb("metadata"),
+  userId: integer("user_id").references(() => users.id),
+  ipAddress: varchar("ip_address", { length: 45 }),
+  resolved: boolean("resolved").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Content moderation and flags
+export const contentFlags = pgTable("content_flags", {
+  id: serial("id").primaryKey(),
+  contentId: integer("content_id").references(() => contentGenerations.id).notNull(),
+  reportedById: integer("reported_by_id").references(() => users.id),
+  reason: varchar("reason", { length: 100 }).notNull(), // spam, inappropriate, harmful
+  description: text("description"),
+  status: varchar("status", { length: 50 }).default("pending").notNull(), // pending, reviewed, approved, removed
+  reviewedById: integer("reviewed_by_id").references(() => users.id),
+  reviewedAt: timestamp("reviewed_at"),
+  actions: jsonb("actions").$type<{
+    contentHidden?: boolean;
+    userWarned?: boolean;
+    userSuspended?: boolean;
+    autoDetected?: boolean;
+  }>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// User account actions (bans, suspensions, warnings)
+export const userActions = pgTable("user_actions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  adminId: integer("admin_id").references(() => users.id).notNull(),
+  action: varchar("action", { length: 50 }).notNull(), // ban, suspend, warn, unban, tier_change
+  reason: text("reason").notNull(),
+  duration: integer("duration_hours"), // null for permanent
+  metadata: jsonb("metadata").$type<{
+    oldTier?: string;
+    newTier?: string;
+    ipBanned?: boolean;
+    hardwareBanned?: boolean;
+  }>(),
+  isActive: boolean("is_active").default(true),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Admin activity audit log
+export const adminAuditLog = pgTable("admin_audit_log", {
+  id: serial("id").primaryKey(),
+  adminId: integer("admin_id").references(() => users.id).notNull(),
+  action: varchar("action", { length: 100 }).notNull(),
+  targetType: varchar("target_type", { length: 50 }), // user, content, system
+  targetId: integer("target_id"),
+  description: text("description").notNull(),
+  ipAddress: varchar("ip_address", { length: 45 }),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Insert schemas for new admin tables
+export const insertSystemLogSchema = createInsertSchema(systemLogs);
+export const insertContentFlagSchema = createInsertSchema(contentFlags);
+export const insertUserActionSchema = createInsertSchema(userActions);
+export const insertAdminAuditLogSchema = createInsertSchema(adminAuditLog);
+
+export type InsertSystemLog = z.infer<typeof insertSystemLogSchema>;
+export type InsertContentFlag = z.infer<typeof insertContentFlagSchema>;
+export type InsertUserAction = z.infer<typeof insertUserActionSchema>;
+export type InsertAdminAuditLog = z.infer<typeof insertAdminAuditLogSchema>;
+
+export type SystemLog = typeof systemLogs.$inferSelect;
+export type ContentFlag = typeof contentFlags.$inferSelect;
+export type UserAction = typeof userActions.$inferSelect;
+export type AdminAuditLog = typeof adminAuditLog.$inferSelect;
