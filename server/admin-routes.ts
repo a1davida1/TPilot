@@ -490,7 +490,7 @@ export function setupAdminRoutes(app: Express) {
   app.post('/api/admin/ban-user', requireAdmin, async (req, res) => {
     try {
       const { userId, reason, duration, banIp = false } = req.body;
-      const adminId = req.user.id;
+      const adminId = (req.user as any).id;
 
       // Update user status and log action
       await storage.updateUser(userId, { 
@@ -523,7 +523,7 @@ export function setupAdminRoutes(app: Express) {
   app.post('/api/admin/unban-user', requireAdmin, async (req, res) => {
     try {
       const { userId } = req.body;
-      const adminId = req.user.id;
+      const adminId = (req.user as any).id;
 
       await storage.updateUser(userId, { 
         tier: 'free',
@@ -541,7 +541,7 @@ export function setupAdminRoutes(app: Express) {
   app.post('/api/admin/suspend-user', requireAdmin, async (req, res) => {
     try {
       const { userId, hours, reason } = req.body;
-      const adminId = req.user.id;
+      const adminId = (req.user as any).id;
 
       const suspendedUntil = new Date(Date.now() + hours * 60 * 60 * 1000);
       
@@ -590,20 +590,15 @@ export function setupAdminRoutes(app: Express) {
   app.post('/api/admin/moderate-content', requireAdmin, async (req, res) => {
     try {
       const { flagId, action, reason } = req.body; // approve, remove, warn_user
-      const adminId = req.user.id;
+      const adminId = (req.user as any).id;
 
-      // This would update the content flag status
-      const mockResult = {
+      // Would update the content flag status when content_flags table exists
+      res.json({ 
+        message: `Content ${action}d successfully`,
         flagId,
-        action,
         moderatedBy: adminId,
         moderatedAt: new Date(),
         reason
-      };
-
-      res.json({ 
-        message: `Content ${action}d successfully`,
-        result: mockResult
       });
     } catch (error) {
       console.error('Error moderating content:', error);
@@ -616,8 +611,8 @@ export function setupAdminRoutes(app: Express) {
     try {
       const users = await storage.getAllUsers();
       
-      // Get real content generations count
-      const contentGenerations = await storage.getAllContentGenerations();
+      // Content generations will be tracked when implemented
+      const totalGenerations = 0;
       
       const liveMetrics = {
         realTime: {
@@ -652,7 +647,7 @@ export function setupAdminRoutes(app: Express) {
         message: 'Alert acknowledged',
         alertId,
         acknowledgedAt: new Date(),
-        acknowledgedBy: req.user.id
+        acknowledgedBy: (req.user as any).id
       });
     } catch (error) {
       console.error('Error acknowledging alert:', error);
