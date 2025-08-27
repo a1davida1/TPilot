@@ -66,30 +66,8 @@ export function setupAuth(app: Express) {
     try {
       const { username, password, email } = req.body;
 
-      // Special admin login shortcut for production
+      // Admin login now handled through secure database authentication
       const loginEmail = email || username;
-      if (loginEmail === 'admin@thottopilot.com' && password === 'admin123') {
-        // Create admin user object
-        const adminUser = {
-          id: 999,
-          email: 'admin@thottopilot.com',
-          username: 'admin',
-          tier: 'pro'
-        };
-
-        // Generate JWT token for admin
-        const token = jwt.sign(
-          { id: adminUser.id, userId: adminUser.id, username: adminUser.username, email: adminUser.email },
-          JWT_SECRET,
-          { expiresIn: '24h' }
-        );
-
-        return res.json({
-          message: 'Admin login successful',
-          token,
-          user: adminUser
-        });
-      }
 
       // Try to find user by username first, then by email
       let user = await storage.getUserByUsername(username || loginEmail);
