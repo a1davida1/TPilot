@@ -1232,7 +1232,11 @@ function UserManagementTab({ authenticatedRequest, users }: { authenticatedReque
                     </td>
                     <td className="p-2">{user.email}</td>
                     <td className="p-2">
-                      <Badge className={getTierColor(user.tier)}>
+                      <Badge className={
+                        user.tier === 'pro' ? 'bg-purple-600' :
+                        user.tier === 'free' ? 'bg-blue-600' :
+                        user.tier === 'banned' ? 'bg-red-600' : 'bg-gray-600'
+                      }>
                         {user.tier.toUpperCase()}
                       </Badge>
                     </td>
