@@ -45,7 +45,7 @@ export function LandingPage() {
                 className="w-8 h-8 rounded-lg"
               />
             </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-pink-600 bg-clip-text text-transparent">
+            <span className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-pink-600 dark:from-pink-400 dark:to-pink-500 bg-clip-text text-transparent">
               ThottoPilot
             </span>
           </div>
@@ -85,9 +85,9 @@ export function LandingPage() {
 
         <div className="relative max-w-4xl mx-auto text-center z-10">
           <h1 className="text-6xl md:text-7xl font-black mb-6 leading-tight tracking-tight">
-            From Photo to Posted 
+            Turn Content Into 
             <span className="block bg-gradient-to-r from-yellow-300 to-pink-300 bg-clip-text text-transparent">
-              in 5 Seconds
+              Cash in Seconds
             </span>
           </h1>
           
