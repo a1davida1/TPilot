@@ -1,0 +1,46 @@
+Replace your current <body> section with:
+html<body>
+  <!-- ADD THIS STATIC CONTENT -->
+  <noscript>
+    <h1>ThottoPilot - AI Content Creation for Creators</h1>
+    <p>From photo to posted in 5 seconds. AI-powered content creation platform.</p>
+    
+    <h2>Features:</h2>
+    <ul>
+      <li>AI generates 8 different captions instantly</li>
+      <li>One-click posting to 50+ platforms</li>
+      <li>Automatic content protection & watermarking</li>
+      <li>Tax tracking and earnings analytics</li>
+      <li>Smart subreddit targeting with rule compliance</li>
+    </ul>
+    
+    <h2>Pricing:</h2>
+    <p><strong>Free:</strong> 10 posts/month with watermark</p>
+    <p><strong>Starter ($12.99):</strong> Remove watermark, 100 posts, scheduling</p>
+    <p><strong>Pro ($29.99):</strong> Unlimited posts, automation, advanced analytics</p>
+    
+    <p>Start free at <a href="https://thottopilot.com">ThottoPilot.com</a></p>
+  </noscript>
+
+  <div id="root"></div>
+  <script type="module" crossorigin src="/assets/index-USPNv9-B.js"></script>
+  <script type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js"></script>
+</body>
+📝 Also Update Your <head> Section:
+html<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+  <title>ThottoPilot - From Photo to Posted in 5 Seconds</title>
+  
+  <!-- ADD THESE META TAGS -->
+  <meta name="description" content="AI-powered content creation for creators. Upload once, AI writes 8 captions, posts to 50+ platforms. Protected content, profit tracking included." />
+  <meta name="keywords" content="AI content creation, social media captions, content creator tools, automated posting, OnlyFans promotion" />
+  
+  <!-- Open Graph -->
+  <meta property="og:title" content="ThottoPilot - From Photo to Posted in 5 Seconds" />
+  <meta property="og:description" content="AI-powered content creation for creators. Upload once, AI writes 8 captions, posts everywhere." />
+  <meta property="og:url" content="https://thottopilot.com" />
+  
+  <script type="module" crossorigin src="/assets/index-USPNv9-B.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-BmGKX7de.css">
+</head>
