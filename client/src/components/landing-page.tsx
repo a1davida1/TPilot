@@ -56,7 +56,7 @@ export function LandingPage() {
                 Sign In
               </Button>
             </Link>
-            <Link to="/demo">
+            <Link to="/modern-demo">
               <Button className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold shadow-lg">
                 Get Started
               </Button>
@@ -118,7 +118,7 @@ export function LandingPage() {
 
           {/* CTA Buttons */}
           <div className="flex gap-6 justify-center mb-16 flex-wrap">
-            <Link to="/demo">
+            <Link to="/modern-demo">
               <Button 
                 size="lg" 
                 className="bg-white text-indigo-600 hover:bg-gray-50 font-bold px-8 py-4 text-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
@@ -141,7 +141,7 @@ export function LandingPage() {
 
           <div className="text-center">
             <p className="text-white/80 mb-2">
-              <Link to="/demo" className="underline underline-offset-4 hover:text-white transition-colors">
+              <Link to="/modern-demo" className="underline underline-offset-4 hover:text-white transition-colors">
                 Continue as Guest - Try Demo
               </Link>
             </p>
@@ -282,7 +282,7 @@ export function LandingPage() {
                     <span className="text-gray-700 dark:text-gray-300">1 platform connection</span>
                   </li>
                 </ul>
-                <Link to="/demo">
+                <Link to="/modern-demo">
                   <Button className="w-full font-semibold">
                     Get Started Free
                   </Button>
@@ -378,7 +378,7 @@ export function LandingPage() {
             Join thousands of creators who've already automated their workflow and 3x'd their engagement with ThottoPilot
           </p>
           <div className="flex gap-6 justify-center flex-wrap">
-            <Link to="/demo">
+            <Link to="/modern-demo">
               <Button 
                 size="lg" 
                 className="bg-white text-indigo-600 hover:bg-gray-50 font-bold px-8 py-4 text-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
