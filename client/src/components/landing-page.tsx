@@ -367,6 +367,12 @@ export function LandingPage() {
 
           {/* Existing users CTA */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link to="/demo">
+              <Button size="lg" className="bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 hover:from-purple-700 hover:via-pink-700 hover:to-rose-700 text-white font-bold px-8 py-4 text-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                <Zap className="mr-2 h-5 w-5" />
+                Continue as Guest - Try Demo
+              </Button>
+            </Link>
             <Link to="/login">
               <Button size="lg" variant="outline" className="font-bold px-8 py-4 text-lg border-pink-300 hover:border-pink-500 hover:bg-pink-50 dark:hover:bg-pink-950/20 shadow-lg hover:shadow-xl">
                 <Sparkles className="mr-2 h-5 w-5" />
