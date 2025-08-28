@@ -45,7 +45,7 @@ export function LandingPage() {
                 className="w-8 h-8 rounded-lg"
               />
             </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+            <span className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-pink-600 bg-clip-text text-transparent">
               ThottoPilot
             </span>
           </div>
@@ -92,7 +92,7 @@ export function LandingPage() {
           </h1>
           
           <p className="text-xl md:text-2xl font-medium mb-6 opacity-95 max-w-3xl mx-auto leading-relaxed">
-            The ultimate content copilot for creators
+            Create, Protect, and Promote - All in One
           </p>
           
           <p className="text-lg mb-12 opacity-90 max-w-2xl mx-auto">
@@ -411,12 +411,12 @@ export function LandingPage() {
                 className="w-8 h-8 rounded-lg"
               />
             </div>
-            <span className="text-3xl font-black bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+            <span className="text-3xl font-black bg-gradient-to-r from-pink-400 to-pink-500 bg-clip-text text-transparent">
               ThottoPilot
             </span>
           </div>
           <p className="text-gray-400 mb-8 text-lg">
-            The ultimate content copilot for creators
+            Create, Protect, and Promote - All in One
           </p>
           <div className="flex justify-center space-x-8 text-gray-400 text-sm">
             <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
