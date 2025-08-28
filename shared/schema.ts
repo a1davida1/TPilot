@@ -317,6 +317,7 @@ export const insertQueueJobSchema = createInsertSchema(queueJobs);
 export const insertPostRateLimitSchema = createInsertSchema(postRateLimits);
 export const insertPostDuplicateSchema = createInsertSchema(postDuplicates);
 
+
 // Phase 5 schemas already included above
 
 // Insert schemas for existing tables
@@ -398,6 +399,7 @@ export type InsertPostRateLimit = z.infer<typeof insertPostRateLimitSchema>;
 
 export type PostDuplicate = typeof postDuplicates.$inferSelect;
 export type InsertPostDuplicate = z.infer<typeof insertPostDuplicateSchema>;
+
 
 // Tax & Expense Tracking Tables
 export const expenseCategories = pgTable("expense_categories", {
