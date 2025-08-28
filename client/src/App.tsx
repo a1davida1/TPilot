@@ -15,6 +15,7 @@ import { useOnboarding } from "@/hooks/useOnboarding";
 import { PremiumLanding } from "./components/premium-landing";
 import { AestheticLanding } from "./components/aesthetic-landing";
 import { AppleInspiredApp } from "./components/apple-inspired-app";
+import { ModernDashboard } from "./components/modern-dashboard";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import Login from "@/pages/login";
@@ -58,6 +59,9 @@ function UnauthenticatedRoutes() {
       <Route path="/reddit" component={RedditPostingPage} />
       <Route path="/demo">
         <AppleInspiredApp />
+      </Route>
+      <Route path="/modern-demo">
+        <ModernDashboard />
       </Route>
       <Route path="/">
         <SEOOptimization {...seoConfigs.landing} />

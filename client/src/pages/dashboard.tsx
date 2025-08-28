@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
-import { SidebarDashboard } from "@/components/sidebar-dashboard";
+import { ModernDashboard } from "@/components/modern-dashboard";
 
 export default function Dashboard() {
   const [isGuestMode, setIsGuestMode] = useState(false);
@@ -18,16 +18,12 @@ export default function Dashboard() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading dashboard...</p>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="h-screen">
-      <SidebarDashboard isGuestMode={isGuestMode} />
-    </div>
-  );
+  return <ModernDashboard />;
 }

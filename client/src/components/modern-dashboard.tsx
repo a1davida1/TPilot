@@ -1,0 +1,501 @@
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { 
+  Home,
+  Sparkles, 
+  Brain, 
+  Shield, 
+  ImageIcon,
+  TrendingUp,
+  Zap,
+  Star,
+  ArrowRight,
+  Menu,
+  X,
+  Camera,
+  Hash,
+  Gift,
+  Users,
+  Plus,
+  Upload,
+  Wand2,
+  Copy,
+  Download,
+  RefreshCw,
+  Eye,
+  CheckCircle,
+  BarChart3,
+  History,
+  Settings,
+  Bell,
+  Crown,
+  ChevronUp,
+  Clock,
+  Activity,
+  Target,
+  DollarSign,
+  FileText,
+  ChevronDown
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+
+interface StatCard {
+  title: string;
+  value: string;
+  change: string;
+  changeType: 'positive' | 'negative';
+  icon: React.ReactNode;
+  color: string;
+}
+
+interface ActivityItem {
+  id: string;
+  type: 'posted' | 'generated' | 'scheduled' | 'protected';
+  title: string;
+  subtitle: string;
+  time: string;
+  icon: React.ReactNode;
+}
+
+export function ModernDashboard() {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [activeSection, setActiveSection] = useState("dashboard");
+  const [isMobile, setIsMobile] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+      if (window.innerWidth < 768) {
+        setSidebarOpen(false);
+      }
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  const navigationItems = [
+    { id: "dashboard", label: "Dashboard", icon: <Home className="h-5 w-5" />, section: "main" },
+    { id: "generate", label: "Content Creator", icon: <Brain className="h-5 w-5" />, badge: "AI", section: "create" },
+    { id: "protect", label: "ImageShield", icon: <Shield className="h-5 w-5" />, badge: "NEW", section: "create" },
+    { id: "gallery", label: "Media Gallery", icon: <ImageIcon className="h-5 w-5" />, section: "create" },
+    { id: "scheduler", label: "Post Scheduler", icon: <Clock className="h-5 w-5" />, badge: "PRO", section: "manage" },
+    { id: "analytics", label: "Analytics", icon: <BarChart3 className="h-5 w-5" />, section: "manage" },
+    { id: "communities", label: "Communities", icon: <Users className="h-5 w-5" />, badge: "50+", section: "manage" },
+    { id: "trending", label: "Trending Tags", icon: <Hash className="h-5 w-5" />, section: "insights" },
+    { id: "audience", label: "Audience Insights", icon: <Target className="h-5 w-5" />, badge: "PRO", section: "insights" },
+    { id: "history", label: "History", icon: <History className="h-5 w-5" />, section: "account" },
+    { id: "settings", label: "Settings", icon: <Settings className="h-5 w-5" />, section: "account" }
+  ];
+
+  const stats: StatCard[] = [
+    {
+      title: "Total Posts",
+      value: "2,847",
+      change: "+12.5%",
+      changeType: "positive",
+      icon: <FileText className="h-6 w-6" />,
+      color: "#6366f1"
+    },
+    {
+      title: "This Month",
+      value: "184",
+      change: "+8.2%",
+      changeType: "positive", 
+      icon: <TrendingUp className="h-6 w-6" />,
+      color: "#10b981"
+    },
+    {
+      title: "Engagement Rate",
+      value: "94.2%",
+      change: "+2.1%",
+      changeType: "positive",
+      icon: <Activity className="h-6 w-6" />,
+      color: "#f59e0b"
+    },
+    {
+      title: "Revenue",
+      value: "$12,847",
+      change: "+15.3%",
+      changeType: "positive",
+      icon: <DollarSign className="h-6 w-6" />,
+      color: "#ef4444"
+    }
+  ];
+
+  const recentActivity: ActivityItem[] = [
+    {
+      id: "1",
+      type: "posted",
+      title: "Posted to r/SelfieWorld",
+      subtitle: "Sunset vibes caption with 3 trending hashtags",
+      time: "2 minutes ago",
+      icon: <CheckCircle className="h-5 w-5" />
+    },
+    {
+      id: "2", 
+      type: "generated",
+      title: "Generated 5 new captions",
+      subtitle: "Instagram style • Playful tone • Summer theme",
+      time: "1 hour ago",
+      icon: <Brain className="h-5 w-5" />
+    },
+    {
+      id: "3",
+      type: "protected",
+      title: "Applied ImageShield protection",
+      subtitle: "3 photos processed • Advanced protection level",
+      time: "3 hours ago", 
+      icon: <Shield className="h-5 w-5" />
+    },
+    {
+      id: "4",
+      type: "scheduled",
+      title: "Scheduled 8 posts",
+      subtitle: "Optimal timing for maximum engagement",
+      time: "Yesterday",
+      icon: <Clock className="h-5 w-5" />
+    }
+  ];
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      toast({
+        title: "Upload started",
+        description: "Processing your image with AI...",
+      });
+    }
+  };
+
+  const sidebarVariants = {
+    open: { x: 0 },
+    closed: { x: isMobile ? -280 : -240 }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+      {/* Mobile Overlay */}
+      <AnimatePresence>
+        {isMobile && sidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Sidebar */}
+      <motion.aside
+        variants={sidebarVariants}
+        animate={sidebarOpen ? "open" : "closed"}
+        className="fixed left-0 top-0 h-full w-[280px] md:w-[240px] bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 z-50 overflow-y-auto"
+      >
+        <div className="p-6">
+          {/* Logo */}
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl flex items-center justify-center shadow-lg">
+              <img 
+                src="/logo.png" 
+                alt="ThottoPilot" 
+                className="w-8 h-8 rounded-lg"
+              />
+            </div>
+            <span className="text-xl font-bold bg-gradient-to-r from-pink-500 to-pink-600 bg-clip-text text-transparent">
+              ThottoPilot
+            </span>
+            {isMobile && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="ml-auto"
+                onClick={() => setSidebarOpen(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+
+          {/* Navigation */}
+          <nav className="space-y-1">
+            {["main", "create", "manage", "insights", "account"].map((section) => (
+              <div key={section}>
+                {section !== "main" && (
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-6">
+                    {section}
+                  </div>
+                )}
+                {navigationItems
+                  .filter(item => item.section === section)
+                  .map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveSection(item.id)}
+                      className={cn(
+                        "w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all",
+                        activeSection === item.id
+                          ? "bg-pink-50 dark:bg-pink-950/20 text-pink-600 dark:text-pink-400 shadow-sm"
+                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                      )}
+                    >
+                      {item.icon}
+                      <span className="flex-1 text-left">{item.label}</span>
+                      {item.badge && (
+                        <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
+                          {item.badge}
+                        </Badge>
+                      )}
+                    </button>
+                  ))}
+              </div>
+            ))}
+          </nav>
+
+          {/* Upgrade Card */}
+          <Card className="mt-8 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white border-0">
+            <CardContent className="p-4 text-center">
+              <Crown className="h-8 w-8 mx-auto mb-2 text-yellow-300" />
+              <h3 className="font-semibold text-sm mb-1">Upgrade to Pro</h3>
+              <p className="text-xs opacity-90 mb-3">Unlock unlimited AI generations</p>
+              <Button size="sm" className="bg-white text-indigo-600 hover:bg-gray-100 w-full text-xs font-medium">
+                Upgrade Now
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </motion.aside>
+
+      {/* Main Content */}
+      <div className={cn(
+        "transition-all duration-300",
+        sidebarOpen && !isMobile ? "ml-[240px]" : "ml-0"
+      )}>
+        {/* Header */}
+        <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Welcome back! Here's your content overview</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <Button variant="outline" size="sm">
+                <Bell className="h-4 w-4 mr-2" />
+                Notifications
+              </Button>
+              <Button className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700">
+                <Plus className="h-4 w-4 mr-2" />
+                Create Content
+              </Button>
+              <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold cursor-pointer">
+                JD
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Dashboard Content */}
+        <main className="p-6">
+          {/* Stats Row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {stats.map((stat, index) => (
+              <Card key={index} className="relative overflow-hidden">
+                <div 
+                  className="absolute top-0 left-0 right-0 h-1"
+                  style={{ backgroundColor: stat.color }}
+                />
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div style={{ color: stat.color }}>
+                      {stat.icon}
+                    </div>
+                    <span className={cn(
+                      "text-sm font-semibold flex items-center gap-1",
+                      stat.changeType === "positive" ? "text-green-600" : "text-red-600"
+                    )}>
+                      {stat.changeType === "positive" ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                      {stat.change}
+                    </span>
+                  </div>
+                  <div className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+                    {stat.value}
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{stat.title}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Main Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            {/* Quick Upload */}
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Upload className="h-5 w-5" />
+                  Quick Upload & Generate
+                </CardTitle>
+                <CardDescription>Upload an image and let AI create engaging content</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div 
+                  className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 text-center hover:border-pink-400 dark:hover:border-pink-500 transition-colors cursor-pointer group"
+                  onClick={() => document.getElementById('file-upload')?.click()}
+                >
+                  <div className="w-16 h-16 bg-pink-50 dark:bg-pink-950/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-pink-100 dark:group-hover:bg-pink-950/40 transition-colors">
+                    <Camera className="h-8 w-8 text-pink-500" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    Drop your photo here
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-6">
+                    or click to browse your files
+                  </p>
+                  <input
+                    id="file-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
+                </div>
+
+                <div className="grid grid-cols-3 gap-3 mt-6">
+                  <Button variant="outline" size="sm" className="flex flex-col gap-1 h-auto py-3">
+                    <Sparkles className="h-5 w-5 text-purple-500" />
+                    <span className="text-xs">AI Caption</span>
+                  </Button>
+                  <Button variant="outline" size="sm" className="flex flex-col gap-1 h-auto py-3">
+                    <Shield className="h-5 w-5 text-blue-500" />
+                    <span className="text-xs">Protect</span>
+                  </Button>
+                  <Button variant="outline" size="sm" className="flex flex-col gap-1 h-auto py-3">
+                    <Clock className="h-5 w-5 text-green-500" />
+                    <span className="text-xs">Schedule</span>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Recent Activity */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Activity className="h-5 w-5" />
+                  Recent Activity
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {recentActivity.map((activity) => (
+                    <div key={activity.id} className="flex items-start gap-3">
+                      <div className={cn(
+                        "w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0",
+                        activity.type === "posted" && "bg-green-100 dark:bg-green-950/20 text-green-600",
+                        activity.type === "generated" && "bg-blue-100 dark:bg-blue-950/20 text-blue-600", 
+                        activity.type === "protected" && "bg-purple-100 dark:bg-purple-950/20 text-purple-600",
+                        activity.type === "scheduled" && "bg-orange-100 dark:bg-orange-950/20 text-orange-600"
+                      )}>
+                        {activity.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          {activity.title}
+                        </p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                          {activity.subtitle}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                          {activity.time}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Bottom Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Gallery Preview */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <ImageIcon className="h-5 w-5" />
+                    Recent Uploads
+                  </CardTitle>
+                  <Button variant="outline" size="sm">
+                    View All
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-3">
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <div key={i} className="aspect-square bg-gray-100 dark:bg-gray-800 rounded-lg relative overflow-hidden group cursor-pointer hover:opacity-80 transition-opacity">
+                      <div className="absolute inset-0 bg-gradient-to-br from-pink-400/20 to-purple-600/20" />
+                      <div className="absolute top-2 right-2 bg-black/80 text-white text-xs px-1.5 py-0.5 rounded">
+                        {i === 1 ? 'NEW' : i === 2 ? 'PRO' : ''}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Performance Metrics */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5" />
+                  Platform Performance
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {[
+                    { platform: "Reddit", posts: 142, engagement: "96.2%", color: "bg-orange-500" },
+                    { platform: "Instagram", posts: 89, engagement: "94.1%", color: "bg-pink-500" },
+                    { platform: "Twitter", posts: 67, engagement: "89.7%", color: "bg-blue-500" },
+                    { platform: "OnlyFans", posts: 34, engagement: "98.5%", color: "bg-purple-500" }
+                  ].map((item, index) => (
+                    <div key={index} className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={cn("w-3 h-3 rounded-full", item.color)} />
+                        <span className="font-medium text-gray-900 dark:text-white">{item.platform}</span>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm">
+                        <span className="text-gray-600 dark:text-gray-400">{item.posts} posts</span>
+                        <span className="font-semibold text-green-600">{item.engagement}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
