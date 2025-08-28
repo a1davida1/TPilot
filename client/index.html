@@ -29,8 +29,8 @@
     <link rel="icon" type="image/png" href="/logo.png" />
   </head>
   <body>
-    <!-- Static content for AI models and search engines -->
-    <noscript>
+    <!-- Static content visible to AI models and search engines -->
+    <div id="static-content" style="display: block;">
       <header>
         <h1>ThottoPilot - From Photo to Posted in 5 Seconds</h1>
         <p><strong>AI-powered content creation platform for adult content creators</strong></p>
@@ -95,9 +95,22 @@
           <p>Professional platform designed for serious content creators looking to scale their business efficiently and securely.</p>
         </section>
       </main>
-    </noscript>
+    </div>
 
     <div id="root"></div>
+    
+    <!-- Hide static content when React app loads -->
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        // Hide static content once React starts loading
+        setTimeout(function() {
+          const staticContent = document.getElementById('static-content');
+          if (staticContent && document.getElementById('root').children.length > 0) {
+            staticContent.style.display = 'none';
+          }
+        }, 100);
+      });
+    </script>
     <script type="module" src="/src/main.tsx"></script>
     <!-- This is a replit script which adds a banner on the top of the page when opened in development mode outside the replit environment -->
     <script type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js"></script>
