@@ -2,10 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { 
@@ -21,429 +17,415 @@ import {
   Calendar,
   Image as ImageIcon,
   Target,
-  Loader2
+  Clock,
+  Globe,
+  BarChart3
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 
-// Turnstile widget component (loaded dynamically)
-declare global {
-  interface Window {
-    turnstile?: {
-      render: (element: string | HTMLElement, options: any) => string;
-      reset: (widgetId: string) => void;
-    };
-  }
-}
-
 export function LandingPage() {
-  const [isHovered, setIsHovered] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [turnstileToken, setTurnstileToken] = useState<string>('');
-  const [formData, setFormData] = useState({
-    email: '',
-    platformTags: [] as string[],
-    painPoint: ''
-  });
-  const { toast } = useToast();
-
-  // Turnstile callback functions
-  const onTurnstileSuccess = (token: string) => {
-    setTurnstileToken(token);
-  };
-
-  const onTurnstileExpired = () => {
-    setTurnstileToken('');
-  };
-
-  const onTurnstileError = () => {
-    setTurnstileToken('');
-  };
-
-  // UTM tracking on page load
+  const [scrollY, setScrollY] = useState(0);
+  
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const utmData = {
-      utm_source: params.get('utm_source'),
-      utm_medium: params.get('utm_medium'),  
-      utm_campaign: params.get('utm_campaign'),
-      utm_content: params.get('utm_content'),
-      utm_term: params.get('utm_term'),
-      referrer: document.referrer
-    };
-    
-    // Save UTM data to cookie for later use
-    const filteredUTM = Object.fromEntries(
-      Object.entries(utmData).filter(([_, v]) => v !== null)
-    );
-    
-    if (Object.keys(filteredUTM).length > 0) {
-      document.cookie = `utm_params=${encodeURIComponent(JSON.stringify(filteredUTM))}; path=/; max-age=${30 * 24 * 60 * 60}`;
-    }
-
-    // Load Turnstile script only in production
-    if (process.env.NODE_ENV === 'production' && !document.querySelector('[src*="challenges.cloudflare.com"]')) {
-      // Make callback functions globally available
-      (window as any).onTurnstileSuccess = onTurnstileSuccess;
-      (window as any).onTurnstileExpired = onTurnstileExpired;
-      (window as any).onTurnstileError = onTurnstileError;
-
-      const script = document.createElement('script');
-      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
-      script.async = true;
-      script.defer = true;
-      document.head.appendChild(script);
-    }
-  }, [onTurnstileSuccess, onTurnstileExpired, onTurnstileError]);
-
-  const platforms = [
-    { id: 'reddit', label: 'Reddit' },
-    { id: 'x', label: 'X (Twitter)' },
-    { id: 'onlyfans', label: 'OnlyFans' },
-    { id: 'fansly', label: 'Fansly' },
-  ];
-
-  const handlePlatformChange = (platformId: string, checked: boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      platformTags: checked 
-        ? [...prev.platformTags, platformId]
-        : prev.platformTags.filter(id => id !== platformId)
-    }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.email.trim()) {
-      toast({
-        title: "Email required",
-        description: "Please enter your email address to join the waitlist.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (formData.platformTags.length === 0) {
-      toast({
-        title: "Platform required", 
-        description: "Please select at least one platform you use.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Skip Turnstile validation in development
-    if (process.env.NODE_ENV === 'production' && !turnstileToken) {
-      toast({
-        title: "Verification required",
-        description: "Please complete the anti-bot verification.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const response = await fetch('/api/leads', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...formData,
-          turnstileToken: turnstileToken || 'dev-bypass',
-          currentUrl: window.location.href,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to join waitlist');
-      }
-
-      toast({
-        title: "Success! 🎉",
-        description: data.message,
-      });
-
-      // Reset form
-      setFormData({
-        email: '',
-        platformTags: [],
-        painPoint: ''
-      });
-      setTurnstileToken('');
-
-      // Reset Turnstile
-      if (window.turnstile) {
-        window.turnstile.reset('turnstile-widget');
-      }
-
-    } catch (error) {
-      console.error('Waitlist signup error:', error);
-      toast({
-        title: "Something went wrong",
-        description: error instanceof Error ? error.message : "Please try again later.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const features = [
-    {
-      icon: <Calendar className="h-6 w-6" />,
-      title: "Caption + Schedule with Rule Checks",
-      description: "Smart captions and scheduling that automatically checks platform rules to prevent violations",
-      benefit: "Zero rule violations"
-    },
-    {
-      icon: <ImageIcon className="h-6 w-6" />,
-      title: "Image Library with Protection",
-      description: "Secure image storage with advanced protection against reverse searches and unauthorized use",
-      benefit: "100% privacy protection"  
-    },
-    {
-      icon: <Target className="h-6 w-6" />,
-      title: "Time-of-Day Optimizer",
-      description: "Analyzes engagement patterns to automatically schedule posts at optimal times for maximum reach",
-      benefit: "3x higher engagement"
-    }
-  ];
+    const handleScroll = () => setScrollY(window.scrollY);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-yellow-50 dark:from-pink-950/20 dark:via-rose-950/20 dark:to-yellow-950/20 relative overflow-hidden">
-      {/* Floating Particles Background */}
-      <div className="particles-background">
-        {[...Array(12)].map((_, i) => (
-          <div
-            key={i}
-            className={`particle particle-${(i % 3) + 1}`}
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 5}s`,
-            }}
-          />
-        ))}
-      </div>
-      
-      {/* Theme Toggle - Fixed Position */}
-      <div className="fixed top-4 right-4 z-50">
-        <ThemeToggle />
-      </div>
-      
-      {/* Hero Section with Waitlist */}
-      <section className="relative py-20 px-4 text-center">
-        <div className="max-w-6xl mx-auto">
-          {/* Logo + Badge */}
-          <div className="flex justify-center items-center gap-4 mb-8">
-            <img 
-              src="/logo.png" 
-              alt="ThottoPilot" 
-              className="h-16 w-16 md:h-20 md:w-20 rounded-full shadow-2xl hover:scale-105 transition-transform duration-300"
-            />
-            <Badge className="bg-gradient-to-r from-pink-500 to-rose-500 text-white border-0 text-lg px-6 py-3 font-bold tracking-tight shadow-lg hover:shadow-xl transition-all duration-300 animate-pulse-slow animate-glow" variant="secondary">
-              🚀 Content Copilot for Creators
-            </Badge>
+    <div className="min-h-screen bg-white dark:bg-gray-900 overflow-hidden">
+      {/* Fixed Header */}
+      <header className="fixed top-0 w-full bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-700/50 z-50">
+        <nav className="max-w-7xl mx-auto flex justify-between items-center px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+              <img 
+                src="/logo.png" 
+                alt="ThottoPilot" 
+                className="w-8 h-8 rounded-lg"
+              />
+            </div>
+            <span className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              ThottoPilot
+            </span>
           </div>
-          
-          <h1 className="text-7xl md:text-9xl font-black text-gradient-animate mb-8 leading-tight tracking-tighter animate-float">
-            ThottoPilot
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <Link to="/login">
+              <Button variant="ghost" className="font-semibold text-indigo-600 hover:text-indigo-700">
+                Sign In
+              </Button>
+            </Link>
+            <Link to="/demo">
+              <Button className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold shadow-lg">
+                Get Started
+              </Button>
+            </Link>
+          </div>
+        </nav>
+      </header>
+
+      {/* Hero Section */}
+      <section className="relative bg-gradient-to-br from-indigo-600 via-purple-600 to-indigo-800 text-white pt-24 pb-16 px-6 overflow-hidden">
+        {/* Animated Background */}
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-white/5 opacity-50"></div>
+          {[...Array(6)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-2 h-2 bg-white/10 rounded-full animate-pulse"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 3}s`,
+              }}
+            />
+          ))}
+        </div>
+
+        <div className="relative max-w-4xl mx-auto text-center z-10">
+          <h1 className="text-6xl md:text-7xl font-black mb-6 leading-tight tracking-tight">
+            From Photo to Posted 
+            <span className="block bg-gradient-to-r from-yellow-300 to-pink-300 bg-clip-text text-transparent">
+              in 5 Seconds
+            </span>
           </h1>
           
-          <p className="text-xl md:text-2xl font-semibold text-foreground mb-8 max-w-3xl mx-auto leading-relaxed">
-            Join the waitlist for the ultimate content copilot that automates your promo workflow with smart scheduling and content protection
+          <p className="text-xl md:text-2xl font-medium mb-6 opacity-95 max-w-3xl mx-auto leading-relaxed">
+            The ultimate content copilot for creators
           </p>
           
-          {/* Waitlist Form */}
-          <Card className="max-w-2xl mx-auto mb-12 glass-panel card-hover animate-fadeIn">
-            <CardHeader>
-              <CardTitle className="text-2xl text-center">Join the Waitlist</CardTitle>
-              <CardDescription className="text-center">
-                Be among the first to experience the future of NSFW content creation
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Email Input */}
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-left block">Email Address *</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="your@email.com"
-                    value={formData.email}
-                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                    required
-                    className="text-lg py-3"
-                    data-testid="input-email"
-                  />
-                </div>
+          <p className="text-lg mb-12 opacity-90 max-w-2xl mx-auto">
+            Smart captions, automated scheduling, and bulletproof image protection. 
+            Transform your content creation workflow with AI-powered optimization.
+          </p>
 
-                {/* Platform Multi-select */}
-                <div className="space-y-3">
-                  <Label className="text-left block">Which platforms do you use? *</Label>
-                  <div className="grid grid-cols-2 gap-3">
-                    {platforms.map((platform) => (
-                      <div key={platform.id} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={platform.id}
-                          checked={formData.platformTags.includes(platform.id)}
-                          onCheckedChange={(checked) => 
-                            handlePlatformChange(platform.id, checked as boolean)
-                          }
-                          data-testid={`checkbox-${platform.id}`}
-                        />
-                        <Label htmlFor={platform.id} className="text-sm font-normal">
-                          {platform.label}
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+          {/* Social Proof */}
+          <div className="flex justify-center gap-8 mb-12 text-sm opacity-90 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              <span>10K+ Creators</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4" />
+              <span>5M+ Posts Generated</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Shield className="w-4 h-4" />
+              <span>100% Safe & Secure</span>
+            </div>
+          </div>
 
-                {/* Pain Point */}
-                <div className="space-y-2">
-                  <Label htmlFor="painPoint" className="text-left block">
-                    What's your biggest content creation challenge? (Optional)
-                  </Label>
-                  <Textarea
-                    id="painPoint"
-                    placeholder="e.g., Takes too long to create posts, hard to find good hashtags, managing multiple platforms..."
-                    value={formData.painPoint}
-                    onChange={(e) => setFormData(prev => ({ ...prev, painPoint: e.target.value }))}
-                    rows={3}
-                    data-testid="textarea-painpoint"
-                  />
-                </div>
-
-                {/* Turnstile Widget */}
-                {process.env.NODE_ENV === 'production' ? (
-                  <div className="flex justify-center">
-                    <div
-                      id="turnstile-widget"
-                      className="cf-turnstile"
-                      data-sitekey={process.env.VITE_TURNSTILE_SITE_KEY}
-                      data-callback="onTurnstileSuccess"
-                      data-expired-callback="onTurnstileExpired"  
-                      data-error-callback="onTurnstileError"
-                    ></div>
-                  </div>
-                ) : (
-                  <div className="flex justify-center">
-                    <div className="text-sm text-gray-500 p-4 border-2 border-dashed rounded-lg">
-                      🔒 Anti-bot verification (bypassed in development)
-                    </div>
-                  </div>
-                )}
-
-                {/* Submit Button */}
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                  size="lg"
-                  className="w-full btn-premium text-white font-bold text-lg py-6 ripple-button premium-micro"
-                  data-testid="button-submit"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Joining Waitlist...
-                    </>
-                  ) : (
-                    <>
-                      <Star className="mr-2 h-5 w-5" />
-                      Join Waitlist
-                    </>
-                  )}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-
-          {/* Existing users CTA */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          {/* CTA Buttons */}
+          <div className="flex gap-6 justify-center mb-16 flex-wrap">
             <Link to="/demo">
-              <Button size="lg" className="bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 hover:from-purple-700 hover:via-pink-700 hover:to-rose-700 text-white font-bold px-8 py-4 text-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+              <Button 
+                size="lg" 
+                className="bg-white text-indigo-600 hover:bg-gray-50 font-bold px-8 py-4 text-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
+              >
                 <Zap className="mr-2 h-5 w-5" />
-                Continue as Guest - Try Demo
+                Try Demo - Free
               </Button>
             </Link>
             <Link to="/login">
-              <Button size="lg" variant="outline" className="font-bold px-8 py-4 text-lg border-pink-300 hover:border-pink-500 hover:bg-pink-50 dark:hover:bg-pink-950/20 shadow-lg hover:shadow-xl">
-                <Sparkles className="mr-2 h-5 w-5" />
-                Already have access? Login
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="border-2 border-white/30 text-white hover:bg-white/10 font-bold px-8 py-4 text-lg backdrop-blur-sm transition-all duration-300"
+              >
+                <ArrowRight className="mr-2 h-5 w-5" />
+                Sign In
               </Button>
             </Link>
+          </div>
+
+          <div className="text-center">
+            <p className="text-white/80 mb-2">
+              <Link to="/demo" className="underline underline-offset-4 hover:text-white transition-colors">
+                Continue as Guest - Try Demo
+              </Link>
+            </p>
+          </div>
+
+          {/* Demo Flow */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/20">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+                1
+              </div>
+              <h3 className="text-lg font-bold mb-2">Upload Photo</h3>
+              <p className="text-sm opacity-90">Drop your image and let AI do the magic</p>
+            </div>
+            <div className="text-center">
+              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+                2
+              </div>
+              <h3 className="text-lg font-bold mb-2">AI Creates Caption</h3>
+              <p className="text-sm opacity-90">Smart captions with trending hashtags</p>
+            </div>
+            <div className="text-center">
+              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+                3
+              </div>
+              <h3 className="text-lg font-bold mb-2">Schedule & Post</h3>
+              <p className="text-sm opacity-90">Automated posting at optimal times</p>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="py-20 px-4 bg-white/70 backdrop-blur-xl dark:bg-black/20">
-        <div className="max-w-6xl mx-auto">
+      <section className="py-20 px-6 bg-gray-50 dark:bg-gray-800">
+        <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-5xl font-black text-foreground mb-6">
-              What's Coming Soon
+            <h2 className="text-5xl font-black text-gray-900 dark:text-white mb-6">
+              Everything You Need to Scale
             </h2>
-            <p className="text-xl font-semibold text-foreground">
-              Powerful tools designed specifically for content creators
+            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+              Powerful tools designed specifically for content creators who want to automate their workflow and maximize engagement
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
-              <Card
-                key={index}
-                className="group glass-panel card-hover animate-fadeIn"
-                style={{ animationDelay: `${index * 0.2}s` }}
-                onMouseEnter={() => setIsHovered(index.toString())}
-                onMouseLeave={() => setIsHovered(null)}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[
+              {
+                icon: <Brain className="w-8 h-8" />,
+                title: "AI Caption Generator",
+                description: "Generate engaging captions with trending hashtags that boost your reach and engagement rates",
+                highlight: "5x Faster Creation"
+              },
+              {
+                icon: <Shield className="w-8 h-8" />,
+                title: "ImageShield Protection", 
+                description: "Military-grade image protection that prevents reverse searches and unauthorized use of your content",
+                highlight: "100% Privacy"
+              },
+              {
+                icon: <Clock className="w-8 h-8" />,
+                title: "Smart Scheduling",
+                description: "AI-powered optimal timing that analyzes your audience to schedule posts when engagement is highest",
+                highlight: "3x More Engagement"
+              },
+              {
+                icon: <Target className="w-8 h-8" />,
+                title: "Platform Optimization",
+                description: "Automatically adapt content for each platform's requirements and best practices for maximum visibility",
+                highlight: "Cross-Platform Ready"
+              },
+              {
+                icon: <BarChart3 className="w-8 h-8" />,
+                title: "Analytics Dashboard",
+                description: "Track performance across all platforms with detailed insights and growth recommendations",
+                highlight: "Data-Driven Growth"
+              },
+              {
+                icon: <Globe className="w-8 h-8" />,
+                title: "Multi-Platform Support",
+                description: "Seamlessly post to Reddit, X (Twitter), OnlyFans, Fansly and more from a single dashboard",
+                highlight: "All-in-One Solution"
+              }
+            ].map((feature, index) => (
+              <Card 
+                key={index} 
+                className="bg-white dark:bg-gray-900 p-8 text-center border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 group"
               >
-                <CardHeader>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className={`p-4 rounded-2xl bg-gradient-to-br from-pink-100 to-rose-100 text-pink-600 transition-all duration-300 ${
-                      isHovered === index.toString() ? 'scale-110 shadow-lg' : ''
-                    }`}>
-                      {feature.icon}
-                    </div>
-                    <Badge className="bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border-green-200 font-bold shadow-md">
-                      {feature.benefit}
-                    </Badge>
-                  </div>
-                  <CardTitle className="text-2xl font-black text-card-foreground group-hover:text-pink-600 transition-colors">
-                    {feature.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription className="text-muted-foreground text-lg leading-relaxed font-medium">
-                    {feature.description}
-                  </CardDescription>
-                </CardContent>
+                <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6 text-white shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  {feature.icon}
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
+                  {feature.title}
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
+                  {feature.description}
+                </p>
+                <Badge className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white border-0 font-semibold">
+                  {feature.highlight}
+                </Badge>
               </Card>
             ))}
           </div>
         </div>
       </section>
 
+      {/* Pricing Section */}
+      <section className="py-20 px-6 bg-white dark:bg-gray-900">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-5xl font-black text-gray-900 dark:text-white mb-6">
+              Choose Your Plan
+            </h2>
+            <p className="text-xl text-gray-600 dark:text-gray-300">
+              Start free, upgrade when you're ready to scale
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            {/* Free Plan */}
+            <Card className="border-2 border-gray-200 dark:border-gray-700 p-8 text-center relative">
+              <CardHeader className="pb-6">
+                <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Free</CardTitle>
+                <div className="text-4xl font-black text-indigo-600 mb-2">$0</div>
+                <p className="text-gray-600 dark:text-gray-300">Perfect for trying out</p>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-3 mb-8 text-left">
+                  <li className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <span className="text-gray-700 dark:text-gray-300">5 AI captions per month</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <span className="text-gray-700 dark:text-gray-300">Basic image protection</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <span className="text-gray-700 dark:text-gray-300">1 platform connection</span>
+                  </li>
+                </ul>
+                <Link to="/demo">
+                  <Button className="w-full font-semibold">
+                    Get Started Free
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            {/* Pro Plan */}
+            <Card className="border-2 border-indigo-500 p-8 text-center relative transform scale-105 bg-gradient-to-b from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 shadow-xl">
+              <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-1 font-bold">
+                Most Popular
+              </Badge>
+              <CardHeader className="pb-6">
+                <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Pro</CardTitle>
+                <div className="text-4xl font-black text-indigo-600 mb-2">$29</div>
+                <p className="text-gray-600 dark:text-gray-300">per month</p>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-3 mb-8 text-left">
+                  <li className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <span className="text-gray-700 dark:text-gray-300">Unlimited AI captions</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <span className="text-gray-700 dark:text-gray-300">Advanced ImageShield</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <span className="text-gray-700 dark:text-gray-300">All platform connections</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <span className="text-gray-700 dark:text-gray-300">Smart scheduling</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <span className="text-gray-700 dark:text-gray-300">Analytics dashboard</span>
+                  </li>
+                </ul>
+                <Link to="/login">
+                  <Button className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 font-semibold">
+                    Start Pro Trial
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            {/* Enterprise Plan */}
+            <Card className="border-2 border-gray-200 dark:border-gray-700 p-8 text-center relative">
+              <CardHeader className="pb-6">
+                <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Enterprise</CardTitle>
+                <div className="text-4xl font-black text-indigo-600 mb-2">$99</div>
+                <p className="text-gray-600 dark:text-gray-300">per month</p>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-3 mb-8 text-left">
+                  <li className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <span className="text-gray-700 dark:text-gray-300">Everything in Pro</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <span className="text-gray-700 dark:text-gray-300">Team collaboration</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <span className="text-gray-700 dark:text-gray-300">Priority support</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <span className="text-gray-700 dark:text-gray-300">Custom integrations</span>
+                  </li>
+                </ul>
+                <Link to="/login">
+                  <Button variant="outline" className="w-full font-semibold">
+                    Contact Sales
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 px-6 bg-gradient-to-br from-gray-900 to-indigo-900 text-white">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-5xl font-black mb-6">
+            Ready to Transform Your Content Game?
+          </h2>
+          <p className="text-xl opacity-90 mb-12 max-w-2xl mx-auto leading-relaxed">
+            Join thousands of creators who've already automated their workflow and 3x'd their engagement with ThottoPilot
+          </p>
+          <div className="flex gap-6 justify-center flex-wrap">
+            <Link to="/demo">
+              <Button 
+                size="lg" 
+                className="bg-white text-indigo-600 hover:bg-gray-50 font-bold px-8 py-4 text-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
+              >
+                <Star className="mr-2 h-5 w-5" />
+                Start Free Trial
+              </Button>
+            </Link>
+            <Link to="/login">
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="border-2 border-white/30 text-white hover:bg-white/10 font-bold px-8 py-4 text-lg backdrop-blur-sm"
+              >
+                Sign In
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
-      <footer className="bg-gradient-to-r from-pink-900 via-rose-900 to-pink-800 dark:from-pink-950 dark:via-rose-950 dark:to-pink-900 text-white py-16 px-4">
-        <div className="max-w-6xl mx-auto text-center">
-          <h3 className="text-4xl font-black mb-6 text-gradient-animate">ThottoPilot</h3>
-          <p className="text-pink-100 mb-8 text-lg font-medium">
+      <footer className="bg-gray-900 text-white py-12 px-6">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="flex justify-center items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+              <img 
+                src="/logo.png" 
+                alt="ThottoPilot" 
+                className="w-8 h-8 rounded-lg"
+              />
+            </div>
+            <span className="text-3xl font-black bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+              ThottoPilot
+            </span>
+          </div>
+          <p className="text-gray-400 mb-8 text-lg">
             The ultimate content copilot for creators
           </p>
-          <div className="flex justify-center space-x-8 text-pink-200">
-            <a href="#" className="hover:text-white transition-colors font-semibold">Privacy Policy</a>
-            <a href="#" className="hover:text-white transition-colors font-semibold">Terms of Service</a>
+          <div className="flex justify-center space-x-8 text-gray-400 text-sm">
+            <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
+            <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
             <a href="#" className="hover:text-white transition-colors">Contact</a>
           </div>
         </div>
       </footer>
+
     </div>
   );
 }
