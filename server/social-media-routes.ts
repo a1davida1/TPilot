@@ -1,8 +1,12 @@
 import type { Express } from "express";
 import { socialMediaManager, type Platform, type PostContent } from "./social-media/social-media-manager.js";
 import { storage } from "./storage.js";
-import { authenticateToken, type AuthRequest } from "./routes.js";
+import { authenticateToken } from "./middleware/auth.js";
 import { z } from "zod";
+
+interface AuthRequest extends Express.Request {
+  user?: any;
+}
 
 // PHASE 2: Social Media API Routes
 
