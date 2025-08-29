@@ -57,14 +57,7 @@ export default function Login() {
     e.preventDefault();
     
     // Admin login shortcut - fast access for development/admin use
-    if (view === 'login' && email === 'admin@thottopilot.com' && password === 'admin123') {
-      authMutation.mutate({
-        email: 'admin@thottopilot.com',
-        password: 'admin123',
-        mode: 'login'
-      });
-      return;
-    }
+    
     
     if (view === 'signup') {
       if (password !== confirmPassword) {
