@@ -37,27 +37,30 @@ export function LandingPage() {
       {/* Fixed Header */}
       <header className="fixed top-0 w-full bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-700/50 z-50">
         <nav className="max-w-7xl mx-auto flex justify-between items-center px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-              <img 
-                src="/logo.png" 
-                alt="ThottoPilot" 
-                className="w-8 h-8 rounded-lg"
-              />
+          <div className="flex items-center gap-3 group cursor-pointer">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-pink-500 to-yellow-400 rounded-xl opacity-70 blur-sm group-hover:opacity-90 transition-all duration-300"></div>
+              <div className="relative w-12 h-12 bg-gradient-to-br from-pink-500 via-rose-500 to-yellow-400 rounded-xl flex items-center justify-center shadow-xl border border-white/20">
+                <img 
+                  src="/thottopilot-full-logo.png" 
+                  alt="ThottoPilot" 
+                  className="w-8 h-8 object-contain filter drop-shadow-lg group-hover:scale-110 transition-all duration-300"
+                />
+              </div>
             </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-pink-600 dark:from-pink-400 dark:to-pink-500 bg-clip-text text-transparent">
+            <span className="text-2xl font-bold bg-gradient-to-r from-pink-600 via-rose-500 to-yellow-500 dark:from-pink-400 dark:via-rose-400 dark:to-yellow-400 bg-clip-text text-transparent drop-shadow-sm group-hover:scale-105 transition-all duration-300">
               ThottoPilot
             </span>
           </div>
           <div className="flex items-center gap-3">
             <ThemeToggle />
             <Link to="/login">
-              <Button variant="ghost" className="font-semibold text-indigo-600 hover:text-indigo-700">
+              <Button variant="ghost" className="font-semibold text-pink-600 hover:text-pink-700 hover:bg-pink-50/80 dark:text-pink-400 dark:hover:text-pink-300 transition-all duration-200">
                 Sign In
               </Button>
             </Link>
             <Link to="/modern-demo">
-              <Button className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold shadow-lg">
+              <Button className="bg-gradient-to-r from-pink-600 via-rose-500 to-yellow-500 hover:from-pink-700 hover:via-rose-600 hover:to-yellow-600 text-white font-semibold shadow-lg hover:shadow-pink-500/30 hover:scale-105 transition-all duration-300 border border-white/20">
                 Get Started
               </Button>
             </Link>
@@ -66,53 +69,93 @@ export function LandingPage() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-indigo-600 via-purple-600 to-indigo-800 text-white pt-24 pb-16 px-6 overflow-hidden">
+      <section className="relative bg-gradient-to-br from-pink-500 via-rose-500 to-purple-600 text-white pt-24 pb-16 px-6 overflow-hidden">
         {/* Animated Background */}
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-white/5 opacity-50"></div>
-          {[...Array(6)].map((_, i) => (
+          <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-yellow-400/10 opacity-60"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.1),transparent_50%)]"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(255,235,59,0.1),transparent_50%)]"></div>
+          {[...Array(12)].map((_, i) => (
             <div
               key={i}
-              className="absolute w-2 h-2 bg-white/10 rounded-full animate-pulse"
+              className="absolute bg-white/20 rounded-full animate-pulse"
               style={{
+                width: `${Math.random() * 6 + 2}px`,
+                height: `${Math.random() * 6 + 2}px`,
                 left: `${Math.random() * 100}%`,
                 top: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 3}s`,
+                animationDelay: `${Math.random() * 4}s`,
+                animationDuration: `${Math.random() * 3 + 2}s`,
               }}
             />
           ))}
         </div>
 
-        <div className="relative max-w-4xl mx-auto text-center z-10">
-          <h1 className="text-6xl md:text-7xl font-black mb-6 leading-tight tracking-tight">
-            Turn Content Into 
-            <span className="block bg-gradient-to-r from-yellow-300 to-pink-300 bg-clip-text text-transparent">
+        <div className="relative max-w-6xl mx-auto text-center z-10">
+          {/* Prominent ThottoPilot Logo */}
+          <div className="mb-8 flex justify-center">
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-pink-400 rounded-3xl blur-xl opacity-50 group-hover:opacity-75 transition-all duration-500 scale-110"></div>
+              <div className="relative bg-white/10 backdrop-blur-sm border border-white/20 rounded-3xl p-8 shadow-2xl">
+                <img 
+                  src="/thottopilot-full-logo.png" 
+                  alt="ThottoPilot" 
+                  className="h-24 w-24 md:h-32 md:w-32 object-contain filter drop-shadow-2xl transform group-hover:scale-105 transition-all duration-300"
+                />
+              </div>
+            </div>
+          </div>
+
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-black mb-6 leading-tight tracking-tight">
+            <span className="bg-gradient-to-r from-white via-yellow-200 to-white bg-clip-text text-transparent drop-shadow-2xl">
+              Turn Content Into 
+            </span>
+            <span className="block bg-gradient-to-r from-yellow-300 via-yellow-200 to-pink-200 bg-clip-text text-transparent drop-shadow-xl animate-pulse">
               Cash in Seconds
             </span>
           </h1>
           
-          <p className="text-xl md:text-2xl font-medium mb-6 opacity-95 max-w-3xl mx-auto leading-relaxed">
-            Create, Protect, and Promote - All in One
+          <p className="text-2xl md:text-3xl font-semibold mb-8 text-white drop-shadow-xl max-w-4xl mx-auto leading-relaxed">
+            <span className="bg-gradient-to-r from-white to-yellow-100 bg-clip-text text-transparent">
+              Create, Protect, and Promote - All in One
+            </span>
           </p>
           
-          <p className="text-lg mb-12 opacity-90 max-w-2xl mx-auto">
+          <p className="text-lg md:text-xl mb-12 text-white/95 drop-shadow-lg max-w-3xl mx-auto leading-relaxed font-medium">
             Smart captions, automated scheduling, and bulletproof image protection. 
-            Transform your content creation workflow with AI-powered optimization.
+            <span className="block mt-2 bg-gradient-to-r from-yellow-200 to-white bg-clip-text text-transparent font-semibold">
+              Transform your content creation workflow with AI-powered optimization.
+            </span>
           </p>
 
-          {/* Social Proof */}
-          <div className="flex justify-center gap-8 mb-12 text-sm opacity-90 flex-wrap">
-            <div className="flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              <span>10K+ Creators</span>
+          {/* Enhanced Social Proof */}
+          <div className="flex justify-center gap-6 mb-12 flex-wrap">
+            <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-6 py-3 flex items-center gap-3 shadow-xl hover:scale-105 transition-all duration-300">
+              <div className="p-2 bg-yellow-400/20 rounded-lg">
+                <Users className="w-5 h-5 text-yellow-200" />
+              </div>
+              <div>
+                <div className="text-white font-bold text-lg">10K+</div>
+                <div className="text-yellow-200 text-sm font-medium">Creators</div>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4" />
-              <span>5M+ Posts Generated</span>
+            <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-6 py-3 flex items-center gap-3 shadow-xl hover:scale-105 transition-all duration-300">
+              <div className="p-2 bg-pink-400/20 rounded-lg">
+                <TrendingUp className="w-5 h-5 text-pink-200" />
+              </div>
+              <div>
+                <div className="text-white font-bold text-lg">5M+</div>
+                <div className="text-pink-200 text-sm font-medium">Posts Generated</div>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4" />
-              <span>100% Safe & Secure</span>
+            <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-6 py-3 flex items-center gap-3 shadow-xl hover:scale-105 transition-all duration-300">
+              <div className="p-2 bg-green-400/20 rounded-lg">
+                <Shield className="w-5 h-5 text-green-200" />
+              </div>
+              <div>
+                <div className="text-white font-bold text-lg">100%</div>
+                <div className="text-green-200 text-sm font-medium">Safe & Secure</div>
+              </div>
             </div>
           </div>
 
@@ -121,7 +164,7 @@ export function LandingPage() {
             <Link to="/modern-demo">
               <Button 
                 size="lg" 
-                className="bg-white text-indigo-600 hover:bg-gray-50 font-bold px-8 py-4 text-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
+                className="relative overflow-hidden bg-gradient-to-r from-yellow-400 to-yellow-300 text-gray-900 hover:from-yellow-300 hover:to-yellow-200 font-bold px-12 py-6 text-xl shadow-2xl hover:shadow-yellow-400/50 transition-all duration-300 hover:scale-110 border-2 border-yellow-200/50 group"
               >
                 <Zap className="mr-2 h-5 w-5" />
                 Try Demo - Free
