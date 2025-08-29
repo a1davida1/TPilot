@@ -42,7 +42,7 @@ export function LandingPage() {
               <div className="absolute inset-0 bg-gradient-to-br from-pink-500 to-yellow-400 rounded-xl opacity-70 blur-sm group-hover:opacity-90 transition-all duration-300"></div>
               <div className="relative w-12 h-12 bg-gradient-to-br from-pink-500 via-rose-500 to-yellow-400 rounded-xl flex items-center justify-center shadow-xl border border-white/20">
                 <img 
-                  src="/thottopilot-full-logo.png" 
+                  src="/logo.png" 
                   alt="ThottoPilot" 
                   className="w-8 h-8 object-contain filter drop-shadow-lg group-hover:scale-110 transition-all duration-300"
                 />
@@ -98,7 +98,7 @@ export function LandingPage() {
               <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-pink-400 rounded-3xl blur-xl opacity-50 group-hover:opacity-75 transition-all duration-500 scale-110"></div>
               <div className="relative bg-white/10 backdrop-blur-sm border border-white/20 rounded-3xl p-8 shadow-2xl">
                 <img 
-                  src="/thottopilot-full-logo.png" 
+                  src="/logo.png" 
                   alt="ThottoPilot" 
                   className="h-24 w-24 md:h-32 md:w-32 object-contain filter drop-shadow-2xl transform group-hover:scale-105 transition-all duration-300"
                 />

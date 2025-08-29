@@ -73,7 +73,7 @@ export function Header() {
             <Link href="/dashboard">
               <div className="flex items-center gap-3 cursor-pointer h-16">
                 <img 
-                  src="/thottopilot-full-logo.png" 
+                  src="/logo.png" 
                   alt="ThottoPilot" 
                   className="h-12 w-12 object-contain hover:scale-105 transition-transform duration-200"
                 />
