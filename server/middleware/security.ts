@@ -1,0 +1,147 @@
+import helmet from "helmet";
+import compression from "compression";
+import rateLimit from "express-rate-limit";
+import winston from "winston";
+import dotenv from "dotenv";
+
+// Load environment variables
+dotenv.config();
+
+// ==========================================
+// VALIDATE ENVIRONMENT VARIABLES
+// ==========================================
+export function validateEnvironment() {
+  const required = ['JWT_SECRET', 'SESSION_SECRET', 'DATABASE_URL'];
+  const missing = required.filter(key => !process.env[key]);
+
+  if (missing.length > 0) {
+    console.error(`❌ Missing required environment variables: ${missing.join(', ')}`);
+    console.error('Please set them in Replit Secrets (lock icon)');
+    throw new Error(`Missing environment variables: ${missing.join(', ')}`);
+  }
+
+  console.log('✅ Environment variables validated');
+}
+
+// ==========================================
+// LOGGER SETUP
+// ==========================================
+export const logger = winston.createLogger({
+  level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.errors({ stack: true }),
+    winston.format.json()
+  ),
+  transports: [
+    new winston.transports.File({ filename: 'error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'combined.log' }),
+    new winston.transports.Console({
+      format: winston.format.simple(),
+    })
+  ],
+});
+
+// ==========================================
+// RATE LIMITERS
+// ==========================================
+export const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 attempts
+  message: 'Too many login attempts, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+export const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // 100 requests per 15 minutes
+  message: 'Too many requests, please try again later.',
+});
+
+export const uploadLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 5, // 5 uploads per minute
+  message: 'Upload rate limit exceeded.',
+});
+
+export const generationLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10, // 10 generations per minute
+  message: 'Generation rate limit exceeded.',
+});
+
+// ==========================================
+// SECURITY MIDDLEWARE
+// ==========================================
+export const securityMiddleware = [
+  // Security headers
+  helmet({
+    contentSecurityPolicy: false, // Disable for now to avoid breaking things
+    crossOriginEmbedderPolicy: false
+  }),
+
+  // Compression
+  compression(),
+
+  // General rate limiting for API routes
+  (req: any, res: any, next: any) => {
+    if (req.path.startsWith('/api/')) {
+      return generalLimiter(req, res, next);
+    }
+    next();
+  }
+];
+
+// ==========================================
+// IP LOGGING MIDDLEWARE
+// ==========================================
+export const ipLoggingMiddleware = (req: any, res: any, next: any) => {
+  const userIP = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 
+                 req.headers['x-real-ip'] || 
+                 req.connection?.remoteAddress || 
+                 req.socket?.remoteAddress ||
+                 req.ip || 'unknown';
+
+  const userAgent = req.headers['user-agent'] || 'Unknown';
+
+  // Don't log sensitive routes
+  const sensitiveRoutes = ['/api/auth/', '/api/admin/'];
+  const shouldLog = !sensitiveRoutes.some(route => req.path.startsWith(route));
+
+  if (shouldLog && process.env.NODE_ENV !== 'production') {
+    logger.info(`[${new Date().toISOString()}] ${req.method} ${req.path} - IP: ${userIP}`);
+  }
+
+  // Attach to request
+  req.userIP = userIP;
+  req.userAgent = userAgent;
+
+  next();
+};
+
+// ==========================================
+// ERROR HANDLER MIDDLEWARE
+// ==========================================
+export const errorHandler = (err: any, req: any, res: any, next: any) => {
+  logger.error('Error:', {
+    message: err.message,
+    stack: err.stack,
+    path: req.path,
+    method: req.method,
+    ip: req.userIP
+  });
+
+  // Don't leak error details in production
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(err.status || 500).json({
+      error: 'An error occurred processing your request'
+    });
+  }
+
+  // Development - send full error
+  return res.status(err.status || 500).json({
+    error: err.message,
+    stack: err.stack
+  });
+};
