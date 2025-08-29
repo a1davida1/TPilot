@@ -75,7 +75,7 @@ export function Header() {
                 <img 
                   src="/logo.png" 
                   alt="ThottoPilot" 
-                  className="h-12 w-12 object-contain hover:scale-105 transition-transform duration-200"
+                  className="h-10 w-10 object-contain hover:scale-105 transition-transform duration-200 filter drop-shadow-md"
                 />
                 <span className="text-xl font-bold bg-gradient-to-r from-pink-600 via-rose-500 to-purple-600 bg-clip-text text-transparent drop-shadow-sm">
                   ThottoPilot

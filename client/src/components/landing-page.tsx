@@ -38,16 +38,11 @@ export function LandingPage() {
       <header className="fixed top-0 w-full bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-700/50 z-50">
         <nav className="max-w-7xl mx-auto flex justify-between items-center px-6 py-4">
           <div className="flex items-center gap-3 group cursor-pointer">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-pink-500 to-yellow-400 rounded-xl opacity-70 blur-sm group-hover:opacity-90 transition-all duration-300"></div>
-              <div className="relative w-12 h-12 bg-gradient-to-br from-pink-500 via-rose-500 to-yellow-400 rounded-xl flex items-center justify-center shadow-xl border border-white/20">
-                <img 
-                  src="/logo.png" 
-                  alt="ThottoPilot" 
-                  className="w-8 h-8 object-contain filter drop-shadow-lg group-hover:scale-110 transition-all duration-300"
-                />
-              </div>
-            </div>
+            <img 
+              src="/logo.png" 
+              alt="ThottoPilot" 
+              className="h-10 w-10 object-contain filter drop-shadow-lg group-hover:scale-110 transition-all duration-300"
+            />
             <span className="text-2xl font-bold bg-gradient-to-r from-pink-600 via-rose-500 to-yellow-500 dark:from-pink-400 dark:via-rose-400 dark:to-yellow-400 bg-clip-text text-transparent drop-shadow-sm group-hover:scale-105 transition-all duration-300">
               ThottoPilot
             </span>
@@ -94,16 +89,11 @@ export function LandingPage() {
         <div className="relative max-w-6xl mx-auto text-center z-10">
           {/* Prominent ThottoPilot Logo */}
           <div className="mb-8 flex justify-center">
-            <div className="relative group">
-              <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-pink-400 rounded-3xl blur-xl opacity-50 group-hover:opacity-75 transition-all duration-500 scale-110"></div>
-              <div className="relative bg-white/10 backdrop-blur-sm border border-white/20 rounded-3xl p-8 shadow-2xl">
-                <img 
-                  src="/logo.png" 
-                  alt="ThottoPilot" 
-                  className="h-24 w-24 md:h-32 md:w-32 object-contain filter drop-shadow-2xl transform group-hover:scale-105 transition-all duration-300"
-                />
-              </div>
-            </div>
+            <img 
+              src="/logo.png" 
+              alt="ThottoPilot" 
+              className="h-24 w-24 md:h-32 md:w-32 object-contain filter drop-shadow-2xl transform hover:scale-105 transition-all duration-300"
+            />
           </div>
 
           <h1 className="text-5xl md:text-7xl lg:text-8xl font-black mb-6 leading-tight tracking-tight">
