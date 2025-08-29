@@ -32,6 +32,9 @@ import RedditPostingPage from "@/pages/reddit-posting";
 import { trackPageView, setUserId, trackFeatureUsage } from "@/lib/analytics-tracker";
 
 function AuthenticatedRoutes() {
+  const { user } = useAuth();
+  const isAdmin = user && (user.id === 999 || user.username === 'admin');
+
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
@@ -43,6 +46,13 @@ function AuthenticatedRoutes() {
       <Route path="/reddit" component={RedditPostingPage} />
       <Route path="/history" component={History} />
       <Route path="/settings" component={Settings} />
+      {/* Admin Routes - Only for authenticated admin users */}
+      {isAdmin && (
+        <>
+          <Route path="/admin" component={AdminDashboard} />
+          <Route path="/admin/leads" component={AdminLeadsPage} />
+        </>
+      )}
       <Route component={NotFound} />
     </Switch>
   );
@@ -53,8 +63,6 @@ function UnauthenticatedRoutes() {
     <Switch>
       <Route path="/login" component={Login} />
       <Route path="/caption-generator" component={CaptionGeneratorPage} />
-      <Route path="/admin" component={AdminDashboard} />
-      <Route path="/admin/leads" component={AdminLeadsPage} />
       <Route path="/policy-demo" component={PolicyDemo} />
       <Route path="/reddit" component={RedditPostingPage} />
       <Route path="/demo">

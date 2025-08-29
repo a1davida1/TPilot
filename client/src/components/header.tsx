@@ -41,17 +41,27 @@ export function Header() {
     }
   };
 
+  const isAdmin = user && (user.id === 999 || user.username === 'admin');
+  
   const navigationItems = [
     { href: '/dashboard', label: 'Dashboard', authenticated: true },
     { href: '/reddit', label: 'Reddit', authenticated: null },
     { href: '/caption-generator', label: 'Generator', authenticated: null },
     { href: '/history', label: 'History', authenticated: true },
     { href: '/settings', label: 'Settings', authenticated: true },
+    { href: '/admin', label: 'Admin Portal', authenticated: true, adminOnly: true },
   ];
 
-  const visibleItems = navigationItems.filter(item => 
-    item.authenticated === null || item.authenticated === isAuthenticated
-  );
+  const visibleItems = navigationItems.filter(item => {
+    if (item.authenticated === null || item.authenticated === isAuthenticated) {
+      // If item requires admin access, check admin status
+      if (item.adminOnly) {
+        return isAdmin;
+      }
+      return true;
+    }
+    return false;
+  });
 
   return (
     <>
@@ -152,6 +162,7 @@ export function Header() {
                     size="sm"
                     onClick={() => setShowAuthModal(true)}
                     className="text-gray-700 hover:text-pink-600 hover:bg-pink-50"
+                    data-testid="button-sign-in"
                   >
                     Sign In
                   </Button>
@@ -159,6 +170,7 @@ export function Header() {
                     size="sm"
                     onClick={() => setShowAuthModal(true)}
                     className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white border-0 shadow-lg"
+                    data-testid="button-get-started"
                   >
                     Get Started
                   </Button>

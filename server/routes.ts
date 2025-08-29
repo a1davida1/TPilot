@@ -31,7 +31,6 @@ import { createLead, confirmLead } from "./api/leads.js";
 import { getLeads } from "./api/admin-leads.js";
 import { captionRouter } from "./routes/caption.js";
 import { registerSocialMediaRoutes } from "./social-media-routes.js";
-import { registerApiRoutes } from "./api-routes.js";
 
 // IP logging middleware
 const logUserIP = (req: any, res: any, next: any) => {
@@ -583,7 +582,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get all content generations in the time range
-      const allGenerations = await storage.getAllContentGenerations?.() || [];
+      const allUsers = await storage.getAllUsers();
+      let allGenerations: any[] = [];
+      for (const user of allUsers) {
+        const userGenerations = await storage.getUserContentGenerations(user.id);
+        allGenerations = [...allGenerations, ...userGenerations];
+      }
       const periodGenerations = allGenerations.filter((gen: any) => {
         const generatedAt = new Date(gen.createdAt);
         return generatedAt >= startDate;
