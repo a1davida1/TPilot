@@ -1,0 +1,480 @@
+} else if (userTier === 'premium') {
+       dailyLimit = -1; // Unlimited
+     }
+     
+     // Calculate real stats (remove fake data)
+     const userStats = {
+       postsCreated: stats.total,
+       totalViews: 0, // Real views not tracked yet - show 0
+       engagementRate: '0.0', // Real engagement not tracked yet - show 0
+       streak: stats.dailyStreak || 0,
+       thisWeek: stats.thisWeek,
+       thisMonth: stats.thisMonth,
+       dailyGenerations: {
+         used: dailyCount,
+         limit: dailyLimit,
+         remaining: dailyLimit === -1 ? -1 : Math.max(0, dailyLimit - dailyCount)
+       }
+     };
+
+     res.json(userStats);
+   } catch (error) {
+     logger.error("User stats error:", error);
+     res.status(500).json({ message: "Failed to get user stats" });
+   }
+ });
+
+ // Get content generation history
+ app.get("/api/content-generation-history", authenticateToken, async (req: AuthRequest, res) => {
+   try {
+     if (!req.user?.id) {
+       return res.status(401).json({ message: "Authentication required" });
+     }
+
+     const limit = parseInt(req.query.limit as string) || 20;
+     const history = await storage.getGenerationsByUserId(req.user.id);
+     
+     // Limit results and format for frontend
+     const formattedHistory = history.slice(0, limit).map(gen => ({
+       ...gen,
+       titles: Array.isArray(gen.titles) ? gen.titles : 
+               typeof gen.titles === 'string' ? JSON.parse(gen.titles || '[]') : []
+     }));
+
+     res.json(formattedHistory);
+   } catch (error) {
+     logger.error("Generation history error:", error);
+     res.status(500).json({ message: "Failed to get generation history" });
+   }
+ });
+
+ // Get user images
+ app.get("/api/user-images", authenticateToken, async (req: AuthRequest, res) => {
+   try {
+     if (!req.user?.id) {
+       return res.status(401).json({ message: "Authentication required" });
+     }
+     
+     const images = await storage.getUserImages(req.user.id);
+     res.json(images);
+   } catch (error) {
+     logger.error("Error fetching user images:", error);
+     res.status(500).json({ message: "Failed to fetch images" });
+   }
+ });
+
+ // Protect image
+ app.post("/api/protect-image/:imageId", authenticateToken, async (req: AuthRequest, res) => {
+   try {
+     if (!req.user?.id) {
+       return res.status(401).json({ message: "Authentication required" });
+     }
+     
+     const { imageId } = req.params;
+     const { protectionLevel } = req.body;
+     
+     const image = await storage.getUserImage(parseInt(imageId), req.user.id);
+     if (!image) {
+       return res.status(404).json({ message: "Image not found" });
+     }
+     
+     // For now, just mark as protected. In a real implementation,
+     // you'd apply the actual protection processing here
+     const updatedImage = {
+       ...image,
+       isProtected: true,
+       protectionLevel: protectionLevel,
+       url: image.url + '?protected=true'
+     };
+     res.json(updatedImage);
+   } catch (error) {
+     logger.error("Image protection error:", error);
+     res.status(500).json({ message: "Failed to protect image" });
+   }
+ });
+
+ // Delete user image
+ app.delete("/api/user-images/:imageId", authenticateToken, async (req: AuthRequest, res) => {
+   try {
+     if (!req.user?.id) {
+       return res.status(401).json({ message: "Authentication required" });
+     }
+     
+     const { imageId } = req.params;
+     await storage.deleteUserImage(parseInt(imageId), req.user.id);
+     res.json({ message: "Image deleted successfully" });
+   } catch (error) {
+     logger.error("Image deletion error:", error);
+     res.status(500).json({ message: "Failed to delete image" });
+   }
+ });
+
+ // User samples routes (pro users only)
+ app.post("/api/user-samples", async (req, res) => {
+   try {
+     // For demo mode, use userId 1
+     const userId = 1; // In production, get from authenticated user
+     const sample = await storage.createUserSample({
+       ...req.body,
+       userId,
+     });
+     res.json(sample);
+   } catch (error) {
+     logger.error("Error creating user sample:", error);
+     res.status(500).json({ error: "Failed to create sample" });
+   }
+ });
+
+ app.get("/api/user-samples", async (req, res) => {
+   try {
+     const userId = 1; // In production, get from authenticated user
+     const samples = await storage.getUserSamples(userId);
+     res.json(samples);
+   } catch (error) {
+     logger.error("Error fetching user samples:", error);
+     res.status(500).json({ error: "Failed to fetch samples" });
+   }
+ });
+
+ app.delete("/api/user-samples/:id", async (req, res) => {
+   try {
+     const userId = 1; // In production, get from authenticated user
+     await storage.deleteUserSample(parseInt(req.params.id), userId);
+     res.status(204).send();
+   } catch (error) {
+     logger.error("Error deleting user sample:", error);
+     res.status(500).json({ error: "Failed to delete sample" });
+   }
+ });
+
+ // User preferences routes (pro users only)
+ app.get("/api/user-preferences", async (req, res) => {
+   try {
+     const userId = 1; // In production, get from authenticated user
+     const preferences = await storage.getUserPreferences(userId);
+     res.json(preferences || {
+       fineTuningEnabled: false,
+       writingStyle: { tone: 50, formality: 50, explicitness: 50 },
+       contentPreferences: { themes: "", avoid: "" },
+       prohibitedWords: [],
+       photoStyle: { lighting: 50, mood: 50, composition: 50 },
+     });
+   } catch (error) {
+     logger.error("Error fetching preferences:", error);
+     res.status(500).json({ error: "Failed to fetch preferences" });
+   }
+ });
+
+ app.put("/api/user-preferences", async (req, res) => {
+   try {
+     const userId = 1; // In production, get from authenticated user
+     const preferences = await storage.updateUserPreferences(userId, {
+       ...req.body,
+       userId,
+     });
+     res.json(preferences);
+   } catch (error) {
+     logger.error("Error updating preferences:", error);
+     res.status(500).json({ error: "Failed to update preferences" });
+   }
+ });
+
+ // Object storage routes
+ app.post("/api/objects/upload", async (req, res) => {
+   try {
+     const objectStorageService = new ObjectStorageService();
+     const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+     res.json({ uploadURL });
+   } catch (error) {
+     logger.error("Error getting upload URL:", error);
+     res.status(500).json({ error: "Failed to get upload URL" });
+   }
+ });
+
+ app.put("/api/sample-images", async (req, res) => {
+   if (!req.body.imageURL) {
+     return res.status(400).json({ error: "imageURL is required" });
+   }
+
+   try {
+     const objectStorageService = new ObjectStorageService();
+     const objectPath = objectStorageService.normalizeObjectEntityPath(
+       req.body.imageURL
+     );
+     res.json({ objectPath });
+   } catch (error) {
+     logger.error("Error processing image:", error);
+     res.status(500).json({ error: "Internal server error" });
+   }
+ });
+
+ app.get("/objects/:objectPath(*)", async (req, res) => {
+   const objectStorageService = new ObjectStorageService();
+   try {
+     const objectFile = await objectStorageService.getObjectEntityFile(
+       req.path
+     );
+     objectStorageService.downloadObject(objectFile, res);
+   } catch (error) {
+     logger.error("Error downloading object:", error);
+     if (error instanceof ObjectNotFoundError) {
+       return res.sendStatus(404);
+     }
+     return res.sendStatus(500);
+   }
+ });
+
+ // Pro Perks API Endpoints
+ app.get("/api/pro-perks", async (req, res) => {
+   try {
+     const { tier = 'free', category } = req.query;
+     
+     let perks;
+     if (category) {
+       perks = getPerksByCategory(category as any);
+     } else {
+       perks = getAvailablePerks(tier as any);
+     }
+     
+     res.json({
+       perks,
+       totalCount: perks.length,
+       availableCategories: ['affiliate', 'integration', 'tools', 'community', 'premium']
+     });
+   } catch (error) {
+     logger.error("Pro perks error:", error);
+     res.status(500).json({ message: "Failed to fetch pro perks" });
+   }
+ });
+
+ app.post("/api/pro-perks/:perkId/signup", async (req, res) => {
+   try {
+     const { perkId } = req.params;
+     const userId = 1; // Demo user ID, would come from auth in production
+     
+     const referralCode = generateReferralCode(userId, perkId);
+     const instructions = getSignupInstructions(perkId);
+     
+     res.json({
+       success: true,
+       referralCode,
+       instructions,
+       message: 'Signup instructions generated successfully'
+     });
+   } catch (error) {
+     logger.error("Perk signup error:", error);
+     res.status(500).json({ message: "Failed to generate signup instructions" });
+   }
+ });
+
+ // Lead API routes (waitlist functionality)
+ app.post("/api/leads", createLead);
+ app.get("/api/leads/confirm", confirmLead);
+ app.get("/api/admin/leads", getLeads);
+
+ // Register new enterprise API routes (Phase 2)
+ registerApiRoutes(app);
+ 
+ // Register Policy Routes
+ registerPolicyRoutes(app);
+ 
+ // Register Reddit Routes  
+ registerRedditRoutes(app);
+ 
+ // Register Analytics Routes (Phase 1)
+ registerAnalyticsRoutes(app);
+
+ // Register Social Media Routes (Phase 2)
+ registerSocialMediaRoutes(app);
+
+ // Register Caption Routes (2-pass Gemini pipeline)
+ app.use('/api/caption', captionRouter);
+
+ // Tax & Expense Tracking API Routes
+ 
+ // Get all expense categories
+ app.get("/api/expense-categories", async (req, res) => {
+   try {
+     const categories = await storage.getExpenseCategories();
+     res.json(categories);
+   } catch (error) {
+     logger.error("Error fetching expense categories:", error);
+     res.status(500).json({ message: "Failed to fetch expense categories" });
+   }
+ });
+
+ // Get user expenses
+ app.get("/api/expenses", authenticateToken, async (req: AuthRequest, res) => {
+   try {
+     if (!req.user?.id) {
+       return res.status(401).json({ message: "Authentication required" });
+     }
+
+     const taxYear = req.query.taxYear ? parseInt(req.query.taxYear as string) : undefined;
+     const expenses = await storage.getUserExpenses(req.user.id, taxYear);
+     res.json(expenses);
+   } catch (error) {
+     logger.error("Error fetching expenses:", error);
+     res.status(500).json({ message: "Failed to fetch expenses" });
+   }
+ });
+
+ // Create new expense
+ app.post("/api/expenses", authenticateToken, async (req: AuthRequest, res) => {
+   try {
+     if (!req.user?.id) {
+       return res.status(401).json({ message: "Authentication required" });
+     }
+
+     const currentYear = new Date().getFullYear();
+     const expenseData = {
+       ...req.body,
+       userId: req.user.id,
+       taxYear: req.body.taxYear || currentYear,
+       amount: Math.round(parseFloat(req.body.amount) * 100), // Convert to cents
+     };
+
+     const expense = await storage.createExpense(expenseData);
+     res.status(201).json(expense);
+   } catch (error) {
+     logger.error("Error creating expense:", error);
+     res.status(500).json({ message: "Failed to create expense" });
+   }
+ });
+
+ // Update expense
+ app.put("/api/expenses/:id", authenticateToken, async (req: AuthRequest, res) => {
+   try {
+     if (!req.user?.id) {
+       return res.status(401).json({ message: "Authentication required" });
+     }
+
+     const expenseId = parseInt(req.params.id);
+     const updates = {
+       ...req.body,
+       amount: req.body.amount ? Math.round(parseFloat(req.body.amount) * 100) : undefined
+     };
+
+     const expense = await storage.updateExpense(expenseId, req.user.id, updates);
+     res.json(expense);
+   } catch (error) {
+     logger.error("Error updating expense:", error);
+     res.status(500).json({ message: "Failed to update expense" });
+   }
+ });
+
+ // Delete expense
+ app.delete("/api/expenses/:id", authenticateToken, async (req: AuthRequest, res) => {
+   try {
+     if (!req.user?.id) {
+       return res.status(401).json({ message: "Authentication required" });
+     }
+
+     const expenseId = parseInt(req.params.id);
+     await storage.deleteExpense(expenseId, req.user.id);
+     res.status(204).send();
+   } catch (error) {
+     logger.error("Error deleting expense:", error);
+     res.status(500).json({ message: "Failed to delete expense" });
+   }
+ });
+
+ // Get expense totals and analytics
+ app.get("/api/expenses/totals", authenticateToken, async (req: AuthRequest, res) => {
+   try {
+     if (!req.user?.id) {
+       return res.status(401).json({ message: "Authentication required" });
+     }
+
+     const taxYear = req.query.taxYear ? parseInt(req.query.taxYear as string) : undefined;
+     const totals = await storage.getExpenseTotals(req.user.id, taxYear);
+     res.json(totals);
+   } catch (error) {
+     logger.error("Error fetching expense totals:", error);
+     res.status(500).json({ message: "Failed to fetch expense totals" });
+   }
+ });
+
+ // Get expenses by date range for calendar view
+ app.get("/api/expenses/range", authenticateToken, async (req: AuthRequest, res) => {
+   try {
+     if (!req.user?.id) {
+       return res.status(401).json({ message: "Authentication required" });
+     }
+
+     const startDate = new Date(req.query.startDate as string);
+     const endDate = new Date(req.query.endDate as string);
+     
+     const expenses = await storage.getExpensesByDateRange(req.user.id, startDate, endDate);
+     res.json(expenses);
+   } catch (error) {
+     logger.error("Error fetching expenses by date range:", error);
+     res.status(500).json({ message: "Failed to fetch expenses by date range" });
+   }
+ });
+
+ // Get tax deduction information
+ app.get("/api/tax-deductions", async (req, res) => {
+   try {
+     const category = req.query.category as string;
+     const deductions = category 
+       ? await storage.getTaxDeductionInfoByCategory(category)
+       : await storage.getTaxDeductionInfo();
+     res.json(deductions);
+   } catch (error) {
+     logger.error("Error fetching tax deduction info:", error);
+     res.status(500).json({ message: "Failed to fetch tax deduction info" });
+   }
+ });
+
+ // Seed tax data (admin only)
+ app.post("/api/admin/seed-tax-data", async (req, res) => {
+   try {
+     const { seedTaxData } = await import('./seeds/expense-categories.js');
+     await seedTaxData();
+     res.json({ message: "Tax data seeded successfully" });
+   } catch (error) {
+     logger.error("Error seeding tax data:", error);
+     res.status(500).json({ message: "Failed to seed tax data" });
+   }
+ });
+
+ // ==========================================
+ // ERROR HANDLING MIDDLEWARE (MUST BE LAST)
+ // ==========================================
+ app.use((err: any, req: any, res: any, next: any) => {
+   logger.error('Unhandled error:', {
+     error: err.message,
+     stack: err.stack,
+     path: req.path,
+     method: req.method,
+     ip: req.userIP
+   });
+
+   // Don't leak error details in production
+   if (IS_PRODUCTION) {
+     return res.status(err.status || 500).json({
+       error: 'An error occurred processing your request'
+     });
+   }
+
+   // Development - send full error
+   return res.status(err.status || 500).json({
+     error: err.message,
+     stack: err.stack
+   });
+ });
+
+ // ==========================================
+ // 404 HANDLER (MUST BE VERY LAST)
+ // ==========================================
+ app.use((req, res) => {
+   res.status(404).json({ 
+     error: 'Endpoint not found',
+     path: req.path 
+   });
+ });
+
+ const httpServer = createServer(app);
+ return httpServer;
+}
