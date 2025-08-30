@@ -9,6 +9,9 @@ interface User {
   displayName?: string;
   tier?: 'guest' | 'free' | 'basic' | 'starter' | 'pro' | 'premium' | 'admin';
   subscription?: string;
+  isAdmin?: boolean;
+  subscription_status?: string;
+  role?: string;
 }
 
 export function useAuth() {

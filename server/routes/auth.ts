@@ -77,8 +77,16 @@ router.post("/login", authLimiter, async (req, res) => {
         id: 999,
         email: ADMIN_EMAIL,
         username: 'admin',
-        tier: 'admin',
-        isAdmin: true
+        tier: 'premium',
+        subscription_status: 'active',
+        isAdmin: true,
+        role: 'admin',
+        features: {
+          unlimited_generations: true,
+          no_watermark: true,
+          api_access: true,
+          priority_support: true
+        }
       };
 
       const token = createToken({
@@ -88,6 +96,13 @@ router.post("/login", authLimiter, async (req, res) => {
         username: adminUser.username, 
         isAdmin: true
       });
+
+      // Store in session if available
+      if (req.session) {
+        req.session.user = adminUser;
+        req.session.userId = 999;
+        req.session.isAdmin = true;
+      }
 
       return res.json({
         message: 'Admin login successful',
@@ -142,13 +157,21 @@ router.get("/user", async (req: any, res) => {
     if (req.isAuthenticated && req.isAuthenticated()) {
       
       // Handle admin user case
-      if (req.user?.isAdmin || req.user?.id === 999) {
+      if (req.user?.isAdmin || req.user?.id === 999 || req.session?.isAdmin) {
         return res.json({
           id: 999,
           email: ADMIN_EMAIL,
           username: 'admin',
-          tier: 'pro',
-          isAdmin: true
+          tier: 'premium',
+          subscription_status: 'active',
+          isAdmin: true,
+          role: 'admin',
+          features: {
+            unlimited_generations: true,
+            no_watermark: true,
+            api_access: true,
+            priority_support: true
+          }
         });
       }
 
@@ -182,13 +205,21 @@ router.get("/user", async (req: any, res) => {
         const { verifyToken } = await import('../middleware/auth.js');
         const decoded = verifyToken(token) as any;
         
-        if (decoded.isAdmin) {
+        if (decoded.isAdmin || decoded.id === 999 || decoded.userId === 999) {
           return res.json({
             id: 999,
             email: ADMIN_EMAIL,
             username: 'admin',
-            tier: 'pro',
-            isAdmin: true
+            tier: 'premium',
+            subscription_status: 'active',
+            isAdmin: true,
+            role: 'admin',
+            features: {
+              unlimited_generations: true,
+              no_watermark: true,
+              api_access: true,
+              priority_support: true
+            }
           });
         }
         

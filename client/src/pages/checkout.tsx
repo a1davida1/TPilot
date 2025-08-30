@@ -71,11 +71,10 @@ const CheckoutForm = ({ plan }: CheckoutFormProps) => {
   );
 };
 
-interface CheckoutPageProps {
-  plan?: 'pro' | 'pro_plus';
-}
-
-export default function Checkout({ plan = 'pro' }: CheckoutPageProps) {
+export default function Checkout() {
+  // Get plan from URL params or default to 'pro'
+  const urlParams = new URLSearchParams(window.location.search);
+  const plan = (urlParams.get('plan') as 'pro' | 'pro_plus') || 'pro';
   const [clientSecret, setClientSecret] = useState("");
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();

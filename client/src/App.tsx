@@ -30,15 +30,16 @@ import { trackPageView, setUserId, trackFeatureUsage } from "@/lib/analytics-tra
 
 function AuthenticatedRoutes() {
   const { user } = useAuth();
-  const isAdmin = user && (user.id === 999 || user.username === 'admin');
+  const isAdmin = user && (user.id === 999 || user.username === 'admin' || user.isAdmin);
+  const userTier = user?.tier || 'free';
 
   return (
     <Switch>
       <Route path="/">
-        <ModernDashboard />
+        <ModernDashboard user={user} userTier={userTier} isAdmin={isAdmin} />
       </Route>
       <Route path="/dashboard">
-        <ModernDashboard />
+        <ModernDashboard user={user} userTier={userTier} isAdmin={isAdmin} />
       </Route>
       <Route path="/caption-generator" component={CaptionGeneratorPage} />
       <Route path="/enterprise" component={Enterprise} />

@@ -64,9 +64,12 @@ interface ActivityItem {
 
 interface ModernDashboardProps {
   isRedditConnected?: boolean;
+  user?: any;
+  userTier?: 'guest' | 'free' | 'basic' | 'starter' | 'pro' | 'premium' | 'admin';
+  isAdmin?: boolean;
 }
 
-export function ModernDashboard({ isRedditConnected = false }: ModernDashboardProps) {
+export function ModernDashboard({ isRedditConnected = false, user, userTier = 'free', isAdmin = false }: ModernDashboardProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeSection, setActiveSection] = useState("dashboard");
   const [isMobile, setIsMobile] = useState(false);
@@ -343,17 +346,23 @@ export function ModernDashboard({ isRedditConnected = false }: ModernDashboardPr
             ))}
           </nav>
 
-          {/* Upgrade Card */}
-          <Card className="mt-8 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white border-0">
-            <CardContent className="p-4 text-center">
-              <Crown className="h-8 w-8 mx-auto mb-2 text-yellow-300" />
-              <h3 className="font-semibold text-sm mb-1">Upgrade to Pro</h3>
-              <p className="text-xs opacity-90 mb-3">Unlock unlimited AI generations</p>
-              <Button size="sm" className="bg-white text-indigo-600 hover:bg-gray-100 w-full text-xs font-medium">
-                Upgrade Now
-              </Button>
-            </CardContent>
-          </Card>
+          {/* Upgrade Card - Only show for free/guest users */}
+          {(userTier === 'free' || userTier === 'guest') && !isAdmin && (
+            <Card className="mt-8 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white border-0">
+              <CardContent className="p-4 text-center">
+                <Crown className="h-8 w-8 mx-auto mb-2 text-yellow-300" />
+                <h3 className="font-semibold text-sm mb-1">Upgrade to Pro</h3>
+                <p className="text-xs opacity-90 mb-3">Unlock unlimited AI generations</p>
+                <Button 
+                  size="sm" 
+                  className="bg-white text-indigo-600 hover:bg-gray-100 w-full text-xs font-medium"
+                  onClick={() => window.location.href = '/checkout'}
+                >
+                  Upgrade Now
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </motion.aside>
 
@@ -401,7 +410,10 @@ export function ModernDashboard({ isRedditConnected = false }: ModernDashboardPr
                   Connect Reddit
                 </Button>
               )}
-              <Button className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700">
+              <Button 
+                className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
+                onClick={() => setActiveSection('generate')}
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Create Content
               </Button>
