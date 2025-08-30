@@ -5,14 +5,48 @@ import { mountBillingRoutes } from "./routes/billing.js";
 import { initializeQueue } from "./lib/queue-factory.js";
 import { initializeWorkers } from "./lib/workers/index.js";
 import { seedDemoUser } from "./seed-demo-user.js";
+import winston from "winston";
+import { v4 as uuidv4 } from "uuid";
 
-// Simple log function for production
-const log = (message: string) => {
-  const timestamp = new Date().toISOString();
-  console.log(`[express] ${message}`);
-};
+declare global {
+  namespace Express {
+    interface Request {
+      id: string;
+    }
+  }
+}
+
+const logger = winston.createLogger({
+  level: "info",
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.printf(({ timestamp, level, message, requestId, ...meta }) => {
+      const metaStr = Object.keys(meta).length ? ` ${JSON.stringify(meta)}` : "";
+      return `${timestamp} [${level}]${requestId ? ` [${requestId}]` : ""} ${message}${metaStr}`;
+    })
+  ),
+  transports: [new winston.transports.Console()],
+});
 
 const app = express();
+
+let Sentry: any;
+if (process.env.SENTRY_DSN) {
+  try {
+    // @ts-ignore -- optional dependency
+    Sentry = await import("@sentry/node");
+    Sentry.init({ dsn: process.env.SENTRY_DSN });
+    app.use(Sentry.Handlers.requestHandler());
+  } catch (err) {
+    logger.warn("Sentry initialization failed", { error: err });
+  }
+}
+
+app.use((req, _res, next) => {
+  req.id = uuidv4();
+  next();
+});
+
 // Raw body for Stripe webhook signature verification
 app.post("/api/webhooks/stripe", express.raw({ type: "application/json" }), (_req,_res,next)=>next());
 app.use(express.json());
@@ -41,7 +75,7 @@ app.use((req, res, next) => {
         logLine = logLine.slice(0, 79) + "…";
       }
 
-      log(logLine);
+      logger.info(logLine, { requestId: req.id });
     }
   });
 
@@ -53,7 +87,7 @@ app.use((req, res, next) => {
   try {
     await seedDemoUser();
   } catch (error) {
-    console.warn('Demo user seeding failed:', error);
+    logger.warn("Demo user seeding failed", { error });
   }
   
   // Initialize Phase 5 queue system
@@ -76,12 +110,16 @@ app.use((req, res, next) => {
   
   const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
     res.status(status).json({ message });
-    throw err;
+    logger.error(message, { requestId: req.id, stack: err.stack });
+    if (Sentry) {
+      Sentry.captureException(err);
+    }
+    // Don't throw - let Express handle the error response
   });
 
   // importantly only setup vite in development and after
@@ -113,6 +151,6 @@ app.use((req, res, next) => {
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
-    log(`serving on port ${port}`);
+    logger.info(`serving on port ${port}`);
   });
 })();

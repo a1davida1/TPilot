@@ -66,8 +66,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // VALIDATE ENVIRONMENT & APPLY SECURITY
   // ==========================================
   
-  // Set trust proxy for rate limiters
-  app.set('trust proxy', true);
+  // Set trust proxy securely for rate limiters
+  app.set('trust proxy', (ip: string) => {
+    // Trust localhost and private network ranges
+    return ['127.0.0.1', '::1'].includes(ip) || ip.startsWith('10.') || ip.startsWith('192.168.');
+  });
   
   // Validate required environment variables first
   validateEnvironment();

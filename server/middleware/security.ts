@@ -51,28 +51,37 @@ export const authLimiter = rateLimit({
   message: 'Too many login attempts, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
-  trustProxy: true, // Trust proxy for X-Forwarded-For headers
+  trustProxy: (ip: string) => {
+    // Trust specific proxy IPs or ranges (adjust for your infrastructure)
+    return ['127.0.0.1', '::1'].includes(ip) || ip.startsWith('10.') || ip.startsWith('192.168.');
+  },
 });
 
 export const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // 100 requests per 15 minutes
   message: 'Too many requests, please try again later.',
-  trustProxy: true,
+  trustProxy: (ip: string) => {
+    return ['127.0.0.1', '::1'].includes(ip) || ip.startsWith('10.') || ip.startsWith('192.168.');
+  },
 });
 
 export const uploadLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 5, // 5 uploads per minute
   message: 'Upload rate limit exceeded.',
-  trustProxy: true,
+  trustProxy: (ip: string) => {
+    return ['127.0.0.1', '::1'].includes(ip) || ip.startsWith('10.') || ip.startsWith('192.168.');
+  },
 });
 
 export const generationLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 10, // 10 generations per minute
   message: 'Generation rate limit exceeded.',
-  trustProxy: true,
+  trustProxy: (ip: string) => {
+    return ['127.0.0.1', '::1'].includes(ip) || ip.startsWith('10.') || ip.startsWith('192.168.');
+  },
 });
 
 // ==========================================
