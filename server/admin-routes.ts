@@ -1,6 +1,7 @@
 import { Express } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { storage } from './storage';
 import { emailService } from './services/email-service';
 
@@ -35,7 +36,7 @@ export function setupAdminRoutes(app: Express) {
     }
 
     // Check if user is admin (ID 999 or username 'admin')
-    if (user.id !== 999 && user.username !== 'admin') {
+    if ((user as any).id !== 999 && (user as any).username !== 'admin') {
       return res.status(403).json({ message: 'Admin access required' });
     }
 
@@ -43,6 +44,44 @@ export function setupAdminRoutes(app: Express) {
     req.user = user;
     next();
   };
+
+  // Reset user password (Admin only)
+  app.post('/api/admin/reset-password', requireAdmin, async (req, res) => {
+    try {
+      const { userId } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ message: 'User ID is required' });
+      }
+      
+      // Check if user exists
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Generate a secure temporary password
+      const tempPassword = crypto.randomBytes(8).toString('base64').slice(0, 12);
+      
+      // Hash the temporary password
+      const hashedTempPassword = await bcrypt.hash(tempPassword, 10);
+      
+      // Update user's password using the existing storage method
+      await storage.updateUserPassword(userId, hashedTempPassword);
+      
+      const adminUser = req.user as any;
+      console.log(`Admin ${adminUser?.username || adminUser?.id} reset password for user ${user.username} (ID: ${userId})`);
+      
+      res.json({
+        message: 'Password reset successful',
+        tempPassword: tempPassword,
+        username: user.username
+      });
+    } catch (error) {
+      console.error('Error resetting user password:', error);
+      res.status(500).json({ message: 'Error resetting user password' });
+    }
+  });
 
   // Get platform statistics
   app.get('/api/admin/stats', requireAdmin, async (req, res) => {

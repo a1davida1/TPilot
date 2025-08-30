@@ -1151,9 +1151,10 @@ function SystemMonitorTab({ authenticatedRequest }: { authenticatedRequest: any 
 function UserManagementTab({ authenticatedRequest, users }: { authenticatedRequest: any, users: any[] }) {
   const { toast } = useToast();
   const [selectedUser, setSelectedUser] = useState<any>(null);
-  const [actionType, setActionType] = useState<'ban' | 'suspend' | 'unban' | null>(null);
+  const [actionType, setActionType] = useState<'ban' | 'suspend' | 'unban' | 'reset-password' | null>(null);
   const [reason, setReason] = useState('');
   const [duration, setDuration] = useState('24');
+  const [tempPassword, setTempPassword] = useState('');
 
   const actionMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -1166,13 +1167,23 @@ function UserManagementTab({ authenticatedRequest, users }: { authenticatedReque
           return authenticatedRequest('/api/admin/suspend-user', 'POST', data);
         case 'force-logout':
           return authenticatedRequest('/api/admin/force-logout', 'POST', data);
+        case 'reset-password':
+          return authenticatedRequest('/api/admin/reset-password', 'POST', data);
       }
     },
-    onSuccess: (_, variables) => {
-      toast({ title: `User ${variables.action} successful` });
-      setSelectedUser(null);
-      setActionType(null);
-      setReason('');
+    onSuccess: (data, variables) => {
+      if (variables.action === 'reset-password') {
+        setTempPassword(data.tempPassword);
+        toast({ 
+          title: "Password Reset Successful", 
+          description: "Temporary password generated. User must change on next login."
+        });
+      } else {
+        toast({ title: `User ${variables.action} successful` });
+        setSelectedUser(null);
+        setActionType(null);
+        setReason('');
+      }
     },
     onError: (error: any) => {
       toast({
@@ -1184,12 +1195,13 @@ function UserManagementTab({ authenticatedRequest, users }: { authenticatedReque
   });
 
   const handleAction = () => {
-    if (!selectedUser || !actionType || !reason) return;
+    if (!selectedUser || !actionType) return;
+    if (actionType !== 'reset-password' && !reason) return;
     
     const actionData: any = {
       userId: selectedUser.id,
       action: actionType,
-      reason
+      reason: actionType === 'reset-password' ? 'Admin password reset' : reason
     };
 
     if (actionType === 'suspend') {
@@ -1274,6 +1286,12 @@ function UserManagementTab({ authenticatedRequest, users }: { authenticatedReque
                           data-testid={`button-logout-user-${user.id}`}>
                           Force Logout
                         </Button>
+                        <Button size="sm" variant="outline"
+                          onClick={() => { setSelectedUser(user); setActionType('reset-password'); }}
+                          data-testid={`button-reset-password-${user.id}`}
+                          className="text-orange-600 hover:text-orange-700">
+                          🔑 Reset Password
+                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -1310,17 +1328,54 @@ function UserManagementTab({ authenticatedRequest, users }: { authenticatedReque
                 </Select>
               </div>
             )}
-            <div className="space-y-2">
-              <Label>Reason *</Label>
-              <textarea 
-                className="w-full p-2 border rounded" 
-                placeholder="Explain the reason for this action..."
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                rows={3}
-                data-testid="textarea-action-reason"
-              />
-            </div>
+            {actionType === 'reset-password' && (
+              <div className="space-y-4">
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                  <p className="text-sm text-yellow-800 dark:text-yellow-200 mb-2">
+                    ⚠️ <strong>Security Notice:</strong> This will generate a temporary password that the user must change on their next login.
+                  </p>
+                  <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                    The temporary password will be displayed only once for security reasons.
+                  </p>
+                </div>
+                {tempPassword && (
+                  <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
+                    <Label className="text-sm font-semibold text-green-800 dark:text-green-200">Temporary Password Generated:</Label>
+                    <div className="mt-2 p-3 bg-white dark:bg-gray-800 rounded border font-mono text-lg">
+                      <div className="flex justify-between items-center">
+                        <span className="select-all">{tempPassword}</span>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => {
+                            navigator.clipboard.writeText(tempPassword);
+                            toast({ title: "Copied to clipboard" });
+                          }}
+                        >
+                          📋 Copy
+                        </Button>
+                      </div>
+                    </div>
+                    <p className="text-xs text-green-700 dark:text-green-300 mt-2">
+                      ✅ Share this with the user. They'll be required to change it on next login.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+            {actionType !== 'reset-password' && (
+              <div className="space-y-2">
+                <Label>Reason *</Label>
+                <textarea 
+                  className="w-full p-2 border rounded" 
+                  placeholder="Explain the reason for this action..."
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  rows={3}
+                  data-testid="textarea-action-reason"
+                />
+              </div>
+            )}
             <div className="flex gap-2 justify-end">
               <Button variant="outline" onClick={() => { setSelectedUser(null); setActionType(null); setReason(''); }}
                 data-testid="button-cancel-action">
