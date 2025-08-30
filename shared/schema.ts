@@ -8,22 +8,29 @@ export const users = pgTable("users", {
   username: varchar("username", { length: 255 }).unique().notNull(),
   password: varchar("password", { length: 255 }).notNull().default(''),
   email: varchar("email", { length: 255 }).unique(),
+  role: varchar("role", { length: 50 }).default("user"), // user, admin, moderator
+  isAdmin: boolean("is_admin").default(false),
   emailVerified: boolean("email_verified").default(false).notNull(),
-  firstName: varchar("first_name", { length: 255 }), // Added missing column
-  lastName: varchar("last_name", { length: 255 }), // Added missing column
-  tier: varchar("tier", { length: 50 }).default("free").notNull(), // free, starter, pro
-  subscriptionStatus: varchar("subscription_status", { length: 50 }).default("free").notNull(), // Added missing column
-  trialEndsAt: timestamp("trial_ends_at"), // For trial management
+  firstName: varchar("first_name", { length: 255 }),
+  lastName: varchar("last_name", { length: 255 }),
+  tier: varchar("tier", { length: 50 }).default("free").notNull(), // free, starter, pro, premium
+  subscriptionStatus: varchar("subscription_status", { length: 50 }).default("inactive").notNull(), // active, inactive, cancelled, past_due
+  trialEndsAt: timestamp("trial_ends_at"),
   provider: varchar("provider", { length: 50 }), // google, facebook, reddit
   providerId: varchar("provider_id", { length: 255 }),
-  avatar: varchar("avatar", { length: 500 }),
-  referralCodeId: integer("referral_code_id"), // Will reference referralCodes.id
-  referredBy: integer("referred_by"), // Added missing column
+  avatar: text("avatar"),
+  bio: text("bio"),
+  referralCodeId: integer("referral_code_id"),
+  referredBy: integer("referred_by"),
   redditUsername: varchar("reddit_username", { length: 255 }),
   redditAccessToken: text("reddit_access_token"),
   redditRefreshToken: text("reddit_refresh_token"),
   redditId: varchar("reddit_id", { length: 255 }),
+  stripeCustomerId: varchar("stripe_customer_id", { length: 255 }),
+  stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  lastLogin: timestamp("last_login"),
 });
 
 export const contentGenerations = pgTable("content_generations", {
