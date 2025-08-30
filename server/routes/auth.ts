@@ -77,7 +77,7 @@ router.post("/login", authLimiter, async (req, res) => {
         id: 999,
         email: ADMIN_EMAIL,
         username: 'admin',
-        tier: 'pro',
+        tier: 'admin',
         isAdmin: true
       };
 

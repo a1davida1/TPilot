@@ -164,8 +164,17 @@ export default function SettingsPage() {
                   </p>
                 </div>
                 <div className="text-right">
-                  <Badge variant={subscriptionData?.subscription?.plan === 'free' ? 'secondary' : 'default'} className="mb-2">
-                    {subscriptionData?.subscription?.plan === 'free' ? 'Free' : subscriptionData?.subscription?.plan || 'Free'}
+                  <Badge 
+                    className={`mb-2 ${
+                      subscriptionData?.subscription?.plan === 'admin' ? 'bg-gradient-to-r from-red-600 to-orange-600 text-white' :
+                      subscriptionData?.subscription?.plan === 'pro' ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white' :
+                      subscriptionData?.subscription?.plan === 'starter' ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white' :
+                      'bg-gray-100 text-gray-800 border border-gray-300'
+                    }`}
+                  >
+                    {subscriptionData?.subscription?.plan === 'admin' ? 'ADMIN' : 
+                     subscriptionData?.subscription?.plan === 'free' ? 'Free' : 
+                     subscriptionData?.subscription?.plan || 'Free'}
                   </Badge>
                   <br />
                   <Button onClick={handleUpgrade} className="bg-gradient-to-r from-purple-600 to-blue-600">
