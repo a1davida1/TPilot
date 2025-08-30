@@ -310,6 +310,15 @@ export function registerApiRoutes(app: Express) {
       
       const userId = user.userId || user.id;
 
+      // Check if user is admin first
+      if (user.isAdmin || userId === 999 || user.tier === 'admin') {
+        return res.json({
+          subscription: { plan: 'admin' },
+          isPro: true,
+          tier: 'admin',
+        });
+      }
+
       const subscription = await CCBillProcessor.getUserSubscription(userId);
       const isPro = await CCBillProcessor.isUserPro(userId);
 

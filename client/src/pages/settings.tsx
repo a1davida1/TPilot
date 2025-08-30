@@ -160,7 +160,8 @@ export default function SettingsPage() {
                 <div>
                   <h3 className="font-medium">Current Plan</h3>
                   <p className="text-sm text-gray-600">
-                    {subscriptionData?.subscription?.plan || 'Free'} Plan
+                    {subscriptionData?.subscription?.plan === 'admin' ? 'Admin' : 
+                     subscriptionData?.subscription?.plan || 'Free'} Plan
                   </p>
                 </div>
                 <div className="text-right">
