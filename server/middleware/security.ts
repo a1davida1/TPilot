@@ -3,6 +3,7 @@ import compression from "compression";
 import rateLimit from "express-rate-limit";
 import winston from "winston";
 import dotenv from "dotenv";
+import crypto from "crypto";
 
 // Load environment variables
 dotenv.config();
@@ -88,9 +89,59 @@ export const generationLimiter = rateLimit({
 // SECURITY MIDDLEWARE
 // ==========================================
 export const securityMiddleware = [
-  // Security headers
+  // Enhanced security headers with CSP
   helmet({
-    contentSecurityPolicy: false, // Disable for now to avoid breaking things
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: [
+          "'self'",
+          "'unsafe-inline'", // Required for React
+          process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : "",
+          "https://js.stripe.com",
+          "https://checkout.stripe.com",
+          "https://apis.google.com"
+        ].filter(Boolean),
+        styleSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          "https://fonts.googleapis.com",
+          "https://checkout.stripe.com"
+        ],
+        imgSrc: [
+          "'self'",
+          "data:",
+          "blob:",
+          "https:",
+          "*.stripe.com",
+          "*.googleapis.com"
+        ],
+        connectSrc: [
+          "'self'",
+          "https://api.stripe.com",
+          "https://checkout.stripe.com",
+          "https://api.openai.com",
+          "https://generativelanguage.googleapis.com",
+          "wss://*.replit.dev",
+          "ws://localhost:*"
+        ],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        objectSrc: ["'none'"],
+        mediaSrc: ["'self'", "blob:"],
+        frameSrc: ["'self'", "https://checkout.stripe.com", "https://js.stripe.com"],
+        workerSrc: ["'self'", "blob:"],
+        childSrc: ["'self'", "blob:"],
+        formAction: ["'self'"],
+        frameAncestors: ["'none'"],
+        baseUri: ["'self'"],
+        upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null
+      }
+    },
+    hsts: process.env.NODE_ENV === 'production' ? {
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: true
+    } : false,
     crossOriginEmbedderPolicy: false
   }),
 
