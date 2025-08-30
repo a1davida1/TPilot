@@ -1,0 +1,223 @@
+diff --git a/client/src/pages/tax-tracker.tsx b/client/src/pages/tax-tracker.tsx
+index 8ea9f9459b82c106302a4a24ef0ba3816e0a7074..af7a3882cf8e90261d8c620011bb960091eb94df 100644
+--- a/client/src/pages/tax-tracker.tsx
++++ b/client/src/pages/tax-tracker.tsx
+@@ -87,105 +87,142 @@ const expenseCategories = [
+     deductionPercentage: 100,
+     description: 'Advertising, promotions, and marketing expenses',
+     legalExplanation: 'All marketing and promotional expenses to grow your business are fully deductible.',
+     examples: ['Social media ads', 'Website costs', 'Professional photography', 'Graphic design', 'Business cards', 'Promotional materials']
+   }
+ ];
+ 
+ interface TaxTrackerProps {
+   userTier?: 'guest' | 'free' | 'pro' | 'premium';
+ }
+ 
+ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
+   const [selectedCategory, setSelectedCategory] = useState(expenseCategories[0]);
+   const [activeTab, setActiveTab] = useState('overview');
+   const [showExpenseModal, setShowExpenseModal] = useState(false);
+   const [showReceiptModal, setShowReceiptModal] = useState(false);
+   const [calendarDate, setCalendarDate] = useState<Date>(new Date());
+   const [expenseForm, setExpenseForm] = useState({
+     description: '',
+     amount: '',
+     category: '',
+     date: format(new Date(), 'yyyy-MM-dd'),
+     notes: ''
+   });
+   const [receiptFile, setReceiptFile] = useState<File | null>(null);
++  const [receiptExpenseId, setReceiptExpenseId] = useState('');
+   
+   const queryClient = useQueryClient();
+ 
+   // Fetch expense totals
+-  const { data: expenseTotals = { totalExpenses: 0, totalDeductions: 0, estimatedSavings: 0 } } = useQuery({
++  const { data: expenseTotals = { total: 0, deductible: 0, byCategory: {} } } = useQuery({
+     queryKey: ['/api/expenses/totals'],
++    queryFn: async () => {
++      const res = await fetch('/api/expenses/totals');
++      if (!res.ok) throw new Error('Failed to fetch expense totals');
++      return res.json();
++    }
+   });
+ 
+   // Fetch recent expenses
+   const { data: recentExpenses = [] } = useQuery({
+     queryKey: ['/api/expenses'],
++    queryFn: async () => {
++      const res = await fetch('/api/expenses');
++      if (!res.ok) throw new Error('Failed to fetch expenses');
++      return res.json();
++    }
+   });
+ 
+   // Fetch calendar expenses
+   const { data: calendarExpenses = [] } = useQuery({
+     queryKey: ['/api/expenses/range', format(startOfMonth(calendarDate), 'yyyy-MM-dd'), format(endOfMonth(calendarDate), 'yyyy-MM-dd')],
+-    enabled: activeTab === 'calendar'
++    enabled: activeTab === 'calendar',
++    queryFn: async () => {
++      const params = new URLSearchParams({
++        startDate: format(startOfMonth(calendarDate), 'yyyy-MM-dd'),
++        endDate: format(endOfMonth(calendarDate), 'yyyy-MM-dd')
++      });
++      const res = await fetch(`/api/expenses/range?${params.toString()}`);
++      if (!res.ok) throw new Error('Failed to fetch expenses');
++      return res.json();
++    }
+   });
+ 
+   // Create expense mutation
+   const createExpenseMutation = useMutation({
+     mutationFn: async (expenseData: any) => {
+       const response = await fetch('/api/expenses', {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify(expenseData)
+       });
+       if (!response.ok) throw new Error('Failed to create expense');
+       return response.json();
+     },
+     onSuccess: () => {
+       queryClient.invalidateQueries({ queryKey: ['/api/expenses'] });
+       queryClient.invalidateQueries({ queryKey: ['/api/expenses/totals'] });
+       setShowExpenseModal(false);
+       setExpenseForm({ description: '', amount: '', category: '', date: format(new Date(), 'yyyy-MM-dd'), notes: '' });
+     }
+   });
+ 
++  const uploadReceiptMutation = useMutation({
++    mutationFn: async ({ expenseId, file }: { expenseId: string; file: File }) => {
++      const formData = new FormData();
++      formData.append('receipt', file);
++      const res = await fetch(`/api/expenses/${expenseId}/receipt`, {
++        method: 'POST',
++        body: formData
++      });
++      if (!res.ok) throw new Error('Failed to upload receipt');
++      return res.json();
++    },
++    onSuccess: () => {
++      queryClient.invalidateQueries({ queryKey: ['/api/expenses'] });
++      setShowReceiptModal(false);
++      setReceiptFile(null);
++      setReceiptExpenseId('');
++    }
++  });
++
+   const handleCreateExpense = () => {
+     if (!expenseForm.description || !expenseForm.amount || !expenseForm.category) return;
+-    
++
+     createExpenseMutation.mutate({
+       description: expenseForm.description,
+       amount: parseFloat(expenseForm.amount),
+-      category: expenseForm.category,
+-      date: expenseForm.date,
++      categoryId: parseInt(expenseForm.category),
++      expenseDate: expenseForm.date,
+       notes: expenseForm.notes
+     });
+   };
+ 
+   const handleReceiptUpload = () => {
+-    if (!receiptFile) return;
+-    // For now, just close the modal - receipt upload can be enhanced later
+-    setShowReceiptModal(false);
+-    setReceiptFile(null);
++    if (!receiptFile || !receiptExpenseId) return;
++    uploadReceiptMutation.mutate({ expenseId: receiptExpenseId, file: receiptFile });
+   };
+ 
+   const getDaysWithExpenses = () => {
+     const daysInMonth = eachDayOfInterval({
+       start: startOfMonth(calendarDate),
+       end: endOfMonth(calendarDate)
+     });
+     
+     return daysInMonth.map(day => {
+       const dayExpenses = calendarExpenses.filter((expense: any) => 
+         isSameDay(parseISO(expense.date), day)
+       );
+       const totalAmount = dayExpenses.reduce((sum: number, expense: any) => sum + expense.amount, 0);
+       
+       return {
+         date: day,
+         expenses: dayExpenses,
+         totalAmount
+       };
+     });
+   };
+ 
+   return (
+     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-purple-50">
+       <div className="max-w-7xl mx-auto p-6 space-y-8">
+diff --git a/client/src/pages/tax-tracker.tsx b/client/src/pages/tax-tracker.tsx
+index 8ea9f9459b82c106302a4a24ef0ba3816e0a7074..af7a3882cf8e90261d8c620011bb960091eb94df 100644
+--- a/client/src/pages/tax-tracker.tsx
++++ b/client/src/pages/tax-tracker.tsx
+@@ -683,50 +720,62 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
+                   Cancel
+                 </Button>
+                 <Button 
+                   onClick={handleCreateExpense}
+                   disabled={!expenseForm.description || !expenseForm.amount || !expenseForm.category || createExpenseMutation.isPending}
+                   className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500"
+                   data-testid="button-create-expense"
+                 >
+                   {createExpenseMutation.isPending ? 'Adding...' : 'Add Expense'}
+                 </Button>
+               </div>
+             </div>
+           </DialogContent>
+         </Dialog>
+ 
+         {/* Upload Receipt Modal */}
+         <Dialog open={showReceiptModal} onOpenChange={setShowReceiptModal}>
+           <DialogContent className="max-w-md">
+             <DialogHeader>
+               <DialogTitle className="flex items-center space-x-2">
+                 <Upload className="h-5 w-5 text-purple-600" />
+                 <span>Upload Receipt</span>
+               </DialogTitle>
+             </DialogHeader>
+             <div className="space-y-4">
++              <Select value={receiptExpenseId} onValueChange={setReceiptExpenseId}>
++                <SelectTrigger>
++                  <SelectValue placeholder="Select expense" />
++                </SelectTrigger>
++                <SelectContent>
++                  {recentExpenses.map((exp: any) => (
++                    <SelectItem key={exp.id} value={String(exp.id)}>
++                      {exp.description}
++                    </SelectItem>
++                  ))}
++                </SelectContent>
++              </Select>
+               <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                 {receiptFile ? (
+                   <div className="space-y-2">
+                     <Receipt className="h-12 w-12 text-green-600 mx-auto" />
+                     <p className="text-sm font-medium text-gray-900">{receiptFile.name}</p>
+                     <p className="text-xs text-gray-500">{(receiptFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                     <Button 
+                       variant="outline" 
+                       size="sm"
+                       onClick={() => setReceiptFile(null)}
+                       data-testid="button-remove-receipt"
+                     >
+                       <X className="h-4 w-4 mr-1" />
+                       Remove
+                     </Button>
+                   </div>
+                 ) : (
+                   <div className="space-y-2">
+                     <Upload className="h-12 w-12 text-gray-400 mx-auto" />
+                     <p className="text-sm text-gray-600">Drag and drop your receipt here</p>
+                     <p className="text-xs text-gray-500">or click to browse</p>
+                     <Input
+                       type="file"
+                       accept="image/*,.pdf"
+                       onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}

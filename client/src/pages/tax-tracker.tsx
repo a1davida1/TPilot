@@ -109,23 +109,43 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
     notes: ''
   });
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptExpenseId, setReceiptExpenseId] = useState('');
   
   const queryClient = useQueryClient();
 
   // Fetch expense totals
-  const { data: expenseTotals = { totalExpenses: 0, totalDeductions: 0, estimatedSavings: 0 } } = useQuery({
+  const { data: expenseTotals = { total: 0, deductible: 0, byCategory: {} } } = useQuery({
     queryKey: ['/api/expenses/totals'],
+    queryFn: async () => {
+      const res = await fetch('/api/expenses/totals');
+      if (!res.ok) throw new Error('Failed to fetch expense totals');
+      return res.json();
+    }
   });
 
   // Fetch recent expenses
   const { data: recentExpenses = [] } = useQuery({
     queryKey: ['/api/expenses'],
+    queryFn: async () => {
+      const res = await fetch('/api/expenses');
+      if (!res.ok) throw new Error('Failed to fetch expenses');
+      return res.json();
+    }
   });
 
   // Fetch calendar expenses
   const { data: calendarExpenses = [] } = useQuery({
     queryKey: ['/api/expenses/range', format(startOfMonth(calendarDate), 'yyyy-MM-dd'), format(endOfMonth(calendarDate), 'yyyy-MM-dd')],
-    enabled: activeTab === 'calendar'
+    enabled: activeTab === 'calendar',
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        startDate: format(startOfMonth(calendarDate), 'yyyy-MM-dd'),
+        endDate: format(endOfMonth(calendarDate), 'yyyy-MM-dd')
+      });
+      const res = await fetch(`/api/expenses/range?${params.toString()}`);
+      if (!res.ok) throw new Error('Failed to fetch expenses');
+      return res.json();
+    }
   });
 
   // Create expense mutation
@@ -147,23 +167,40 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
     }
   });
 
+  const uploadReceiptMutation = useMutation({
+    mutationFn: async ({ expenseId, file }: { expenseId: string; file: File }) => {
+      const formData = new FormData();
+      formData.append('receipt', file);
+      const res = await fetch(`/api/expenses/${expenseId}/receipt`, {
+        method: 'POST',
+        body: formData
+      });
+      if (!res.ok) throw new Error('Failed to upload receipt');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/expenses'] });
+      setShowReceiptModal(false);
+      setReceiptFile(null);
+      setReceiptExpenseId('');
+    }
+  });
+
   const handleCreateExpense = () => {
     if (!expenseForm.description || !expenseForm.amount || !expenseForm.category) return;
-    
+
     createExpenseMutation.mutate({
       description: expenseForm.description,
       amount: parseFloat(expenseForm.amount),
-      category: expenseForm.category,
-      date: expenseForm.date,
+      categoryId: parseInt(expenseForm.category),
+      expenseDate: expenseForm.date,
       notes: expenseForm.notes
     });
   };
 
   const handleReceiptUpload = () => {
-    if (!receiptFile) return;
-    // For now, just close the modal - receipt upload can be enhanced later
-    setShowReceiptModal(false);
-    setReceiptFile(null);
+    if (!receiptFile || !receiptExpenseId) return;
+    uploadReceiptMutation.mutate({ expenseId: receiptExpenseId, file: receiptFile });
   };
 
   const getDaysWithExpenses = () => {
@@ -705,6 +742,18 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
+              <Select value={receiptExpenseId} onValueChange={setReceiptExpenseId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select expense" />
+                </SelectTrigger>
+                <SelectContent>
+                  {recentExpenses.map((exp: any) => (
+                    <SelectItem key={exp.id} value={String(exp.id)}>
+                      {exp.description}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
                 {receiptFile ? (
                   <div className="space-y-2">
