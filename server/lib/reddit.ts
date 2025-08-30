@@ -240,16 +240,17 @@ export function getRedditAuthUrl(state: string): string {
     throw new Error('Reddit OAuth credentials not configured');
   }
 
-  // Use configured REDDIT_REDIRECT_URI if available, otherwise fall back to dynamic domain
+  // Always use a consistent redirect URI
   let redirectUri = process.env.REDDIT_REDIRECT_URI;
   
   if (!redirectUri) {
-    const domain = process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000';
+    // Use the primary domain from REPLIT_DOMAINS for consistency
+    const domain = process.env.REPLIT_DOMAINS?.split(',')[0] || 'thottopilot.com';
     const protocol = domain.includes('localhost') ? 'http' : 'https';
     redirectUri = `${protocol}://${domain}/api/reddit/callback`;
   }
   
-  console.log('Reddit OAuth redirect URI:', redirectUri);
+  console.log('Reddit OAuth redirect URI (auth):', redirectUri);
 
   const baseUrl = 'https://www.reddit.com/api/v1/authorize';
   const params = new URLSearchParams({
@@ -276,14 +277,17 @@ export async function exchangeRedditCode(code: string): Promise<{
     throw new Error('Reddit OAuth credentials not configured');
   }
 
-  // Use configured REDDIT_REDIRECT_URI if available, otherwise fall back to dynamic domain
+  // Always use a consistent redirect URI (must match exactly)
   let redirectUri = process.env.REDDIT_REDIRECT_URI;
   
   if (!redirectUri) {
-    const domain = process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000';
+    // Use the primary domain from REPLIT_DOMAINS for consistency
+    const domain = process.env.REPLIT_DOMAINS?.split(',')[0] || 'thottopilot.com';
     const protocol = domain.includes('localhost') ? 'http' : 'https';
     redirectUri = `${protocol}://${domain}/api/reddit/callback`;
   }
+  
+  console.log('Reddit OAuth redirect URI (exchange):', redirectUri);
 
   const response = await fetch('https://www.reddit.com/api/v1/access_token', {
     method: 'POST',

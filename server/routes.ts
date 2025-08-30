@@ -112,14 +112,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(session({
     store,
     secret: SESSION_SECRET,
-    resave: false,
+    resave: true, // Changed to true for OAuth state persistence
     saveUninitialized: true, // Required for OAuth flows
     cookie: {
-      secure: IS_PRODUCTION, // Only use secure in production
+      secure: false, // Always false for development OAuth to work
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      sameSite: 'lax'
-    }
+      sameSite: 'lax' // Allows OAuth redirects
+    },
+    name: 'thottopilot.sid', // Custom session name
+    rolling: true // Refresh session on activity
   }));
 
   // ==========================================
@@ -336,6 +338,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/leads", createLead);
   app.get("/api/leads/confirm", confirmLead);
   app.get("/api/admin/leads", getLeads);
+
+  // Debug endpoint for Reddit OAuth session
+  app.get('/api/debug/reddit-session', (req, res) => {
+    res.json({
+      sessionID: req.sessionID,
+      redditState: (req.session as any).redditOAuthState,
+      hasSession: !!req.session,
+      cookies: req.headers.cookie,
+      sessionData: req.session
+    });
+  });
 
   // ==========================================
   // ERROR HANDLER (MUST BE LAST)

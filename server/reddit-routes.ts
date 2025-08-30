@@ -25,7 +25,26 @@ export function registerRedditRoutes(app: Express) {
       // Store state in session for verification
       (req.session as any).redditOAuthState = state;
       
+      // Debug logging
+      console.log('Setting Reddit OAuth state:', state);
+      console.log('Session ID:', req.sessionID);
+      console.log('Session after setting:', (req.session as any).redditOAuthState);
+      
+      // Force session save and wait for it to complete
+      await new Promise<void>((resolve, reject) => {
+        req.session.save((err) => {
+          if (err) {
+            console.error('Session save error:', err);
+            reject(err);
+          } else {
+            console.log('Session saved successfully');
+            resolve();
+          }
+        });
+      });
+      
       const authUrl = getRedditAuthUrl(state);
+      console.log('Generated auth URL:', authUrl);
       res.json({ authUrl });
       
     } catch (error) {
@@ -47,8 +66,18 @@ export function registerRedditRoutes(app: Express) {
         return res.redirect('/dashboard?error=reddit_missing_params');
       }
 
+      // Debug logging
+      console.log('Reddit callback - Received state:', state);
+      console.log('Reddit callback - Session ID:', req.sessionID);
+      console.log('Reddit callback - Session state:', (req.session as any).redditOAuthState);
+      console.log('Reddit callback - Full session:', req.session);
+      
       // Verify state parameter
       if (state !== (req.session as any).redditOAuthState) {
+        console.error('State mismatch:', {
+          received: state,
+          stored: (req.session as any).redditOAuthState
+        });
         return res.redirect('/dashboard?error=reddit_invalid_state');
       }
 
@@ -94,6 +123,7 @@ export function registerRedditRoutes(app: Express) {
       // Clear OAuth state
       delete (req.session as any).redditOAuthState;
 
+      // Success redirect to dashboard
       res.redirect('/dashboard?reddit=connected&username=' + encodeURIComponent(profile.username));
       
     } catch (error) {
