@@ -94,6 +94,49 @@ export function useAuth() {
     }
   };
 
+  // Check for OAuth redirect tokens in URL or cookies
+  useEffect(() => {
+    // Check URL params for OAuth success
+    const urlParams = new URLSearchParams(window.location.search);
+    const reddit = urlParams.get('reddit');
+    const error = urlParams.get('error');
+    
+    if (reddit === 'connected') {
+      console.log('Reddit connected successfully!');
+      // Clean URL
+      window.history.replaceState({}, '', window.location.pathname);
+      // Refetch user to get updated Reddit connection status
+      refetch();
+    }
+    
+    if (error) {
+      console.error('OAuth error:', error);
+      // Clean URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+    
+    // Check for auth token in cookies (set by backend after OAuth)
+    const checkCookieAuth = async () => {
+      const response = await fetch('/api/auth/user', {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const userData = await response.json();
+        if (userData && userData.id) {
+          // User is authenticated via cookie/session
+          console.log('User authenticated via OAuth:', userData.username);
+          refetch();
+        }
+      }
+    };
+    
+    // Only check cookie auth if no token in localStorage
+    if (!token && (reddit || error)) {
+      checkCookieAuth();
+    }
+  }, [refetch]);
+
   // Quick admin login function for testing
   const quickAdminLogin = async () => {
     try {
