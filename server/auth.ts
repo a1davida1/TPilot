@@ -147,8 +147,20 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: 'Invalid or expired token' });
       }
 
-      await storage.updateUserEmailVerified(record.userId, true);
+      // Get user details for welcome email
+      const user = await storage.getUser(record.userId);
+      if (!user) {
+        return res.status(400).json({ message: 'User not found' });
+      }
+
+      // In the email verification endpoint, after marking email as verified:
+      await storage.updateUserEmailVerified(user.id, true);
       await storage.deleteVerificationToken(token);
+
+      // Send welcome email
+      if (user.email) {
+        await emailService.sendWelcomeEmail(user.email, user.username);
+      }
 
       res.json({ message: 'Email verified successfully' });
     } catch (error) {
@@ -296,39 +308,4 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // Verify email with token
-  app.get('/api/auth/verify-email', async (req, res) => {
-    try {
-      const { token } = req.query;
-      
-      if (!token) {
-        return res.status(400).json({ message: 'Verification token required' });
-      }
-
-      // Verify token
-      const decoded = jwt.verify(token as string, JWT_SECRET) as any;
-      
-      if (decoded.type !== 'email-verification') {
-        return res.status(400).json({ message: 'Invalid verification token' });
-      }
-
-      // Update user email verification status
-      const user = await storage.getUserByEmail(decoded.email);
-      
-      if (!user) {
-        return res.status(400).json({ message: 'Invalid verification token' });
-      }
-
-      // Mark email as verified (would need to add this to schema)
-      await storage.updateUserEmailVerified(user.id, true);
-
-      res.json({ message: 'Email verified successfully' });
-    } catch (error) {
-      if (error instanceof jwt.TokenExpiredError) {
-        return res.status(400).json({ message: 'Verification link has expired' });
-      }
-      console.error('Email verification error:', error);
-      res.status(500).json({ message: 'Error verifying email' });
-    }
-  });
 }
