@@ -3,11 +3,12 @@ import { RedditManager, getRedditAuthUrl, exchangeRedditCode } from './lib/reddi
 import { db } from './db.js';
 import { creatorAccounts } from '@shared/schema.js';
 import { eq, and } from 'drizzle-orm';
+import { authenticateToken } from './middleware/auth.js';
 
 export function registerRedditRoutes(app: Express) {
   
   // Start Reddit OAuth flow
-  app.get('/api/reddit/connect', async (req, res) => {
+  app.get('/api/reddit/connect', authenticateToken, async (req: any, res) => {
     try {
       if (!process.env.REDDIT_CLIENT_ID) {
         return res.status(503).json({ 
@@ -15,7 +16,7 @@ export function registerRedditRoutes(app: Express) {
         });
       }
 
-      const userId = (req.session as any)?.userId || (req.user as any)?.userId;
+      const userId = req.user?.id;
       if (!userId) {
         return res.status(401).json({ error: 'Authentication required' });
       }
@@ -102,9 +103,9 @@ export function registerRedditRoutes(app: Express) {
   });
 
   // Get user's Reddit connections
-  app.get('/api/reddit/accounts', async (req, res) => {
+  app.get('/api/reddit/accounts', authenticateToken, async (req: any, res) => {
     try {
-      const userId = (req.session as any)?.userId || (req.user as any)?.userId;
+      const userId = req.user?.id;
       if (!userId) {
         return res.status(401).json({ error: 'Authentication required' });
       }
@@ -135,10 +136,10 @@ export function registerRedditRoutes(app: Express) {
   });
 
   // Disconnect Reddit account
-  app.delete('/api/reddit/accounts/:accountId', async (req, res) => {
+  app.delete('/api/reddit/accounts/:accountId', authenticateToken, async (req: any, res) => {
     try {
       const { accountId } = req.params;
-      const userId = (req.session as any)?.userId || (req.user as any)?.userId;
+      const userId = req.user?.id;
       if (!userId) {
         return res.status(401).json({ error: 'Authentication required' });
       }
@@ -166,9 +167,9 @@ export function registerRedditRoutes(app: Express) {
   });
 
   // Test Reddit connection
-  app.post('/api/reddit/test', async (req, res) => {
+  app.post('/api/reddit/test', authenticateToken, async (req: any, res) => {
     try {
-      const userId = (req.session as any)?.userId || (req.user as any)?.userId;
+      const userId = req.user?.id;
       if (!userId) {
         return res.status(401).json({ error: 'Authentication required' });
       }
@@ -201,9 +202,9 @@ export function registerRedditRoutes(app: Express) {
   });
 
   // Manual post submission (for testing)
-  app.post('/api/reddit/submit', async (req, res) => {
+  app.post('/api/reddit/submit', authenticateToken, async (req: any, res) => {
     try {
-      const userId = (req.session as any)?.userId || (req.user as any)?.userId;
+      const userId = req.user?.id;
       if (!userId) {
         return res.status(401).json({ error: 'Authentication required' });
       }
