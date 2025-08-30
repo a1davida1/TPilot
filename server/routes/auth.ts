@@ -54,10 +54,13 @@ router.post("/signup", authLimiter, async (req, res) => {
 // Login route with rate limiting
 router.post("/login", authLimiter, async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, username, password } = req.body;
+    
+    // Get the login identifier (could be email or username)
+    const loginIdentifier = email || username;
     
     // Admin login check
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+    if (loginIdentifier === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
       const adminUser = {
         id: 999,
         email: ADMIN_EMAIL,
@@ -82,10 +85,10 @@ router.post("/login", authLimiter, async (req, res) => {
     }
 
     // Find user by email OR username
-    let user = await storage.getUserByEmail(email);
+    let user = await storage.getUserByEmail(loginIdentifier);
     
     if (!user) {
-      user = await storage.getUserByUsername(email);
+      user = await storage.getUserByUsername(loginIdentifier);
     }
     
     if (!user) {
