@@ -58,7 +58,48 @@ export function setupAuth(app: Express) {
     try {
       const { username, password, email } = req.body;
 
-      // Admin login now handled through secure database authentication
+      // ADMIN LOGIN CHECK FIRST (using environment variables)
+      const loginIdentifier = email || username;
+      const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+      const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+      
+      console.log('🚨 LOGIN ATTEMPT:', { loginIdentifier, passwordProvided: !!password });
+      console.log('🚨 ADMIN CHECK:', { 
+        adminEmail: ADMIN_EMAIL, 
+        adminPasswordSet: !!ADMIN_PASSWORD,
+        isAdminLogin: loginIdentifier === ADMIN_EMAIL && password === ADMIN_PASSWORD
+      });
+      
+      if (ADMIN_EMAIL && ADMIN_PASSWORD && loginIdentifier === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+        const adminUser = {
+          id: 999,
+          email: ADMIN_EMAIL,
+          username: 'admin',
+          tier: 'pro',
+          isAdmin: true
+        };
+
+        const token = jwt.sign(
+          { 
+            userId: adminUser.id, 
+            id: adminUser.id, 
+            email: adminUser.email, 
+            username: adminUser.username, 
+            isAdmin: true
+          },
+          JWT_SECRET,
+          { expiresIn: '24h' }
+        );
+
+        console.log('🎉 ADMIN LOGIN SUCCESSFUL!');
+        return res.json({
+          message: 'Admin login successful',
+          token,
+          user: adminUser
+        });
+      }
+
+      // Regular user login logic continues below
       const loginEmail = email || username;
 
       // Try to find user by username first, then by email
