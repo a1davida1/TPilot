@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitest/config';
+import path from 'path';
 
 export default defineConfig({
   test: {
@@ -6,5 +7,11 @@ export default defineConfig({
     globals: true,
     include: ['tests/**/*.{test,spec}.{js,ts}'],
     exclude: ['node_modules', 'dist', 'client']
+  },
+  resolve: {
+    alias: {
+      '@shared': path.resolve(__dirname, './shared'),
+      '@': path.resolve(__dirname, './client/src'),
+    }
   }
 });
