@@ -10,7 +10,7 @@ import { Header } from "@/components/header";
 import { useAuth } from "@/hooks/useAuth";
 import { SEOOptimization, seoConfigs } from "@/components/seo-optimization";
 import { UnifiedLanding } from "@/components/unified-landing";
-import { UnifiedDashboard } from "@/components/unified-dashboard";
+import { ModernDashboard } from "@/components/modern-dashboard";
 import { OnboardingWalkthrough } from "@/components/onboarding-walkthrough";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import NotFound from "@/pages/not-found";
@@ -34,10 +34,10 @@ function AuthenticatedRoutes() {
   return (
     <Switch>
       <Route path="/">
-        <UnifiedDashboard />
+        <ModernDashboard />
       </Route>
       <Route path="/dashboard">
-        <UnifiedDashboard />
+        <ModernDashboard />
       </Route>
       <Route path="/caption-generator" component={CaptionGeneratorPage} />
       <Route path="/enterprise" component={Enterprise} />
