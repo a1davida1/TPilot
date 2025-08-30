@@ -165,14 +165,53 @@ export class QueueMonitor {
   }
 
   private async getProcessingStats(queueName: string) {
-    // In a full implementation, this would query job history from database
-    // For now, return mock processing stats
-    return {
-      completed: Math.floor(Math.random() * 100),
-      throughput: Math.floor(Math.random() * 50), // jobs/hour
-      avgProcessingTime: Math.floor(Math.random() * 5000), // 0-5 seconds
-      lastProcessed: new Date(Date.now() - Math.random() * 3600000), // Within last hour
-    };
+    try {
+      const queue = getQueueBackend();
+      
+      // Get completed job count from the last 24 hours
+      const completedJobs = await queue.getCompletedCount ? 
+        queue.getCompletedCount(queueName, { since: new Date(Date.now() - 24 * 60 * 60 * 1000) }) : 
+        0;
+      
+      // Calculate throughput (jobs per hour over last 24 hours)
+      const throughput = Math.floor(completedJobs / 24);
+      
+      // Get recent job timing data if available
+      const recentJobs = await queue.getRecentJobs ? 
+        queue.getRecentJobs(queueName, 10) : 
+        [];
+      
+      // Calculate average processing time from recent jobs
+      const avgProcessingTime = recentJobs.length > 0 ?
+        recentJobs.reduce((sum, job) => {
+          const duration = job.processedOn && job.timestamp ? 
+            job.processedOn - job.timestamp : 1000;
+          return sum + duration;
+        }, 0) / recentJobs.length :
+        1000; // Default 1 second
+      
+      // Get last processed job timestamp
+      const lastProcessedJob = recentJobs[0];
+      const lastProcessed = lastProcessedJob?.processedOn ? 
+        new Date(lastProcessedJob.processedOn) : 
+        new Date();
+      
+      return {
+        completed: completedJobs,
+        throughput,
+        avgProcessingTime: Math.floor(avgProcessingTime),
+        lastProcessed,
+      };
+    } catch (error) {
+      console.error('Error getting processing stats:', error);
+      // Return basic stats if queue backend doesn't support detailed metrics
+      return {
+        completed: 0,
+        throughput: 0,
+        avgProcessingTime: 0,
+        lastProcessed: new Date(),
+      };
+    }
   }
 
   private determineHealthStatus(failureRate: number, pending: number, active: number): 'healthy' | 'warning' | 'critical' {

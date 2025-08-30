@@ -6,7 +6,7 @@ import { CaptionArray, RankResult, platformChecks } from "./schema";
 async function load(p:string){ return fs.readFile(path.join(process.cwd(),"prompts",p),"utf8"); }
 async function b64(url:string){ 
   try {
-    const r=await fetch(url, { timeout: 10000 }); 
+    const r=await fetch(url); 
     if(!r.ok) throw new Error(`fetch failed: ${r.status} ${r.statusText}`); 
     const b=Buffer.from(await r.arrayBuffer()); 
     return b.toString("base64"); 

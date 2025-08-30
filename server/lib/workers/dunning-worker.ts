@@ -122,20 +122,69 @@ export class DunningWorker {
 
   private async retryPayment(subscription: any) {
     try {
-      // In full implementation, this would integrate with payment processor (CCBill, Stripe, etc.)
-      // For now, simulate payment attempt
       console.log(`Attempting payment retry for subscription ${subscription.id}`);
       
-      // Simulate random success/failure for demo
-      const success = Math.random() > 0.7; // 30% success rate
-      
-      if (success) {
-        return { success: true, transactionId: `txn_${Date.now()}` };
+      // Try to process payment using the configured payment provider
+      if (process.env.STRIPE_SECRET_KEY && subscription.stripeCustomerId) {
+        return await this.retryStripePayment(subscription);
+      } else if (process.env.CCBILL_ACCOUNT_NUMBER && subscription.ccbillSubscriptionId) {
+        return await this.retryCCBillPayment(subscription);
       } else {
-        return { success: false, error: 'Card declined - insufficient funds' };
+        console.warn('No payment provider configured for retry');
+        return { success: false, error: 'No payment method available for retry' };
       }
     } catch (error: any) {
+      console.error('Payment retry error:', error);
       return { success: false, error: error.message };
+    }
+  }
+
+  private async retryStripePayment(subscription: any) {
+    try {
+      const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+      
+      // Attempt to charge the customer's default payment method
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: subscription.amount,
+        currency: 'usd',
+        customer: subscription.stripeCustomerId,
+        payment_method: subscription.paymentMethodId,
+        confirm: true,
+        off_session: true, // Indicates this is for an existing customer
+      });
+
+      if (paymentIntent.status === 'succeeded') {
+        return { 
+          success: true, 
+          transactionId: paymentIntent.id,
+          provider: 'stripe'
+        };
+      } else {
+        return { 
+          success: false, 
+          error: `Payment failed: ${paymentIntent.status}`,
+          provider: 'stripe'
+        };
+      }
+    } catch (error: any) {
+      const errorMessage = error.decline_code || error.message || 'Payment failed';
+      return { success: false, error: errorMessage, provider: 'stripe' };
+    }
+  }
+
+  private async retryCCBillPayment(subscription: any) {
+    try {
+      // CCBill retry would use their API to process a new transaction
+      console.log(`Retrying CCBill payment for subscription ${subscription.ccbillSubscriptionId}`);
+      
+      // For now, log that CCBill retry is not yet implemented
+      return { 
+        success: false, 
+        error: 'CCBill retry not yet implemented',
+        provider: 'ccbill'
+      };
+    } catch (error: any) {
+      return { success: false, error: error.message, provider: 'ccbill' };
     }
   }
 

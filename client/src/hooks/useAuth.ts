@@ -103,8 +103,8 @@ export function useAuth() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: 'admin@thottopilot.com',
-          password: 'admin123'
+          email: 'thottopilot@thottopilot.com',
+          password: 'Struggle123!*'
         })
       });
       
