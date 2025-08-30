@@ -70,6 +70,7 @@ export function ModernDashboard({ isRedditConnected = false }: ModernDashboardPr
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeSection, setActiveSection] = useState("dashboard");
   const [isMobile, setIsMobile] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -170,12 +171,81 @@ export function ModernDashboard({ isRedditConnected = false }: ModernDashboardPr
     }
   ];
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('File input changed');
     const file = event.target.files?.[0];
-    if (file) {
+    
+    if (!file) {
+      console.log('No file selected');
+      return;
+    }
+    
+    console.log('File selected:', file.name, 'Size:', file.size, 'Type:', file.type);
+    
+    // Check file size (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please select an image under 10MB",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Create FormData for upload
+    const formData = new FormData();
+    formData.append('image', file);
+    
+    try {
+      console.log('Starting upload...');
       toast({
         title: "Upload started",
-        description: "Processing your image with AI...",
+        description: "Processing your image...",
+      });
+      
+      // Get auth token
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        toast({
+          title: "Authentication required",
+          description: "Please log in to upload images",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      const response = await fetch('/api/upload/image', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+      
+      console.log('Upload response status:', response.status);
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Upload failed');
+      }
+      
+      const data = await response.json();
+      console.log('Upload successful:', data);
+      
+      toast({
+        title: "Upload successful!",
+        description: `${file.name} has been uploaded successfully`,
+      });
+      
+      // Reset the input
+      event.target.value = '';
+      
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({
+        title: "Upload failed",
+        description: error instanceof Error ? error.message : "Failed to upload image",
+        variant: "destructive",
       });
     }
   };
@@ -386,24 +456,79 @@ export function ModernDashboard({ isRedditConnected = false }: ModernDashboardPr
               </CardHeader>
               <CardContent>
                 <div 
-                  className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 text-center hover:border-pink-400 dark:hover:border-pink-500 transition-colors cursor-pointer group"
-                  onClick={() => document.getElementById('file-upload')?.click()}
+                  className={cn(
+                    "border-2 border-dashed rounded-xl p-8 text-center transition-all cursor-pointer group",
+                    isDragging 
+                      ? "border-pink-500 bg-pink-50 dark:bg-pink-950/20" 
+                      : "border-gray-300 dark:border-gray-600 hover:border-pink-400 dark:hover:border-pink-500"
+                  )}
+                  onClick={() => {
+                    console.log('Upload area clicked');
+                    const input = document.getElementById('file-upload') as HTMLInputElement;
+                    if (input) {
+                      console.log('File input found, triggering click');
+                      input.click();
+                    } else {
+                      console.error('File input not found!');
+                    }
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Drag over');
+                    setIsDragging(true);
+                  }}
+                  onDragLeave={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Drag leave');
+                    setIsDragging(false);
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('File dropped');
+                    setIsDragging(false);
+                    
+                    const files = e.dataTransfer.files;
+                    if (files && files[0]) {
+                      console.log('Processing dropped file:', files[0].name);
+                      // Create a synthetic event for the handleFileUpload function
+                      const input = document.getElementById('file-upload') as HTMLInputElement;
+                      if (input) {
+                        const dataTransfer = new DataTransfer();
+                        dataTransfer.items.add(files[0]);
+                        input.files = dataTransfer.files;
+                        
+                        const event = new Event('change', { bubbles: true });
+                        input.dispatchEvent(event);
+                      }
+                    }
+                  }}
                 >
                   <div className="w-16 h-16 bg-pink-50 dark:bg-pink-950/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-pink-100 dark:group-hover:bg-pink-950/40 transition-colors">
                     <Camera className="h-8 w-8 text-pink-500" />
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                    Drop your photo here
+                    {isDragging ? "Drop your photo now!" : "Drop your photo here"}
                   </h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-6">
-                    or click to browse your files
+                    {isDragging ? "Release to upload" : "or click to browse your files"}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-500">
+                    Supports: JPEG, PNG, WebP, GIF (Max 10MB)
                   </p>
                   <input
                     id="file-upload"
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
                     className="hidden"
                     onChange={handleFileUpload}
+                    onClick={(e) => {
+                      // Reset the input value to allow re-selecting the same file
+                      (e.target as HTMLInputElement).value = '';
+                      console.log('File input clicked, value reset');
+                    }}
                   />
                 </div>
 
