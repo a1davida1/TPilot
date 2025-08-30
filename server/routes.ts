@@ -7,6 +7,7 @@ import connectPgSimple from 'connect-pg-simple';
 import * as connectRedis from 'connect-redis';
 import { Pool } from 'pg';
 import Redis from 'ioredis';
+import Stripe from 'stripe';
 
 // Security and middleware
 import { validateEnvironment, securityMiddleware, ipLoggingMiddleware, errorHandler, logger, generationLimiter } from "./middleware/security.js";
@@ -65,6 +66,12 @@ const SESSION_SECRET = process.env.SESSION_SECRET!;
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 const DATABASE_URL = process.env.DATABASE_URL;
 const REDIS_URL = process.env.REDIS_URL;
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+
+// Initialize Stripe if configured
+const stripe = STRIPE_SECRET_KEY ? new Stripe(STRIPE_SECRET_KEY, {
+  apiVersion: '2025-08-27.basil' as any,
+}) : null;
 
 // Auth request interface
 interface AuthRequest extends express.Request {
@@ -155,6 +162,161 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Serve uploaded files securely
   app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
+  // ==========================================
+  // STRIPE PAYMENT ENDPOINTS
+  // ==========================================
+  
+  // Create subscription payment intent
+  app.post("/api/create-subscription", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      if (!stripe) {
+        return res.status(503).json({ 
+          message: "Payment system is not configured. Please try again later." 
+        });
+      }
+
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const { plan, amount } = req.body;
+      
+      // Validate plan and amount
+      if (!plan || !amount) {
+        return res.status(400).json({ message: "Plan and amount are required" });
+      }
+
+      if (plan !== 'pro' && plan !== 'pro_plus') {
+        return res.status(400).json({ message: "Invalid plan selected" });
+      }
+
+      // Get or create Stripe customer
+      const user = await storage.getUser(req.user.id);
+      let customerId = user?.stripeCustomerId;
+
+      if (!customerId) {
+        // Create new Stripe customer
+        const customer = await stripe.customers.create({
+          email: user?.email || undefined,
+          metadata: {
+            userId: req.user.id.toString(),
+            plan: plan
+          }
+        });
+        customerId = customer.id;
+        
+        // Save customer ID to database
+        await storage.updateUser(req.user.id, { stripeCustomerId: customerId });
+      }
+
+      // Create subscription with trial period
+      const subscription = await stripe.subscriptions.create({
+        customer: customerId,
+        items: [{
+          price_data: {
+            currency: 'usd',
+            product: plan === 'pro_plus' ? 'prod_thottopilot_pro_plus' : 'prod_thottopilot_pro',
+            unit_amount: amount,
+            recurring: {
+              interval: 'month',
+            },
+          } as any,
+        }],
+        payment_behavior: 'default_incomplete',
+        payment_settings: { save_default_payment_method: 'on_subscription' },
+        expand: ['latest_invoice.payment_intent'],
+      });
+
+      const invoice = subscription.latest_invoice as Stripe.Invoice;
+      const paymentIntent = (invoice as any).payment_intent as Stripe.PaymentIntent;
+
+      res.json({
+        subscriptionId: subscription.id,
+        clientSecret: paymentIntent.client_secret,
+      });
+    } catch (error: any) {
+      logger.error("Subscription creation error:", error);
+      res.status(500).json({ 
+        message: "Error creating subscription: " + (error.message || 'Unknown error') 
+      });
+    }
+  });
+
+  // Get subscription status
+  app.get("/api/subscription-status", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      if (!stripe) {
+        return res.json({ hasSubscription: false, plan: 'free' });
+      }
+
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const user = await storage.getUser(req.user.id);
+      
+      if (!user?.stripeCustomerId) {
+        return res.json({ hasSubscription: false, plan: 'free' });
+      }
+
+      // Get active subscriptions for this customer
+      const subscriptions = await stripe.subscriptions.list({
+        customer: user.stripeCustomerId,
+        status: 'active',
+        limit: 1
+      });
+
+      if (subscriptions.data.length > 0) {
+        const subscription = subscriptions.data[0];
+        const plan = subscription.metadata?.plan || 'pro';
+        
+        return res.json({
+          hasSubscription: true,
+          plan,
+          subscriptionId: subscription.id,
+          currentPeriodEnd: (subscription as any).current_period_end,
+        });
+      }
+
+      return res.json({ hasSubscription: false, plan: 'free' });
+    } catch (error) {
+      logger.error("Subscription status error:", error);
+      res.status(500).json({ message: "Failed to get subscription status" });
+    }
+  });
+
+  // Cancel subscription
+  app.post("/api/cancel-subscription", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      if (!stripe) {
+        return res.status(503).json({ message: "Payment system not configured" });
+      }
+
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const { subscriptionId } = req.body;
+      
+      if (!subscriptionId) {
+        return res.status(400).json({ message: "Subscription ID required" });
+      }
+
+      // Cancel at period end to allow user to keep access until end of billing period
+      const subscription = await stripe.subscriptions.update(subscriptionId, {
+        cancel_at_period_end: true
+      });
+
+      res.json({
+        message: "Subscription will be cancelled at the end of the billing period",
+        cancelAt: subscription.cancel_at
+      });
+    } catch (error) {
+      logger.error("Subscription cancellation error:", error);
+      res.status(500).json({ message: "Failed to cancel subscription" });
+    }
+  });
 
   // ==========================================
   // CONTENT GENERATION ENDPOINTS

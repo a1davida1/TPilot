@@ -27,7 +27,7 @@ import {
   Crown,
   Zap
 } from 'lucide-react';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 
 export default function SettingsPage() {
   const [theme, setTheme] = useState('light');
@@ -109,12 +109,12 @@ export default function SettingsPage() {
     });
   };
 
+  const [, setLocation] = useLocation();
+  
   const handleUpgrade = () => {
-    // This will be implemented when payment system is ready
-    toast({
-      title: "Upgrade coming soon!",
-      description: "Payment integration will be available soon. You'll get early access!",
-    });
+    // Navigate to Stripe checkout page
+    const selectedPlan = subscriptionData?.subscription?.plan === 'free' ? 'pro' : 'pro_plus';
+    setLocation(`/checkout?plan=${selectedPlan}`);
   };
 
   return (

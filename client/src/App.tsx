@@ -17,6 +17,7 @@ import NotFound from "@/pages/not-found";
 import Login from "@/pages/login";
 import History from "@/pages/history";
 import Settings from "@/pages/settings";
+import Checkout from "@/pages/checkout";
 import Enterprise from "@/pages/enterprise";
 import Phase4Dashboard from "@/pages/phase4";
 import { AdminDashboard } from "@/pages/admin";
@@ -46,6 +47,7 @@ function AuthenticatedRoutes() {
       <Route path="/reddit" component={RedditPostingPage} />
       <Route path="/history" component={History} />
       <Route path="/settings" component={Settings} />
+      <Route path="/checkout" component={Checkout} />
       {/* Admin Routes - Only for authenticated admin users */}
       {isAdmin && (
         <>
