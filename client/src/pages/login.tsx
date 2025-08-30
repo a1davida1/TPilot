@@ -41,8 +41,8 @@ export default function Login() {
         localStorage.setItem('user', JSON.stringify(data.user));
       }
       
-      // Trigger auth refetch to update useAuth state
-      window.location.reload();
+      // Redirect to dashboard
+      setLocation('/dashboard');
     },
     onError: (error: any) => {
       toast({
@@ -55,9 +55,6 @@ export default function Login() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Admin login shortcut - fast access for development/admin use
-    
     
     if (view === 'signup') {
       if (password !== confirmPassword) {
