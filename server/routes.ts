@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Response, NextFunction } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
 import session from 'express-session';
@@ -18,6 +18,7 @@ import { setupAuth } from "./auth.js";
 import { setupAdminRoutes } from "./admin-routes.js";
 import { configureSocialAuth, socialAuthRoutes } from "./social-auth-config.js";
 import { visitorAnalytics } from "./visitor-analytics.js";
+import type { AnalyticsRequest } from "./visitor-analytics.js";
 
 // Service imports
 import { generateContent } from "./services/content-generator.js";
@@ -78,7 +79,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(ipLoggingMiddleware);
 
   // Visitor analytics middleware
-  app.use((req, res, next) => {
+  app.use((req: AnalyticsRequest, res: Response, next: NextFunction) => {
     // Only track non-API routes to avoid noise
     if (!req.path.startsWith('/api/') && !req.path.startsWith('/uploads/')) {
       visitorAnalytics.trackPageView(req, req.path);
