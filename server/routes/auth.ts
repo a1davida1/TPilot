@@ -160,7 +160,8 @@ router.get("/user", async (req: any, res) => {
           const { password: _, ...userResponse } = user;
           return res.json({
             ...userResponse,
-            tier: userResponse.tier || 'free'
+            tier: userResponse.tier || 'free',
+            role: userResponse.role || 'user' // Handle nullable role
           });
         }
       }
@@ -196,7 +197,8 @@ router.get("/user", async (req: any, res) => {
           const { password: _, ...userResponse } = user;
           return res.json({
             ...userResponse,
-            tier: userResponse.tier || 'free'
+            tier: userResponse.tier || 'free',
+            role: userResponse.role || 'user' // Handle nullable role
           });
         }
         

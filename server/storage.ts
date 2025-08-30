@@ -942,18 +942,19 @@ class PostgreSQLStorage implements IStorage {
     try {
       const { platform, status, limit = 50, offset = 0 } = filters || {};
       
-      let query = db.select().from(socialMediaPosts)
-        .where(eq(socialMediaPosts.userId, userId));
-
+      // Build conditions array
+      const conditions = [eq(socialMediaPosts.userId, userId)];
+      
       if (platform) {
-        query = query.where(eq(socialMediaPosts.platform, platform));
+        conditions.push(eq(socialMediaPosts.platform, platform));
       }
       
       if (status) {
-        query = query.where(eq(socialMediaPosts.status, status));
+        conditions.push(eq(socialMediaPosts.status, status));
       }
 
-      return await query
+      return await db.select().from(socialMediaPosts)
+        .where(and(...conditions))
         .orderBy(desc(socialMediaPosts.createdAt))
         .limit(limit)
         .offset(offset);
@@ -1009,14 +1010,16 @@ class PostgreSQLStorage implements IStorage {
 
   async getPlatformEngagement(accountId: number, date?: Date): Promise<PlatformEngagement[]> {
     try {
-      let query = db.select().from(platformEngagement)
-        .where(eq(platformEngagement.accountId, accountId));
-
+      // Build conditions array
+      const conditions = [eq(platformEngagement.accountId, accountId)];
+      
       if (date) {
-        query = query.where(eq(platformEngagement.date, date));
+        conditions.push(eq(platformEngagement.date, date));
       }
 
-      return await query.orderBy(desc(platformEngagement.date));
+      return await db.select().from(platformEngagement)
+        .where(and(...conditions))
+        .orderBy(desc(platformEngagement.date));
     } catch (error) {
       console.error('Error getting platform engagement:', error);
       return [];
