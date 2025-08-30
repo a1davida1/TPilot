@@ -24,6 +24,8 @@ import {
   type InsertPlatformEngagement,
   type PostSchedule,
   type InsertPostSchedule,
+  type VerificationToken,
+  type InsertVerificationToken,
   users,
   contentGenerations,
   userSamples,
@@ -35,7 +37,8 @@ import {
   socialMediaAccounts,
   socialMediaPosts,
   platformEngagement,
-  postSchedule
+  postSchedule,
+  verificationTokens
 } from "@shared/schema";
 import { db } from "./db.js";
 import { eq, desc, and, gte, sql, count } from "drizzle-orm";
@@ -52,6 +55,9 @@ export interface IStorage {
   updateUserProfile(userId: number, updates: Partial<User>): Promise<User | undefined>;
   updateUserPassword(userId: number, hashedPassword: string): Promise<void>;
   updateUserEmailVerified(userId: number, verified: boolean): Promise<void>;
+  createVerificationToken(token: InsertVerificationToken): Promise<VerificationToken>;
+  getVerificationToken(token: string): Promise<VerificationToken | undefined>;
+  deleteVerificationToken(token: string): Promise<void>;
   deleteUser(userId: number): Promise<void>;
 
   // Generation operations
@@ -256,6 +262,39 @@ class PostgreSQLStorage implements IStorage {
       console.log('Storage: Email verification status updated for user:', userId);
     } catch (error) {
       console.error('Storage: Error updating email verification:', error);
+      throw error;
+    }
+  }
+
+  async createVerificationToken(tokenData: InsertVerificationToken): Promise<VerificationToken> {
+    try {
+      const [token] = await db.insert(verificationTokens).values(tokenData).returning();
+      return token;
+    } catch (error) {
+      console.error('Storage: Error creating verification token:', error);
+      throw error;
+    }
+  }
+
+  async getVerificationToken(token: string): Promise<VerificationToken | undefined> {
+    try {
+      const result = await db
+        .select()
+        .from(verificationTokens)
+        .where(eq(verificationTokens.token, token))
+        .limit(1);
+      return result[0];
+    } catch (error) {
+      console.error('Storage: Error getting verification token:', error);
+      return undefined;
+    }
+  }
+
+  async deleteVerificationToken(token: string): Promise<void> {
+    try {
+      await db.delete(verificationTokens).where(eq(verificationTokens.token, token));
+    } catch (error) {
+      console.error('Storage: Error deleting verification token:', error);
       throw error;
     }
   }

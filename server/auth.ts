@@ -2,7 +2,8 @@ import { Express } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { storage } from './storage';
-import { emailService, sendVerificationEmail } from './services/email-service';
+import { emailService } from './services/email-service';
+import crypto from 'crypto';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
 
@@ -34,14 +35,15 @@ export function setupAuth(app: Express) {
         tier: 'free'
       });
 
-      // Generate verification token and send email
+      // Create verification token and send email
       if (user.email) {
-        const verificationToken = jwt.sign(
-          { email: user.email, username: user.username, type: 'email-verification' },
-          JWT_SECRET,
-          { expiresIn: '24h' }
-        );
-        await sendVerificationEmail(user.email, user.username, verificationToken);
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        await storage.createVerificationToken({
+          userId: user.id,
+          token: verificationToken,
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+        });
+        await emailService.sendVerificationEmail(user.email, user.username, verificationToken);
       }
 
       res.json({ message: 'Verification email sent' });
@@ -107,28 +109,16 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: 'Token is required' });
       }
 
-      // Verify JWT token
-      const decoded = jwt.verify(token, JWT_SECRET) as any;
-      
-      if (decoded.type !== 'email-verification') {
-        return res.status(400).json({ message: 'Invalid verification token' });
+      const record = await storage.getVerificationToken(token);
+      if (!record || record.expiresAt < new Date()) {
+        return res.status(400).json({ message: 'Invalid or expired token' });
       }
 
-      // Update user email verification status
-      const user = await storage.getUserByEmail(decoded.email);
-      
-      if (!user) {
-        return res.status(400).json({ message: 'Invalid verification token' });
-      }
-
-      // Mark email as verified
-      await storage.updateUserEmailVerified(user.id, true);
+      await storage.updateUserEmailVerified(record.userId, true);
+      await storage.deleteVerificationToken(token);
 
       res.json({ message: 'Email verified successfully' });
     } catch (error) {
-      if (error instanceof jwt.TokenExpiredError) {
-        return res.status(400).json({ message: 'Verification link has expired' });
-      }
       console.error('Email verification error:', error);
       res.status(500).json({ message: 'Error verifying email' });
     }

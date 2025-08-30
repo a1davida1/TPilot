@@ -89,6 +89,13 @@ export const leads = pgTable("leads", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const verificationTokens = pgTable("verification_tokens", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  token: varchar("token", { length: 255 }).unique().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+});
+
 export const userImages = pgTable("user_images", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
@@ -327,6 +334,7 @@ export const insertUserSampleSchema = createInsertSchema(userSamples);
 export const insertUserPreferenceSchema = createInsertSchema(userPreferences);
 export const insertUserImageSchema = createInsertSchema(userImages);
 export const insertLeadSchema = createInsertSchema(leads);
+export const insertVerificationTokenSchema = createInsertSchema(verificationTokens);
 
 // Types
 export type User = typeof users.$inferSelect;
@@ -334,6 +342,8 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 
 export type Lead = typeof leads.$inferSelect;
 export type InsertLead = z.infer<typeof insertLeadSchema>;
+export type VerificationToken = typeof verificationTokens.$inferSelect;
+export type InsertVerificationToken = z.infer<typeof insertVerificationTokenSchema>;
 
 export type ContentGeneration = typeof contentGenerations.$inferSelect;
 export type InsertContentGeneration = z.infer<typeof insertContentGenerationSchema>;
