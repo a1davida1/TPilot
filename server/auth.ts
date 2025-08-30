@@ -68,7 +68,7 @@ export function setupAuth(app: Express) {
           id: 999,
           email: ADMIN_EMAIL,
           username: 'admin',
-          tier: 'pro',
+          tier: 'premium',
           isAdmin: true
         };
 
