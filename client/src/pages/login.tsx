@@ -316,13 +316,6 @@ export default function Login() {
               </p>
             </div>
             
-            {view === 'login' && (
-              <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                <p className="text-xs text-purple-700 text-center">
-                  <strong>Admin Access:</strong> admin@thottopilot.com / admin123
-                </p>
-              </div>
-            )}
 
           </CardContent>
         </Card>
