@@ -1,0 +1,166 @@
+diff --git a/server/services/email-service.ts b/server/services/email-service.ts
+index 01efd511451f7c2aa972f031920365ace03989f1..b837c5bfa4764449582a758bc17aa73d14d6b46d 100644
+--- a/server/services/email-service.ts
++++ b/server/services/email-service.ts
+@@ -1,33 +1,38 @@
+ import sgMail from '@sendgrid/mail';
+ import jwt from 'jsonwebtoken';
+ 
+ // Initialize SendGrid with API key
+ const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
+ const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
+ const APP_URL = process.env.APP_URL || 'http://localhost:5000';
+ 
++// Ensure API key exists in production
++if (!SENDGRID_API_KEY && process.env.NODE_ENV === 'production') {
++  throw new Error('SENDGRID_API_KEY is required in production');
++}
++
+ // Only initialize if API key is available
+ if (SENDGRID_API_KEY) {
+   sgMail.setApiKey(SENDGRID_API_KEY);
+ }
+ 
+ interface EmailTemplate {
+   subject: string;
+   htmlContent: string;
+   textContent?: string;
+ }
+ 
+ // Email templates with ThottoPilot branding
+ const emailTemplates = {
+   welcome: (username: string): EmailTemplate => ({
+     subject: 'Welcome to ThottoPilot! 🚀',
+     htmlContent: `
+       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+         <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0;">
+           <h1 style="color: white; margin: 0; text-align: center;">Welcome to ThottoPilot!</h1>
+         </div>
+         <div style="padding: 30px; background: #f7f7f7;">
+           <h2 style="color: #333;">Hey ${username}! 👋</h2>
+           <p style="color: #666; line-height: 1.6;">
+             We're thrilled to have you join the ThottoPilot community! You're now ready to:
+           </p>
+diff --git a/server/services/email-service.ts b/server/services/email-service.ts
+index 01efd511451f7c2aa972f031920365ace03989f1..b837c5bfa4764449582a758bc17aa73d14d6b46d 100644
+--- a/server/services/email-service.ts
++++ b/server/services/email-service.ts
+@@ -292,72 +297,70 @@ export class EmailService {
+   // Send content generation notification
+   async sendContentNotification(email: string, username: string, platform: string): Promise<boolean> {
+     if (!this.isConfigured) {
+       console.log(`📧 [Mock] Content notification would be sent to ${email}`);
+       return true;
+     }
+ 
+     try {
+       const template = emailTemplates.contentGenerated(username, platform);
+       await sgMail.send({
+         to: email,
+         from: 'noreply@thottopilot.com',
+         subject: template.subject,
+         html: template.htmlContent,
+         text: template.textContent
+       });
+       console.log(`✅ Content notification sent to ${email}`);
+       return true;
+     } catch (error) {
+       console.error('❌ Failed to send content notification:', error);
+       return false;
+     }
+   }
+ 
+   // Verify email address (for email verification flow)
+-  async sendVerificationEmail(email: string, username: string): Promise<boolean> {
++  async sendVerificationEmail(
++    email: string,
++    username: string,
++    verificationToken: string
++  ): Promise<boolean> {
+     if (!this.isConfigured) {
+       console.log(`📧 [Mock] Verification email would be sent to ${email}`);
+       return true;
+     }
+ 
+     try {
+-      const verificationToken = jwt.sign(
+-        { email, username, type: 'email-verification' },
+-        JWT_SECRET,
+-        { expiresIn: '24h' }
+-      );
+-
+       await sgMail.send({
+         to: email,
+         from: 'noreply@thottopilot.com',
+         subject: 'Verify Your ThottoPilot Email 📧',
+         html: `
+           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+             <h2>Verify Your Email</h2>
+             <p>Hi ${username}, please verify your email to unlock all features:</p>
+-            <a href="${APP_URL}/verify-email?token=${verificationToken}" 
++            <a href="${APP_URL}/verify-email?token=${verificationToken}"
+                style="background: linear-gradient(90deg, #667eea, #764ba2); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; display: inline-block;">
+               Verify Email
+             </a>
+             <p style="color: #999; font-size: 14px; margin-top: 20px;">
+               This link expires in 24 hours.
+             </p>
+           </div>
+         `,
+         text: `Hi ${username}, verify your email: ${APP_URL}/verify-email?token=${verificationToken}`
+       });
+       console.log(`✅ Verification email sent to ${email}`);
+       return true;
+     } catch (error) {
+       console.error('❌ Failed to send verification email:', error);
+       return false;
+     }
+   }
+ 
+   // Send admin notification for new waitlist signup
+   async sendAdminWaitlistNotification(
+     userEmail: string, 
+     platformTags: string[], 
+     painPoint: string | null, 
+     utmData: any
+   ): Promise<boolean> {
+diff --git a/server/services/email-service.ts b/server/services/email-service.ts
+index 01efd511451f7c2aa972f031920365ace03989f1..b837c5bfa4764449582a758bc17aa73d14d6b46d 100644
+--- a/server/services/email-service.ts
++++ b/server/services/email-service.ts
+@@ -371,26 +374,34 @@ export class EmailService {
+     
+     try {
+       const template = emailTemplates.adminWaitlistNotification(userEmail, platformTags, painPoint, utmData);
+       await sgMail.send({
+         to: adminEmail,
+         from: 'noreply@thottopilot.com',
+         subject: template.subject,
+         html: template.htmlContent,
+         text: template.textContent
+       });
+       console.log(`✅ Admin waitlist notification sent to ${adminEmail} for user: ${userEmail}`);
+       return true;
+     } catch (error) {
+       console.error('❌ Failed to send admin waitlist notification:', error);
+       return false;
+     }
+   }
+ 
+   // Check if email service is configured
+   isEmailServiceConfigured(): boolean {
+     return this.isConfigured;
+   }
+ }
+ 
+ // Export singleton instance
+-export const emailService = new EmailService();
++export const emailService = new EmailService();
++
++// Convenience export for direct usage
++export const sendVerificationEmail = (
++  email: string,
++  username: string,
++  token: string
++) => emailService.sendVerificationEmail(email, username, token);
++

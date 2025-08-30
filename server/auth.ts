@@ -34,27 +34,12 @@ export function setupAuth(app: Express) {
         tier: 'free'
       });
 
-      // Generate token
-      const token = jwt.sign(
-        { id: user.id, userId: user.id, username: user.username },
-        JWT_SECRET,
-        { expiresIn: '24h' }
-      );
-
-      // Send welcome email
+      // Send verification email
       if (user.email) {
-        await emailService.sendWelcomeEmail(user.email, user.username);
+        await emailService.sendVerificationEmail(user.email, user.username);
       }
 
-      res.json({
-        token,
-        user: {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          tier: user.tier
-        }
-      });
+      res.json({ message: 'Verification email sent' });
     } catch (error) {
       console.error('Signup error:', error);
       res.status(500).json({ message: 'Error creating user' });
@@ -84,6 +69,10 @@ export function setupAuth(app: Express) {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
 
+      if (!user.emailVerified) {
+        return res.status(403).json({ message: 'Email not verified' });
+      }
+
       const token = jwt.sign(
         { id: user.id, userId: user.id, username: user.username },
         JWT_SECRET,
@@ -102,6 +91,41 @@ export function setupAuth(app: Express) {
     } catch (error) {
       console.error('Login error:', error);
       res.status(500).json({ message: 'Error logging in' });
+    }
+  });
+
+  // Email verification
+  app.get('/api/auth/verify-email', async (req, res) => {
+    try {
+      const token = req.query.token as string;
+      if (!token) {
+        return res.status(400).json({ message: 'Token is required' });
+      }
+
+      // Verify JWT token
+      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      
+      if (decoded.type !== 'email-verification') {
+        return res.status(400).json({ message: 'Invalid verification token' });
+      }
+
+      // Update user email verification status
+      const user = await storage.getUserByEmail(decoded.email);
+      
+      if (!user) {
+        return res.status(400).json({ message: 'Invalid verification token' });
+      }
+
+      // Mark email as verified
+      await storage.updateUserEmailVerified(user.id, true);
+
+      res.json({ message: 'Email verified successfully' });
+    } catch (error) {
+      if (error instanceof jwt.TokenExpiredError) {
+        return res.status(400).json({ message: 'Verification link has expired' });
+      }
+      console.error('Email verification error:', error);
+      res.status(500).json({ message: 'Error verifying email' });
     }
   });
 

@@ -1,0 +1,178 @@
+diff --git a/server/storage.ts b/server/storage.ts
+index b4694777bd0af20879985bf276c7947c61bafc29..ae2262086a8284bd815b86ca880dcb9a80d1c9ef 100644
+--- a/server/storage.ts
++++ b/server/storage.ts
+@@ -2,78 +2,84 @@
+ import {
+   type User,
+   type InsertUser,
+   type ContentGeneration,
+   type InsertContentGeneration,
+   type UserSample,
+   type InsertUserSample,
+   type UserPreference,
+   type InsertUserPreference,
+   type UserImage,
+   type InsertUserImage,
+   type ExpenseCategory,
+   type InsertExpenseCategory,
+   type Expense,
+   type InsertExpense,
+   type TaxDeductionInfo,
+   type InsertTaxDeductionInfo,
+   type SocialMediaAccount,
+   type InsertSocialMediaAccount,
+   type SocialMediaPost,
+   type InsertSocialMediaPost,
+   type PlatformEngagement,
+   type InsertPlatformEngagement,
+   type PostSchedule,
+   type InsertPostSchedule,
++  type VerificationToken,
++  type InsertVerificationToken,
+   users,
+   contentGenerations,
+   userSamples,
+   userPreferences,
+   userImages,
+   expenseCategories,
+   expenses,
+   taxDeductionInfo,
+   socialMediaAccounts,
+   socialMediaPosts,
+   platformEngagement,
+-  postSchedule
++  postSchedule,
++  verificationTokens
+ } from "@shared/schema";
+ import { db } from "./db.js";
+ import { eq, desc, and, gte, sql, count } from "drizzle-orm";
+ 
+ export interface IStorage {
+   // User operations
+   getUser(id: number): Promise<User | undefined>;
+   getAllUsers(): Promise<User[]>;
+   getUserByUsername(username: string): Promise<User | undefined>;
+   getUserByEmail(email: string): Promise<User | undefined>;
+   createUser(user: InsertUser): Promise<User>;
+   updateUserTier(userId: number, tier: string): Promise<void>;
+   updateUser(userId: number, updates: Partial<User>): Promise<User>;
+   updateUserProfile(userId: number, updates: Partial<User>): Promise<User | undefined>;
+   updateUserPassword(userId: number, hashedPassword: string): Promise<void>;
+   updateUserEmailVerified(userId: number, verified: boolean): Promise<void>;
++  createVerificationToken(token: InsertVerificationToken): Promise<VerificationToken>;
++  getVerificationToken(token: string): Promise<VerificationToken | undefined>;
++  deleteVerificationToken(token: string): Promise<void>;
+   deleteUser(userId: number): Promise<void>;
+ 
+   // Generation operations
+   createGeneration(gen: InsertContentGeneration): Promise<ContentGeneration>;
+   getGenerationsByUserId(userId: number): Promise<ContentGeneration[]>;
+   createContentGeneration(gen: InsertContentGeneration): Promise<ContentGeneration>;
+   getUserContentGenerations(userId: number): Promise<ContentGeneration[]>;
+   getContentGenerationCount(): Promise<number>;
+   getContentGenerationStats(userId: number): Promise<{ total: number; thisWeek: number; thisMonth: number; totalGenerations?: number }>;
+   getLastGenerated(userId: number): Promise<ContentGeneration | undefined>;
+ 
+   // Sample operations
+   createUserSample(sample: InsertUserSample): Promise<UserSample>;
+   getUserSamples(userId: number): Promise<UserSample[]>;
+   deleteUserSample(sampleId: number, userId: number): Promise<void>;
+ 
+   // Preference operations
+   getUserPreferences(userId: number): Promise<UserPreference | undefined>;
+   updateUserPreferences(userId: number, preferences: InsertUserPreference): Promise<UserPreference>;
+ 
+   // Image operations
+   createUserImage(image: InsertUserImage): Promise<UserImage>;
+   getUserImages(userId: number): Promise<UserImage[]>;
+   getUserImage(imageId: number, userId: number): Promise<UserImage | undefined>;
+   deleteUserImage(imageId: number, userId: number): Promise<void>;
+diff --git a/server/storage.ts b/server/storage.ts
+index b4694777bd0af20879985bf276c7947c61bafc29..ae2262086a8284bd815b86ca880dcb9a80d1c9ef 100644
+--- a/server/storage.ts
++++ b/server/storage.ts
+@@ -238,50 +244,83 @@ class PostgreSQLStorage implements IStorage {
+       console.error('Storage: Error updating user profile:', error);
+       return undefined;
+     }
+   }
+ 
+   async updateUserPassword(userId: number, hashedPassword: string): Promise<void> {
+     try {
+       await db.update(users).set({ password: hashedPassword }).where(eq(users.id, userId));
+       console.log('Storage: Password updated for user:', userId);
+     } catch (error) {
+       console.error('Storage: Error updating user password:', error);
+       throw error;
+     }
+   }
+ 
+   async updateUserEmailVerified(userId: number, verified: boolean): Promise<void> {
+     try {
+       await db.update(users).set({ emailVerified: verified }).where(eq(users.id, userId));
+       console.log('Storage: Email verification status updated for user:', userId);
+     } catch (error) {
+       console.error('Storage: Error updating email verification:', error);
+       throw error;
+     }
+   }
+ 
++  async createVerificationToken(tokenData: InsertVerificationToken): Promise<VerificationToken> {
++    try {
++      const [token] = await db.insert(verificationTokens).values(tokenData).returning();
++      return token;
++    } catch (error) {
++      console.error('Storage: Error creating verification token:', error);
++      throw error;
++    }
++  }
++
++  async getVerificationToken(token: string): Promise<VerificationToken | undefined> {
++    try {
++      const result = await db
++        .select()
++        .from(verificationTokens)
++        .where(eq(verificationTokens.token, token))
++        .limit(1);
++      return result[0];
++    } catch (error) {
++      console.error('Storage: Error getting verification token:', error);
++      return undefined;
++    }
++  }
++
++  async deleteVerificationToken(token: string): Promise<void> {
++    try {
++      await db.delete(verificationTokens).where(eq(verificationTokens.token, token));
++    } catch (error) {
++      console.error('Storage: Error deleting verification token:', error);
++      throw error;
++    }
++  }
++
+   async deleteUser(userId: number): Promise<void> {
+     try {
+       await db.delete(users).where(eq(users.id, userId));
+     } catch (error) {
+       console.error('Storage: Error deleting user:', error);
+       throw error;
+     }
+   }
+ 
+   // Generation operations
+   async createGeneration(gen: InsertContentGeneration): Promise<ContentGeneration> {
+     try {
+       // Ensure proper typing for database insertion
+       const genData = {
+         ...gen,
+         titles: gen.titles as string[]
+       };
+       const result = await db.insert(contentGenerations).values([genData]).returning();
+       return result[0];
+     } catch (error) {
+       console.error('Storage: Error creating generation:', error);
+       throw error;
+     }
+   }
+ 
