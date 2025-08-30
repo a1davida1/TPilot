@@ -87,6 +87,7 @@ export function ModernDashboard({ isRedditConnected = false }: ModernDashboardPr
 
   const navigationItems = [
     { id: "dashboard", label: "Dashboard", icon: <Home className="h-5 w-5" />, section: "main" },
+    { id: "reddit", label: "Reddit Hub", icon: <FaReddit className="h-5 w-5" />, badge: "NEW", section: "create" },
     { id: "generate", label: "Content Creator", icon: <Brain className="h-5 w-5" />, badge: "AI", section: "create" },
     { id: "protect", label: "ImageShield", icon: <Shield className="h-5 w-5" />, badge: "NEW", section: "create" },
     { id: "gallery", label: "Media Gallery", icon: <ImageIcon className="h-5 w-5" />, section: "create" },
@@ -244,7 +245,13 @@ export function ModernDashboard({ isRedditConnected = false }: ModernDashboardPr
                   .map((item) => (
                     <button
                       key={item.id}
-                      onClick={() => setActiveSection(item.id)}
+                      onClick={() => {
+                        if (item.id === 'reddit') {
+                          window.location.href = '/reddit';
+                        } else {
+                          setActiveSection(item.id);
+                        }
+                      }}
                       className={cn(
                         "w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all",
                         activeSection === item.id
