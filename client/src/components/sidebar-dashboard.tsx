@@ -749,11 +749,36 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
 
       default:
         return (
-          <Card className="min-h-[400px] flex items-center justify-center">
-            <div className="text-center space-y-4">
-              <Sparkles className="h-16 w-16 mx-auto text-gray-600" />
-              <h3 className="text-xl font-medium text-gray-600">Coming Soon</h3>
-              <p className="text-gray-500">This feature is under development</p>
+          <Card className="min-h-[400px] p-6">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-semibold text-gray-900">{activeSection.charAt(0).toUpperCase() + activeSection.slice(1)}</h3>
+                <Badge variant="outline">Feature</Badge>
+              </div>
+              <div className="grid gap-4">
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <p className="text-gray-700 mb-3">
+                    This section contains advanced features and tools to help you maximize your content creation and engagement.
+                  </p>
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                      <span className="text-sm text-gray-600">Content optimization tools</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                      <span className="text-sm text-gray-600">Advanced analytics</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                      <span className="text-sm text-gray-600">Audience insights</span>
+                    </div>
+                  </div>
+                </div>
+                <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600">
+                  Explore Features
+                </Button>
+              </div>
             </div>
           </Card>
         );

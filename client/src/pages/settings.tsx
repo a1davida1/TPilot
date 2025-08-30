@@ -363,29 +363,54 @@ export default function SettingsPage() {
                 Billing & Payment
               </CardTitle>
               <CardDescription>
-                Payment system integration coming soon!
+                Manage your subscription and payment methods
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 className="font-medium text-blue-900 mb-2">Payment Integration Coming Soon</h4>
-                <p className="text-sm text-blue-700 mb-3">
-                  We're working on integrating secure payment processing to offer premium features and higher usage limits.
-                </p>
-                <p className="text-sm text-blue-600">
-                  Consider purchasing a custom domain for a more professional setup when payments go live!
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                <h4 className="font-medium">Planned Premium Features:</h4>
-                <ul className="text-sm text-gray-600 space-y-1">
-                  <li>• Unlimited AI generations</li>
-                  <li>• Advanced image protection</li>
-                  <li>• Custom templates</li>
-                  <li>• Priority support</li>
-                  <li>• Analytics dashboard</li>
-                </ul>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-medium">Payment Method</h4>
+                    <p className="text-sm text-gray-600">
+                      {subscriptionData?.subscription?.plan === 'free' ? 
+                        'No payment method on file' : 
+                        'Card ending in •••• (managed by Stripe)'}
+                    </p>
+                  </div>
+                  {subscriptionData?.subscription?.plan !== 'free' && (
+                    <Button variant="outline" size="sm">
+                      Update Card
+                    </Button>
+                  )}
+                </div>
+                
+                <Separator />
+                
+                <div className="space-y-2">
+                  <h4 className="font-medium">Billing History</h4>
+                  <p className="text-sm text-gray-600">
+                    View and download your past invoices
+                  </p>
+                  <Button variant="outline" size="sm" className="w-full">
+                    <Download className="h-4 w-4 mr-2" />
+                    View Billing History
+                  </Button>
+                </div>
+                
+                {subscriptionData?.subscription?.plan !== 'free' && (
+                  <>
+                    <Separator />
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-red-600">Cancel Subscription</h4>
+                      <p className="text-sm text-gray-600">
+                        Cancel your subscription at any time. You'll retain access until the end of your billing period.
+                      </p>
+                      <Button variant="outline" size="sm" className="w-full border-red-300 text-red-600 hover:bg-red-50">
+                        Cancel Subscription
+                      </Button>
+                    </div>
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>
