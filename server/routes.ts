@@ -15,6 +15,7 @@ import { authenticateToken } from "./middleware/auth.js";
 // Route modules
 import { authRoutes } from "./routes/auth.js";
 import { uploadRoutes } from "./routes/upload.js";
+import { registerExpenseRoutes } from "./expense-routes.js";
 
 // Core imports
 import { storage } from "./storage.js";
@@ -289,6 +290,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register Social Media Routes
   registerSocialMediaRoutes(app);
+
+  // Register Expense Routes (Tax Tracker API)
+  registerExpenseRoutes(app);
 
   // Register Caption Routes (2-pass Gemini pipeline)
   app.use('/api/caption', captionRouter);
