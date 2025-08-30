@@ -4,6 +4,7 @@
  */
 
 import { getQueueBackend, enqueue, registerProcessor } from "../queue-factory.js";
+import type { Platform, PostContent } from "../../social-media/social-media-manager.js";
 
 // Queue names for type safety
 export const QUEUE_NAMES = {
@@ -18,11 +19,15 @@ export type QueueNames = typeof QUEUE_NAMES[keyof typeof QUEUE_NAMES];
 // Job data types
 export interface PostJobData {
   userId: number;
-  postJobId: number;
-  subreddit: string;
-  titleFinal: string;
-  bodyFinal: string;
+  // Existing Reddit-specific fields
+  postJobId?: number;
+  subreddit?: string;
+  titleFinal?: string;
+  bodyFinal?: string;
   mediaKey?: string;
+  // New social media fields
+  platforms?: Platform[];
+  content?: PostContent;
 }
 
 export interface MetricsJobData {
