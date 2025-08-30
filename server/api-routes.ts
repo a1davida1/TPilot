@@ -300,7 +300,7 @@ export function registerApiRoutes(app: Express) {
   });
 
   // Get User Subscription
-  app.get('/api/subscription', async (req, res) => {
+  app.get('/api/subscription', authenticateToken, async (req: AuthRequest, res) => {
     try {
       const user = req.user;
       
