@@ -2,7 +2,7 @@ import { Express } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { storage } from './storage';
-import { emailService } from './services/email-service';
+import { emailService, sendVerificationEmail } from './services/email-service';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
 
@@ -34,9 +34,14 @@ export function setupAuth(app: Express) {
         tier: 'free'
       });
 
-      // Send verification email
+      // Generate verification token and send email
       if (user.email) {
-        await emailService.sendVerificationEmail(user.email, user.username);
+        const verificationToken = jwt.sign(
+          { email: user.email, username: user.username, type: 'email-verification' },
+          JWT_SECRET,
+          { expiresIn: '24h' }
+        );
+        await sendVerificationEmail(user.email, user.username, verificationToken);
       }
 
       res.json({ message: 'Verification email sent' });

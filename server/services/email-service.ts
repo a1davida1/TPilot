@@ -6,6 +6,11 @@ const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
 const APP_URL = process.env.APP_URL || 'http://localhost:5000';
 
+// Ensure API key exists in production
+if (!SENDGRID_API_KEY && process.env.NODE_ENV === 'production') {
+  throw new Error('SENDGRID_API_KEY is required in production');
+}
+
 // Only initialize if API key is available
 if (SENDGRID_API_KEY) {
   sgMail.setApiKey(SENDGRID_API_KEY);
@@ -314,19 +319,17 @@ export class EmailService {
   }
 
   // Verify email address (for email verification flow)
-  async sendVerificationEmail(email: string, username: string): Promise<boolean> {
+  async sendVerificationEmail(
+    email: string,
+    username: string,
+    verificationToken: string
+  ): Promise<boolean> {
     if (!this.isConfigured) {
       console.log(`📧 [Mock] Verification email would be sent to ${email}`);
       return true;
     }
 
     try {
-      const verificationToken = jwt.sign(
-        { email, username, type: 'email-verification' },
-        JWT_SECRET,
-        { expiresIn: '24h' }
-      );
-
       await sgMail.send({
         to: email,
         from: 'noreply@thottopilot.com',
@@ -335,7 +338,7 @@ export class EmailService {
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <h2>Verify Your Email</h2>
             <p>Hi ${username}, please verify your email to unlock all features:</p>
-            <a href="${APP_URL}/verify-email?token=${verificationToken}" 
+            <a href="${APP_URL}/verify-email?token=${verificationToken}"
                style="background: linear-gradient(90deg, #667eea, #764ba2); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; display: inline-block;">
               Verify Email
             </a>
@@ -394,3 +397,10 @@ export class EmailService {
 
 // Export singleton instance
 export const emailService = new EmailService();
+
+// Convenience export for direct usage
+export const sendVerificationEmail = (
+  email: string,
+  username: string,
+  token: string
+) => emailService.sendVerificationEmail(email, username, token);
