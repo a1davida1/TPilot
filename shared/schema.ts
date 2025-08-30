@@ -11,7 +11,7 @@ export const users = pgTable("users", {
   emailVerified: boolean("email_verified").default(false).notNull(),
   firstName: varchar("first_name", { length: 255 }), // Added missing column
   lastName: varchar("last_name", { length: 255 }), // Added missing column
-  tier: varchar("tier", { length: 50 }).default("free").notNull(), // free, pro, premium, pro_plus
+  tier: varchar("tier", { length: 50 }).default("free").notNull(), // free, starter, pro
   subscriptionStatus: varchar("subscription_status", { length: 50 }).default("free").notNull(), // Added missing column
   trialEndsAt: timestamp("trial_ends_at"), // For trial management
   provider: varchar("provider", { length: 50 }), // google, facebook, reddit

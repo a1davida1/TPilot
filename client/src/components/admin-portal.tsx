@@ -53,7 +53,7 @@ interface UserStats {
   totalUsers: number;
   freeUsers: number;
   proUsers: number;
-  premiumUsers: number;
+  starterUsers: number;
   trialUsers: number;
   newUsersToday: number;
   activeToday: number;
@@ -64,7 +64,7 @@ interface TrialRequest {
   email: string;
   username: string;
   duration: number;
-  tier: 'pro' | 'premium';
+  tier: 'starter' | 'pro';
 }
 
 export function AdminPortal() {
@@ -72,7 +72,7 @@ export function AdminPortal() {
     email: '',
     username: '',
     duration: 30,
-    tier: 'pro'
+    tier: 'starter'
   });
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const { toast } = useToast();
@@ -128,7 +128,7 @@ export function AdminPortal() {
         description: `A ${trialForm.duration}-day ${trialForm.tier} trial has been created`,
         action: <CheckCircle className="h-4 w-4 text-green-500" />
       });
-      setTrialForm({ email: '', username: '', duration: 30, tier: 'pro' });
+      setTrialForm({ email: '', username: '', duration: 30, tier: 'starter' });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/stats'] });
     },
@@ -169,8 +169,8 @@ export function AdminPortal() {
 
   const getTierColor = (tier: string) => {
     switch (tier) {
-      case 'premium': return 'bg-gradient-to-r from-purple-600 to-pink-600 text-white';
-      case 'pro': return 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white';
+      case 'pro': return 'bg-gradient-to-r from-purple-600 to-pink-600 text-white';
+      case 'starter': return 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white';
       case 'trial': return 'bg-gradient-to-r from-orange-500 to-yellow-500 text-white';
       default: return 'bg-gray-500 text-white';
     }
@@ -549,22 +549,22 @@ export function AdminPortal() {
                   <Label htmlFor="tier">Access Tier</Label>
                   <Select 
                     value={trialForm.tier} 
-                    onValueChange={(value: 'pro' | 'premium') => setTrialForm({...trialForm, tier: value})}
+                    onValueChange={(value: 'starter' | 'pro') => setTrialForm({...trialForm, tier: value})}
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="pro">
+                      <SelectItem value="starter">
                         <div className="flex items-center gap-2">
                           <Star className="h-4 w-4 text-blue-500" />
-                          Pro Tier
+                          Starter Tier ($13/mo)
                         </div>
                       </SelectItem>
-                      <SelectItem value="premium">
+                      <SelectItem value="pro">
                         <div className="flex items-center gap-2">
                           <Crown className="h-4 w-4 text-purple-500" />
-                          Premium Tier
+                          Pro Tier ($29/mo)
                         </div>
                       </SelectItem>
                     </SelectContent>
@@ -676,8 +676,8 @@ export function AdminPortal() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="free">Free</SelectItem>
-                            <SelectItem value="pro">Pro</SelectItem>
-                            <SelectItem value="premium">Premium</SelectItem>
+                            <SelectItem value="starter">Starter ($13/mo)</SelectItem>
+                            <SelectItem value="pro">Pro ($29/mo)</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>

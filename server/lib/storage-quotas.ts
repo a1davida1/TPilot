@@ -166,17 +166,17 @@ export class StorageQuotaManager {
   /**
    * Helper: Determine plan type from subscription status
    */
-  private static getPlanType(subscriptionStatus: string | null): 'free' | 'pro' | 'pro_plus' {
+  private static getPlanType(subscriptionStatus: string | null): 'free' | 'starter' | 'pro' {
     if (!subscriptionStatus || subscriptionStatus === 'inactive') {
       return 'free';
     }
     
-    if (subscriptionStatus.includes('pro_plus') || subscriptionStatus.includes('premium')) {
-      return 'pro_plus';
+    if (subscriptionStatus.includes('pro') || subscriptionStatus.includes('premium')) {
+      return 'pro';
     }
     
-    if (subscriptionStatus.includes('pro') || subscriptionStatus.includes('paid')) {
-      return 'pro';
+    if (subscriptionStatus.includes('starter') || subscriptionStatus.includes('paid')) {
+      return 'starter';
     }
     
     return 'free';
@@ -185,12 +185,12 @@ export class StorageQuotaManager {
   /**
    * Helper: Get storage limit based on plan type
    */
-  private static getStorageLimit(planType: 'free' | 'pro' | 'pro_plus'): number {
+  private static getStorageLimit(planType: 'free' | 'starter' | 'pro'): number {
     switch (planType) {
-      case 'pro_plus':
-        return env.PLAN_STORAGE_BYTES_PRO_PLUS || 53687091200; // 50GB
       case 'pro':
-        return env.PLAN_STORAGE_BYTES_PRO; // 25GB
+        return env.PLAN_STORAGE_BYTES_PRO; // 50GB
+      case 'starter':
+        return env.PLAN_STORAGE_BYTES_STARTER; // 10GB
       case 'free':
       default:
         return env.PLAN_STORAGE_BYTES_FREE; // 2GB

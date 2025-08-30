@@ -37,8 +37,8 @@ export const envSchema = z.object({
   
   // Media Configuration (Phase 5: Updated quotas)
   PLAN_STORAGE_BYTES_FREE: z.coerce.number().default(2147483648), // 2GB
-  PLAN_STORAGE_BYTES_PRO: z.coerce.number().default(26843545600), // 25GB
-  PLAN_STORAGE_BYTES_PRO_PLUS: z.coerce.number().optional().default(53687091200), // 50GB
+  PLAN_STORAGE_BYTES_STARTER: z.coerce.number().default(10737418240), // 10GB
+  PLAN_STORAGE_BYTES_PRO: z.coerce.number().default(53687091200), // 50GB
   MEDIA_SIGNED_TTL_SECONDS: z.coerce.number().default(900), // 15 minutes
   WATERMARK_ENABLED: z.coerce.boolean().default(true),
   WATERMARK_TEXT: z.string().default("ThottoPilot"),
@@ -54,8 +54,8 @@ export const envSchema = z.object({
   
   // Daily Generation Limits by Tier
   DAILY_GENERATIONS_FREE: z.coerce.number().default(5),
-  DAILY_GENERATIONS_PRO: z.coerce.number().default(50),
-  DAILY_GENERATIONS_PREMIUM: z.coerce.number().default(-1), // -1 = unlimited
+  DAILY_GENERATIONS_STARTER: z.coerce.number().default(50),
+  DAILY_GENERATIONS_PRO: z.coerce.number().default(-1), // -1 = unlimited
   
   // Payment Providers (Phase 5)
   SEGPAY_MERCHANT_ID: z.string().optional(),
@@ -145,8 +145,8 @@ try {
       USE_PG_QUEUE: !process.env.REDIS_URL, // Auto-enable when no Redis
       MAX_POSTS_PER_SUBREDDIT_24H: 1,
       DAILY_GENERATIONS_FREE: 5,
-      DAILY_GENERATIONS_PRO: 50,
-      DAILY_GENERATIONS_PREMIUM: -1,
+      DAILY_GENERATIONS_STARTER: 25,
+      DAILY_GENERATIONS_PRO: -1,
       UTM_COOKIE_TTL_DAYS: 30,
       MEDIA_MAX_BYTES_FREE: 524288000,
       MEDIA_MAX_BYTES_PRO: 10737418240,
@@ -199,7 +199,7 @@ export const config = {
   generationLimits: {
     free: env.DAILY_GENERATIONS_FREE,
     pro: env.DAILY_GENERATIONS_PRO,
-    premium: env.DAILY_GENERATIONS_PREMIUM,
+    starter: env.DAILY_GENERATIONS_STARTER,
   },
   
   // App settings

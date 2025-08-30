@@ -624,7 +624,7 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
                   <div className="text-sm text-gray-300">
                     <div className="font-medium">{user?.username || 'User'}</div>
                     <div className="text-xs text-gray-500">
-                      {userTier === 'pro' ? 'Pro Member' : userTier === 'premium' ? 'Premium' : 'Free Account'}
+                      {userTier === 'pro' ? 'Pro Member ($29/mo)' : userTier === 'starter' ? 'Starter ($13/mo)' : 'Free Account'}
                     </div>
                   </div>
                   {userTier === 'free' && (
