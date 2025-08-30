@@ -1,0 +1,107 @@
+// Replace the Reddit callback in server/auth.ts (around line 208)
+app.get('/api/auth/reddit/callback', async (req, res) => {
+  try {
+    const { code, error, state } = req.query;
+    
+    if (error) {
+      console.error('Reddit OAuth error:', error);
+      return res.redirect(`/?error=${error}`);
+    }
+    
+    if (!code) {
+      return res.redirect('/?error=no-code');
+    }
+
+    // Exchange code for access token
+    const tokenResponse = await fetch('https://www.reddit.com/api/v1/access_token', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${Buffer.from(`${process.env.REDDIT_CLIENT_ID}:${process.env.REDDIT_CLIENT_SECRET}`).toString('base64')}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'User-Agent': 'ThottoPilot/1.0'
+      },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: code as string,
+        redirect_uri: `${process.env.FRONTEND_URL || 'https://thottopilot.com'}/api/auth/reddit/callback`
+      })
+    });
+
+    const tokenData = await tokenResponse.json();
+    
+    if (!tokenData.access_token) {
+      console.error('No access token received:', tokenData);
+      return res.redirect('/?error=token-failed');
+    }
+
+    // Get Reddit user info
+    const userResponse = await fetch('https://oauth.reddit.com/api/v1/me', {
+      headers: {
+        'Authorization': `Bearer ${tokenData.access_token}`,
+        'User-Agent': 'ThottoPilot/1.0'
+      }
+    });
+
+    const redditUser = await userResponse.json();
+    
+    if (!redditUser.name) {
+      return res.redirect('/?error=no-reddit-user');
+    }
+
+    // Find or create user
+    let user = await storage.getUserByUsername(redditUser.name);
+    
+    if (!user) {
+      // Create new user from Reddit
+      user = await storage.createUser({
+        email: `${redditUser.name}@reddit.local`, // Reddit doesn't provide email
+        username: redditUser.name,
+        password: crypto.randomBytes(32).toString('hex'), // Random password
+        tier: 'free',
+        provider: 'reddit',
+        providerId: redditUser.id,
+        avatar: redditUser.icon_img?.replace(/&amp;/g, '&'),
+        emailVerified: true // Auto-verify social accounts
+      });
+    } else {
+      // Update existing user with Reddit info
+      await storage.updateUser(user.id, {
+        provider: 'reddit',
+        providerId: redditUser.id,
+        avatar: user.avatar || redditUser.icon_img?.replace(/&amp;/g, '&')
+      });
+    }
+
+    // Create JWT token
+    const token = jwt.sign(
+      { 
+        id: user.id,
+        userId: user.id, 
+        username: user.username,
+        email: user.email
+      },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    // Store token in session or cookie
+    res.cookie('authToken', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    });
+
+    // Store Reddit tokens for API access
+    await storage.updateUser(user.id, {
+      redditAccessToken: tokenData.access_token,
+      redditRefreshToken: tokenData.refresh_token || null
+    });
+
+    res.redirect('/dashboard?reddit=connected');
+    
+  } catch (error) {
+    console.error('Reddit OAuth callback error:', error);
+    res.redirect('/?error=oauth-failed');
+  }
+});
