@@ -1,6 +1,7 @@
 import { Express } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import session from 'express-session';
 import { storage } from './storage';
 import { emailService } from './services/email-service';
 import crypto from 'crypto';
@@ -231,7 +232,7 @@ export function setupAuth(app: Express) {
     res.redirect(authUrl);
   });
 
-  app.get('/api/auth/reddit/callback', async (req, res) => {
+  app.get('/api/auth/reddit/callback', async (req: any, res) => {
     try {
       const { code, error, state } = req.query;
       
@@ -324,14 +325,22 @@ export function setupAuth(app: Express) {
         maxAge: 24 * 60 * 60 * 1000 // 24 hours
       });
 
-      // Store Reddit tokens for API access
-      await storage.updateUser(user.id, {
-        provider: 'reddit',
-        providerId: redditUser.id,
-        avatar: user.avatar || redditUser.icon_img?.replace(/&amp;/g, '&')
+      // Set session for passport compatibility
+      req.session.userId = user.id;
+      req.session.user = {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        tier: user.tier || 'free'
+      };
+      
+      // Save session before redirecting
+      req.session.save((err: any) => {
+        if (err) {
+          console.error('Session save error:', err);
+        }
+        res.redirect('/dashboard?reddit=connected');
       });
-
-      res.redirect('/dashboard?reddit=connected');
       
     } catch (error) {
       console.error('Reddit OAuth callback error:', error);
