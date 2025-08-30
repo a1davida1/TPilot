@@ -167,6 +167,7 @@ export function useAuth() {
     login,
     logout,
     token,
+    refetch,
     quickAdminLogin
   };
 }

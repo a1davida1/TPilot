@@ -63,5 +63,5 @@ export default function Dashboard() {
     );
   }
 
-  return <ModernDashboard isRedditConnected={!!user?.redditUsername} />;
+  return <ModernDashboard isRedditConnected={user?.provider === 'reddit'} />;
 }

@@ -37,6 +37,7 @@ import {
   FileText,
   ChevronDown
 } from "lucide-react";
+import { FaReddit } from "react-icons/fa";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -61,7 +62,11 @@ interface ActivityItem {
   icon: React.ReactNode;
 }
 
-export function ModernDashboard() {
+interface ModernDashboardProps {
+  isRedditConnected?: boolean;
+}
+
+export function ModernDashboard({ isRedditConnected = false }: ModernDashboardProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeSection, setActiveSection] = useState("dashboard");
   const [isMobile, setIsMobile] = useState(false);
@@ -301,6 +306,23 @@ export function ModernDashboard() {
                 <Bell className="h-4 w-4 mr-2" />
                 Notifications
               </Button>
+              {/* Reddit Connection Indicator */}
+              {isRedditConnected ? (
+                <Badge className="bg-orange-100 text-orange-700 border-orange-200">
+                  <FaReddit className="h-3 w-3 mr-1" />
+                  Reddit Connected
+                </Badge>
+              ) : (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => window.location.href = '/api/auth/reddit'}
+                  className="border-orange-200 text-orange-600 hover:bg-orange-50"
+                >
+                  <FaReddit className="h-4 w-4 mr-2" />
+                  Connect Reddit
+                </Button>
+              )}
               <Button className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700">
                 <Plus className="h-4 w-4 mr-2" />
                 Create Content
