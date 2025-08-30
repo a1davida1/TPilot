@@ -9,15 +9,11 @@ import { ErrorBoundary } from "@/components/error-boundary";
 import { Header } from "@/components/header";
 import { useAuth } from "@/hooks/useAuth";
 import { SEOOptimization, seoConfigs } from "@/components/seo-optimization";
-import { LandingPage } from "@/components/landing-page";
+import { UnifiedLanding } from "@/components/unified-landing";
+import { UnifiedDashboard } from "@/components/unified-dashboard";
 import { OnboardingWalkthrough } from "@/components/onboarding-walkthrough";
 import { useOnboarding } from "@/hooks/useOnboarding";
-import { PremiumLanding } from "./components/premium-landing";
-import { AestheticLanding } from "./components/aesthetic-landing";
-import { AppleInspiredApp } from "./components/apple-inspired-app";
-import { ModernDashboard } from "./components/modern-dashboard";
 import NotFound from "@/pages/not-found";
-import Dashboard from "@/pages/dashboard";
 import Login from "@/pages/login";
 import History from "@/pages/history";
 import Settings from "@/pages/settings";
@@ -37,8 +33,12 @@ function AuthenticatedRoutes() {
 
   return (
     <Switch>
-      <Route path="/" component={Dashboard} />
-      <Route path="/dashboard" component={Dashboard} />
+      <Route path="/">
+        <UnifiedDashboard />
+      </Route>
+      <Route path="/dashboard">
+        <UnifiedDashboard />
+      </Route>
       <Route path="/caption-generator" component={CaptionGeneratorPage} />
       <Route path="/enterprise" component={Enterprise} />
       {/* ULTRA PREMIUM ROUTE - Hidden for now */}
@@ -65,15 +65,9 @@ function UnauthenticatedRoutes() {
       <Route path="/caption-generator" component={CaptionGeneratorPage} />
       <Route path="/policy-demo" component={PolicyDemo} />
       <Route path="/reddit" component={RedditPostingPage} />
-      <Route path="/demo">
-        <AppleInspiredApp />
-      </Route>
-      <Route path="/modern-demo">
-        <ModernDashboard />
-      </Route>
       <Route path="/">
         <SEOOptimization {...seoConfigs.landing} />
-        <LandingPage />
+        <UnifiedLanding />
       </Route>
       <Route>
         <Redirect to="/" />
