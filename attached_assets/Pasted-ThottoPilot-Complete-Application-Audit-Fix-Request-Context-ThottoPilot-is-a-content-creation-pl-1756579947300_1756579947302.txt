@@ -1,0 +1,381 @@
+ThottoPilot - Complete Application Audit & Fix Request
+Context: ThottoPilot is a content creation platform for adult content creators that helps them generate AI-powered captions, protect images, schedule posts, and manage their social media presence across Reddit, Twitter, Instagram, and OnlyFans. The app uses React/TypeScript frontend, Express/Node backend, PostgreSQL database, and integrates with multiple AI providers (OpenAI, Anthropic, Google Gemini) and third-party services (Stripe, SendGrid, Reddit OAuth).
+Your Mission: Perform a complete audit and fix all issues to make this a production-ready SaaS application. Focus on security, performance, user experience, and code quality.
+
+📋 PART 1: General Application Health Audit
+A. Security Audit
+
+ Remove ALL hardcoded credentials, API keys, or passwords from code
+ Ensure all sensitive data is in environment variables
+ Check for SQL injection vulnerabilities
+ Verify XSS protection is in place
+ Implement CSRF protection if missing
+ Add rate limiting to all public endpoints
+ Ensure passwords are properly hashed with bcrypt
+ Verify JWT tokens are properly signed and validated
+ Check file upload security and size limits
+ Add input validation and sanitization everywhere
+ Implement proper CORS configuration
+ Add security headers (Helmet.js)
+
+B. Authentication System
+
+ Email/password login works properly
+ Session management is secure
+ JWT tokens refresh properly
+ Logout clears all auth data
+ Password reset flow works (if implemented)
+ Email verification works (if enabled)
+ Remember me functionality (if needed)
+ Social OAuth works (Google, Facebook, Reddit)
+ Role-based access control (admin vs user)
+ Account deletion/deactivation works
+
+C. Database Health
+
+ All migrations are up to date
+ Indexes exist on frequently queried columns
+ Foreign key constraints are proper
+ No duplicate data or orphaned records
+ Proper cascading deletes
+ Database connection pooling is configured
+ Backup strategy exists
+ Add missing columns for features
+ Check for N+1 query problems
+ Optimize slow queries
+
+D. API Endpoints
+
+ All endpoints return proper HTTP status codes
+ Error messages are consistent and helpful
+ Pagination works on list endpoints
+ File uploads handle errors gracefully
+ Request validation is comprehensive
+ API documentation exists (even if basic)
+ Versioning strategy (if needed)
+ Proper REST conventions followed
+ GraphQL implementation (if applicable)
+ WebSocket connections (if applicable)
+
+E. Frontend Quality
+
+ No console errors in production
+ All forms have proper validation
+ Loading states for all async operations
+ Error boundaries catch React errors
+ Responsive design works on mobile
+ Dark mode works properly (if implemented)
+ Accessibility (ARIA labels, keyboard nav)
+ SEO meta tags are present
+ Favicon and app icons exist
+ 404 page exists and looks good
+
+F. Performance Optimization
+
+ Images are optimized and lazy loaded
+ Code splitting is implemented
+ Bundle size is reasonable (<1MB initial)
+ API responses are cached where appropriate
+ Database queries are optimized
+ Redis caching is working (if configured)
+ CDN is configured for static assets
+ Compression is enabled (gzip/brotli)
+ Service worker for offline support (optional)
+ Memory leaks are identified and fixed
+
+G. Third-Party Integrations
+
+ Payment processing (Stripe) works in test mode
+ Email sending (SendGrid) works or falls back gracefully
+ AI providers fall back gracefully if API keys missing
+ File storage (S3/Cloudinary) works
+ Analytics tracking (if implemented)
+ Error tracking (Sentry) is configured
+ Social media APIs are properly integrated
+ Webhooks are secure and validated
+ OAuth flows complete successfully
+ Rate limits are respected
+
+H. DevOps & Deployment
+
+ Environment variables are documented
+ Build process works without errors
+ Tests run successfully (if any exist)
+ Logs are structured and useful
+ Health check endpoint exists
+ Graceful shutdown is implemented
+ Process manager (PM2) configured
+ Auto-restart on crash
+ Monitoring is set up
+ Backup automation exists
+
+
+🔧 PART 2: Specific Issues to Fix
+Critical Issue #1: Reddit OAuth State Error
+Problem: Reddit OAuth returns reddit_invalid_state error and redirects to wrong dashboard
+Fix Required:
+
+Store state in session before OAuth redirect
+Validate state parameter in callback
+Ensure session middleware runs before auth routes
+Redirect to /dashboard?reddit=connected not old dashboard
+Add proper error handling for expired sessions
+
+Critical Issue #2: Session Configuration
+Location: server/routes.ts
+Fix Required:
+
+Session middleware must be initialized BEFORE auth routes
+Set saveUninitialized: true for OAuth
+Add Redis session store if REDIS_URL exists
+Configure proper session secrets
+Add TypeScript types for session properties
+
+Critical Issue #3: Database Schema
+Required Columns - Add if missing:
+sqlALTER TABLE users 
+ADD COLUMN IF NOT EXISTS reddit_username VARCHAR(255),
+ADD COLUMN IF NOT EXISTS reddit_access_token TEXT,
+ADD COLUMN IF NOT EXISTS reddit_refresh_token TEXT,
+ADD COLUMN IF NOT EXISTS reddit_id VARCHAR(255),
+ADD COLUMN IF NOT EXISTS stripe_customer_id VARCHAR(255),
+ADD COLUMN IF NOT EXISTS stripe_subscription_id VARCHAR(255),
+ADD COLUMN IF NOT EXISTS subscription_status VARCHAR(50),
+ADD COLUMN IF NOT EXISTS subscription_tier VARCHAR(50),
+ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT false,
+ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW(),
+ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW();
+Critical Issue #4: Environment Variables
+Check and create if missing:
+# Security (Generate secure random strings)
+JWT_SECRET=
+SESSION_SECRET=
+ADMIN_EMAIL=
+ADMIN_PASSWORD=
+
+# Database
+DATABASE_URL=
+REDIS_URL=
+
+# OAuth
+REDDIT_CLIENT_ID=
+REDDIT_CLIENT_SECRET=
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+FACEBOOK_APP_ID=
+FACEBOOK_APP_SECRET=
+
+# APIs
+OPENAI_API_KEY=
+ANTHROPIC_API_KEY=
+GOOGLE_GENAI_API_KEY=
+SENDGRID_API_KEY=
+
+# Stripe
+STRIPE_SECRET_KEY=
+STRIPE_PUBLISHABLE_KEY=
+STRIPE_WEBHOOK_SECRET=
+
+# App Config
+FRONTEND_URL=https://thottopilot.com
+NODE_ENV=production
+PORT=5000
+Critical Issue #5: Multi-AI Provider
+Location: server/services/multi-ai-provider.ts line 18
+Fix: Change available: false to available: !!process.env.GOOGLE_GENAI_API_KEY
+
+✅ PART 3: Feature Verification Checklist
+Content Generation
+
+ AI caption generation works with at least one provider
+ Falls back to demo content if no API keys
+ Style presets generate appropriate content
+ Photo instructions are detailed and helpful
+ Hashtag generation is platform-appropriate
+ Copy to clipboard works
+ Regenerate function works
+ Character limits are enforced
+
+Reddit Integration
+
+ OAuth connection flow completes
+ Post submission works
+ Subreddit rules are checked
+ NSFW/Spoiler flags work
+ Scheduling posts works
+ Account karma is displayed
+ Multiple account support (if implemented)
+ Rate limiting prevents spam
+
+Image Protection
+
+ Upload accepts common formats (JPG, PNG, WebP)
+ Protection levels work (light, medium, heavy)
+ Watermark is added for free users
+ Download protected image works
+ Batch processing works
+ File size limits are enforced
+ Storage cleanup happens
+
+User Dashboard
+
+ Stats are accurate and real-time
+ Navigation works properly
+ Quick actions function
+ Recent activity displays correctly
+ Upgrade prompts work
+ Settings save properly
+ Profile can be edited
+ Subscription status shows
+
+Billing System
+
+ Stripe checkout works in test mode
+ Subscription tiers are enforced
+ Feature gating works properly
+ Billing portal is accessible
+ Webhooks update subscription status
+ Trial period works (if implemented)
+ Refunds are handled
+ Invoice emails are sent
+
+Analytics & Tracking
+
+ Page views are tracked
+ User actions are logged
+ Conversion funnel works
+ Error tracking captures issues
+ Performance metrics are collected
+ A/B testing framework (if implemented)
+ GDPR compliance for EU users
+ Data retention policies
+
+
+🧪 PART 4: Testing Requirements
+Create Test Suite
+Create server/test-endpoints.js:
+javascript// Test all critical endpoints
+const criticalEndpoints = [
+  // Auth
+  { path: '/api/auth/login', method: 'POST', body: { email: 'test@test.com', password: 'test' } },
+  { path: '/api/auth/signup', method: 'POST', body: { email: 'new@test.com', password: 'test', username: 'test' } },
+  { path: '/api/auth/user', method: 'GET', requiresAuth: true },
+  { path: '/api/auth/logout', method: 'POST' },
+  
+  // Content
+  { path: '/api/generate-content', method: 'POST', requiresAuth: true },
+  { path: '/api/caption/generate', method: 'POST', requiresAuth: true },
+  
+  // Reddit
+  { path: '/api/reddit/accounts', method: 'GET', requiresAuth: true },
+  { path: '/api/auth/reddit', method: 'GET' },
+  
+  // Billing
+  { path: '/api/billing/subscription', method: 'GET', requiresAuth: true },
+  
+  // Health
+  { path: '/api/health', method: 'GET' },
+];
+
+// Run tests and report results
+Manual Test Flow
+
+Sign up new account
+Verify email (if enabled)
+Login with credentials
+Connect Reddit account
+Generate AI content
+Upload and protect image
+Create Reddit post
+Check billing/upgrade
+Edit profile
+Logout
+
+
+📊 PART 5: Performance Metrics
+Target Metrics
+
+ Page load time < 3 seconds
+ Time to interactive < 5 seconds
+ API response time < 500ms average
+ Database queries < 100ms
+ Memory usage < 512MB
+ CPU usage < 50% average
+ Error rate < 1%
+ Uptime > 99.9%
+
+
+📝 PART 6: Documentation Requirements
+Create/Update These Files
+
+ README.md with setup instructions
+ .env.example with all variables
+ API.md with endpoint documentation
+ DEPLOYMENT.md with deploy guide
+ CONTRIBUTING.md with code standards
+ SECURITY.md with security policies
+ package.json with all dependencies
+ Dockerfile (if using Docker)
+
+
+🎯 PRIORITY ORDER
+Fix Immediately (Blocking Issues)
+
+Reddit OAuth state error
+Session configuration
+Missing environment variables
+Security vulnerabilities
+
+Fix Soon (Core Features)
+
+Content generation endpoints
+User authentication flow
+Database schema updates
+Email service
+
+Fix Later (Enhancements)
+
+Performance optimizations
+Analytics implementation
+Advanced features
+Documentation
+
+
+📈 SUCCESS CRITERIA
+The application is ready when:
+
+ User can sign up and login
+ Reddit OAuth completes successfully
+ Content generation produces results
+ No console errors in production
+ All critical endpoints return 200 OK
+ Payment flow works in test mode
+ Mobile responsive design works
+ Load time is under 3 seconds
+
+
+🚨 IMPORTANT NOTES
+
+Do NOT delete any existing functionality - only fix and improve
+Test each fix before moving to the next
+Keep a log of what was changed
+Create backups before major changes
+Use TypeScript for all new code
+Follow existing code patterns in the project
+Comment complex logic for future developers
+Handle errors gracefully - never crash
+Log important events for debugging
+Maintain backward compatibility where possible
+
+
+After completing all fixes, provide a summary report including:
+
+Number of issues fixed
+Critical problems resolved
+Performance improvements made
+Security vulnerabilities patched
+Features verified working
+Remaining issues (if any)
+Recommended next steps
+
+Good luck! Make ThottoPilot production-ready! 🚀
