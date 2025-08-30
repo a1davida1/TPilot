@@ -51,12 +51,10 @@ router.post("/signup", authLimiter, async (req, res) => {
   }
 });
 
-// Login route with rate limiting
+// Login route with rate limiting (unused - handled by server/auth.ts)
 router.post("/login", authLimiter, async (req, res) => {
-  console.log("🚨 LOGIN ROUTE HIT - THIS SHOULD DEFINITELY SHOW UP!");
   try {
     const { email, username, password } = req.body;
-    console.log("🚨 REQUEST BODY:", { email, username, passwordProvided: !!password });
     
     // Get the login identifier (could be email or username)
     const loginIdentifier = email || username;

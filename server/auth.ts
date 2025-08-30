@@ -63,13 +63,6 @@ export function setupAuth(app: Express) {
       const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
       const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
       
-      console.log('🚨 LOGIN ATTEMPT:', { loginIdentifier, passwordProvided: !!password });
-      console.log('🚨 ADMIN CHECK:', { 
-        adminEmail: ADMIN_EMAIL, 
-        adminPasswordSet: !!ADMIN_PASSWORD,
-        isAdminLogin: loginIdentifier === ADMIN_EMAIL && password === ADMIN_PASSWORD
-      });
-      
       if (ADMIN_EMAIL && ADMIN_PASSWORD && loginIdentifier === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
         const adminUser = {
           id: 999,
@@ -91,7 +84,6 @@ export function setupAuth(app: Express) {
           { expiresIn: '24h' }
         );
 
-        console.log('🎉 ADMIN LOGIN SUCCESSFUL!');
         return res.json({
           message: 'Admin login successful',
           token,
