@@ -59,6 +59,14 @@ router.post("/login", authLimiter, async (req, res) => {
     // Get the login identifier (could be email or username)
     const loginIdentifier = email || username;
     
+    // Debug logging for admin login
+    console.log('🔍 Login attempt:', {
+      loginIdentifier,
+      receivedPassword: password ? '***masked***' : 'null/undefined',
+      adminEmail: ADMIN_EMAIL,
+      adminPasswordSet: !!ADMIN_PASSWORD
+    });
+    
     // Admin login check
     if (loginIdentifier === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
       const adminUser = {
