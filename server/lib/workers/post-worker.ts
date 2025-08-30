@@ -5,6 +5,8 @@ import { postJobs, eventLogs } from "@shared/schema.js";
 import { eq } from "drizzle-orm";
 import { RedditManager } from "../reddit.js";
 import { MediaManager } from "../media.js";
+import { storage } from "../../storage.js";
+import { socialMediaManager, type Platform, type PostContent } from "../../social-media/social-media-manager.js";
 
 export class PostWorker {
   private initialized = false;
@@ -23,7 +25,11 @@ export class PostWorker {
   }
 
   private async processJob(jobData: unknown, jobId: string) {
-    const { userId, postJobId, subreddit, titleFinal, bodyFinal, mediaKey } = jobData as PostJobData;
+    const data = jobData as PostJobData;
+    if (data.platforms && data.content) {
+      return this.processSocialMediaJob(data, jobId);
+    }
+    const { userId, postJobId, subreddit, titleFinal, bodyFinal, mediaKey } = data;
 
     try {
       console.log(`Processing post job ${postJobId} for user ${userId}`);
@@ -35,7 +41,7 @@ export class PostWorker {
       }
 
       // Check if we can post to this subreddit
-      const canPost = await RedditManager.canPostToSubreddit(userId, subreddit);
+      const canPost = await RedditManager.canPostToSubreddit(userId, subreddit!);
       if (!canPost.canPost) {
         throw new Error(`Cannot post: ${canPost.reason}`);
       }
@@ -66,7 +72,7 @@ export class PostWorker {
 
       // Update job status in database
       if (result.success) {
-        await this.updateJobStatus(postJobId, 'sent', {
+        await this.updateJobStatus(postJobId!, 'sent', {
           redditPostId: result.postId,
           url: result.url,
           completedAt: new Date().toISOString(),
@@ -88,7 +94,7 @@ export class PostWorker {
       console.error(`Post job ${postJobId} failed:`, error);
 
       // Update job status to failed
-      await this.updateJobStatus(postJobId, 'failed', {
+      await this.updateJobStatus(postJobId!, 'failed', {
         error: error.message,
         failedAt: new Date().toISOString(),
       });
@@ -101,6 +107,57 @@ export class PostWorker {
       });
 
       throw error; // Re-throw to mark job as failed
+    }
+  }
+
+  private async processSocialMediaJob(data: PostJobData, jobId: string) {
+    const { userId, platforms, content } = data;
+    if (!platforms || !content) return;
+
+    try {
+      console.log(`Processing social media job ${jobId} for user ${userId}`);
+      const accounts = await storage.getUserSocialMediaAccounts(userId);
+      const connected = accounts
+        .filter(acc => acc.isActive && platforms.includes(acc.platform as Platform))
+        .map(acc => acc.platform as Platform);
+
+      for (const acc of accounts) {
+        if (connected.includes(acc.platform as Platform) && acc.accessToken) {
+          const credentials = {
+            accessToken: acc.accessToken,
+            refreshToken: acc.refreshToken,
+            ...(acc.metadata || {}),
+          };
+          socialMediaManager.connectAccount(acc.platform as Platform, credentials);
+        }
+      }
+
+      const results = await socialMediaManager.postToMultiplePlatforms(
+        connected,
+        content as PostContent
+      );
+
+      for (const result of results) {
+        const account = accounts.find(a => a.platform === result.platform);
+        if (account) {
+          const postData = {
+            userId,
+            accountId: account.id,
+            platform: result.platform,
+            platformPostId: result.postId,
+            content: content.text,
+            mediaUrls: content.mediaUrls || [],
+            hashtags: content.hashtags || [],
+            status: result.success ? 'published' as const : 'failed' as const,
+            publishedAt: result.success ? new Date() : undefined,
+            errorMessage: result.error,
+          };
+          await storage.createSocialMediaPost(postData);
+        }
+      }
+    } catch (error) {
+      console.error(`Social media job ${jobId} failed:`, error);
+      throw error;
     }
   }
 
