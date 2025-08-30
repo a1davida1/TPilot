@@ -145,12 +145,26 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
     validateAuth();
   }, [isGuestMode]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      // Call server logout endpoint first
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include' // Include session cookies
+      });
+    } catch (error) {
+      console.error('Server logout failed:', error);
+      // Continue with local cleanup even if server call fails
+    }
+    
+    // Clear local storage and state
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
     setUser(null);
     setUserTier('guest');
-    window.location.reload();
+    
+    // Redirect to home page
+    window.location.href = '/';
   };
 
   const handleLoginSuccess = (userData: any) => {
