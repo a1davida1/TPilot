@@ -51,6 +51,12 @@ router.post("/signup", authLimiter, async (req, res) => {
   }
 });
 
+// TEST ROUTE - Remove this after debugging
+router.get("/test", (req, res) => {
+  console.log("🚨 AUTH TEST ROUTE HIT!");
+  res.json({ message: "Auth routes working!" });
+});
+
 // Login route with rate limiting
 router.post("/login", authLimiter, async (req, res) => {
   console.log("🚨 LOGIN ROUTE HIT - THIS SHOULD DEFINITELY SHOW UP!");
