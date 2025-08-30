@@ -29,6 +29,13 @@
       "when": 1756235352107,
       "tag": "0003_mighty_hitman",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1756578015780,
+      "tag": "0004_skinny_mockingbird",
+      "breakpoints": true
     }
   ]
 }

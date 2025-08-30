@@ -19,6 +19,10 @@ export const users = pgTable("users", {
   avatar: varchar("avatar", { length: 500 }),
   referralCodeId: integer("referral_code_id"), // Will reference referralCodes.id
   referredBy: integer("referred_by"), // Added missing column
+  redditUsername: varchar("reddit_username", { length: 255 }),
+  redditAccessToken: text("reddit_access_token"),
+  redditRefreshToken: text("reddit_refresh_token"),
+  redditId: varchar("reddit_id", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
