@@ -60,7 +60,7 @@ router.post("/login", authLimiter, async (req, res) => {
     const loginIdentifier = email || username;
     
     // Debug logging for admin login
-    console.log('🔍 Login attempt:', {
+    logger.info('🔍 Login attempt:', {
       loginIdentifier,
       receivedPassword: password ? '***masked***' : 'null/undefined',
       adminEmail: ADMIN_EMAIL,
@@ -68,6 +68,10 @@ router.post("/login", authLimiter, async (req, res) => {
     });
     
     // Admin login check
+    logger.info('🔍 Admin login comparison:', { 
+      matches: loginIdentifier === ADMIN_EMAIL && password === ADMIN_PASSWORD 
+    });
+    
     if (loginIdentifier === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
       const adminUser = {
         id: 999,
