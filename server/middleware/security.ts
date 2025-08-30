@@ -51,24 +51,28 @@ export const authLimiter = rateLimit({
   message: 'Too many login attempts, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
+  trustProxy: true, // Trust proxy for X-Forwarded-For headers
 });
 
 export const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // 100 requests per 15 minutes
   message: 'Too many requests, please try again later.',
+  trustProxy: true,
 });
 
 export const uploadLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 5, // 5 uploads per minute
   message: 'Upload rate limit exceeded.',
+  trustProxy: true,
 });
 
 export const generationLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 10, // 10 generations per minute
   message: 'Generation rate limit exceeded.',
+  trustProxy: true,
 });
 
 // ==========================================

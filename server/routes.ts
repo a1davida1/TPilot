@@ -65,6 +65,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // VALIDATE ENVIRONMENT & APPLY SECURITY
   // ==========================================
   
+  // Set trust proxy for rate limiters
+  app.set('trust proxy', true);
+  
   // Validate required environment variables first
   validateEnvironment();
   
