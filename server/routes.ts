@@ -23,7 +23,10 @@ import { setupAuth } from "./auth.js";
 import { setupAdminRoutes } from "./admin-routes.js";
 import { configureSocialAuth, socialAuthRoutes } from "./social-auth-config.js";
 import { visitorAnalytics } from "./visitor-analytics.js";
-import type { AnalyticsRequest } from "./visitor-analytics.js";
+// Analytics request type
+interface AnalyticsRequest extends express.Request {
+  sessionID: string;
+}
 
 // Service imports
 import { generateContent } from "./services/content-generator.js";
@@ -88,21 +91,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Apply IP logging middleware
   app.use(ipLoggingMiddleware);
 
-  // Visitor analytics middleware
-  app.use((req: AnalyticsRequest, res: Response, next: NextFunction) => {
-    // Only track non-API routes to avoid noise
-    if (!req.path.startsWith('/api/') && !req.path.startsWith('/uploads/')) {
-      visitorAnalytics.trackPageView(req, req.path);
-    }
-    next();
-  });
-
-  // Session configuration (secure)
+  // Session configuration (MUST BE BEFORE AUTH ROUTES)
   let store: session.Store | undefined;
 
   if (IS_PRODUCTION) {
     if (REDIS_URL) {
-      const RedisStore = connectRedis.default(session);
+      const RedisStore = (connectRedis as any)(session);
       const redisClient = new Redis(REDIS_URL);
       store = new RedisStore({ client: redisClient });
     } else if (DATABASE_URL) {
@@ -119,7 +113,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     store,
     secret: SESSION_SECRET,
     resave: false,
-    saveUninitialized: false,
+    saveUninitialized: true, // Required for OAuth flows
     cookie: {
       secure: IS_PRODUCTION, // Only use secure in production
       httpOnly: true,
@@ -171,14 +165,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Authentication required" });
       }
 
-      const result = await generateContent(req.body);
+      const { platform, style, theme, timing, allowsPromotion } = req.body;
+      const result = await generateContent(
+        platform || 'reddit',
+        style || 'playful',
+        theme || 'lingerie',
+        timing,
+        allowsPromotion
+      );
       
       // Save to database
+      // Transform photoInstructions to match database schema
+      const photoInstructions = {
+        lighting: Array.isArray(result.photoInstructions.lighting) 
+          ? result.photoInstructions.lighting[0] 
+          : result.photoInstructions.lighting || 'Natural lighting',
+        cameraAngle: Array.isArray(result.photoInstructions.angles) 
+          ? result.photoInstructions.angles[0] 
+          : (result.photoInstructions as any).cameraAngle || 'Eye level',
+        composition: Array.isArray(result.photoInstructions.composition) 
+          ? result.photoInstructions.composition[0] 
+          : result.photoInstructions.composition || 'Center composition',
+        styling: Array.isArray(result.photoInstructions.styling) 
+          ? result.photoInstructions.styling[0] 
+          : result.photoInstructions.styling || 'Casual styling',
+        mood: (result.photoInstructions as any).mood || 'Confident and natural',
+        technicalSettings: Array.isArray(result.photoInstructions.technical) 
+          ? result.photoInstructions.technical[0] 
+          : (result.photoInstructions as any).technicalSettings || 'Auto settings'
+      };
+
       await storage.createContentGeneration({
         userId: req.user.id,
         titles: result.titles || [],
-        photoInstructions: typeof result.photoInstructions === 'string' ? result.photoInstructions : JSON.stringify(result.photoInstructions || {}),
-        platform: req.body.platform || "reddit",
+        content: result.content || '',
+        photoInstructions,
+        platform: platform || "reddit",
+        style: style || 'playful',
+        theme: theme || 'lingerie',
         createdAt: new Date()
       });
 

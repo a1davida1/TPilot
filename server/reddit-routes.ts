@@ -94,7 +94,7 @@ export function registerRedditRoutes(app: Express) {
       // Clear OAuth state
       delete (req.session as any).redditOAuthState;
 
-      res.redirect('/dashboard?connected=reddit&username=' + encodeURIComponent(profile.username));
+      res.redirect('/dashboard?reddit=connected&username=' + encodeURIComponent(profile.username));
       
     } catch (error) {
       console.error('Reddit callback error:', error);

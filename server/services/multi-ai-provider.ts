@@ -104,8 +104,8 @@ async function generateWithGemini(prompt: string) {
   if (!gemini) return null;
   
   try {
-    // Use the text generation method for @google/genai
-    const response = await gemini.generateText({
+    // Use the generate method for @google/genai
+    const response = await (gemini as any).generate({
       prompt: prompt,
       temperature: 0.8,
       maxOutputTokens: 1500
@@ -276,7 +276,7 @@ function calculateCost(prompt: string, content: string, provider: AIProvider): n
   return Math.round(cost * 100000) / 100000; // Round to 5 decimal places
 }
 
-function generateDemoContent(request: MultiAIRequest): MultiAIResponse {
+function generateDemoContent(request: MultiAIRequest & { style?: string; theme?: string }): MultiAIResponse {
   const { customPrompt, platform, allowsPromotion, user, style: requestStyle } = request;
   
   // Use the style parameter sent from the frontend (preset ID) as the primary source
