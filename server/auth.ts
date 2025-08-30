@@ -255,7 +255,7 @@ export function setupAuth(app: Express) {
         body: new URLSearchParams({
           grant_type: 'authorization_code',
           code: code as string,
-          redirect_uri: `${process.env.FRONTEND_URL || 'https://thottopilot.com'}/api/auth/reddit/callback`
+          redirect_uri: `${req.protocol}://${req.get('host')}/api/auth/reddit/callback`
         })
       });
 
@@ -326,8 +326,9 @@ export function setupAuth(app: Express) {
 
       // Store Reddit tokens for API access
       await storage.updateUser(user.id, {
-        redditAccessToken: tokenData.access_token,
-        redditRefreshToken: tokenData.refresh_token || null
+        provider: 'reddit',
+        providerId: redditUser.id,
+        avatar: user.avatar || redditUser.icon_img?.replace(/&amp;/g, '&')
       });
 
       res.redirect('/dashboard?reddit=connected');
