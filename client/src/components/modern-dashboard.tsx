@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Home,
@@ -71,6 +71,7 @@ export function ModernDashboard({ isRedditConnected = false }: ModernDashboardPr
   const [activeSection, setActiveSection] = useState("dashboard");
   const [isMobile, setIsMobile] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -462,14 +463,15 @@ export function ModernDashboard({ isRedditConnected = false }: ModernDashboardPr
                       ? "border-pink-500 bg-pink-50 dark:bg-pink-950/20" 
                       : "border-gray-300 dark:border-gray-600 hover:border-pink-400 dark:hover:border-pink-500"
                   )}
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     console.log('Upload area clicked');
-                    const input = document.getElementById('file-upload') as HTMLInputElement;
-                    if (input) {
-                      console.log('File input found, triggering click');
-                      input.click();
+                    if (fileInputRef.current) {
+                      console.log('File input found via ref, triggering click');
+                      fileInputRef.current.click();
                     } else {
-                      console.error('File input not found!');
+                      console.error('File input ref not available!');
                     }
                   }}
                   onDragOver={(e) => {
@@ -494,14 +496,13 @@ export function ModernDashboard({ isRedditConnected = false }: ModernDashboardPr
                     if (files && files[0]) {
                       console.log('Processing dropped file:', files[0].name);
                       // Create a synthetic event for the handleFileUpload function
-                      const input = document.getElementById('file-upload') as HTMLInputElement;
-                      if (input) {
+                      if (fileInputRef.current) {
                         const dataTransfer = new DataTransfer();
                         dataTransfer.items.add(files[0]);
-                        input.files = dataTransfer.files;
+                        fileInputRef.current.files = dataTransfer.files;
                         
                         const event = new Event('change', { bubbles: true });
-                        input.dispatchEvent(event);
+                        fileInputRef.current.dispatchEvent(event);
                       }
                     }
                   }}
@@ -519,6 +520,7 @@ export function ModernDashboard({ isRedditConnected = false }: ModernDashboardPr
                     Supports: JPEG, PNG, WebP, GIF (Max 10MB)
                   </p>
                   <input
+                    ref={fileInputRef}
                     id="file-upload"
                     type="file"
                     accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
@@ -533,9 +535,18 @@ export function ModernDashboard({ isRedditConnected = false }: ModernDashboardPr
                 </div>
 
                 <div className="grid grid-cols-3 gap-3 mt-6">
-                  <Button variant="outline" size="sm" className="flex flex-col gap-1 h-auto py-3">
-                    <Sparkles className="h-5 w-5 text-purple-500" />
-                    <span className="text-xs">AI Caption</span>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex flex-col gap-1 h-auto py-3"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      console.log('Direct upload button clicked');
+                      fileInputRef.current?.click();
+                    }}
+                  >
+                    <Upload className="h-5 w-5 text-pink-500" />
+                    <span className="text-xs">Select File</span>
                   </Button>
                   <Button variant="outline" size="sm" className="flex flex-col gap-1 h-auto py-3">
                     <Shield className="h-5 w-5 text-blue-500" />
