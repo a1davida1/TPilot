@@ -549,6 +549,204 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
           </div>
         );
 
+      case 'history':
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Generation History</h1>
+                <p className="text-gray-600">View and manage your content generation history</p>
+              </div>
+              <Badge variant="outline">Recent Activity</Badge>
+            </div>
+            <Card className="bg-white border-gray-200">
+              <CardContent className="p-6">
+                <div className="text-center space-y-4">
+                  <History className="h-16 w-16 mx-auto text-purple-400" />
+                  <h3 className="text-xl font-medium text-gray-900">Generation History</h3>
+                  <p className="text-gray-600">Track all your content generations, view past results, and export data.</p>
+                  <div className="grid gap-4 mt-6">
+                    <div className="text-left space-y-2">
+                      <h4 className="font-medium text-gray-900">Features:</h4>
+                      <ul className="text-sm text-gray-600 space-y-1">
+                        <li>• View all past content generations</li>
+                        <li>• Search and filter by date, platform, or type</li>
+                        <li>• Export generation data to CSV</li>
+                        <li>• Performance analytics for each generation</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      case 'templates':
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Premium Templates</h1>
+                <p className="text-gray-600">Professional content templates for all platforms</p>
+              </div>
+              <Badge className="bg-gradient-to-r from-purple-500 to-pink-500">Pro Collection</Badge>
+            </div>
+            <Card className="bg-white border-gray-200">
+              <CardContent className="p-6">
+                <div className="text-center space-y-4">
+                  <FileText className="h-16 w-16 mx-auto text-purple-400" />
+                  <h3 className="text-xl font-medium text-gray-900">Premium Templates</h3>
+                  <p className="text-gray-600">Access our curated collection of high-converting content templates.</p>
+                  <div className="grid gap-4 mt-6">
+                    <div className="text-left space-y-2">
+                      <h4 className="font-medium text-gray-900">Template Categories:</h4>
+                      <ul className="text-sm text-gray-600 space-y-1">
+                        <li>• Reddit promotion templates (50+ variations)</li>
+                        <li>• Social media captions and hashtags</li>
+                        <li>• Engagement-boosting formats</li>
+                        <li>• Platform-specific optimizations</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      case 'customization':
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Brand Customization</h1>
+                <p className="text-gray-600">Customize content generation to match your brand</p>
+              </div>
+              <Badge className="bg-gradient-to-r from-purple-500 to-pink-500">Pro Feature</Badge>
+            </div>
+            <Card className="bg-white border-gray-200">
+              <CardContent className="p-6">
+                <div className="text-center space-y-4">
+                  <Settings className="h-16 w-16 mx-auto text-purple-400" />
+                  <h3 className="text-xl font-medium text-gray-900">Brand Customization</h3>
+                  <p className="text-gray-600">Train the AI to understand your brand voice and style preferences.</p>
+                  <div className="grid gap-4 mt-6">
+                    <div className="text-left space-y-2">
+                      <h4 className="font-medium text-gray-900">Customization Options:</h4>
+                      <ul className="text-sm text-gray-600 space-y-1">
+                        <li>• Brand voice and tone settings</li>
+                        <li>• Custom content style preferences</li>
+                        <li>• Industry-specific terminology</li>
+                        <li>• Personalized content templates</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      case 'export':
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Export Tools</h1>
+                <p className="text-gray-600">Export your content and data in various formats</p>
+              </div>
+              <Badge variant="outline">Data Export</Badge>
+            </div>
+            <Card className="bg-white border-gray-200">
+              <CardContent className="p-6">
+                <div className="text-center space-y-4">
+                  <FileText className="h-16 w-16 mx-auto text-purple-400" />
+                  <h3 className="text-xl font-medium text-gray-900">Export Tools</h3>
+                  <p className="text-gray-600">Download your content and analytics data in multiple formats.</p>
+                  <div className="grid gap-4 mt-6">
+                    <div className="text-left space-y-2">
+                      <h4 className="font-medium text-gray-900">Export Options:</h4>
+                      <ul className="text-sm text-gray-600 space-y-1">
+                        <li>• CSV export for analytics data</li>
+                        <li>• PDF reports for performance metrics</li>
+                        <li>• JSON format for API integrations</li>
+                        <li>• Batch content export tools</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      case 'guides':
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Creator Guides</h1>
+                <p className="text-gray-600">Learn best practices and advanced strategies</p>
+              </div>
+              <Badge variant="outline">Learning Center</Badge>
+            </div>
+            <Card className="bg-white border-gray-200">
+              <CardContent className="p-6">
+                <div className="text-center space-y-4">
+                  <BookOpen className="h-16 w-16 mx-auto text-purple-400" />
+                  <h3 className="text-xl font-medium text-gray-900">Creator Guides</h3>
+                  <p className="text-gray-600">Comprehensive guides to help you maximize your content creation success.</p>
+                  <div className="grid gap-4 mt-6">
+                    <div className="text-left space-y-2">
+                      <h4 className="font-medium text-gray-900">Available Guides:</h4>
+                      <ul className="text-sm text-gray-600 space-y-1">
+                        <li>• Reddit marketing strategies</li>
+                        <li>• Content creation best practices</li>
+                        <li>• Image protection techniques</li>
+                        <li>• Monetization and growth tips</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      case 'community':
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Community</h1>
+                <p className="text-gray-600">Connect with other creators and get support</p>
+              </div>
+              <Badge variant="outline">Join Community</Badge>
+            </div>
+            <Card className="bg-white border-gray-200">
+              <CardContent className="p-6">
+                <div className="text-center space-y-4">
+                  <Users className="h-16 w-16 mx-auto text-purple-400" />
+                  <h3 className="text-xl font-medium text-gray-900">Creator Community</h3>
+                  <p className="text-gray-600">Join our community of successful content creators and get expert support.</p>
+                  <div className="grid gap-4 mt-6">
+                    <div className="text-left space-y-2">
+                      <h4 className="font-medium text-gray-900">Community Features:</h4>
+                      <ul className="text-sm text-gray-600 space-y-1">
+                        <li>• Private Discord server access</li>
+                        <li>• Weekly Q&A sessions with experts</li>
+                        <li>• Share strategies and success stories</li>
+                        <li>• Get feedback on your content</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
       default:
         return (
           <Card className="min-h-[400px] flex items-center justify-center">
