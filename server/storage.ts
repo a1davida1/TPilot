@@ -160,22 +160,9 @@ class PostgreSQLStorage implements IStorage {
 
   async getAllUsers(): Promise<User[]> {
     try {
-      const allUsers = await db.select().from(users);
-      
-      // Remove duplicates based on username (keep the most recent one)
-      const uniqueUsers = allUsers.reduce((acc, user) => {
-        const existing = acc.find(u => u.username === user.username);
-        if (!existing) {
-          acc.push(user);
-        } else if (user.createdAt && existing.createdAt && new Date(user.createdAt) > new Date(existing.createdAt)) {
-          // Replace with newer user if timestamps exist
-          const index = acc.findIndex(u => u.username === user.username);
-          acc[index] = user;
-        }
-        return acc;
-      }, [] as User[]);
-      
-      return uniqueUsers;
+      const allUsers = await db.select().from(users).orderBy(desc(users.createdAt));
+      console.log('Storage: Found', allUsers.length, 'total users');
+      return allUsers;
     } catch (error) {
       console.error('Storage: Error getting all users:', error);
       return [];
