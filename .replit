@@ -53,3 +53,4 @@ task = "shell.exec"
 args = "npm run dev"
 
 [agent]
+integrations = ["javascript_stripe==1.0.0"]
