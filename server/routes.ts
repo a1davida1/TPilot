@@ -3,6 +3,10 @@ import express from "express";
 import { createServer, type Server } from "http";
 import session from 'express-session';
 import path from 'path';
+import connectPgSimple from 'connect-pg-simple';
+import * as connectRedis from 'connect-redis';
+import { Pool } from 'pg';
+import Redis from 'ioredis';
 
 // Security and middleware
 import { validateEnvironment, securityMiddleware, ipLoggingMiddleware, errorHandler, logger, generationLimiter } from "./middleware/security.js";
@@ -55,6 +59,8 @@ import bcrypt from 'bcrypt';
 // Get secure environment variables (no fallbacks)
 const SESSION_SECRET = process.env.SESSION_SECRET!;
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+const DATABASE_URL = process.env.DATABASE_URL;
+const REDIS_URL = process.env.REDIS_URL;
 
 // Auth request interface
 interface AuthRequest extends express.Request {
@@ -91,7 +97,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Session configuration (secure)
+  let store: session.Store | undefined;
+
+  if (IS_PRODUCTION) {
+    if (REDIS_URL) {
+      const RedisStore = connectRedis.default(session);
+      const redisClient = new Redis(REDIS_URL);
+      store = new RedisStore({ client: redisClient });
+    } else if (DATABASE_URL) {
+      const PgStore = connectPgSimple(session);
+      store = new PgStore({
+        pool: new Pool({ connectionString: DATABASE_URL })
+      });
+    } else {
+      logger.warn('No REDIS_URL or DATABASE_URL set in production; using MemoryStore.');
+    }
+  }
+
   app.use(session({
+    store,
     secret: SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
