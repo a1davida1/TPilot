@@ -33,7 +33,21 @@ export default function Dashboard() {
     // Handle OAuth errors
     if (error) {
       let errorMessage = "Authentication failed. Please try again.";
-      if (error === 'oauth-not-implemented') {
+      
+      // Reddit-specific error handling
+      if (error === 'reddit_missing_params') {
+        errorMessage = "Reddit connection failed: missing parameters. Please check your Reddit app settings.";
+      } else if (error === 'reddit_invalid_state') {
+        errorMessage = "Session expired. Please try connecting Reddit again.";
+      } else if (error === 'reddit_connection_failed') {
+        errorMessage = "Reddit connection failed. Please try again.";
+      } else if (error === 'reddit_access_denied') {
+        errorMessage = "Reddit access was denied. Please try again and authorize the application.";
+      } else if (error === 'reddit_profile_failed') {
+        errorMessage = "Failed to get Reddit profile. Please try again.";
+      } else if (error === 'reddit_invalid_user') {
+        errorMessage = "Invalid user session. Please log out and log back in.";
+      } else if (error === 'oauth-not-implemented') {
         errorMessage = "Reddit integration is being set up. Please try again later.";
       } else if (error === 'reddit_auth_failed') {
         errorMessage = "Reddit authentication failed. Please try again.";

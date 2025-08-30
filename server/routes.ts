@@ -190,6 +190,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get user stats
+  // Debug endpoint for Reddit OAuth troubleshooting (temporary)
+  app.get('/api/debug/session', (req: any, res) => {
+    res.json({
+      sessionId: req.sessionID,
+      hasSession: !!req.session,
+      redditState: req.session?.redditOAuthState,
+      redditConnected: req.session?.redditConnected,
+      cookies: req.headers.cookie ? 'present' : 'missing'
+    });
+  });
+
   app.get("/api/user-stats", authenticateToken, async (req: AuthRequest, res) => {
     try {
       if (!req.user?.id) {
