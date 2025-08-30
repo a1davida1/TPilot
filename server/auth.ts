@@ -308,4 +308,53 @@ export function setupAuth(app: Express) {
     }
   });
 
+  // Get current user endpoint (CRITICAL - this was missing!)
+  app.get('/api/auth/user', async (req: any, res) => {
+    try {
+      // Try JWT token authentication
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        
+        try {
+          const decoded = jwt.verify(token, JWT_SECRET) as any;
+          
+          // Handle admin user
+          if (decoded.isAdmin) {
+            return res.json({
+              id: 999,
+              email: process.env.ADMIN_EMAIL || 'admin@thottopilot.com',
+              username: 'admin',
+              tier: 'admin',
+              isAdmin: true
+            });
+          }
+          
+          // Handle regular user
+          const user = await storage.getUser(decoded.userId || decoded.id);
+          if (user) {
+            const { password: _, ...userResponse } = user;
+            return res.json({
+              ...userResponse,
+              tier: userResponse.tier || 'free'
+            });
+          }
+          
+          return res.json({
+            ...decoded,
+            tier: decoded.tier || 'free'
+          });
+        } catch (jwtError) {
+          console.error('JWT verification error:', jwtError);
+          return res.status(401).json({ message: 'Invalid token' });
+        }
+      }
+
+      return res.status(401).json({ message: 'Access token required' });
+    } catch (error) {
+      console.error('Get user error:', error);
+      res.status(500).json({ message: 'Error fetching user data' });
+    }
+  });
+
 }
