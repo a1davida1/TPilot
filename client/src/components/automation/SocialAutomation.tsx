@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -14,6 +14,47 @@ export function SocialAutomation() {
   const [trendAnalysis, setTrendAnalysis] = useState(true);
   const [postFrequency, setPostFrequency] = useState([3]);
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['reddit', 'twitter']);
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [posts, setPosts] = useState<any[]>([]);
+
+  const handleQuickPost = async () => {
+    const caption = localStorage.getItem('latestCaption') || '';
+    const image = localStorage.getItem('latestImage');
+    try {
+      const res = await fetch('/api/social-media/quick-post', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
+        },
+        body: JSON.stringify({ content: { text: caption, mediaUrls: image ? [image] : [] } })
+      });
+      const data = await res.json();
+      if (data.jobId) {
+        setJobId(data.jobId);
+      }
+    } catch (err) {
+      console.error('Quick post failed:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (!jobId) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch('/api/social-media/posts', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
+          }
+        });
+        const data = await res.json();
+        setPosts(data.posts || []);
+      } catch (err) {
+        console.error('Failed to fetch posts:', err);
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [jobId]);
 
   const automationFeatures = [
     {
@@ -88,9 +129,12 @@ export function SocialAutomation() {
             Advanced AI-powered social media automation and optimization
           </p>
         </div>
-        <Badge variant="secondary" className="bg-purple-500/10 text-purple-400 border-purple-500/20">
-          Phase 4 • Automation
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Button size="sm" onClick={handleQuickPost}>Quick Post</Button>
+          <Badge variant="secondary" className="bg-purple-500/10 text-purple-400 border-purple-500/20">
+            Phase 4 • Automation
+          </Badge>
+        </div>
       </div>
 
       <Tabs defaultValue="overview" className="space-y-4">
@@ -190,6 +234,21 @@ export function SocialAutomation() {
               </div>
             </CardContent>
           </Card>
+          {posts.length > 0 && (
+            <Card className="bg-gradient-to-r from-gray-900/50 to-gray-800/50 border-gray-700/50">
+              <CardHeader>
+                <CardTitle className="text-white">Post Status</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {posts.map(post => (
+                  <div key={post.id} className="flex justify-between text-sm text-gray-400">
+                    <span>{post.platform}</span>
+                    <span>{post.status}</span>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="platforms" className="space-y-4">
