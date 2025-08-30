@@ -95,16 +95,54 @@ export function SidebarDashboard({ isGuestMode = false }: SidebarDashboardProps)
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['creator-tools']));
   const [setupLater, setSetupLater] = useState(false);
 
-  // Load user from localStorage on mount
+  // Load and validate user from server on mount
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      const userData = JSON.parse(storedUser);
-      setUser(userData);
-      setUserTier(userData.tier || 'free');
-    } else if (isGuestMode) {
-      setUserTier('guest');
-    }
+    const validateAuth = async () => {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        if (isGuestMode) {
+          setUserTier('guest');
+        }
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/auth/user', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (response.ok) {
+          const userData = await response.json();
+          setUser(userData);
+          setUserTier(userData.tier || 'free');
+          // Update localStorage with fresh data
+          localStorage.setItem('user', JSON.stringify(userData));
+        } else {
+          // Invalid token, clear auth data
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('user');
+          setUser(null);
+          if (isGuestMode) {
+            setUserTier('guest');
+          }
+        }
+      } catch (error) {
+        console.error('Auth validation failed:', error);
+        // Fallback to localStorage if server is unavailable
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          const userData = JSON.parse(storedUser);
+          setUser(userData);
+          setUserTier(userData.tier || 'free');
+        } else if (isGuestMode) {
+          setUserTier('guest');
+        }
+      }
+    };
+
+    validateAuth();
   }, [isGuestMode]);
 
   const handleLogout = () => {
