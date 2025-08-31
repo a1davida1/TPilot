@@ -1,5 +1,6 @@
 import { queueMonitor } from "./queue-monitor.js";
 import { QUEUE_NAMES } from "./queue/index.js";
+import { logger } from "../middleware/security.js";
 
 export interface ScalingConfig {
   minConcurrency: number;
@@ -64,7 +65,7 @@ export class WorkerScaler {
   async startScaling(intervalMs: number = 60000) { // Check every minute
     if (this.scaling) return;
 
-    console.log('📈 Starting worker auto-scaling...');
+    logger.info('📈 Starting worker auto-scaling...');
     this.scaling = true;
 
     // Initialize scaling states
@@ -82,17 +83,17 @@ export class WorkerScaler {
       try {
         await this.performScalingCheck();
       } catch (error) {
-        console.error('Worker scaling error:', error);
+        logger.error('Worker scaling error', { error });
       }
     }, intervalMs);
 
-    console.log(`✅ Worker auto-scaling started (interval: ${intervalMs}ms)`);
+    logger.info(`✅ Worker auto-scaling started (interval: ${intervalMs}ms)`);
   }
 
   stopScaling() {
     if (!this.scaling) return;
 
-    console.log('🛑 Stopping worker auto-scaling...');
+    logger.info('🛑 Stopping worker auto-scaling...');
     this.scaling = false;
 
     if (this.intervalId) {
@@ -100,7 +101,7 @@ export class WorkerScaler {
       this.intervalId = undefined;
     }
 
-    console.log('✅ Worker auto-scaling stopped');
+    logger.info('✅ Worker auto-scaling stopped');
   }
 
   private async performScalingCheck() {
@@ -157,7 +158,7 @@ export class WorkerScaler {
       config.maxConcurrency
     );
 
-    console.log(`📈 Scaling UP ${queueName}: ${state.currentConcurrency} → ${newConcurrency}`);
+    logger.info(`📈 Scaling UP ${queueName}: ${state.currentConcurrency} → ${newConcurrency}`);
 
     await this.updateWorkerConcurrency(queueName, newConcurrency);
 
@@ -173,7 +174,7 @@ export class WorkerScaler {
       config.minConcurrency
     );
 
-    console.log(`📉 Scaling DOWN ${queueName}: ${state.currentConcurrency} → ${newConcurrency}`);
+    logger.info(`📉 Scaling DOWN ${queueName}: ${state.currentConcurrency} → ${newConcurrency}`);
 
     await this.updateWorkerConcurrency(queueName, newConcurrency);
 
@@ -187,7 +188,7 @@ export class WorkerScaler {
     try {
       // In a full implementation, this would dynamically adjust worker concurrency
       // For now, log the scaling action
-      console.log(`🔧 Worker concurrency for ${queueName} set to ${newConcurrency}`);
+      logger.info(`🔧 Worker concurrency for ${queueName} set to ${newConcurrency}`);
       
       // This would typically:
       // 1. Update the worker's concurrency setting
@@ -195,7 +196,7 @@ export class WorkerScaler {
       // 3. Adjust resource allocation
       
     } catch (error) {
-      console.error(`Failed to update worker concurrency for ${queueName}:`, error);
+      logger.error(`Failed to update worker concurrency for ${queueName}`, { error });
     }
   }
 
@@ -223,7 +224,7 @@ export class WorkerScaler {
       throw new Error(`Concurrency must be between ${config.minConcurrency} and ${config.maxConcurrency}`);
     }
 
-    console.log(`🎯 Manual scaling ${queueName}: ${state.currentConcurrency} → ${targetConcurrency}`);
+    logger.info(`🎯 Manual scaling ${queueName}: ${state.currentConcurrency} → ${targetConcurrency}`);
 
     await this.updateWorkerConcurrency(queueName, targetConcurrency);
 
@@ -236,7 +237,7 @@ export class WorkerScaler {
 
   updateConfig(queueName: string, config: Partial<ScalingConfig>) {
     this.queueConfigs[queueName] = { ...this.queueConfigs[queueName], ...config };
-    console.log(`🔧 Updated scaling config for ${queueName}:`, config);
+    logger.info(`🔧 Updated scaling config for ${queueName}`, { config });
   }
 }
 
