@@ -76,6 +76,18 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  
+  // Determine premium status
+  const isPremium = isAdmin || userTier === 'premium' || userTier === 'pro' || userTier === 'admin';
+  
+  // Debug logging
+  console.log('Dashboard props:', { user, userTier, isAdmin, isPremium });
+  console.log('User details:', { 
+    id: user?.id, 
+    username: user?.username, 
+    email: user?.email,
+    tier: user?.tier
+  });
 
   useEffect(() => {
     const checkMobile = () => {
@@ -311,7 +323,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
           </nav>
 
           {/* Upgrade Card - Only show for free/guest users */}
-          {(userTier === 'free' || userTier === 'guest') && !isAdmin && (
+          {!isPremium && (
             <Card className="mt-8 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white border-0">
               <CardContent className="p-4 text-center">
                 <Crown className="h-8 w-8 mx-auto mb-2 text-yellow-300" />
@@ -652,6 +664,17 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
             </Card>
           </div>
         </main>
+        
+        {/* Debug Info - Remove after fixing */}
+        <div className="fixed bottom-4 right-4 bg-black/90 text-white p-4 rounded-lg text-xs space-y-1 max-w-xs z-50">
+          <div className="font-bold text-yellow-400 mb-2">🔍 DEBUG INFO</div>
+          <div>User ID: <span className="text-cyan-400">{user?.id || 'none'}</span></div>
+          <div>Username: <span className="text-cyan-400">{user?.username || 'none'}</span></div>
+          <div>Email: <span className="text-cyan-400">{user?.email || 'none'}</span></div>
+          <div>Tier: <span className="text-cyan-400">{userTier}</span></div>
+          <div>Is Admin: <span className={isAdmin ? "text-green-400 font-bold" : "text-red-400"}>{isAdmin ? 'YES ✓' : 'NO ✗'}</span></div>
+          <div>Is Premium: <span className={isPremium ? "text-green-400 font-bold" : "text-red-400"}>{isPremium ? 'YES ✓' : 'NO ✗'}</span></div>
+        </div>
       </div>
     </div>
   );

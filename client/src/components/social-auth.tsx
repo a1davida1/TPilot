@@ -40,7 +40,22 @@ export function SocialAuth({ onSuccess, isLoading = false }: SocialAuthProps) {
       icon: <FaReddit className="h-5 w-5" />,
       color: 'bg-orange-500 hover:bg-orange-600',
       description: 'Perfect for content creators',
-      url: '/api/auth/reddit',
+      url: '', // Handled in handleSocialAuth
+      handler: async () => {
+        try {
+          const response = await fetch('/api/reddit/connect', {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+          const data = await response.json();
+          if (data.authUrl) {
+            window.location.href = data.authUrl;
+          }
+        } catch (error) {
+          console.error('Failed to connect Reddit:', error);
+        }
+      },
       recommended: true
     },
     {
@@ -57,8 +72,13 @@ export function SocialAuth({ onSuccess, isLoading = false }: SocialAuthProps) {
     setLoadingProvider(provider.id);
     
     try {
-      // Redirect to OAuth provider
-      window.location.href = provider.url;
+      // Check if provider has custom handler
+      if ((provider as any).handler) {
+        await (provider as any).handler();
+      } else if (provider.url) {
+        // Redirect to OAuth provider
+        window.location.href = provider.url;
+      }
       onSuccess?.(provider.id);
     } catch (error) {
       console.error(`${provider.name} auth failed:`, error);

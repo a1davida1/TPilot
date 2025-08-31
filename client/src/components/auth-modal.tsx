@@ -102,7 +102,22 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
       name: 'Reddit',
       icon: <FaReddit className="h-5 w-5" />,
       color: 'bg-orange-500 hover:bg-orange-600',
-      url: '/api/auth/reddit'
+      url: '', // Handled in handleSocialAuth
+      handler: async () => {
+        try {
+          const response = await fetch('/api/reddit/connect', {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+          const data = await response.json();
+          if (data.authUrl) {
+            window.location.href = data.authUrl;
+          }
+        } catch (error) {
+          console.error('Failed to connect Reddit:', error);
+        }
+      }
     },
     {
       id: 'facebook',
@@ -199,7 +214,13 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
             {socialProviders.map((provider) => (
               <Button
                 key={provider.id}
-                onClick={() => handleSocialAuth(provider.url)}
+                onClick={() => {
+                  if ((provider as any).handler) {
+                    (provider as any).handler();
+                  } else if (provider.url) {
+                    handleSocialAuth(provider.url);
+                  }
+                }}
                 className={`w-full ${provider.color} text-white border-0`}
               >
                 {provider.icon}
