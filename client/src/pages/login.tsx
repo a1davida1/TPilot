@@ -307,7 +307,7 @@ export default function Login() {
             <div className="mt-6 text-center space-y-2">
               {/* Password reset feature removed - was non-functional */}
               
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 {view === 'login' ? "Don't have an account?" : "Already have an account?"}
                 <button
                   type="button"
@@ -323,7 +323,7 @@ export default function Login() {
           </CardContent>
         </Card>
         
-        <div className="mt-8 text-center text-sm text-gray-500">
+        <div className="mt-8 text-center text-sm text-muted-foreground">
           <p>Protected by industry-standard encryption</p>
         </div>
       </div>

@@ -214,7 +214,7 @@ export function LandingPage() {
             <h2 className="text-5xl font-black text-gray-900 dark:text-white mb-6">
               Everything You Need to Scale
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               Powerful tools designed specifically for content creators who want to automate their workflow and maximize engagement
             </p>
           </div>
@@ -268,7 +268,7 @@ export function LandingPage() {
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
                   {feature.title}
                 </h3>
-                <p className="text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
+                <p className="text-muted-foreground mb-4 leading-relaxed">
                   {feature.description}
                 </p>
                 <Badge className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white border-0 font-semibold">
@@ -287,7 +287,7 @@ export function LandingPage() {
             <h2 className="text-5xl font-black text-gray-900 dark:text-white mb-6">
               Choose Your Plan
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300">
+            <p className="text-xl text-muted-foreground">
               Start free, upgrade when you're ready to scale
             </p>
           </div>
@@ -298,21 +298,21 @@ export function LandingPage() {
               <CardHeader className="pb-6">
                 <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Free</CardTitle>
                 <div className="text-4xl font-black text-indigo-600 mb-2">$0</div>
-                <p className="text-gray-600 dark:text-gray-300">Perfect for trying out</p>
+                <p className="text-muted-foreground">Perfect for trying out</p>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3 mb-8 text-left">
                   <li className="flex items-center gap-3">
                     <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-gray-700 dark:text-gray-300">5 AI captions per month</span>
+                    <span className="text-foreground">5 AI captions per month</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-gray-700 dark:text-gray-300">Basic image protection</span>
+                    <span className="text-foreground">Basic image protection</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-gray-700 dark:text-gray-300">1 platform connection</span>
+                    <span className="text-foreground">1 platform connection</span>
                   </li>
                 </ul>
                 <Link to="/modern-demo">
@@ -331,29 +331,29 @@ export function LandingPage() {
               <CardHeader className="pb-6">
                 <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Pro</CardTitle>
                 <div className="text-4xl font-black text-indigo-600 mb-2">$29</div>
-                <p className="text-gray-600 dark:text-gray-300">per month</p>
+                <p className="text-muted-foreground">per month</p>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3 mb-8 text-left">
                   <li className="flex items-center gap-3">
                     <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-gray-700 dark:text-gray-300">Unlimited AI captions</span>
+                    <span className="text-foreground">Unlimited AI captions</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-gray-700 dark:text-gray-300">Advanced ImageShield</span>
+                    <span className="text-foreground">Advanced ImageShield</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-gray-700 dark:text-gray-300">All platform connections</span>
+                    <span className="text-foreground">All platform connections</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-gray-700 dark:text-gray-300">Smart scheduling</span>
+                    <span className="text-foreground">Smart scheduling</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-gray-700 dark:text-gray-300">Analytics dashboard</span>
+                    <span className="text-foreground">Analytics dashboard</span>
                   </li>
                 </ul>
                 <Link to="/login">
@@ -369,25 +369,25 @@ export function LandingPage() {
               <CardHeader className="pb-6">
                 <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Enterprise</CardTitle>
                 <div className="text-4xl font-black text-indigo-600 mb-2">$99</div>
-                <p className="text-gray-600 dark:text-gray-300">per month</p>
+                <p className="text-muted-foreground">per month</p>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3 mb-8 text-left">
                   <li className="flex items-center gap-3">
                     <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-gray-700 dark:text-gray-300">Everything in Pro</span>
+                    <span className="text-foreground">Everything in Pro</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-gray-700 dark:text-gray-300">Team collaboration</span>
+                    <span className="text-foreground">Team collaboration</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-gray-700 dark:text-gray-300">Priority support</span>
+                    <span className="text-foreground">Priority support</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-gray-700 dark:text-gray-300">Custom integrations</span>
+                    <span className="text-foreground">Custom integrations</span>
                   </li>
                 </ul>
                 <Link to="/login">
@@ -448,10 +448,10 @@ export function LandingPage() {
               ThottoPilot
             </span>
           </div>
-          <p className="text-gray-400 mb-8 text-lg">
+          <p className="text-muted-foreground mb-8 text-lg">
             Create, Protect, and Promote - All in One
           </p>
-          <div className="flex justify-center space-x-8 text-gray-400 text-sm">
+          <div className="flex justify-center space-x-8 text-muted-foreground text-sm">
             <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
             <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
             <a href="#" className="hover:text-white transition-colors">Contact</a>

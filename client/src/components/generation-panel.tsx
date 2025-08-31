@@ -106,7 +106,7 @@ export function GenerationPanel({ onContentGenerated }: GenerationPanelProps) {
             Content Generator
           </h2>
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-500">Platform:</span>
+            <span className="text-sm text-muted-foreground">Platform:</span>
             <Select value={platform} onValueChange={setPlatform}>
               <SelectTrigger className="w-32">
                 <SelectValue />
@@ -123,7 +123,7 @@ export function GenerationPanel({ onContentGenerated }: GenerationPanelProps) {
         {/* Generation Options */}
         <div className="space-y-4 mb-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Content Style</label>
+            <label className="block text-sm font-medium text-foreground mb-2">Content Style</label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {["playful", "mysterious", "bold", "elegant", "shy", "naughty", "kinky"].map((styleOption) => (
                 <Button
@@ -131,7 +131,7 @@ export function GenerationPanel({ onContentGenerated }: GenerationPanelProps) {
                   variant={style === styleOption ? "default" : "outline"}
                   size="sm"
                   onClick={() => setStyle(styleOption)}
-                  className={style === styleOption ? "bg-primary text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}
+                  className={style === styleOption ? "bg-primary text-white" : "bg-muted text-foreground hover:bg-muted/80"}
                 >
                   {styleOption.charAt(0).toUpperCase() + styleOption.slice(1)}
                 </Button>
@@ -140,7 +140,7 @@ export function GenerationPanel({ onContentGenerated }: GenerationPanelProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Photo Style</label>
+            <label className="block text-sm font-medium text-foreground mb-2">Photo Style</label>
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
               {["tease", "shower", "lingerie", "slutty", "nude"].map((themeOption) => (
                 <Button
@@ -148,7 +148,7 @@ export function GenerationPanel({ onContentGenerated }: GenerationPanelProps) {
                   variant={theme === themeOption ? "default" : "outline"}
                   size="sm"
                   onClick={() => setTheme(themeOption)}
-                  className={theme === themeOption ? "bg-secondary text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}
+                  className={theme === themeOption ? "bg-secondary text-white" : "bg-muted text-foreground hover:bg-muted/80"}
                 >
                   {themeOption.charAt(0).toUpperCase() + themeOption.slice(1)}
                 </Button>
@@ -157,7 +157,7 @@ export function GenerationPanel({ onContentGenerated }: GenerationPanelProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Post Timing</label>
+            <label className="block text-sm font-medium text-foreground mb-2">Post Timing</label>
             <div className="grid grid-cols-3 gap-2">
               {["morning", "evening", "late"].map((timingOption) => (
                 <Button
@@ -165,7 +165,7 @@ export function GenerationPanel({ onContentGenerated }: GenerationPanelProps) {
                   variant={timing === timingOption ? "default" : "outline"}
                   size="sm"
                   onClick={() => setTiming(timingOption)}
-                  className={timing === timingOption ? "bg-accent text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}
+                  className={timing === timingOption ? "bg-accent text-white" : "bg-muted text-foreground hover:bg-muted/80"}
                 >
                   {timingOption.charAt(0).toUpperCase() + timingOption.slice(1)}
                 </Button>
@@ -174,7 +174,7 @@ export function GenerationPanel({ onContentGenerated }: GenerationPanelProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Does the subreddit allow promotion in the main post?</label>
+            <label className="block text-sm font-medium text-foreground mb-2">Does the subreddit allow promotion in the main post?</label>
             <div className="grid grid-cols-2 gap-2">
               {["yes", "no"].map((promotionOption) => (
                 <Button
@@ -182,7 +182,7 @@ export function GenerationPanel({ onContentGenerated }: GenerationPanelProps) {
                   variant={allowsPromotion === (promotionOption === "yes") ? "default" : "outline"}
                   size="sm"
                   onClick={() => setAllowsPromotion(promotionOption === "yes")}
-                  className={allowsPromotion === (promotionOption === "yes") ? "bg-green-500 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}
+                  className={allowsPromotion === (promotionOption === "yes") ? "bg-green-500 text-white" : "bg-muted text-foreground hover:bg-muted/80"}
                 >
                   {promotionOption === "yes" ? "Yes - Include links/promo" : "No - Keep it subtle"}
                 </Button>

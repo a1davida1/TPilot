@@ -576,9 +576,9 @@ export function UnifiedContentCreator({
           <TabsContent value="image" className="space-y-4">
             {!canUseImageWorkflow ? (
               <div className="text-center p-8 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
-                <Crown className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                <Crown className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                 <h3 className="text-lg font-semibold mb-2 text-gray-900">Pro Feature</h3>
-                <p className="text-gray-600 mb-4">
+                <p className="text-muted-foreground mb-4">
                   Image-based content generation is available for Pro and Premium users
                 </p>
                 <Button onClick={handleUpgradePrompt} className="bg-primary hover:bg-primary/90">
@@ -610,8 +610,8 @@ export function UnifiedContentCreator({
                       </div>
                     ) : (
                       <div className="text-center">
-                        <Upload className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                        <p className="text-sm text-gray-600 mb-4">
+                        <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                        <p className="text-sm text-muted-foreground mb-4">
                           Upload an image to generate captions and content
                         </p>
                         <Button onClick={() => fileInputRef.current?.click()}>

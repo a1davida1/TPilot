@@ -284,7 +284,7 @@ export function GeminiCaptionGeneratorTabs() {
                     disabled={!!imageFile}
                     data-testid="input-image-url"
                   />
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <span>OR</span>
                   </div>
                 </div>
@@ -300,14 +300,14 @@ export function GeminiCaptionGeneratorTabs() {
                             className="mx-auto max-h-48 rounded-lg object-contain"
                             data-testid="img-preview"
                           />
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                          <p className="text-sm text-muted-foreground">
                             {imageFile?.name}
                           </p>
                         </div>
                       ) : (
                         <div className="flex flex-col items-center gap-2">
-                          <Upload className="h-8 w-8 text-gray-400" />
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                          <Upload className="h-8 w-8 text-muted-foreground" />
+                          <p className="text-sm text-muted-foreground">
                             Click to upload an image
                           </p>
                         </div>
@@ -455,7 +455,7 @@ export function GeminiCaptionGeneratorTabs() {
                   onChange={(e) => setRewriteImageUrl(e.target.value)}
                   data-testid="input-rewrite-image-url"
                 />
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted-foreground">
                   Adding an image helps create more relevant content
                 </p>
               </div>

@@ -93,7 +93,7 @@ export function Header() {
                     className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 cursor-pointer transform hover:scale-105 ${
                       location === item.href 
                         ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg shadow-pink-500/30' 
-                        : 'text-gray-700 dark:text-gray-300 hover:text-pink-600 hover:bg-pink-100/80 dark:hover:bg-pink-900/30'
+                        : 'text-foreground hover:text-pink-600 hover:bg-pink-100/80 dark:hover:bg-pink-900/30'
                     }`}
                     data-testid={`nav-${item.label.toLowerCase().replace(' ', '-')}`}
                   >

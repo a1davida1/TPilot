@@ -193,7 +193,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
               <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
                 {mode === 'login' ? 'Welcome Back' : 'Create Account'}
               </h2>
-              <p className="text-sm text-gray-400 mt-1">
+              <p className="text-sm text-foreground mt-1">
                 {mode === 'login' 
                   ? 'Sign in to access your content' 
                   : 'Join ThottoPilot today'}
@@ -203,7 +203,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
               variant="ghost"
               size="sm"
               onClick={onClose}
-              className="text-gray-400 hover:text-white"
+              className="text-foreground hover:text-foreground"
             >
               <X className="h-5 w-5" />
             </Button>
@@ -231,7 +231,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
 
           <div className="relative mb-6">
             <Separator className="bg-gray-800" />
-            <span className="absolute left-1/2 -translate-x-1/2 -top-3 bg-gray-900 px-3 text-sm text-gray-500">
+            <span className="absolute left-1/2 -translate-x-1/2 -top-3 bg-card px-3 text-sm text-foreground">
               or
             </span>
           </div>
@@ -239,11 +239,11 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Label htmlFor="username" className="text-gray-300">
+              <Label htmlFor="username" className="text-foreground font-medium">
                 Username
               </Label>
               <div className="relative mt-1">
-                <User className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
+                <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="username"
                   type="text"
@@ -258,11 +258,11 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
 
             {mode === 'signup' && (
               <div>
-                <Label htmlFor="email" className="text-gray-300">
+                <Label htmlFor="email" className="text-foreground font-medium">
                   Email
                 </Label>
                 <div className="relative mt-1">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="email"
                     type="email"
@@ -276,11 +276,11 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
             )}
 
             <div>
-              <Label htmlFor="password" className="text-gray-300">
+              <Label htmlFor="password" className="text-foreground font-medium">
                 Password
               </Label>
               <div className="relative mt-1">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
+                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="password"
                   type="password"
@@ -314,11 +314,11 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
 
           {/* Toggle mode */}
           <div className="mt-6 text-center">
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-foreground">
               {mode === 'login' ? "Don't have an account?" : "Already have an account?"}
               <button
                 onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
-                className="ml-2 text-purple-400 hover:text-purple-300 font-medium"
+                className="ml-2 text-primary hover:text-primary/80 font-medium"
               >
                 {mode === 'login' ? 'Sign up' : 'Sign in'}
               </button>
@@ -327,12 +327,12 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
 
           {/* Benefits for signup */}
           {mode === 'signup' && (
-            <div className="mt-6 p-4 bg-purple-900/20 rounded-lg border border-purple-800/50">
-              <h4 className="text-sm font-medium text-purple-300 mb-2 flex items-center">
+            <div className="mt-6 p-4 bg-card/50 rounded-lg border border-border">
+              <h4 className="text-sm font-medium text-foreground mb-2 flex items-center">
                 <Sparkles className="h-4 w-4 mr-2" />
                 Pro Benefits Include:
               </h4>
-              <ul className="space-y-1 text-xs text-purple-300/80">
+              <ul className="space-y-1 text-xs text-muted-foreground">
                 <li className="flex items-center gap-2">
                   <CheckCircle className="h-3 w-3" />
                   Unlimited AI content generation

@@ -291,7 +291,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
             {["main", "create", "manage", "insights", "account"].map((section) => (
               <div key={section}>
                 {section !== "main" && (
-                  <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-6">
+                  <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mt-6">
                     {section}
                   </div>
                 )}
@@ -340,7 +340,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                         "w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all",
                         activeSection === item.id
                           ? "bg-pink-50 dark:bg-pink-950/20 text-pink-600 dark:text-pink-400 shadow-sm"
-                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                          : "text-foreground hover:bg-gray-100 dark:hover:bg-gray-800"
                       )}
                     >
                       {item.icon}
@@ -394,7 +394,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
               </Button>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Welcome back! Here's your content overview</p>
+                <p className="text-sm text-muted-foreground">Welcome back! Here's your content overview</p>
               </div>
             </div>
             
@@ -506,7 +506,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                   <div className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
                     {stat.value}
                   </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{stat.title}</p>
+                  <p className="text-sm text-muted-foreground">{stat.title}</p>
                 </CardContent>
               </Card>
             ))}
@@ -571,10 +571,10 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                     {isDragging ? "Drop your photo now!" : "Drop your photo here"}
                   </h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-6">
+                  <p className="text-muted-foreground mb-6">
                     {isDragging ? "Release to upload" : "or click to browse your files"}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-500">
+                  <p className="text-xs text-muted-foreground">
                     Supports: JPEG, PNG, WebP, GIF (Max 10MB)
                   </p>
                   <input
@@ -643,10 +643,10 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                         <p className="text-sm font-medium text-gray-900 dark:text-white">
                           {activity.title}
                         </p>
-                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                        <p className="text-xs text-muted-foreground">
                           {activity.subtitle}
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                           {activity.time}
                         </p>
                       </div>
@@ -718,7 +718,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                         <span className="font-medium text-gray-900 dark:text-white">{item.platform}</span>
                       </div>
                       <div className="flex items-center gap-4 text-sm">
-                        <span className="text-gray-600 dark:text-gray-400">{item.posts} posts</span>
+                        <span className="text-muted-foreground">{item.posts} posts</span>
                         <span className="font-semibold text-green-600">{item.engagement}</span>
                       </div>
                     </div>

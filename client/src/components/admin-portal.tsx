@@ -575,7 +575,7 @@ export function AdminPortal() {
               </div>
 
               <div className="flex items-center justify-between pt-4">
-                <div className="text-sm text-gray-600 dark:text-gray-400">
+                <div className="text-sm text-muted-foreground">
                   Trial will automatically expire after the selected duration
                 </div>
                 <Button 
@@ -617,7 +617,7 @@ export function AdminPortal() {
                         </div>
                         <div>
                           <p className="font-medium">{user.username}</p>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">{user.email}</p>
+                          <p className="text-sm text-muted-foreground">{user.email}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -631,7 +631,7 @@ export function AdminPortal() {
                       </div>
                     </div>
                   )) || (
-                    <p className="text-center text-gray-500 py-4">No active trials</p>
+                    <p className="text-center text-muted-foreground py-4">No active trials</p>
                   )}
               </div>
             </CardContent>
@@ -649,8 +649,8 @@ export function AdminPortal() {
               <div className="space-y-3">
                 {usersLoading ? (
                   <div className="text-center py-8">
-                    <RefreshCw className="h-8 w-8 animate-spin mx-auto text-gray-400" />
-                    <p className="text-gray-500 mt-2">Loading users...</p>
+                    <RefreshCw className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
+                    <p className="text-muted-foreground mt-2">Loading users...</p>
                   </div>
                 ) : (
                   Array.isArray(users) ? users.slice(0, 10).map((user: any) => (
@@ -661,8 +661,8 @@ export function AdminPortal() {
                         </div>
                         <div>
                           <p className="font-medium text-lg">{user.username}</p>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">{user.email || 'No email'}</p>
-                          <p className="text-xs text-gray-500">Joined {new Date(user.createdAt).toLocaleDateString()}</p>
+                          <p className="text-sm text-muted-foreground">{user.email || 'No email'}</p>
+                          <p className="text-xs text-muted-foreground">Joined {new Date(user.createdAt).toLocaleDateString()}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
@@ -1100,12 +1100,12 @@ function SystemMonitorTab({ authenticatedRequest }: { authenticatedRequest: any 
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="font-medium">{log.message}</p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                    <p className="text-xs text-muted-foreground">
                       {log.service} • {log.level.toUpperCase()} 
                       {log.ipAddress && ` • ${log.ipAddress}`}
                     </p>
                   </div>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-muted-foreground">
                     {new Date(log.createdAt).toLocaleTimeString()}
                   </span>
                 </div>
@@ -1125,22 +1125,22 @@ function SystemMonitorTab({ authenticatedRequest }: { authenticatedRequest: any 
             <div className="text-center p-3 border rounded">
               <div className={`w-3 h-3 rounded-full mx-auto mb-2 ${metrics?.services?.ai?.gemini ? 'bg-green-500' : 'bg-red-500'}`} />
               <p className="text-sm font-medium">Gemini AI</p>
-              <p className="text-xs text-gray-600">{metrics?.services?.ai?.gemini ? 'Connected' : 'Offline'}</p>
+              <p className="text-xs text-muted-foreground">{metrics?.services?.ai?.gemini ? 'Connected' : 'Offline'}</p>
             </div>
             <div className="text-center p-3 border rounded">
               <div className={`w-3 h-3 rounded-full mx-auto mb-2 ${metrics?.services?.ai?.openai ? 'bg-green-500' : 'bg-red-500'}`} />
               <p className="text-sm font-medium">OpenAI</p>
-              <p className="text-xs text-gray-600">{metrics?.services?.ai?.openai ? 'Connected' : 'Offline'}</p>
+              <p className="text-xs text-muted-foreground">{metrics?.services?.ai?.openai ? 'Connected' : 'Offline'}</p>
             </div>
             <div className="text-center p-3 border rounded">
               <div className={`w-3 h-3 rounded-full mx-auto mb-2 ${metrics?.services?.email ? 'bg-green-500' : 'bg-red-500'}`} />
               <p className="text-sm font-medium">Email</p>
-              <p className="text-xs text-gray-600">{metrics?.services?.email ? 'Connected' : 'Offline'}</p>
+              <p className="text-xs text-muted-foreground">{metrics?.services?.email ? 'Connected' : 'Offline'}</p>
             </div>
             <div className="text-center p-3 border rounded">
               <div className={`w-3 h-3 rounded-full mx-auto mb-2 ${metrics?.services?.storage ? 'bg-green-500' : 'bg-red-500'}`} />
               <p className="text-sm font-medium">Storage</p>
-              <p className="text-xs text-gray-600">{metrics?.services?.storage ? 'Connected' : 'Offline'}</p>
+              <p className="text-xs text-muted-foreground">{metrics?.services?.storage ? 'Connected' : 'Offline'}</p>
             </div>
           </div>
         </CardContent>

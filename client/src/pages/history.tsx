@@ -163,7 +163,7 @@ export default function HistoryPage() {
               <div className="text-2xl font-bold text-green-600">
                 {generations.filter(g => g.generationType === 'ai').length}
               </div>
-              <div className="text-sm text-gray-600">AI Generated</div>
+              <div className="text-sm text-muted-foreground">AI Generated</div>
             </CardContent>
           </Card>
           <Card className="text-center shadow-md border-0 bg-white/80 backdrop-blur-sm">
@@ -171,13 +171,13 @@ export default function HistoryPage() {
               <div className="text-2xl font-bold text-purple-600">
                 {generations.filter(g => g.platform === 'reddit').length}
               </div>
-              <div className="text-sm text-gray-600">Reddit Posts</div>
+              <div className="text-sm text-muted-foreground">Reddit Posts</div>
             </CardContent>
           </Card>
           <Card className="text-center shadow-md border-0 bg-white/80 backdrop-blur-sm">
             <CardContent className="pt-6">
               <div className="text-2xl font-bold text-orange-600">{filteredGenerations.length}</div>
-              <div className="text-sm text-gray-600">Filtered Results</div>
+              <div className="text-sm text-muted-foreground">Filtered Results</div>
             </CardContent>
           </Card>
         </div>
@@ -186,14 +186,14 @@ export default function HistoryPage() {
         {isLoading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading your content history...</p>
+            <p className="mt-4 text-muted-foreground">Loading your content history...</p>
           </div>
         ) : filteredGenerations.length === 0 ? (
           <Card className="text-center py-12 shadow-lg border-0 bg-white/80 backdrop-blur-sm">
             <CardContent>
-              <History className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <History className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No content found</h3>
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 {searchQuery || filterPlatform !== 'all' || filterType !== 'all'
                   ? 'Try adjusting your search or filters'
                   : 'Start generating content to see your history here'
