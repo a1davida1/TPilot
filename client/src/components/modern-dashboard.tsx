@@ -367,7 +367,23 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => window.location.href = '/api/auth/reddit'}
+                  onClick={async () => {
+                    try {
+                      const response = await fetch('/api/reddit/connect', {
+                        headers: {
+                          'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        }
+                      });
+                      const data = await response.json();
+                      if (data.authUrl) {
+                        window.location.href = data.authUrl;
+                      } else if (data.error) {
+                        console.error('Reddit connection error:', data.error);
+                      }
+                    } catch (error) {
+                      console.error('Failed to connect Reddit:', error);
+                    }
+                  }}
                   className="border-orange-200 text-orange-600 hover:bg-orange-50"
                 >
                   <FaReddit className="h-4 w-4 mr-2" />
