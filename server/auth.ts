@@ -78,18 +78,54 @@ export function setupAuth(app: Express) {
         tier: 'free'
       });
 
-      // Create verification token and send email
-      if (user.email) {
-        const verificationToken = crypto.randomBytes(32).toString('hex');
-        await storage.createVerificationToken({
-          userId: user.id,
-          token: verificationToken,
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
-        });
-        await emailService.sendVerificationEmail(user.email, user.username, verificationToken);
-      }
+      // For development, provide immediate authentication
+      // For production, require email verification
+      const isDevelopment = process.env.NODE_ENV === 'development';
+      
+      if (isDevelopment) {
+        // Automatically verify email in development
+        await storage.updateUserEmailVerified(user.id, true);
+        
+        // Generate JWT token for immediate authentication
+        const token = jwt.sign(
+          {
+            id: user.id,
+            userId: user.id,
+            username: user.username,
+            isAdmin: user.isAdmin,
+            role: user.role
+          },
+          JWT_SECRET_VALIDATED,
+          { expiresIn: '24h' }
+        );
 
-      res.json({ message: 'Verification email sent' });
+        res.status(201).json({
+          message: 'User created successfully',
+          token,
+          user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            tier: user.tier,
+            isAdmin: user.isAdmin,
+            role: user.role,
+            emailVerified: true
+          }
+        });
+      } else {
+        // Production: Create verification token and send email
+        if (user.email) {
+          const verificationToken = crypto.randomBytes(32).toString('hex');
+          await storage.createVerificationToken({
+            userId: user.id,
+            token: verificationToken,
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+          });
+          await emailService.sendVerificationEmail(user.email, user.username, verificationToken);
+        }
+
+        res.json({ message: 'Verification email sent' });
+      }
     } catch (error) {
       safeLog('error', 'Authentication signup failed', { error: error.message });
       res.status(500).json({ message: 'Error creating user' });
