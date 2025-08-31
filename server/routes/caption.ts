@@ -10,7 +10,7 @@ const router = Router();
 
 router.post('/generate', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const { imageUrl, platform, voice, nsfw } = req.body || {};
+    const { imageUrl, platform, voice, style, mood, nsfw } = req.body || {};
     
     if (!imageUrl || !platform) {
       return res.status(400).json({ error: "imageUrl and platform are required" });
@@ -22,7 +22,7 @@ router.post('/generate', authenticateToken, async (req: AuthRequest, res: Respon
       return res.status(400).json({ error: "Invalid platform. Must be one of: instagram, x, reddit, tiktok" });
     }
     
-    const result = await pipeline({ imageUrl, platform, voice, nsfw: nsfw || false });
+    const result = await pipeline({ imageUrl, platform, voice, style, mood, nsfw: nsfw || false });
     
     // Save generation to database
     if (req.user?.id && result.final) {
@@ -30,7 +30,7 @@ router.post('/generate', authenticateToken, async (req: AuthRequest, res: Respon
         await storage.createGeneration({
           userId: req.user.id,
           platform,
-          style: voice || 'default',
+          style: style || voice || 'default',
           theme: 'image_based',
           titles: Array.isArray(result.final.title) ? result.final.title : [result.final.title],
           content: result.final.caption || '',
@@ -62,7 +62,7 @@ router.post('/generate', authenticateToken, async (req: AuthRequest, res: Respon
 
 router.post('/generate-text', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const { platform, voice, theme, context, nsfw } = req.body || {};
+    const { platform, voice, style, mood, theme, context, nsfw } = req.body || {};
     
     if (!platform || !theme) {
       return res.status(400).json({ error: "platform and theme are required" });
@@ -74,7 +74,7 @@ router.post('/generate-text', authenticateToken, async (req: AuthRequest, res: R
       return res.status(400).json({ error: "Invalid platform. Must be one of: instagram, x, reddit, tiktok" });
     }
     
-    const result = await pipelineTextOnly({ platform, voice, theme, context, nsfw: nsfw || false });
+    const result = await pipelineTextOnly({ platform, voice, style, mood, theme, context, nsfw: nsfw || false });
     
     // Save generation to database
     if (req.user?.id && result.final) {
@@ -82,7 +82,7 @@ router.post('/generate-text', authenticateToken, async (req: AuthRequest, res: R
         await storage.createGeneration({
           userId: req.user.id,
           platform,
-          style: voice || 'default',
+          style: style || voice || 'default',
           theme: theme || 'lifestyle',
           titles: Array.isArray(result.final.title) ? result.final.title : [result.final.title],
           content: result.final.caption || '',
@@ -114,7 +114,7 @@ router.post('/generate-text', authenticateToken, async (req: AuthRequest, res: R
 
 router.post('/rewrite', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const { platform, voice, existingCaption, imageUrl, nsfw } = req.body || {};
+    const { platform, voice, style, mood, existingCaption, imageUrl, nsfw } = req.body || {};
     
     if (!platform || !existingCaption) {
       return res.status(400).json({ error: "platform and existingCaption are required" });
@@ -126,7 +126,7 @@ router.post('/rewrite', authenticateToken, async (req: AuthRequest, res: Respons
       return res.status(400).json({ error: "Invalid platform. Must be one of: instagram, x, reddit, tiktok" });
     }
     
-    const result = await pipelineRewrite({ platform, voice, existingCaption, imageUrl, nsfw: nsfw || false });
+    const result = await pipelineRewrite({ platform, voice, style, mood, existingCaption, imageUrl, nsfw: nsfw || false });
     
     // Save generation to database
     if (req.user?.id && result.final) {
@@ -134,7 +134,7 @@ router.post('/rewrite', authenticateToken, async (req: AuthRequest, res: Respons
         await storage.createGeneration({
           userId: req.user.id,
           platform,
-          style: voice || 'default',
+          style: style || voice || 'default',
           theme: 'rewrite',
           titles: Array.isArray(result.final.title) ? result.final.title : [result.final.title],
           content: result.final.caption || '',

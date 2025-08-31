@@ -15,9 +15,9 @@ export async function extractFacts(imageUrl:string){
   return stripToJSON(res.response.text());
 }
 
-export async function variantsRewrite(params:{platform:"instagram"|"x"|"reddit"|"tiktok", voice:string, existingCaption:string, facts?:any, hint?:string, nsfw?:boolean}){
+export async function variantsRewrite(params:{platform:"instagram"|"x"|"reddit"|"tiktok", voice:string, style?:string, mood?:string, existingCaption:string, facts?:any, hint?:string, nsfw?:boolean}){
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rewrite.txt");
-  const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\nEXISTING_CAPTION: "${params.existingCaption}"${params.facts?`\nIMAGE_FACTS: ${JSON.stringify(params.facts)}`:""}\nNSFW: ${params.nsfw || false}${params.hint?`\nHINT:${params.hint}`:""}`;
+  const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\n${params.style ? `STYLE: ${params.style}\n` : ''}${params.mood ? `MOOD: ${params.mood}\n` : ''}EXISTING_CAPTION: "${params.existingCaption}"${params.facts?`\nIMAGE_FACTS: ${JSON.stringify(params.facts)}`:""}\nNSFW: ${params.nsfw || false}${params.hint?`\nHINT:${params.hint}`:""}`;
   const res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+user }]);
   const json=stripToJSON(res.response.text());
   // Fix common safety_level values and missing fields
@@ -58,10 +58,10 @@ export async function rankAndSelect(variants:any){
   return RankResult.parse(json);
 }
 
-export async function pipelineRewrite({ platform, voice="flirty_playful", existingCaption, imageUrl, nsfw=false }:{
-  platform:"instagram"|"x"|"reddit"|"tiktok", voice?:string, existingCaption:string, imageUrl?:string, nsfw?:boolean }){
+export async function pipelineRewrite({ platform, voice="flirty_playful", style, mood, existingCaption, imageUrl, nsfw=false }:{
+  platform:"instagram"|"x"|"reddit"|"tiktok", voice?:string, style?:string, mood?:string, existingCaption:string, imageUrl?:string, nsfw?:boolean }){
   let facts = imageUrl ? await extractFacts(imageUrl) : undefined;
-  let variants = await variantsRewrite({ platform, voice, existingCaption, facts, nsfw });
+  let variants = await variantsRewrite({ platform, voice, style, mood, existingCaption, facts, nsfw });
   let ranked = await rankAndSelect(variants);
   let out = ranked.final;
 

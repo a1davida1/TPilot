@@ -7,9 +7,9 @@ async function load(p:string){ return fs.readFile(path.join(process.cwd(),"promp
 function stripToJSON(txt:string){ const i=Math.min(...[txt.indexOf("{"),txt.indexOf("[")].filter(x=>x>=0));
   const j=Math.max(txt.lastIndexOf("}"),txt.lastIndexOf("]")); return JSON.parse((i>=0&&j>=0)?txt.slice(i,j+1):txt); }
 
-export async function generateVariantsTextOnly(params:{platform:"instagram"|"x"|"reddit"|"tiktok", voice:string, theme:string, context?:string, hint?:string, nsfw?:boolean}){
+export async function generateVariantsTextOnly(params:{platform:"instagram"|"x"|"reddit"|"tiktok", voice:string, style?:string, mood?:string, theme:string, context?:string, hint?:string, nsfw?:boolean}){
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("variants_textonly.txt");
-  const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\nTHEME: "${params.theme}"\nCONTEXT: "${params.context||''}"\nNSFW: ${params.nsfw || false}${params.hint?`\nHINT:${params.hint}`:""}`;
+  const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\n${params.style ? `STYLE: ${params.style}\n` : ''}${params.mood ? `MOOD: ${params.mood}\n` : ''}THEME: "${params.theme}"\nCONTEXT: "${params.context||''}"\nNSFW: ${params.nsfw || false}${params.hint?`\nHINT:${params.hint}`:""}`;
   const res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+user }]);
   const json=stripToJSON(res.response.text());
   // Fix common safety_level values and missing fields
@@ -50,9 +50,9 @@ export async function rankAndSelect(variants:any){
   return RankResult.parse(json);
 }
 
-export async function pipelineTextOnly({ platform, voice="flirty_playful", theme, context, nsfw=false }:{
-  platform:"instagram"|"x"|"reddit"|"tiktok", voice?:string, theme:string, context?:string, nsfw?:boolean }){
-  let variants = await generateVariantsTextOnly({ platform, voice, theme, context, nsfw });
+export async function pipelineTextOnly({ platform, voice="flirty_playful", style, mood, theme, context, nsfw=false }:{
+  platform:"instagram"|"x"|"reddit"|"tiktok", voice?:string, style?:string, mood?:string, theme:string, context?:string, nsfw?:boolean }){
+  let variants = await generateVariantsTextOnly({ platform, voice, style, mood, theme, context, nsfw });
   let ranked = await rankAndSelect(variants);
   let out = ranked.final;
 

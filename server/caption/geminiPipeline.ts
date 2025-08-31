@@ -49,9 +49,9 @@ export async function extractFacts(imageUrl:string){
   }
 }
 
-export async function generateVariants(params:{platform:"instagram"|"x"|"reddit"|"tiktok", voice:string, facts:any, hint?:string, nsfw?:boolean}){
+export async function generateVariants(params:{platform:"instagram"|"x"|"reddit"|"tiktok", voice:string, style?:string, mood?:string, facts:any, hint?:string, nsfw?:boolean}){
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("variants.txt");
-  const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\nIMAGE_FACTS: ${JSON.stringify(params.facts)}\nNSFW: ${params.nsfw || false}\n${params.hint?`HINT:${params.hint}`:""}`;
+  const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\n${params.style ? `STYLE: ${params.style}\n` : ''}${params.mood ? `MOOD: ${params.mood}\n` : ''}IMAGE_FACTS: ${JSON.stringify(params.facts)}\nNSFW: ${params.nsfw || false}\n${params.hint?`HINT:${params.hint}`:""}`;
   const res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+user }]);
   const json=stripToJSON(res.response.text());
   // Fix common safety_level values
@@ -86,10 +86,10 @@ export async function rankAndSelect(variants:any){
   return RankResult.parse(json);
 }
 
-export async function pipeline({ imageUrl, platform, voice="flirty_playful", nsfw=false }:{
-  imageUrl:string, platform:"instagram"|"x"|"reddit"|"tiktok", voice?:string, nsfw?:boolean }){
+export async function pipeline({ imageUrl, platform, voice="flirty_playful", style, mood, nsfw=false }:{
+  imageUrl:string, platform:"instagram"|"x"|"reddit"|"tiktok", voice?:string, style?:string, mood?:string, nsfw?:boolean }){
   const facts = await extractFacts(imageUrl);
-  let variants = await generateVariants({ platform, voice, facts, nsfw });
+  let variants = await generateVariants({ platform, voice, style, mood, facts, nsfw });
   let ranked = await rankAndSelect(variants);
   let out = ranked.final;
 

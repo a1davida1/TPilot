@@ -29,10 +29,34 @@ const VOICES = [
   { value: "cozy_girl", label: "Cozy Girl" }
 ];
 
+const STYLES = [
+  { value: "explicit", label: "Explicit" },
+  { value: "poetic", label: "Poetic" },
+  { value: "chill", label: "Chill" },
+  { value: "playful", label: "Playful" },
+  { value: "mysterious", label: "Mysterious" },
+  { value: "confident", label: "Confident" },
+  { value: "elegant", label: "Elegant" },
+  { value: "casual", label: "Casual" }
+];
+
+const MOODS = [
+  { value: "seductive", label: "Seductive" },
+  { value: "romantic", label: "Romantic" },
+  { value: "energetic", label: "Energetic" },
+  { value: "relaxed", label: "Relaxed" },
+  { value: "intimate", label: "Intimate" },
+  { value: "adventurous", label: "Adventurous" },
+  { value: "dreamy", label: "Dreamy" },
+  { value: "bold", label: "Bold" }
+];
+
 export function GeminiCaptionGeneratorTabs() {
   // Shared states
   const [platform, setPlatform] = useState<string>("reddit");
   const [voice, setVoice] = useState<string>("flirty_playful");
+  const [style, setStyle] = useState<string>("playful");
+  const [mood, setMood] = useState<string>("seductive");
   const [nsfw, setNsfw] = useState<boolean>(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [captionData, setCaptionData] = useState<any>(null);
@@ -90,7 +114,7 @@ export function GeminiCaptionGeneratorTabs() {
 
     try {
       const response = await apiRequest('POST', '/api/caption/generate', {
-        imageUrl, platform, voice, nsfw
+        imageUrl, platform, voice, style, mood, nsfw
       });
 
       const result = await response.json();
@@ -125,7 +149,7 @@ export function GeminiCaptionGeneratorTabs() {
 
     try {
       const response = await apiRequest('POST', '/api/caption/generate-text', {
-        platform, voice, theme, context, nsfw
+        platform, voice, style, mood, theme, context, nsfw
       });
 
       const result = await response.json();
@@ -159,16 +183,14 @@ export function GeminiCaptionGeneratorTabs() {
     setCaptionData(null);
 
     try {
-      const response = await fetch('/api/caption/rewrite', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          platform, 
-          voice, 
-          existingCaption, 
-          imageUrl: rewriteImageUrl || undefined,
-          nsfw
-        })
+      const response = await apiRequest('POST', '/api/caption/rewrite', {
+        platform, 
+        voice, 
+        style,
+        mood,
+        existingCaption, 
+        imageUrl: rewriteImageUrl || undefined,
+        nsfw
       });
 
       const result = await response.json();
@@ -194,39 +216,73 @@ export function GeminiCaptionGeneratorTabs() {
 
   const PlatformVoiceSelectors = () => (
     <>
-      <div className="space-y-2">
-        <Label htmlFor="platform">Platform</Label>
-        <Select value={platform} onValueChange={setPlatform}>
-          <SelectTrigger id="platform">
-            <SelectValue placeholder="Select platform" />
-          </SelectTrigger>
-          <SelectContent>
-            {PLATFORMS.map(p => (
-              <SelectItem key={p.value} value={p.value}>
-                {p.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="platform">Platform</Label>
+          <Select value={platform} onValueChange={setPlatform}>
+            <SelectTrigger id="platform">
+              <SelectValue placeholder="Select platform" />
+            </SelectTrigger>
+            <SelectContent>
+              {PLATFORMS.map(p => (
+                <SelectItem key={p.value} value={p.value}>
+                  {p.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="voice">Content Voice</Label>
+          <Select value={voice} onValueChange={setVoice}>
+            <SelectTrigger id="voice">
+              <SelectValue placeholder="Select voice" />
+            </SelectTrigger>
+            <SelectContent>
+              {VOICES.map(v => (
+                <SelectItem key={v.value} value={v.value}>
+                  {v.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="style">Content Style</Label>
+          <Select value={style} onValueChange={setStyle}>
+            <SelectTrigger id="style">
+              <SelectValue placeholder="Select style" />
+            </SelectTrigger>
+            <SelectContent>
+              {STYLES.map(s => (
+                <SelectItem key={s.value} value={s.value}>
+                  {s.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="mood">Content Mood</Label>
+          <Select value={mood} onValueChange={setMood}>
+            <SelectTrigger id="mood">
+              <SelectValue placeholder="Select mood" />
+            </SelectTrigger>
+            <SelectContent>
+              {MOODS.map(m => (
+                <SelectItem key={m.value} value={m.value}>
+                  {m.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="voice">Content Voice</Label>
-        <Select value={voice} onValueChange={setVoice}>
-          <SelectTrigger id="voice">
-            <SelectValue placeholder="Select voice" />
-          </SelectTrigger>
-          <SelectContent>
-            {VOICES.map(v => (
-              <SelectItem key={v.value} value={v.value}>
-                {v.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-2 pt-4">
         <Checkbox
           id="nsfw"
           checked={nsfw}
