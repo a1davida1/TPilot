@@ -30,7 +30,7 @@ const secureStorage = multer.diskStorage({
 const upload = multer({ 
   storage: secureStorage,
   limits: { 
-    fileSize: 10 * 1024 * 1024, // 10MB limit
+    fileSize: 50 * 1024 * 1024, // 50MB limit (better for high-quality content creator photos)
     files: 1, // Only 1 file at a time
     fields: 20 // Limit fields
   },
