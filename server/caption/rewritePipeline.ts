@@ -26,7 +26,7 @@ export async function variantsRewrite(params:{platform:"instagram"|"x"|"reddit"|
       // Fix safety_level variations
       if(!item.safety_level || item.safety_level==="safe" || item.safety_level==="1" || item.safety_level===1) item.safety_level="normal";
       else if(item.safety_level==="2" || item.safety_level===2 || item.safety_level==="suggestive") item.safety_level="spicy_safe";
-      else if(item.safety_level==="3" || item.safety_level===3) item.safety_level="needs_review";
+      else if(item.safety_level==="3" || item.safety_level===3 || item.safety_level==="high" || item.safety_level==="nsfw") item.safety_level="needs_review";
       // Fix other fields
       if(!item.mood || item.mood.length<2) item.mood="engaging";
       if(!item.style || item.style.length<2) item.style="authentic";
@@ -47,7 +47,7 @@ export async function rankAndSelect(variants:any){
   if(json.final){
     if(!json.final.safety_level || json.final.safety_level==="safe" || json.final.safety_level==="1" || json.final.safety_level===1) json.final.safety_level="normal";
     else if(json.final.safety_level==="2" || json.final.safety_level===2 || json.final.safety_level==="suggestive") json.final.safety_level="spicy_safe";
-    else if(json.final.safety_level==="3" || json.final.safety_level===3) json.final.safety_level="needs_review";
+    else if(json.final.safety_level==="3" || json.final.safety_level===3 || json.final.safety_level==="high" || json.final.safety_level==="nsfw") json.final.safety_level="needs_review";
     if(!json.final.mood || json.final.mood.length<2) json.final.mood="engaging";
     if(!json.final.style || json.final.style.length<2) json.final.style="authentic";
     if(!json.final.cta || json.final.cta.length<2) json.final.cta="Check it out";
