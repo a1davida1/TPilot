@@ -298,27 +298,35 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                     <button
                       key={item.id}
                       onClick={() => {
+                        console.log('Clicked item:', item.id, item.label);
                         // Navigate to appropriate page based on item
                         switch(item.id) {
                           case 'reddit':
+                            console.log('Navigating to /reddit');
                             setLocation('/reddit');
                             break;
                           case 'generate':
+                            console.log('Navigating to /caption-generator');
                             setLocation('/caption-generator');
                             break;
                           case 'history':
+                            console.log('Navigating to /history');
                             setLocation('/history');
                             break;
                           case 'settings':
+                            console.log('Navigating to /settings');
                             setLocation('/settings');
                             break;
                           case 'gallery':
+                            console.log('Navigating to /gallery');
                             setLocation('/gallery');
                             break;
                           case 'dashboard':
+                            console.log('Navigating to /dashboard');
                             setLocation('/dashboard');
                             break;
                           default:
+                            console.log('Unimplemented feature:', item.id);
                             // For unimplemented pages, just update active section
                             setActiveSection(item.id);
                             toast({
