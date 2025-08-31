@@ -17,41 +17,15 @@ export default function Dashboard() {
     const error = urlParams.get('error');
     const guest = urlParams.get('guest');
     
-    // Handle Reddit connection success
-    if (reddit === 'connected') {
-      const username = urlParams.get('username');
-      toast({
-        title: "Reddit Connected! 🎉",
-        description: username ? `Connected as u/${username}` : "Your Reddit account has been successfully linked.",
-        variant: "default",
-      });
-      // Clean URL
-      window.history.replaceState({}, '', '/dashboard');
-      // Refetch user to get updated data
-      refetch();
-    }
+    // No longer handling Reddit OAuth connections
     
     // Handle OAuth errors
     if (error) {
       let errorMessage = "Authentication failed. Please try again.";
       
-      // Reddit-specific error handling
-      if (error === 'reddit_missing_params') {
-        errorMessage = "Reddit connection failed: missing parameters.";
-      } else if (error === 'invalid_state') {
-        errorMessage = "Session expired. Please try connecting Reddit again.";
-      } else if (error === 'reddit_connection_failed') {
-        errorMessage = "Reddit connection failed. Please try again.";
-      } else if (error === 'reddit_access_denied') {
-        errorMessage = "You denied access to Reddit. Please try again and authorize the app.";
-      } else if (error === 'reddit_profile_failed') {
-        errorMessage = "Failed to get Reddit profile. Please try again.";
-      } else if (error === 'reddit_token_exchange_failed') {
-        errorMessage = "Failed to authenticate with Reddit. Please try again.";
-      } else if (error === 'oauth-not-implemented') {
-        errorMessage = "Reddit integration is being set up. Please try again later.";
-      } else if (error === 'reddit_auth_failed') {
-        errorMessage = "Reddit authentication failed. Please try again.";
+      // General OAuth error handling
+      if (error === 'oauth-not-implemented') {
+        errorMessage = "Social login is being set up. Please try again later.";
       }
       
       toast({
