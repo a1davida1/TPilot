@@ -4,6 +4,7 @@ import { db } from "../../db.js";
 import { contentGenerations, eventLogs } from "@shared/schema.js";
 import { eq } from "drizzle-orm";
 import { AiService } from "../ai-service.js";
+import { logger } from "../logger.js";
 
 export class AiPromoWorker {
   private initialized = false;
@@ -18,20 +19,20 @@ export class AiPromoWorker {
     );
     
     this.initialized = true;
-    console.log('✅ AI Promo worker initialized with queue abstraction');
+    logger.info('✅ AI Promo worker initialized with queue abstraction');
   }
 
   private async processJob(jobData: unknown, jobId: string) {
     const { userId, generationId, promptText, imageKey, platforms, styleHints, variants = 1 } = jobData as AiPromoJobData;
 
     try {
-      console.log(`Processing AI promo job for generation ${generationId}`);
+      logger.info(`Processing AI promo job for generation ${generationId}`);
 
       // Generate promotional content variants
       const results = [];
       
       for (let i = 0; i < variants; i++) {
-        console.log(`Generating variant ${i + 1}/${variants}`);
+        logger.info(`Generating variant ${i + 1}/${variants}`);
         
         const aiRequest = {
           userId,
@@ -64,7 +65,7 @@ export class AiPromoWorker {
       return { success: true, results };
 
     } catch (error: any) {
-      console.error(`AI promo job for generation ${generationId} failed:`, error);
+      logger.error(`AI promo job for generation ${generationId} failed:`, { error: error.message, stack: error.stack });
 
       // Update generation status to failed
       await this.updateGenerationStatus(generationId, 'failed', error.message);

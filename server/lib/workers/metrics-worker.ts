@@ -4,6 +4,7 @@ import { db } from "../../db.js";
 import { postJobs, eventLogs } from "@shared/schema.js";
 import { eq } from "drizzle-orm";
 import { RedditManager } from "../reddit.js";
+import { logger } from "../logger.js";
 
 export class MetricsWorker {
   private initialized = false;
@@ -18,14 +19,14 @@ export class MetricsWorker {
     );
     
     this.initialized = true;
-    console.log('✅ Metrics worker initialized with queue abstraction');
+    logger.info('✅ Metrics worker initialized with queue abstraction');
   }
 
   private async processJob(jobData: unknown, jobId: string) {
     const { postJobId, redditPostId, scheduledFor } = jobData as MetricsJobData;
 
     try {
-      console.log(`Processing metrics job for post ${redditPostId}`);
+      logger.info(`Processing metrics job for post ${redditPostId}`);
 
       // Get post job details
       const [postJob] = await db
@@ -40,7 +41,7 @@ export class MetricsWorker {
       // Get Reddit manager for user
       const reddit = await RedditManager.forUser(postJob.userId);
       if (!reddit) {
-        console.warn(`No Reddit access for user ${postJob.userId}, skipping metrics`);
+        logger.warn(`No Reddit access for user ${postJob.userId}, skipping metrics`);
         return { success: false, reason: 'No Reddit access' };
       }
 
@@ -66,12 +67,12 @@ export class MetricsWorker {
 
         return { success: true, metrics };
       } else {
-        console.warn(`Could not fetch metrics for post ${redditPostId}`);
+        logger.warn(`Could not fetch metrics for post ${redditPostId}`);
         return { success: false, reason: 'Failed to fetch metrics' };
       }
 
     } catch (error: any) {
-      console.error(`Metrics job for post ${redditPostId} failed:`, error);
+      logger.error(`Metrics job for post ${redditPostId} failed:`, { error: error.message });
 
       // Log failure event
       if (postJobId) {

@@ -3,31 +3,32 @@ import { metricsWorker } from "./metrics-worker.js";
 import { aiPromoWorker } from "./ai-promo-worker.js";
 import { dunningWorker } from "./dunning-worker.js";
 import { batchPostingWorker } from "./batch-posting-worker.js";
+import { logger } from "../logger.js";
 
 // Initialize all workers
 export async function initializeWorkers() {
-  console.log('🔄 Initializing background workers...');
+  logger.info('🔄 Initializing background workers...');
   
   // Initialize each worker
   await postWorker.initialize();
-  console.log('✅ Post worker initialized');
+  logger.info('✅ Post worker initialized');
   
   await metricsWorker.initialize();
-  console.log('✅ Metrics worker initialized');
+  logger.info('✅ Metrics worker initialized');
   
   await aiPromoWorker.initialize();
-  console.log('✅ AI Promo worker initialized');
+  logger.info('✅ AI Promo worker initialized');
   
   await dunningWorker.initialize();
-  console.log('✅ Dunning worker initialized');
+  logger.info('✅ Dunning worker initialized');
   
   await batchPostingWorker.initialize();
-  console.log('✅ Batch posting worker initialized');
+  logger.info('✅ Batch posting worker initialized');
 }
 
 // Graceful shutdown
 export async function shutdownWorkers() {
-  console.log('🔄 Shutting down workers...');
+  logger.info('🔄 Shutting down workers...');
   
   await postWorker.close();
   await metricsWorker.close();
@@ -35,7 +36,7 @@ export async function shutdownWorkers() {
   await dunningWorker.close();
   await batchPostingWorker.close();
   
-  console.log('✅ All workers shut down');
+  logger.info('✅ All workers shut down');
 }
 
 // Health check for workers

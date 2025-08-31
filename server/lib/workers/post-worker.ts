@@ -7,6 +7,7 @@ import { RedditManager } from "../reddit.js";
 import { MediaManager } from "../media.js";
 import { storage } from "../../storage.js";
 import { socialMediaManager, type Platform, type PostContent } from "../../social-media/social-media-manager.js";
+import { logger } from "../logger.js";
 
 export class PostWorker {
   private initialized = false;
@@ -21,7 +22,7 @@ export class PostWorker {
     );
     
     this.initialized = true;
-    console.log('✅ Post worker initialized with queue abstraction');
+    logger.info('✅ Post worker initialized with queue abstraction');
   }
 
   private async processJob(jobData: unknown, jobId: string) {
@@ -32,7 +33,7 @@ export class PostWorker {
     const { userId, postJobId, subreddit, titleFinal, bodyFinal, mediaKey } = data;
 
     try {
-      console.log(`Processing post job ${postJobId} for user ${userId}`);
+      logger.info(`Processing post job ${postJobId} for user ${userId}`);
 
       // Get Reddit manager for user
       const reddit = await RedditManager.forUser(userId);
@@ -63,7 +64,7 @@ export class PostWorker {
             postOptions.url = mediaAsset.downloadUrl || mediaAsset.signedUrl;
           }
         } catch (error) {
-          console.warn('Failed to attach media, posting as text:', error);
+          logger.warn('Failed to attach media, posting as text:', { error: error.message });
         }
       }
 

@@ -1,6 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes.js";
-import { setupAuth } from "./auth.js";  // ADD THIS LINE
+import { setupAuth } from "./auth.js";
 import { mountStripeWebhook } from "./routes/webhooks.stripe.js";
 import { mountBillingRoutes } from "./routes/billing.js";
 import { initializeQueue } from "./lib/queue-factory.js";
@@ -31,10 +31,10 @@ const logger = winston.createLogger({
 
 const app = express();
 
-let Sentry: any;
+let Sentry: typeof import("@sentry/node") | undefined;
+
 if (process.env.SENTRY_DSN) {
   try {
-    // @ts-ignore -- optional dependency
     Sentry = await import("@sentry/node");
     Sentry.init({ dsn: process.env.SENTRY_DSN });
     app.use(Sentry.Handlers.requestHandler());
@@ -105,8 +105,8 @@ app.use((req, res, next) => {
   const { workerScaler } = await import("./lib/worker-scaler.js");
   await workerScaler.startScaling(60000); // Scale every minute
   
-  // CRITICAL FIX: Setup auth routes BEFORE other routes
-  setupAuth(app);  // ADD THIS LINE
+  // Setup auth routes BEFORE other routes
+  setupAuth(app);
   
   // Mount Stripe webhook and billing routes
   mountStripeWebhook(app);

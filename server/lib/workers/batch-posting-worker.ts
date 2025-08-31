@@ -4,6 +4,7 @@ import { db } from "../../db.js";
 import { postJobs, eventLogs } from "@shared/schema.js";
 import { eq } from "drizzle-orm";
 import { RedditManager } from "../reddit.js";
+import { logger } from "../logger.js";
 
 export class BatchPostingWorker {
   private initialized = false;
@@ -18,7 +19,7 @@ export class BatchPostingWorker {
     );
     
     this.initialized = true;
-    console.log('✅ Batch posting worker initialized with queue abstraction');
+    logger.info('✅ Batch posting worker initialized with queue abstraction');
   }
 
   private async processJob(jobData: unknown, jobId: string) {
@@ -33,7 +34,7 @@ export class BatchPostingWorker {
     } = jobData as BatchPostJobData;
 
     try {
-      console.log(`Processing batch posting campaign ${campaignId} for ${subreddits.length} subreddits`);
+      logger.info(`Processing batch posting campaign ${campaignId} for ${subreddits.length} subreddits`);
 
       // Get Reddit manager for user
       const reddit = await RedditManager.forUser(userId);
@@ -49,7 +50,7 @@ export class BatchPostingWorker {
         const subreddit = subreddits[i];
         
         try {
-          console.log(`Posting to r/${subreddit} (${i + 1}/${subreddits.length})`);
+          logger.info(`Posting to r/${subreddit} (${i + 1}/${subreddits.length})`);
 
           // Check if we can post to this subreddit
           const canPost = await RedditManager.canPostToSubreddit(userId, subreddit);
@@ -97,7 +98,7 @@ export class BatchPostingWorker {
                 postOptions.url = mediaAsset.downloadUrl || mediaAsset.signedUrl;
               }
             } catch (error) {
-              console.warn('Failed to attach media, posting as text:', error);
+              logger.warn('Failed to attach media, posting as text:', { error: error.message });
             }
           }
 
@@ -152,12 +153,12 @@ export class BatchPostingWorker {
 
           // Add delay between posts (except for the last one)
           if (i < subreddits.length - 1) {
-            console.log(`Waiting ${delayBetweenPosts / 1000}s before next post...`);
+            logger.info(`Waiting ${delayBetweenPosts / 1000}s before next post...`);
             await this.sleep(delayBetweenPosts);
           }
 
         } catch (error: any) {
-          console.error(`Failed to post to r/${subreddit}:`, error);
+          logger.error(`Failed to post to r/${subreddit}:`, { error: error.message });
           
           results.push({
             subreddit,

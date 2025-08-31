@@ -3,6 +3,7 @@ import { QUEUE_NAMES, type DunningJobData } from "../queue/index.js";
 import { db } from "../../db.js";
 import { users, eventLogs } from "@shared/schema.js";
 import { eq } from "drizzle-orm";
+import { logger } from "../logger.js";
 
 export class DunningWorker {
   private initialized = false;
@@ -17,14 +18,14 @@ export class DunningWorker {
     );
     
     this.initialized = true;
-    console.log('✅ Dunning worker initialized with queue abstraction');
+    logger.info('✅ Dunning worker initialized with queue abstraction');
   }
 
   private async processJob(jobData: unknown, jobId: string) {
     const { subscriptionId, attempt, maxAttempts = 3 } = jobData as DunningJobData;
 
     try {
-      console.log(`Processing dunning job for subscription ${subscriptionId}, attempt ${attempt}/${maxAttempts}`);
+      logger.info(`Processing dunning job for subscription ${subscriptionId}, attempt ${attempt}/${maxAttempts}`);
 
       // Get subscription details (would query subscriptions table in full implementation)
       const subscription = await this.getSubscriptionDetails(subscriptionId);
