@@ -1,6 +1,8 @@
 import helmet from "helmet";
 import compression from "compression";
 import rateLimit from "express-rate-limit";
+import mongoSanitize from "express-mongo-sanitize";
+import hpp from "hpp";
 import winston from "winston";
 import dotenv from "dotenv";
 import crypto from "crypto";
@@ -86,6 +88,113 @@ export const generationLimiter = rateLimit({
 });
 
 // ==========================================
+// INPUT SANITIZATION MIDDLEWARE
+// ==========================================
+export const inputSanitizer = (req: any, res: any, next: any) => {
+  // Sanitize request body, query, and params
+  mongoSanitize({
+    replaceWith: '_',
+    onSanitize: ({ req, key }) => {
+      logger.warn(`Sanitized potentially malicious input: ${key} from ${req.userIP}`);
+    }
+  })(req, res, () => {
+    // Additional custom sanitization
+    if (req.body && typeof req.body === 'object') {
+      sanitizeObject(req.body);
+    }
+    if (req.query && typeof req.query === 'object') {
+      sanitizeObject(req.query);
+    }
+    next();
+  });
+};
+
+// Custom sanitization for specific threats
+function sanitizeObject(obj: any): void {
+  for (const key in obj) {
+    if (typeof obj[key] === 'string') {
+      // Remove potential XSS payloads
+      obj[key] = obj[key]
+        .replace(/<script[^>]*>.*?<\/script>/gi, '')
+        .replace(/javascript:/gi, '')
+        .replace(/on\w+\s*=/gi, '')
+        .replace(/eval\s*\(/gi, '')
+        .replace(/expression\s*\(/gi, '');
+      
+      // Limit string length to prevent DoS
+      if (obj[key].length > 10000) {
+        obj[key] = obj[key].substring(0, 10000);
+      }
+    } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+      sanitizeObject(obj[key]);
+    }
+  }
+}
+
+// ==========================================
+// API KEY VALIDATION MIDDLEWARE
+// ==========================================
+export const validateApiKey = (req: any, res: any, next: any) => {
+  const apiKey = req.headers['x-api-key'];
+  
+  // Skip validation for non-API routes
+  if (!req.path.startsWith('/api/')) {
+    return next();
+  }
+  
+  // Skip validation for public endpoints
+  const publicEndpoints = [
+    '/api/health',
+    '/api/auth/login',
+    '/api/auth/register',
+    '/api/webhooks'
+  ];
+  
+  if (publicEndpoints.some(endpoint => req.path.startsWith(endpoint))) {
+    return next();
+  }
+  
+  // Validate API key format if provided
+  if (apiKey && !isValidApiKeyFormat(apiKey)) {
+    logger.warn(`Invalid API key format from ${req.userIP}`);
+    return res.status(401).json({ error: 'Invalid API key format' });
+  }
+  
+  next();
+};
+
+function isValidApiKeyFormat(key: string): boolean {
+  // Basic API key format validation
+  return /^[A-Za-z0-9_-]{32,128}$/.test(key);
+}
+
+// ==========================================
+// CONTENT-TYPE VALIDATION MIDDLEWARE
+// ==========================================
+export const validateContentType = (req: any, res: any, next: any) => {
+  // Only validate POST, PUT, PATCH requests
+  if (!['POST', 'PUT', 'PATCH'].includes(req.method)) {
+    return next();
+  }
+  
+  const contentType = req.headers['content-type'];
+  
+  // Skip for multipart uploads
+  if (contentType && contentType.startsWith('multipart/form-data')) {
+    return next();
+  }
+  
+  // Require JSON content type for API routes
+  if (req.path.startsWith('/api/') && contentType !== 'application/json') {
+    return res.status(400).json({ 
+      error: 'Content-Type must be application/json for API requests' 
+    });
+  }
+  
+  next();
+};
+
+// ==========================================
 // SECURITY MIDDLEWARE
 // ==========================================
 export const securityMiddleware = [
@@ -144,6 +253,20 @@ export const securityMiddleware = [
     } : false,
     crossOriginEmbedderPolicy: false
   }),
+
+  // Input sanitization and validation
+  inputSanitizer,
+  
+  // HTTP Parameter Pollution protection
+  hpp({
+    whitelist: ['tags', 'categories'] // Allow arrays for these fields
+  }),
+  
+  // Content-Type validation
+  validateContentType,
+  
+  // API key format validation
+  validateApiKey,
 
   // Compression
   compression(),

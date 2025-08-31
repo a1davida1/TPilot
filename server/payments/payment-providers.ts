@@ -17,12 +17,26 @@ function disabled(name: PaymentProvider["name"]): PaymentProvider {
 // Paxum
 export function makePaxum(): PaymentProvider {
   const key = process.env.PAXUM_API_KEY;
+  const baseUrl = process.env.APP_BASE_URL;
+  
   if (!key) return disabled("paxum");
+  if (!baseUrl) {
+    throw new Error('APP_BASE_URL environment variable is required');
+  }
+  
   return {
     name: "paxum",
     enabled: true,
     async createCheckout({ userId, planId, amountCents = 0, returnUrl }) {
+      // Input validation
+      if (!userId || !planId) {
+        throw new Error('userId and planId are required');
+      }
+      
       try {
+        // Sanitize amount (handle negative values, ensure reasonable limits)
+        const sanitizedAmount = Math.max(0, Math.min(amountCents || 0, 99999999999));
+        
         // Create Paxum checkout session
         const paxumEndpoint = 'https://www.paxum.com/payment/checkout';
         
@@ -30,12 +44,12 @@ export function makePaxum(): PaymentProvider {
           business: key, // Paxum merchant ID
           button_id: planId,
           currency_code: 'USD',
-          amount: (amountCents / 100).toFixed(2),
+          amount: (sanitizedAmount / 100).toFixed(2),
           item_name: `ThottoPilot ${planId} Plan`,
           custom: userId,
-          return_url: returnUrl || `${process.env.APP_BASE_URL}/billing/success`,
-          cancel_url: `${process.env.APP_BASE_URL}/billing/cancelled`,
-          notify_url: `${process.env.APP_BASE_URL}/api/webhooks/paxum`,
+          return_url: returnUrl || `${baseUrl}/billing/success`,
+          cancel_url: `${baseUrl}/billing/cancelled`,
+          notify_url: `${baseUrl}/api/webhooks/paxum`,
         });
 
         return { url: `${paxumEndpoint}?${params.toString()}` };
@@ -57,6 +71,14 @@ export function makeCoinbase(): PaymentProvider {
     async createCheckout({ userId, planId, amountCents = 0, returnUrl }) {
       try {
         // Create Coinbase Commerce checkout session
+        // Input validation
+        if (!userId || !planId) {
+          throw new Error('userId and planId are required');
+        }
+        
+        // Sanitize amount (handle negative values, ensure reasonable limits)
+        const sanitizedAmount = Math.max(0, Math.min(amountCents || 0, 99999999999));
+        
         const response = await fetch('https://api.commerce.coinbase.com/checkouts', {
           method: 'POST',
           headers: {
@@ -69,7 +91,7 @@ export function makeCoinbase(): PaymentProvider {
             description: `Subscription to ThottoPilot ${planId} plan`,
             pricing_type: 'fixed_price',
             local_price: {
-              amount: (amountCents / 100).toFixed(2),
+              amount: (sanitizedAmount / 100).toFixed(2),
               currency: 'USD'
             },
             metadata: {

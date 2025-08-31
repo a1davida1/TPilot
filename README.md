@@ -192,14 +192,202 @@ ThottoPilot uses environment variables for secure configuration of external serv
 **PAXUM_API_KEY** - Paxum payment processor merchant ID
 - **Required**: Optional (enables Paxum payment option)
 - **Obtain**: Paxum merchant dashboard
-- **Usage**: Creates checkout URLs for subscription payments via Paxum
-- **Security**: Used in checkout URL generation as merchant identifier
 
 **COINBASE_COMMERCE_KEY** - Coinbase Commerce API key
 - **Required**: Optional (enables cryptocurrency payments)
-- **Obtain**: Coinbase Commerce Dashboard (https://commerce.coinbase.com/)
-- **Usage**: Creates hosted checkout sessions for crypto payments
-- **Security**: Used in API headers for authenticated Coinbase requests
+- **Obtain**: Coinbase Commerce dashboard
+- **Usage**: Crypto payment processing for subscriptions
+
+### Authentication & Security
+
+**JWT_SECRET** - Secret key for JSON Web Token signing
+- **Required**: Yes - Used for secure API authentication
+- **Format**: Random string (minimum 32 characters)
+- **Generate**: `openssl rand -hex 32`
+
+**SESSION_SECRET** - Secret key for session cookie signing
+- **Required**: Yes - Protects user sessions
+- **Format**: Random string (minimum 32 characters)
+- **Generate**: `openssl rand -hex 32`
+
+### External API Services
+
+**STRIPE_SECRET_KEY** - Stripe payment processor secret key
+- **Required**: Optional (enables Stripe billing)
+- **Obtain**: Stripe Dashboard → Developers → API Keys
+- **Format**: Starts with `sk_`
+
+**REDDIT_CLIENT_ID** - Reddit OAuth application client ID
+- **Required**: Optional (enables Reddit integration)
+- **Obtain**: Reddit App Preferences (https://www.reddit.com/prefs/apps)
+
+**REDDIT_CLIENT_SECRET** - Reddit OAuth application secret
+- **Required**: Optional (with REDDIT_CLIENT_ID)
+- **Usage**: Reddit post scheduling and subreddit integration
+
+**REDDIT_REDIRECT_URI** - Reddit OAuth redirect URI
+- **Required**: Optional (with Reddit OAuth)
+- **Example**: `https://yourapp.com/auth/reddit/callback`
+
+### Media & Storage
+
+**AWS_ACCESS_KEY_ID** - AWS S3 access key
+- **Required**: Optional (enables S3 media storage)
+- **Usage**: Image uploads and CDN distribution
+
+**AWS_SECRET_ACCESS_KEY** - AWS S3 secret key
+- **Required**: With AWS_ACCESS_KEY_ID
+- **Security**: Never commit to version control
+
+**AWS_REGION** - AWS S3 bucket region
+- **Required**: With S3 configuration
+- **Example**: `us-east-1`
+
+**S3_BUCKET_MEDIA** - S3 bucket name for media storage
+- **Required**: With S3 configuration
+- **Usage**: Stores user uploads and generated content
+
+**S3_PUBLIC_CDN_DOMAIN** - CloudFront or CDN domain for S3
+- **Required**: Optional (improves media delivery)
+- **Example**: `https://cdn.yourdomain.com`
+
+### Queue & Background Processing
+
+**REDIS_URL** - Redis connection string for queue processing
+- **Required**: Optional (PostgreSQL fallback available)
+- **Example**: `redis://localhost:6379`
+- **Usage**: High-performance job queue and caching
+
+**USE_PG_QUEUE** - Force PostgreSQL queue backend
+- **Default**: `false` (auto-enabled if no Redis)
+- **Values**: `true` | `false`
+
+### Email Services
+
+**SENDGRID_API_KEY** - SendGrid email service API key
+- **Required**: Optional (enables email notifications)
+- **Obtain**: SendGrid Dashboard → Settings → API Keys
+
+**RESEND_API_KEY** - Resend email service API key  
+- **Required**: Optional (alternative to SendGrid)
+- **Obtain**: Resend Dashboard (https://resend.com)
+
+### Anti-Bot Protection
+
+**TURNSTILE_SITE_KEY** - Cloudflare Turnstile site key (public)
+- **Required**: Optional (enables CAPTCHA protection)
+- **Obtain**: Cloudflare Dashboard → Turnstile
+
+**TURNSTILE_SECRET_KEY** - Cloudflare Turnstile secret key
+- **Required**: With TURNSTILE_SITE_KEY
+- **Usage**: Server-side CAPTCHA verification
+
+### Analytics & Monitoring
+
+**ANALYTICS_WRITE_KEY** - Analytics service write key
+- **Required**: Optional (enables usage analytics)
+- **Usage**: Track user engagement and platform metrics
+
+### Configuration Limits
+
+**DAILY_GENERATIONS_FREE** - Daily AI generations for free tier
+- **Default**: `5`
+- **Usage**: Rate limiting for free users
+
+**DAILY_GENERATIONS_STARTER** - Daily AI generations for starter tier
+- **Default**: `50`  
+- **Usage**: Rate limiting for starter subscription
+
+**DAILY_GENERATIONS_PRO** - Daily AI generations for pro tier
+- **Default**: `-1` (unlimited)
+- **Usage**: Rate limiting for pro subscription
+
+**MEDIA_MAX_BYTES_FREE** - Maximum media storage for free users
+- **Default**: `524288000` (500MB)
+- **Usage**: Storage quota enforcement
+
+**MEDIA_MAX_BYTES_PRO** - Maximum media storage for pro users
+- **Default**: `10737418240` (10GB)
+- **Usage**: Storage quota for paid subscribers
+
+### Watermarking Configuration
+
+**WATERMARK_ENABLED** - Enable watermarks on free tier images
+- **Default**: `true`
+- **Values**: `true` | `false`
+
+**WATERMARK_TEXT** - Watermark text overlay
+- **Default**: `"ThottoPilot"`
+- **Usage**: Branding on free tier protected images
+
+**WATERMARK_OPACITY** - Watermark transparency level
+- **Default**: `0.18` (18% opacity)
+- **Range**: `0.0` to `1.0`
+
+### Admin Configuration
+
+**ADMIN_EMAIL_WHITELIST** - Comma-separated admin emails
+- **Required**: Optional (restricts admin access)
+- **Example**: `admin@yoursite.com,support@yoursite.com`
+- **Usage**: Controls who can access admin portal
+
+## Configuration Examples
+
+### Minimum Development Setup
+```bash
+DATABASE_URL=postgresql://user:pass@localhost:5432/thottopilot_dev
+JWT_SECRET=your-super-secret-jwt-key-here-32-chars-min
+SESSION_SECRET=your-session-secret-key-here-32-chars-min
+GOOGLE_GENAI_API_KEY=your-gemini-api-key
+APP_BASE_URL=http://localhost:5000
+```
+
+### Full Production Setup
+```bash
+# Core (Required)
+DATABASE_URL=postgresql://user:pass@prod-db:5432/thottopilot
+JWT_SECRET=your-production-jwt-secret
+SESSION_SECRET=your-production-session-secret
+APP_BASE_URL=https://yourapp.com
+
+# AI Services
+GOOGLE_GENAI_API_KEY=your-gemini-api-key
+OPENAI_API_KEY=your-openai-api-key
+
+# Payment Processing
+STRIPE_SECRET_KEY=sk_live_your_stripe_secret
+PAXUM_API_KEY=your-paxum-merchant-id
+COINBASE_COMMERCE_KEY=your-coinbase-commerce-key
+
+# Media Storage
+AWS_ACCESS_KEY_ID=your-aws-access-key
+AWS_SECRET_ACCESS_KEY=your-aws-secret-key
+AWS_REGION=us-east-1
+S3_BUCKET_MEDIA=your-media-bucket
+S3_PUBLIC_CDN_DOMAIN=https://cdn.yourapp.com
+
+# Performance & Queues
+REDIS_URL=redis://your-redis-instance:6379
+
+# Email & Notifications
+SENDGRID_API_KEY=your-sendgrid-api-key
+
+# Security & Anti-Bot
+TURNSTILE_SITE_KEY=your-turnstile-site-key
+TURNSTILE_SECRET_KEY=your-turnstile-secret-key
+
+# Analytics
+ANALYTICS_WRITE_KEY=your-analytics-key
+```
+
+### Environment Variable Security
+
+⚠️ **Important Security Notes:**
+- Never commit `.env` files to version control
+- Use different keys for development and production
+- Rotate secrets regularly, especially JWT and session secrets
+- Store production secrets in secure secret management systems
+- Validate all environment variables on application startup
 
 **STRIPE_SECRET_KEY** - Stripe payment processor secret key
 - **Required**: Optional (enables credit card payments)
