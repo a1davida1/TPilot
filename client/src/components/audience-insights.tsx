@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Users, Globe, Clock, TrendingUp, Calendar, Eye } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 
 interface AudienceData {
   platform: string;

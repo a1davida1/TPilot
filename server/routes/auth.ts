@@ -99,9 +99,9 @@ router.post("/login", authLimiter, async (req, res) => {
 
       // Store in session if available
       if (req.session) {
-        req.session.user = adminUser;
-        req.session.userId = 999;
-        req.session.isAdmin = true;
+        (req.session as any).user = adminUser;
+        (req.session as any).userId = 999;
+        (req.session as any).isAdmin = true;
       }
 
       return res.json({

@@ -34,7 +34,8 @@ export function EngagementStats() {
     );
   }
 
-  const { total = 0, thisWeek = 0, thisMonth = 0, dailyStreak = 0 } = stats || {};
+  const statsData = stats as { total?: number; thisWeek?: number; thisMonth?: number; dailyStreak?: number } || {};
+  const { total = 0, thisWeek = 0, thisMonth = 0, dailyStreak = 0 } = statsData;
 
   return (
     <Card>

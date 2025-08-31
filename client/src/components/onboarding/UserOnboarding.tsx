@@ -307,7 +307,7 @@ export default function UserOnboarding() {
     localStorage.removeItem('onboarding_current_step');
   };
 
-  const startTutorial = () => {
+  const startMainTutorial = () => {
     // Mark step as completed and provide user feedback
     const currentStepId = onboardingSteps[currentStep].id;
     setCompletedSteps(prev => new Set([...prev, currentStepId]));
@@ -403,7 +403,7 @@ export default function UserOnboarding() {
               <Button 
                 size="sm"
                 className="bg-gradient-to-r from-purple-500 to-pink-500"
-                onClick={startTutorial}
+                onClick={startMainTutorial}
               >
                 Start Tutorial
               </Button>
@@ -623,7 +623,7 @@ export default function UserOnboarding() {
     }
   };
   
-  const startTutorial = () => {
+  const startContentTutorial = () => {
     // Mark step as completed and provide user feedback
     const currentStepId = onboardingSteps[currentStep].id;
     setCompletedSteps(prev => new Set([...prev, currentStepId]));

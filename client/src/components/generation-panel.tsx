@@ -17,7 +17,7 @@ export function GenerationPanel({ onContentGenerated }: GenerationPanelProps) {
   const [style, setStyle] = useState("playful");
   const [theme, setTheme] = useState("tease");
   const [timing, setTiming] = useState("evening");
-  const [allowsPromotion, setAllowsPromotion] = useState("no");
+  const [allowsPromotion, setAllowsPromotion] = useState(false);
   const [copiedItem, setCopiedItem] = useState<string | null>(null);
   const [generatedContent, setGeneratedContent] = useState<ContentGeneration | null>(null);
 
@@ -55,6 +55,7 @@ export function GenerationPanel({ onContentGenerated }: GenerationPanelProps) {
         subreddit: null,
         allowsPromotion: allowsPromotion,
         userId: 1,
+        generationType: 'ai' as const,
         createdAt: new Date()
       };
       setGeneratedContent(transformedData);
@@ -178,10 +179,10 @@ export function GenerationPanel({ onContentGenerated }: GenerationPanelProps) {
               {["yes", "no"].map((promotionOption) => (
                 <Button
                   key={promotionOption}
-                  variant={allowsPromotion === promotionOption ? "default" : "outline"}
+                  variant={allowsPromotion === (promotionOption === "yes") ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setAllowsPromotion(promotionOption)}
-                  className={allowsPromotion === promotionOption ? "bg-green-500 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}
+                  onClick={() => setAllowsPromotion(promotionOption === "yes")}
+                  className={allowsPromotion === (promotionOption === "yes") ? "bg-green-500 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}
                 >
                   {promotionOption === "yes" ? "Yes - Include links/promo" : "No - Keep it subtle"}
                 </Button>

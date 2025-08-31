@@ -28,6 +28,8 @@ export const users = pgTable("users", {
   redditId: varchar("reddit_id", { length: 255 }),
   stripeCustomerId: varchar("stripe_customer_id", { length: 255 }),
   stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
+  bannedAt: timestamp("banned_at"),
+  suspendedUntil: timestamp("suspended_until"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   lastLogin: timestamp("last_login"),

@@ -88,7 +88,7 @@ Make the content authentic and engaging.`;
     const lines = content.split('\n').filter(line => line.trim());
     
     // Extract titles (look for numbered list or bullet points)
-    const titles = [];
+    const titles: string[] = [];
     const titleSection = lines.find(line => line.toLowerCase().includes('title'));
     if (titleSection) {
       const titleIndex = lines.indexOf(titleSection);

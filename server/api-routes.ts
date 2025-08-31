@@ -150,11 +150,11 @@ export function registerApiRoutes(app: Express) {
     try {
       const user = req.user;
       
-      if (!user?.userId && !user?.id) {
+      if (!user?.id) {
         return res.status(401).json({ error: 'Authentication required' });
       }
       
-      const userId = user.userId || user.id;
+      const userId = user.id;
       const limit = parseInt(req.query.limit as string) || 20;
 
       const assets = await MediaManager.getUserAssets(userId, limit);
@@ -170,11 +170,11 @@ export function registerApiRoutes(app: Express) {
     try {
       const user = req.user;
       
-      if (!user?.userId && !user?.id) {
+      if (!user?.id) {
         return res.status(401).json({ error: 'Authentication required' });
       }
       
-      const userId = user.userId || user.id;
+      const userId = user.id;
       const mediaId = parseInt(req.params.id);
 
       const success = await MediaManager.deleteAsset(mediaId, userId);
@@ -225,11 +225,11 @@ export function registerApiRoutes(app: Express) {
       const data = schema.parse(req.body);
       const user = req.user;
       
-      if (!user?.userId && !user?.id) {
+      if (!user?.id) {
         return res.status(401).json({ error: 'Authentication required' });
       }
       
-      const userId = user.userId || user.id;
+      const userId = user.id;
 
       // Schedule the post
       const scheduledAt = data.scheduledAt 
@@ -274,11 +274,11 @@ export function registerApiRoutes(app: Express) {
     try {
       const user = req.user;
       
-      if (!user?.userId && !user?.id) {
+      if (!user?.id) {
         return res.status(401).json({ error: 'Authentication required' });
       }
       
-      const userId = user.userId || user.id;
+      const userId = user.id;
 
       const jobs = await db
         .select()
@@ -299,11 +299,11 @@ export function registerApiRoutes(app: Express) {
     try {
       const user = req.user;
       
-      if (!user?.userId && !user?.id) {
+      if (!user?.id) {
         return res.status(401).json({ error: 'Authentication required' });
       }
       
-      const userId = user.userId || user.id;
+      const userId = user.id;
       const plan = req.body.plan || 'pro';
 
       const formData = CCBillProcessor.generateFormData(userId, plan);
@@ -344,11 +344,11 @@ export function registerApiRoutes(app: Express) {
     try {
       const user = req.user;
       
-      if (!user?.userId && !user?.id) {
+      if (!user?.id) {
         return res.status(401).json({ error: 'Authentication required' });
       }
       
-      const userId = user.userId || user.id;
+      const userId = user.id;
 
       // Check if user is admin first
       if (user.isAdmin || userId === 999 || user.tier === 'admin') {
@@ -378,11 +378,11 @@ export function registerApiRoutes(app: Express) {
     try {
       const user = req.user;
       
-      if (!user?.userId && !user?.id) {
+      if (!user?.id) {
         return res.status(401).json({ error: 'Authentication required' });
       }
       
-      const userId = user.userId || user.id;
+      const userId = user.id;
 
       const accounts = await db
         .select()
@@ -407,11 +407,11 @@ export function registerApiRoutes(app: Express) {
     try {
       const user = req.user;
       
-      if (!user?.userId && !user?.id) {
+      if (!user?.id) {
         return res.status(401).json({ error: 'Authentication required' });
       }
       
-      const userId = user.userId || user.id;
+      const userId = user.id;
       const accountId = parseInt(req.params.accountId);
 
       const [account] = await db
@@ -443,11 +443,11 @@ export function registerApiRoutes(app: Express) {
     try {
       const user = req.user;
       
-      if (!user?.userId && !user?.id) {
+      if (!user?.id) {
         return res.status(401).json({ error: 'Authentication required' });
       }
       
-      const userId = user.userId || user.id;
+      const userId = user.id;
       
       const usage = await MediaManager.getUserStorageUsage(userId);
       res.json(usage);
@@ -462,11 +462,11 @@ export function registerApiRoutes(app: Express) {
     try {
       const user = req.user;
       
-      if (!user?.userId && !user?.id) {
+      if (!user?.id) {
         return res.status(401).json({ error: 'Authentication required' });
       }
       
-      const userId = user.userId || user.id;
+      const userId = user.id;
       const limit = parseInt(req.query.limit as string) || 20;
 
       const history = await AiService.getUserHistory(userId, limit);

@@ -6,6 +6,9 @@ import { z } from "zod";
 
 interface AuthRequest extends Express.Request {
   user?: any;
+  body: any;
+  params: any;
+  query: any;
 }
 
 // PHASE 2: Social Media API Routes
@@ -155,7 +158,7 @@ export function registerSocialMediaRoutes(app: Express) {
             accessToken: account.accessToken,
             refreshToken: account.refreshToken,
             // Add platform-specific credentials based on metadata
-            ...account.metadata,
+            ...(typeof account.metadata === 'object' && account.metadata ? account.metadata : {}),
           };
           socialMediaManager.connectAccount(account.platform as Platform, credentials);
         }
@@ -303,7 +306,7 @@ export function registerSocialMediaRoutes(app: Express) {
       const credentials = {
         accessToken: account.accessToken,
         refreshToken: account.refreshToken,
-        ...account.metadata,
+        ...(typeof account.metadata === 'object' && account.metadata ? account.metadata : {}),
       };
       socialMediaManager.connectAccount(account.platform as Platform, credentials);
 

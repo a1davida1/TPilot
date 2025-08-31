@@ -11,6 +11,10 @@ if (SENDGRID_API_KEY) {
 }
 
 export const emailService = {
+  get isEmailServiceConfigured(): boolean {
+    return !!SENDGRID_API_KEY;
+  },
+  
   async sendVerificationEmail(to: string, username: string, token: string) {
     if (!SENDGRID_API_KEY) {
       // SendGrid not configured - email skipped
