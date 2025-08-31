@@ -49,9 +49,9 @@ export async function extractFacts(imageUrl:string){
   }
 }
 
-export async function generateVariants(params:{platform:"instagram"|"x"|"reddit"|"tiktok", voice:string, facts:any, hint?:string}){
+export async function generateVariants(params:{platform:"instagram"|"x"|"reddit"|"tiktok", voice:string, facts:any, hint?:string, nsfw?:boolean}){
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("variants.txt");
-  const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\nIMAGE_FACTS: ${JSON.stringify(params.facts)}\n${params.hint?`HINT:${params.hint}`:""}`;
+  const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\nIMAGE_FACTS: ${JSON.stringify(params.facts)}\nNSFW: ${params.nsfw || false}\n${params.hint?`HINT:${params.hint}`:""}`;
   const res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+user }]);
   const json=stripToJSON(res.response.text());
   // Fix common safety_level values
@@ -86,16 +86,16 @@ export async function rankAndSelect(variants:any){
   return RankResult.parse(json);
 }
 
-export async function pipeline({ imageUrl, platform, voice="flirty_playful" }:{
-  imageUrl:string, platform:"instagram"|"x"|"reddit"|"tiktok", voice?:string }){
+export async function pipeline({ imageUrl, platform, voice="flirty_playful", nsfw=false }:{
+  imageUrl:string, platform:"instagram"|"x"|"reddit"|"tiktok", voice?:string, nsfw?:boolean }){
   const facts = await extractFacts(imageUrl);
-  let variants = await generateVariants({ platform, voice, facts });
+  let variants = await generateVariants({ platform, voice, facts, nsfw });
   let ranked = await rankAndSelect(variants);
   let out = ranked.final;
 
   const err = platformChecks(platform, out);
   if (err) {
-    variants = await generateVariants({ platform, voice, facts, hint:`Fix: ${err}. Use IMAGE_FACTS nouns/colors/setting explicitly.` });
+    variants = await generateVariants({ platform, voice, facts, hint:`Fix: ${err}. Use IMAGE_FACTS nouns/colors/setting explicitly.`, nsfw });
     ranked = await rankAndSelect(variants);
     out = ranked.final;
   }

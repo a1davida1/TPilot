@@ -7,7 +7,7 @@ const router = Router();
 
 router.post('/generate', async (req: Request, res: Response) => {
   try {
-    const { imageUrl, platform, voice } = req.body || {};
+    const { imageUrl, platform, voice, nsfw } = req.body || {};
     
     if (!imageUrl || !platform) {
       return res.status(400).json({ error: "imageUrl and platform are required" });
@@ -19,7 +19,7 @@ router.post('/generate', async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Invalid platform. Must be one of: instagram, x, reddit, tiktok" });
     }
     
-    const result = await pipeline({ imageUrl, platform, voice });
+    const result = await pipeline({ imageUrl, platform, voice, nsfw: nsfw || false });
     return res.status(200).json(result);
     
   } catch (e: any) {
@@ -30,7 +30,7 @@ router.post('/generate', async (req: Request, res: Response) => {
 
 router.post('/generate-text', async (req: Request, res: Response) => {
   try {
-    const { platform, voice, theme, context } = req.body || {};
+    const { platform, voice, theme, context, nsfw } = req.body || {};
     
     if (!platform || !theme) {
       return res.status(400).json({ error: "platform and theme are required" });
@@ -42,7 +42,7 @@ router.post('/generate-text', async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Invalid platform. Must be one of: instagram, x, reddit, tiktok" });
     }
     
-    const result = await pipelineTextOnly({ platform, voice, theme, context });
+    const result = await pipelineTextOnly({ platform, voice, theme, context, nsfw: nsfw || false });
     return res.status(200).json(result);
     
   } catch (e: any) {
@@ -53,7 +53,7 @@ router.post('/generate-text', async (req: Request, res: Response) => {
 
 router.post('/rewrite', async (req: Request, res: Response) => {
   try {
-    const { platform, voice, existingCaption, imageUrl } = req.body || {};
+    const { platform, voice, existingCaption, imageUrl, nsfw } = req.body || {};
     
     if (!platform || !existingCaption) {
       return res.status(400).json({ error: "platform and existingCaption are required" });
@@ -65,7 +65,7 @@ router.post('/rewrite', async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Invalid platform. Must be one of: instagram, x, reddit, tiktok" });
     }
     
-    const result = await pipelineRewrite({ platform, voice, existingCaption, imageUrl });
+    const result = await pipelineRewrite({ platform, voice, existingCaption, imageUrl, nsfw: nsfw || false });
     return res.status(200).json(result);
     
   } catch (e: any) {

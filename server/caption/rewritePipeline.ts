@@ -15,9 +15,9 @@ export async function extractFacts(imageUrl:string){
   return stripToJSON(res.response.text());
 }
 
-export async function variantsRewrite(params:{platform:"instagram"|"x"|"reddit"|"tiktok", voice:string, existingCaption:string, facts?:any, hint?:string}){
+export async function variantsRewrite(params:{platform:"instagram"|"x"|"reddit"|"tiktok", voice:string, existingCaption:string, facts?:any, hint?:string, nsfw?:boolean}){
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rewrite.txt");
-  const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\nEXISTING_CAPTION: "${params.existingCaption}"${params.facts?`\nIMAGE_FACTS: ${JSON.stringify(params.facts)}`:""}${params.hint?`\nHINT:${params.hint}`:""}`;
+  const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\nEXISTING_CAPTION: "${params.existingCaption}"${params.facts?`\nIMAGE_FACTS: ${JSON.stringify(params.facts)}`:""}\nNSFW: ${params.nsfw || false}${params.hint?`\nHINT:${params.hint}`:""}`;
   const res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+user }]);
   const json=stripToJSON(res.response.text());
   // Fix common safety_level values and missing fields
@@ -58,16 +58,16 @@ export async function rankAndSelect(variants:any){
   return RankResult.parse(json);
 }
 
-export async function pipelineRewrite({ platform, voice="flirty_playful", existingCaption, imageUrl }:{
-  platform:"instagram"|"x"|"reddit"|"tiktok", voice?:string, existingCaption:string, imageUrl?:string }){
+export async function pipelineRewrite({ platform, voice="flirty_playful", existingCaption, imageUrl, nsfw=false }:{
+  platform:"instagram"|"x"|"reddit"|"tiktok", voice?:string, existingCaption:string, imageUrl?:string, nsfw?:boolean }){
   let facts = imageUrl ? await extractFacts(imageUrl) : undefined;
-  let variants = await variantsRewrite({ platform, voice, existingCaption, facts });
+  let variants = await variantsRewrite({ platform, voice, existingCaption, facts, nsfw });
   let ranked = await rankAndSelect(variants);
   let out = ranked.final;
 
   const err = platformChecks(platform, out);
   if (err) {
-    variants = await variantsRewrite({ platform, voice, existingCaption, facts, hint:`Fix: ${err}. Be specific and engaging.` });
+    variants = await variantsRewrite({ platform, voice, existingCaption, facts, hint:`Fix: ${err}. Be specific and engaging.`, nsfw });
     ranked = await rankAndSelect(variants);
     out = ranked.final;
   }
