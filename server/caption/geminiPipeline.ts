@@ -28,12 +28,41 @@ export async function extractFacts(imageUrl:string){
     let mimeType = "image/jpeg";
     
     if (imageUrl.startsWith('data:')) {
-      // Extract base64 data from data URL
-      const [header, data] = imageUrl.split(',');
-      imageData = data;
+      // Extract base64 data from data URL - use indexOf to find first comma only
+      const commaIndex = imageUrl.indexOf(',');
+      if (commaIndex === -1) {
+        throw new Error('Invalid data URL format - missing comma separator');
+      }
+      
+      const header = imageUrl.substring(0, commaIndex);
+      imageData = imageUrl.substring(commaIndex + 1);
+      
+      // Extract mime type from header
       const mimeMatch = header.match(/data:([^;]+)/);
-      if (mimeMatch) mimeType = mimeMatch[1];
+      if (mimeMatch) {
+        mimeType = mimeMatch[1];
+      }
+      
+      // Validate and clean Base64 data
+      imageData = imageData.replace(/\s/g, ''); // Remove any whitespace
+      
+      // Basic Base64 validation
+      if (!/^[A-Za-z0-9+/]*={0,2}$/.test(imageData)) {
+        throw new Error('Invalid Base64 data format');
+      }
+      
+      // Check if Base64 data is reasonable length (not too short or extremely long)
+      if (imageData.length < 100) {
+        throw new Error('Base64 data appears to be too short');
+      }
+      
+      if (imageData.length > 10000000) { // ~7.5MB base64 encoded
+        throw new Error('Image data too large for processing');
+      }
+      
+      console.log(`Processing data URL with mime type: ${mimeType}, data length: ${imageData.length}`);
     } else {
+      console.log('Fetching image from URL:', imageUrl);
       imageData = await b64(imageUrl);
     }
     
