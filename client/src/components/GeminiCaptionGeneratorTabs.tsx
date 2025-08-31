@@ -76,7 +76,7 @@ export function GeminiCaptionGeneratorTabs() {
   };
 
   const handleGenerateImage = async () => {
-    if (!imageUrl) {
+    if (!imageUrl && !imageFile) {
       setError("Please provide an image URL or upload an image");
       return;
     }
@@ -321,7 +321,7 @@ export function GeminiCaptionGeneratorTabs() {
 
               <Button
                 onClick={handleGenerateImage}
-                disabled={isGenerating || !imageUrl}
+                disabled={isGenerating || (!imageUrl && !imageFile)}
                 className="w-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white"
                 data-testid="button-generate-image"
               >
