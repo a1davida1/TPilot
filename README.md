@@ -146,6 +146,57 @@ For detailed deployment instructions, see `DEPLOYMENT.md` and `replit.md`.
 - Priority queue processing
 - Enhanced storage quotas
 
+### Tax Tracker
+
+ThottoPilot includes a comprehensive tax tracking system designed specifically for content creators to maximize their tax deductions and maintain IRS-compliant records.
+
+#### Purpose and Features
+- **Smart Expense Categorization**: Pre-configured categories optimized for adult content creators including Beauty & Wellness (100% deductible), Technology & Equipment, Wardrobe & Fashion, Travel & Entertainment, and Home Office expenses
+- **Real-time Tax Calculations**: Automatic calculation of total expenses, deductible amounts, and category breakdowns
+- **Receipt Management**: Upload and store receipt images/PDFs with automatic attachment to expenses
+- **Calendar View**: Visual expense tracking with monthly/yearly views for better financial planning
+- **Tax-Compliant Documentation**: Built-in legal explanations and IRS documentation requirements for each category
+- **Quarterly/Annual Reporting**: Generate summary reports for tax preparation and accountant communication
+
+#### User Workflow
+1. **Add Expenses**: Users can quickly add business expenses with amount, category, date, and optional notes
+2. **Upload Receipts**: Attach receipt images (JPEG, PNG) or PDFs to expenses for IRS compliance
+3. **Track Totals**: Real-time dashboard shows total expenses, deductible amounts, and category breakdowns
+4. **Calendar Review**: Monthly calendar view displays expenses by date with visual spending indicators
+5. **Export Data**: Generate reports for tax preparation or accountant review
+
+#### Access Requirements
+- **Authentication**: Full tax tracker features require user authentication
+- **User Tiers**: Available to all authenticated users (Free, Starter, Pro, Enterprise)
+- **Route**: Accessible at `/tax-tracker` for logged-in users
+
+#### Environment Variables
+The tax tracker operates using the core application environment variables:
+- **DATABASE_URL**: Required for storing expense and category data
+- **JWT_SECRET**: Required for user authentication
+- **AWS_S3 Keys**: Optional for receipt storage (local storage fallback available)
+
+#### API Endpoints
+- `GET /api/expense-categories` - Retrieve all active expense categories
+- `GET /api/expenses` - Get user's expenses (optional taxYear filter)
+- `POST /api/expenses` - Create new expense record
+- `PUT /api/expenses/:id` - Update existing expense
+- `DELETE /api/expenses/:id` - Delete expense record
+- `GET /api/expenses/totals` - Calculate total and deductible amounts
+- `GET /api/expenses/range` - Retrieve expenses within date range
+- `POST /api/expenses/:id/receipt` - Upload receipt file for expense
+
+#### Tax Categories and Deduction Information
+The system includes comprehensive tax guidance with legal basis for deductions:
+- **Beauty & Wellness**: 100% deductible as professional appearance costs
+- **Wardrobe & Fashion**: 100% deductible for content-specific clothing
+- **Technology & Equipment**: 100% deductible under IRS Section 179
+- **Travel & Entertainment**: 100% deductible for business purposes
+- **Home Office**: Percentage-based deduction following IRS home office rules
+- **Marketing & Promotion**: 100% deductible advertising and promotion costs
+
+For detailed troubleshooting and customer support, see `docs/tax-tracker-support.md`.
+
 ## Support
 
 For technical issues and questions:

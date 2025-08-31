@@ -321,6 +321,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                     onClick={() => setShowExpenseModal(true)}
                     className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg"
                     data-testid="button-add-expense"
+                    aria-label="Open form to add a new tax-deductible expense"
                   >
                     <Plus className="mr-2 h-4 w-4" />
                     Add New Expense
@@ -330,6 +331,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                     variant="outline" 
                     className="w-full border-purple-200 hover:bg-purple-50"
                     data-testid="button-upload-receipt"
+                    aria-label="Upload receipt image or PDF for existing expense"
                   >
                     <Receipt className="mr-2 h-4 w-4" />
                     Upload Receipt

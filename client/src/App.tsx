@@ -26,6 +26,7 @@ import PolicyDemo from "@/pages/PolicyDemo";
 import CaptionGeneratorPage from "@/pages/caption-generator";
 import RedditPostingPage from "@/pages/reddit-posting";
 import ImageShieldPage from "@/pages/imageshield";
+import TaxTracker from "@/pages/tax-tracker";
 import { RedditCommunities } from "@/components/reddit-communities";
 import { ImageGallery } from "@/components/image-gallery";
 // Phase 1: Real Analytics Tracking
@@ -82,6 +83,7 @@ function AuthenticatedRoutes() {
       <Route path="/reddit" component={RedditPostingPage} />
       <Route path="/communities" component={() => <CommunitiesPage />} />
       <Route path="/gallery" component={() => <GalleryPage />} />
+      <Route path="/tax-tracker" component={TaxTracker} />
       <Route path="/history" component={History} />
       <Route path="/settings" component={Settings} />
       <Route path="/checkout" component={Checkout} />
