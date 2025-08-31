@@ -25,6 +25,7 @@ import { AdminLeadsPage } from "@/pages/admin-leads";
 import PolicyDemo from "@/pages/PolicyDemo";
 import CaptionGeneratorPage from "@/pages/caption-generator";
 import RedditPostingPage from "@/pages/reddit-posting";
+import ImageShieldPage from "@/pages/imageshield";
 // Phase 1: Real Analytics Tracking
 import { trackPageView, setUserId, trackFeatureUsage } from "@/lib/analytics-tracker";
 
@@ -38,6 +39,7 @@ function AuthenticatedRoutes() {
       <Route path="/" component={Dashboard} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/caption-generator" component={CaptionGeneratorPage} />
+      <Route path="/imageshield" component={ImageShieldPage} />
       <Route path="/enterprise" component={Enterprise} />
       {/* ULTRA PREMIUM ROUTE - Hidden for now */}
       {/* <Route path="/phase4" component={Phase4Dashboard} /> */}
@@ -62,6 +64,7 @@ function UnauthenticatedRoutes() {
     <Switch>
       <Route path="/login" component={Login} />
       <Route path="/caption-generator" component={CaptionGeneratorPage} />
+      <Route path="/imageshield" component={ImageShieldPage} />
       <Route path="/policy-demo" component={PolicyDemo} />
       <Route path="/reddit" component={RedditPostingPage} />
       <Route path="/">

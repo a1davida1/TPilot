@@ -306,6 +306,9 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                           case 'generate':
                             setLocation('/caption-generator');
                             break;
+                          case 'protect':
+                            setLocation('/imageshield');
+                            break;
                           case 'history':
                             setLocation('/history');
                             break;
