@@ -24,18 +24,17 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 export function Header() {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated, isLoading, user, logout } = useAuth();
   const [location] = useLocation();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', { 
-        method: 'POST',
-        credentials: 'include'
-      });
-      window.location.reload();
+      // Call the useAuth logout function which handles both frontend and backend logout
+      await logout();
+      // Redirect to login page after successful logout
+      window.location.href = '/login';
     } catch (error) {
       console.error('Logout failed:', error);
     }

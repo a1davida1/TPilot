@@ -83,12 +83,16 @@ export function useAuth() {
     
     // Also try to logout from session
     try {
-      await fetch('/api/auth/logout', {
+      await fetch('/logout', {
         method: 'POST',
         credentials: 'include'
       });
     } catch (error) {
+      console.log('Session logout failed (expected if using token auth)');
     }
+    
+    // Refetch to update user state immediately
+    refetch();
   };
 
   // Check for OAuth redirect tokens in URL or cookies
