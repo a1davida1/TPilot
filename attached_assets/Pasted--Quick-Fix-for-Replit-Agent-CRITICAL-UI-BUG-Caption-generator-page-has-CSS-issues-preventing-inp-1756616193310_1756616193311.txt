@@ -1,0 +1,102 @@
+🔧 Quick Fix for Replit Agent:
+CRITICAL UI BUG: Caption generator page has CSS issues preventing input.
+
+The symptoms:
+- Entire component moves on hover
+- Cannot click or type in input fields
+- Likely caused by overly aggressive CSS animations
+
+FIX THESE ISSUES:
+
+1. In client/src/pages/caption-generator.tsx, check for hover animations:
+- Remove any transform effects on the main container
+- Look for className="hover:..." or "group-hover:..." on parent divs
+
+2. In client/src/components/GeminiCaptionGeneratorTabs.tsx, check for:
+- CSS classes causing movement on hover
+- Any parent divs with hover:scale or hover:translate
+- Remove these problem classes:
+  * hover-lift
+  * card-hover
+  * float-gentle
+  * animate-float
+  * card-3d
+
+3. Check for z-index or pointer-events issues:
+```css
+/* Add to the input fields: */
+.caption-input {
+  z-index: 10;
+  pointer-events: auto !important;
+  position: relative;
+}
+
+Find and remove problematic CSS from the parent container:
+
+typescript// REMOVE classes like:
+className="card-hover hover-lift animate-float"
+
+// REPLACE with simple:
+className="bg-white rounded-lg shadow-lg"
+
+In client/src/index.css, temporarily disable these animations:
+
+css/* COMMENT OUT THESE PROBLEM ANIMATIONS */
+/*
+.hover-lift:hover {
+  transform: translateY(-2px);
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+*/
+IMMEDIATE FIX:
+Add this CSS override to the caption generator page:
+css.caption-generator-container * {
+  transform: none !important;
+  animation: none !important;
+  pointer-events: auto !important;
+}
+
+---
+
+## ⚡ **Quick Browser Console Fix:**
+
+Run this RIGHT NOW to disable the animations:
+
+```javascript
+// Disable all animations temporarily
+document.querySelectorAll('*').forEach(el => {
+  el.style.transform = 'none';
+  el.style.animation = 'none';
+  el.style.pointerEvents = 'auto';
+});
+
+// Make inputs work
+document.querySelectorAll('input, textarea, button, select').forEach(el => {
+  el.style.pointerEvents = 'auto';
+  el.style.zIndex = '9999';
+  el.style.position = 'relative';
+});
+
+🎯 The Root Cause:
+Your index.css has aggressive animations:
+
+.hover-lift - moves elements up on hover
+.card-hover - transforms on hover
+.animate-float - constantly floating animation
+.card-3d - 3D transforms
+
+These are being applied to the caption generator container, making it unusable!
+
+💡 Permanent Fix:
+The caption generator needs simpler styling without animations:
+typescript// In GeminiCaptionGeneratorTabs.tsx, use simple classes:
+<div className="bg-white rounded-lg shadow-md p-6">
+  {/* No hover effects, no animations */}
+</div>

@@ -502,9 +502,10 @@ td {
   animation: shimmer 3s infinite;
 }
 
+/* DISABLED - Causing caption generator issues
 .animate-float {
   animation: float 4s ease-in-out infinite;
-}
+} */
 
 .animate-glow {
   animation: glow 3s ease-in-out infinite;
@@ -806,8 +807,8 @@ td {
   left: 100%;
 }
 
-/* Enhanced Premium Bubble Card Effects */
-.card-hover {
+/* Enhanced Premium Bubble Card Effects - DISABLED FOR CAPTION GENERATOR FIX */
+/* .card-hover {
   transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   border-radius: 1.75rem;
   background: hsl(var(--card));
@@ -847,7 +848,7 @@ td {
 .card-hover:hover::before {
   opacity: 1;
   animation: shimmer 2s ease-in-out;
-}
+} */
 
 /* Gradient text animations */
 @keyframes gradient-shift {
@@ -1096,9 +1097,10 @@ td {
 /* Venture Capital Level Polish */
 
 /* Floating Elements */
+/* DISABLED - Causing caption generator issues
 .float-gentle {
   animation: glass-float 6s ease-in-out infinite;
-}
+} */
 
 /* Premium Shadows */
 .shadow-premium {
@@ -1231,13 +1233,14 @@ button, .btn, nav {
 }
 
 /* Premium hover states */
+/* DISABLED - Causing caption generator issues
 .hover-lift {
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .hover-lift:hover {
   transform: translateY(-2px);
-}
+} */
 
 /* Subtle animations for micro-interactions */
 @keyframes micro-bounce {
@@ -1306,6 +1309,7 @@ button, .btn, nav {
 }
 
 /* 3D Transform Effects - Enhanced */
+/* DISABLED - Causing caption generator issues
 .card-3d {
   transform-style: preserve-3d;
   perspective: 1000px;
@@ -1317,7 +1321,7 @@ button, .btn, nav {
   box-shadow: 
     0 20px 60px rgba(236, 72, 153, 0.2),
     0 10px 30px rgba(244, 114, 182, 0.15);
-}
+} */
 
 /* Neon Glow Effects - Premium */
 .neon-glow {
