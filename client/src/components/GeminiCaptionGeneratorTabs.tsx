@@ -7,14 +7,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { CaptionPreview } from "./CaptionPreview";
 import { Loader2, Sparkles, Upload, AlertCircle, Image as ImageIcon, Type, Edit3 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 const PLATFORMS = [
+  { value: "reddit", label: "Reddit" },
   { value: "instagram", label: "Instagram" },
   { value: "x", label: "X (Twitter)" },
-  { value: "reddit", label: "Reddit" },
   { value: "tiktok", label: "TikTok" }
 ];
 
@@ -29,8 +30,9 @@ const VOICES = [
 
 export function GeminiCaptionGeneratorTabs() {
   // Shared states
-  const [platform, setPlatform] = useState<string>("instagram");
+  const [platform, setPlatform] = useState<string>("reddit");
   const [voice, setVoice] = useState<string>("flirty_playful");
+  const [nsfw, setNsfw] = useState<boolean>(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [captionData, setCaptionData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
@@ -89,7 +91,7 @@ export function GeminiCaptionGeneratorTabs() {
       const response = await fetch('/api/caption/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageUrl, platform, voice })
+        body: JSON.stringify({ imageUrl, platform, voice, nsfw })
       });
 
       const result = await response.json();
@@ -97,8 +99,8 @@ export function GeminiCaptionGeneratorTabs() {
 
       setCaptionData(result);
       toast({
-        title: "Caption generated!",
-        description: "Your AI-powered caption is ready to use",
+        title: "Content generated!",
+        description: "Your AI-powered content is ready to use",
       });
     } catch (err: any) {
       console.error('Generation error:', err);
@@ -115,7 +117,7 @@ export function GeminiCaptionGeneratorTabs() {
 
   const handleGenerateText = async () => {
     if (!theme) {
-      setError("Please provide a theme for your caption");
+      setError("Please provide a theme for your content");
       return;
     }
 
@@ -127,7 +129,7 @@ export function GeminiCaptionGeneratorTabs() {
       const response = await fetch('/api/caption/generate-text', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ platform, voice, theme, context })
+        body: JSON.stringify({ platform, voice, theme, context, nsfw })
       });
 
       const result = await response.json();
@@ -135,8 +137,8 @@ export function GeminiCaptionGeneratorTabs() {
 
       setCaptionData(result);
       toast({
-        title: "Caption generated!",
-        description: "Your AI-powered caption is ready to use",
+        title: "Content generated!",
+        description: "Your AI-powered content is ready to use",
       });
     } catch (err: any) {
       console.error('Generation error:', err);
@@ -153,7 +155,7 @@ export function GeminiCaptionGeneratorTabs() {
 
   const handleRewrite = async () => {
     if (!existingCaption) {
-      setError("Please provide an existing caption to rewrite");
+      setError("Please provide existing content to rewrite");
       return;
     }
 
@@ -169,7 +171,8 @@ export function GeminiCaptionGeneratorTabs() {
           platform, 
           voice, 
           existingCaption, 
-          imageUrl: rewriteImageUrl || undefined 
+          imageUrl: rewriteImageUrl || undefined,
+          nsfw
         })
       });
 
@@ -178,8 +181,8 @@ export function GeminiCaptionGeneratorTabs() {
 
       setCaptionData(result);
       toast({
-        title: "Caption rewritten!",
-        description: "Your improved caption is ready to use",
+        title: "Content rewritten!",
+        description: "Your improved content is ready to use",
       });
     } catch (err: any) {
       console.error('Rewrite error:', err);
@@ -227,6 +230,18 @@ export function GeminiCaptionGeneratorTabs() {
           </SelectContent>
         </Select>
       </div>
+
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="nsfw"
+          checked={nsfw}
+          onCheckedChange={(checked) => setNsfw(checked as boolean)}
+          data-testid="checkbox-nsfw"
+        />
+        <Label htmlFor="nsfw" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+          NSFW Content
+        </Label>
+      </div>
     </>
   );
 
@@ -236,11 +251,11 @@ export function GeminiCaptionGeneratorTabs() {
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="image" className="flex items-center gap-2">
             <ImageIcon className="h-4 w-4" />
-            Image → Caption
+            Image → Content
           </TabsTrigger>
           <TabsTrigger value="text" className="flex items-center gap-2">
             <Type className="h-4 w-4" />
-            Text → Caption
+            Text → Content
           </TabsTrigger>
           <TabsTrigger value="rewrite" className="flex items-center gap-2">
             <Edit3 className="h-4 w-4" />
@@ -254,7 +269,7 @@ export function GeminiCaptionGeneratorTabs() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-pink-500" />
-                Generate Caption from Image
+                Generate Content from Image
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -333,7 +348,7 @@ export function GeminiCaptionGeneratorTabs() {
                 ) : (
                   <>
                     <Sparkles className="mr-2 h-4 w-4" />
-                    Generate Caption from Image
+                    Generate Content from Image
                   </>
                 )}
               </Button>
@@ -347,12 +362,12 @@ export function GeminiCaptionGeneratorTabs() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Type className="h-5 w-5 text-blue-500" />
-                Generate Caption from Text
+                Generate Content from Text
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="theme">Theme / Topic</Label>
+                <Label htmlFor="theme">Content Theme / Topic</Label>
                 <Input
                   id="theme"
                   type="text"
@@ -395,12 +410,12 @@ export function GeminiCaptionGeneratorTabs() {
                 {isGenerating ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating Caption...
+                    Generating Content...
                   </>
                 ) : (
                   <>
                     <Type className="mr-2 h-4 w-4" />
-                    Generate Caption from Text
+                    Generate Content from Text
                   </>
                 )}
               </Button>
@@ -414,15 +429,15 @@ export function GeminiCaptionGeneratorTabs() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Edit3 className="h-5 w-5 text-green-500" />
-                Rewrite Existing Caption
+                Rewrite Existing Content
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="existing">Existing Caption</Label>
+                <Label htmlFor="existing">Existing Content</Label>
                 <Textarea
                   id="existing"
-                  placeholder="Paste your existing caption here..."
+                  placeholder="Paste your existing content here..."
                   value={existingCaption}
                   onChange={(e) => setExistingCaption(e.target.value)}
                   rows={4}
@@ -441,7 +456,7 @@ export function GeminiCaptionGeneratorTabs() {
                   data-testid="input-rewrite-image-url"
                 />
                 <p className="text-sm text-gray-500">
-                  Adding an image helps create more relevant captions
+                  Adding an image helps create more relevant content
                 </p>
               </div>
 
@@ -463,12 +478,12 @@ export function GeminiCaptionGeneratorTabs() {
                 {isGenerating ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Rewriting Caption...
+                    Rewriting Content...
                   </>
                 ) : (
                   <>
                     <Edit3 className="mr-2 h-4 w-4" />
-                    Rewrite Caption
+                    Rewrite Content
                   </>
                 )}
               </Button>

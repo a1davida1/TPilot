@@ -23,17 +23,17 @@ export default function CaptionGeneratorPage() {
           <CardHeader>
             <CardTitle className="text-2xl flex items-center gap-2">
               <Sparkles className="h-6 w-6" />
-              Professional Caption Studio
+              Professional Content Studio
             </CardTitle>
             <CardDescription className="text-pink-100">
-              Professional-grade caption creation with quality assurance for perfect results every time
+              Professional-grade content creation with quality assurance for perfect results every time
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
               <div className="bg-white/20 backdrop-blur rounded-lg p-3">
                 <div className="font-semibold mb-1">📸 Multi-Mode</div>
-                <div className="text-pink-100">Image, Text, or Rewrite existing captions</div>
+                <div className="text-pink-100">Image, Text, or Rewrite existing content</div>
               </div>
               <div className="bg-white/20 backdrop-blur rounded-lg p-3">
                 <div className="font-semibold mb-1">🎨 6 Voice Styles</div>
