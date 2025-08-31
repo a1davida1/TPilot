@@ -74,6 +74,19 @@ const stripe = STRIPE_SECRET_KEY ? new Stripe(STRIPE_SECRET_KEY, {
   apiVersion: '2025-08-27.basil' as any,
 }) : null;
 
+// Configure multer for optional image uploads
+const upload = multer({
+  dest: 'uploads/',
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed!'));
+    }
+  }
+});
+
 // Auth request interface
 interface AuthRequest extends express.Request {
   user?: any;
@@ -390,6 +403,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       logger.error("Content generation error:", error);
       res.status(500).json({ message: "Failed to generate content" });
+    }
+  });
+
+  // Unified AI generation endpoint - handles both text and image workflows
+  app.post('/api/generate-unified', generationLimiter, authenticateToken, upload.single('image'), async (req: AuthRequest, res) => {
+    try {
+      const { mode, prompt, platform, style, theme, includePromotion, customInstructions } = req.body as any;
+
+      // Check daily generation limit for authenticated users
+      if (req.user?.id) {
+        const user = await storage.getUser(req.user.id);
+        if (!user) {
+          return res.status(401).json({ error: 'User not found' });
+        }
+
+        const userTier = user.tier || 'free';
+        const dailyCount = await storage.getDailyGenerationCount(req.user.id);
+
+        let dailyLimit = 5;
+        if (userTier === 'pro') {
+          dailyLimit = 50;
+        } else if (userTier === 'premium') {
+          dailyLimit = -1;
+        }
+
+        if (dailyLimit !== -1 && dailyCount >= dailyLimit) {
+          return res.status(429).json({
+            error: 'Daily generation limit reached',
+            limit: dailyLimit,
+            used: dailyCount,
+            tier: userTier,
+            message: `You've reached your daily limit of ${dailyLimit} generations. ${userTier === 'free' ? 'Upgrade to Pro for 50 daily generations!' : 'Your limit resets tomorrow.'}`
+          });
+        }
+      }
+
+      let imageBase64: string | undefined;
+
+      // Handle image upload if present
+      if (mode === 'image' && req.file) {
+        if (!validateImageFormat(req.file.originalname)) {
+          return res.status(400).json({ error: 'Invalid image format. Please use JPG, PNG, or WebP.' });
+        }
+        imageBase64 = imageToBase64(req.file.path);
+
+        // Clean up uploaded file after converting to base64
+        await fs.unlink(req.file.path).catch(console.error);
+      }
+
+      const result = await generateUnifiedAIContent({
+        mode: (mode as 'text' | 'image') || 'text',
+        prompt,
+        imageBase64,
+        platform: platform || 'reddit',
+        style: style || 'playful',
+        theme,
+        includePromotion: includePromotion === 'true' || includePromotion === true,
+        customInstructions
+      });
+
+      // Check if this is demo content and add metadata
+      const isDemoContent = result.titles[0]?.includes('[DEMO]') || result.content?.includes('[DEMO CONTENT]');
+
+      // Save to database if user is authenticated
+      if (req.user?.id) {
+        await storage.createContentGeneration({
+          userId: req.user.id,
+          platform: platform || 'reddit',
+          style: style || 'playful',
+          theme: theme || 'general',
+          titles: result.titles,
+          content: result.content,
+          photoInstructions: result.photoInstructions,
+          prompt: prompt || customInstructions,
+          allowsPromotion: includePromotion === 'true' || includePromotion === true
+        });
+      }
+
+      const response = {
+        ...result,
+        contentSource: isDemoContent ? 'demo' : 'ai',
+        isDemo: isDemoContent,
+        apiStatus: isDemoContent ? 'unavailable' : 'active'
+      };
+
+      res.json(response);
+    } catch (error) {
+      console.error('Unified AI generation error:', error);
+      res.status(500).json({
+        error: 'Failed to generate content',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 

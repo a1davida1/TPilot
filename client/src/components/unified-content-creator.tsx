@@ -56,6 +56,8 @@ interface GeneratedContentDisplay extends Omit<ContentGeneration, 'photoInstruct
   upgradeMessage?: string;
   userTier?: string;
   variationCount?: number;
+  apiStatus?: string;
+  isDemo?: boolean;
   titles: string[]; // Ensure titles is always an array
   photoInstructions: {
     lighting: string;
@@ -333,7 +335,7 @@ export function UnifiedContentCreator({
     try {
       const settings = protectionPresets[protectionLevel];
       // Apply watermark for free users (Pro/Premium users get watermark-free)
-      const shouldAddWatermark = userTier === 'free' || userTier === 'guest';
+      const shouldAddWatermark = userTier === 'free' || isGuestMode;
       const protectedBlob = await protectImage(file, settings, shouldAddWatermark);
       
       // Create preview URL for protected image
@@ -660,7 +662,7 @@ export function UnifiedContentCreator({
                       {/* Protection level selector */}
                       <div className="space-y-2">
                         <Label className="text-sm font-medium">Protection Level</Label>
-                        <Select value={protectionLevel} onValueChange={setProtectionLevel}>
+                        <Select value={protectionLevel} onValueChange={(value) => setProtectionLevel(value as 'light' | 'standard' | 'heavy')}>
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
@@ -731,7 +733,7 @@ export function UnifiedContentCreator({
                               />
                             </div>
                           </div>
-                          {(userTier === 'guest' || userTier === 'free') && (
+                          {(isGuestMode || userTier === 'free') && (
                             <p className="text-xs text-orange-600 text-center">
                               ⚠️ Watermark applied - Upgrade to Pro to remove
                             </p>
@@ -750,10 +752,23 @@ export function UnifiedContentCreator({
             <GenerationHistory 
               onSelectGeneration={(generation) => {
                 // Load selected generation as current content
-                const displayData = {
+                const displayData: GeneratedContentDisplay = {
                   ...generation,
+                  userId: (generation as any).userId || 0,
+                  subreddit: (generation as any).subreddit || null,
+                  generationType: (generation as any).generationType || 'ai',
+                  createdAt: typeof generation.createdAt === 'string' 
+                    ? new Date(generation.createdAt) 
+                    : generation.createdAt || new Date(),
                   titles: generation.titles || [],
-                  photoInstructions: generation.photoInstructions || {}
+                  photoInstructions: generation.photoInstructions || {
+                    lighting: '',
+                    cameraAngle: '',
+                    composition: '',
+                    styling: '',
+                    mood: '',
+                    technicalSettings: ''
+                  }
                 };
                 setGeneratedContent(displayData);
                 toast({
