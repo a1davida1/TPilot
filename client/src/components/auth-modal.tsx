@@ -136,6 +136,10 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
       errors.push('Username is required');
     } else if (formData.username.length < 3) {
       errors.push('Username must be at least 3 characters');
+    } else if (formData.username.length > 50) {
+      errors.push('Username must be less than 50 characters');
+    } else if (!/^[a-zA-Z0-9_-]+$/.test(formData.username)) {
+      errors.push('Username can only contain letters, numbers, underscores and hyphens');
     }
     
     if (mode === 'signup') {
@@ -148,8 +152,14 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
     
     if (!formData.password.trim()) {
       errors.push('Password is required');
-    } else if (formData.password.length < 6) {
-      errors.push('Password must be at least 6 characters');
+    } else if (formData.password.length < 8) {
+      errors.push('Password must be at least 8 characters');
+    } else if (!/(?=.*[a-z])/.test(formData.password)) {
+      errors.push('Password must contain at least one lowercase letter');
+    } else if (!/(?=.*[A-Z])/.test(formData.password)) {
+      errors.push('Password must contain at least one uppercase letter');
+    } else if (!/(?=.*\d)/.test(formData.password)) {
+      errors.push('Password must contain at least one number');
     }
     
     return errors;
@@ -182,9 +192,9 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <Card className="bg-gray-900 border-gray-800 max-w-md w-full relative overflow-hidden">
+      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 max-w-md w-full relative overflow-hidden shadow-2xl">
         {/* Background gradient effect */}
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 via-pink-600/20 to-purple-600/20 opacity-50" />
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 via-pink-600/10 to-purple-600/10 opacity-30" />
         
         <div className="relative z-10 p-6">
           {/* Header */}
@@ -230,7 +240,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
           </div>
 
           <div className="relative mb-6">
-            <Separator className="bg-gray-800" />
+            <Separator className="bg-border" />
             <span className="absolute left-1/2 -translate-x-1/2 -top-3 bg-card px-3 text-sm text-foreground">
               or
             </span>
@@ -249,7 +259,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                   type="text"
                   value={formData.username}
                   onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  className="pl-10 bg-gray-800/50 border-gray-700 text-white focus:border-purple-500"
+                  className="pl-10 bg-background border-input text-foreground focus:border-purple-500"
                   placeholder="Enter your username"
                   required
                 />
@@ -268,7 +278,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="pl-10 bg-gray-800/50 border-gray-700 text-white focus:border-purple-500"
+                    className="pl-10 bg-background border-input text-foreground focus:border-purple-500"
                     placeholder="your@email.com"
                   />
                 </div>
@@ -286,7 +296,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                   type="password"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="pl-10 bg-gray-800/50 border-gray-700 text-white focus:border-purple-500"
+                  className="pl-10 bg-background border-input text-foreground focus:border-purple-500"
                   placeholder="••••••••"
                   required
                 />
