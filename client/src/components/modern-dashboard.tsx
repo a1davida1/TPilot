@@ -638,7 +638,17 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                     <ImageIcon className="h-5 w-5" />
                     Recent Uploads
                   </CardTitle>
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      setActiveSection('gallery');
+                      toast({
+                        title: "Coming Soon",
+                        description: "Media Gallery feature is being developed.",
+                      });
+                    }}
+                  >
                     View All
                   </Button>
                 </div>
