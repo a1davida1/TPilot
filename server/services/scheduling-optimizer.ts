@@ -25,15 +25,6 @@ interface PlatformStats {
   topHashtags: string[];
 }
 
-interface PostToOptimize {
-  platform: string;
-  [key: string]: any;
-}
-
-interface OptimizedPost extends PostToOptimize {
-  scheduledTime: Date;
-  optimizationScore: number;
-}
 
 class SchedulingOptimizer {
   // Best posting times by platform (based on industry research)
@@ -264,9 +255,12 @@ class SchedulingOptimizer {
     return styleMap[trend.category] || 'casual';
   }
 
-  async optimizePostingSchedule(userId: number, posts: PostToOptimize[]): Promise<OptimizedPost[]> {
+  async optimizePostingSchedule<T extends { platform: string }>(
+    userId: number,
+    posts: T[]
+  ): Promise<(T & { scheduledTime: Date; optimizationScore: number })[]> {
     // Distribute posts optimally across time slots
-    const optimizedPosts: OptimizedPost[] = [];
+    const optimizedPosts: (T & { scheduledTime: Date; optimizationScore: number })[] = [];
     const usedSlots = new Set<string>();
     
     for (const post of posts) {
