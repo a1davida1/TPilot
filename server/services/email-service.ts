@@ -1,4 +1,5 @@
 import sgMail from '@sendgrid/mail';
+import { safeLog } from '../lib/logger-utils.js';
 
 // Initialize SendGrid
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
@@ -70,7 +71,7 @@ export const emailService = {
     try {
       await sgMail.send(msg);
     } catch (error) {
-      console.error('Error sending verification email:', error);
+      safeLog('error', 'Verification email send failed', { error: error.message });
       throw error;
     }
   },
@@ -148,7 +149,7 @@ export const emailService = {
     try {
       await sgMail.send(msg);
     } catch (error) {
-      console.error('Error sending password reset email:', error);
+      safeLog('error', 'Password reset email send failed', { error: error.message });
       throw error;
     }
   },
@@ -211,7 +212,7 @@ export const emailService = {
     try {
       await sgMail.send(msg);
     } catch (error) {
-      console.error('Error sending welcome email:', error);
+      safeLog('error', 'Welcome email send failed', { error: error.message });
       // Don't throw for welcome emails - they're not critical
     }
   },
@@ -280,7 +281,7 @@ export const emailService = {
     try {
       await sgMail.send(msg);
     } catch (error) {
-      console.error('Error sending upgrade email:', error);
+      safeLog('error', 'Upgrade email send failed', { error: error.message });
     }
   }
 };

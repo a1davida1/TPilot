@@ -10,7 +10,7 @@ import { Link } from "wouter";
 
 // Load Stripe
 if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
-  console.error('Missing required Stripe key: VITE_STRIPE_PUBLIC_KEY');
+  throw new Error('Missing required Stripe key: VITE_STRIPE_PUBLIC_KEY');
 }
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY || '');
 
@@ -128,7 +128,7 @@ export default function Checkout() {
           throw new Error('Failed to setup payment');
         }
       } catch (error) {
-        console.error('Payment setup error:', error);
+        // Payment setup error - handled via toast UI
         toast({
           title: "Setup Failed",
           description: "Failed to initialize payment. Please try again.",

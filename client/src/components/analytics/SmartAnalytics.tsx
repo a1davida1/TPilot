@@ -65,9 +65,9 @@ const safeDivide = (numerator: number, denominator: number, fallback: number = 0
 };
 
 // Safe array access
-const safeArrayAccess = <T>(array: T[] | undefined | null, index: number, fallback: T): T => {
+function safeArrayAccess<T>(array: T[] | undefined | null, index: number, fallback: T): T {
   return Array.isArray(array) && array.length > index && index >= 0 ? array[index] : fallback;
-};
+}
 
 export default function SmartAnalytics() {
   const [timeRange, setTimeRange] = useState('7d');

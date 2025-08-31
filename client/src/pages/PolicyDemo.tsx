@@ -26,7 +26,7 @@ export default function PolicyDemo() {
   const [showPreview, setShowPreview] = useState(false);
 
   const handlePolicyPreviewComplete = (result: any) => {
-    console.log('Policy check result:', result);
+    // Policy result handled internally by preview component
   };
 
   // Demo content examples

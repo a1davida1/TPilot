@@ -7,6 +7,7 @@ import { emailService } from './services/email-service';
 import crypto from 'crypto';
 import { z } from 'zod';
 import { authLimiter } from './middleware/security.js';
+import { safeLog, redactUserData } from './lib/logger-utils.js';
 
 // Auth validation schemas
 const signupSchema = z.object({
@@ -37,6 +38,8 @@ const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
   throw new Error('JWT_SECRET environment variable is required for secure token operations');
 }
+// Type assertion after validation
+const JWT_SECRET_VALIDATED: string = JWT_SECRET;
 
 export function setupAuth(app: Express) {
   // Regular signup
@@ -88,7 +91,7 @@ export function setupAuth(app: Express) {
 
       res.json({ message: 'Verification email sent' });
     } catch (error) {
-      console.error('Signup error:', error);
+      safeLog('error', 'Authentication signup failed', { error: error.message });
       res.status(500).json({ message: 'Error creating user' });
     }
   });
@@ -129,7 +132,7 @@ export function setupAuth(app: Express) {
             username: adminUser.username, 
             isAdmin: true
           },
-          JWT_SECRET,
+          JWT_SECRET_VALIDATED,
           { expiresIn: '24h' }
         );
 
@@ -144,7 +147,7 @@ export function setupAuth(app: Express) {
       const loginEmail = email || username;
 
       // Try to find user by username first, then by email
-      let user = await storage.getUserByUsername(username || loginEmail);
+      let user = await storage.getUserByUsername(username || loginEmail || '');
       if (!user && loginEmail) {
         user = await storage.getUserByEmail(loginEmail);
       }
@@ -164,7 +167,7 @@ export function setupAuth(app: Express) {
 
       const token = jwt.sign(
         { id: user.id, userId: user.id, username: user.username },
-        JWT_SECRET,
+        JWT_SECRET_VALIDATED,
         { expiresIn: '24h' }
       );
 
@@ -178,7 +181,7 @@ export function setupAuth(app: Express) {
         }
       });
     } catch (error) {
-      console.error('Login error:', error);
+      safeLog('error', 'Authentication login failed', { error: error.message });
       res.status(500).json({ message: 'Error logging in' });
     }
   });
@@ -213,7 +216,7 @@ export function setupAuth(app: Express) {
 
       res.json({ message: 'Email verified successfully' });
     } catch (error) {
-      console.error('Email verification error:', error);
+      safeLog('error', 'Email verification failed', { error: error.message });
       res.status(500).json({ message: 'Error verifying email' });
     }
   });
@@ -245,7 +248,7 @@ export function setupAuth(app: Express) {
 
       res.json({ message: 'If the email exists, a reset link has been sent' });
     } catch (error) {
-      console.error('Password reset request error:', error);
+      safeLog('error', 'Password reset request failed', { error: error.message });
       res.status(500).json({ message: 'Error processing password reset' });
     }
   });
@@ -260,7 +263,7 @@ export function setupAuth(app: Express) {
       }
 
       // Verify token
-      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      const decoded = jwt.verify(token, JWT_SECRET_VALIDATED) as any;
       
       if (decoded.type !== 'password-reset') {
         return res.status(400).json({ message: 'Invalid reset token' });
@@ -284,7 +287,7 @@ export function setupAuth(app: Express) {
       if (error instanceof jwt.TokenExpiredError) {
         return res.status(400).json({ message: 'Reset link has expired' });
       }
-      console.error('Password reset error:', error);
+      safeLog('error', 'Password reset failed', { error: error.message });
       res.status(500).json({ message: 'Error resetting password' });
     }
   });
@@ -298,7 +301,7 @@ export function setupAuth(app: Express) {
         const token = authHeader.substring(7);
         
         try {
-          const decoded = jwt.verify(token, JWT_SECRET) as any;
+          const decoded = jwt.verify(token, JWT_SECRET_VALIDATED) as any;
           
           // Handle admin user
           if (decoded.isAdmin) {
@@ -326,14 +329,14 @@ export function setupAuth(app: Express) {
             tier: decoded.tier || 'free'
           });
         } catch (jwtError) {
-          console.error('JWT verification error:', jwtError);
+          safeLog('error', 'JWT verification failed', { error: jwtError.message });
           return res.status(401).json({ message: 'Invalid token' });
         }
       }
 
       return res.status(401).json({ message: 'Access token required' });
     } catch (error) {
-      console.error('Get user error:', error);
+      safeLog('error', 'Get user failed', { error: error.message });
       res.status(500).json({ message: 'Error fetching user data' });
     }
   });

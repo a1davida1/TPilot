@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-// import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   Sparkles, 
   Brain, 
@@ -413,8 +413,9 @@ export function AppleInspiredApp() {
 
         {/* Main Content */}
         <main className="pt-20">
-          {activeSection === "generate" && (
-            <div className="max-w-6xl mx-auto px-6 py-12">
+          <AnimatePresence mode="wait">
+            {activeSection === "generate" && (
+              <div className="max-w-6xl mx-auto px-6 py-12">
                 {/* Hero Section */}
                 <div className="text-center mb-12">
                   <h2 className="text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
@@ -635,7 +636,7 @@ export function AppleInspiredApp() {
                     )}
                   </motion.div>
                 )}
-              </motion.div>
+              </div>
             )}
 
             {activeSection === "protect" && (

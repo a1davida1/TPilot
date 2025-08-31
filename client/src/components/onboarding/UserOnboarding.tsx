@@ -32,6 +32,8 @@ interface Tutorial {
     description: string;
     action?: string;
   }>;
+  optional?: boolean;
+  component?: React.ReactNode;
 }
 
 // Clean onboarding steps generator function (outside component for performance)
@@ -305,12 +307,24 @@ export default function UserOnboarding() {
     localStorage.removeItem('onboarding_current_step');
   };
 
+  const startTutorial = () => {
+    // Mark step as completed and provide user feedback
+    const currentStepId = onboardingSteps[currentStep].id;
+    setCompletedSteps(prev => new Set([...prev, currentStepId]));
+    // In a real implementation, this would navigate to the content creator
+    // or open a guided tutorial overlay
+  };
+
   const tutorials: Tutorial[] = [
     {
       id: 'profile',
       title: 'Complete Your Profile',
       description: 'Tell us about your content style to personalize your experience',
-
+      duration: '3 min',
+      difficulty: 'beginner',
+      category: 'Setup',
+      icon: <Heart className="h-5 w-5" />,
+      steps: [],
       optional: false,
       component: (
         <div className="space-y-4">
@@ -366,7 +380,11 @@ export default function UserOnboarding() {
       id: 'first-content',
       title: 'Create Your First Content',
       description: 'Let\'s generate your first piece of content together',
-
+      duration: '5 min',
+      difficulty: 'beginner',
+      category: 'Content Creation',
+      icon: <Play className="h-5 w-5" />,
+      steps: [],
       optional: false,
       component: (
         <div className="space-y-4">
@@ -421,7 +439,11 @@ export default function UserOnboarding() {
       id: 'image-protection',
       title: 'Protect Your Images',
       description: 'Learn how to use ImageShield to protect your content',
-
+      duration: '4 min',
+      difficulty: 'intermediate',
+      category: 'Security',
+      icon: <Shield className="h-5 w-5" />,
+      steps: [],
       optional: true,
       component: (
         <div className="space-y-4">
@@ -461,7 +483,11 @@ export default function UserOnboarding() {
       id: 'analytics',
       title: 'Understanding Analytics',
       description: 'Learn how to track and improve your content performance',
-
+      duration: '6 min',
+      difficulty: 'intermediate',
+      category: 'Analytics',
+      icon: <Target className="h-5 w-5" />,
+      steps: [],
       optional: true,
       component: (
         <div className="space-y-4">
@@ -495,8 +521,7 @@ export default function UserOnboarding() {
           </div>
         </div>
       )
-    }
-  ];
+    },
     {
       id: 'content-creation',
       title: 'Content Creation Mastery',
@@ -605,6 +630,7 @@ export default function UserOnboarding() {
     // In a real implementation, this would navigate to the content creator
     // or open a guided tutorial overlay
   };
+  
 
   const handlePrevious = () => {
     if (currentStep > 0) {

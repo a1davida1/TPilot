@@ -82,14 +82,16 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
   // Determine premium status
   const isPremium = isAdmin || userTier === 'premium' || userTier === 'pro' || userTier === 'admin';
   
-  // Debug logging
-  console.log('Dashboard props:', { user, userTier, isAdmin, isPremium });
-  console.log('User details:', { 
-    id: user?.id, 
-    username: user?.username, 
-    email: user?.email,
-    tier: user?.tier
-  });
+  // User data logged for debugging - sensitive fields redacted in production
+  if (import.meta.env.DEV) {
+    console.log('Dashboard props:', { 
+      userTier, 
+      isAdmin, 
+      isPremium,
+      userId: user?.id,
+      hasEmail: !!user?.email 
+    });
+  }
 
   useEffect(() => {
     const checkMobile = () => {
@@ -190,15 +192,20 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
   ];
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('File input changed');
     const file = event.target.files?.[0];
     
     if (!file) {
-      console.log('No file selected');
       return;
     }
     
-    console.log('File selected:', file.name, 'Size:', file.size, 'Type:', file.type);
+    // File validation logging (safe data only)
+    if (import.meta.env.DEV) {
+      console.log('File upload:', { 
+        size: file.size, 
+        type: file.type,
+        hasFile: true 
+      });
+    }
     
     // Check file size (10MB limit)
     if (file.size > 10 * 1024 * 1024) {
@@ -426,7 +433,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                         if (data.authUrl) {
                           window.location.href = data.authUrl;
                         } else if (data.error) {
-                          console.error('Reddit connection error:', data.error);
+                          // Reddit connection failed - error handled via toast
                           toast({
                             title: "Connection Failed",
                             description: data.error || "Unable to connect to Reddit",
@@ -434,7 +441,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                           });
                         }
                       } else {
-                        console.error('Reddit connection failed:', response.status);
+                        // Reddit request failed - error handled via toast
                         toast({
                           title: "Connection Failed", 
                           description: "Please try again later",
@@ -442,7 +449,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                         });
                       }
                     } catch (error) {
-                      console.error('Failed to connect Reddit:', error);
+                      // Reddit connection error - handled via toast
                       toast({
                         title: "Connection Error",
                         description: "Unable to connect to Reddit. Please try again.",
@@ -524,35 +531,25 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('Upload area clicked');
-                    if (fileInputRef.current) {
-                      console.log('File input found via ref, triggering click');
-                      fileInputRef.current.click();
-                    } else {
-                      console.error('File input ref not available!');
-                    }
+                    fileInputRef.current?.click();
                   }}
                   onDragOver={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('Drag over');
                     setIsDragging(true);
                   }}
                   onDragLeave={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('Drag leave');
                     setIsDragging(false);
                   }}
                   onDrop={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('File dropped');
                     setIsDragging(false);
                     
                     const files = e.dataTransfer.files;
                     if (files && files[0]) {
-                      console.log('Processing dropped file:', files[0].name);
                       // Create a synthetic event for the handleFileUpload function
                       if (fileInputRef.current) {
                         const dataTransfer = new DataTransfer();

@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 import { GoogleGenAI } from '@google/genai';
+import { safeLog } from '../lib/logger-utils.js';
 
 // Multi-provider AI system for cost optimization
 // Priority: Gemini Flash (cheapest) -> Claude Haiku -> OpenAI (fallback)
@@ -56,7 +57,7 @@ export async function generateWithMultiProvider(request: MultiAIRequest): Promis
     if (!provider.available) continue;
     
     try {
-      console.log(`Attempting generation with ${provider.name} (input: $${provider.inputCost}/1M tokens)`);
+      safeLog('info', 'AI provider attempt', { provider: provider.name, inputCost: provider.inputCost });
       
       let result: any = null;
       switch (provider.name) {
@@ -74,23 +75,23 @@ export async function generateWithMultiProvider(request: MultiAIRequest): Promis
       }
       
       if (result && result.content) {
-        console.log(`Successfully generated content with ${provider.name}`);
+        safeLog('info', 'AI generation successful', { provider: provider.name });
         return {
           ...result,
           provider: provider.name,
           estimatedCost: calculateCost(prompt, result.content, provider)
         };
       } else {
-        console.log(`${provider.name} returned null, trying next provider`);
+        safeLog('warn', 'AI provider returned empty result', { provider: provider.name });
       }
     } catch (error) {
-      console.log(`${provider.name} encountered error, trying next provider:`, error instanceof Error ? error.message : String(error));
+      safeLog('warn', 'AI provider failed, trying next', { provider: provider.name, error: error instanceof Error ? error.message : String(error) });
       continue; // Try next provider
     }
   }
   
   // If all providers fail, return demo content
-  console.log('All AI providers failed, using demo content');
+  safeLog('error', 'All AI providers failed - using fallback content', {});
   // Pass style and theme from unified request to demo generator
   const demoRequest = {
     ...request,
@@ -112,13 +113,13 @@ async function generateWithGemini(prompt: string) {
     });
     
     if (!response || !response.text) {
-      console.log('Gemini: Empty response, skipping to next provider');
+      safeLog('warn', 'Gemini provider returned empty response', {});
       return null;
     }
     
     const text = response.text.trim();
     if (text.length === 0) {
-      console.log('Gemini: No text in response, skipping to next provider');
+      safeLog('warn', 'Gemini provider returned no text', {});
       return null;
     }
     
@@ -143,10 +144,10 @@ async function generateWithGemini(prompt: string) {
       };
     }
     
-    console.log('Gemini generated successfully');
+    safeLog('info', 'Gemini generation completed successfully', {});
     return validateAndFormatResponse(result);
   } catch (error) {
-    console.log('Gemini generation failed, trying next provider:', error instanceof Error ? error.message : String(error));
+    safeLog('warn', 'Gemini generation failed', { error: error instanceof Error ? error.message : String(error) });
     return null; // Don't throw, just return null to try next provider
   }
 }

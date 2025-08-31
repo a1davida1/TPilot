@@ -42,6 +42,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db.js";
 import { eq, desc, and, gte, sql, count } from "drizzle-orm";
+import { safeLog, redactUserData } from './lib/logger-utils.js';
 
 export interface IStorage {
   // User operations
@@ -150,7 +151,7 @@ class PostgreSQLStorage implements IStorage {
       }
       return user;
     } catch (error) {
-      console.error('Storage: Error getting user:', error);
+      safeLog('error', 'Storage operation failed - getting user:', { error: error.message });
       return undefined;
     }
   }
@@ -160,7 +161,7 @@ class PostgreSQLStorage implements IStorage {
       const allUsers = await db.select().from(users).orderBy(desc(users.createdAt));
       return allUsers;
     } catch (error) {
-      console.error('Storage: Error getting all users:', error);
+      safeLog('error', 'Storage operation failed - getting all users:', { error: error.message });
       return [];
     }
   }
@@ -170,7 +171,7 @@ class PostgreSQLStorage implements IStorage {
       const result = await db.select().from(users).where(eq(users.username, username)).limit(1);
       return result[0];
     } catch (error) {
-      console.error('Storage: Error getting user by username:', error);
+      safeLog('error', 'Storage operation failed - getting user by username:', { error: error.message });
       return undefined;
     }
   }
@@ -180,7 +181,7 @@ class PostgreSQLStorage implements IStorage {
       const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
       return result[0];
     } catch (error) {
-      console.error('Storage: Error getting user by email:', error);
+      safeLog('error', 'Storage operation failed - getting user by email:', { error: error.message });
       return undefined;
     }
   }
@@ -191,7 +192,7 @@ class PostgreSQLStorage implements IStorage {
       const user = result[0];
       return user;
     } catch (error) {
-      console.error('Storage: Error creating user:', error);
+      safeLog('error', 'Storage operation failed - creating user:', { error: error.message });
       throw error;
     }
   }
@@ -200,7 +201,7 @@ class PostgreSQLStorage implements IStorage {
     try {
       await db.update(users).set({ tier }).where(eq(users.id, userId));
     } catch (error) {
-      console.error('Storage: Error updating user tier:', error);
+      safeLog('error', 'Storage operation failed - updating user tier:', { error: error.message });
       throw error;
     }
   }
@@ -213,7 +214,7 @@ class PostgreSQLStorage implements IStorage {
       }
       return result[0];
     } catch (error) {
-      console.error('Storage: Error updating user:', error);
+      safeLog('error', 'Storage operation failed - updating user:', { error: error.message });
       throw error;
     }
   }
@@ -223,7 +224,7 @@ class PostgreSQLStorage implements IStorage {
       const result = await db.update(users).set(updates).where(eq(users.id, userId)).returning();
       return result[0];
     } catch (error) {
-      console.error('Storage: Error updating user profile:', error);
+      safeLog('error', 'Storage operation failed - updating user profile:', { error: error.message });
       return undefined;
     }
   }
@@ -232,7 +233,7 @@ class PostgreSQLStorage implements IStorage {
     try {
       await db.update(users).set({ password: hashedPassword }).where(eq(users.id, userId));
     } catch (error) {
-      console.error('Storage: Error updating user password:', error);
+      safeLog('error', 'Storage operation failed - updating user password:', { error: error.message });
       throw error;
     }
   }
@@ -241,7 +242,7 @@ class PostgreSQLStorage implements IStorage {
     try {
       await db.update(users).set({ emailVerified: verified }).where(eq(users.id, userId));
     } catch (error) {
-      console.error('Storage: Error updating email verification:', error);
+      safeLog('error', 'Storage operation failed - updating email verification:', { error: error.message });
       throw error;
     }
   }
@@ -251,7 +252,7 @@ class PostgreSQLStorage implements IStorage {
       const [token] = await db.insert(verificationTokens).values(tokenData).returning();
       return token;
     } catch (error) {
-      console.error('Storage: Error creating verification token:', error);
+      safeLog('error', 'Storage operation failed - creating verification token:', { error: error.message });
       throw error;
     }
   }
@@ -265,7 +266,7 @@ class PostgreSQLStorage implements IStorage {
         .limit(1);
       return result[0];
     } catch (error) {
-      console.error('Storage: Error getting verification token:', error);
+      safeLog('error', 'Storage operation failed - getting verification token:', { error: error.message });
       return undefined;
     }
   }
@@ -274,7 +275,7 @@ class PostgreSQLStorage implements IStorage {
     try {
       await db.delete(verificationTokens).where(eq(verificationTokens.token, token));
     } catch (error) {
-      console.error('Storage: Error deleting verification token:', error);
+      safeLog('error', 'Storage operation failed - deleting verification token:', { error: error.message });
       throw error;
     }
   }
@@ -283,7 +284,7 @@ class PostgreSQLStorage implements IStorage {
     try {
       await db.delete(users).where(eq(users.id, userId));
     } catch (error) {
-      console.error('Storage: Error deleting user:', error);
+      safeLog('error', 'Storage operation failed - deleting user:', { error: error.message });
       throw error;
     }
   }
@@ -299,7 +300,7 @@ class PostgreSQLStorage implements IStorage {
       const result = await db.insert(contentGenerations).values([genData]).returning();
       return result[0];
     } catch (error) {
-      console.error('Storage: Error creating generation:', error);
+      safeLog('error', 'Storage operation failed - creating generation:', { error: error.message });
       throw error;
     }
   }
@@ -310,7 +311,7 @@ class PostgreSQLStorage implements IStorage {
         .where(eq(contentGenerations.userId, userId))
         .orderBy(desc(contentGenerations.createdAt));
     } catch (error) {
-      console.error('Storage: Error getting generations by user ID:', error);
+      safeLog('error', 'Storage operation failed - getting generations by user ID:', { error: error.message });
       return [];
     }
   }
@@ -330,7 +331,7 @@ class PostgreSQLStorage implements IStorage {
         .from(contentGenerations);
       return result[0]?.count || 0;
     } catch (error) {
-      console.error('Error getting content generation count:', error);
+      console.error('Error getting content generation count:', { error: error.message });
       return 0;
     }
   }
@@ -358,7 +359,7 @@ class PostgreSQLStorage implements IStorage {
         dailyStreak: dailyStreak
       };
     } catch (error) {
-      console.error('Storage: Error getting content generation stats:', error);
+      safeLog('error', 'Storage operation failed - getting content generation stats:', { error: error.message });
       return { total: 0, thisWeek: 0, thisMonth: 0, dailyStreak: 0 };
     }
   }
@@ -371,7 +372,7 @@ class PostgreSQLStorage implements IStorage {
         .limit(1);
       return result[0];
     } catch (error) {
-      console.error('Storage: Error getting last generated:', error);
+      safeLog('error', 'Storage operation failed - getting last generated:', { error: error.message });
       return undefined;
     }
   }
@@ -429,7 +430,7 @@ class PostgreSQLStorage implements IStorage {
 
       return streak;
     } catch (error) {
-      console.error('Storage: Error calculating daily streak:', error);
+      safeLog('error', 'Storage operation failed - calculating daily streak:', { error: error.message });
       return 0;
     }
   }
@@ -440,7 +441,7 @@ class PostgreSQLStorage implements IStorage {
       const result = await db.insert(userSamples).values(sample).returning();
       return result[0];
     } catch (error) {
-      console.error('Storage: Error creating user sample:', error);
+      safeLog('error', 'Storage operation failed - creating user sample:', { error: error.message });
       throw error;
     }
   }
@@ -451,7 +452,7 @@ class PostgreSQLStorage implements IStorage {
         .where(eq(userSamples.userId, userId))
         .orderBy(desc(userSamples.createdAt));
     } catch (error) {
-      console.error('Storage: Error getting user samples:', error);
+      safeLog('error', 'Storage operation failed - getting user samples:', { error: error.message });
       return [];
     }
   }
@@ -460,7 +461,7 @@ class PostgreSQLStorage implements IStorage {
     try {
       await db.delete(userSamples).where(and(eq(userSamples.id, sampleId), eq(userSamples.userId, userId)));
     } catch (error) {
-      console.error('Storage: Error deleting user sample:', error);
+      safeLog('error', 'Storage operation failed - deleting user sample:', { error: error.message });
       throw error;
     }
   }
@@ -471,7 +472,7 @@ class PostgreSQLStorage implements IStorage {
       const result = await db.select().from(userPreferences).where(eq(userPreferences.userId, userId)).limit(1);
       return result[0];
     } catch (error) {
-      console.error('Storage: Error getting user preferences:', error);
+      safeLog('error', 'Storage operation failed - getting user preferences:', { error: error.message });
       return undefined;
     }
   }
@@ -494,7 +495,7 @@ class PostgreSQLStorage implements IStorage {
         .returning();
       return insertResult[0];
     } catch (error) {
-      console.error('Storage: Error updating user preferences:', error);
+      safeLog('error', 'Storage operation failed - updating user preferences:', { error: error.message });
       throw error;
     }
   }
@@ -505,7 +506,7 @@ class PostgreSQLStorage implements IStorage {
       const result = await db.insert(userImages).values(image).returning();
       return result[0];
     } catch (error) {
-      console.error('Storage: Error creating user image:', error);
+      safeLog('error', 'Storage operation failed - creating user image:', { error: error.message });
       throw error;
     }
   }
@@ -516,7 +517,7 @@ class PostgreSQLStorage implements IStorage {
         .where(eq(userImages.userId, userId))
         .orderBy(desc(userImages.createdAt));
     } catch (error) {
-      console.error('Storage: Error getting user images:', error);
+      safeLog('error', 'Storage operation failed - getting user images:', { error: error.message });
       return [];
     }
   }
@@ -528,7 +529,7 @@ class PostgreSQLStorage implements IStorage {
         .limit(1);
       return result[0];
     } catch (error) {
-      console.error('Storage: Error getting user image:', error);
+      safeLog('error', 'Storage operation failed - getting user image:', { error: error.message });
       return undefined;
     }
   }
@@ -537,7 +538,7 @@ class PostgreSQLStorage implements IStorage {
     try {
       await db.delete(userImages).where(and(eq(userImages.id, imageId), eq(userImages.userId, userId)));
     } catch (error) {
-      console.error('Storage: Error deleting user image:', error);
+      safeLog('error', 'Storage operation failed - deleting user image:', { error: error.message });
       throw error;
     }
   }
@@ -549,7 +550,7 @@ class PostgreSQLStorage implements IStorage {
       const result = await db.select({ count: count() }).from(users);
       return result[0]?.count || 0;
     } catch (error) {
-      console.error('Error getting total user count:', error);
+      console.error('Error getting total user count:', { error: error.message });
       return 0;
     }
   }
@@ -567,7 +568,7 @@ class PostgreSQLStorage implements IStorage {
       
       return result.length;
     } catch (error) {
-      console.error('Error getting active user count:', error);
+      console.error('Error getting active user count:', { error: error.message });
       return 0;
     }
   }
@@ -577,7 +578,7 @@ class PostgreSQLStorage implements IStorage {
       const result = await db.select({ count: count() }).from(contentGenerations);
       return result[0]?.count || 0;
     } catch (error) {
-      console.error('Error getting total content generated:', error);
+      console.error('Error getting total content generated:', { error: error.message });
       return 0;
     }
   }
@@ -598,7 +599,7 @@ class PostgreSQLStorage implements IStorage {
       
       return counts;
     } catch (error) {
-      console.error('Error getting subscription counts:', error);
+      console.error('Error getting subscription counts:', { error: error.message });
       return { free: 0, pro: 0, premium: 0 };
     }
   }
@@ -625,7 +626,7 @@ class PostgreSQLStorage implements IStorage {
       
       return result[0]?.count || 0;
     } catch (error) {
-      console.error('Error getting daily generation count:', error);
+      console.error('Error getting daily generation count:', { error: error.message });
       return 0;
     }
   }
@@ -636,7 +637,7 @@ class PostgreSQLStorage implements IStorage {
       const [result] = await db.insert(expenseCategories).values(category).returning();
       return result;
     } catch (error) {
-      console.error('Error creating expense category:', error);
+      console.error('Error creating expense category:', { error: error.message });
       throw error;
     }
   }
@@ -647,7 +648,7 @@ class PostgreSQLStorage implements IStorage {
         .where(eq(expenseCategories.isActive, true))
         .orderBy(expenseCategories.sortOrder, expenseCategories.name);
     } catch (error) {
-      console.error('Error getting expense categories:', error);
+      console.error('Error getting expense categories:', { error: error.message });
       return [];
     }
   }
@@ -658,7 +659,7 @@ class PostgreSQLStorage implements IStorage {
         .where(eq(expenseCategories.id, id));
       return result;
     } catch (error) {
-      console.error('Error getting expense category:', error);
+      console.error('Error getting expense category:', { error: error.message });
       return undefined;
     }
   }
@@ -671,7 +672,7 @@ class PostgreSQLStorage implements IStorage {
         .returning();
       return result;
     } catch (error) {
-      console.error('Error updating expense category:', error);
+      console.error('Error updating expense category:', { error: error.message });
       throw error;
     }
   }
@@ -682,7 +683,7 @@ class PostgreSQLStorage implements IStorage {
         .set({ isActive: false })
         .where(eq(expenseCategories.id, id));
     } catch (error) {
-      console.error('Error deleting expense category:', error);
+      console.error('Error deleting expense category:', { error: error.message });
       throw error;
     }
   }
@@ -693,7 +694,7 @@ class PostgreSQLStorage implements IStorage {
       const [result] = await db.insert(expenses).values(expense).returning();
       return result;
     } catch (error) {
-      console.error('Error creating expense:', error);
+      console.error('Error creating expense:', { error: error.message });
       throw error;
     }
   }
@@ -718,7 +719,7 @@ class PostgreSQLStorage implements IStorage {
         category: r.category
       })) as any;
     } catch (error) {
-      console.error('Error getting user expenses:', error);
+      console.error('Error getting user expenses:', { error: error.message });
       return [];
     }
   }
@@ -729,7 +730,7 @@ class PostgreSQLStorage implements IStorage {
         .where(and(eq(expenses.id, id), eq(expenses.userId, userId)));
       return result;
     } catch (error) {
-      console.error('Error getting expense:', error);
+      console.error('Error getting expense:', { error: error.message });
       return undefined;
     }
   }
@@ -742,7 +743,7 @@ class PostgreSQLStorage implements IStorage {
         .returning();
       return result;
     } catch (error) {
-      console.error('Error updating expense:', error);
+      console.error('Error updating expense:', { error: error.message });
       throw error;
     }
   }
@@ -752,7 +753,7 @@ class PostgreSQLStorage implements IStorage {
       await db.delete(expenses)
         .where(and(eq(expenses.id, id), eq(expenses.userId, userId)));
     } catch (error) {
-      console.error('Error deleting expense:', error);
+      console.error('Error deleting expense:', { error: error.message });
       throw error;
     }
   }
@@ -772,7 +773,7 @@ class PostgreSQLStorage implements IStorage {
         .where(and(...conditions))
         .orderBy(desc(expenses.expenseDate));
     } catch (error) {
-      console.error('Error getting expenses by category:', error);
+      console.error('Error getting expenses by category:', { error: error.message });
       return [];
     }
   }
@@ -787,7 +788,7 @@ class PostgreSQLStorage implements IStorage {
         ))
         .orderBy(desc(expenses.expenseDate));
     } catch (error) {
-      console.error('Error getting expenses by date range:', error);
+      console.error('Error getting expenses by date range:', { error: error.message });
       return [];
     }
   }
@@ -825,7 +826,7 @@ class PostgreSQLStorage implements IStorage {
 
       return { total, deductible, byCategory };
     } catch (error) {
-      console.error('Error getting expense totals:', error);
+      console.error('Error getting expense totals:', { error: error.message });
       return { total: 0, deductible: 0, byCategory: {} };
     }
   }
@@ -836,7 +837,7 @@ class PostgreSQLStorage implements IStorage {
       return await db.select().from(taxDeductionInfo)
         .orderBy(taxDeductionInfo.category, taxDeductionInfo.title);
     } catch (error) {
-      console.error('Error getting tax deduction info:', error);
+      console.error('Error getting tax deduction info:', { error: error.message });
       return [];
     }
   }
@@ -847,7 +848,7 @@ class PostgreSQLStorage implements IStorage {
         .where(eq(taxDeductionInfo.category, category))
         .orderBy(taxDeductionInfo.title);
     } catch (error) {
-      console.error('Error getting tax deduction info by category:', error);
+      console.error('Error getting tax deduction info by category:', { error: error.message });
       return [];
     }
   }
@@ -857,7 +858,7 @@ class PostgreSQLStorage implements IStorage {
       const [result] = await db.insert(taxDeductionInfo).values(info).returning();
       return result;
     } catch (error) {
-      console.error('Error creating tax deduction info:', error);
+      console.error('Error creating tax deduction info:', { error: error.message });
       throw error;
     }
   }
@@ -868,7 +869,7 @@ class PostgreSQLStorage implements IStorage {
       const [result] = await db.insert(socialMediaAccounts).values(account).returning();
       return result;
     } catch (error) {
-      console.error('Error creating social media account:', error);
+      console.error('Error creating social media account:', { error: error.message });
       throw error;
     }
   }
@@ -879,7 +880,7 @@ class PostgreSQLStorage implements IStorage {
         .where(eq(socialMediaAccounts.userId, userId))
         .orderBy(desc(socialMediaAccounts.createdAt));
     } catch (error) {
-      console.error('Error getting user social media accounts:', error);
+      console.error('Error getting user social media accounts:', { error: error.message });
       return [];
     }
   }
@@ -891,7 +892,7 @@ class PostgreSQLStorage implements IStorage {
         .limit(1);
       return result;
     } catch (error) {
-      console.error('Error getting social media account:', error);
+      console.error('Error getting social media account:', { error: error.message });
       return undefined;
     }
   }
@@ -904,7 +905,7 @@ class PostgreSQLStorage implements IStorage {
         .returning();
       return result;
     } catch (error) {
-      console.error('Error updating social media account:', error);
+      console.error('Error updating social media account:', { error: error.message });
       throw error;
     }
   }
@@ -913,7 +914,7 @@ class PostgreSQLStorage implements IStorage {
     try {
       await db.delete(socialMediaAccounts).where(eq(socialMediaAccounts.id, accountId));
     } catch (error) {
-      console.error('Error deleting social media account:', error);
+      console.error('Error deleting social media account:', { error: error.message });
       throw error;
     }
   }
@@ -923,7 +924,7 @@ class PostgreSQLStorage implements IStorage {
       const [result] = await db.insert(socialMediaPosts).values(post).returning();
       return result;
     } catch (error) {
-      console.error('Error creating social media post:', error);
+      console.error('Error creating social media post:', { error: error.message });
       throw error;
     }
   }
@@ -952,7 +953,7 @@ class PostgreSQLStorage implements IStorage {
         .limit(limit)
         .offset(offset);
     } catch (error) {
-      console.error('Error getting user social media posts:', error);
+      console.error('Error getting user social media posts:', { error: error.message });
       return [];
     }
   }
@@ -964,7 +965,7 @@ class PostgreSQLStorage implements IStorage {
         .limit(1);
       return result;
     } catch (error) {
-      console.error('Error getting social media post:', error);
+      console.error('Error getting social media post:', { error: error.message });
       return undefined;
     }
   }
@@ -977,7 +978,7 @@ class PostgreSQLStorage implements IStorage {
         .returning();
       return result;
     } catch (error) {
-      console.error('Error updating social media post:', error);
+      console.error('Error updating social media post:', { error: error.message });
       throw error;
     }
   }
@@ -986,7 +987,7 @@ class PostgreSQLStorage implements IStorage {
     try {
       await db.delete(socialMediaPosts).where(eq(socialMediaPosts.id, postId));
     } catch (error) {
-      console.error('Error deleting social media post:', error);
+      console.error('Error deleting social media post:', { error: error.message });
       throw error;
     }
   }
@@ -996,7 +997,7 @@ class PostgreSQLStorage implements IStorage {
       const [result] = await db.insert(platformEngagement).values(engagement).returning();
       return result;
     } catch (error) {
-      console.error('Error creating platform engagement:', error);
+      console.error('Error creating platform engagement:', { error: error.message });
       throw error;
     }
   }
@@ -1014,7 +1015,7 @@ class PostgreSQLStorage implements IStorage {
         .where(and(...conditions))
         .orderBy(desc(platformEngagement.date));
     } catch (error) {
-      console.error('Error getting platform engagement:', error);
+      console.error('Error getting platform engagement:', { error: error.message });
       return [];
     }
   }
@@ -1024,7 +1025,7 @@ class PostgreSQLStorage implements IStorage {
       const [result] = await db.insert(postSchedule).values(schedule).returning();
       return result;
     } catch (error) {
-      console.error('Error creating post schedule:', error);
+      console.error('Error creating post schedule:', { error: error.message });
       throw error;
     }
   }
@@ -1035,7 +1036,7 @@ class PostgreSQLStorage implements IStorage {
         .where(eq(postSchedule.userId, userId))
         .orderBy(desc(postSchedule.scheduledTime));
     } catch (error) {
-      console.error('Error getting user scheduled posts:', error);
+      console.error('Error getting user scheduled posts:', { error: error.message });
       return [];
     }
   }
@@ -1047,7 +1048,7 @@ class PostgreSQLStorage implements IStorage {
         .limit(1);
       return result;
     } catch (error) {
-      console.error('Error getting post schedule:', error);
+      console.error('Error getting post schedule:', { error: error.message });
       return undefined;
     }
   }
@@ -1060,7 +1061,7 @@ class PostgreSQLStorage implements IStorage {
         .returning();
       return result;
     } catch (error) {
-      console.error('Error updating post schedule:', error);
+      console.error('Error updating post schedule:', { error: error.message });
       throw error;
     }
   }
@@ -1069,7 +1070,7 @@ class PostgreSQLStorage implements IStorage {
     try {
       await db.delete(postSchedule).where(eq(postSchedule.id, scheduleId));
     } catch (error) {
-      console.error('Error deleting post schedule:', error);
+      console.error('Error deleting post schedule:', { error: error.message });
       throw error;
     }
   }

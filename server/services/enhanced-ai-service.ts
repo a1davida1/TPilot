@@ -5,6 +5,7 @@
 
 import { generateWithMultiProvider } from './multi-ai-provider';
 import { preGeneratedTemplates } from '../content-templates';
+import { safeLog } from '../lib/logger-utils.js';
 
 export interface EnhancedAIRequest {
   mode: 'text' | 'image' | 'hybrid';
@@ -189,7 +190,7 @@ class EnhancedAIContentGenerator {
       return this.generateFromTemplates(request);
       
     } catch (error) {
-      console.error('Enhanced AI generation error:', error);
+      safeLog('error', 'Enhanced AI generation failed', { error: error.message });
       return this.generateSafetyFallback(request);
     }
   }
@@ -315,7 +316,7 @@ Create content that feels authentic, drives engagement, and perfectly matches th
       
       return null;
     } catch (error) {
-      console.error('AI generation failed:', error);
+      safeLog('error', 'AI generation fallback failed', { error: error.message });
       return null;
     }
   }
