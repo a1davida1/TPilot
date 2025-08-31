@@ -71,10 +71,34 @@ export default function Login() {
         });
         return;
       }
-      if (password.length < 6) {
+      if (password.length < 8) {
         toast({
           title: "Password too short",
-          description: "Password must be at least 6 characters long.",
+          description: "Password must be at least 8 characters long.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!/[a-z]/.test(password)) {
+        toast({
+          title: "Add a lowercase letter",
+          description: "Password must contain at least one lowercase letter.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!/[A-Z]/.test(password)) {
+        toast({
+          title: "Add an uppercase letter",
+          description: "Password must contain at least one uppercase letter.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!/\d/.test(password)) {
+        toast({
+          title: "Add a number",
+          description: "Password must contain at least one number.",
           variant: "destructive",
         });
         return;
