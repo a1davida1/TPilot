@@ -153,6 +153,132 @@ For technical issues and questions:
 - Review the codebase structure and inline comments
 - Refer to the test suite for usage examples
 
+## Environment Variables
+
+ThottoPilot uses environment variables for secure configuration of external services and platform features. Copy `.env.example` to `.env` and configure the following variables:
+
+### Core Application Settings
+
+**APP_BASE_URL** - The base URL where your application is hosted
+- **Development**: `http://localhost:5000`
+- **Production**: `https://your-domain.com`
+- **Usage**: Used for OAuth redirects, webhook URLs, and email verification links
+
+**NODE_ENV** - Application environment mode
+- **Values**: `development` | `production`
+- **Impact**: Affects logging, error handling, and feature availability
+
+### Database Configuration
+
+**DATABASE_URL** - PostgreSQL connection string
+- **Format**: `postgresql://user:password@host:port/database`
+- **Required**: Yes - Core data storage for users, content, and billing
+- **Example**: `postgresql://user:pass@localhost:5432/thottopilot`
+
+### AI Content Generation
+
+**GOOGLE_GENAI_API_KEY** - Google Gemini API key (Primary AI provider)
+- **Required**: Yes for AI content generation
+- **Obtain**: Google AI Studio (https://makersuite.google.com/app/apikey)
+- **Usage**: Primary AI provider for content generation and image analysis
+
+**OPENAI_API_KEY** - OpenAI API key (Fallback AI provider)
+- **Required**: Optional (fallback when Gemini unavailable)
+- **Obtain**: OpenAI Platform (https://platform.openai.com/api-keys)
+- **Usage**: Backup AI provider and specialized model access
+
+### Payment Provider Integration
+
+**PAXUM_API_KEY** - Paxum payment processor merchant ID
+- **Required**: Optional (enables Paxum payment option)
+- **Obtain**: Paxum merchant dashboard
+- **Usage**: Creates checkout URLs for subscription payments via Paxum
+- **Security**: Used in checkout URL generation as merchant identifier
+
+**COINBASE_COMMERCE_KEY** - Coinbase Commerce API key
+- **Required**: Optional (enables cryptocurrency payments)
+- **Obtain**: Coinbase Commerce Dashboard (https://commerce.coinbase.com/)
+- **Usage**: Creates hosted checkout sessions for crypto payments
+- **Security**: Used in API headers for authenticated Coinbase requests
+
+**STRIPE_SECRET_KEY** - Stripe payment processor secret key
+- **Required**: Optional (enables credit card payments)
+- **Obtain**: Stripe Dashboard (https://dashboard.stripe.com/apikeys)
+- **Usage**: Primary payment processing for subscriptions and one-time purchases
+- **Security**: Critical - must be kept secret, starts with `sk_`
+
+### CCBill Payment Processing
+
+**CCBILL_CLIENT_ACCOUNT** - CCBill client account number
+**CCBILL_SUBACCOUNT** - CCBill sub-account for payment routing
+**CCBILL_FLEXFORM_ID** - CCBill form configuration ID
+**CCBILL_SALT** - CCBill security salt for payment verification
+- **Required**: Optional (enables CCBill payments for adult content)
+- **Obtain**: CCBill merchant interface
+- **Usage**: Adult-industry specialized payment processing
+
+### Storage and Media
+
+**AWS_ACCESS_KEY_ID** / **AWS_SECRET_ACCESS_KEY** - AWS credentials for S3 storage
+**S3_BUCKET_MEDIA** - S3 bucket name for media file storage
+**S3_PUBLIC_CDN_DOMAIN** - CloudFront distribution for media delivery
+- **Required**: Optional (improves media performance and scalability)
+- **Usage**: Stores user-uploaded images and generated content assets
+
+### Queue and Performance
+
+**REDIS_URL** - Redis connection string for enhanced queue performance
+- **Format**: `redis://localhost:6379` or `redis://user:pass@host:port`
+- **Required**: Optional (falls back to PostgreSQL queue)
+- **Usage**: Improves background job processing for content generation
+
+### Email Services
+
+**SENDGRID_API_KEY** - SendGrid email service API key
+**RESEND_API_KEY** - Resend email service API key
+- **Required**: Choose one for email verification and notifications
+- **Usage**: Sends account verification emails and system notifications
+
+### Social Media Integration
+
+**REDDIT_CLIENT_ID** / **REDDIT_CLIENT_SECRET** - Reddit OAuth application credentials
+**REDDIT_REDIRECT_URI** - OAuth callback URL for Reddit authentication
+- **Required**: Optional (enables Reddit posting features)
+- **Obtain**: Reddit App Preferences (https://www.reddit.com/prefs/apps)
+- **Usage**: Allows users to connect Reddit accounts for posting automation
+
+### Analytics and Monitoring
+
+**ANALYTICS_WRITE_KEY** - Analytics service API key for usage tracking
+**SENTRY_DSN** - Sentry error tracking and monitoring
+- **Required**: Optional (enables advanced monitoring and insights)
+- **Usage**: Tracks feature usage, performance metrics, and error reporting
+
+### Security and Rate Limiting
+
+**TURNSTILE_SITE_KEY** / **TURNSTILE_SECRET_KEY** - Cloudflare Turnstile anti-bot protection
+- **Required**: Optional (enhances registration security)
+- **Usage**: Prevents automated abuse of registration and generation endpoints
+
+### Feature Configuration
+
+**DAILY_GENERATIONS_FREE** - Daily AI generation limit for free users (default: 5)
+**DAILY_GENERATIONS_STARTER** - Daily limit for starter tier (default: 50)  
+**DAILY_GENERATIONS_PRO** - Daily limit for pro tier (-1 = unlimited)
+
+**MEDIA_MAX_BYTES_FREE** - Maximum media storage for free users (default: 500MB)
+**MEDIA_MAX_BYTES_PRO** - Maximum media storage for pro users (default: 10GB)
+
+**WATERMARK_ENABLED** - Enable automatic watermarking for free tier (default: true)
+**WATERMARK_TEXT** - Watermark text overlay (default: "ThottoPilot")
+**WATERMARK_OPACITY** - Watermark transparency level (default: 0.18)
+
+### Development and Testing
+
+**ADMIN_EMAIL_WHITELIST** - Comma-separated list of admin email addresses
+**CRON_TZ** - Timezone for scheduled tasks (default: America/Chicago)
+**USE_PG_QUEUE** - Force PostgreSQL queue instead of Redis (default: true)
+
 ## License
 
 Proprietary - All rights reserved
