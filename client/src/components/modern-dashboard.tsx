@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Home,
@@ -76,6 +77,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   
   // Determine premium status
   const isPremium = isAdmin || userTier === 'premium' || userTier === 'pro' || userTier === 'admin';
@@ -296,10 +298,33 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                     <button
                       key={item.id}
                       onClick={() => {
-                        if (item.id === 'reddit') {
-                          window.location.href = '/reddit';
-                        } else {
-                          setActiveSection(item.id);
+                        // Navigate to appropriate page based on item
+                        switch(item.id) {
+                          case 'reddit':
+                            setLocation('/reddit');
+                            break;
+                          case 'generate':
+                            setLocation('/caption-generator');
+                            break;
+                          case 'history':
+                            setLocation('/history');
+                            break;
+                          case 'settings':
+                            setLocation('/settings');
+                            break;
+                          case 'gallery':
+                            setLocation('/gallery');
+                            break;
+                          case 'dashboard':
+                            setLocation('/dashboard');
+                            break;
+                          default:
+                            // For unimplemented pages, just update active section
+                            setActiveSection(item.id);
+                            toast({
+                              title: "Coming Soon",
+                              description: `${item.label} feature is being developed.`,
+                            });
                         }
                       }}
                       className={cn(
@@ -404,7 +429,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
               )}
               <Button 
                 className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
-                onClick={() => setActiveSection('generate')}
+                onClick={() => setLocation('/caption-generator')}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Create Content
@@ -664,17 +689,6 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
             </Card>
           </div>
         </main>
-        
-        {/* Debug Info - Remove after fixing */}
-        <div className="fixed bottom-4 right-4 bg-black/90 text-white p-4 rounded-lg text-xs space-y-1 max-w-xs z-50">
-          <div className="font-bold text-yellow-400 mb-2">🔍 DEBUG INFO</div>
-          <div>User ID: <span className="text-cyan-400">{user?.id || 'none'}</span></div>
-          <div>Username: <span className="text-cyan-400">{user?.username || 'none'}</span></div>
-          <div>Email: <span className="text-cyan-400">{user?.email || 'none'}</span></div>
-          <div>Tier: <span className="text-cyan-400">{userTier}</span></div>
-          <div>Is Admin: <span className={isAdmin ? "text-green-400 font-bold" : "text-red-400"}>{isAdmin ? 'YES ✓' : 'NO ✗'}</span></div>
-          <div>Is Premium: <span className={isPremium ? "text-green-400 font-bold" : "text-red-400"}>{isPremium ? 'YES ✓' : 'NO ✗'}</span></div>
-        </div>
       </div>
     </div>
   );

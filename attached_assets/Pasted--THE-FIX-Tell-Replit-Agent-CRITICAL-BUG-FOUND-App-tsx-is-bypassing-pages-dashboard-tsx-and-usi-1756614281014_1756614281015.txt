@@ -1,0 +1,96 @@
+🔧 THE FIX - Tell Replit Agent:
+CRITICAL BUG FOUND: App.tsx is bypassing pages/dashboard.tsx and using ModernDashboard directly!
+
+FIX THIS NOW:
+
+1. In client/src/App.tsx, CHANGE:
+```typescript
+// REMOVE THIS:
+import { ModernDashboard } from "@/components/modern-dashboard";
+
+// ADD THIS:
+import Dashboard from "@/pages/dashboard";
+
+Update the routes in App.tsx:
+
+typescript// CHANGE FROM:
+<Route path="/">
+  <ModernDashboard user={user} userTier={userTier} isAdmin={isAdmin} />
+</Route>
+<Route path="/dashboard">
+  <ModernDashboard user={user} userTier={userTier} isAdmin={isAdmin} />
+</Route>
+
+// CHANGE TO:
+<Route path="/" component={Dashboard} />
+<Route path="/dashboard" component={Dashboard} />
+
+Make sure pages/dashboard.tsx properly handles everything:
+
+typescript// client/src/pages/dashboard.tsx should be:
+import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
+import { ModernDashboard } from "@/components/modern-dashboard";
+import { useToast } from "@/hooks/use-toast";
+
+export default function Dashboard() {
+  const { user, isLoading, isAuthenticated, refetch } = useAuth();
+  const { toast } = useToast();
+  const [location] = useLocation();
+  
+  // Handle OAuth callbacks
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    
+    if (params.get('reddit') === 'connected') {
+      toast({ title: "Reddit Connected!", description: "Your account is linked." });
+      window.history.replaceState({}, '', '/dashboard');
+      refetch();
+    }
+    
+    if (params.get('error')) {
+      toast({ 
+        title: "Error", 
+        description: params.get('error'),
+        variant: "destructive" 
+      });
+      window.history.replaceState({}, '', '/dashboard');
+    }
+  }, [location, toast, refetch]);
+  
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+  
+  // Determine admin status
+  const isAdmin = user?.id === 999 || user?.isAdmin || user?.email === process.env.REACT_APP_ADMIN_EMAIL;
+  const userTier = isAdmin ? 'premium' : (user?.tier || 'free');
+  
+  return <ModernDashboard user={user} userTier={userTier} isAdmin={isAdmin} />;
+}
+This is why OAuth redirects and admin recognition are broken - the Dashboard page wrapper that handles all this logic is being bypassed!
+
+---
+
+## 💡 **This Explains EVERYTHING:**
+
+1. **Reddit OAuth fails** → Because ModernDashboard doesn't handle OAuth params
+2. **Admin not recognized** → Because the Dashboard page has the admin logic
+3. **Logout not working** → Because Dashboard page handles auth state
+
+**Your Dashboard page has all the logic but App.tsx bypasses it entirely!**
+
+---
+
+## ⚡ **Quick Manual Fix:**
+
+Edit `client/src/App.tsx`:
+
+Line 12: Remove `import { ModernDashboard }`
+Line 13: Add `import Dashboard from "@/pages/dashboard"`
+
+Lines 32-37: Change to:
+```typescript
+<Route path="/" component={Dashboard} />
+<Route path="/dashboard" component={Dashboard} />
