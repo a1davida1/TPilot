@@ -324,6 +324,9 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                           case 'dashboard':
                             setLocation('/dashboard');
                             break;
+                          case 'communities':
+                            setLocation('/communities');
+                            break;
                           default:
                             // For unimplemented pages, just update active section
                             setActiveSection(item.id);

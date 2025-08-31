@@ -26,8 +26,26 @@ import PolicyDemo from "@/pages/PolicyDemo";
 import CaptionGeneratorPage from "@/pages/caption-generator";
 import RedditPostingPage from "@/pages/reddit-posting";
 import ImageShieldPage from "@/pages/imageshield";
+import { RedditCommunities } from "@/components/reddit-communities";
 // Phase 1: Real Analytics Tracking
 import { trackPageView, setUserId, trackFeatureUsage } from "@/lib/analytics-tracker";
+
+// Communities Page Component
+function CommunitiesPage() {
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          Reddit Communities
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          Discover and explore 180+ active communities with detailed insights, engagement rates, and posting guidelines.
+        </p>
+      </div>
+      <RedditCommunities />
+    </div>
+  );
+}
 
 function AuthenticatedRoutes() {
   const { user } = useAuth();
@@ -44,6 +62,7 @@ function AuthenticatedRoutes() {
       {/* ULTRA PREMIUM ROUTE - Hidden for now */}
       {/* <Route path="/phase4" component={Phase4Dashboard} /> */}
       <Route path="/reddit" component={RedditPostingPage} />
+      <Route path="/communities" component={() => <CommunitiesPage />} />
       <Route path="/history" component={History} />
       <Route path="/settings" component={Settings} />
       <Route path="/checkout" component={Checkout} />
