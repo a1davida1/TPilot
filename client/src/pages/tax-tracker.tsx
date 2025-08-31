@@ -229,11 +229,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
       <div className="max-w-7xl mx-auto p-6 space-y-8">
         
         {/* Header */}
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center space-y-4"
-        >
+        <div className="text-center space-y-4">
           <div className="flex items-center justify-center space-x-3">
             <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl shadow-lg">
               <Calculator className="h-8 w-8 text-white" />
@@ -246,15 +242,10 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
             Almost everything in your life as a content creator is tax deductible. 
             Track your expenses and maximize your savings with confidence.
           </p>
-        </motion.div>
+        </div>
 
         {/* Quick Stats */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-6"
-        >
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300">
             <CardContent className="p-6">
               <div className="flex items-center space-x-4">
@@ -296,7 +287,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
               </div>
             </CardContent>
           </Card>
-        </motion.div>
+        </div>
 
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -316,11 +307,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="grid grid-cols-1 lg:grid-cols-2 gap-8"
-            >
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Quick Actions */}
               <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
                 <CardHeader>
@@ -379,11 +366,8 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                     </div>
                   ) : (
                     recentExpenses.slice(0, 3).map((expense: any, index: number) => (
-                      <motion.div 
+                      <div 
                         key={expense.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.1 }}
                         className="flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
                       >
                         <div>
@@ -396,31 +380,20 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                             100% Deductible
                           </Badge>
                         </div>
-                      </motion.div>
+                      </div>
                     ))
                   )}
                 </CardContent>
               </Card>
-            </motion.div>
+            </div>
           </TabsContent>
 
           <TabsContent value="categories" className="space-y-6">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-            >
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {expenseCategories.map((category, index) => {
                 const IconComponent = category.icon;
                 return (
-                  <motion.div
-                    key={category.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
+                  <div key={category.id}>
                     <Card 
                       className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300 cursor-pointer group"
                       onClick={() => setSelectedCategory(category)}
@@ -466,19 +439,14 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                         </div>
                       </CardContent>
                     </Card>
-                  </motion.div>
+                  </div>
                 );
               })}
-            </motion.div>
+            </div>
 
             {/* Selected Category Details */}
-            <AnimatePresence>
-              {selectedCategory && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                >
+            {selectedCategory && (
+              <div>
                   <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
                     <CardHeader>
                       <CardTitle className="flex items-center space-x-3">
@@ -517,9 +485,8 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                       </div>
                     </CardContent>
                   </Card>
-                </motion.div>
+                </div>
               )}
-            </AnimatePresence>
           </TabsContent>
 
           <TabsContent value="calendar" className="space-y-6">

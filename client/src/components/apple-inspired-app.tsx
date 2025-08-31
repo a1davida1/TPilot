@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+// import { motion, AnimatePresence } from "framer-motion";
 import { 
   Sparkles, 
   Brain, 
@@ -281,11 +281,11 @@ export function AppleInspiredApp() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex">
       {/* Apple-style Sidebar */}
-      <motion.div
-        initial={{ x: 0 }}
-        animate={{ x: sidebarOpen ? 0 : -280 }}
-        transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="fixed left-0 top-0 h-full w-72 bg-white/95 backdrop-blur-xl border-r border-gray-200/50 z-40 overflow-y-auto"
+      <div
+        className={cn(
+          "fixed left-0 top-0 h-full w-72 bg-white/95 backdrop-blur-xl border-r border-gray-200/50 z-40 overflow-y-auto transition-transform duration-500 ease-out",
+          sidebarOpen ? "translate-x-0" : "-translate-x-72"
+        )}
       >
         {/* Sidebar Header */}
         <div className="p-6 border-b border-gray-200/50">
@@ -314,17 +314,15 @@ export function AppleInspiredApp() {
         <nav className="p-4">
           <div className="space-y-1">
             {navigationItems.map((item) => (
-              <motion.button
+              <button
                 key={item.id}
                 onClick={() => setActiveSection(item.id)}
                 className={cn(
-                  "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all",
+                  "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all hover:scale-[1.02] active:scale-[0.98]",
                   activeSection === item.id
                     ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg"
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                 )}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
               >
                 <span className="flex items-center space-x-3">
                   {item.icon}
@@ -344,7 +342,7 @@ export function AppleInspiredApp() {
                     {item.badge}
                   </span>
                 )}
-              </motion.button>
+              </button>
             ))}
           </div>
         </nav>
@@ -359,7 +357,7 @@ export function AppleInspiredApp() {
             </button>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Main Content Area */}
       <div className={cn(
@@ -367,7 +365,7 @@ export function AppleInspiredApp() {
         sidebarOpen ? "ml-72" : "ml-0"
       )}>
         {/* Fixed Header with Glass Effect */}
-        <motion.header 
+        <header 
           className={cn(
             "fixed top-0 left-0 right-0 z-30 transition-all duration-300",
             scrollY > 10 && "backdrop-blur-xl border-b border-gray-200/50"
@@ -396,57 +394,35 @@ export function AppleInspiredApp() {
 
               {/* Auth Buttons */}
               <div className="flex items-center space-x-3">
-                <motion.button
+                <button
                   onClick={() => { window.location.href = '/login'; }}
-                  className="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium transition-colors"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  className="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium transition-all hover:scale-105 active:scale-95"
                 >
                   Login
-                </motion.button>
-                <motion.button
+                </button>
+                <button
                   onClick={() => { window.location.href = '/login'; }}
-                  className="px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  className="px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95"
                 >
                   Sign Up Free
-                </motion.button>
+                </button>
               </div>
             </div>
           </div>
-        </motion.header>
+        </header>
 
         {/* Main Content */}
         <main className="pt-20">
-          <AnimatePresence mode="wait">
-            {activeSection === "generate" && (
-              <motion.div
-                key="generate"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-                className="max-w-6xl mx-auto px-6 py-12"
-              >
+          {activeSection === "generate" && (
+            <div className="max-w-6xl mx-auto px-6 py-12">
                 {/* Hero Section */}
                 <div className="text-center mb-12">
-                  <motion.h2 
-                    className="text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4"
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                  >
+                  <h2 className="text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
                     Create Engaging Content
-                  </motion.h2>
-                  <motion.p 
-                    className="text-xl text-gray-600 max-w-2xl mx-auto"
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                  >
+                  </h2>
+                  <p className="text-xl text-gray-600 max-w-2xl mx-auto">
                     Generate personalized content with professional photo guidance in seconds
-                  </motion.p>
+                  </p>
                 </div>
 
                 {/* Content Generator Card */}

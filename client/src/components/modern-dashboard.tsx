@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { motion, AnimatePresence } from "framer-motion";
+// import { motion, AnimatePresence } from "framer-motion";
 import { 
   Home,
   Sparkles, 
@@ -232,31 +232,27 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
     event.target.value = '';
   };
 
-  const sidebarVariants = {
-    open: { x: 0 },
-    closed: { x: isMobile ? -280 : -240 }
-  };
+  // const sidebarVariants = {
+  //   open: { x: 0 },
+  //   closed: { x: isMobile ? -280 : -240 }
+  // };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Mobile Overlay */}
-      <AnimatePresence>
-        {isMobile && sidebarOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 z-40 md:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
-      </AnimatePresence>
+      {isMobile && sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
       {/* Sidebar */}
-      <motion.aside
-        variants={sidebarVariants}
-        animate={sidebarOpen ? "open" : "closed"}
-        className="fixed left-0 top-0 h-full w-[280px] md:w-[240px] bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 z-50 overflow-y-auto"
+      <aside
+        className={cn(
+          "fixed left-0 top-0 h-full w-[280px] md:w-[240px] bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 z-50 overflow-y-auto transition-transform duration-300",
+          sidebarOpen ? "translate-x-0" : (isMobile ? "-translate-x-[280px]" : "-translate-x-[240px]")
+        )}
       >
         <div className="p-6">
           {/* Logo */}
@@ -368,7 +364,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
             </Card>
           )}
         </div>
-      </motion.aside>
+      </aside>
 
       {/* Main Content */}
       <div className={cn(

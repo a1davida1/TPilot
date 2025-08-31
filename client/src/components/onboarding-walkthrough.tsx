@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+// import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -181,24 +181,18 @@ export function OnboardingWalkthrough({ isOpen, onClose, onComplete }: Onboardin
   if (!isOpen) return null;
 
   return (
-    <AnimatePresence>
+    <>
       {isOpen && (
         <>
           {/* Overlay */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+          <div
             className="fixed inset-0 bg-black/50 z-50"
             onClick={skipTutorial}
           />
 
           {/* Highlight circle for targeted elements */}
           {highlightedElement && step.targetElement && (
-            <motion.div
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0, opacity: 0 }}
+            <div
               className="fixed z-50 pointer-events-none"
               style={{
                 left: highlightedElement.getBoundingClientRect().left + window.pageXOffset - 10,
@@ -214,10 +208,7 @@ export function OnboardingWalkthrough({ isOpen, onClose, onComplete }: Onboardin
           )}
 
           {/* Tutorial tooltip */}
-          <motion.div
-            initial={{ scale: 0, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0, opacity: 0, y: 20 }}
+          <div
             className="fixed z-50"
             style={{
               left: step.position === 'center' ? '50%' : tooltipPosition.x,
@@ -311,13 +302,10 @@ export function OnboardingWalkthrough({ isOpen, onClose, onComplete }: Onboardin
                 </div>
               </CardContent>
             </Card>
-          </motion.div>
+          </div>
 
           {/* Floating progress indicator */}
-          <motion.div
-            initial={{ opacity: 0, x: 100 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 100 }}
+          <div
             className="fixed top-24 right-6 z-50"
           >
             <Card className="p-3 bg-white/95 backdrop-blur-sm">
@@ -335,9 +323,9 @@ export function OnboardingWalkthrough({ isOpen, onClose, onComplete }: Onboardin
                 </div>
               </div>
             </Card>
-          </motion.div>
+          </div>
         </>
       )}
-    </AnimatePresence>
+    </>
   );
 }

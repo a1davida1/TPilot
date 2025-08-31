@@ -23,7 +23,7 @@ import {
   EyeOff
 } from 'lucide-react';
 import { ThottoPilotLogo } from '@/components/thottopilot-logo';
-import { motion, AnimatePresence } from 'framer-motion';
+// import { motion, AnimatePresence } from 'framer-motion';
 
 interface GettingStartedProps {
   userTier?: 'guest' | 'free' | 'pro' | 'premium';
@@ -190,11 +190,7 @@ export function GettingStarted({ userTier = 'free', onSectionSelect, isAtBottom 
   // Minimized version for experienced users
   if (isMinimized) {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="fixed bottom-4 left-4 z-30"
-      >
+      <div className="fixed bottom-4 left-4 z-30">
         <Card className="bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200 shadow-lg max-w-xs">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -219,29 +215,14 @@ export function GettingStarted({ userTier = 'free', onSectionSelect, isAtBottom 
             <Progress value={progressPercentage} className="h-2 mt-2" />
           </CardContent>
         </Card>
-      </motion.div>
+      </div>
     );
   }
 
   return (
-    <motion.div 
-      className="max-w-4xl mx-auto p-6 space-y-8"
-      layout
-      initial={false}
-      animate={{
-        y: isAtBottom ? 0 : 0,
-      }}
-      transition={{
-        duration: 0.5,
-        ease: "easeInOut"
-      }}
-    >
+    <div className="max-w-4xl mx-auto p-6 space-y-8">
       {/* Welcome Header */}
-      <motion.div 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-center space-y-4"
-      >
+      <div className="text-center space-y-4">
         <div className="flex flex-col items-center justify-center space-y-4">
           <img 
             src="/thottopilot-full-logo.png" 
@@ -265,14 +246,10 @@ export function GettingStarted({ userTier = 'free', onSectionSelect, isAtBottom 
             </Badge>
           )}
         </div>
-      </motion.div>
+      </div>
 
       {/* Progress Overview */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-      >
+      <div>
         <Card className="bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
@@ -302,14 +279,10 @@ export function GettingStarted({ userTier = 'free', onSectionSelect, isAtBottom 
             </p>
           </CardContent>
         </Card>
-      </motion.div>
+      </div>
 
       {/* Setup Steps */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-      >
+      <div>
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
@@ -324,11 +297,8 @@ export function GettingStarted({ userTier = 'free', onSectionSelect, isAtBottom 
               const isDisabled = step.proOnly && (userTier === 'guest' || userTier === 'free');
               
               return (
-                <motion.div
+                <div
                   key={step.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
                   className={`p-4 rounded-xl border-2 transition-all duration-300 ${
                     isCompleted 
                       ? 'bg-green-50 border-green-200' 
@@ -386,19 +356,15 @@ export function GettingStarted({ userTier = 'free', onSectionSelect, isAtBottom 
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </div>
-                </motion.div>
+                </div>
               );
             })}
           </CardContent>
         </Card>
-      </motion.div>
+      </div>
 
       {/* Key Features Overview */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-      >
+      <div>
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
@@ -411,11 +377,8 @@ export function GettingStarted({ userTier = 'free', onSectionSelect, isAtBottom 
               {features.map((feature, index) => {
                 const IconComponent = feature.icon;
                 return (
-                  <motion.div
+                  <div
                     key={feature.title}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.1 * index }}
                     className="p-4 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 hover:shadow-md transition-all duration-300"
                   >
                     <div className="flex items-center space-x-3">
@@ -427,22 +390,18 @@ export function GettingStarted({ userTier = 'free', onSectionSelect, isAtBottom 
                         <p className="text-sm text-gray-600">{feature.description}</p>
                       </div>
                     </div>
-                  </motion.div>
+                  </div>
                 );
               })}
             </div>
           </CardContent>
         </Card>
-      </motion.div>
+      </div>
 
 
       {/* Pro Upgrade CTA for Free Users */}
       {(userTier === 'free' || userTier === 'guest') && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
+        <div>
           <Card className="bg-gradient-to-r from-yellow-400 via-orange-500 to-pink-500 text-white">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -462,8 +421,8 @@ export function GettingStarted({ userTier = 'free', onSectionSelect, isAtBottom 
               </div>
             </CardContent>
           </Card>
-        </motion.div>
+        </div>
       )}
-    </motion.div>
+    </div>
   );
 }

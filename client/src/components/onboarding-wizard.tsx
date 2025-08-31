@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+// import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ChevronRight, 
   ChevronLeft, 
@@ -147,17 +147,9 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
           </div>
         </CardHeader>
         <CardContent className="pt-6">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentStep}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              {steps[currentStep].component}
-            </motion.div>
-          </AnimatePresence>
+          <div key={currentStep}>
+            {steps[currentStep].component}
+          </div>
 
           <div className="flex justify-between mt-8">
             <Button
@@ -405,12 +397,7 @@ function TutorialStep() {
       
       <div className="space-y-4">
         {features.map((feature, index) => (
-          <motion.div
-            key={index}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.2 }}
-          >
+          <div key={index}>
             <Card className="p-4">
               <div className="flex gap-4">
                 <div className="flex-shrink-0">{feature.icon}</div>
@@ -420,7 +407,7 @@ function TutorialStep() {
                 </div>
               </div>
             </Card>
-          </motion.div>
+          </div>
         ))}
       </div>
 
