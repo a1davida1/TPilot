@@ -1,0 +1,207 @@
+diff --git a/server/auth.ts b/server/auth.ts
+index a7a4c4df705aabac16f3c9364d7130ab459fc43d..f716f76952d65589993dda745a3ecddc532addfa 100644
+--- a/server/auth.ts
++++ b/server/auth.ts
+@@ -88,118 +88,92 @@ export function setupAuth(app: Express) {
+         });
+         await emailService.sendVerificationEmail(user.email, user.username, verificationToken);
+       }
+ 
+       res.json({ message: 'Verification email sent' });
+     } catch (error) {
+       safeLog('error', 'Authentication signup failed', { error: error.message });
+       res.status(500).json({ message: 'Error creating user' });
+     }
+   });
+ 
+   // Regular login
+   app.post('/api/auth/login', authLimiter, async (req, res) => {
+     try {
+       // Validate input
+       const validationResult = loginSchema.safeParse(req.body);
+       if (!validationResult.success) {
+         return res.status(400).json({ 
+           message: 'Validation failed', 
+           errors: validationResult.error.flatten().fieldErrors 
+         });
+       }
+       
+       const { username, password, email } = validationResult.data;
+ 
+-      // ADMIN LOGIN CHECK FIRST (using environment variables)
+       const loginIdentifier = email || username;
+-      const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+-      const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+-      
+-      if (ADMIN_EMAIL && ADMIN_PASSWORD && loginIdentifier === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+-        const adminUser = {
+-          id: 999,
+-          email: ADMIN_EMAIL,
+-          username: 'admin',
+-          tier: 'pro',
+-          isAdmin: true
+-        };
+-
+-        const token = jwt.sign(
+-          { 
+-            userId: adminUser.id, 
+-            id: adminUser.id, 
+-            email: adminUser.email, 
+-            username: adminUser.username, 
+-            isAdmin: true
+-          },
+-          JWT_SECRET_VALIDATED,
+-          { expiresIn: '24h' }
+-        );
+-
+-        return res.json({
+-          message: 'Admin login successful',
+-          token,
+-          user: adminUser
+-        });
+-      }
+-
+-      // Regular user login logic continues below
+-      const loginEmail = email || username;
+ 
+       // Try to find user by username first, then by email
+-      let user = await storage.getUserByUsername(username || loginEmail || '');
+-      if (!user && loginEmail) {
+-        user = await storage.getUserByEmail(loginEmail);
++      let user = await storage.getUserByUsername(username || loginIdentifier || '');
++      if (!user && loginIdentifier) {
++        user = await storage.getUserByEmail(loginIdentifier);
+       }
+ 
+       if (!user) {
+         return res.status(401).json({ message: 'Invalid credentials' });
+       }
+ 
+       const validPassword = await bcrypt.compare(password, user.password);
+       if (!validPassword) {
+         return res.status(401).json({ message: 'Invalid credentials' });
+       }
+ 
+       if (!user.emailVerified) {
+         return res.status(403).json({ message: 'Email not verified' });
+       }
+ 
+       const token = jwt.sign(
+-        { id: user.id, userId: user.id, username: user.username },
++        {
++          id: user.id,
++          userId: user.id,
++          username: user.username,
++          isAdmin: user.isAdmin,
++          role: user.role
++        },
+         JWT_SECRET_VALIDATED,
+         { expiresIn: '24h' }
+       );
+ 
+       res.json({
+         token,
+         user: {
+           id: user.id,
+           username: user.username,
+           email: user.email,
+-          tier: user.tier
++          tier: user.tier,
++          isAdmin: user.isAdmin,
++          role: user.role
+         }
+       });
+     } catch (error) {
+       safeLog('error', 'Authentication login failed', { error: error.message });
+       res.status(500).json({ message: 'Error logging in' });
+     }
+   });
+ 
+   // Email verification
+   app.get('/api/auth/verify-email', authLimiter, async (req, res) => {
+     try {
+       const token = req.query.token as string;
+       if (!token) {
+         return res.status(400).json({ message: 'Token is required' });
+       }
+ 
+       const record = await storage.getVerificationToken(token);
+       if (!record || record.expiresAt < new Date()) {
+         return res.status(400).json({ message: 'Invalid or expired token' });
+       }
+ 
+       // Get user details for welcome email
+       const user = await storage.getUser(record.userId);
+       if (!user) {
+         return res.status(400).json({ message: 'User not found' });
+diff --git a/server/auth.ts b/server/auth.ts
+index a7a4c4df705aabac16f3c9364d7130ab459fc43d..f716f76952d65589993dda745a3ecddc532addfa 100644
+--- a/server/auth.ts
++++ b/server/auth.ts
+@@ -281,64 +255,49 @@ export function setupAuth(app: Express) {
+       
+       // Update user password (would need to add this method to storage)
+       await storage.updateUserPassword(user.id, hashedPassword);
+ 
+       res.json({ message: 'Password reset successfully' });
+     } catch (error) {
+       if (error instanceof jwt.TokenExpiredError) {
+         return res.status(400).json({ message: 'Reset link has expired' });
+       }
+       safeLog('error', 'Password reset failed', { error: error.message });
+       res.status(500).json({ message: 'Error resetting password' });
+     }
+   });
+ 
+   // Get current user endpoint (CRITICAL - this was missing!)
+   app.get('/api/auth/user', async (req: any, res) => {
+     try {
+       // Try JWT token authentication
+       const authHeader = req.headers.authorization;
+       if (authHeader && authHeader.startsWith('Bearer ')) {
+         const token = authHeader.substring(7);
+         
+         try {
+           const decoded = jwt.verify(token, JWT_SECRET_VALIDATED) as any;
+           
+-          // Handle admin user
+-          if (decoded.isAdmin) {
+-            return res.json({
+-              id: 999,
+-              email: process.env.ADMIN_EMAIL || 'admin@thottopilot.com',
+-              username: 'admin',
+-              tier: 'admin',
+-              isAdmin: true
+-            });
+-          }
+-          
+-          // Handle regular user
+           const user = await storage.getUser(decoded.userId || decoded.id);
+           if (user) {
+             const { password: _, ...userResponse } = user;
+             return res.json({
+               ...userResponse,
+               tier: userResponse.tier || 'free'
+             });
+           }
+-          
+-          return res.json({
+-            ...decoded,
+-            tier: decoded.tier || 'free'
+-          });
++
++          return res.status(404).json({ message: 'User not found' });
+         } catch (jwtError) {
+           safeLog('error', 'JWT verification failed', { error: jwtError.message });
+           return res.status(401).json({ message: 'Invalid token' });
+         }
+       }
+ 
+       return res.status(401).json({ message: 'Access token required' });
+     } catch (error) {
+       safeLog('error', 'Get user failed', { error: error.message });
+       res.status(500).json({ message: 'Error fetching user data' });
+     }
+   });
+ 
+ }
