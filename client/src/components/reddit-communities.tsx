@@ -78,13 +78,13 @@ export function RedditCommunities() {
 
   // Fetch communities data
   const { data: communities = [], isLoading } = useQuery({
-    queryKey: ['/api/reddit-communities', filterCategory, searchTerm],
+    queryKey: ['/api/reddit/communities', filterCategory, searchTerm],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (filterCategory !== 'all') params.append('category', filterCategory);
       if (searchTerm) params.append('search', searchTerm);
-      
-      const response = await apiRequest('GET', `/api/reddit-communities?${params.toString()}`);
+
+      const response = await apiRequest('GET', `/api/reddit/communities?${params.toString()}`);
       return response.json();
     },
     retry: false

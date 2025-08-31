@@ -38,7 +38,7 @@ import { generateImageCaption, imageToBase64, validateImageFormat } from "./imag
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage.js";
 import { getRandomTemplates, addWatermark, getTemplateByMood } from "./content-templates.js";
 import { generateAdvancedContent, type ContentParameters } from "./advanced-content-generator.js";
-import { redditCommunitiesDatabase, getRecommendationsForUser, getCommunityInsights } from "./reddit-communities.js";
+// Reddit communities now handled in reddit-routes.ts
 import { getAvailablePerks, getPerksByCategory, generateReferralCode, getSignupInstructions } from "./pro-perks.js";
 
 // API route modules

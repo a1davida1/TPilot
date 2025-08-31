@@ -1,0 +1,56 @@
+diff --git a/server/routes.ts b/server/routes.ts
+index d20946cb6f562af69ee0086839f072a0c6b015e4..122800ba081d792a303b55cd52a8e8eb4ead1d89 100644
+--- a/server/routes.ts
++++ b/server/routes.ts
+@@ -16,51 +16,50 @@ import { authenticateToken } from "./middleware/auth.js";
+ // Route modules
+ import { authRoutes } from "./routes/auth.js";
+ import { uploadRoutes } from "./routes/upload.js";
+ import { registerExpenseRoutes } from "./expense-routes.js";
+ 
+ // Core imports
+ import { storage } from "./storage.js";
+ import { setupAuth } from "./auth.js";
+ import { setupAdminRoutes } from "./admin-routes.js";
+ import { configureSocialAuth, socialAuthRoutes } from "./social-auth-config.js";
+ import { visitorAnalytics } from "./visitor-analytics.js";
+ // Analytics request type
+ interface AnalyticsRequest extends express.Request {
+   sessionID: string;
+ }
+ 
+ // Service imports
+ import { generateContent } from "./services/content-generator.js";
+ import { generateAIContent, analyzeImageForContent } from "./services/ai-generator.js";
+ import { generateWithMultiProvider, getProviderStatus } from "./services/multi-ai-provider.js";
+ import { generateUnifiedAIContent, analyzeImage } from "./services/unified-ai-service.js";
+ import { generateImageCaption, imageToBase64, validateImageFormat } from "./image-caption-generator.js";
+ import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage.js";
+ import { getRandomTemplates, addWatermark, getTemplateByMood } from "./content-templates.js";
+ import { generateAdvancedContent, type ContentParameters } from "./advanced-content-generator.js";
+-import { redditCommunitiesDatabase, getRecommendationsForUser, getCommunityInsights } from "./reddit-communities.js";
+ import { getAvailablePerks, getPerksByCategory, generateReferralCode, getSignupInstructions } from "./pro-perks.js";
+ 
+ // API route modules
+ import { registerApiRoutes } from "./api-routes.js";
+ import { registerPolicyRoutes } from "./policy-routes.js";
+ import { registerRedditRoutes } from "./reddit-routes.js";
+ import { registerAnalyticsRoutes } from "./analytics-routes.js";
+ import { createLead, confirmLead } from "./api/leads.js";
+ import { getLeads } from "./api/admin-leads.js";
+ import { captionRouter } from "./routes/caption.js";
+ import { registerSocialMediaRoutes } from "./social-media-routes.js";
+ 
+ // Schema imports
+ import { insertContentGenerationSchema, insertUserImageSchema } from "@shared/schema";
+ 
+ // Core dependencies
+ import multer from 'multer';
+ import fs from 'fs/promises';
+ import crypto from 'crypto';
+ import jwt from 'jsonwebtoken';
+ import bcrypt from 'bcrypt';
+ 
+ // Get secure environment variables (no fallbacks)
+ const SESSION_SECRET = process.env.SESSION_SECRET!;
+ const IS_PRODUCTION = process.env.NODE_ENV === 'production';

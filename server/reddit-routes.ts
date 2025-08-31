@@ -6,6 +6,7 @@ import { creatorAccounts } from '@shared/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { authenticateToken } from './middleware/auth.js';
 import { stateStore, encrypt, decrypt, rateLimit } from './services/state-store.js';
+import { redditCommunitiesDatabase, getCommunityInsights } from './reddit-communities.js';
 
 export function registerRedditRoutes(app: Express) {
   
@@ -152,6 +153,45 @@ export function registerRedditRoutes(app: Express) {
     } catch (error) {
       console.error('Reddit callback error:', error);
       res.redirect('/dashboard?error=reddit_connection_failed');
+    }
+  });
+
+  // Reddit communities listing
+  app.get('/api/reddit/communities', async (req, res) => {
+    try {
+      const { category, search } = req.query;
+      let communities = redditCommunitiesDatabase;
+
+      if (category && category !== 'all') {
+        communities = communities.filter(c => c.category === category);
+      }
+
+      if (search) {
+        const term = (search as string).toLowerCase();
+        communities = communities.filter(c =>
+          c.name.toLowerCase().includes(term) ||
+          c.displayName.toLowerCase().includes(term) ||
+          c.description.toLowerCase().includes(term) ||
+          c.tags.some(tag => tag.toLowerCase().includes(term))
+        );
+      }
+
+      res.json(communities);
+    } catch (error) {
+      console.error('Error fetching Reddit communities:', error);
+      res.status(500).json({ error: 'Failed to fetch Reddit communities' });
+    }
+  });
+
+  // Detailed community insights
+  app.get('/api/reddit/community-insights/:communityId', async (req, res) => {
+    try {
+      const { communityId } = req.params;
+      const insights = getCommunityInsights(communityId);
+      res.json(insights);
+    } catch (error) {
+      console.error('Error fetching community insights:', error);
+      res.status(500).json({ error: 'Failed to fetch community insights' });
     }
   });
 
