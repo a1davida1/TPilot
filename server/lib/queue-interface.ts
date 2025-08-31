@@ -62,6 +62,41 @@ export interface IQueue {
   getPendingCount(queueName: string): Promise<number>;
 
   /**
+   * Get active job count for monitoring (optional)
+   */
+  getActiveCount?(queueName: string): Promise<number>;
+
+  /**
+   * Get failed job count for monitoring (optional)
+   */
+  getFailedCount?(queueName: string): Promise<number>;
+
+  /**
+   * Get delayed job count for monitoring (optional)
+   */
+  getDelayedCount?(queueName: string): Promise<number>;
+
+  /**
+   * Get completed job count for monitoring (optional)
+   */
+  getCompletedCount?(queueName: string): Promise<number>;
+
+  /**
+   * Get recent jobs for monitoring (optional)
+   */
+  getRecentJobs?(queueName: string, limit?: number): Promise<any[]>;
+
+  /**
+   * Retry failed jobs (optional)
+   */
+  retryFailedJobs?(queueName: string): Promise<number>;
+
+  /**
+   * Clear queue (optional)
+   */
+  clearQueue?(queueName: string): Promise<void>;
+
+  /**
    * Initialize the queue backend
    */
   initialize(): Promise<void>;

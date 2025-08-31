@@ -30,6 +30,8 @@ export const users = pgTable("users", {
   stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
   bannedAt: timestamp("banned_at"),
   suspendedUntil: timestamp("suspended_until"),
+  banReason: text("ban_reason"),
+  suspensionReason: text("suspension_reason"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   lastLogin: timestamp("last_login"),

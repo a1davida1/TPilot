@@ -9,6 +9,7 @@ import type { Platform, PostContent } from "../../social-media/social-media-mana
 // Queue names for type safety
 export const QUEUE_NAMES = {
   POST: 'post-queue',
+  BATCH_POST: 'batch-post-queue',
   METRICS: 'metrics-queue', 
   AI_PROMO: 'ai-promo-queue',
   DUNNING: 'dunning-queue',
@@ -28,6 +29,16 @@ export interface PostJobData {
   // New social media fields
   platforms?: Platform[];
   content?: PostContent;
+}
+
+export interface BatchPostJobData {
+  userId: number;
+  campaignId: string;
+  subreddits: string[];
+  titleTemplate: string;
+  bodyTemplate: string;
+  mediaKey?: string;
+  delayBetweenPosts?: number;
 }
 
 export interface MetricsJobData {

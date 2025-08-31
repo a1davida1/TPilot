@@ -159,7 +159,7 @@ export function setupAdminRoutes(app: Express) {
       });
       
       // Send welcome email with trial info
-      if (email && emailService.isEmailServiceConfigured()) {
+      if (email && emailService.isEmailServiceConfigured) {
         await emailService.sendUpgradeEmail(email, username, `${duration}-day ${tier} trial`);
       }
       
@@ -190,7 +190,7 @@ export function setupAdminRoutes(app: Express) {
       // Get user for email notification
       const user = await storage.getUser(userId);
       
-      if (user?.email && tier !== 'free' && emailService.isEmailServiceConfigured()) {
+      if (user?.email && tier !== 'free' && emailService.isEmailServiceConfigured) {
         await emailService.sendUpgradeEmail(user.email, user.username, tier);
       }
       
@@ -346,7 +346,7 @@ export function setupAdminRoutes(app: Express) {
     try {
       const { userIds, subject, content } = req.body;
       
-      if (!emailService.isEmailServiceConfigured()) {
+      if (!emailService.isEmailServiceConfigured) {
         return res.status(400).json({ message: 'Email service not configured' });
       }
       
