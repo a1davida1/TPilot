@@ -92,7 +92,7 @@ export class PostWorker {
       }
 
     } catch (error: any) {
-      console.error(`Post job ${postJobId} failed:`, error);
+      logger.error(`Post job ${postJobId} failed:`, { error });
 
       // Update job status to failed
       await this.updateJobStatus(postJobId!, 'failed', {
@@ -116,7 +116,7 @@ export class PostWorker {
     if (!platforms || !content) return;
 
     try {
-      console.log(`Processing social media job ${jobId} for user ${userId}`);
+      logger.info(`Processing social media job ${jobId} for user ${userId}`);
       const accounts = await storage.getUserSocialMediaAccounts(userId);
       const connected = accounts
         .filter(acc => acc.isActive && platforms.includes(acc.platform as Platform))
@@ -157,7 +157,7 @@ export class PostWorker {
         }
       }
     } catch (error) {
-      console.error(`Social media job ${jobId} failed:`, error);
+      logger.error(`Social media job ${jobId} failed:`, { error });
       throw error;
     }
   }
@@ -173,7 +173,7 @@ export class PostWorker {
         })
         .where(eq(postJobs.id, postJobId));
     } catch (error) {
-      console.error('Failed to update job status:', error);
+      logger.error('Failed to update job status:', { error });
     }
   }
 
@@ -183,7 +183,7 @@ export class PostWorker {
       // For now, return a placeholder implementation
       return await MediaManager.getAsset(parseInt(key), userId);
     } catch (error) {
-      console.error('Failed to get media asset:', error);
+      logger.error('Failed to get media asset:', { error });
       return null;
     }
   }
@@ -196,7 +196,7 @@ export class PostWorker {
         meta,
       });
     } catch (error) {
-      console.error('Failed to log event:', error);
+      logger.error('Failed to log event:', { error });
     }
   }
 

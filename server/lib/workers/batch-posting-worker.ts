@@ -180,7 +180,7 @@ export class BatchPostingWorker {
         results,
       });
 
-      console.log(`Batch posting campaign ${campaignId} completed: ${successCount} success, ${failureCount} failed`);
+      logger.info(`Batch posting campaign ${campaignId} completed: ${successCount} success, ${failureCount} failed`);
 
       return { 
         success: true, 
@@ -193,7 +193,7 @@ export class BatchPostingWorker {
       };
 
     } catch (error: any) {
-      console.error(`Batch posting campaign ${campaignId} failed:`, error);
+      logger.error(`Batch posting campaign ${campaignId} failed:`, { error });
 
       // Log failure event
       await this.logEvent(userId, 'batch_post.failed', {
@@ -264,7 +264,7 @@ export class BatchPostingWorker {
       const { MediaManager } = await import("../media.js");
       return await MediaManager.getAsset(parseInt(key), userId);
     } catch (error) {
-      console.error('Failed to get media asset:', error);
+      logger.error('Failed to get media asset:', { error });
       return null;
     }
   }
@@ -283,7 +283,7 @@ export class BatchPostingWorker {
       });
 
     } catch (error) {
-      console.error('Failed to schedule metrics collection:', error);
+      logger.error('Failed to schedule metrics collection:', { error });
     }
   }
 
@@ -299,7 +299,7 @@ export class BatchPostingWorker {
         meta,
       });
     } catch (error) {
-      console.error('Failed to log batch posting event:', error);
+      logger.error('Failed to log batch posting event:', { error });
     }
   }
 

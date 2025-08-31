@@ -107,7 +107,7 @@ export class MetricsWorker {
         collectedAt: new Date(),
       };
     } catch (error) {
-      console.error('Failed to fetch Reddit post metrics:', error);
+      logger.error('Failed to fetch Reddit post metrics:', { error });
       return null;
     }
   }
@@ -132,7 +132,7 @@ export class MetricsWorker {
         .where(eq(postJobs.id, postJobId));
 
     } catch (error) {
-      console.error('Failed to update post metrics:', error);
+      logger.error('Failed to update post metrics:', { error });
     }
   }
 
@@ -163,10 +163,10 @@ export class MetricsWorker {
         delay: delayMinutes * 60 * 1000, // Convert to milliseconds
       });
 
-      console.log(`Scheduled next metrics check for post ${redditPostId} in ${delayMinutes} minutes`);
+      logger.info(`Scheduled next metrics check for post ${redditPostId} in ${delayMinutes} minutes`);
 
     } catch (error) {
-      console.error('Failed to schedule next metrics check:', error);
+      logger.error('Failed to schedule next metrics check:', { error });
     }
   }
 
@@ -178,7 +178,7 @@ export class MetricsWorker {
         meta,
       });
     } catch (error) {
-      console.error('Failed to log metrics event:', error);
+      logger.error('Failed to log metrics event:', { error });
     }
   }
 

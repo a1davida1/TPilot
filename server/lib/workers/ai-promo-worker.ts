@@ -90,7 +90,7 @@ export class AiPromoWorker {
         description: 'User uploaded image for promotional content',
       };
     } catch (error) {
-      console.error('Failed to get image context:', error);
+      logger.error('Failed to get image context:', { error });
       return null;
     }
   }
@@ -110,7 +110,7 @@ export class AiPromoWorker {
         .where(eq(contentGenerations.id, generationId));
 
     } catch (error) {
-      console.error('Failed to update generation results:', error);
+      logger.error('Failed to update generation results:', { error });
     }
   }
 
@@ -125,7 +125,7 @@ export class AiPromoWorker {
         .where(eq(contentGenerations.id, generationId));
 
     } catch (error) {
-      console.error('Failed to update generation status:', error);
+      logger.error('Failed to update generation status:', { error });
     }
   }
 
@@ -137,7 +137,7 @@ export class AiPromoWorker {
         meta,
       });
     } catch (error) {
-      console.error('Failed to log AI promo event:', error);
+      logger.error('Failed to log AI promo event:', { error });
     }
   }
 

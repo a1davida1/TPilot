@@ -95,7 +95,7 @@ export class DunningWorker {
       }
 
     } catch (error: any) {
-      console.error(`Dunning job for subscription ${subscriptionId} failed:`, error);
+      logger.error(`Dunning job for subscription ${subscriptionId} failed:`, { error });
 
       // Log failure event
       await this.logEvent(0, 'dunning.system_error', {
@@ -123,7 +123,7 @@ export class DunningWorker {
 
   private async retryPayment(subscription: any) {
     try {
-      console.log(`Attempting payment retry for subscription ${subscription.id}`);
+      logger.info(`Attempting payment retry for subscription ${subscription.id}`);
       
       // Try to process payment using the configured payment provider
       if (process.env.STRIPE_SECRET_KEY && subscription.stripeCustomerId) {
@@ -131,11 +131,11 @@ export class DunningWorker {
       } else if (process.env.CCBILL_ACCOUNT_NUMBER && subscription.ccbillSubscriptionId) {
         return await this.retryCCBillPayment(subscription);
       } else {
-        console.warn('No payment provider configured for retry');
+        logger.warn('No payment provider configured for retry');
         return { success: false, error: 'No payment method available for retry' };
       }
     } catch (error: any) {
-      console.error('Payment retry error:', error);
+      logger.error('Payment retry error:', { error });
       return { success: false, error: error.message };
     }
   }
@@ -176,7 +176,7 @@ export class DunningWorker {
   private async retryCCBillPayment(subscription: any) {
     try {
       // CCBill retry would use their API to process a new transaction
-      console.log(`Retrying CCBill payment for subscription ${subscription.ccbillSubscriptionId}`);
+      logger.info(`Retrying CCBill payment for subscription ${subscription.ccbillSubscriptionId}`);
       
       // For now, log that CCBill retry is not yet implemented
       return { 
@@ -191,7 +191,7 @@ export class DunningWorker {
 
   private async reactivateSubscription(subscriptionId: number) {
     // In full implementation, update subscriptions table status to 'active'
-    console.log(`Reactivating subscription ${subscriptionId}`);
+    logger.info(`Reactivating subscription ${subscriptionId}`);
     
     // Update user tier if needed
     // await db.update(users).set({ tier: 'pro' }).where(eq(users.id, userId));
@@ -199,7 +199,7 @@ export class DunningWorker {
 
   private async suspendSubscription(subscriptionId: number) {
     // In full implementation, update subscriptions table status to 'suspended'
-    console.log(`Suspending subscription ${subscriptionId}`);
+    logger.info(`Suspending subscription ${subscriptionId}`);
     
     // Downgrade user tier
     // await db.update(users).set({ tier: 'free' }).where(eq(users.id, userId));
@@ -222,16 +222,16 @@ export class DunningWorker {
         delay: delayMs,
       });
 
-      console.log(`Scheduled dunning attempt ${nextAttempt} for subscription ${subscriptionId} in ${delayDays} days`);
+      logger.info(`Scheduled dunning attempt ${nextAttempt} for subscription ${subscriptionId} in ${delayDays} days`);
 
     } catch (error) {
-      console.error('Failed to schedule next dunning attempt:', error);
+      logger.error('Failed to schedule next dunning attempt:', { error });
     }
   }
 
   private async sendRecoveryNotification(user: any, subscription: any) {
     // In full implementation, this would send an email
-    console.log(`Sending recovery notification to ${user.email} for subscription ${subscription.id}`);
+    logger.info(`Sending recovery notification to ${user.email} for subscription ${subscription.id}`);
     
     // Would integrate with email service (SendGrid, etc.)
     // await EmailService.send({
@@ -243,7 +243,7 @@ export class DunningWorker {
 
   private async sendSuspensionNotification(user: any, subscription: any) {
     // In full implementation, this would send an email
-    console.log(`Sending suspension notification to ${user.email} for subscription ${subscription.id}`);
+    logger.info(`Sending suspension notification to ${user.email} for subscription ${subscription.id}`);
     
     // Would integrate with email service
     // await EmailService.send({
@@ -261,7 +261,7 @@ export class DunningWorker {
         meta,
       });
     } catch (error) {
-      console.error('Failed to log dunning event:', error);
+      logger.error('Failed to log dunning event:', { error });
     }
   }
 
