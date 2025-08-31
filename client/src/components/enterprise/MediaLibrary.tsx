@@ -117,18 +117,31 @@ export default function MediaLibrary() {
   });
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    // Process all selected files
+    for (const file of Array.from(files)) {
       if (file.size > 50 * 1024 * 1024) {
         toast({
           title: "File too large",
-          description: "Please select a file smaller than 50MB",
+          description: `${file.name} is larger than 50MB and will be skipped`,
           variant: "destructive",
         });
-        return;
+        continue;
       }
+      
+      // Show immediate feedback
+      toast({
+        title: "Uploading",
+        description: `Processing ${file.name}...`,
+      });
+      
       uploadMutation.mutate(file);
     }
+    
+    // Reset input to allow re-selection
+    event.target.value = '';
   };
 
   const formatFileSize = (bytes: number) => {

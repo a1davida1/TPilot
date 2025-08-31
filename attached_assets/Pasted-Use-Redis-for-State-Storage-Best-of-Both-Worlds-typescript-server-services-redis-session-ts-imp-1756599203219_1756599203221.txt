@@ -1,0 +1,179 @@
+Use Redis for State Storage (Best of Both Worlds):
+typescript// server/services/redis-session.ts
+import Redis from 'ioredis';
+
+// Use Redis if available, fallback to memory
+const redis = process.env.REDIS_URL ? 
+  new Redis(process.env.REDIS_URL) : null;
+
+// Fallback to memory if no Redis
+const memoryStore = new Map<string, any>();
+
+export const stateStore = {
+  async set(key: string, value: any, expiresIn = 3600) {
+    const data = JSON.stringify(value);
+    if (redis) {
+      await redis.set(key, data, 'EX', expiresIn);
+    } else {
+      memoryStore.set(key, { data, expires: Date.now() + (expiresIn * 1000) });
+    }
+  },
+  
+  async get(key: string) {
+    if (redis) {
+      const data = await redis.get(key);
+      return data ? JSON.parse(data) : null;
+    } else {
+      const item = memoryStore.get(key);
+      if (!item) return null;
+      if (Date.now() > item.expires) {
+        memoryStore.delete(key);
+        return null;
+      }
+      return JSON.parse(item.data);
+    }
+  },
+  
+  async delete(key: string) {
+    if (redis) {
+      await redis.del(key);
+    } else {
+      memoryStore.delete(key);
+    }
+  }
+};
+Updated Secure Reddit OAuth:
+typescriptimport { stateStore } from './services/redis-session';
+
+// START OAUTH - SECURE VERSION
+router.get('/api/auth/reddit', async (req: any, res) => {
+  try {
+    // Generate cryptographically secure state
+    const state = crypto.randomBytes(32).toString('hex');
+    const userId = req.user?.id || req.session?.userId;
+    
+    if (!userId) {
+      return res.status(401).json({ error: 'Must be logged in' });
+    }
+    
+    // Store state securely with user binding
+    await stateStore.set(`reddit_state:${state}`, {
+      userId,
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+      timestamp: Date.now()
+    }, 600); // 10 minute expiry
+    
+    const params = new URLSearchParams({
+      client_id: process.env.REDDIT_CLIENT_ID!,
+      response_type: 'code',
+      state: state,
+      redirect_uri: 'https://thottopilot.com/api/auth/reddit/callback',
+      duration: 'permanent',
+      scope: 'identity read submit'
+    });
+    
+    res.redirect(`https://www.reddit.com/api/v1/authorize?${params}`);
+  } catch (error) {
+    console.error('Reddit OAuth error:', error);
+    res.redirect('/dashboard?error=oauth_failed');
+  }
+});
+
+// CALLBACK - SECURE VERSION
+router.get('/api/auth/reddit/callback', async (req: any, res) => {
+  try {
+    const { code, error, state } = req.query;
+    
+    if (error) {
+      return res.redirect(`/dashboard?error=${error}`);
+    }
+    
+    // Validate state
+    const stateData = await stateStore.get(`reddit_state:${state}`);
+    
+    if (!stateData) {
+      console.error('Invalid or expired state');
+      return res.redirect('/dashboard?error=invalid_state');
+    }
+    
+    // Additional security checks
+    if (stateData.ip !== req.ip) {
+      console.warn('IP mismatch in OAuth callback');
+      // Could still continue, just log it
+    }
+    
+    // Clean up state immediately
+    await stateStore.delete(`reddit_state:${state}`);
+    
+    // Exchange code for token (rest of your code...)
+    // ... 
+    
+    // Store tokens ENCRYPTED
+    const encryptedToken = encrypt(tokens.access_token); // You need to implement encryption
+    
+    await storage.updateUser(stateData.userId, {
+      reddit_username: redditUser.name,
+      reddit_access_token_encrypted: encryptedToken,
+      reddit_token_expires: Date.now() + (tokens.expires_in * 1000)
+    });
+    
+    res.redirect('/dashboard?reddit=connected');
+  } catch (error) {
+    console.error('Reddit callback error:', error);
+    res.redirect('/dashboard?error=oauth_failed');
+  }
+});
+
+🔐 Quick Security Improvements:
+1. Add Token Encryption:
+typescriptimport crypto from 'crypto';
+
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || process.env.SESSION_SECRET;
+
+export function encrypt(text: string): string {
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv(
+    'aes-256-cbc',
+    Buffer.from(ENCRYPTION_KEY.slice(0, 32)),
+    iv
+  );
+  const encrypted = Buffer.concat([cipher.update(text), cipher.final()]);
+  return iv.toString('hex') + ':' + encrypted.toString('hex');
+}
+
+export function decrypt(text: string): string {
+  const parts = text.split(':');
+  const iv = Buffer.from(parts[0], 'hex');
+  const encrypted = Buffer.from(parts[1], 'hex');
+  const decipher = crypto.createDecipheriv(
+    'aes-256-cbc',
+    Buffer.from(ENCRYPTION_KEY.slice(0, 32)),
+    iv
+  );
+  return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString();
+}
+2. Add Rate Limiting:
+typescriptconst rateLimiter = new Map<string, number[]>();
+
+function rateLimit(req: any, res: any, next: any) {
+  const key = `${req.ip}:reddit_oauth`;
+  const now = Date.now();
+  const attempts = rateLimiter.get(key) || [];
+  
+  // Clean old attempts
+  const recentAttempts = attempts.filter(t => now - t < 60000); // 1 minute
+  
+  if (recentAttempts.length >= 5) {
+    return res.status(429).json({ error: 'Too many attempts' });
+  }
+  
+  recentAttempts.push(now);
+  rateLimiter.set(key, recentAttempts);
+  next();
+}
+
+// Apply to OAuth routes
+router.get('/api/auth/reddit', rateLimit, async (req, res) => {
+  // ... your code
+});

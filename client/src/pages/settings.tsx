@@ -75,7 +75,7 @@ export default function SettingsPage() {
       });
       localStorage.removeItem('authToken');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      setLocation('/login');
     }
   });
 
@@ -178,10 +178,12 @@ export default function SettingsPage() {
                      subscriptionData?.subscription?.plan || 'Free'}
                   </Badge>
                   <br />
-                  <Button onClick={handleUpgrade} className="bg-gradient-to-r from-purple-600 to-blue-600">
-                    <Zap className="h-4 w-4 mr-2" />
-                    Upgrade Plan
-                  </Button>
+                  {subscriptionData?.subscription?.plan !== 'admin' && (
+                    <Button onClick={handleUpgrade} className="bg-gradient-to-r from-purple-600 to-blue-600">
+                      <Zap className="h-4 w-4 mr-2" />
+                      Upgrade Plan
+                    </Button>
+                  )}
                 </div>
               </div>
               

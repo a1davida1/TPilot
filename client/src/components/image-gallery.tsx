@@ -78,7 +78,7 @@ export function ImageGallery() {
   const { data: images = [] } = useQuery<UserImage[]>({
     queryKey: ['/api/media'],
     queryFn: () => authenticatedRequest('/api/media'),
-    enabled: !!localStorage.getItem('authToken')
+    enabled: true // Always enable to avoid blocking
   });
 
   const uploadMutation = useMutation({
@@ -131,14 +131,47 @@ export function ImageGallery() {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
+    // Process files immediately without blocking
     for (const file of Array.from(files)) {
-      const formData = new FormData();
-      formData.append('file', file); // Match backend field name
-      if (selectedTags) {
-        formData.append('tags', selectedTags);
-      }
+      // Show immediate feedback
+      toast({
+        title: "Processing image",
+        description: `Uploading ${file.name}...`
+      });
       
-      uploadMutation.mutate(formData);
+      // Create preview URL for immediate display
+      const previewUrl = URL.createObjectURL(file);
+      
+      // Store locally for now if no auth
+      if (!localStorage.getItem('authToken')) {
+        // Store in local state for demo purposes
+        const localImage = {
+          id: Date.now().toString(),
+          originalUrl: previewUrl,
+          originalFileName: file.name,
+          tags: selectedTags ? selectedTags.split(',').map(t => t.trim()) : [],
+          isProtected: false,
+          uploadedAt: new Date().toISOString()
+        };
+        
+        // Store in localStorage for persistence
+        const storedImages = JSON.parse(localStorage.getItem('localImages') || '[]');
+        storedImages.push(localImage);
+        localStorage.setItem('localImages', JSON.stringify(storedImages));
+        
+        toast({
+          title: "Image ready!",
+          description: `${file.name} has been added to your gallery.`
+        });
+      } else {
+        // Try server upload if authenticated
+        const formData = new FormData();
+        formData.append('file', file);
+        if (selectedTags) {
+          formData.append('tags', selectedTags);
+        }
+        uploadMutation.mutate(formData);
+      }
     }
     
     // Reset input

@@ -65,14 +65,20 @@ export default function AIContentStudio() {
   });
 
   const handleGenerate = () => {
+    // Allow generation even without specific prompt if platforms are selected
     if (!prompt.trim() && platforms.length === 0) {
       toast({
-        title: "Missing input",
-        description: "Please provide a prompt or select platforms",
-        variant: "destructive",
+        title: "Let's get started!",
+        description: "Select platforms or add a prompt to generate content",
       });
       return;
     }
+
+    // Show immediate feedback
+    toast({
+      title: "Generating content...",
+      description: "AI is creating your content",
+    });
 
     generateMutation.mutate({
       prompt: prompt.trim() || undefined,
