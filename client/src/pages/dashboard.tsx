@@ -19,9 +19,10 @@ export default function Dashboard() {
     
     // Handle Reddit connection success
     if (reddit === 'connected') {
+      const username = urlParams.get('username');
       toast({
         title: "Reddit Connected! 🎉",
-        description: "Your Reddit account has been successfully linked.",
+        description: username ? `Connected as u/${username}` : "Your Reddit account has been successfully linked.",
         variant: "default",
       });
       // Clean URL
@@ -36,17 +37,17 @@ export default function Dashboard() {
       
       // Reddit-specific error handling
       if (error === 'reddit_missing_params') {
-        errorMessage = "Reddit connection failed: missing parameters. Please check your Reddit app settings.";
-      } else if (error === 'reddit_invalid_state') {
+        errorMessage = "Reddit connection failed: missing parameters.";
+      } else if (error === 'invalid_state') {
         errorMessage = "Session expired. Please try connecting Reddit again.";
       } else if (error === 'reddit_connection_failed') {
         errorMessage = "Reddit connection failed. Please try again.";
       } else if (error === 'reddit_access_denied') {
-        errorMessage = "Reddit access was denied. Please try again and authorize the application.";
+        errorMessage = "You denied access to Reddit. Please try again and authorize the app.";
       } else if (error === 'reddit_profile_failed') {
         errorMessage = "Failed to get Reddit profile. Please try again.";
-      } else if (error === 'reddit_invalid_user') {
-        errorMessage = "Invalid user session. Please log out and log back in.";
+      } else if (error === 'reddit_token_exchange_failed') {
+        errorMessage = "Failed to authenticate with Reddit. Please try again.";
       } else if (error === 'oauth-not-implemented') {
         errorMessage = "Reddit integration is being set up. Please try again later.";
       } else if (error === 'reddit_auth_failed') {
@@ -77,5 +78,19 @@ export default function Dashboard() {
     );
   }
 
-  return <ModernDashboard isRedditConnected={!!(user as any)?.reddit_username || !!(user as any)?.provider} />;
+  // Determine admin status and user tier
+  const isAdmin = user && (user.id === 999 || user.username === 'admin' || user.isAdmin || user.email === 'thottopilot@thottopilot.com');
+  const userTier = isAdmin ? 'admin' : (user?.tier || 'free');
+  
+  // Check Reddit connection status
+  const isRedditConnected = !!(user as any)?.reddit_username || !!(user as any)?.provider;
+  
+  return (
+    <ModernDashboard 
+      user={user} 
+      userTier={userTier} 
+      isAdmin={isAdmin}
+      isRedditConnected={isRedditConnected}
+    />
+  );
 }

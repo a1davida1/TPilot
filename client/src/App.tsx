@@ -10,7 +10,7 @@ import { Header } from "@/components/header";
 import { useAuth } from "@/hooks/useAuth";
 import { SEOOptimization, seoConfigs } from "@/components/seo-optimization";
 import { UnifiedLanding } from "@/components/unified-landing";
-import { ModernDashboard } from "@/components/modern-dashboard";
+import Dashboard from "@/pages/dashboard";
 import { OnboardingWalkthrough } from "@/components/onboarding-walkthrough";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import NotFound from "@/pages/not-found";
@@ -35,12 +35,8 @@ function AuthenticatedRoutes() {
 
   return (
     <Switch>
-      <Route path="/">
-        <ModernDashboard user={user} userTier={userTier} isAdmin={isAdmin} />
-      </Route>
-      <Route path="/dashboard">
-        <ModernDashboard user={user} userTier={userTier} isAdmin={isAdmin} />
-      </Route>
+      <Route path="/" component={Dashboard} />
+      <Route path="/dashboard" component={Dashboard} />
       <Route path="/caption-generator" component={CaptionGeneratorPage} />
       <Route path="/enterprise" component={Enterprise} />
       {/* ULTRA PREMIUM ROUTE - Hidden for now */}
