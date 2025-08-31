@@ -11,8 +11,11 @@ export function CaptionPreview({ data }: { data: any }) {
 
   if (!data) return null;
   
-  const { final, ranked } = data;
-  const charCount = final.caption.length;
+  // Safe destructuring with fallbacks
+  const { final, ranked } = data || {};
+  if (!final) return null;
+  
+  const charCount = final.caption?.length || 0;
 
   const handleCopyCaption = async () => {
     await navigator.clipboard.writeText(final.caption);
@@ -45,31 +48,35 @@ export function CaptionPreview({ data }: { data: any }) {
         </div>
 
         {/* ALT Text */}
-        <div className="space-y-1">
-          <p className="text-xs font-medium text-gray-500 dark:text-gray-400">ALT Text</p>
-          <p className="text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 p-2 rounded">
-            {final.alt}
-          </p>
-        </div>
+        {final.alt && (
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">ALT Text</p>
+            <p className="text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 p-2 rounded">
+              {final.alt}
+            </p>
+          </div>
+        )}
 
         {/* Hashtags */}
-        <div className="flex flex-wrap gap-2">
-          {final.hashtags.map((h: string) => (
-            <Badge 
-              key={h} 
-              variant="secondary" 
-              className="text-xs bg-gradient-to-r from-pink-100 to-purple-100 dark:from-pink-900/30 dark:to-purple-900/30"
-            >
-              {h}
-            </Badge>
-          ))}
-        </div>
+        {final.hashtags && final.hashtags.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {final.hashtags.map((h: string, index: number) => (
+              <Badge 
+                key={`${h}-${index}`} 
+                variant="secondary" 
+                className="text-xs bg-gradient-to-r from-pink-100 to-purple-100 dark:from-pink-900/30 dark:to-purple-900/30"
+              >
+                {h}
+              </Badge>
+            ))}
+          </div>
+        )}
 
         {/* Metadata Grid */}
         <div className="grid grid-cols-2 gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
           <div className="space-y-1">
             <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Mood</p>
-            <p className="text-sm text-gray-700 dark:text-gray-300">{final.mood}</p>
+            <p className="text-sm text-gray-700 dark:text-gray-300">{final.mood || 'N/A'}</p>
           </div>
           <div className="space-y-1">
             <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Style</p>

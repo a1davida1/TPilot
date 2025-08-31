@@ -161,7 +161,7 @@ class AnalyticsTracker {
       element = `#${target.id}`;
     } else if (target.getAttribute('data-testid')) {
       element = `[data-testid="${target.getAttribute('data-testid')}"]`;
-    } else if (target.className) {
+    } else if (target.className && typeof target.className === 'string' && target.className.trim()) {
       element = `.${target.className.split(' ')[0]}`;
     } else {
       element = target.tagName.toLowerCase();
