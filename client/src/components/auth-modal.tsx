@@ -329,6 +329,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
               <button
                 onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
                 className="ml-2 text-primary hover:text-primary/80 font-medium"
+                aria-label={mode === 'login' ? 'Switch to sign up form' : 'Switch to sign in form'}
               >
                 {mode === 'login' ? 'Sign up' : 'Sign in'}
               </button>

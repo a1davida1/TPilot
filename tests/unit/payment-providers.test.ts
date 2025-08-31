@@ -272,7 +272,7 @@ describe('Payment Providers', () => {
           json: async () => {
             throw new Error('Unexpected end of JSON input');
           }
-        } as Response);
+        } as unknown as Response);
 
         const provider = makeCoinbase();
         await expect(provider.createCheckout({
