@@ -89,11 +89,21 @@ export function registerRedditRoutes(app: Express) {
       console.log('Processing Reddit OAuth for user:', userId);
 
       // Exchange code for tokens
-      const tokenData = await exchangeRedditCode(code.toString());
-      
+      let tokenData;
+      try {
+        tokenData = await exchangeRedditCode(code.toString());
+      } catch (err) {
+        console.error('Reddit token exchange error:', err);
+        return res.redirect('/dashboard?error=reddit_token_exchange_failed');
+      }
+
       if (!tokenData || !tokenData.accessToken) {
         console.error('Failed to exchange code for tokens');
         return res.redirect('/dashboard?error=reddit_token_exchange_failed');
+      }
+
+      if (!tokenData.refreshToken) {
+        console.warn('Reddit token response missing refresh token for user:', userId);
       }
       
       // Get Reddit user info

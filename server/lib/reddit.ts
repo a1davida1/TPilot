@@ -97,7 +97,7 @@ export class RedditManager {
 
       if (options.url) {
         // Link post
-        submission = (this.reddit as any)
+        submission = await (this.reddit as any)
           .getSubreddit(options.subreddit)
           .submitLink({
             subredditName: options.subreddit,
@@ -108,7 +108,7 @@ export class RedditManager {
           });
       } else {
         // Text post
-        submission = (this.reddit as any)
+        submission = await (this.reddit as any)
           .getSubreddit(options.subreddit)
           .submitSelfpost({
             subredditName: options.subreddit,
@@ -122,6 +122,12 @@ export class RedditManager {
       // Update rate limiting
       await this.updateRateLimit(options.subreddit);
 
+      console.log('Reddit submission succeeded:', {
+        userId: this.userId,
+        subreddit: options.subreddit,
+        postId: submission.id,
+      });
+
       return {
         success: true,
         postId: submission.id,
@@ -129,8 +135,11 @@ export class RedditManager {
       };
 
     } catch (error: any) {
-      console.error('Reddit submission failed:', error);
-      
+      console.error('Reddit submission failed:', {
+        message: error?.message,
+        stack: error?.stack,
+      });
+
       let errorMessage = 'Failed to submit post';
       
       // Parse common Reddit API errors
@@ -299,29 +308,44 @@ export async function exchangeRedditCode(code: string): Promise<{
   
   console.log('Reddit OAuth redirect URI (exchange):', redirectUri);
 
-  const response = await fetch('https://www.reddit.com/api/v1/access_token', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Basic ${Buffer.from(`${process.env.REDDIT_CLIENT_ID}:${process.env.REDDIT_CLIENT_SECRET}`).toString('base64')}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'User-Agent': 'ThottoPilot/1.0',
-    },
-    body: new URLSearchParams({
-      grant_type: 'authorization_code',
-      code,
-      redirect_uri: redirectUri,
-    }),
-  });
+  try {
+    const response = await fetch('https://www.reddit.com/api/v1/access_token', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${Buffer.from(`${process.env.REDDIT_CLIENT_ID}:${process.env.REDDIT_CLIENT_SECRET}`).toString('base64')}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'User-Agent': 'ThottoPilot/1.0',
+      },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: redirectUri,
+      }),
+    });
 
-  if (!response.ok) {
-    throw new Error(`Reddit token exchange failed: ${response.statusText}`);
+    if (!response.ok) {
+      const body = await response.text();
+      console.error('Reddit token exchange failed:', {
+        status: response.status,
+        statusText: response.statusText,
+        body,
+      });
+      throw new Error(`Reddit token exchange failed: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    if (!data.refresh_token) {
+      console.warn('No refresh token returned from Reddit');
+    }
+
+    return {
+      accessToken: data.access_token,
+      refreshToken: data.refresh_token,
+      expiresIn: data.expires_in,
+    };
+  } catch (error) {
+    console.error('Reddit code exchange error:', error);
+    throw error;
   }
-
-  const data = await response.json();
-  
-  return {
-    accessToken: data.access_token,
-    refreshToken: data.refresh_token,
-    expiresIn: data.expires_in,
-  };
 }
