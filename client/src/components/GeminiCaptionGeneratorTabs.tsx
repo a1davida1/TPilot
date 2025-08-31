@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { CaptionPreview } from "./CaptionPreview";
 import { Loader2, Sparkles, Upload, AlertCircle, Image as ImageIcon, Type, Edit3 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 const PLATFORMS = [
   { value: "reddit", label: "Reddit" },
@@ -88,14 +89,11 @@ export function GeminiCaptionGeneratorTabs() {
     setCaptionData(null);
 
     try {
-      const response = await fetch('/api/caption/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageUrl, platform, voice, nsfw })
+      const response = await apiRequest('POST', '/api/caption/generate', {
+        imageUrl, platform, voice, nsfw
       });
 
       const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'Generation failed');
 
       setCaptionData(result);
       toast({
@@ -126,14 +124,11 @@ export function GeminiCaptionGeneratorTabs() {
     setCaptionData(null);
 
     try {
-      const response = await fetch('/api/caption/generate-text', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ platform, voice, theme, context, nsfw })
+      const response = await apiRequest('POST', '/api/caption/generate-text', {
+        platform, voice, theme, context, nsfw
       });
 
       const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'Generation failed');
 
       setCaptionData(result);
       toast({
