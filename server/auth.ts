@@ -110,46 +110,12 @@ export function setupAuth(app: Express) {
       
       const { username, password, email } = validationResult.data;
 
-      // ADMIN LOGIN CHECK FIRST (using environment variables)
       const loginIdentifier = email || username;
-      const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
-      const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
-      
-      if (ADMIN_EMAIL && ADMIN_PASSWORD && loginIdentifier === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-        const adminUser = {
-          id: 999,
-          email: ADMIN_EMAIL,
-          username: 'admin',
-          tier: 'pro',
-          isAdmin: true
-        };
-
-        const token = jwt.sign(
-          { 
-            userId: adminUser.id, 
-            id: adminUser.id, 
-            email: adminUser.email, 
-            username: adminUser.username, 
-            isAdmin: true
-          },
-          JWT_SECRET_VALIDATED,
-          { expiresIn: '24h' }
-        );
-
-        return res.json({
-          message: 'Admin login successful',
-          token,
-          user: adminUser
-        });
-      }
-
-      // Regular user login logic continues below
-      const loginEmail = email || username;
 
       // Try to find user by username first, then by email
-      let user = await storage.getUserByUsername(username || loginEmail || '');
-      if (!user && loginEmail) {
-        user = await storage.getUserByEmail(loginEmail);
+      let user = await storage.getUserByUsername(username || loginIdentifier || '');
+      if (!user && loginIdentifier) {
+        user = await storage.getUserByEmail(loginIdentifier);
       }
 
       if (!user) {
@@ -166,7 +132,13 @@ export function setupAuth(app: Express) {
       }
 
       const token = jwt.sign(
-        { id: user.id, userId: user.id, username: user.username },
+        {
+          id: user.id,
+          userId: user.id,
+          username: user.username,
+          isAdmin: user.isAdmin,
+          role: user.role
+        },
         JWT_SECRET_VALIDATED,
         { expiresIn: '24h' }
       );
@@ -177,7 +149,9 @@ export function setupAuth(app: Express) {
           id: user.id,
           username: user.username,
           email: user.email,
-          tier: user.tier
+          tier: user.tier,
+          isAdmin: user.isAdmin,
+          role: user.role
         }
       });
     } catch (error) {
@@ -303,18 +277,6 @@ export function setupAuth(app: Express) {
         try {
           const decoded = jwt.verify(token, JWT_SECRET_VALIDATED) as any;
           
-          // Handle admin user
-          if (decoded.isAdmin) {
-            return res.json({
-              id: 999,
-              email: process.env.ADMIN_EMAIL || 'admin@thottopilot.com',
-              username: 'admin',
-              tier: 'admin',
-              isAdmin: true
-            });
-          }
-          
-          // Handle regular user
           const user = await storage.getUser(decoded.userId || decoded.id);
           if (user) {
             const { password: _, ...userResponse } = user;
@@ -323,11 +285,8 @@ export function setupAuth(app: Express) {
               tier: userResponse.tier || 'free'
             });
           }
-          
-          return res.json({
-            ...decoded,
-            tier: decoded.tier || 'free'
-          });
+
+          return res.status(404).json({ message: 'User not found' });
         } catch (jwtError) {
           safeLog('error', 'JWT verification failed', { error: jwtError.message });
           return res.status(401).json({ message: 'Invalid token' });
