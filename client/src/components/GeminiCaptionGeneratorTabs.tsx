@@ -232,7 +232,7 @@ export function GeminiCaptionGeneratorTabs() {
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="image" className="w-full">
+      <Tabs defaultValue="image" className="w-full relative z-10">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="image" className="flex items-center gap-2">
             <ImageIcon className="h-4 w-4" />
@@ -249,8 +249,8 @@ export function GeminiCaptionGeneratorTabs() {
         </TabsList>
 
         {/* Image → Caption Tab */}
-        <TabsContent value="image">
-          <Card>
+        <TabsContent value="image" className="mt-0">
+          <Card className="relative z-10">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-pink-500" />
@@ -342,8 +342,8 @@ export function GeminiCaptionGeneratorTabs() {
         </TabsContent>
 
         {/* Text → Caption Tab */}
-        <TabsContent value="text">
-          <Card>
+        <TabsContent value="text" className="mt-0">
+          <Card className="relative z-10">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Type className="h-5 w-5 text-blue-500" />
@@ -355,9 +355,11 @@ export function GeminiCaptionGeneratorTabs() {
                 <Label htmlFor="theme">Theme / Topic</Label>
                 <Input
                   id="theme"
+                  type="text"
                   placeholder="e.g., 'Morning coffee vibes' or 'Workout motivation'"
                   value={theme}
                   onChange={(e) => setTheme(e.target.value)}
+                  className="w-full"
                   data-testid="input-theme"
                 />
               </div>
@@ -370,6 +372,7 @@ export function GeminiCaptionGeneratorTabs() {
                   value={context}
                   onChange={(e) => setContext(e.target.value)}
                   rows={3}
+                  className="w-full resize-none"
                   data-testid="textarea-context"
                 />
               </div>
@@ -406,8 +409,8 @@ export function GeminiCaptionGeneratorTabs() {
         </TabsContent>
 
         {/* Rewrite Tab */}
-        <TabsContent value="rewrite">
-          <Card>
+        <TabsContent value="rewrite" className="mt-0">
+          <Card className="relative z-10">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Edit3 className="h-5 w-5 text-green-500" />
