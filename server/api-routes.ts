@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { z } from "zod";
 import { db } from "./db.js";
 import { AiService } from "./lib/ai-service.js";
+import { generateEnhancedContent } from "./services/enhanced-ai-service.js";
 import { MediaManager } from "./lib/media.js";
 import { CCBillProcessor } from "./lib/billing.js";
 import { PolicyLinter } from "./lib/policyLinter.js";
@@ -73,6 +74,45 @@ export function registerApiRoutes(app: Express) {
       res.json(result);
     } catch (error: any) {
       console.error('AI generation failed:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Enhanced AI Content Generation
+  app.post('/api/ai/enhanced', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const schema = z.object({
+        mode: z.enum(['text', 'image', 'hybrid']).default('text'),
+        prompt: z.string().optional(),
+        imageBase64: z.string().optional(),
+        platform: z.enum(['reddit', 'twitter', 'instagram', 'tiktok', 'onlyfans']),
+        style: z.enum(['playful', 'mysterious', 'bold', 'elegant', 'confident', 'authentic', 'sassy', 'professional']),
+        theme: z.string().optional(),
+        tone: z.enum(['casual', 'formal', 'flirty', 'friendly', 'provocative']).optional(),
+        contentType: z.enum(['teasing', 'promotional', 'engagement', 'lifestyle', 'announcement', 'educational']).optional(),
+        includePromotion: z.boolean().optional(),
+        promotionLevel: z.enum(['none', 'subtle', 'moderate', 'direct']).optional(),
+        targetAudience: z.enum(['general', 'fans', 'potential-subscribers', 'premium-tier']).optional(),
+        customInstructions: z.string().optional(),
+        subreddit: z.string().optional(),
+        niche: z.string().optional(),
+        personalBrand: z.string().optional(),
+      });
+
+      const data = schema.parse(req.body);
+
+      if (!req.user?.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const result = await generateEnhancedContent({
+        ...data,
+        userId: String(req.user.id),
+      });
+
+      res.json(result);
+    } catch (error: any) {
+      console.error('Enhanced AI generation failed:', error);
       res.status(500).json({ error: error.message });
     }
   });
