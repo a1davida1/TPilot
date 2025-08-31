@@ -35,8 +35,8 @@ export function setupAdminRoutes(app: Express) {
       return res.status(401).json({ message: 'Admin access required' });
     }
 
-    // Check if user is admin (ID 999 or username 'admin')
-    if ((user as any).id !== 999 && (user as any).username !== 'admin') {
+    // Check if user is admin (ID 999, username 'admin', or has isAdmin flag)
+    if ((user as any).id !== 999 && (user as any).username !== 'admin' && !(user as any).isAdmin) {
       return res.status(403).json({ message: 'Admin access required' });
     }
 
