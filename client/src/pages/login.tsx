@@ -34,14 +34,14 @@ export default function Login() {
           description: "You're logged in successfully.",
         });
 
-        if (data.token) {
+        if (data.token && data.user) {
           localStorage.setItem('authToken', data.token);
-        }
-        if (data.user) {
           localStorage.setItem('user', JSON.stringify(data.user));
+          // Force auth state update immediately
+          window.location.href = '/dashboard';
+        } else {
+          setLocation('/dashboard');
         }
-
-        setLocation('/dashboard');
       } else {
         toast({
           title: "Account created!",
