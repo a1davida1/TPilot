@@ -196,62 +196,26 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
       return;
     }
     
-    // Create FormData for upload
-    const formData = new FormData();
-    formData.append('image', file);
+    // Show immediate success - we'll store the file locally for now
+    toast({
+      title: "Image ready! 🎉",
+      description: `${file.name} loaded successfully. Switching to Content Creator...`,
+    });
     
-    try {
-      console.log('Starting upload...');
-      toast({
-        title: "Upload started",
-        description: "Processing your image...",
-      });
-      
-      // Get auth token
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        toast({
-          title: "Authentication required",
-          description: "Please log in to upload images",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      const response = await fetch('/api/upload/image', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: formData,
-      });
-      
-      console.log('Upload response status:', response.status);
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Upload failed');
-      }
-      
-      const data = await response.json();
-      console.log('Upload successful:', data);
-      
-      toast({
-        title: "Upload successful!",
-        description: `${file.name} has been uploaded successfully`,
-      });
-      
-      // Reset the input
-      event.target.value = '';
-      
-    } catch (error) {
-      console.error('Upload error:', error);
-      toast({
-        title: "Upload failed",
-        description: error instanceof Error ? error.message : "Failed to upload image",
-        variant: "destructive",
-      });
-    }
+    // Store the file in window for the content creator to use
+    (window as any).selectedImageFile = file;
+    
+    // Create a preview URL
+    const previewUrl = URL.createObjectURL(file);
+    (window as any).selectedImagePreview = previewUrl;
+    
+    // Switch to the content generator section
+    setTimeout(() => {
+      setActiveSection('generate');
+    }, 500);
+    
+    // Reset the input so the same file can be selected again
+    event.target.value = '';
   };
 
   const sidebarVariants = {
