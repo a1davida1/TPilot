@@ -27,6 +27,7 @@ import CaptionGeneratorPage from "@/pages/caption-generator";
 import RedditPostingPage from "@/pages/reddit-posting";
 import ImageShieldPage from "@/pages/imageshield";
 import { RedditCommunities } from "@/components/reddit-communities";
+import { ImageGallery } from "@/components/image-gallery";
 // Phase 1: Real Analytics Tracking
 import { trackPageView, setUserId, trackFeatureUsage } from "@/lib/analytics-tracker";
 
@@ -47,6 +48,23 @@ function CommunitiesPage() {
   );
 }
 
+// Gallery Page Component
+function GalleryPage() {
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          Media Gallery
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          Upload, organize, and protect your images. Apply advanced protection to prevent reverse searches.
+        </p>
+      </div>
+      <ImageGallery />
+    </div>
+  );
+}
+
 function AuthenticatedRoutes() {
   const { user } = useAuth();
   const isAdmin = user && (user.id === 999 || user.username === 'admin' || user.isAdmin);
@@ -63,6 +81,7 @@ function AuthenticatedRoutes() {
       {/* <Route path="/phase4" component={Phase4Dashboard} /> */}
       <Route path="/reddit" component={RedditPostingPage} />
       <Route path="/communities" component={() => <CommunitiesPage />} />
+      <Route path="/gallery" component={() => <GalleryPage />} />
       <Route path="/history" component={History} />
       <Route path="/settings" component={Settings} />
       <Route path="/checkout" component={Checkout} />
