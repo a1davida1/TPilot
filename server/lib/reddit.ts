@@ -2,6 +2,7 @@ import snoowrap from 'snoowrap';
 import { db } from '../db.js';
 import { users, creatorAccounts } from '@shared/schema.js';
 import { eq, and } from 'drizzle-orm';
+import { decrypt } from '../services/state-store.js';
 
 export interface RedditPostOptions {
   subreddit: string;
@@ -52,15 +53,24 @@ export class RedditManager {
           and(
             eq(creatorAccounts.userId, userId),
             eq(creatorAccounts.platform, 'reddit'),
-            eq(creatorAccounts.status, 'ok')
+            eq(creatorAccounts.isActive, true)
           )
         );
 
-      if (!account || !account.oauthToken || !account.oauthRefresh) {
+      if (!account || !account.oauthToken) {
         return null;
       }
 
-      return new RedditManager(account.oauthToken, account.oauthRefresh, userId);
+      // Decrypt tokens
+      const accessToken = decrypt(account.oauthToken);
+      const refreshToken = account.oauthRefresh ? decrypt(account.oauthRefresh) : '';
+      
+      if (!accessToken) {
+        console.error('Failed to decrypt access token for user:', userId);
+        return null;
+      }
+
+      return new RedditManager(accessToken, refreshToken, userId);
     } catch (error) {
       console.error('Failed to create Reddit manager for user:', error);
       return null;
