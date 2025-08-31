@@ -13,7 +13,7 @@ interface ContentSuggestion {
 interface PostPerformance {
   postId: number;
   engagement: number;
-  postedAt: Date;
+  postedAt: Date | null;
   platform: string;
 }
 
@@ -23,6 +23,16 @@ interface PlatformStats {
   bestHours: number[];
   bestDays: number[];
   topHashtags: string[];
+}
+
+interface PostToOptimize {
+  platform: string;
+  [key: string]: any;
+}
+
+interface OptimizedPost extends PostToOptimize {
+  scheduledTime: Date;
+  optimizationScore: number;
 }
 
 class SchedulingOptimizer {
@@ -99,8 +109,15 @@ class SchedulingOptimizer {
       
       return posts.map(p => ({
         postId: p.postId,
-        engagement: p.engagement || 0,
-        postedAt: p.postedAt,
+        engagement: typeof p.engagement === 'number'
+          ? p.engagement
+          : (p.engagement?.likes ?? 0)
+            + (p.engagement?.comments ?? 0)
+            + (p.engagement?.shares ?? 0)
+            + (p.engagement?.views ?? 0)
+            + (p.engagement?.retweets ?? 0)
+            + (p.engagement?.quotes ?? 0),
+        postedAt: p.postedAt ?? null,
         platform: p.platform
       }));
     } catch (error) {
@@ -116,7 +133,8 @@ class SchedulingOptimizer {
     const hourlyEngagement = new Map<number, { total: number; count: number }>();
     
     history.forEach(post => {
-      const hour = new Date(post.postedAt).getHours();
+      if (!post.postedAt) return;
+      const hour = post.postedAt.getHours();
       const current = hourlyEngagement.get(hour) || { total: 0, count: 0 };
       hourlyEngagement.set(hour, {
         total: current.total + post.engagement,
@@ -246,9 +264,9 @@ class SchedulingOptimizer {
     return styleMap[trend.category] || 'casual';
   }
 
-  async optimizePostingSchedule(userId: number, posts: any[]): Promise<any[]> {
+  async optimizePostingSchedule(userId: number, posts: PostToOptimize[]): Promise<OptimizedPost[]> {
     // Distribute posts optimally across time slots
-    const optimizedPosts = [];
+    const optimizedPosts: OptimizedPost[] = [];
     const usedSlots = new Set<string>();
     
     for (const post of posts) {
@@ -334,7 +352,8 @@ class SchedulingOptimizer {
       // Find best performing hours
       const hourlyPerformance = new Map<number, number[]>();
       history.forEach(post => {
-        const hour = new Date(post.postedAt).getHours();
+        if (!post.postedAt) return;
+        const hour = post.postedAt.getHours();
         const perf = hourlyPerformance.get(hour) || [];
         perf.push(post.engagement);
         hourlyPerformance.set(hour, perf);
@@ -352,7 +371,8 @@ class SchedulingOptimizer {
       // Find best performing days
       const dailyPerformance = new Map<number, number[]>();
       history.forEach(post => {
-        const day = new Date(post.postedAt).getDay();
+        if (!post.postedAt) return;
+        const day = post.postedAt.getDay();
         const perf = dailyPerformance.get(day) || [];
         perf.push(post.engagement);
         dailyPerformance.set(day, perf);

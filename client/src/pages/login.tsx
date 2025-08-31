@@ -27,22 +27,28 @@ export default function Login() {
     },
     onSuccess: async (response: Response) => {
       const data = await response.json();
-      
-      toast({
-        title: view === 'login' ? "Welcome back!" : "Account created!",
-        description: view === 'login' ? "You're logged in successfully." : "Your account has been created and you're logged in.",
-      });
-      
-      // Store auth token/user data
-      if (data.token) {
-        localStorage.setItem('authToken', data.token);
+
+      if (view === 'login') {
+        toast({
+          title: "Welcome back!",
+          description: "You're logged in successfully.",
+        });
+
+        if (data.token) {
+          localStorage.setItem('authToken', data.token);
+        }
+        if (data.user) {
+          localStorage.setItem('user', JSON.stringify(data.user));
+        }
+
+        setLocation('/dashboard');
+      } else {
+        toast({
+          title: "Account created!",
+          description: "Please check your email to verify your account before logging in.",
+        });
+        setView('login');
       }
-      if (data.user) {
-        localStorage.setItem('user', JSON.stringify(data.user));
-      }
-      
-      // Redirect to dashboard
-      setLocation('/dashboard');
     },
     onError: (error: any) => {
       toast({

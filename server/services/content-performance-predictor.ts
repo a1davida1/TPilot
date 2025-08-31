@@ -62,7 +62,7 @@ class ContentPerformancePredictor {
   };
 
   // Platform-specific adjustments
-  private platformMultipliers = {
+  private platformMultipliers: Record<string, Partial<Record<keyof ContentFeatures, number>>> = {
     reddit: {
       titleLength: 1.2,
       hasQuestion: 1.3,
@@ -207,36 +207,36 @@ class ContentPerformancePredictor {
 
   private applyPlatformAdjustments(score: number, features: ContentFeatures): number {
     const multipliers = this.platformMultipliers[features.platform as keyof typeof this.platformMultipliers];
-    
+
     if (!multipliers) return score;
-    
+
     let adjustment = 1.0;
-    
+
     // Apply platform-specific multipliers
-    if (features.titleLength > 0 && multipliers.titleLength) {
+    if (features.titleLength > 0 && multipliers.titleLength !== undefined) {
       adjustment *= multipliers.titleLength;
     }
-    
-    if (features.hasEmojis && multipliers.hasEmojis) {
+
+    if (features.hasEmojis && multipliers.hasEmojis !== undefined) {
       adjustment *= multipliers.hasEmojis;
     }
-    
-    if (features.hasQuestion && multipliers.hasQuestion) {
+
+    if (features.hasQuestion && multipliers.hasQuestion !== undefined) {
       adjustment *= multipliers.hasQuestion;
     }
-    
-    if (features.imageCount > 0 && multipliers.imageCount) {
+
+    if (features.imageCount > 0 && multipliers.imageCount !== undefined) {
       adjustment *= multipliers.imageCount;
     }
-    
-    if (features.hashtagCount > 0 && multipliers.hashtagCount) {
+
+    if (features.hashtagCount > 0 && multipliers.hashtagCount !== undefined) {
       adjustment *= multipliers.hashtagCount;
     }
-    
-    if (features.hasCTA && multipliers.hasCTA) {
+
+    if (features.hasCTA && multipliers.hasCTA !== undefined) {
       adjustment *= multipliers.hasCTA;
     }
-    
+
     return score * adjustment;
   }
 

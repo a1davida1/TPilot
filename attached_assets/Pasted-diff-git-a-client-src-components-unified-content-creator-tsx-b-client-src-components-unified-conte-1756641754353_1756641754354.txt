@@ -1,0 +1,57 @@
+diff --git a/client/src/components/unified-content-creator.tsx b/client/src/components/unified-content-creator.tsx
+index 58b71a6513881d58f226c445230b9102c28c9850..76f44d4b5af4cd48c71271ac8080e6bb70b2ed2a 100644
+--- a/client/src/components/unified-content-creator.tsx
++++ b/client/src/components/unified-content-creator.tsx
+@@ -34,50 +34,52 @@ import { protectImage, protectionPresets, downloadProtectedImage } from "@/lib/i
+ // And placeholder functions/types like photoTypes, textTones, availableHashtags, setSelectedPhotoType, etc. are defined or imported.
+ 
+ // Dummy definitions for placeholder types and states to make the code runnable for demonstration.
+ // In a real app, these would be imported or defined elsewhere.
+ const ThemeToggle = () => null; // Placeholder for ThemeToggle component
+ const photoTypes = [
+   { id: 'realistic', label: 'Realistic', emoji: '📸' },
+   { id: 'artistic', label: 'Artistic', emoji: '🎨' },
+ ];
+ const textTones = [
+   { id: 'playful', label: 'Playful', emoji: '😜' },
+   { id: 'sensual', label: 'Sensual', emoji: '💋' },
+   { id: 'elegant', label: 'Elegant', emoji: '👑' },
+   { id: 'casual', label: 'Casual', emoji: '😊' },
+ ];
+ const availableHashtags = ['#model', '#photography', '#fashion', '#lifestyle', '#beauty', '#art', '#portrait', '#creative', '#outfit', '#style'];
+ 
+ // Extended interface for frontend display with dynamic server properties
+ interface GeneratedContentDisplay extends Omit<ContentGeneration, 'photoInstructions'> {
+   contentSource?: 'ai' | 'template' | 'demo';
+   aiProvider?: string;
+   estimatedCost?: number;
+   upgradeMessage?: string;
+   userTier?: string;
+   variationCount?: number;
++  apiStatus?: string;
++  isDemo?: boolean;
+   titles: string[]; // Ensure titles is always an array
+   photoInstructions: {
+     lighting: string;
+     cameraAngle: string;
+     composition: string;
+     styling: string;
+     mood: string;
+     technicalSettings: string;
+   }; // Match the exact schema type
+ }
+ 
+ interface UnifiedContentCreatorProps {
+   onContentGenerated: (generation: ContentGeneration) => void;
+   isGuestMode?: boolean;
+   userTier?: "free" | "basic" | "pro" | "premium";
+ }
+ 
+ export function UnifiedContentCreator({ 
+   onContentGenerated, 
+   isGuestMode = false,
+   userTier = "free" 
+ }: UnifiedContentCreatorProps) {
+   const [workflowMode, setWorkflowMode] = useState<'text' | 'image' | 'presets' | 'history'>('presets');
+   const [customPrompt, setCustomPrompt] = useState("");
+   const [platform, setPlatform] = useState("reddit");

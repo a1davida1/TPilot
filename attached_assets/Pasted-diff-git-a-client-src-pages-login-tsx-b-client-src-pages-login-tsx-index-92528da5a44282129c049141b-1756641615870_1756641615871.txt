@@ -1,0 +1,92 @@
+diff --git a/client/src/pages/login.tsx b/client/src/pages/login.tsx
+index 92528da5a44282129c049141b913be6b9e507dba..97cf00cefe8c34b51509bdb8ef1f74c08120d09c 100644
+--- a/client/src/pages/login.tsx
++++ b/client/src/pages/login.tsx
+@@ -5,66 +5,72 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
+ import { Input } from '@/components/ui/input';
+ import { Label } from '@/components/ui/label';
+ import { useToast } from '@/hooks/use-toast';
+ import { useMutation } from '@tanstack/react-query';
+ import { apiRequest } from '@/lib/queryClient';
+ import { Sparkles, Mail, Lock, User, Eye, EyeOff, Zap, Shield, Target, BarChart, Brain } from 'lucide-react';
+ import { Link, useLocation } from 'wouter';
+ 
+ export default function Login() {
+   const [, setLocation] = useLocation();
+   const [view, setView] = useState<'landing' | 'login' | 'signup'>('landing');
+   // Password reset state removed - was non-functional
+   const [email, setEmail] = useState('');
+   const [password, setPassword] = useState('');
+   const [confirmPassword, setConfirmPassword] = useState('');
+   const [username, setUsername] = useState('');
+   const [showPassword, setShowPassword] = useState(false);
+   const { toast } = useToast();
+ 
+   const authMutation = useMutation({
+     mutationFn: async (data: { email: string; password: string; username?: string; mode: 'login' | 'signup' }) => {
+       return apiRequest('POST', `/api/auth/${data.mode}`, data);
+     },
+     onSuccess: async (response: Response) => {
+       const data = await response.json();
+-      
+-      toast({
+-        title: view === 'login' ? "Welcome back!" : "Account created!",
+-        description: view === 'login' ? "You're logged in successfully." : "Your account has been created and you're logged in.",
+-      });
+-      
+-      // Store auth token/user data
+-      if (data.token) {
+-        localStorage.setItem('authToken', data.token);
+-      }
+-      if (data.user) {
+-        localStorage.setItem('user', JSON.stringify(data.user));
++
++      if (view === 'login') {
++        toast({
++          title: "Welcome back!",
++          description: "You're logged in successfully.",
++        });
++
++        if (data.token) {
++          localStorage.setItem('authToken', data.token);
++        }
++        if (data.user) {
++          localStorage.setItem('user', JSON.stringify(data.user));
++        }
++
++        setLocation('/dashboard');
++      } else {
++        toast({
++          title: "Account created!",
++          description: "Please check your email to verify your account before logging in.",
++        });
++        setView('login');
+       }
+-      
+-      // Redirect to dashboard
+-      setLocation('/dashboard');
+     },
+     onError: (error: any) => {
+       toast({
+         title: view === 'login' ? "Login failed" : "Signup failed",
+         description: error.message || "Please check your credentials and try again.",
+         variant: "destructive",
+       });
+     }
+   });
+ 
+   const handleSubmit = (e: React.FormEvent) => {
+     e.preventDefault();
+     
+     if (view === 'signup') {
+       if (password !== confirmPassword) {
+         toast({
+           title: "Passwords don't match",
+           description: "Please make sure both passwords are the same.",
+           variant: "destructive",
+         });
+         return;
+       }
+       if (password.length < 6) {
+         toast({
+           title: "Password too short",

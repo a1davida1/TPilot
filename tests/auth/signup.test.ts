@@ -8,6 +8,7 @@ const tokens: any[] = [];
 
 vi.mock('../../server/storage', () => ({
   storage: {
+    getUser: vi.fn().mockImplementation(async (id: number) => users.find(u => u.id === id)),
     getUserByUsername: vi.fn().mockImplementation(async (username: string) => users.find(u => u.username === username)),
     getUserByEmail: vi.fn().mockImplementation(async (email: string) => users.find(u => u.email === email)),
     createUser: vi.fn().mockImplementation(async (data: any) => {
