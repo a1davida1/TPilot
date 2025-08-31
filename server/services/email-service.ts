@@ -12,8 +12,7 @@ if (SENDGRID_API_KEY) {
 export const emailService = {
   async sendVerificationEmail(to: string, username: string, token: string) {
     if (!SENDGRID_API_KEY) {
-      console.log('SendGrid not configured, skipping email');
-      console.log(`Verification link: ${FRONTEND_URL}/verify-email?token=${token}`);
+      // SendGrid not configured - email skipped
       return;
     }
 
@@ -70,7 +69,6 @@ export const emailService = {
 
     try {
       await sgMail.send(msg);
-      console.log('Verification email sent to:', to);
     } catch (error) {
       console.error('Error sending verification email:', error);
       throw error;
@@ -79,13 +77,16 @@ export const emailService = {
 
   async sendPasswordResetEmail(to: string, username: string) {
     if (!SENDGRID_API_KEY) {
-      console.log('SendGrid not configured, skipping email');
+      // SendGrid not configured - email skipped
       return;
     }
 
     // Generate reset token
     const jwt = await import('jsonwebtoken');
-    const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
+    const JWT_SECRET = process.env.JWT_SECRET;
+    if (!JWT_SECRET) {
+      throw new Error('JWT_SECRET environment variable is required for password reset tokens');
+    }
     
     const resetToken = jwt.default.sign(
       { email: to, type: 'password-reset' },
@@ -146,7 +147,6 @@ export const emailService = {
 
     try {
       await sgMail.send(msg);
-      console.log('Password reset email sent to:', to);
     } catch (error) {
       console.error('Error sending password reset email:', error);
       throw error;
@@ -155,7 +155,7 @@ export const emailService = {
 
   async sendWelcomeEmail(to: string, username: string) {
     if (!SENDGRID_API_KEY) {
-      console.log('SendGrid not configured, skipping welcome email');
+      // SendGrid not configured - email skipped
       return;
     }
 
@@ -210,7 +210,6 @@ export const emailService = {
 
     try {
       await sgMail.send(msg);
-      console.log('Welcome email sent to:', to);
     } catch (error) {
       console.error('Error sending welcome email:', error);
       // Don't throw for welcome emails - they're not critical
@@ -219,7 +218,7 @@ export const emailService = {
 
   async sendUpgradeEmail(to: string, username: string, newTier: string) {
     if (!SENDGRID_API_KEY) {
-      console.log('SendGrid not configured, skipping upgrade email');
+      // SendGrid not configured - email skipped
       return;
     }
 
@@ -280,7 +279,6 @@ export const emailService = {
 
     try {
       await sgMail.send(msg);
-      console.log('Upgrade email sent to:', to);
     } catch (error) {
       console.error('Error sending upgrade email:', error);
     }

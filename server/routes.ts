@@ -60,6 +60,7 @@ import fs from 'fs/promises';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
+import csrf from 'csurf';
 
 // Get secure environment variables (no fallbacks)
 const SESSION_SECRET = process.env.SESSION_SECRET!;
@@ -130,6 +131,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     name: 'thottopilot.sid', // Custom session name
     rolling: true // Refresh session on activity
   }));
+
+  // CSRF protection for session-based routes
+  const csrfProtection = csrf({ 
+    cookie: {
+      httpOnly: true,
+      secure: IS_PRODUCTION,
+      sameSite: 'strict'
+    }
+  });
+  
+  // Apply CSRF to session-based auth routes only (not JWT routes)
+  app.use('/api/auth/verify-email', csrfProtection);
+  app.get('/api/csrf-token', csrfProtection, (req, res) => {
+    res.json({ csrfToken: req.csrfToken() });
+  });
 
   // ==========================================
   // AUTHENTICATION SETUP

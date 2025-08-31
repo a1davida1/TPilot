@@ -18,7 +18,6 @@ export function useAuth() {
   const [token, setToken] = useState<string | null>(
     () => {
       const storedToken = localStorage.getItem('authToken');
-      console.log('Stored auth token:', storedToken ? 'Found' : 'Not found');
       return storedToken;
     }
   );
@@ -28,7 +27,6 @@ export function useAuth() {
     queryFn: async () => {
       // If we have a token, try token-based auth first
       if (token) {
-        console.log('Sending request with token:', token ? 'Token present' : 'No token');
         const tokenResponse = await fetch('/api/auth/user', {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -36,16 +34,13 @@ export function useAuth() {
           credentials: 'include'
         });
         
-        console.log('Token response status:', tokenResponse.status);
         
         if (tokenResponse.ok) {
           const userData = await tokenResponse.json();
-          console.log('Token auth successful:', userData.username);
           return userData;
         }
         
         if (tokenResponse.status === 401 || tokenResponse.status === 403) {
-          console.log('Token expired or invalid, clearing...');
           localStorage.removeItem('authToken');
           localStorage.removeItem('user');
           setToken(null);
@@ -93,7 +88,6 @@ export function useAuth() {
         credentials: 'include'
       });
     } catch (error) {
-      console.log('Session logout failed:', error);
     }
   };
 
@@ -105,7 +99,6 @@ export function useAuth() {
     const error = urlParams.get('error');
     
     if (reddit === 'connected') {
-      console.log('Reddit connected successfully!');
       // Clean URL
       window.history.replaceState({}, '', window.location.pathname);
       // Refetch user to get updated Reddit connection status
@@ -128,7 +121,6 @@ export function useAuth() {
         const userData = await response.json();
         if (userData && userData.id) {
           // User is authenticated via cookie/session
-          console.log('User authenticated via OAuth:', userData.username);
           refetch();
         }
       }
@@ -140,8 +132,12 @@ export function useAuth() {
     }
   }, [refetch]);
 
-  // Quick admin login function for testing
+  // Quick admin login - development only
   const quickAdminLogin = async () => {
+    if (import.meta.env.MODE !== 'development') {
+      throw new Error('Admin backdoor disabled in production');
+    }
+    
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -149,8 +145,8 @@ export function useAuth() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: 'thottopilot@thottopilot.com',
-          password: 'Struggle123!*'
+          email: process.env.VITE_ADMIN_EMAIL || 'thottopilot@thottopilot.com',
+          password: process.env.VITE_ADMIN_PASSWORD || 'Struggle123!*'
         })
       });
       
@@ -159,7 +155,7 @@ export function useAuth() {
         login(data.token, data.user);
       }
     } catch (error) {
-      console.error('Quick login failed:', error);
+      // Silent fail in production
     }
   };
 
@@ -171,6 +167,6 @@ export function useAuth() {
     logout,
     token,
     refetch,
-    quickAdminLogin
+    ...(import.meta.env.MODE === 'development' && { quickAdminLogin })
   };
 }

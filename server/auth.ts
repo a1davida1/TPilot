@@ -5,14 +5,53 @@ import session from 'express-session';
 import { storage } from './storage';
 import { emailService } from './services/email-service';
 import crypto from 'crypto';
+import { z } from 'zod';
+import { authLimiter } from './middleware/security.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
+// Auth validation schemas
+const signupSchema = z.object({
+  username: z.string()
+    .min(3, 'Username must be at least 3 characters')
+    .max(50, 'Username must be less than 50 characters')
+    .regex(/^[a-zA-Z0-9_-]+$/, 'Username can only contain letters, numbers, underscores and hyphens'),
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .max(128, 'Password must be less than 128 characters')
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Password must contain at least one lowercase letter, one uppercase letter, and one number'),
+  email: z.string()
+    .email('Please enter a valid email address')
+    .max(255, 'Email must be less than 255 characters')
+});
+
+const loginSchema = z.object({
+  username: z.string().optional(),
+  email: z.string().email().optional(),
+  password: z.string()
+    .min(1, 'Password is required')
+    .max(128, 'Password must be less than 128 characters')
+}).refine(data => data.username || data.email, {
+  message: 'Either username or email is required'
+});
+
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required for secure token operations');
+}
 
 export function setupAuth(app: Express) {
   // Regular signup
-  app.post('/api/auth/signup', async (req, res) => {
+  app.post('/api/auth/signup', authLimiter, async (req, res) => {
     try {
-      const { username, password, email } = req.body;
+      // Validate input
+      const validationResult = signupSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: 'Validation failed', 
+          errors: validationResult.error.flatten().fieldErrors 
+        });
+      }
+      
+      const { username, password, email } = validationResult.data;
 
       // Check if user exists by username OR email
       const existingUserByUsername = await storage.getUserByUsername(username);
@@ -55,9 +94,18 @@ export function setupAuth(app: Express) {
   });
 
   // Regular login
-  app.post('/api/auth/login', async (req, res) => {
+  app.post('/api/auth/login', authLimiter, async (req, res) => {
     try {
-      const { username, password, email } = req.body;
+      // Validate input
+      const validationResult = loginSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: 'Validation failed', 
+          errors: validationResult.error.flatten().fieldErrors 
+        });
+      }
+      
+      const { username, password, email } = validationResult.data;
 
       // ADMIN LOGIN CHECK FIRST (using environment variables)
       const loginIdentifier = email || username;
@@ -136,7 +184,7 @@ export function setupAuth(app: Express) {
   });
 
   // Email verification
-  app.get('/api/auth/verify-email', async (req, res) => {
+  app.get('/api/auth/verify-email', authLimiter, async (req, res) => {
     try {
       const token = req.query.token as string;
       if (!token) {
@@ -170,57 +218,11 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // OAuth routes
-  app.get('/api/auth/google', (req, res) => {
-    // Redirect to Google OAuth
-    const clientId = process.env.GOOGLE_CLIENT_ID;
-    const redirectUri = encodeURIComponent(`${req.protocol}://${req.get('host')}/api/auth/google/callback`);
-    const scope = encodeURIComponent('email profile');
-
-    if (!clientId) {
-      return res.status(500).json({ message: 'Google OAuth not configured' });
-    }
-
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}`;
-    res.redirect(authUrl);
-  });
-
-  app.get('/api/auth/google/callback', async (req, res) => {
-    try {
-      // In a real implementation, you would exchange the code for an access token
-      // and fetch the user profile from Google
-      // For now, we'll show an error message
-      res.redirect('/?error=oauth-not-implemented');
-    } catch (error) {
-      console.error('Google OAuth callback error:', error);
-      res.redirect('/?error=oauth-failed');
-    }
-  });
-
-  app.get('/api/auth/facebook', (req, res) => {
-    // Similar to Google OAuth
-    const appId = process.env.FACEBOOK_APP_ID;
-    const redirectUri = encodeURIComponent(`${req.protocol}://${req.get('host')}/api/auth/facebook/callback`);
-
-    if (!appId) {
-      return res.status(500).json({ message: 'Facebook OAuth not configured' });
-    }
-
-    const authUrl = `https://www.facebook.com/v12.0/dialog/oauth?client_id=${appId}&redirect_uri=${redirectUri}&scope=email`;
-    res.redirect(authUrl);
-  });
-
-  app.get('/api/auth/facebook/callback', async (req, res) => {
-    try {
-      res.redirect('/?error=oauth-not-implemented');
-    } catch (error) {
-      console.error('Facebook OAuth callback error:', error);
-      res.redirect('/?error=oauth-failed');
-    }
-  });
+  // OAuth routes removed - placeholder routes created unnecessary attack surface
+  // When ready to implement, use proper OAuth libraries and security practices
 
   // Password reset request
-  app.post('/api/auth/forgot-password', async (req, res) => {
+  app.post('/api/auth/forgot-password', authLimiter, async (req, res) => {
     try {
       const { email } = req.body;
       
@@ -249,7 +251,7 @@ export function setupAuth(app: Express) {
   });
 
   // Reset password with token
-  app.post('/api/auth/reset-password', async (req, res) => {
+  app.post('/api/auth/reset-password', authLimiter, async (req, res) => {
     try {
       const { token, newPassword } = req.body;
       

@@ -142,14 +142,11 @@ export interface IStorage {
 class PostgreSQLStorage implements IStorage {
   // User operations
   async getUser(id: number): Promise<User | undefined> {
-    console.log('Storage: Looking for user with ID:', id);
     try {
       const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
       const user = result[0];
       if (user) {
-        console.log('Storage: Found user:', { id: user.id, username: user.username });
       } else {
-        console.log('Storage: User not found');
       }
       return user;
     } catch (error) {
@@ -161,7 +158,6 @@ class PostgreSQLStorage implements IStorage {
   async getAllUsers(): Promise<User[]> {
     try {
       const allUsers = await db.select().from(users).orderBy(desc(users.createdAt));
-      console.log('Storage: Found', allUsers.length, 'total users');
       return allUsers;
     } catch (error) {
       console.error('Storage: Error getting all users:', error);
@@ -193,7 +189,6 @@ class PostgreSQLStorage implements IStorage {
     try {
       const result = await db.insert(users).values(userData).returning();
       const user = result[0];
-      console.log('Storage: Created user:', { id: user.id, username: user.username });
       return user;
     } catch (error) {
       console.error('Storage: Error creating user:', error);
@@ -236,7 +231,6 @@ class PostgreSQLStorage implements IStorage {
   async updateUserPassword(userId: number, hashedPassword: string): Promise<void> {
     try {
       await db.update(users).set({ password: hashedPassword }).where(eq(users.id, userId));
-      console.log('Storage: Password updated for user:', userId);
     } catch (error) {
       console.error('Storage: Error updating user password:', error);
       throw error;
@@ -246,7 +240,6 @@ class PostgreSQLStorage implements IStorage {
   async updateUserEmailVerified(userId: number, verified: boolean): Promise<void> {
     try {
       await db.update(users).set({ emailVerified: verified }).where(eq(users.id, userId));
-      console.log('Storage: Email verification status updated for user:', userId);
     } catch (error) {
       console.error('Storage: Error updating email verification:', error);
       throw error;
