@@ -409,19 +409,49 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                   size="sm"
                   onClick={async () => {
                     try {
+                      const token = localStorage.getItem('auth_token');
+                      const headers: any = {
+                        'Content-Type': 'application/json'
+                      };
+                      
+                      // Only add auth header if we have a valid token
+                      if (token && token !== 'undefined' && token !== 'null') {
+                        headers['Authorization'] = `Bearer ${token}`;
+                      }
+                      
                       const response = await fetch('/api/reddit/connect', {
-                        headers: {
-                          'Authorization': `Bearer ${localStorage.getItem('token')}`
-                        }
+                        method: 'GET',
+                        headers,
+                        credentials: 'include' // Include cookies for session auth
                       });
-                      const data = await response.json();
-                      if (data.authUrl) {
-                        window.location.href = data.authUrl;
-                      } else if (data.error) {
-                        console.error('Reddit connection error:', data.error);
+                      
+                      if (response.ok) {
+                        const data = await response.json();
+                        if (data.authUrl) {
+                          window.location.href = data.authUrl;
+                        } else if (data.error) {
+                          console.error('Reddit connection error:', data.error);
+                          toast({
+                            title: "Connection Failed",
+                            description: data.error || "Unable to connect to Reddit",
+                            variant: "destructive"
+                          });
+                        }
+                      } else {
+                        console.error('Reddit connection failed:', response.status);
+                        toast({
+                          title: "Connection Failed", 
+                          description: "Please try again later",
+                          variant: "destructive"
+                        });
                       }
                     } catch (error) {
                       console.error('Failed to connect Reddit:', error);
+                      toast({
+                        title: "Connection Error",
+                        description: "Unable to connect to Reddit. Please try again.",
+                        variant: "destructive"
+                      });
                     }
                   }}
                   className="border-orange-200 text-orange-600 hover:bg-orange-50"
