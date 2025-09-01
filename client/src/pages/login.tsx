@@ -12,8 +12,8 @@ import { Link, useLocation } from 'wouter';
 
 export default function Login() {
   const [, setLocation] = useLocation();
-  const [view, setView] = useState<'landing' | 'login' | 'signup'>('landing');
-  // Password reset state removed - was non-functional
+  const [view, setView] = useState<'landing' | 'login' | 'signup' | 'forgot-password'>('landing');
+  const [resetEmail, setResetEmail] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -68,6 +68,26 @@ export default function Login() {
       toast({
         title: view === 'login' ? "Login failed" : "Signup failed",
         description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  });
+
+  const forgotPasswordMutation = useMutation({
+    mutationFn: async (email: string) => {
+      return apiRequest('POST', '/api/auth/forgot-password', { email });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Reset link sent!",
+        description: "Check your email for password reset instructions.",
+      });
+      setView('login');
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: "Failed to send reset email. Please try again.",
         variant: "destructive",
       });
     }
@@ -132,6 +152,69 @@ export default function Login() {
       mode: view === 'signup' ? 'signup' : 'login'
     });
   };
+
+  const handleForgotPassword = () => {
+    if (!resetEmail) {
+      toast({
+        title: "Email required",
+        description: "Please enter your email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+    forgotPasswordMutation.mutate(resetEmail);
+  };
+
+  // Forgot Password View
+  if (view === 'forgot-password') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-xl border-0 bg-white/80 backdrop-blur-lg">
+          <CardHeader className="space-y-1 text-center">
+            <CardTitle className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              Reset Password
+            </CardTitle>
+            <CardDescription>
+              Enter your email to receive a password reset link
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="reset-email">Email</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  id="reset-email"
+                  type="email"
+                  placeholder="your.email@example.com"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  className="pl-9"
+                  data-testid="input-reset-email"
+                />
+              </div>
+            </div>
+            <Button 
+              onClick={handleForgotPassword}
+              disabled={forgotPasswordMutation.isPending}
+              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+              data-testid="button-send-reset"
+            >
+              {forgotPasswordMutation.isPending ? 'Sending...' : 'Send Reset Link'}
+            </Button>
+            <Button 
+              onClick={() => setView('login')}
+              variant="ghost"
+              className="w-full"
+              data-testid="button-back-to-login"
+            >
+              Back to Login
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // Landing Page View
   if (view === 'landing') {
@@ -316,6 +399,19 @@ export default function Login() {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                {view === 'login' && (
+                  <div className="text-right">
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="p-0 h-auto text-sm text-purple-600 hover:text-purple-700"
+                      onClick={() => setView('forgot-password')}
+                      data-testid="link-forgot-password"
+                    >
+                      Forgot password?
+                    </Button>
+                  </div>
+                )}
               </div>
               
               {view === 'signup' && (
@@ -349,8 +445,6 @@ export default function Login() {
             </form>
             
             <div className="mt-6 text-center space-y-2">
-              {/* Password reset feature removed - was non-functional */}
-              
               <p className="text-sm text-muted-foreground">
                 {view === 'login' ? "Don't have an account?" : "Already have an account?"}
                 <button
