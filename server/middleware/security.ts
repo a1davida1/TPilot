@@ -53,38 +53,25 @@ export const authLimiter = rateLimit({
   max: 5, // 5 attempts
   message: 'Too many login attempts, please try again later.',
   standardHeaders: true,
-  legacyHeaders: false,
-  trustProxy: (ip: string) => {
-    // Trust specific proxy IPs or ranges (adjust for your infrastructure)
-    return ['127.0.0.1', '::1'].includes(ip) || ip.startsWith('10.') || ip.startsWith('192.168.');
-  },
+  legacyHeaders: false
 });
 
 export const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // 100 requests per 15 minutes
-  message: 'Too many requests, please try again later.',
-  trustProxy: (ip: string) => {
-    return ['127.0.0.1', '::1'].includes(ip) || ip.startsWith('10.') || ip.startsWith('192.168.');
-  },
+  message: 'Too many requests, please try again later.'
 });
 
 export const uploadLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 5, // 5 uploads per minute
-  message: 'Upload rate limit exceeded.',
-  trustProxy: (ip: string) => {
-    return ['127.0.0.1', '::1'].includes(ip) || ip.startsWith('10.') || ip.startsWith('192.168.');
-  },
+  message: 'Upload rate limit exceeded.'
 });
 
 export const generationLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 10, // 10 generations per minute
-  message: 'Generation rate limit exceeded.',
-  trustProxy: (ip: string) => {
-    return ['127.0.0.1', '::1'].includes(ip) || ip.startsWith('10.') || ip.startsWith('192.168.');
-  },
+  message: 'Generation rate limit exceeded.'
 });
 
 // ==========================================
@@ -95,7 +82,7 @@ export const inputSanitizer = (req: any, res: any, next: any) => {
   mongoSanitize({
     replaceWith: '_',
     onSanitize: ({ req, key }) => {
-      logger.warn(`Sanitized potentially malicious input: ${key} from ${req.userIP}`);
+      logger.warn(`Sanitized potentially malicious input: ${key} from ${req.ip}`);
     }
   })(req, res, () => {
     // Additional custom sanitization

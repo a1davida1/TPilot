@@ -2,6 +2,8 @@
  * Utility functions for structured logging with sensitive data redaction
  */
 
+import { logger } from '../middleware/security.js';
+
 // Sensitive field patterns to redact
 const SENSITIVE_PATTERNS = [
   'password',
@@ -62,7 +64,6 @@ export function redactSensitiveData(data: any): any {
  * Safe logging function that redacts sensitive data
  */
 export function safeLog(level: 'info' | 'warn' | 'error', message: string, data?: any) {
-  const { logger } = require('../middleware/security.js');
   
   if (data) {
     const redactedData = redactSensitiveData(data);
