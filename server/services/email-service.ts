@@ -4,7 +4,10 @@ import { safeLog } from '../lib/logger-utils.js';
 // Initialize SendGrid
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@thottopilot.com';
-const FRONTEND_URL = process.env.FRONTEND_URL || process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS}` : 'https://thottopilot.com';
+// In development, always use Replit domain for working links
+const FRONTEND_URL = process.env.NODE_ENV === 'development' && process.env.REPLIT_DOMAINS 
+  ? `https://${process.env.REPLIT_DOMAINS}` 
+  : process.env.FRONTEND_URL || 'https://thottopilot.com';
 
 if (SENDGRID_API_KEY) {
   sgMail.setApiKey(SENDGRID_API_KEY);
