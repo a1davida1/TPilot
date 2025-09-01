@@ -50,28 +50,48 @@ export const logger = winston.createLogger({
 // ==========================================
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // 5 attempts
-  message: 'Too many login attempts, please try again later.',
+  max: 15, // 15 attempts per 15 minutes
+  message: {
+    error: 'Rate limit exceeded',
+    message: 'Too many authentication attempts. You can try again in 15 minutes or use a different email address.',
+    type: 'rate_limit',
+    retryAfter: '15 minutes'
+  },
   standardHeaders: true,
   legacyHeaders: false
 });
 
 export const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // 100 requests per 15 minutes
-  message: 'Too many requests, please try again later.'
+  max: 200, // 200 requests per 15 minutes
+  message: {
+    error: 'Rate limit exceeded',
+    message: 'Too many requests from your IP address. Please wait 15 minutes before trying again.',
+    type: 'rate_limit',
+    retryAfter: '15 minutes'
+  }
 });
 
 export const uploadLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 5, // 5 uploads per minute
-  message: 'Upload rate limit exceeded.'
+  max: 10, // 10 uploads per minute
+  message: {
+    error: 'Upload rate limit exceeded',
+    message: 'Too many file uploads. Please wait 1 minute before uploading more files.',
+    type: 'rate_limit',
+    retryAfter: '1 minute'
+  }
 });
 
 export const generationLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 10, // 10 generations per minute
-  message: 'Generation rate limit exceeded.'
+  max: 20, // 20 generations per minute
+  message: {
+    error: 'Content generation rate limit exceeded',
+    message: 'Too many content generation requests. Please wait 1 minute before generating more content.',
+    type: 'rate_limit',
+    retryAfter: '1 minute'
+  }
 });
 
 // ==========================================

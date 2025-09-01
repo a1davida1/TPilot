@@ -84,10 +84,30 @@ export default function Login() {
       });
       setView('login');
     },
-    onError: (error: any) => {
+    onError: async (error: any) => {
+      let errorMessage = "Failed to send reset email. Please try again.";
+      let errorTitle = "Error";
+      
+      // Parse server error response for more specific messages
+      if (error.response) {
+        try {
+          const errorData = await error.response.json();
+          if (errorData.type === 'rate_limit') {
+            errorTitle = "Too Many Attempts";
+            errorMessage = errorData.message || "You've made too many password reset attempts. Please wait 15 minutes or try a different email address.";
+          } else if (errorData.message) {
+            errorMessage = errorData.message;
+          }
+        } catch (e) {
+          // Use default message if parsing fails
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
       toast({
-        title: "Error",
-        description: "Failed to send reset email. Please try again.",
+        title: errorTitle,
+        description: errorMessage,
         variant: "destructive",
       });
     }
