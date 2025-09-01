@@ -27,12 +27,13 @@ interface AuthModalProps {
 
 export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
   const { toast } = useToast();
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot-password'>('login');
   const [formData, setFormData] = useState({
     username: '',
     email: '',
     password: ''
   });
+  const [resetEmail, setResetEmail] = useState('');
 
   const authMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -84,6 +85,40 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
       toast({
         title: 'Error',
         description: error.message || 'Authentication failed. Please try again.',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const forgotPasswordMutation = useMutation({
+    mutationFn: async (email: string) => {
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to send reset email');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Reset Email Sent',
+        description: 'Please check your email for password reset instructions.'
+      });
+      setMode('login');
+      setResetEmail('');
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to send reset email. Please try again.',
         variant: 'destructive'
       });
     }
@@ -201,12 +236,13 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                {mode === 'login' ? 'Welcome Back' : 'Create Account'}
+                {mode === 'login' ? 'Welcome Back' : mode === 'signup' ? 'Create Account' : 'Reset Password'}
               </h2>
               <p className="text-sm text-foreground mt-1">
                 {mode === 'login' 
                   ? 'Sign in to access your content' 
-                  : 'Join ThottoPilot today'}
+                  : mode === 'signup' ? 'Join ThottoPilot today'
+                  : 'Enter your email to receive reset instructions'}
               </p>
             </div>
             <Button
@@ -219,34 +255,96 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
             </Button>
           </div>
 
-          {/* Social Auth */}
-          <div className="space-y-3 mb-6">
-            {socialProviders.map((provider) => (
+          {/* Social Auth - Hide for forgot password */}
+          {mode !== 'forgot-password' && (
+            <>
+              <div className="space-y-3 mb-6">
+                {socialProviders.map((provider) => (
+                  <Button
+                    key={provider.id}
+                    onClick={() => {
+                      if ((provider as any).handler) {
+                        (provider as any).handler();
+                      } else if (provider.url) {
+                        handleSocialAuth(provider.url);
+                      }
+                    }}
+                    className={`w-full ${provider.color} text-white border-0`}
+                  >
+                    {provider.icon}
+                    <span className="ml-2">Continue with {provider.name}</span>
+                  </Button>
+                ))}
+              </div>
+
+              <div className="relative mb-6">
+                <Separator className="bg-border" />
+                <span className="absolute left-1/2 -translate-x-1/2 -top-3 bg-card px-3 text-sm text-foreground">
+                  or
+                </span>
+              </div>
+            </>
+          )}
+
+          {/* Forgot Password Form */}
+          {mode === 'forgot-password' ? (
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if (resetEmail.trim()) {
+                forgotPasswordMutation.mutate(resetEmail);
+              }
+            }} className="space-y-4">
+              <div>
+                <Label htmlFor="reset-email" className="text-foreground font-medium">
+                  Email Address
+                </Label>
+                <div className="relative mt-1">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="reset-email"
+                    type="email"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    className="pl-10 bg-background border-input text-foreground focus:border-purple-500"
+                    placeholder="Enter your email address"
+                    required
+                    data-testid="input-reset-email"
+                  />
+                </div>
+              </div>
+
               <Button
-                key={provider.id}
-                onClick={() => {
-                  if ((provider as any).handler) {
-                    (provider as any).handler();
-                  } else if (provider.url) {
-                    handleSocialAuth(provider.url);
-                  }
-                }}
-                className={`w-full ${provider.color} text-white border-0`}
+                type="submit"
+                disabled={forgotPasswordMutation.isPending}
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                data-testid="button-send-reset"
               >
-                {provider.icon}
-                <span className="ml-2">Continue with {provider.name}</span>
+                {forgotPasswordMutation.isPending ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    Send Reset Email
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
               </Button>
-            ))}
-          </div>
 
-          <div className="relative mb-6">
-            <Separator className="bg-border" />
-            <span className="absolute left-1/2 -translate-x-1/2 -top-3 bg-card px-3 text-sm text-foreground">
-              or
-            </span>
-          </div>
-
-          {/* Form */}
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => setMode('login')}
+                  className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+                  data-testid="button-back-to-login"
+                >
+                  Back to Login
+                </button>
+              </div>
+            </form>
+          ) : (
+            /* Login/Signup Form */
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Label htmlFor="username" className="text-foreground font-medium">
@@ -303,6 +401,20 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
               </div>
             </div>
 
+            {/* Forgot Password Link for Login */}
+            {mode === 'login' && (
+              <div className="text-right">
+                <button
+                  type="button"
+                  onClick={() => setMode('forgot-password')}
+                  className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+                  data-testid="link-forgot-password"
+                >
+                  Forgot password?
+                </button>
+              </div>
+            )}
+
             <Button
               type="submit"
               disabled={authMutation.isPending}
@@ -321,20 +433,23 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
               )}
             </Button>
           </form>
+          )}
 
-          {/* Toggle mode */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-foreground">
-              {mode === 'login' ? "Don't have an account?" : "Already have an account?"}
-              <button
-                onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
-                className="ml-2 text-primary hover:text-primary/80 font-medium"
-                aria-label={mode === 'login' ? 'Switch to sign up form' : 'Switch to sign in form'}
-              >
-                {mode === 'login' ? 'Sign up' : 'Sign in'}
-              </button>
-            </p>
-          </div>
+          {/* Toggle mode - Only show for login/signup */}
+          {mode !== 'forgot-password' && (
+            <div className="mt-6 text-center">
+              <p className="text-sm text-foreground">
+                {mode === 'login' ? "Don't have an account?" : "Already have an account?"}
+                <button
+                  onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
+                  className="ml-2 text-primary hover:text-primary/80 font-medium"
+                  aria-label={mode === 'login' ? 'Switch to sign up form' : 'Switch to sign in form'}
+                >
+                  {mode === 'login' ? 'Sign up' : 'Sign in'}
+                </button>
+              </p>
+            </div>
+          )}
 
           {/* Benefits for signup */}
           {mode === 'signup' && (
