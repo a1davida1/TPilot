@@ -39,47 +39,40 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
     mutationFn: async (data: typeof formData) => {
       const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/signup';
       
-      // Prepare request data - exclude email for login mode
+      // Prepare request data - exclude email for login mode unless signup
       const requestData = mode === 'login' 
         ? { username: data.username, password: data.password }
-        : data;
+        : { username: data.username, email: data.email, password: data.password };
         
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestData)
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Authentication failed');
-      }
-
-      return response.json();
+      return apiRequest('POST', endpoint, requestData);
     },
-    onSuccess: (data) => {
-      if (!data.token) {
-        throw new Error('No authentication token received');
+    onSuccess: async (response: Response) => {
+      const data = await response.json();
+      
+      if (mode === 'login') {
+        toast({
+          title: 'Welcome back!',
+          description: 'You have successfully logged in.'
+        });
+        
+        // Reset form and close modal
+        setFormData({ username: '', email: '', password: '' });
+        onSuccess();
+        
+        // Refresh the page to update auth state with HttpOnly cookies
+        setTimeout(() => {
+          window.location.reload();
+        }, 100);
+      } else {
+        toast({
+          title: 'Account created!',
+          description: 'Please check your email to verify your account before logging in.'
+        });
+        
+        // Switch to login mode for verification
+        setMode('login');
+        setFormData({ username: '', email: '', password: '' });
       }
-      
-      localStorage.setItem('authToken', data.token);
-      if (data.user) {
-        localStorage.setItem('user', JSON.stringify(data.user));
-      }
-      
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
-      toast({
-        title: mode === 'login' ? 'Welcome back!' : 'Account created!',
-        description: mode === 'login' 
-          ? 'You have successfully logged in.' 
-          : 'Your account has been created successfully.'
-      });
-      
-      // Reset form
-      setFormData({ username: '', email: '', password: '' });
-      onSuccess();
     },
     onError: (error: any) => {
       toast({
