@@ -108,9 +108,21 @@ export function makeCoinbase(): PaymentProvider {
         }
 
         const data = await response.json();
+        
+        // Validate response structure
+        if (!data || !data.data || !data.data.hosted_url) {
+          throw new Error('Invalid response from Coinbase Commerce API');
+        }
+        
         return { url: data.data.hosted_url };
       } catch (error) {
         console.error('Coinbase Commerce checkout creation failed:', error);
+        
+        // Re-throw specific validation errors
+        if (error.message === 'Invalid response from Coinbase Commerce API') {
+          throw error;
+        }
+        
         throw new Error('Failed to create Coinbase Commerce checkout session');
       }
     },
