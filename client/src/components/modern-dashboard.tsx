@@ -36,7 +36,8 @@ import {
   Target,
   DollarSign,
   FileText,
-  ChevronDown
+  ChevronDown,
+  Calculator
 } from "lucide-react";
 import { FaReddit } from "react-icons/fa";
 import { cn } from "@/lib/utils";
@@ -115,6 +116,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
     { id: "scheduler", label: "Post Scheduler", icon: <Clock className="h-5 w-5" />, badge: "PRO", section: "manage" },
     { id: "analytics", label: "Analytics", icon: <BarChart3 className="h-5 w-5" />, section: "manage" },
     { id: "communities", label: "Communities", icon: <Users className="h-5 w-5" />, badge: "50+", section: "manage" },
+    { id: "tax-tracker", label: "Tax Tracker", icon: <Calculator className="h-5 w-5" />, badge: "NEW", section: "manage" },
     { id: "trending", label: "Trending Tags", icon: <Hash className="h-5 w-5" />, section: "insights" },
     { id: "audience", label: "Audience Insights", icon: <Target className="h-5 w-5" />, badge: "PRO", section: "insights" },
     { id: "history", label: "History", icon: <History className="h-5 w-5" />, section: "account" },
