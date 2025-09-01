@@ -106,9 +106,9 @@ export default function Login() {
     }
 
     authMutation.mutate({
-      email,
+      email: view === 'signup' ? email : email, // For signup, use email; for login, use email field value
+      username: view === 'signup' ? username : email, // For signup, use username; for login, send same value as username too
       password,
-      username: view === 'signup' ? username : undefined,
       mode: view === 'signup' ? 'signup' : 'login'
     });
   };
