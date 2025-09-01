@@ -82,9 +82,12 @@ export const emailService = {
 
   async sendPasswordResetEmail(to: string, username: string) {
     if (!SENDGRID_API_KEY) {
-      // SendGrid not configured - email skipped
+      console.log('❌ SendGrid not configured - password reset email skipped');
       return;
     }
+
+    console.log(`🔄 Sending password reset email to: ${to}`);
+    console.log(`📧 FROM_EMAIL: ${FROM_EMAIL}`);
 
     // Generate reset token
     const jwt = await import('jsonwebtoken');
@@ -151,8 +154,17 @@ export const emailService = {
     };
 
     try {
-      await sgMail.send(msg);
-    } catch (error) {
+      console.log(`📤 Attempting to send email via SendGrid...`);
+      const result = await sgMail.send(msg);
+      console.log(`✅ Password reset email sent successfully to: ${to}`);
+      console.log(`SendGrid response:`, result[0].statusCode);
+      safeLog('info', 'Password reset email sent successfully', { to });
+    } catch (error: any) {
+      console.error(`❌ Failed to send password reset email to: ${to}`);
+      console.error(`SendGrid error:`, error.message);
+      if (error.response?.body) {
+        console.error(`SendGrid error details:`, error.response.body);
+      }
       safeLog('error', 'Password reset email send failed', { error: error.message });
       throw error;
     }
