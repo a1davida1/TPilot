@@ -140,11 +140,9 @@ export default function Login() {
     }
 
     // For login, detect if input contains "@" to determine if it's email or username
-    const loginPayload = view === 'login' && email.includes('@') 
-      ? { email: email } 
-      : view === 'login' 
-        ? { username: email }
-        : { email: email, username: username };
+    const loginPayload = view === 'login' 
+      ? (email.includes('@') ? { email: email } : { username: email })
+      : { email: email, username: username };
 
     authMutation.mutate({
       ...loginPayload,

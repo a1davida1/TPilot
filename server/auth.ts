@@ -155,10 +155,14 @@ export function setupAuth(app: Express) {
 
       const loginIdentifier = email || username;
 
-      // Try to find user by username first, then by email
-      let user = await storage.getUserByUsername(username || loginIdentifier || '');
-      if (!user && loginIdentifier) {
+      // Check if loginIdentifier is an email (contains @) or username
+      let user;
+      if (loginIdentifier && loginIdentifier.includes('@')) {
+        // It's an email
         user = await storage.getUserByEmail(loginIdentifier);
+      } else {
+        // It's a username
+        user = await storage.getUserByUsername(loginIdentifier || '');
       }
 
       if (!user) {
