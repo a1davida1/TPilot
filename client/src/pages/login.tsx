@@ -22,7 +22,7 @@ export default function Login() {
   const { toast } = useToast();
 
   const authMutation = useMutation({
-    mutationFn: async (data: { email: string; password: string; username?: string; mode: 'login' | 'signup' }) => {
+    mutationFn: async (data: { email?: string; username?: string; password: string; mode: 'login' | 'signup' }) => {
       return apiRequest('POST', `/api/auth/${data.mode}`, data);
     },
     onSuccess: async (response: Response) => {
@@ -34,14 +34,8 @@ export default function Login() {
           description: "You're logged in successfully.",
         });
 
-        if (data.token && data.user) {
-          localStorage.setItem('authToken', data.token);
-          localStorage.setItem('user', JSON.stringify(data.user));
-          // Force auth state update immediately
-          window.location.href = '/dashboard';
-        } else {
-          setLocation('/dashboard');
-        }
+        // Rely on HttpOnly cookies, no localStorage usage
+        setLocation('/dashboard');
       } else {
         toast({
           title: "Account created!",
@@ -50,10 +44,30 @@ export default function Login() {
         setView('login');
       }
     },
-    onError: (error: any) => {
+    onError: async (error: any) => {
+      let errorMessage = "Please check your credentials and try again.";
+      let fieldErrors: any = {};
+
+      // Parse server errors to show field-specific messages
+      if (error.response) {
+        try {
+          const errorData = await error.response.json();
+          if (errorData.errors) {
+            fieldErrors = errorData.errors;
+            errorMessage = Object.values(errorData.errors).join(', ') as string;
+          } else if (errorData.message) {
+            errorMessage = errorData.message;
+          }
+        } catch (e) {
+          // Fallback to generic message
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
       toast({
         title: view === 'login' ? "Login failed" : "Signup failed",
-        description: error.message || "Please check your credentials and try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -105,9 +119,15 @@ export default function Login() {
       }
     }
 
+    // For login, detect if input contains "@" to determine if it's email or username
+    const loginPayload = view === 'login' && email.includes('@') 
+      ? { email: email } 
+      : view === 'login' 
+        ? { username: email }
+        : { email: email, username: username };
+
     authMutation.mutate({
-      email: view === 'signup' ? email : email, // For signup, use email; for login, use email field value
-      username: view === 'signup' ? username : email, // For signup, use username; for login, send same value as username too
+      ...loginPayload,
       password,
       mode: view === 'signup' ? 'signup' : 'login'
     });

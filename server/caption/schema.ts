@@ -7,7 +7,7 @@ export const CaptionItem = z.object({
   cta: z.string().min(2),
   mood: z.string().min(2),
   style: z.string().min(2),
-  safety_level: z.enum(["normal","spicy_safe","needs_review"]),
+  safety_level: z.string(),
   nsfw: z.boolean().default(false)
 });
 export const CaptionArray = z.array(CaptionItem).length(5);

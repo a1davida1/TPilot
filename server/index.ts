@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes.js";
 import { setupAuth } from "./auth.js";
 import { mountStripeWebhook } from "./routes/webhooks.stripe.js";
@@ -50,6 +51,7 @@ app.use((req, _res, next) => {
 
 // Raw body for Stripe webhook signature verification
 app.post("/api/webhooks/stripe", express.raw({ type: "application/json" }), (_req,_res,next)=>next());
+app.use(cookieParser()); // Parse cookies for authentication
 app.use(express.json({ limit: '50mb' })); // Increase for image uploads
 app.use(express.urlencoded({ extended: false, limit: '50mb' })); // Increase for image uploads
 

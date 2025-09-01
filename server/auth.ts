@@ -99,9 +99,16 @@ export function setupAuth(app: Express) {
           { expiresIn: '24h' }
         );
 
+        // Set JWT in HttpOnly cookie
+        res.cookie('authToken', token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          maxAge: 24 * 60 * 60 * 1000 // 24 hours
+        });
+
         res.status(201).json({
           message: 'User created successfully',
-          token,
           user: {
             id: user.id,
             username: user.username,
@@ -179,8 +186,15 @@ export function setupAuth(app: Express) {
         { expiresIn: '24h' }
       );
 
+      // Set JWT in HttpOnly cookie
+      res.cookie('authToken', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      });
+
       res.json({
-        token,
         user: {
           id: user.id,
           username: user.username,
@@ -306,31 +320,38 @@ export function setupAuth(app: Express) {
   // Get current user endpoint (CRITICAL - this was missing!)
   app.get('/api/auth/user', async (req: any, res) => {
     try {
-      // Try JWT token authentication
-      const authHeader = req.headers.authorization;
-      if (authHeader && authHeader.startsWith('Bearer ')) {
-        const token = authHeader.substring(7);
-        
-        try {
-          const decoded = jwt.verify(token, JWT_SECRET_VALIDATED) as any;
-          
-          const user = await storage.getUser(decoded.userId || decoded.id);
-          if (user) {
-            const { password: _, ...userResponse } = user;
-            return res.json({
-              ...userResponse,
-              tier: userResponse.tier || 'free'
-            });
-          }
+      let token = null;
 
-          return res.status(404).json({ message: 'User not found' });
-        } catch (jwtError) {
-          safeLog('error', 'JWT verification failed', { error: jwtError.message });
-          return res.status(401).json({ message: 'Invalid token' });
-        }
+      // Try cookie-based authentication first (preferred)
+      if (req.cookies && req.cookies.authToken) {
+        token = req.cookies.authToken;
+      }
+      // Fallback to Bearer token authentication  
+      else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+        token = req.headers.authorization.substring(7);
       }
 
-      return res.status(401).json({ message: 'Access token required' });
+      if (!token) {
+        return res.status(401).json({ message: 'Access token required' });
+      }
+        
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET_VALIDATED) as any;
+        
+        const user = await storage.getUser(decoded.userId || decoded.id);
+        if (user) {
+          const { password: _, ...userResponse } = user;
+          return res.json({
+            ...userResponse,
+            tier: userResponse.tier || 'free'
+          });
+        }
+
+        return res.status(404).json({ message: 'User not found' });
+      } catch (jwtError) {
+        safeLog('error', 'JWT verification failed', { error: jwtError.message });
+        return res.status(401).json({ message: 'Invalid token' });
+      }
     } catch (error) {
       safeLog('error', 'Get user failed', { error: error.message });
       res.status(500).json({ message: 'Error fetching user data' });

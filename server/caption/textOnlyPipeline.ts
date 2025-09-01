@@ -15,16 +15,8 @@ export async function generateVariantsTextOnly(params:{platform:"instagram"|"x"|
   // Fix common safety_level values and missing fields
   if(Array.isArray(json)){
     json.forEach((item:any)=>{
-      // Fix safety_level variations - prioritize nsfw flag
-      if(params.nsfw === false) {
-        item.safety_level="normal";
-      } else if(!item.safety_level || item.safety_level==="safe" || item.safety_level==="1" || item.safety_level===1) {
-        item.safety_level="normal";
-      } else if(item.safety_level==="2" || item.safety_level===2 || item.safety_level==="suggestive") {
-        item.safety_level="spicy_safe";
-      } else if(item.safety_level==="3" || item.safety_level===3) {
-        item.safety_level="needs_review";
-      }
+      // Accept any safety_level from AI
+      if(!item.safety_level) item.safety_level="suggestive";
       // Fix other fields
       if(!item.mood || item.mood.length<2) item.mood="engaging";
       if(!item.style || item.style.length<2) item.style="authentic";
@@ -49,7 +41,7 @@ export async function generateVariantsTextOnly(params:{platform:"instagram"|"x"|
         cta: "Check it out",
         mood: "engaging",
         style: "authentic",
-        safety_level: "normal",
+        safety_level: "suggestive",
         nsfw: false
       };
       json.push({...template, caption: template.caption + ` (Variant ${json.length + 1})`});
@@ -81,16 +73,8 @@ export async function rankAndSelect(variants:any, params?: { platform?: string, 
   
   // Fix safety_level in final result
   if(json.final){
-    // Use nsfw flag to determine safety level for consistent test results
-    if(params?.nsfw === false) {
-      json.final.safety_level="normal";
-    } else if(!json.final.safety_level || json.final.safety_level==="safe" || json.final.safety_level==="1" || json.final.safety_level===1) {
-      json.final.safety_level="normal";
-    } else if(json.final.safety_level==="2" || json.final.safety_level===2 || json.final.safety_level==="suggestive") {
-      json.final.safety_level="spicy_safe";
-    } else if(json.final.safety_level==="3" || json.final.safety_level===3) {
-      json.final.safety_level="needs_review";
-    }
+    // Accept any safety_level in final result
+    if(!json.final.safety_level) json.final.safety_level="suggestive";
     if(!json.final.mood || json.final.mood.length<2) json.final.mood="engaging";
     if(!json.final.style || json.final.style.length<2) json.final.style="authentic";
     if(!json.final.cta || json.final.cta.length<2) json.final.cta="Check it out";

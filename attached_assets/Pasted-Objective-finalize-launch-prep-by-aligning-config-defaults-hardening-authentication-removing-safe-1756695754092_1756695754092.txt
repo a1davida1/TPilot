@@ -1,0 +1,45 @@
+Objective: finalize launch prep by aligning config defaults, hardening authentication, removing safety-level restrictions, and expanding tests. Follow these steps in order, committing in logical chunks and running checks after each major change.
+
+1. Align starter tier generation limit
+   - File: server/lib/config.ts
+   - In fallback config (~line 143), set DAILY_GENERATIONS_STARTER to 50.
+   - Run: npm run typecheck
+   - Commit: “fix: align starter daily generation limit”
+
+2. Fix login identifier logic & token storage
+   - File: client/src/pages/login.tsx
+   - Update handleSubmit to send `{email}` when input contains “@”, otherwise `{username}`.
+   - Remove localStorage usage; rely on HttpOnly cookies.
+   - Parse server errors to show field messages.
+   - Run: npm run typecheck
+   - Commit: “feat: improve login identifier handling and auth security”
+
+3. Enable cookie-based auth on the server
+   - File: server/auth.ts
+   - Set JWT in HttpOnly, Secure, SameSite=Strict cookies.
+   - Ensure API endpoints include credentials.
+   - Run: npm run typecheck
+   - Commit: “feat: issue auth tokens via cookies”
+
+4. Remove safety-level gating in caption pipelines
+   - Files: server/caption/schema.ts, server/caption/geminiPipeline.ts, textOnlyPipeline.ts, rewritePipeline.ts
+   - Replace safety_level enum with z.string().
+   - Remove mapping/validation blocks that constrain safety_level.
+   - Run: npm run typecheck
+   - Commit: “chore: allow unrestricted caption safety levels”
+
+5. Expand test coverage
+   - Add Vitest suites under tests/ for:
+     • username/email login + cookie auth
+     • caption generation accepting ‘suggestive’
+     • worker queue initialization/logging
+   - Ensure npm test runs these.
+   - Commit: “test: add auth and caption integration tests”
+
+6. Final checks
+   - Run: npm run typecheck
+   - Run: npm test
+   - Confirm `git status` is clean.
+   - Summarize test results and any remaining TODOs.
+
+Remember: do not create new branches. Keep commits focused and descriptive. Provide a final summary of work and blockers.
