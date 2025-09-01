@@ -86,6 +86,7 @@ Keep it authentic and engaging for ${platform}.
     }
 
     // Use multi-provider system with Gemini first (70x cheaper than OpenAI)
+    // Note: This require() will be converted to import() in future refactor
     const { generateWithMultiProvider } = require('./services/multi-ai-provider');
     
     const response = await generateWithMultiProvider(
