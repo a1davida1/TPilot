@@ -533,6 +533,68 @@ ANALYTICS_WRITE_KEY=your-analytics-key
 **CRON_TZ** - Timezone for scheduled tasks (default: America/Chicago)
 **USE_PG_QUEUE** - Force PostgreSQL queue instead of Redis (default: true)
 
+## Session Setup & Generation Troubleshooting
+
+### Session Configuration
+
+ThottoPilot uses both JWT tokens (for API authentication) and express-session (for OAuth flows). The session system requires:
+
+- **PostgreSQL session table**: Created by `migrations/001_create_session_table.sql`
+- **SESSION_SECRET environment variable**: Required for session encryption
+- **Database connection**: Uses PostgreSQL for session storage in production
+
+**Common Session Issues:**
+- `Session store not available`: Run the session table migration
+- `Invalid session`: Check SESSION_SECRET is set correctly
+- `Session persistence issues`: Verify PostgreSQL connection
+
+**Setup Instructions:**
+```bash
+# Apply session table migration (Required for production)
+psql $DATABASE_URL -f migrations/001_create_session_table.sql
+```
+
+### AI Content Generation Troubleshooting
+
+The AI system uses a multi-provider fallback architecture:
+
+**Provider Priority (by cost):**
+1. Google Gemini Flash (cheapest) - `GOOGLE_GENAI_API_KEY`
+2. OpenAI GPT-4o (fallback) - `OPENAI_API_KEY`  
+3. Template system (final fallback) - No API key required
+
+**Troubleshooting "Generation Failed" Errors:**
+
+1. **Check API Key Configuration:**
+   ```bash
+   # Verify at least one provider is configured
+   echo "AI providers configured: $(env | grep -E "(OPENAI|GEMINI|GOOGLE_GENAI)" | wc -l)"
+   ```
+
+2. **Common Error Patterns:**
+   - `quota exceeded`: API limits reached, upgrade provider plan
+   - `Invalid API key`: Check environment variable is set correctly
+   - `Network timeout`: Temporary provider issue, system will retry with next provider
+   - `All providers failed`: Check logs, system falls back to demo content
+
+3. **Error Recovery:**
+   - System automatically tries providers in cost order
+   - If all fail, demo content is returned (not an error)
+   - Check server logs for specific provider failure reasons
+
+4. **Environment Variables Required:**
+   ```bash
+   # At least one of these should be set:
+   OPENAI_API_KEY=your_openai_key
+   GOOGLE_GENAI_API_KEY=your_gemini_key
+   GEMINI_API_KEY=your_gemini_key  # Alternative variable name
+   ```
+
+**Testing Generation:**
+- Demo user: `admin@thottopilot.com` / `admin123`
+- If generation fails, check browser console and server logs
+- System gracefully degrades to demo content rather than hard failures
+
 ## License
 
 Proprietary - All rights reserved
