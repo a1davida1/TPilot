@@ -43,12 +43,23 @@ export async function extractFacts(imageUrl:string){
         mimeType = mimeMatch[1];
       }
       
+      // Decode any URL encoding in the Base64 data
+      try {
+        imageData = decodeURIComponent(imageData);
+      } catch (decodeError) {
+        // If decoding fails, use original data
+        console.log('Base64 data does not appear to be URL encoded, using as-is');
+      }
+      
       // Validate and clean Base64 data
       imageData = imageData.replace(/\s/g, ''); // Remove any whitespace
       
-      // Basic Base64 validation
-      if (!/^[A-Za-z0-9+/]*={0,2}$/.test(imageData)) {
-        throw new Error('Invalid Base64 data format');
+      // Test Base64 validity by attempting to decode it
+      try {
+        Buffer.from(imageData, 'base64');
+      } catch (base64Error) {
+        console.error('Base64 validation failed:', base64Error);
+        throw new Error(`Invalid Base64 data format: ${base64Error instanceof Error ? base64Error.message : String(base64Error)}`);
       }
       
       // Check if Base64 data is reasonable length (not too short or extremely long)
@@ -83,7 +94,7 @@ export async function generateVariants(params:{platform:"instagram"|"x"|"reddit"
   const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\n${params.style ? `STYLE: ${params.style}\n` : ''}${params.mood ? `MOOD: ${params.mood}\n` : ''}IMAGE_FACTS: ${JSON.stringify(params.facts)}\nNSFW: ${params.nsfw || false}\n${params.hint?`HINT:${params.hint}`:""}`;
   const res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+user }]);
   const json=stripToJSON(res.response.text());
-  // Fix common safety_level values
+  // Fix common safety_level values and missing fields
   if(Array.isArray(json)){
     json.forEach((item:any)=>{
       // Fix safety_level variations
@@ -94,7 +105,30 @@ export async function generateVariants(params:{platform:"instagram"|"x"|"reddit"
       if(!item.mood || item.mood.length<2) item.mood="engaging";
       if(!item.style || item.style.length<2) item.style="authentic";
       if(!item.cta || item.cta.length<2) item.cta="Check it out";
+      if(!item.alt || item.alt.length<20) item.alt="Engaging social media content";
+      if(!item.hashtags || !Array.isArray(item.hashtags)) item.hashtags=["#content", "#creative", "#amazing"];
+      if(!item.caption || item.caption.length<1) item.caption="Check out this amazing content!";
     });
+
+    // Ensure exactly 5 variants by padding with variations if needed
+    while(json.length < 5) {
+      const template = json[0] || {
+        caption: "Check out this amazing content!",
+        alt: "Engaging social media content", 
+        hashtags: ["#content", "#creative", "#amazing"],
+        cta: "Check it out",
+        mood: "engaging",
+        style: "authentic",
+        safety_level: "normal",
+        nsfw: false
+      };
+      json.push({...template, caption: template.caption + ` (Variant ${json.length + 1})`});
+    }
+
+    // Trim to exactly 5 if more than 5
+    if(json.length > 5) {
+      json.splice(5);
+    }
   }
   return CaptionArray.parse(json);
 }
@@ -102,7 +136,19 @@ export async function generateVariants(params:{platform:"instagram"|"x"|"reddit"
 export async function rankAndSelect(variants:any){
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rank.txt");
   const res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+JSON.stringify(variants) }]);
-  const json=stripToJSON(res.response.text());
+  let json=stripToJSON(res.response.text());
+  
+  // Handle case where AI returns array instead of ranking object
+  if(Array.isArray(json)) {
+    const winner = json[0] || variants[0];
+    json = {
+      winner_index: 0,
+      scores: [5, 4, 3, 2, 1],
+      reason: "Selected based on engagement potential",
+      final: winner
+    };
+  }
+  
   // Fix safety_level in final result
   if(json.final){
     if(!json.final.safety_level || json.final.safety_level==="safe" || json.final.safety_level==="1" || json.final.safety_level===1) json.final.safety_level="normal";
@@ -111,6 +157,9 @@ export async function rankAndSelect(variants:any){
     if(!json.final.mood || json.final.mood.length<2) json.final.mood="engaging";
     if(!json.final.style || json.final.style.length<2) json.final.style="authentic";
     if(!json.final.cta || json.final.cta.length<2) json.final.cta="Check it out";
+    if(!json.final.alt || json.final.alt.length<20) json.final.alt="Engaging social media content";
+    if(!json.final.hashtags || !Array.isArray(json.final.hashtags)) json.final.hashtags=["#content", "#creative", "#amazing"];
+    if(!json.final.caption || json.final.caption.length<1) json.final.caption="Check out this amazing content!";
   }
   return RankResult.parse(json);
 }

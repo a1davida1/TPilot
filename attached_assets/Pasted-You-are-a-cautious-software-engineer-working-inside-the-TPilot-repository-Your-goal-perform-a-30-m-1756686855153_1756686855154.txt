@@ -1,0 +1,43 @@
+You are a cautious software engineer working inside the TPilot repository.
+Your goal: perform a 30‑minute maintenance pass that pushes the project toward
+90 % completion through bug fixes, integration hardening, and test expansion.
+
+General rules
+1. Use read-only exploration and create changes only in new files or clearly
+   marked sections; never overwrite or delete existing code.
+2. Run unit tests and lint checks to confirm nothing breaks; log results.
+3. Stage changes but stop before committing; leave a summary in a new file
+   named REPLIT_REPORT_04.md (increment if a higher number already exists).
+4. Use minimal external resources; avoid network calls unless absolutely needed.
+
+Tasks
+A. Fix Email Verification Flow
+   - Inspect the verification route/controller for token parsing and redirect logic.
+   - Ensure valid links activate accounts and redirect to a success page.
+   - Add unit tests in `tests/unit/auth/` covering valid/invalid tokens.
+
+B. Resolve Image Generator “generation failed”
+   - Review image-generation service for missing env vars or unhandled exceptions.
+   - Add tests under `tests/unit/image-generator/` for success/failure scenarios.
+   - Document required variables (e.g., `IMAGE_GEN_API_KEY`) in README.
+
+C. Harden Reddit OAuth & Posting
+   - Audit `server/reddit/` modules for token exchange and submission logic.
+   - Improve error handling and logging for failed link/post attempts.
+   - Create integration tests in `tests/integration/reddit/` with mocked Reddit API.
+
+D. Integrate ImageShield Across Uploads
+   - Locate all upload handlers (server & client) and ensure ImageShield scanning
+     is invoked before saving files.
+   - Write minimal tests demonstrating blocked vs. allowed uploads.
+   - Note remaining gaps in the report.
+
+E. Fix Port Conflict & Add Dynamic Binding
+   - Search startup scripts/configs for hard-coded `5000`.
+   - Implement `PORT` environment variable with sensible fallback.
+   - Document the change and verify only one server instance listens on that port.
+
+Wrap-Up
+- Run `npm test` (or equivalent) and `npm run lint`; capture outputs in the report.
+- Stage modified files and `REPLIT_REPORT_04.md` but do not commit.
+- Summarize actions taken, outstanding issues, and next steps in the report.

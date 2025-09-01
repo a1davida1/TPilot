@@ -62,7 +62,7 @@ describe('Reddit Integration', () => {
     // Mock submission error by creating a new RedditManager with error-throwing reddit instance
     const errorRedditManager = {
       ...redditManager,
-      submitPost: async () => {
+      submitPost: async (options: any) => {
         try {
           throw new Error('RATELIMIT: Rate limit exceeded');
         } catch (error: any) {
