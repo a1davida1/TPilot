@@ -224,7 +224,8 @@ export function setupAuth(app: Express) {
         await emailService.sendWelcomeEmail(user.email, user.username);
       }
 
-      res.json({ message: 'Email verified successfully' });
+      // Redirect to success page instead of returning JSON
+      res.redirect('/dashboard?verified=true&welcome=true');
     } catch (error) {
       safeLog('error', 'Email verification failed', { error: error.message });
       res.status(500).json({ message: 'Error verifying email' });
