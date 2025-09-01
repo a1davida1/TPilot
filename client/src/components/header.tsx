@@ -27,6 +27,7 @@ export function Header() {
   const { isAuthenticated, isLoading, user, logout } = useAuth();
   const [location] = useLocation();
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
@@ -159,7 +160,10 @@ export function Header() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setShowAuthModal(true)}
+                    onClick={() => {
+                      setAuthModalMode('login');
+                      setShowAuthModal(true);
+                    }}
                     className="text-gray-700 hover:text-pink-600 hover:bg-pink-50"
                     data-testid="button-sign-in"
                   >
@@ -167,7 +171,10 @@ export function Header() {
                   </Button>
                   <Button
                     size="sm"
-                    onClick={() => setShowAuthModal(true)}
+                    onClick={() => {
+                      setAuthModalMode('signup');
+                      setShowAuthModal(true);
+                    }}
                     className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white border-0 shadow-lg"
                     data-testid="button-get-started"
                   >
@@ -230,6 +237,7 @@ export function Header() {
                         variant="ghost"
                         size="sm"
                         onClick={() => {
+                          setAuthModalMode('login');
                           setShowAuthModal(true);
                           setMobileMenuOpen(false);
                         }}
@@ -240,6 +248,7 @@ export function Header() {
                       <Button
                         size="sm"
                         onClick={() => {
+                          setAuthModalMode('signup');
                           setShowAuthModal(true);
                           setMobileMenuOpen(false);
                         }}
@@ -259,6 +268,7 @@ export function Header() {
       {/* Auth Modal */}
       <AuthModal
         isOpen={showAuthModal}
+        initialMode={authModalMode}
         onClose={() => setShowAuthModal(false)}
         onSuccess={() => {
           setShowAuthModal(false);

@@ -23,17 +23,23 @@ interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  initialMode?: 'login' | 'signup';
 }
 
-export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
+export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }: AuthModalProps) {
   const { toast } = useToast();
-  const [mode, setMode] = useState<'login' | 'signup' | 'forgot-password'>('login');
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot-password'>(initialMode);
   const [formData, setFormData] = useState({
     username: '',
     email: '',
     password: ''
   });
   const [resetEmail, setResetEmail] = useState('');
+
+  // Reset mode when modal opens
+  if (isOpen && mode !== initialMode && mode !== 'forgot-password') {
+    setMode(initialMode);
+  }
 
   const authMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
