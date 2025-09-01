@@ -55,7 +55,11 @@ async function applyReceiptImageShieldProtection(
     }
 
     if (settings.noise > 0) {
-      pipeline = pipeline.noise(settings.noise);
+      // Apply noise through modulation instead of deprecated noise() method
+      pipeline = pipeline.modulate({
+        brightness: 1 + (Math.random() - 0.5) * (settings.noise / 100),
+        saturation: 1 + (Math.random() - 0.5) * (settings.noise / 200)
+      });
     }
 
     if (settings.resize < 100) {

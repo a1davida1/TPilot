@@ -134,6 +134,10 @@ router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken, u
 
     tempFilePath = req.file.path;
     
+    if (!tempFilePath) {
+      return res.status(400).json({ message: 'Invalid file path' });
+    }
+    
     // Basic malware check
     const fileBuffer = await fs.readFile(tempFilePath);
     if (performBasicMalwareCheck(fileBuffer)) {

@@ -32,13 +32,19 @@ const logger = winston.createLogger({
 
 const app = express();
 
-let Sentry: typeof import("@sentry/node") | undefined;
+let Sentry: any | undefined;
 
 if (process.env.SENTRY_DSN) {
   try {
-    Sentry = await import("@sentry/node");
-    Sentry.init({ dsn: process.env.SENTRY_DSN });
-    app.use(Sentry.Handlers.requestHandler());
+    // Dynamic import with proper error handling for optional dependency
+    const SentryModule = await import("@sentry/node" as any).catch(() => null);
+    if (SentryModule) {
+      Sentry = SentryModule;
+      Sentry.init({ dsn: process.env.SENTRY_DSN });
+      app.use(Sentry.Handlers.requestHandler());
+    } else {
+      logger.warn("Sentry module not available, continuing without error tracking");
+    }
   } catch (err) {
     logger.warn("Sentry initialization failed", { error: err });
   }
