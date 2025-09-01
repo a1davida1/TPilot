@@ -1,5 +1,5 @@
 export interface PaymentProvider {
-  name: "paxum" | "coinbase";
+  name: "paxum" | "coinbase" | "stripe";
   enabled: boolean;
   createCheckout(params: { userId: string; planId: string; amountCents?: number; returnUrl?: string }): Promise<{ url: string }>;
 }
@@ -129,5 +129,48 @@ export function makeCoinbase(): PaymentProvider {
   };
 }
 
-export const providers: PaymentProvider[] = [makePaxum(), makeCoinbase()].filter(p => p.enabled);
+// Stripe
+export function makeStripe(): PaymentProvider {
+  const secretKey = process.env.STRIPE_SECRET_KEY;
+  const baseUrl = process.env.APP_BASE_URL;
+  
+  if (!secretKey) return disabled("stripe");
+  if (!baseUrl) {
+    throw new Error('APP_BASE_URL environment variable is required');
+  }
+  
+  return {
+    name: "stripe",
+    enabled: true,
+    async createCheckout({ userId, planId, amountCents = 0, returnUrl }) {
+      // Input validation
+      if (!userId || !planId) {
+        throw new Error('userId and planId are required');
+      }
+      
+      try {
+        // Use the existing Stripe integration from billing.ts
+        // This creates a checkout session URL for the payment
+        const checkoutUrl = `${baseUrl}/api/billing/checkout`;
+        
+        // Return the checkout initiation URL
+        // The actual Stripe session creation happens in billing.ts
+        const params = new URLSearchParams({
+          userId,
+          planId,
+          amount: amountCents.toString(),
+          returnUrl: returnUrl || `${baseUrl}/billing/success`
+        });
+        
+        return { url: `${checkoutUrl}?${params.toString()}` };
+      } catch (error) {
+        console.error('Stripe checkout creation failed:', error);
+        throw new Error('Failed to create Stripe checkout session');
+      }
+    },
+  };
+}
+
+// CONSOLIDATION: Only enable Stripe for production readiness
+export const providers: PaymentProvider[] = [makeStripe()].filter(p => p.enabled);
 export const anyProviderEnabled = providers.length > 0;

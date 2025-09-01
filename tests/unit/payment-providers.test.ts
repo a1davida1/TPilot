@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, afterEach } from 'vitest';
-import { makePaxum, makeCoinbase } from '../../server/payments/payment-providers';
+import { makePaxum, makeCoinbase, makeStripe } from '../../server/payments/payment-providers';
 
 describe('Payment Providers', () => {
   let originalEnv: NodeJS.ProcessEnv;
@@ -398,6 +398,78 @@ describe('Payment Providers', () => {
       
       expect(providers.length).toBeGreaterThan(0);
       expect(providers.every((p: any) => p.enabled)).toBe(true);
+    });
+  });
+
+  describe('Stripe Provider', () => {
+    test('creates checkout URL with valid secret key', async () => {
+      process.env.STRIPE_SECRET_KEY = 'sk_test_123';
+      process.env.APP_BASE_URL = 'https://test.com';
+
+      const provider = makeStripe();
+      expect(provider.enabled).toBe(true);
+      expect(provider.name).toBe('stripe');
+
+      const result = await provider.createCheckout({
+        userId: 'user123',
+        planId: 'pro',
+        amountCents: 2999,
+        returnUrl: 'https://test.com/success'
+      });
+
+      expect(result.url).toContain('https://test.com/api/billing/checkout');
+      expect(result.url).toContain('userId=user123');
+      expect(result.url).toContain('planId=pro');
+      expect(result.url).toContain('amount=2999');
+      expect(result.url).toContain('returnUrl=https%3A%2F%2Ftest.com%2Fsuccess');
+    });
+
+    test('uses default return URL when none provided', async () => {
+      process.env.STRIPE_SECRET_KEY = 'sk_test_456';
+      process.env.APP_BASE_URL = 'https://thottopilot.com';
+
+      const provider = makeStripe();
+      const result = await provider.createCheckout({
+        userId: 'user123',
+        planId: 'basic'
+      });
+
+      expect(result.url).toContain('returnUrl=https%3A%2F%2Fthottopilot.com%2Fbilling%2Fsuccess');
+    });
+
+    test('returns disabled provider when secret key missing', () => {
+      delete process.env.STRIPE_SECRET_KEY;
+
+      const provider = makeStripe();
+      expect(provider.enabled).toBe(false);
+      expect(provider.name).toBe('stripe');
+    });
+
+    test('throws error when disabled provider used', async () => {
+      delete process.env.STRIPE_SECRET_KEY;
+
+      const provider = makeStripe();
+      await expect(provider.createCheckout({
+        userId: 'user123',
+        planId: 'pro'
+      })).rejects.toThrow('Payment provider "stripe" is disabled (missing secrets).');
+    });
+
+    test('validates required parameters', async () => {
+      process.env.STRIPE_SECRET_KEY = 'sk_test_789';
+      process.env.APP_BASE_URL = 'https://test.com';
+
+      const provider = makeStripe();
+      
+      await expect(provider.createCheckout({
+        userId: '',
+        planId: 'pro'
+      })).rejects.toThrow('userId and planId are required');
+
+      await expect(provider.createCheckout({
+        userId: 'user123',
+        planId: ''
+      })).rejects.toThrow('userId and planId are required');
     });
   });
 });

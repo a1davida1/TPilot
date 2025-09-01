@@ -1,6 +1,8 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
+import request from 'supertest';
+import express from 'express';
 
-// Mock the storage and email service
+// Mock the storage and email service for redirect testing
 const mockStorage = {
   getVerificationToken: vi.fn(),
   getUser: vi.fn(),
@@ -12,40 +14,35 @@ const mockEmailService = {
   sendWelcomeEmail: vi.fn(),
 };
 
-vi.mock('../../server/storage', () => ({
-  storage: mockStorage
-}));
+vi.mock('../../../server/storage', () => ({ storage: mockStorage }));
+vi.mock('../../../server/services/email-service', () => ({ emailService: mockEmailService }));
 
-vi.mock('../../server/services/email-service', () => ({
-  emailService: mockEmailService
-}));
+// Import auth setup after mocking
+import { setupAuth } from '../../../server/auth';
 
-describe('Email Verification Redirect Fix', () => {
+describe('Email Verification Redirect Tests', () => {
+  let app: express.Express;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    app = express();
+    app.use(express.json());
+    setupAuth(app);
   });
 
-  test('redirects to dashboard with verification success params', async () => {
-    const mockReq = {
-      query: { token: 'valid-token-123' }
-    };
+  test('should redirect to dashboard with success params on valid token', async () => {
+    const validToken = 'valid-token-123';
+    const futureDate = new Date(Date.now() + 24 * 60 * 60 * 1000);
     
-    const mockRes = {
-      status: vi.fn().mockReturnThis(),
-      json: vi.fn(),
-      redirect: vi.fn()
-    };
-
-    // Mock successful verification flow
     mockStorage.getVerificationToken.mockResolvedValue({
+      token: validToken,
       userId: 1,
-      token: 'valid-token-123',
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // Future date
+      expiresAt: futureDate
     });
 
     mockStorage.getUser.mockResolvedValue({
       id: 1,
-      email: 'user@example.com',
+      email: 'test@example.com',
       username: 'testuser'
     });
 
@@ -53,83 +50,24 @@ describe('Email Verification Redirect Fix', () => {
     mockStorage.deleteVerificationToken.mockResolvedValue(undefined);
     mockEmailService.sendWelcomeEmail.mockResolvedValue(undefined);
 
-    // Test the logic that should redirect
-    const token = mockReq.query.token as string;
-    expect(token).toBe('valid-token-123');
+    const response = await request(app)
+      .get(`/api/auth/verify-email?token=${validToken}`)
+      .expect(302); // Expect redirect
 
-    const record = await mockStorage.getVerificationToken(token);
-    expect(record).toBeTruthy();
-    expect(record.expiresAt > new Date()).toBe(true);
-
-    const user = await mockStorage.getUser(record.userId);
-    expect(user).toBeTruthy();
-
-    await mockStorage.updateUserEmailVerified(user.id, true);
-    await mockStorage.deleteVerificationToken(token);
-
-    if (user.email) {
-      await mockEmailService.sendWelcomeEmail(user.email, user.username);
-    }
-
-    // Simulate the redirect call
-    mockRes.redirect('/dashboard?verified=true&welcome=true');
-
-    expect(mockRes.redirect).toHaveBeenCalledWith('/dashboard?verified=true&welcome=true');
+    expect(response.headers.location).toBe('/dashboard?verified=true&welcome=true');
     expect(mockStorage.updateUserEmailVerified).toHaveBeenCalledWith(1, true);
-    expect(mockStorage.deleteVerificationToken).toHaveBeenCalledWith('valid-token-123');
-    expect(mockEmailService.sendWelcomeEmail).toHaveBeenCalledWith('user@example.com', 'testuser');
+    expect(mockStorage.deleteVerificationToken).toHaveBeenCalledWith(validToken);
+    expect(mockEmailService.sendWelcomeEmail).toHaveBeenCalledWith('test@example.com', 'testuser');
   });
 
-  test('handles expired token correctly', async () => {
-    const mockReq = {
-      query: { token: 'expired-token-123' }
-    };
-    
-    const mockRes = {
-      status: vi.fn().mockReturnThis(),
-      json: vi.fn(),
-      redirect: vi.fn()
-    };
+  test('should return JSON error for invalid token (no redirect)', async () => {
+    mockStorage.getVerificationToken.mockResolvedValue(null);
 
-    // Mock expired token
-    mockStorage.getVerificationToken.mockResolvedValue({
-      userId: 1,
-      token: 'expired-token-123',
-      expiresAt: new Date(Date.now() - 24 * 60 * 60 * 1000) // Past date
-    });
+    const response = await request(app)
+      .get('/api/auth/verify-email?token=invalid-token')
+      .expect(400);
 
-    const token = mockReq.query.token as string;
-    const record = await mockStorage.getVerificationToken(token);
-    
-    // Should be treated as invalid due to expiration
-    const isExpired = record && record.expiresAt < new Date();
-    expect(isExpired).toBe(true);
-
-    // Simulate error response for expired token
-    mockRes.status(400).json({ message: 'Invalid or expired token' });
-
-    expect(mockRes.status).toHaveBeenCalledWith(400);
-    expect(mockRes.json).toHaveBeenCalledWith({ message: 'Invalid or expired token' });
-  });
-
-  test('handles missing token parameter', async () => {
-    const mockReq = {
-      query: {} // No token
-    };
-    
-    const mockRes = {
-      status: vi.fn().mockReturnThis(),
-      json: vi.fn(),
-      redirect: vi.fn()
-    };
-
-    const token = mockReq.query.token as string;
-    expect(token).toBeFalsy();
-
-    // Should return error for missing token
-    mockRes.status(400).json({ message: 'Token is required' });
-
-    expect(mockRes.status).toHaveBeenCalledWith(400);
-    expect(mockRes.json).toHaveBeenCalledWith({ message: 'Token is required' });
+    expect(response.body.message).toBe('Invalid or expired token');
+    expect(response.headers.location).toBeUndefined(); // No redirect
   });
 });
