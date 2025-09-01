@@ -250,7 +250,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Label htmlFor="username" className="text-foreground font-medium">
-                Username
+                {mode === 'login' ? 'Username or Email' : 'Username'}
               </Label>
               <div className="relative mt-1">
                 <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -260,7 +260,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                   value={formData.username}
                   onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                   className="pl-10 bg-background border-input text-foreground focus:border-purple-500"
-                  placeholder="Enter your username"
+                  placeholder={mode === 'login' ? 'Username or email address' : 'Enter your username'}
                   required
                 />
               </div>
