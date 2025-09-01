@@ -2,6 +2,8 @@ import express, { type Express } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs/promises';
+import sharp from 'sharp';
+import crypto from 'crypto';
 import { authenticateToken } from './middleware/auth.js';
 import { storage } from './storage.js';
 import { MediaManager } from './lib/media.js';
@@ -21,6 +23,77 @@ const upload = multer({
     }
   }
 });
+
+// ImageShield protection for receipt uploads
+interface ProtectionSettings {
+  level: string;
+  blur: number;
+  noise: number;
+  resize: number;
+  quality: number;
+}
+
+const protectionPresets: Record<string, ProtectionSettings> = {
+  light: { level: 'light', blur: 0.3, noise: 3, resize: 98, quality: 95 },
+  standard: { level: 'standard', blur: 0.5, noise: 5, resize: 95, quality: 92 },
+  heavy: { level: 'heavy', blur: 0.8, noise: 8, resize: 90, quality: 88 }
+};
+
+// Apply ImageShield protection server-side for receipts
+async function applyReceiptImageShieldProtection(
+  inputBuffer: Buffer, 
+  protectionLevel: 'light' | 'standard' | 'heavy' = 'light',
+  addWatermark: boolean = false
+): Promise<Buffer> {
+  try {
+    const settings = protectionPresets[protectionLevel];
+    let pipeline = sharp(inputBuffer);
+
+    // Apply protection transformations
+    if (settings.blur > 0) {
+      pipeline = pipeline.blur(settings.blur);
+    }
+
+    if (settings.noise > 0) {
+      pipeline = pipeline.noise(settings.noise);
+    }
+
+    if (settings.resize < 100) {
+      const metadata = await sharp(inputBuffer).metadata();
+      if (metadata.width && metadata.height) {
+        const newWidth = Math.round(metadata.width * (settings.resize / 100));
+        const newHeight = Math.round(metadata.height * (settings.resize / 100));
+        pipeline = pipeline.resize(newWidth, newHeight);
+      }
+    }
+
+    // Add watermark for free users
+    if (addWatermark) {
+      const metadata = await pipeline.metadata();
+      const watermarkText = Buffer.from(`
+        <svg width="${metadata.width || 800}" height="${metadata.height || 600}">
+          <text x="50%" y="95%" font-family="Arial" font-size="16" fill="rgba(255,255,255,0.6)" text-anchor="middle">
+            Protected by ThottoPilot™
+          </text>
+        </svg>
+      `);
+      
+      pipeline = pipeline.composite([{
+        input: watermarkText,
+        top: 0,
+        left: 0,
+      }]);
+    }
+
+    return await pipeline
+      .jpeg({ quality: settings.quality })
+      .toBuffer();
+  } catch (error) {
+    console.error('Receipt ImageShield protection failed:', error);
+    // Return original buffer if protection fails
+    return inputBuffer;
+  }
+}
 
 export function registerExpenseRoutes(app: Express) {
   // Get all expense categories
@@ -143,7 +216,7 @@ export function registerExpenseRoutes(app: Express) {
     }
   });
 
-  // Upload receipt for an expense
+  // Upload receipt for an expense with ImageShield protection
   app.post('/api/expenses/:id/receipt', authenticateToken, upload.single('receipt'), async (req: AuthRequest, res) => {
     try {
       if (!req.user?.id) {
@@ -154,21 +227,34 @@ export function registerExpenseRoutes(app: Express) {
         return res.status(400).json({ message: 'No file uploaded' });
       }
 
+      // Determine protection level based on user tier (conservative for receipts)
+      const userTier = req.user.tier || 'free';
+      const protectionLevel = req.body.protectionLevel || 'light';
+      const addWatermark = ['free', 'starter'].includes(userTier);
+      
+      // Apply ImageShield protection to receipt
+      console.log(`Applying ImageShield protection (${protectionLevel}) to receipt for user ${req.user.id}, tier: ${userTier}`);
+      const protectedBuffer = await applyReceiptImageShieldProtection(
+        req.file.buffer,
+        protectionLevel as 'light' | 'standard' | 'heavy',
+        addWatermark
+      );
+
       let receiptUrl: string;
-      let receiptFileName = req.file.originalname;
+      let receiptFileName = `protected_${req.file.originalname}`;
 
       if (process.env.S3_BUCKET_MEDIA) {
-        const asset = await MediaManager.uploadFile(req.file.buffer, {
+        const asset = await MediaManager.uploadFile(protectedBuffer, {
           userId: req.user.id,
-          filename: req.file.originalname,
+          filename: receiptFileName,
         });
         receiptUrl = asset.downloadUrl || asset.signedUrl || asset.key;
         receiptFileName = asset.filename;
       } else {
         const uploadDir = path.join(process.cwd(), 'uploads', 'receipts');
         await fs.mkdir(uploadDir, { recursive: true });
-        const fileName = `${Date.now()}-${req.file.originalname}`;
-        await fs.writeFile(path.join(uploadDir, fileName), req.file.buffer);
+        const fileName = `protected_${Date.now()}-${req.file.originalname}`;
+        await fs.writeFile(path.join(uploadDir, fileName), protectedBuffer);
         receiptUrl = `/uploads/receipts/${fileName}`;
         receiptFileName = fileName;
       }
@@ -178,6 +264,7 @@ export function registerExpenseRoutes(app: Express) {
         receiptFileName,
       });
 
+      console.log(`Protected receipt uploaded: ${receiptFileName} for expense ${expenseId}`);
       res.json(expense);
     } catch (error) {
       console.error('Error uploading receipt:', error);

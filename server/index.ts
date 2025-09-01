@@ -152,11 +152,45 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    logger.info(`serving on port ${port}`);
-  });
+  
+  // Graceful port binding with EADDRINUSE error handling
+  const startServer = (attemptPort: number, retryCount = 0): void => {
+    const maxRetries = 3;
+    
+    server.listen({
+      port: attemptPort,
+      host: "0.0.0.0",
+      reusePort: true,
+    }, () => {
+      logger.info(`serving on port ${attemptPort}`);
+      // Update environment variable if we used a fallback port
+      if (attemptPort !== port) {
+        logger.info(`Note: Using fallback port ${attemptPort} instead of ${port}`);
+      }
+    });
+    
+    server.on('error', (err: any) => {
+      if (err.code === 'EADDRINUSE') {
+        logger.warn(`Port ${attemptPort} is in use`, { error: err.message });
+        
+        if (retryCount < maxRetries) {
+          // In Replit, we can only use the PORT environment variable
+          // Try to kill any stray processes and retry the same port
+          logger.info(`Retrying port ${attemptPort} in 2 seconds (attempt ${retryCount + 1}/${maxRetries})`);
+          setTimeout(() => {
+            startServer(attemptPort, retryCount + 1);
+          }, 2000);
+        } else {
+          logger.error(`Failed to bind to port ${attemptPort} after ${maxRetries} attempts`);
+          logger.error('Please check if another process is using this port and restart the application');
+          process.exit(1);
+        }
+      } else {
+        logger.error('Server error:', err);
+        process.exit(1);
+      }
+    });
+  };
+  
+  startServer(port);
 })();

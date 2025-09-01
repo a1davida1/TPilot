@@ -1,0 +1,48 @@
+You are a cautious software engineer working inside the TPilot repository.
+Goal: perform a 30‑minute maintenance pass that improves reliability and
+user-facing workflows—without destructive changes.
+
+General rules
+1. Use read-only exploration and create changes only in new files or clearly
+   marked sections; never overwrite or delete existing code.
+2. Run unit tests and lint checks to confirm nothing breaks; log results.
+3. Stage changes but stop before committing; leave a summary in a new file
+   named REPLIT_REPORT_06.md (increment if higher numbers exist).
+4. Use minimal external resources; avoid network calls unless absolutely needed.
+
+Tasks
+A. Email verification redirect
+   - File: `server/auth.ts` (around signup flow & verify handler)
+   - Ensure the verification token is validated and successful links redirect
+     to a user-friendly success page.
+   - Update/add tests in `tests/unit/auth/email-verification-redirect.test.ts`.
+
+B. Image generator “generation failed”
+   - Files: `server/services/multi-ai-provider.ts`,
+     `server/services/enhanced-ai-service.ts`
+   - Check for missing env vars and unhandled errors; tighten logging.
+   - Add tests under `tests/unit/image-generator/enhanced-ai-service.test.ts`
+     covering success and failure paths.
+
+C. ImageShield for receipt uploads
+   - File: `server/expense-routes.ts` (receipt upload endpoint near lines ~146‑180)
+   - Apply ImageShield scanning (`applyImageShieldProtection`) before storing
+     receipts, mirroring logic from `server/routes/upload.ts`.
+   - Create tests in `tests/unit/expenses/receipt-upload.test.ts` for allowed
+     vs. blocked uploads.
+
+D. Port binding resilience
+   - File: `server/index.ts` (port setup near lines ~174‑183)
+   - Confirm `PORT` env variable is respected and implement a graceful
+     EADDRINUSE handler or fallback.
+   - If needed, update `start.sh` to kill stray processes.
+
+E. Documentation
+   - File: `README.md`
+   - Expand the environment‑variable section with `IMAGE_SHIELD_API_KEY`,
+     `IMAGE_SHIELD_LEVEL`, and `PORT` usage examples.
+
+Wrap-up
+- Run lint and unit tests; record outputs in `REPLIT_REPORT_06.md`.
+- Stage all new/modified files but do **not** commit.
+- In the report, note completed tasks, skipped items, and next steps.

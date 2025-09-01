@@ -219,6 +219,11 @@ ThottoPilot uses environment variables for secure configuration of external serv
 - **Values**: `development` | `production`
 - **Impact**: Affects logging, error handling, and feature availability
 
+**PORT** - Server port binding configuration
+- **Default**: `5000`
+- **Range**: `1000-65535` (in Replit environments, only PORT environment variable is allowed)
+- **Usage**: HTTP server listening port with automatic EADDRINUSE error handling and retry logic
+
 ### Database Configuration
 
 **DATABASE_URL** - PostgreSQL connection string
@@ -361,7 +366,17 @@ ThottoPilot uses environment variables for secure configuration of external serv
 - **Default**: `10737418240` (10GB)
 - **Usage**: Storage quota for paid subscribers
 
-### Watermarking Configuration
+### Image Protection & Watermarking
+
+**IMAGE_SHIELD_API_KEY** - External ImageShield service API key
+- **Required**: Optional (enables advanced anti-reverse-search protection)
+- **Obtain**: ImageShield service provider dashboard
+- **Usage**: Enhanced image protection beyond built-in algorithms
+
+**IMAGE_SHIELD_LEVEL** - ImageShield protection intensity
+- **Default**: `standard`
+- **Values**: `light` | `standard` | `heavy`
+- **Usage**: Determines blur, noise, and resize levels for image protection
 
 **WATERMARK_ENABLED** - Enable watermarks on free tier images
 - **Default**: `true`

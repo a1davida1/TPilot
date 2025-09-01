@@ -10,12 +10,27 @@ export default function Dashboard() {
   const { user, isLoading, isAuthenticated, refetch } = useAuth();
   const { toast } = useToast();
 
-  // Check for OAuth callbacks and guest mode
+  // Check for OAuth callbacks, email verification, and guest mode
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const reddit = urlParams.get('reddit');
     const error = urlParams.get('error');
     const guest = urlParams.get('guest');
+    const verified = urlParams.get('verified');
+    const welcome = urlParams.get('welcome');
+    
+    // Handle email verification success
+    if (verified === 'true') {
+      toast({
+        title: welcome === 'true' ? "Welcome to ThottoPilot!" : "Email Verified",
+        description: welcome === 'true' 
+          ? "Your account has been verified successfully. Welcome aboard!" 
+          : "Your email has been verified successfully.",
+        variant: "default",
+      });
+      // Clean URL
+      window.history.replaceState({}, '', '/dashboard');
+    }
     
     // No longer handling Reddit OAuth connections
     
