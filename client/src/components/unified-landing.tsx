@@ -59,31 +59,6 @@ export function UnifiedLanding() {
         </div>
 
         <div className="relative max-w-7xl mx-auto px-6 py-20">
-          {/* Header */}
-          <nav className="flex justify-between items-center mb-16">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white text-lg font-bold">
-                ✨
-              </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                ThottoPilot
-              </span>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              <Link to="/login">
-                <Button variant="ghost" className="font-semibold">
-                  Sign In
-                </Button>
-              </Link>
-              <Link to="/login">
-                <Button className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold">
-                  Get Started Free
-                </Button>
-              </Link>
-            </div>
-          </nav>
-
           {/* Hero Content */}
           <div className="text-center max-w-4xl mx-auto">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-100 dark:bg-purple-900/30 rounded-full text-purple-700 dark:text-purple-300 text-sm font-semibold mb-8">
