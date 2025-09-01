@@ -43,23 +43,28 @@ export async function extractFacts(imageUrl:string){
         mimeType = mimeMatch[1];
       }
       
-      // Decode any URL encoding in the Base64 data
-      try {
-        imageData = decodeURIComponent(imageData);
-      } catch (decodeError) {
-        // If decoding fails, use original data
-        console.log('Base64 data does not appear to be URL encoded, using as-is');
-      }
+      // Base64 data from data URLs should be used as-is
+      // Note: decodeURIComponent can corrupt valid base64 strings
       
       // Validate and clean Base64 data
       imageData = imageData.replace(/\s/g, ''); // Remove any whitespace
       
       // Test Base64 validity by attempting to decode it
+      let decodedBuffer;
       try {
-        Buffer.from(imageData, 'base64');
+        decodedBuffer = Buffer.from(imageData, 'base64');
       } catch (base64Error) {
         console.error('Base64 validation failed:', base64Error);
         throw new Error(`Invalid Base64 data format: ${base64Error instanceof Error ? base64Error.message : String(base64Error)}`);
+      }
+      
+      // Additional validation for WebP format
+      if (mimeType === 'image/webp') {
+        console.log('WebP format detected, validating header...');
+        const headerSignature = decodedBuffer.subarray(0, 4).toString();
+        if (headerSignature !== 'RIFF') {
+          console.warn('WebP validation warning: Missing RIFF header');
+        }
       }
       
       // Check if Base64 data is reasonable length (not too short or extremely long)
@@ -72,6 +77,7 @@ export async function extractFacts(imageUrl:string){
       }
       
       console.log(`Processing data URL with mime type: ${mimeType}, data length: ${imageData.length}`);
+      console.log(`Base64 starts with: ${imageData.substring(0, 50)}...`);
     } else {
       console.log('Fetching image from URL:', imageUrl);
       imageData = await b64(imageUrl);
