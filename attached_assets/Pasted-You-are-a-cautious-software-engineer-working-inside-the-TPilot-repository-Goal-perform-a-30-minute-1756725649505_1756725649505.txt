@@ -1,0 +1,46 @@
+You are a cautious software engineer working inside the TPilot repository.
+Goal: perform a 30‑minute maintenance pass that fixes session handling,
+stabilizes key workflows, and improves robustness—without destructive changes.
+
+General rules
+1. Use read-only exploration and create changes only in new files or clearly
+   marked sections; never overwrite or delete existing code.
+2. Run unit tests and lint checks to confirm nothing breaks; log results.
+3. Stage changes but stop before committing; leave a summary in a new file
+   named REPLIT_REPORT_01.md (increment numbers for each new session:
+   REPLIT_REPORT_02.md, REPLIT_REPORT_03.md, …).
+4. Use minimal external resources; avoid network calls unless absolutely needed.
+
+Tasks
+A. **Provision missing session table**
+   - File: `server/index.ts` (session middleware initialization).
+   - Confirm database contains required `session` table; if absent, add SQL migration
+     under `migrations/` and document steps in README.
+   - Add a smoke test in `tests/integration/session.test.ts` verifying session storage.
+
+B. **Fix email verification redirect**
+   - Files: `server/auth.ts` (verify-email route) and related templates/components.
+   - Ensure valid tokens activate the account and redirect to a success page instead
+     of an error page.
+   - Add unit tests in `tests/unit/auth/email-verification.test.ts`.
+
+C. **Diagnose “generation failed” in image generator**
+   - Files: `server/lib/ai-service.ts`, `server/services/enhanced-ai-service.ts`.
+   - Check for missing environment variables or unhandled exceptions.
+   - Add tests under `tests/unit/image-generator/` for success and failure paths.
+
+D. **Repair Reddit account linking & posting**
+   - Files: `server/lib/reddit.ts`, `server/reddit/routes.ts`.
+   - Review OAuth callback, token exchange, and posting logic; improve error handling
+     and logging.
+   - Create integration tests in `tests/integration/reddit/` simulating link and post.
+
+E. **Document session setup & generation troubleshooting**
+   - Update `README.md` with instructions for creating the `session` table, required
+     env vars, and steps to debug the image generator.
+   - Keep the additions at the end of relevant sections to avoid conflicts.
+
+Wrap-up
+- Run lint and tests; capture outputs in the new REPLIT_REPORT_01.md (or incremented file).
+- Stage new/modified files but do **not** commit.
+- Summarize completed tasks, issues found, and next steps in the report.
