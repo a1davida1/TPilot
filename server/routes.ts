@@ -245,16 +245,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         items: [{
           price_data: {
             currency: 'usd',
-            product: plan === 'pro_plus' ? 'prod_thottopilot_pro_plus' : 'prod_thottopilot_pro',
+            product_data: {
+              name: plan === 'pro_plus' ? 'ThottoPilot Pro Plus' : 'ThottoPilot Pro',
+              description: plan === 'pro_plus' 
+                ? 'Premium content creation with advanced features' 
+                : 'Professional content creation and protection'
+            },
             unit_amount: amount,
             recurring: {
               interval: 'month',
             },
-          } as any,
+          },
         }],
         payment_behavior: 'default_incomplete',
         payment_settings: { save_default_payment_method: 'on_subscription' },
         expand: ['latest_invoice.payment_intent'],
+        metadata: {
+          userId: req.user.id.toString(),
+          plan: plan
+        }
       });
 
       const invoice = subscription.latest_invoice as Stripe.Invoice;
