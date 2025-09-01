@@ -75,7 +75,15 @@ export default function Login() {
 
   const forgotPasswordMutation = useMutation({
     mutationFn: async (email: string) => {
-      return apiRequest('POST', '/api/auth/forgot-password', { email });
+      console.log('🔍 Frontend: Attempting password reset for:', email);
+      try {
+        const response = await apiRequest('POST', '/api/auth/forgot-password', { email });
+        console.log('✅ Frontend: Password reset response:', response.status, response.statusText);
+        return response;
+      } catch (error) {
+        console.error('❌ Frontend: Password reset failed:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       toast({
