@@ -32,9 +32,9 @@ router.post('/generate', authenticateToken, async (req: AuthRequest, res: Respon
           platform,
           style: style || voice || 'default',
           theme: 'image_based',
-          titles: Array.isArray(result.final.title) ? result.final.title : [result.final.title],
+          titles: [result.final.caption || 'Generated content'],
           content: result.final.caption || '',
-          photoInstructions: result.final.photoInstructions || {
+          photoInstructions: {
             lighting: 'Natural lighting',
             cameraAngle: 'Eye level',
             composition: 'Center composition',
@@ -84,9 +84,9 @@ router.post('/generate-text', authenticateToken, async (req: AuthRequest, res: R
           platform,
           style: style || voice || 'default',
           theme: theme || 'lifestyle',
-          titles: Array.isArray(result.final.title) ? result.final.title : [result.final.title],
+          titles: [result.final.caption || 'Generated content'],
           content: result.final.caption || '',
-          photoInstructions: result.final.photoInstructions || {
+          photoInstructions: {
             lighting: 'Natural lighting',
             cameraAngle: 'Eye level',
             composition: 'Center composition',
@@ -136,9 +136,9 @@ router.post('/rewrite', authenticateToken, async (req: AuthRequest, res: Respons
           platform,
           style: style || voice || 'default',
           theme: 'rewrite',
-          titles: Array.isArray(result.final.title) ? result.final.title : [result.final.title],
+          titles: [result.final.caption || 'Generated content'],
           content: result.final.caption || '',
-          photoInstructions: result.final.photoInstructions || {
+          photoInstructions: {
             lighting: 'Natural lighting',
             cameraAngle: 'Eye level',
             composition: 'Center composition',

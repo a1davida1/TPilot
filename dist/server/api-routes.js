@@ -8,26 +8,29 @@ import { PolicyLinter } from "./lib/policyLinter.js";
 import { PostScheduler } from "./lib/scheduling.js";
 import { addJob } from "./lib/queue/index.js";
 import { RedditManager } from "./lib/reddit.js";
-import { postJobs, creatorAccounts } from "@shared/schema.js";
+import { postJobs, creatorAccounts, users } from "@shared/schema.js";
 import { eq, desc } from "drizzle-orm";
 import multer from "multer";
-// Import from routes.ts where authenticateToken is defined
-// We'll create a separate auth helper file for this
 import jwt from 'jsonwebtoken';
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
 const authenticateToken = async (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
     if (!token) {
-        return res.sendStatus(401);
+        return res.status(401).json({ message: 'Access token required' });
     }
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
-        req.user = decoded;
+        // Fetch the full user object from database
+        const [user] = await db.select().from(users).where(eq(users.id, decoded.userId));
+        if (!user) {
+            return res.status(401).json({ message: 'User not found' });
+        }
+        req.user = user;
         next();
     }
     catch (error) {
-        return res.sendStatus(403);
+        return res.status(403).json({ message: 'Invalid token' });
     }
 };
 // Multer configuration for file uploads

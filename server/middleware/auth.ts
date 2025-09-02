@@ -9,7 +9,7 @@ import { eq } from 'drizzle-orm';
 // Create a proper User type alias from the schema
 type UserType = typeof users.$inferSelect;
 
-interface AuthRequest extends express.Request {
+export interface AuthRequest extends express.Request {
   user?: UserType;
 }
 

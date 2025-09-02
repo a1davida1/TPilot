@@ -30,12 +30,7 @@ router.post("/signup", authLimiter, async (req, res) => {
     });
 
     // Generate JWT token
-    const token = createToken({
-      id: newUser.id, 
-      userId: newUser.id, 
-      username: newUser.username, 
-      email: newUser.email
-    });
+    const token = createToken(newUser);
 
     // Remove password from response
     const { password: _, ...userResponse } = newUser;
@@ -90,12 +85,9 @@ router.post("/login", authLimiter, async (req, res) => {
       };
 
       const token = createToken({
-        userId: adminUser.id, 
-        id: adminUser.id, 
-        email: adminUser.email, 
-        username: adminUser.username, 
-        isAdmin: true
-      });
+        ...adminUser,
+        password: '' // Required by UserType but not needed for token
+      } as any);
 
       // Store in session if available
       if (req.session) {
@@ -129,12 +121,7 @@ router.post("/login", authLimiter, async (req, res) => {
     }
 
     // Generate JWT token
-    const token = createToken({
-      id: user.id, 
-      userId: user.id, 
-      username: user.username, 
-      email: user.email
-    });
+    const token = createToken(user);
 
     // Remove password from response
     const { password: _, ...userResponse } = user;
