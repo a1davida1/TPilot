@@ -15,6 +15,7 @@ import { OnboardingWalkthrough } from "@/components/onboarding-walkthrough";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import NotFound from "@/pages/not-found";
 import Login from "@/pages/login";
+import ResetPasswordPage from "@/pages/reset-password";
 import History from "@/pages/history";
 import Settings from "@/pages/settings";
 import Checkout from "@/pages/checkout";
@@ -103,6 +104,7 @@ function UnauthenticatedRoutes() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
+      <Route path="/reset-password" component={ResetPasswordPage} />
       <Route path="/caption-generator" component={CaptionGeneratorPage} />
       <Route path="/imageshield" component={ImageShieldPage} />
       <Route path="/policy-demo" component={PolicyDemo} />
