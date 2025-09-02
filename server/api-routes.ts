@@ -9,34 +9,48 @@ import { PolicyLinter } from "./lib/policyLinter.js";
 import { PostScheduler } from "./lib/scheduling.js";
 import { addJob } from "./lib/queue/index.js";
 import { RedditManager } from "./lib/reddit.js";
-import { postJobs, subscriptions, mediaAssets, creatorAccounts, type User } from "@shared/schema.js";
+import { postJobs, subscriptions, mediaAssets, creatorAccounts, users } from "@shared/schema.js";
 import { eq, desc } from "drizzle-orm";
 import multer from "multer";
-// Import from routes.ts where authenticateToken is defined
-// We'll create a separate auth helper file for this
 import jwt from 'jsonwebtoken';
 import type { Request, Response, NextFunction } from 'express';
 
-interface AuthRequest extends Request {
-  user?: User;
+// Create a proper User type alias from the schema
+type UserType = typeof users.$inferSelect;
+
+// Augment Express namespace to add user property
+declare global {
+  namespace Express {
+    interface Request {
+      user?: UserType;
+    }
+  }
 }
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
 
-const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
+const authenticateToken = async (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
   if (!token) {
-    return res.sendStatus(401);
+    return res.status(401).json({ message: 'Access token required' });
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded;
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: number; email: string; iat: number; exp: number };
+    
+    // Fetch the full user object from database
+    const [user] = await db.select().from(users).where(eq(users.id, decoded.userId));
+    
+    if (!user) {
+      return res.status(401).json({ message: 'User not found' });
+    }
+    
+    req.user = user;
     next();
   } catch (error) {
-    return res.sendStatus(403);
+    return res.status(403).json({ message: 'Invalid token' });
   }
 };
 
@@ -51,7 +65,7 @@ const upload = multer({
 export function registerApiRoutes(app: Express) {
   
   // AI Content Generation
-  app.post('/api/ai/generate', authenticateToken, async (req: AuthRequest, res) => {
+  app.post('/api/ai/generate', authenticateToken, async (req: Request, res) => {
     try {
       const schema = z.object({
         prompt: z.string().optional(),
@@ -79,7 +93,7 @@ export function registerApiRoutes(app: Express) {
   });
 
   // Enhanced AI Content Generation
-  app.post('/api/ai/enhanced', authenticateToken, async (req: AuthRequest, res) => {
+  app.post('/api/ai/enhanced', authenticateToken, async (req: Request, res) => {
     try {
       const schema = z.object({
         mode: z.enum(['text', 'image', 'hybrid']).default('text'),
@@ -118,7 +132,7 @@ export function registerApiRoutes(app: Express) {
   });
 
   // Media Upload
-  app.post('/api/media/upload', authenticateToken, upload.single('file'), async (req: AuthRequest, res) => {
+  app.post('/api/media/upload', authenticateToken, upload.single('file'), async (req: Request, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ error: 'No file provided' });
@@ -146,7 +160,7 @@ export function registerApiRoutes(app: Express) {
   });
 
   // Get User Media
-  app.get('/api/media', authenticateToken, async (req: AuthRequest, res) => {
+  app.get('/api/media', authenticateToken, async (req: Request, res) => {
     try {
       const user = req.user;
       
@@ -166,7 +180,7 @@ export function registerApiRoutes(app: Express) {
   });
 
   // Delete Media
-  app.delete('/api/media/:id', authenticateToken, async (req: AuthRequest, res) => {
+  app.delete('/api/media/:id', authenticateToken, async (req: Request, res) => {
     try {
       const user = req.user;
       
@@ -340,7 +354,7 @@ export function registerApiRoutes(app: Express) {
   });
 
   // Get User Subscription
-  app.get('/api/subscription', authenticateToken, async (req: AuthRequest, res) => {
+  app.get('/api/subscription', authenticateToken, async (req: Request, res) => {
     try {
       const user = req.user;
       
@@ -374,7 +388,7 @@ export function registerApiRoutes(app: Express) {
   });
 
   // Reddit Account Management
-  app.get('/api/reddit/accounts', authenticateToken, async (req: AuthRequest, res) => {
+  app.get('/api/reddit/accounts', authenticateToken, async (req: Request, res) => {
     try {
       const user = req.user;
       
@@ -439,7 +453,7 @@ export function registerApiRoutes(app: Express) {
   });
 
   // Storage Usage
-  app.get('/api/storage/usage', authenticateToken, async (req: AuthRequest, res) => {
+  app.get('/api/storage/usage', authenticateToken, async (req: Request, res) => {
     try {
       const user = req.user;
       

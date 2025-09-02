@@ -15,6 +15,25 @@ export const QUEUE_NAMES = {
 export async function addJob(queueName, jobData, options) {
     return enqueue(queueName, jobData, options);
 }
+// Queue management functions
+export async function pauseQueue(queueName) {
+    const backend = getQueueBackend();
+    if (backend.pause) {
+        await backend.pause(queueName);
+    }
+    else {
+        console.warn(`Queue backend does not support pausing queue: ${queueName}`);
+    }
+}
+export async function resumeQueue(queueName) {
+    const backend = getQueueBackend();
+    if (backend.resume) {
+        await backend.resume(queueName);
+    }
+    else {
+        console.warn(`Queue backend does not support resuming queue: ${queueName}`);
+    }
+}
 // Queue health check
 export async function getQueueHealth() {
     const queue = getQueueBackend();

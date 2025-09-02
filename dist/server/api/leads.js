@@ -91,7 +91,7 @@ export async function createLead(req, res) {
         // Send admin notification
         const adminNotificationSent = await emailService.sendAdminWaitlistNotification(email, leadData.platformTags, painPoint || null, mergedUTM);
         // Track analytics event
-        trackEvent('lead_created', {
+        trackEvent(null, 'lead_created', {
             email,
             platformTags,
             painPoint: painPoint ? 'provided' : 'not_provided',
@@ -161,7 +161,7 @@ export async function confirmLead(req, res) {
       `);
         }
         // Track analytics event
-        trackEvent('lead_confirmed', {
+        trackEvent(null, 'lead_confirmed', {
             email: verification.email,
             confirmedAt: updatedLead.confirmedAt,
         });

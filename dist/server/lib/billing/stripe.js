@@ -5,5 +5,5 @@ if (!process.env.STRIPE_SECRET_KEY) {
     console.warn("⚠️ STRIPE_SECRET_KEY not configured. Stripe billing functionality disabled.");
 }
 export const stripe = new Stripe(stripeSecretKey, {
-    apiVersion: "2024-06-20",
+    apiVersion: "2025-08-27.basil",
 });

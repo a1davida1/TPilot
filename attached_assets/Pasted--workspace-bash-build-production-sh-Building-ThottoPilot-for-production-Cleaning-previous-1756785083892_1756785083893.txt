@@ -1,0 +1,141 @@
+~/workspace$ bash build-production.sh
+🔨 Building ThottoPilot for production...
+📦 Cleaning previous builds...
+🔧 Preparing TypeScript compilation...
+⚙️ Compiling TypeScript...
+server/api-routes.ts(36,5): error TS2322: Type 'string | JwtPayload' is not assignable to type '{ id: number; username: string; password: string; email: string | null; role: string | null; isAdmin: boolean | null; emailVerified: boolean; firstName: string | null; lastName: string | null; ... 21 more ...; lastLogin: Date | null; } | undefined'.
+  Type 'string' is not assignable to type '{ id: number; username: string; password: string; email: string | null; role: string | null; isAdmin: boolean | null; emailVerified: boolean; firstName: string | null; lastName: string | null; ... 21 more ...; lastLogin: Date | null; }'.
+server/api-routes.ts(54,32): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type '(req: AuthRequest, res: Response, next: NextFunction) => Promise<Response<any, Record<string, any>> | undefined>' is not assignable to parameter of type 'RequestHandlerParams<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+      Type '(req: AuthRequest, res: Response, next: NextFunction) => Promise<Response<any, Record<string, any>> | undefined>' is not assignable to type 'RequestHandler<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+        Types of parameters 'req' and 'req' are incompatible.
+          Type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>' is not assignable to type 'AuthRequest'.
+            Types of property 'user' are incompatible.
+              Type 'User | undefined' is not assignable to type '{ id: number; username: string; password: string; email: string | null; role: string | null; isAdmin: boolean | null; emailVerified: boolean; firstName: string | null; lastName: string | null; ... 21 more ...; lastLogin: Date | null; } | undefined'.
+                Type 'User' is missing the following properties from type '{ id: number; username: string; password: string; email: string | null; role: string | null; isAdmin: boolean | null; emailVerified: boolean; firstName: string | null; lastName: string | null; ... 21 more ...; lastLogin: Date | null; }': id, username, password, email, and 27 more.
+server/api-routes.ts(82,32): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type '(req: AuthRequest, res: Response, next: NextFunction) => Promise<Response<any, Record<string, any>> | undefined>' is not assignable to parameter of type 'RequestHandlerParams<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+      Type '(req: AuthRequest, res: Response, next: NextFunction) => Promise<Response<any, Record<string, any>> | undefined>' is not assignable to type 'RequestHandler<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+        Types of parameters 'req' and 'req' are incompatible.
+          Type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>' is not assignable to type 'AuthRequest'.
+            Types of property 'user' are incompatible.
+              Type 'User | undefined' is not assignable to type '{ id: number; username: string; password: string; email: string | null; role: string | null; isAdmin: boolean | null; emailVerified: boolean; firstName: string | null; lastName: string | null; ... 21 more ...; lastLogin: Date | null; } | undefined'.
+                Type 'User' is missing the following properties from type '{ id: number; username: string; password: string; email: string | null; role: string | null; isAdmin: boolean | null; emailVerified: boolean; firstName: string | null; lastName: string | null; ... 21 more ...; lastLogin: Date | null; }': id, username, password, email, and 27 more.
+server/api-routes.ts(121,33): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type '(req: AuthRequest, res: Response, next: NextFunction) => Promise<Response<any, Record<string, any>> | undefined>' is not assignable to parameter of type 'RequestHandlerParams<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+      Type '(req: AuthRequest, res: Response, next: NextFunction) => Promise<Response<any, Record<string, any>> | undefined>' is not assignable to type 'RequestHandler<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+        Types of parameters 'req' and 'req' are incompatible.
+          Type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>' is not assignable to type 'AuthRequest'.
+            Types of property 'user' are incompatible.
+              Type 'User | undefined' is not assignable to type '{ id: number; username: string; password: string; email: string | null; role: string | null; isAdmin: boolean | null; emailVerified: boolean; firstName: string | null; lastName: string | null; ... 21 more ...; lastLogin: Date | null; } | undefined'.
+                Type 'User' is missing the following properties from type '{ id: number; username: string; password: string; email: string | null; role: string | null; isAdmin: boolean | null; emailVerified: boolean; firstName: string | null; lastName: string | null; ... 21 more ...; lastLogin: Date | null; }': id, username, password, email, and 27 more.
+server/api-routes.ts(149,25): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type '(req: AuthRequest, res: Response, next: NextFunction) => Promise<Response<any, Record<string, any>> | undefined>' is not assignable to parameter of type 'RequestHandlerParams<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+      Type '(req: AuthRequest, res: Response, next: NextFunction) => Promise<Response<any, Record<string, any>> | undefined>' is not assignable to type 'RequestHandler<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+        Types of parameters 'req' and 'req' are incompatible.
+          Type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>' is not assignable to type 'AuthRequest'.
+            Types of property 'user' are incompatible.
+              Type 'User | undefined' is not assignable to type '{ id: number; username: string; password: string; email: string | null; role: string | null; isAdmin: boolean | null; emailVerified: boolean; firstName: string | null; lastName: string | null; ... 21 more ...; lastLogin: Date | null; } | undefined'.
+                Type 'User' is missing the following properties from type '{ id: number; username: string; password: string; email: string | null; role: string | null; isAdmin: boolean | null; emailVerified: boolean; firstName: string | null; lastName: string | null; ... 21 more ...; lastLogin: Date | null; }': id, username, password, email, and 27 more.
+server/api-routes.ts(169,32): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type '(req: AuthRequest, res: Response, next: NextFunction) => Promise<Response<any, Record<string, any>> | undefined>' is not assignable to parameter of type 'RequestHandlerParams<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+      Type '(req: AuthRequest, res: Response, next: NextFunction) => Promise<Response<any, Record<string, any>> | undefined>' is not assignable to type 'RequestHandler<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+        Types of parameters 'req' and 'req' are incompatible.
+          Type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>' is not assignable to type 'AuthRequest'.
+            Types of property 'user' are incompatible.
+              Type 'User | undefined' is not assignable to type '{ id: number; username: string; password: string; email: string | null; role: string | null; isAdmin: boolean | null; emailVerified: boolean; firstName: string | null; lastName: string | null; ... 21 more ...; lastLogin: Date | null; } | undefined'.
+                Type 'User' is missing the following properties from type '{ id: number; username: string; password: string; email: string | null; role: string | null; isAdmin: boolean | null; emailVerified: boolean; firstName: string | null; lastName: string | null; ... 21 more ...; lastLogin: Date | null; }': id, username, password, email, and 27 more.
+server/api-routes.ts(228,18): error TS2339: Property 'id' does not exist on type 'User'.
+server/api-routes.ts(232,27): error TS2339: Property 'id' does not exist on type 'User'.
+server/api-routes.ts(277,18): error TS2339: Property 'id' does not exist on type 'User'.
+server/api-routes.ts(281,27): error TS2339: Property 'id' does not exist on type 'User'.
+server/api-routes.ts(302,18): error TS2339: Property 'id' does not exist on type 'User'.
+server/api-routes.ts(306,27): error TS2339: Property 'id' does not exist on type 'User'.
+server/api-routes.ts(343,32): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type '(req: AuthRequest, res: Response, next: NextFunction) => Promise<Response<any, Record<string, any>> | undefined>' is not assignable to parameter of type 'RequestHandlerParams<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+      Type '(req: AuthRequest, res: Response, next: NextFunction) => Promise<Response<any, Record<string, any>> | undefined>' is not assignable to type 'RequestHandler<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+        Types of parameters 'req' and 'req' are incompatible.
+          Type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>' is not assignable to type 'AuthRequest'.
+            Types of property 'user' are incompatible.
+              Type 'User | undefined' is not assignable to type '{ id: number; username: string; password: string; email: string | null; role: string | null; isAdmin: boolean | null; emailVerified: boolean; firstName: string | null; lastName: string | null; ... 21 more ...; lastLogin: Date | null; } | undefined'.
+                Type 'User' is missing the following properties from type '{ id: number; username: string; password: string; email: string | null; role: string | null; isAdmin: boolean | null; emailVerified: boolean; firstName: string | null; lastName: string | null; ... 21 more ...; lastLogin: Date | null; }': id, username, password, email, and 27 more.
+server/api-routes.ts(377,35): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type '(req: AuthRequest, res: Response, next: NextFunction) => Promise<Response<any, Record<string, any>> | undefined>' is not assignable to parameter of type 'RequestHandlerParams<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+      Type '(req: AuthRequest, res: Response, next: NextFunction) => Promise<Response<any, Record<string, any>> | undefined>' is not assignable to type 'RequestHandler<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+        Types of parameters 'req' and 'req' are incompatible.
+          Type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>' is not assignable to type 'AuthRequest'.
+            Types of property 'user' are incompatible.
+              Type 'User | undefined' is not assignable to type '{ id: number; username: string; password: string; email: string | null; role: string | null; isAdmin: boolean | null; emailVerified: boolean; firstName: string | null; lastName: string | null; ... 21 more ...; lastLogin: Date | null; } | undefined'.
+                Type 'User' is missing the following properties from type '{ id: number; username: string; password: string; email: string | null; role: string | null; isAdmin: boolean | null; emailVerified: boolean; firstName: string | null; lastName: string | null; ... 21 more ...; lastLogin: Date | null; }': id, username, password, email, and 27 more.
+server/api-routes.ts(410,18): error TS2339: Property 'id' does not exist on type 'User'.
+server/api-routes.ts(414,27): error TS2339: Property 'id' does not exist on type 'User'.
+server/api-routes.ts(442,33): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type '(req: AuthRequest, res: Response, next: NextFunction) => Promise<Response<any, Record<string, any>> | undefined>' is not assignable to parameter of type 'RequestHandlerParams<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+      Type '(req: AuthRequest, res: Response, next: NextFunction) => Promise<Response<any, Record<string, any>> | undefined>' is not assignable to type 'RequestHandler<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+        Types of parameters 'req' and 'req' are incompatible.
+          Type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>' is not assignable to type 'AuthRequest'.
+            Types of property 'user' are incompatible.
+              Type 'User | undefined' is not assignable to type '{ id: number; username: string; password: string; email: string | null; role: string | null; isAdmin: boolean | null; emailVerified: boolean; firstName: string | null; lastName: string | null; ... 21 more ...; lastLogin: Date | null; } | undefined'.
+                Type 'User' is missing the following properties from type '{ id: number; username: string; password: string; email: string | null; role: string | null; isAdmin: boolean | null; emailVerified: boolean; firstName: string | null; lastName: string | null; ... 21 more ...; lastLogin: Date | null; }': id, username, password, email, and 27 more.
+server/api-routes.ts(465,18): error TS2339: Property 'id' does not exist on type 'User'.
+server/api-routes.ts(469,27): error TS2339: Property 'id' does not exist on type 'User'.
+server/index.ts(141,40): error TS2307: Cannot find module './vite.js' or its corresponding type declarations.
+server/lib/workers/ai-promo-worker.ts(47,22): error TS2345: Argument of type 'AiResponse' is not assignable to parameter of type 'never'.
+server/lib/workers/ai-promo-worker.ts(103,11): error TS2353: Object literal may only specify known properties, and 'resultJson' does not exist in type '{ platform?: string | SQL<unknown> | PgColumn<ColumnBaseConfig<ColumnDataType, string>, {}, {}> | undefined; style?: string | SQL<unknown> | PgColumn<...> | undefined; ... 10 more ...; generationType?: string | ... 2 more ... | undefined; }'.
+server/lib/workers/ai-promo-worker.ts(122,11): error TS2353: Object literal may only specify known properties, and 'resultJson' does not exist in type '{ platform?: string | SQL<unknown> | PgColumn<ColumnBaseConfig<ColumnDataType, string>, {}, {}> | undefined; style?: string | SQL<unknown> | PgColumn<...> | undefined; ... 10 more ...; generationType?: string | ... 2 more ... | undefined; }'.
+server/lib/workers/batch-posting-worker.ts(58,26): error TS2345: Argument of type '{ subreddit: string; success: boolean; error: string | undefined; skipped: boolean; }' is not assignable to parameter of type 'never'.
+server/lib/workers/batch-posting-worker.ts(75,55): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(value: { userId: number | SQL<unknown> | Placeholder<string, any>; subreddit: string | SQL<unknown> | Placeholder<string, any>; titleFinal: string | SQL<unknown> | Placeholder<...>; ... 7 more ...; resultJson?: unknown; }): PgInsertBase<...>', gave the following error.
+    Object literal may only specify known properties, and 'campaignId' does not exist in type '{ userId: number | SQL<unknown> | Placeholder<string, any>; subreddit: string | SQL<unknown> | Placeholder<string, any>; titleFinal: string | SQL<unknown> | Placeholder<...>; ... 7 more ...; resultJson?: unknown; }'.
+  Overload 2 of 2, '(values: { userId: number | SQL<unknown> | Placeholder<string, any>; subreddit: string | SQL<unknown> | Placeholder<string, any>; titleFinal: string | SQL<unknown> | Placeholder<...>; ... 7 more ...; resultJson?: unknown; }[]): PgInsertBase<...>', gave the following error.
+    Object literal may only specify known properties, and 'userId' does not exist in type '{ userId: number | SQL<unknown> | Placeholder<string, any>; subreddit: string | SQL<unknown> | Placeholder<string, any>; titleFinal: string | SQL<unknown> | Placeholder<...>; ... 7 more ...; resultJson?: unknown; }[]'.
+server/lib/workers/batch-posting-worker.ts(123,62): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+server/lib/workers/batch-posting-worker.ts(125,26): error TS2345: Argument of type '{ subreddit: string; success: boolean; postId: string | undefined; url: string | undefined; }' is not assignable to parameter of type 'never'.
+server/lib/workers/batch-posting-worker.ts(146,26): error TS2345: Argument of type '{ subreddit: string; success: boolean; error: string | undefined; }' is not assignable to parameter of type 'never'.
+server/lib/workers/batch-posting-worker.ts(163,24): error TS2345: Argument of type '{ subreddit: string; success: boolean; error: any; }' is not assignable to parameter of type 'never'.
+server/middleware/tiered-rate-limit.ts(141,34): error TS2339: Property 'message' does not exist on type '{ windowMs: number; max: number; }'.
+server/middleware/tiered-rate-limit.ts(160,27): error TS2339: Property 'message' does not exist on type '{ windowMs: number; max: number; }'.
+server/routes.ts(248,13): error TS2353: Object literal may only specify known properties, and 'product_data' does not exist in type 'PriceData'.
+server/routes/caption.ts(6,34): error TS2459: Module '"../middleware/auth"' declares 'AuthRequest' locally, but it is not exported.
+server/routes/caption.ts(35,46): error TS2339: Property 'title' does not exist on type '{ style: string; hashtags: string[]; mood: string; nsfw: boolean; caption: string; alt: string; cta: string; safety_level: string; }'.
+server/routes/caption.ts(35,68): error TS2339: Property 'title' does not exist on type '{ style: string; hashtags: string[]; mood: string; nsfw: boolean; caption: string; alt: string; cta: string; safety_level: string; }'.
+server/routes/caption.ts(35,90): error TS2339: Property 'title' does not exist on type '{ style: string; hashtags: string[]; mood: string; nsfw: boolean; caption: string; alt: string; cta: string; safety_level: string; }'.
+server/routes/caption.ts(37,43): error TS2339: Property 'photoInstructions' does not exist on type '{ style: string; hashtags: string[]; mood: string; nsfw: boolean; caption: string; alt: string; cta: string; safety_level: string; }'.
+server/routes/caption.ts(87,46): error TS2339: Property 'title' does not exist on type '{ style: string; hashtags: string[]; mood: string; nsfw: boolean; caption: string; alt: string; cta: string; safety_level: string; }'.
+server/routes/caption.ts(87,68): error TS2339: Property 'title' does not exist on type '{ style: string; hashtags: string[]; mood: string; nsfw: boolean; caption: string; alt: string; cta: string; safety_level: string; }'.
+server/routes/caption.ts(87,90): error TS2339: Property 'title' does not exist on type '{ style: string; hashtags: string[]; mood: string; nsfw: boolean; caption: string; alt: string; cta: string; safety_level: string; }'.
+server/routes/caption.ts(89,43): error TS2339: Property 'photoInstructions' does not exist on type '{ style: string; hashtags: string[]; mood: string; nsfw: boolean; caption: string; alt: string; cta: string; safety_level: string; }'.
+server/routes/caption.ts(139,46): error TS2339: Property 'title' does not exist on type '{ style: string; hashtags: string[]; mood: string; nsfw: boolean; caption: string; alt: string; cta: string; safety_level: string; }'.
+server/routes/caption.ts(139,68): error TS2339: Property 'title' does not exist on type '{ style: string; hashtags: string[]; mood: string; nsfw: boolean; caption: string; alt: string; cta: string; safety_level: string; }'.
+server/routes/caption.ts(139,90): error TS2339: Property 'title' does not exist on type '{ style: string; hashtags: string[]; mood: string; nsfw: boolean; caption: string; alt: string; cta: string; safety_level: string; }'.
+server/routes/caption.ts(141,43): error TS2339: Property 'photoInstructions' does not exist on type '{ style: string; hashtags: string[]; mood: string; nsfw: boolean; caption: string; alt: string; cta: string; safety_level: string; }'.
+🔗 Resolving path mappings...
+build-production.sh: line 22: tsc-alias: command not found
+🔄 Fixing import extensions...
+npm error Missing script: "fix-imports"
+npm error
+npm error To see a list of scripts, run:
+npm error   npm run
+npm error A complete log of this run can be found in: /home/runner/.npm/_logs/2025-09-02T03_50_03_367Z-debug-0.log
+✨ Finalizing imports...
+🔧 Fixing double extensions...
+🎨 Building client...
+vite v5.4.19 building for production...
+✓ 4 modules transformed.
+Client build skipped (development mode)
+✅ Production build complete!
+
+To run in production:
+  NODE_ENV=production node dist/server/index.js
+
+Or for deployment:
+  Use the dist/ directory as your deployment artifact

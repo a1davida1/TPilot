@@ -1,9 +1,16 @@
 import jwt from 'jsonwebtoken';
 import express from 'express';
 import { logger } from './security.js';
+import { db } from '../db.js';
+import { users } from '@shared/schema.js';
+
+import { eq } from 'drizzle-orm';
+
+// Create a proper User type alias from the schema
+type UserType = typeof users.$inferSelect;
 
 interface AuthRequest extends express.Request {
-  user?: any;
+  user?: UserType;
 }
 
 // Get JWT secret (must be set in environment)
@@ -29,8 +36,16 @@ export const authenticateToken = async (req: AuthRequest, res: express.Response,
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
-    req.user = decoded;
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: number; email: string; iat: number; exp: number };
+    
+    // Fetch the full user object from database
+    const [user] = await db.select().from(users).where(eq(users.id, decoded.userId));
+    
+    if (!user) {
+      return res.status(401).json({ message: 'User not found' });
+    }
+    
+    req.user = user;
     next();
   } catch (error) {
     logger.error('Auth error:', error);
@@ -38,8 +53,8 @@ export const authenticateToken = async (req: AuthRequest, res: express.Response,
   }
 };
 
-export const createToken = (payload: any): string => {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' });
+export const createToken = (user: UserType): string => {
+  return jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
 };
 
 export const verifyToken = (token: string): any => {
