@@ -12,8 +12,8 @@ import { RedditManager } from "./lib/reddit.js";
 import { postJobs, subscriptions, mediaAssets, creatorAccounts, users } from "@shared/schema.js";
 import { eq, desc } from "drizzle-orm";
 import multer from "multer";
-import jwt from 'jsonwebtoken';
 import type { Request, Response, NextFunction } from 'express';
+import { authenticateToken } from './middleware/auth.js';
 
 // Create a proper User type alias from the schema
 type UserType = typeof users.$inferSelect;
@@ -27,32 +27,6 @@ declare global {
   }
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
-
-const authenticateToken = async (req: Request, res: Response, next: NextFunction) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
-
-  if (!token) {
-    return res.status(401).json({ message: 'Access token required' });
-  }
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: number; email: string; iat: number; exp: number };
-    
-    // Fetch the full user object from database
-    const [user] = await db.select().from(users).where(eq(users.id, decoded.userId));
-    
-    if (!user) {
-      return res.status(401).json({ message: 'User not found' });
-    }
-    
-    req.user = user;
-    next();
-  } catch (error) {
-    return res.status(403).json({ message: 'Invalid token' });
-  }
-};
 
 // Multer configuration for file uploads
 const upload = multer({

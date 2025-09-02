@@ -19,13 +19,13 @@ if (!JWT_SECRET) {
   throw new Error('JWT_SECRET environment variable is required');
 }
 
-// Get admin credentials from environment (optional for demo)
-export const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@thottopilot.com';
-export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
-
+// Get admin credentials from environment (required)
 if (!process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD) {
-  console.warn('⚠️  Using default admin credentials. Set ADMIN_EMAIL and ADMIN_PASSWORD in production!');
+  throw new Error('ADMIN_EMAIL and ADMIN_PASSWORD environment variables are required');
 }
+
+export const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 export const authenticateToken = async (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
   const authHeader = req.headers['authorization'];
