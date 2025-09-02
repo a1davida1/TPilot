@@ -167,13 +167,24 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
     const errors: string[] = [];
     
     if (!formData.username.trim()) {
-      errors.push('Username is required');
-    } else if (formData.username.length < 3) {
-      errors.push('Username must be at least 3 characters');
-    } else if (formData.username.length > 50) {
-      errors.push('Username must be less than 50 characters');
-    } else if (!/^[a-zA-Z0-9_-]+$/.test(formData.username)) {
-      errors.push('Username can only contain letters, numbers, underscores and hyphens');
+      errors.push(mode === 'login' ? 'Username or email is required' : 'Username is required');
+    } else if (mode === 'signup') {
+      // Strict username validation for signup only
+      if (formData.username.length < 3) {
+        errors.push('Username must be at least 3 characters');
+      } else if (formData.username.length > 50) {
+        errors.push('Username must be less than 50 characters');
+      } else if (!/^[a-zA-Z0-9_-]+$/.test(formData.username)) {
+        errors.push('Username can only contain letters, numbers, underscores and hyphens');
+      }
+    } else if (mode === 'login') {
+      // For login: allow username OR email format
+      const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.username);
+      const isUsername = /^[a-zA-Z0-9_-]+$/.test(formData.username);
+      
+      if (!isEmail && !isUsername) {
+        errors.push('Please enter a valid username or email address');
+      }
     }
     
     if (mode === 'signup') {
