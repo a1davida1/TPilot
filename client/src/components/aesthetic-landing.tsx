@@ -46,10 +46,10 @@ export function AestheticLanding() {
   }, []);
 
   const stats = [
-    { icon: <Users className="h-5 w-5" />, value: "10,000+", label: "Active Creators" },
-    { icon: <Sparkles className="h-5 w-5" />, value: "2.4M+", label: "Posts Created" },
-    { icon: <TrendingUp className="h-5 w-5" />, value: "340%", label: "Avg Growth" },
-    { icon: <Star className="h-5 w-5" />, value: "4.9/5", label: "User Rating" }
+    { icon: <Users className="h-5 w-5" />, value: "Beta", label: "Early Access" },
+    { icon: <Sparkles className="h-5 w-5" />, value: "50+", label: "Templates" },
+    { icon: <TrendingUp className="h-5 w-5" />, value: "24/7", label: "Support" },
+    { icon: <Star className="h-5 w-5" />, value: "New", label: "Platform" }
   ];
 
   const features = [
