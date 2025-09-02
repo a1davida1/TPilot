@@ -114,6 +114,14 @@ const photoTypeVariations = {
     lighting: 'Professional studio lighting, artistic drama, creative illumination',
     angles: 'Unlimited creative angles, artistic freedom, boundary-pushing compositions',
     mood: 'completely uninhibited and free'
+  },
+  'explicit': {
+    themes: ['explicit content', 'uncensored expression', 'adult artistry', 'mature themes', 'uninhibited creativity'],
+    settings: ['private space', 'adult content studio', 'mature setting', 'exclusive location'],
+    clothing: ['explicit styling', 'uncensored wardrobe', 'mature fashion', 'adult themes'],
+    lighting: 'Professional explicit content lighting, dramatic contrasts',
+    angles: 'Explicit composition, uncensored angles, mature perspectives',
+    mood: 'explicitly mature and uncensored'
   }
 };
 

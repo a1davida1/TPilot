@@ -4,7 +4,7 @@
 export interface ContentTemplate {
   id: string;
   category: 'teasing' | 'promotional' | 'engagement' | 'lifestyle' | 'announcement' | 'shower';
-  style: 'playful' | 'confident' | 'mysterious' | 'casual' | 'direct' | 'relaxed' | 'peaceful' | 'glowing' | 'magical' | 'refreshing' | 'blissful' | 'dreamy' | 'soft' | 'warm' | 'natural' | 'brave';
+  style: 'playful' | 'confident' | 'mysterious' | 'casual' | 'direct' | 'relaxed' | 'peaceful' | 'glowing' | 'magical' | 'refreshing' | 'blissful' | 'dreamy' | 'soft' | 'warm' | 'natural' | 'brave' | 'explicit';
   promotionLevel?: 'none' | 'subtle' | 'moderate' | 'direct';
   subCategory?: 'flash-sale' | 'new-content' | 'discount' | 'exclusive-offer' | 'custom-request' | 'bundle' | 'limited-time';
   title: string;
