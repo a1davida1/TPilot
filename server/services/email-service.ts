@@ -4,10 +4,11 @@ import { safeLog } from '../lib/logger-utils.js';
 // Initialize SendGrid
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@thottopilot.com';
-// Use Replit domain if available (development), otherwise fallback to configured URL
-const FRONTEND_URL = process.env.REPLIT_DOMAINS 
-  ? `https://${process.env.REPLIT_DOMAINS}` 
-  : process.env.FRONTEND_URL || 'https://thottopilot.com';
+// Use configured production URL first, fallback to Replit domain only in development
+const FRONTEND_URL = process.env.FRONTEND_URL 
+  || (process.env.NODE_ENV === 'development' && process.env.REPLIT_DOMAINS 
+      ? `https://${process.env.REPLIT_DOMAINS}` 
+      : 'https://thottopilot.com');
 
 if (SENDGRID_API_KEY) {
   sgMail.setApiKey(SENDGRID_API_KEY);
