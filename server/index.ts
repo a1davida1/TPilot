@@ -1,12 +1,12 @@
 import express, { type Request, Response, NextFunction } from "express";
 import cookieParser from "cookie-parser";
-import { registerRoutes } from "./routes.js";
-import { setupAuth } from "./auth.js";
-import { mountStripeWebhook } from "./routes/webhooks.stripe.js";
-import { mountBillingRoutes } from "./routes/billing.js";
-import { initializeQueue } from "./lib/queue-factory.js";
-import { initializeWorkers } from "./lib/workers/index.js";
-import { seedDemoUser } from "./seed-demo-user.js";
+import { registerRoutes } from "./routes";
+import { setupAuth } from "./auth";
+import { mountStripeWebhook } from "./routes/webhooks.stripe";
+import { mountBillingRoutes } from "./routes/billing";
+import { initializeQueue } from "./lib/queue-factory";
+import { initializeWorkers } from "./lib/workers/index";
+import { seedDemoUser } from "./seed-demo-user";
 import winston from "winston";
 import { v4 as uuidv4 } from "uuid";
 
