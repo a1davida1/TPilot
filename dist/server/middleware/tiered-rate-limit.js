@@ -125,7 +125,7 @@ export function createTieredRateLimiter(feature) {
                 keyGenerator: (req) => `${userId}_${tier}_${feature || 'general'}`,
                 handler: (req, res) => {
                     res.status(429).json({
-                        error: defaultLimits.message,
+                        error: defaultLimits.message || 'Rate limit exceeded. Please wait before trying again.',
                         tier,
                         retryAfter: Math.ceil(defaultLimits.windowMs / 1000),
                         upgradeUrl: '/pricing'
@@ -142,7 +142,7 @@ export function createTieredRateLimiter(feature) {
                 keyGenerator: (req) => `${userId}_${tier}_${feature || 'general'}`,
                 handler: (req, res) => {
                     res.status(429).json({
-                        error: limits.message,
+                        error: limits.message || 'Rate limit exceeded. Please wait before trying again.',
                         tier,
                         retryAfter: Math.ceil(limits.windowMs / 1000),
                         upgradeUrl: tier === 'free' || tier === 'starter' ? '/pricing' : undefined

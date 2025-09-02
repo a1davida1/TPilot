@@ -77,17 +77,27 @@ export class AiPromoWorker {
     }
     async updateGenerationResults(generationId, results) {
         try {
-            await db
-                .update(contentGenerations)
-                .set({
-                resultJson: {
-                    status: 'completed',
-                    variants: results,
-                    completedAt: new Date().toISOString(),
-                },
-                updatedAt: new Date(),
-            })
-                .where(eq(contentGenerations.id, generationId));
+            // Use the first result to update the generation record
+            const firstResult = results[0];
+            if (firstResult && firstResult.content && firstResult.content.length > 0) {
+                const content = firstResult.content[0];
+                await db
+                    .update(contentGenerations)
+                    .set({
+                    content: content.body || '',
+                    titles: content.titles || [],
+                    photoInstructions: {
+                        lighting: 'Natural lighting preferred',
+                        cameraAngle: 'Eye level angle',
+                        composition: 'Center composition',
+                        styling: 'Authentic styling',
+                        mood: 'Confident and natural',
+                        technicalSettings: 'Auto settings'
+                    },
+                    updatedAt: new Date(),
+                })
+                    .where(eq(contentGenerations.id, generationId));
+            }
         }
         catch (error) {
             logger.error('Failed to update generation results:', { error });
@@ -98,7 +108,7 @@ export class AiPromoWorker {
             await db
                 .update(contentGenerations)
                 .set({
-                resultJson: error ? { status, error, failedAt: new Date().toISOString() } : { status },
+                content: error ? `Generation failed: ${error}` : 'Processing...',
                 updatedAt: new Date(),
             })
                 .where(eq(contentGenerations.id, generationId));

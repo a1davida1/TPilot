@@ -52,7 +52,7 @@ export class BatchPostingWorker {
                         titleFinal: customizedContent.title,
                         bodyFinal: customizedContent.body,
                         mediaKey,
-                        campaignId: campaignId.toString(),
+                        scheduledAt: new Date(),
                         status: 'pending',
                     }).returning();
                     // Submit post
@@ -90,7 +90,9 @@ export class BatchPostingWorker {
                         })
                             .where(eq(postJobs.id, postJob.id));
                         // Schedule metrics collection
-                        await this.scheduleMetricsCollection(postJob.id, result.postId);
+                        if (result.postId) {
+                            await this.scheduleMetricsCollection(postJob.id, result.postId);
+                        }
                         results.push({
                             subreddit,
                             success: true,

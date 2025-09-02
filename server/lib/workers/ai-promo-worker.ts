@@ -29,7 +29,7 @@ export class AiPromoWorker {
       logger.info(`Processing AI promo job for generation ${generationId}`);
 
       // Generate promotional content variants
-      const results = [];
+      const results: any[] = [];
       
       for (let i = 0; i < variants; i++) {
         logger.info(`Generating variant ${i + 1}/${variants}`);
@@ -114,7 +114,6 @@ export class AiPromoWorker {
               mood: 'Confident and natural',
               technicalSettings: 'Auto settings'
             },
-            updatedAt: new Date(),
           })
           .where(eq(contentGenerations.id, generationId));
       }
@@ -130,7 +129,6 @@ export class AiPromoWorker {
         .update(contentGenerations)
         .set({
           content: error ? `Generation failed: ${error}` : 'Processing...',
-          updatedAt: new Date(),
         })
         .where(eq(contentGenerations.id, generationId));
 
