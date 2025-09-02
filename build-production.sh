@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 echo "🔨 Building ThottoPilot for production..."
 
@@ -9,12 +10,14 @@ rm -rf dist
 # Temporarily move vite.ts to avoid compilation errors
 echo "🔧 Preparing TypeScript compilation..."
 mv server/vite.ts server/vite.ts.bak 2>/dev/null || true
+mv server/vite-stub.ts server/vite.ts 2>/dev/null || true
 
 # Compile TypeScript (ignore vite.ts error)
 echo "⚙️ Compiling TypeScript..."
 tsc -p tsconfig.json 2>&1 | grep -v "TS5097" | grep -v "vite.ts" | grep -v "Found 1 error" || true
 
 # Restore vite.ts
+mv server/vite.ts server/vite-stub.ts 2>/dev/null || true
 mv server/vite.ts.bak server/vite.ts 2>/dev/null || true
 
 # Apply path mappings
@@ -23,7 +26,7 @@ tsc-alias -p tsconfig.json
 
 # Fix imports - add .js extensions
 echo "🔄 Fixing import extensions..."
-npm run fix-imports
+bash fix-all-imports.sh
 
 # Fix all relative imports that need .js
 echo "✨ Finalizing imports..."
@@ -40,9 +43,7 @@ find dist -name '*.js' -exec sed -i 's/\.js\.js/\.js/g' {} + 2>/dev/null || true
 # Build client for production
 if [ -d "client" ]; then
   echo "🎨 Building client..."
-  cd client
-  npx vite build 2>/dev/null || echo "Client build skipped (development mode)"
-  cd ..
+  npx vite build
 fi
 
 echo "✅ Production build complete!"
