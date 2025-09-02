@@ -20,7 +20,7 @@ export function PasswordReset({ isOpen, onClose }: PasswordResetProps) {
 
   const resetMutation = useMutation({
     mutationFn: async (email: string) => {
-      return apiRequest('POST', '/api/auth/reset-password', { email });
+      return apiRequest('POST', '/api/auth/forgot-password', { email });
     },
     onSuccess: () => {
       setStep('sent');
