@@ -111,7 +111,7 @@ export async function createLead(req: Request, res: Response) {
     );
 
     // Track analytics event
-    trackEvent('lead_created', {
+    trackEvent(null, 'lead_created', {
       email,
       platformTags,
       painPoint: painPoint ? 'provided' : 'not_provided',
@@ -189,7 +189,7 @@ export async function confirmLead(req: Request, res: Response) {
     }
 
     // Track analytics event
-    trackEvent('lead_confirmed', {
+    trackEvent(null, 'lead_confirmed', {
       email: verification.email,
       confirmedAt: updatedLead.confirmedAt,
     });

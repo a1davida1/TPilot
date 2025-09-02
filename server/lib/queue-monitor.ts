@@ -169,20 +169,20 @@ export class QueueMonitor {
       const queue = getQueueBackend();
       
       // Get completed job count from the last 24 hours
-      const completedJobs = await queue.getCompletedCount ? 
-        queue.getCompletedCount(queueName, { since: new Date(Date.now() - 24 * 60 * 60 * 1000) }) : 
+      const completedJobs = queue.getCompletedCount ? 
+        await queue.getCompletedCount(queueName) : 
         0;
       
       // Calculate throughput (jobs per hour over last 24 hours)
-      const throughput = Math.floor(completedJobs / 24);
+      const throughput = Math.floor(Number(completedJobs) / 24);
       
       // Get recent job timing data if available
-      const recentJobs = await queue.getRecentJobs ? 
-        queue.getRecentJobs(queueName, 10) : 
+      const recentJobs = queue.getRecentJobs ? 
+        await queue.getRecentJobs(queueName, 10) : 
         [];
       
       // Calculate average processing time from recent jobs
-      const avgProcessingTime = recentJobs.length > 0 ?
+      const avgProcessingTime = Array.isArray(recentJobs) && recentJobs.length > 0 ?
         recentJobs.reduce((sum, job) => {
           const duration = job.processedOn && job.timestamp ? 
             job.processedOn - job.timestamp : 1000;

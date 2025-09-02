@@ -3,12 +3,116 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-    <title>ThottoPilot - AI Content Creation for Creators</title>
-    <script type="module" crossorigin src="/assets/index-USPNv9-B.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-BmGKX7de.css">
+    <title>ThottoPilot - From Photo to Posted in 5 Seconds</title>
+    <meta name="description" content="AI-powered content creation platform for adult content creators. Upload once, AI generates 8 different captions, posts everywhere. ImageShield protection, profit tracking, tax organization included." />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://thottopilot.com/" />
+    <meta property="og:title" content="ThottoPilot - From Photo to Posted in 5 Seconds" />
+    <meta property="og:description" content="AI-powered content creation platform for adult content creators. Upload once, AI generates 8 different captions, posts everywhere." />
+    <meta property="og:image" content="https://thottopilot.com/og-image.jpg" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://thottopilot.com/" />
+    <meta property="twitter:title" content="ThottoPilot - From Photo to Posted in 5 Seconds" />
+    <meta property="twitter:description" content="AI-powered content creation platform for adult content creators. Upload once, AI generates 8 different captions, posts everywhere." />
+    <meta property="twitter:image" content="https://thottopilot.com/og-image.jpg" />
+
+    <!-- Additional SEO -->
+    <meta name="keywords" content="content creation, AI captions, social media automation, adult content, image protection, profit tracking, tax tracker" />
+    <meta name="author" content="ThottoPilot" />
+    <link rel="canonical" href="https://thottopilot.com/" />
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <script type="module" crossorigin src="/assets/index-CWElr0GS.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-BQMqperA.css">
   </head>
   <body>
+    <!-- Static content visible to AI models and search engines -->
+    <div id="static-content" style="display: block;">
+      <header>
+        <h1>ThottoPilot - From Photo to Posted in 5 Seconds</h1>
+        <p><strong>AI-powered content creation platform for adult content creators</strong></p>
+      </header>
+      
+      <main>
+        <section>
+          <h2>Revolutionary Content Creation Platform</h2>
+          <p>Upload once, AI writes 8 different captions, posts everywhere. Complete with ImageShield protection, profit tracking, and tax organization.</p>
+        </section>
+
+        <section>
+          <h2>Core Features</h2>
+          <ul>
+            <li><strong>5-Second Posting:</strong> Upload to 50+ platforms instantly</li>
+            <li><strong>AI Caption Generation:</strong> 8 unique captions per upload with platform optimization</li>
+            <li><strong>ImageShield Protection:</strong> Multi-layer image protection against reverse searches</li>
+            <li><strong>Intelligent Reddit Integration:</strong> Smart subreddit targeting and compliance</li>
+            <li><strong>Apple-Level Tax Tracker:</strong> Professional tax organization and profit tracking</li>
+            <li><strong>Enterprise Media Gallery:</strong> Advanced image management with performance analytics</li>
+            <li><strong>Admin Portal:</strong> Real-time analytics, user management, and system monitoring</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>Platform Highlights</h2>
+          <ul>
+            <li>Dual AI providers (Gemini + OpenAI) with intelligent fallback</li>
+            <li>Comprehensive billing system with Stripe integration</li>
+            <li>Advanced security with bcrypt authentication</li>
+            <li>Real-time data dashboard with live metrics</li>
+            <li>Queue management for high-volume posting</li>
+            <li>Mobile-optimized responsive design</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>Pricing Plans</h2>
+          <div>
+            <h3>Free Plan</h3>
+            <p>10 posts per month with ThottoPilot watermark</p>
+            
+            <h3>Starter Plan - $12.99/month</h3>
+            <p>Remove watermark, 100 posts, basic scheduling, image protection</p>
+            
+            <h3>Pro Plan - $29.99/month</h3>
+            <p>Unlimited posts, advanced automation, analytics, priority support</p>
+            
+            <h3>Enterprise Plan - $99.99/month</h3>
+            <p>White-label solution, API access, custom integrations, dedicated support</p>
+          </div>
+        </section>
+
+        <section>
+          <h2>Technology Stack</h2>
+          <p>Built with React, TypeScript, Express.js, PostgreSQL, and enterprise-grade security. Deployed on Replit with custom domain support.</p>
+        </section>
+
+        <section>
+          <h2>Contact & Access</h2>
+          <p>Visit <a href="https://thottopilot.com">thottopilot.com</a> to get started with your content creation journey.</p>
+          <p>Professional platform designed for serious content creators looking to scale their business efficiently and securely.</p>
+        </section>
+      </main>
+    </div>
+
     <div id="root"></div>
+    
+    <!-- Hide static content when React app loads -->
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        // Hide static content once React starts loading
+        setTimeout(function() {
+          const staticContent = document.getElementById('static-content');
+          if (staticContent && document.getElementById('root').children.length > 0) {
+            staticContent.style.display = 'none';
+          }
+        }, 100);
+      });
+    </script>
     <!-- This is a replit script which adds a banner on the top of the page when opened in development mode outside the replit environment -->
     <script type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js"></script>
   </body>

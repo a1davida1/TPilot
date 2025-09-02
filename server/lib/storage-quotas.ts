@@ -13,7 +13,7 @@ export interface StorageQuotaInfo {
   limit: number;
   available: number;
   percentage: number;
-  planType: 'free' | 'pro' | 'pro_plus';
+  planType: 'free' | 'starter' | 'pro';
 }
 
 export class StorageQuotaManager {

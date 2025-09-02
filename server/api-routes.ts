@@ -9,7 +9,7 @@ import { PolicyLinter } from "./lib/policyLinter.js";
 import { PostScheduler } from "./lib/scheduling.js";
 import { addJob } from "./lib/queue/index.js";
 import { RedditManager } from "./lib/reddit.js";
-import { postJobs, subscriptions, mediaAssets, creatorAccounts } from "@shared/schema.js";
+import { postJobs, subscriptions, mediaAssets, creatorAccounts, type User } from "@shared/schema.js";
 import { eq, desc } from "drizzle-orm";
 import multer from "multer";
 // Import from routes.ts where authenticateToken is defined
@@ -18,7 +18,7 @@ import jwt from 'jsonwebtoken';
 import type { Request, Response, NextFunction } from 'express';
 
 interface AuthRequest extends Request {
-  user?: any;
+  user?: User;
 }
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';

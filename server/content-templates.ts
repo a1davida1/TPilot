@@ -155,7 +155,7 @@ export const preGeneratedTemplates: ContentTemplate[] = [
   {
     id: 'shower_013',
     category: 'shower',
-    style: 'teasing',
+    style: 'playful',
     title: "Post-shower glow hits different ✨",
     content: "Just me, a teasing trail of water, and that post-shower glow that always hits a little different. The towel can wait—this moment is too good.",
     tags: ['teasing', 'trail', 'towel wait'],
@@ -308,7 +308,7 @@ export const preGeneratedTemplates: ContentTemplate[] = [
   {
     id: 'shower_030',
     category: 'shower',
-    style: 'teasing',
+    style: 'playful',
     title: "Curtain slipped, steam wrapped tighter 😏",
     content: "The curtain slipped a touch, the steam wrapped tighter, and my mood turned to 'tease.' Accidents? None. Choices? Absolutely.",
     tags: ['curtain slip', 'steam wrap', 'mood tease'],
@@ -371,7 +371,7 @@ export const preGeneratedTemplates: ContentTemplate[] = [
   {
     id: 'shower_037',
     category: 'shower',
-    style: 'teasing',
+    style: 'playful',
     title: "Over-shoulder or close-up glow? 🤔",
     content: "Do you like the over-the-shoulder shot or the close-up glow more? I took both and made the steam choose.",
     tags: ['over-shoulder', 'close-up', 'steam choose'],
@@ -461,7 +461,7 @@ export const preGeneratedTemplates: ContentTemplate[] = [
   {
     id: 'shower_047',
     category: 'shower',
-    style: 'teasing',
+    style: 'playful',
     title: "Little lace, lot of steam 💨",
     content: "A little lace, a lot of steam, and just enough mystery to keep things interesting. You can fill in the blanks.",
     tags: ['little lace', 'lot steam', 'fill blanks'],

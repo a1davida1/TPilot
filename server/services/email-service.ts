@@ -305,5 +305,57 @@ export const emailService = {
     } catch (error) {
       safeLog('error', 'Upgrade email send failed', { error: error.message });
     }
+  },
+
+  async sendAdminWaitlistNotification(email: string, platformTags: string[], painPoint: string | null, utmData: any) {
+    if (!SENDGRID_API_KEY) {
+      return false; // Email service not configured
+    }
+
+    const adminEmail = 'admin@thottopilot.com'; // You may want to make this configurable
+    const platformList = platformTags.length > 0 ? platformTags.join(', ') : 'None specified';
+    const painPointText = painPoint || 'Not provided';
+
+    const msg = {
+      to: adminEmail,
+      from: FROM_EMAIL,
+      subject: '🔔 New ThottoPilot Waitlist Signup',
+      text: `New waitlist signup!\n\nEmail: ${email}\nPlatforms: ${platformList}\nPain Point: ${painPointText}\n\nUTM Data:\n- Source: ${utmData.utmSource || 'N/A'}\n- Medium: ${utmData.utmMedium || 'N/A'}\n- Campaign: ${utmData.utmCampaign || 'N/A'}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
+            <h1 style="color: white; margin: 0;">ThottoPilot Admin</h1>
+            <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">New Waitlist Signup Alert</p>
+          </div>
+          
+          <div style="padding: 40px; background: #f7f7f7;">
+            <h2 style="color: #333; margin-bottom: 20px;">🔔 New Waitlist Signup</h2>
+            
+            <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+              <h3 style="color: #333; margin-top: 0;">Contact Information</h3>
+              <p style="color: #666; margin: 5px 0;"><strong>Email:</strong> ${email}</p>
+              <p style="color: #666; margin: 5px 0;"><strong>Platforms:</strong> ${platformList}</p>
+              <p style="color: #666; margin: 5px 0;"><strong>Pain Point:</strong> ${painPointText}</p>
+            </div>
+            
+            <div style="background: white; padding: 20px; border-radius: 8px;">
+              <h3 style="color: #333; margin-top: 0;">Marketing Data</h3>
+              <p style="color: #666; margin: 5px 0;"><strong>UTM Source:</strong> ${utmData.utmSource || 'N/A'}</p>
+              <p style="color: #666; margin: 5px 0;"><strong>UTM Medium:</strong> ${utmData.utmMedium || 'N/A'}</p>
+              <p style="color: #666; margin: 5px 0;"><strong>UTM Campaign:</strong> ${utmData.utmCampaign || 'N/A'}</p>
+            </div>
+          </div>
+        </div>
+      `,
+    };
+
+    try {
+      await sgMail.send(msg);
+      safeLog('info', 'Admin waitlist notification sent successfully', { email });
+      return true;
+    } catch (error: any) {
+      safeLog('error', 'Admin waitlist notification send failed', { error: error.message });
+      return false;
+    }
   }
 };
