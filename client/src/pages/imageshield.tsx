@@ -3,7 +3,14 @@ import { useAuth } from "@/hooks/useAuth";
 
 export default function ImageShieldPage() {
   const { user } = useAuth();
-  const userTier = user?.tier || 'free';
+  const baseTier = user?.tier || 'free';
+  // Map tiers for ImageShield component compatibility
+  const getUserTier = (): "free" | "basic" | "pro" | "premium" => {
+    if (baseTier === 'admin') return 'premium';
+    if (baseTier === 'guest') return 'basic';
+    return baseTier as "free" | "basic" | "pro" | "premium";
+  };
+  const userTier = getUserTier();
   const isGuestMode = !user;
 
   return (
@@ -11,7 +18,7 @@ export default function ImageShieldPage() {
       <div className="container mx-auto p-4 max-w-6xl">
         <ImageShield 
           isGuestMode={isGuestMode} 
-          userTier={userTier as "free" | "pro" | "premium" | "admin"}
+          userTier={userTier}
         />
       </div>
     </div>
