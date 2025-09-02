@@ -36,32 +36,32 @@ const rateLimitConfigs = {
 // Feature-specific rate limits
 const featureLimits = {
   contentGeneration: {
-    free: { windowMs: 3600000, max: 5 }, // 5 per hour
-    starter: { windowMs: 3600000, max: 25 }, // 25 per hour
-    pro: { windowMs: 3600000, max: 100 }, // 100 per hour
-    premium: { windowMs: 3600000, max: 500 }, // 500 per hour
-    admin: { windowMs: 3600000, max: 10000 }
+    free: { windowMs: 3600000, max: 5, message: "You've reached your free content generation limit. Upgrade to Pro for more!" }, // 5 per hour
+    starter: { windowMs: 3600000, max: 25, message: "Content generation limit reached. Please wait before trying again." }, // 25 per hour
+    pro: { windowMs: 3600000, max: 100, message: "Content generation limit reached. Please wait before trying again." }, // 100 per hour
+    premium: { windowMs: 3600000, max: 500, message: "Content generation limit reached. Please wait before trying again." }, // 500 per hour
+    admin: { windowMs: 3600000, max: 10000, message: "Admin content generation limit reached." }
   },
   imageProtection: {
-    free: { windowMs: 3600000, max: 3 }, // 3 per hour
-    starter: { windowMs: 3600000, max: 15 }, // 15 per hour
-    pro: { windowMs: 3600000, max: 50 }, // 50 per hour
-    premium: { windowMs: 3600000, max: 200 }, // 200 per hour
-    admin: { windowMs: 3600000, max: 10000 }
+    free: { windowMs: 3600000, max: 3, message: "You've reached your free image protection limit. Upgrade to Pro for more!" }, // 3 per hour
+    starter: { windowMs: 3600000, max: 15, message: "Image protection limit reached. Please wait before trying again." }, // 15 per hour
+    pro: { windowMs: 3600000, max: 50, message: "Image protection limit reached. Please wait before trying again." }, // 50 per hour
+    premium: { windowMs: 3600000, max: 200, message: "Image protection limit reached. Please wait before trying again." }, // 200 per hour
+    admin: { windowMs: 3600000, max: 10000, message: "Admin image protection limit reached." }
   },
   postScheduling: {
-    free: { windowMs: 86400000, max: 5 }, // 5 per day
-    starter: { windowMs: 86400000, max: 25 }, // 25 per day
-    pro: { windowMs: 86400000, max: 100 }, // 100 per day
-    premium: { windowMs: 86400000, max: 500 }, // 500 per day
-    admin: { windowMs: 86400000, max: 10000 }
+    free: { windowMs: 86400000, max: 5, message: "You've reached your free post scheduling limit. Upgrade to Pro for more!" }, // 5 per day
+    starter: { windowMs: 86400000, max: 25, message: "Post scheduling limit reached. Please wait before trying again." }, // 25 per day
+    pro: { windowMs: 86400000, max: 100, message: "Post scheduling limit reached. Please wait before trying again." }, // 100 per day
+    premium: { windowMs: 86400000, max: 500, message: "Post scheduling limit reached. Please wait before trying again." }, // 500 per day
+    admin: { windowMs: 86400000, max: 10000, message: "Admin post scheduling limit reached." }
   },
   apiAccess: {
-    free: { windowMs: 3600000, max: 100 }, // 100 per hour
-    starter: { windowMs: 3600000, max: 500 }, // 500 per hour
-    pro: { windowMs: 3600000, max: 2000 }, // 2000 per hour
-    premium: { windowMs: 3600000, max: 10000 }, // 10000 per hour
-    admin: { windowMs: 3600000, max: 100000 }
+    free: { windowMs: 3600000, max: 100, message: "You've reached your free API access limit. Upgrade to Pro for more!" }, // 100 per hour
+    starter: { windowMs: 3600000, max: 500, message: "API access limit reached. Please wait before trying again." }, // 500 per hour
+    pro: { windowMs: 3600000, max: 2000, message: "API access limit reached. Please wait before trying again." }, // 2000 per hour
+    premium: { windowMs: 3600000, max: 10000, message: "API access limit reached. Please wait before trying again." }, // 10000 per hour
+    admin: { windowMs: 3600000, max: 100000, message: "Admin API access limit reached." }
   }
 };
 

@@ -250,12 +250,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               description: plan === 'pro_plus' 
                 ? 'Premium content creation with advanced features' 
                 : 'Professional content creation and protection'
-            } as any,
+            },
             unit_amount: amount,
             recurring: {
               interval: 'month',
             },
-          },
+          } as any,
         }],
         payment_behavior: 'default_incomplete',
         payment_settings: { save_default_payment_method: 'on_subscription' },
