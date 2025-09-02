@@ -9,7 +9,7 @@ import { ErrorBoundary } from "@/components/error-boundary";
 import { Header } from "@/components/header";
 import { useAuth } from "@/hooks/useAuth";
 import { SEOOptimization, seoConfigs } from "@/components/seo-optimization";
-import { UnifiedLanding } from "@/components/unified-landing";
+import { AestheticLanding } from "@/components/aesthetic-landing";
 import Dashboard from "@/pages/dashboard";
 import { OnboardingWalkthrough } from "@/components/onboarding-walkthrough";
 import { useOnboarding } from "@/hooks/useOnboarding";
@@ -94,7 +94,7 @@ function UnauthenticatedRoutes() {
       <Route path="/reddit" component={RedditPostingPage}/>
       <Route path="/">
         <SEOOptimization {...seoConfigs.landing}/>
-        <UnifiedLanding />
+        <AestheticLanding />
       </Route>
       <Route>
         <Redirect to="/"/>
