@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
 // Temporarily disabled framer-motion to fix runtime errors
 // import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
@@ -118,8 +119,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
   const { data: expenseTotals = { total: 0, deductible: 0, byCategory: {} } } = useQuery({
     queryKey: ['/api/expenses/totals'],
     queryFn: async () => {
-      const res = await fetch('/api/expenses/totals');
-      if (!res.ok) throw new Error('Failed to fetch expense totals');
+      const res = await apiRequest('GET', '/api/expenses/totals');
       return res.json();
     }
   });
@@ -128,8 +128,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
   const { data: recentExpenses = [] } = useQuery({
     queryKey: ['/api/expenses'],
     queryFn: async () => {
-      const res = await fetch('/api/expenses');
-      if (!res.ok) throw new Error('Failed to fetch expenses');
+      const res = await apiRequest('GET', '/api/expenses');
       return res.json();
     }
   });
@@ -143,8 +142,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
         startDate: format(startOfMonth(calendarDate), 'yyyy-MM-dd'),
         endDate: format(endOfMonth(calendarDate), 'yyyy-MM-dd')
       });
-      const res = await fetch(`/api/expenses/range?${params.toString()}`);
-      if (!res.ok) throw new Error('Failed to fetch expenses');
+      const res = await apiRequest('GET', `/api/expenses/range?${params.toString()}`);
       return res.json();
     }
   });
@@ -152,12 +150,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
   // Create expense mutation
   const createExpenseMutation = useMutation({
     mutationFn: async (expenseData: any) => {
-      const response = await fetch('/api/expenses', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(expenseData)
-      });
-      if (!response.ok) throw new Error('Failed to create expense');
+      const response = await apiRequest('POST', '/api/expenses', expenseData);
       return response.json();
     },
     onSuccess: () => {
@@ -172,9 +165,17 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
     mutationFn: async ({ expenseId, file }: { expenseId: string; file: File }) => {
       const formData = new FormData();
       formData.append('receipt', file);
+      // For file uploads, we need to use fetch directly but with proper auth headers
+      const token = localStorage.getItem('authToken');
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
       const res = await fetch(`/api/expenses/${expenseId}/receipt`, {
         method: 'POST',
-        body: formData
+        headers,
+        body: formData,
+        credentials: 'include'
       });
       if (!res.ok) throw new Error('Failed to upload receipt');
       return res.json();

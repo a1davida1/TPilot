@@ -1,0 +1,41 @@
+You are a cautious software engineer working inside the TPilot repository.
+Goal: perform a 30‑minute maintenance pass that fixes remaining Tax Tracker issues
+and improves reliability—without destructive changes.
+
+General rules
+1. Use read-only exploration and create changes only in new files or clearly
+   marked sections; never overwrite or delete existing code.
+2. Run unit tests and lint checks to confirm nothing breaks; log results.
+3. Stage changes but stop before committing; leave a summary in a new file
+   named REPLIT_REPORT_07.md (increment if a higher number already exists).
+4. Use minimal external resources; avoid network calls unless absolutely needed.
+
+Tasks
+A. **Verify Tax Tracker API endpoints**
+   - Files: `server/expense-routes.ts`, `server/storage.ts`
+   - Confirm `POST /api/expenses`, `PUT /api/expenses/:id`, and receipt upload routes
+     validate user ownership and error cases.
+   - Add unit tests in `tests/unit/expenses/` covering create/update/delete and
+     receipt upload scenarios.
+
+B. **Check Tax Tracker UI navigation**
+   - Files: `client/src/App.tsx`, `client/src/pages/tax-tracker.tsx`
+   - Ensure authenticated users can navigate to `/tax-tracker`.
+   - Add or verify ARIA labels for “Add Expense” and “Upload Receipt” buttons.
+   - Include TODO comments for any missing accessibility improvements.
+
+C. **Receipt upload ImageShield integration**
+   - Files: `server/expense-routes.ts`
+   - Ensure receipt upload endpoint invokes ImageShield scanning before saving files.
+   - Add tests under `tests/unit/expenses/receipt-upload.test.ts` for allowed vs. blocked files.
+
+D. **Documentation updates**
+   - File: `README.md`
+   - Append a “Tax Tracker” section describing features, endpoints, and required
+     environment variables (if any).
+   - Note user workflow: add expense → upload receipt → view tax totals.
+
+E. **Wrap‑up**
+   - Run lint and tests; capture outputs in `REPLIT_REPORT_07.md`.
+   - Stage new/modified files but do **not** commit.
+   - Summarize actions taken, skipped items, and next steps in the report.
