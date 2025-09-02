@@ -1,0 +1,162 @@
+~/workspace$ npm run start
+
+> rest-express@1.0.0 start
+> NODE_ENV=production tsx server/index.ts
+
+[dotenv@17.2.1] injecting env (0) from .env -- tip: 📡 auto-backup env with Radar: https://dotenvx.com/radar
+✅ Demo user already exists
+🔧 Using PostgreSQL queue backend (Redis not available)
+🔧 Initializing PostgreSQL Queue backend
+2025-09-02T19:57:38.264Z [info] 🔄 Initializing background workers...
+2025-09-02T19:57:38.266Z [info] ✅ Post worker initialized with queue abstraction
+2025-09-02T19:57:38.266Z [info] ✅ Post worker initialized
+2025-09-02T19:57:38.266Z [info] ✅ Metrics worker initialized with queue abstraction
+2025-09-02T19:57:38.266Z [info] ✅ Metrics worker initialized
+2025-09-02T19:57:38.266Z [info] ✅ AI Promo worker initialized with queue abstraction
+2025-09-02T19:57:38.266Z [info] ✅ AI Promo worker initialized
+2025-09-02T19:57:38.267Z [info] ✅ Dunning worker initialized with queue abstraction
+2025-09-02T19:57:38.267Z [info] ✅ Dunning worker initialized
+2025-09-02T19:57:38.267Z [info] ✅ Batch posting worker initialized with queue abstraction
+2025-09-02T19:57:38.267Z [info] ✅ Batch posting worker initialized
+🔍 Starting queue monitoring...
+✅ Queue monitoring started (interval: 30000ms)
+info: 📈 Starting worker auto-scaling... {"timestamp":"2025-09-02T19:57:38.755Z"}
+info: ✅ Worker auto-scaling started (interval: 60000ms) {"timestamp":"2025-09-02T19:57:38.757Z"}
+✅ Environment variables validated
+2025-09-02T19:57:38.770Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:38.770Z [info] Retrying port 5000 in 2 seconds (attempt 1/3)
+2025-09-02T19:57:40.771Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:40.771Z [info] Retrying port 5000 in 2 seconds (attempt 1/3)
+2025-09-02T19:57:40.771Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:40.771Z [info] Retrying port 5000 in 2 seconds (attempt 2/3)
+2025-09-02T19:57:42.771Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:42.771Z [info] Retrying port 5000 in 2 seconds (attempt 1/3)
+2025-09-02T19:57:42.771Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:42.771Z [info] Retrying port 5000 in 2 seconds (attempt 2/3)
+2025-09-02T19:57:42.771Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:42.772Z [info] Retrying port 5000 in 2 seconds (attempt 2/3)
+2025-09-02T19:57:42.772Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:42.772Z [info] Retrying port 5000 in 2 seconds (attempt 1/3)
+2025-09-02T19:57:42.772Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:42.772Z [info] Retrying port 5000 in 2 seconds (attempt 2/3)
+2025-09-02T19:57:42.772Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:42.772Z [info] Retrying port 5000 in 2 seconds (attempt 2/3)
+2025-09-02T19:57:42.772Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:42.772Z [info] Retrying port 5000 in 2 seconds (attempt 3/3)
+2025-09-02T19:57:44.772Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.773Z [info] Retrying port 5000 in 2 seconds (attempt 1/3)
+2025-09-02T19:57:44.773Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.773Z [info] Retrying port 5000 in 2 seconds (attempt 2/3)
+2025-09-02T19:57:44.773Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.773Z [info] Retrying port 5000 in 2 seconds (attempt 2/3)
+2025-09-02T19:57:44.773Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.773Z [info] Retrying port 5000 in 2 seconds (attempt 3/3)
+2025-09-02T19:57:44.773Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.773Z [info] Retrying port 5000 in 2 seconds (attempt 2/3)
+2025-09-02T19:57:44.773Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.773Z [info] Retrying port 5000 in 2 seconds (attempt 1/3)
+2025-09-02T19:57:44.773Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.773Z [info] Retrying port 5000 in 2 seconds (attempt 2/3)
+2025-09-02T19:57:44.773Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.773Z [info] Retrying port 5000 in 2 seconds (attempt 2/3)
+2025-09-02T19:57:44.773Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.773Z [info] Retrying port 5000 in 2 seconds (attempt 3/3)
+2025-09-02T19:57:44.774Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.774Z [info] Retrying port 5000 in 2 seconds (attempt 2/3)
+2025-09-02T19:57:44.774Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.774Z [info] Retrying port 5000 in 2 seconds (attempt 3/3)
+2025-09-02T19:57:44.774Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.774Z [info] Retrying port 5000 in 2 seconds (attempt 1/3)
+2025-09-02T19:57:44.774Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.774Z [info] Retrying port 5000 in 2 seconds (attempt 2/3)
+2025-09-02T19:57:44.774Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.774Z [info] Retrying port 5000 in 2 seconds (attempt 2/3)
+2025-09-02T19:57:44.774Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.774Z [info] Retrying port 5000 in 2 seconds (attempt 3/3)
+2025-09-02T19:57:44.774Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.774Z [info] Retrying port 5000 in 2 seconds (attempt 2/3)
+2025-09-02T19:57:44.774Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.774Z [info] Retrying port 5000 in 2 seconds (attempt 3/3)
+2025-09-02T19:57:44.774Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.774Z [info] Retrying port 5000 in 2 seconds (attempt 3/3)
+2025-09-02T19:57:44.774Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.774Z [info] Retrying port 5000 in 2 seconds (attempt 1/3)
+2025-09-02T19:57:44.774Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.774Z [info] Retrying port 5000 in 2 seconds (attempt 2/3)
+2025-09-02T19:57:44.774Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.775Z [info] Retrying port 5000 in 2 seconds (attempt 2/3)
+2025-09-02T19:57:44.775Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.775Z [info] Retrying port 5000 in 2 seconds (attempt 3/3)
+2025-09-02T19:57:44.775Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.775Z [info] Retrying port 5000 in 2 seconds (attempt 2/3)
+2025-09-02T19:57:44.775Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.775Z [info] Retrying port 5000 in 2 seconds (attempt 3/3)
+2025-09-02T19:57:44.775Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.775Z [info] Retrying port 5000 in 2 seconds (attempt 3/3)
+2025-09-02T19:57:44.775Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.775Z [info] Retrying port 5000 in 2 seconds (attempt 2/3)
+2025-09-02T19:57:44.775Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.775Z [info] Retrying port 5000 in 2 seconds (attempt 1/3)
+2025-09-02T19:57:44.775Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.775Z [info] Retrying port 5000 in 2 seconds (attempt 2/3)
+2025-09-02T19:57:44.775Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.775Z [info] Retrying port 5000 in 2 seconds (attempt 2/3)
+2025-09-02T19:57:44.775Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.775Z [info] Retrying port 5000 in 2 seconds (attempt 3/3)
+2025-09-02T19:57:44.775Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.775Z [info] Retrying port 5000 in 2 seconds (attempt 2/3)
+2025-09-02T19:57:44.775Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.775Z [info] Retrying port 5000 in 2 seconds (attempt 3/3)
+2025-09-02T19:57:44.775Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.775Z [info] Retrying port 5000 in 2 seconds (attempt 3/3)
+2025-09-02T19:57:44.775Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.775Z [info] Retrying port 5000 in 2 seconds (attempt 2/3)
+2025-09-02T19:57:44.775Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.775Z [info] Retrying port 5000 in 2 seconds (attempt 3/3)
+(node:1410) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 listening listeners added to [Server]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+(Use `node --trace-warnings ...` to show where the warning was created)
+2025-09-02T19:57:44.777Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.777Z [info] Retrying port 5000 in 2 seconds (attempt 1/3)
+2025-09-02T19:57:44.777Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.777Z [info] Retrying port 5000 in 2 seconds (attempt 2/3)
+2025-09-02T19:57:44.777Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.777Z [info] Retrying port 5000 in 2 seconds (attempt 2/3)
+2025-09-02T19:57:44.777Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.777Z [info] Retrying port 5000 in 2 seconds (attempt 3/3)
+2025-09-02T19:57:44.777Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.777Z [info] Retrying port 5000 in 2 seconds (attempt 2/3)
+2025-09-02T19:57:44.777Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.778Z [info] Retrying port 5000 in 2 seconds (attempt 3/3)
+2025-09-02T19:57:44.778Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.778Z [info] Retrying port 5000 in 2 seconds (attempt 3/3)
+2025-09-02T19:57:44.778Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.778Z [info] Retrying port 5000 in 2 seconds (attempt 2/3)
+2025-09-02T19:57:44.778Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.778Z [info] Retrying port 5000 in 2 seconds (attempt 3/3)
+2025-09-02T19:57:44.778Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.778Z [info] Retrying port 5000 in 2 seconds (attempt 3/3)
+(node:1410) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 error listeners added to [Server]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+2025-09-02T19:57:44.778Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.778Z [info] Retrying port 5000 in 2 seconds (attempt 1/3)
+2025-09-02T19:57:44.778Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.778Z [info] Retrying port 5000 in 2 seconds (attempt 2/3)
+2025-09-02T19:57:44.778Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.778Z [info] Retrying port 5000 in 2 seconds (attempt 2/3)
+2025-09-02T19:57:44.778Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.778Z [info] Retrying port 5000 in 2 seconds (attempt 3/3)
+2025-09-02T19:57:44.778Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.778Z [info] Retrying port 5000 in 2 seconds (attempt 2/3)
+2025-09-02T19:57:44.778Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.778Z [info] Retrying port 5000 in 2 seconds (attempt 3/3)
+2025-09-02T19:57:44.778Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.779Z [info] Retrying port 5000 in 2 seconds (attempt 3/3)
+2025-09-02T19:57:44.779Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.779Z [info] Retrying port 5000 in 2 seconds (attempt 2/3)
+2025-09-02T19:57:44.779Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.779Z [info] Retrying port 5000 in 2 seconds (attempt 3/3)
+2025-09-02T19:57:44.779Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.779Z [info] Retrying port 5000 in 2 seconds (attempt 3/3)
+2025-09-02T19:57:44.779Z [warn] Port 5000 is in use {"error":"listen EADDRINUSE: address already in use 0.0.0.0:5000"}
+2025-09-02T19:57:44.779Z [error] Failed to bind to port 5000 after 3 attempts
+2025-09-02T19:57:44.779Z [error] Please check if another process is using this port and restart the application
+~/workspace$ 

@@ -167,6 +167,9 @@ app.use((req, res, next) => {
   const startServer = (attemptPort: number, retryCount = 0): void => {
     const maxRetries = 3;
     
+    // Remove any existing error listeners to prevent memory leaks
+    server.removeAllListeners('error');
+    
     server.listen({
       port: attemptPort,
       host: "0.0.0.0",
