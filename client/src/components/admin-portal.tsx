@@ -113,11 +113,17 @@ export function AdminPortal() {
   });
 
   // Fetch all users
-  const { data: users, isLoading: usersLoading } = useQuery({
+  const { data: users, isLoading: usersLoading, error: usersError } = useQuery({
     queryKey: ['/api/admin/users'],
     queryFn: () => authenticatedRequest('/api/admin/users'),
     enabled: !!token
   });
+  
+  // Debug logging
+  console.log('Admin Portal - Users data:', users);
+  console.log('Admin Portal - Users loading:', usersLoading);
+  console.log('Admin Portal - Users error:', usersError);
+  console.log('Admin Portal - Token exists:', !!token);
 
   // Create trial user mutation
   const createTrialMutation = useMutation({
