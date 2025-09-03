@@ -310,6 +310,11 @@ export function setupAuth(app: Express) {
     try {
       const { email } = req.body;
       
+      // Production debugging
+      console.log('🔍 Password reset request received for:', email);
+      console.log('🔍 SENDGRID_API_KEY exists:', !!process.env.SENDGRID_API_KEY);
+      console.log('🔍 Email service configured:', emailService.isEmailServiceConfigured);
+      
       if (!email) {
         return res.status(400).json({ message: 'Email is required' });
       }
@@ -318,17 +323,23 @@ export function setupAuth(app: Express) {
       const user = await storage.getUserByEmail(email);
       
       if (!user) {
+        console.log('🔍 User not found for email:', email);
         // Don't reveal if email exists for security
         return res.json({ message: 'If the email exists, a reset link has been sent' });
       }
 
+      console.log('🔍 User found:', user.username, 'attempting to send email...');
+      
       // Send password reset email
       if (user.email) {
+        console.log('🔍 Calling emailService.sendPasswordResetEmail...');
         await emailService.sendPasswordResetEmail(user.email, user.username);
+        console.log('🔍 Email service call completed');
       }
 
       res.json({ message: 'If the email exists, a reset link has been sent' });
     } catch (error) {
+      console.error('❌ Password reset failed:', error.message);
       safeLog('error', 'Password reset request failed', { error: error.message });
       res.status(500).json({ message: 'Error processing password reset' });
     }
@@ -385,6 +396,22 @@ export function setupAuth(app: Express) {
       safeLog('error', 'Password reset failed', { error: error.message });
       res.status(500).json({ message: 'Error resetting password' });
     }
+  });
+
+  // Email service health check endpoint
+  app.get('/api/auth/email-status', (req, res) => {
+    const status = {
+      configured: emailService.isEmailServiceConfigured,
+      sendgrid_key_exists: !!process.env.SENDGRID_API_KEY,
+      from_email: process.env.FROM_EMAIL || 'not set',
+      frontend_url: process.env.FRONTEND_URL || 'not set',
+      jwt_secret_exists: !!process.env.JWT_SECRET,
+      node_env: process.env.NODE_ENV || 'not set',
+      deployment: process.env.REPLIT_DEPLOYMENT || 'not set'
+    };
+    
+    console.log('📊 Email service status check:', status);
+    res.json(status);
   });
 
   // Get current user endpoint (CRITICAL - this was missing!)
