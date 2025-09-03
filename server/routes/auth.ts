@@ -239,22 +239,42 @@ router.get("/user", async (req: any, res) => {
 
 // Logout route
 router.post("/logout", (req: any, res) => {
+  logger.info('Logout attempt - session ID:', req.sessionID);
+  logger.info('Session data before destroy:', req.session);
+  
   // Destroy session if it exists
   if (req.session) {
+    // Clear user data first
+    delete (req.session as any).user;
+    delete (req.session as any).userId;
+    delete (req.session as any).isAdmin;
+    
     req.session.destroy((err: any) => {
       if (err) {
         logger.error('Session destruction error:', err);
         return res.status(500).json({ message: 'Error logging out' });
       }
-      // Clear both possible session cookie names
-      res.clearCookie('connect.sid');
-      res.clearCookie('thottopilot.sid');
+      
+      logger.info('Session destroyed successfully');
+      
+      // Clear the actual session cookie (thottopilot.sid is the session name we use)
+      res.clearCookie('thottopilot.sid', { 
+        path: '/',
+        httpOnly: true,
+        sameSite: 'lax'
+      });
+      res.clearCookie('connect.sid', { path: '/' }); // Just in case
+      
       res.json({ message: 'Logged out successfully' });
     });
   } else {
     // Clear cookies even if no session
-    res.clearCookie('connect.sid');
-    res.clearCookie('thottopilot.sid');
+    res.clearCookie('thottopilot.sid', { 
+      path: '/',
+      httpOnly: true,
+      sameSite: 'lax'
+    });
+    res.clearCookie('connect.sid', { path: '/' });
     res.json({ message: 'Logged out successfully' });
   }
 });
