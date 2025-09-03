@@ -343,12 +343,20 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: 'Token and new password are required' });
       }
 
+      // Decode the token (it might be URL encoded from the frontend)
+      const decodedToken = decodeURIComponent(token);
       
       // Verify token
       let decoded: any;
       try {
-        decoded = jwt.verify(token, JWT_SECRET_VALIDATED) as any;
+        decoded = jwt.verify(decodedToken, JWT_SECRET_VALIDATED) as any;
       } catch (verifyError: any) {
+        if (verifyError.name === 'TokenExpiredError') {
+          return res.status(400).json({ message: 'Reset link has expired. Please request a new one.' });
+        }
+        if (verifyError.name === 'JsonWebTokenError') {
+          return res.status(400).json({ message: 'Invalid reset token. Please request a new reset link.' });
+        }
         return res.status(400).json({ message: 'Invalid or expired reset token' });
       }
       

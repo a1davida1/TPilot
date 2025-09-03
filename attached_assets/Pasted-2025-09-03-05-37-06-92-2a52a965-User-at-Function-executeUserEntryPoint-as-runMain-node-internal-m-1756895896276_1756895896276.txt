@@ -1,0 +1,151 @@
+2025-09-03 05:37:06.92
+2a52a965
+User
+at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+2025-09-03 05:37:06.92
+2a52a965
+User
+at node:internal/main/run_main_module:28:49 {
+2025-09-03 05:37:06.92
+2a52a965
+User
+code: 'MODULE_NOT_FOUND',
+2025-09-03 05:37:06.92
+2a52a965
+User
+requireStack: []
+2025-09-03 05:37:06.92
+2a52a965
+User
+}
+2025-09-03 05:37:06.92
+2a52a965
+User
+2025-09-03 05:37:06.92
+2a52a965
+User
+Node.js v20.19.3
+2025-09-03 05:37:06.92
+2a52a965
+System
+command finished with error [sh -c NODE_ENV=production node dist/server/index.js]: exit status 1
+2025-09-03 05:37:16.37
+2a52a965
+User
+node:internal/modules/cjs/loader:1215
+2025-09-03 05:37:16.37
+2a52a965
+User
+throw err;
+2025-09-03 05:37:16.37
+2a52a965
+User
+^
+2025-09-03 05:37:16.37
+2a52a965
+User
+2025-09-03 05:37:16.37
+2a52a965
+User
+Error: Cannot find module '/home/runner/workspace/dist/server/index.js'
+2025-09-03 05:37:16.37
+2a52a965
+User
+at Module._resolveFilename (node:internal/modules/cjs/loader:1212:15)
+2025-09-03 05:37:16.37
+2a52a965
+User
+at Module._load (node:internal/modules/cjs/loader:1043:27)
+2025-09-03 05:37:16.37
+2a52a965
+User
+at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+2025-09-03 05:37:16.37
+2a52a965
+User
+at node:internal/main/run_main_module:28:49 {
+2025-09-03 05:37:16.37
+2a52a965
+User
+code: 'MODULE_NOT_FOUND',
+2025-09-03 05:37:16.37
+2a52a965
+User
+requireStack: []
+2025-09-03 05:37:16.37
+2a52a965
+User
+}
+2025-09-03 05:37:16.37
+2a52a965
+User
+2025-09-03 05:37:16.37
+2a52a965
+User
+Node.js v20.19.3
+2025-09-03 05:37:16.39
+2a52a965
+System
+command finished with error [sh -c NODE_ENV=production node dist/server/index.js]: exit status 1
+2025-09-03 05:37:19.97
+2a52a965
+User
+node:internal/modules/cjs/loader:1215
+2025-09-03 05:37:19.97
+2a52a965
+User
+throw err;
+2025-09-03 05:37:19.97
+2a52a965
+User
+^
+2025-09-03 05:37:19.97
+2a52a965
+User
+2025-09-03 05:37:19.97
+2a52a965
+User
+Error: Cannot find module '/home/runner/workspace/dist/server/index.js'
+2025-09-03 05:37:19.97
+2a52a965
+User
+at Module._resolveFilename (node:internal/modules/cjs/loader:1212:15)
+2025-09-03 05:37:19.97
+2a52a965
+User
+at Module._load (node:internal/modules/cjs/loader:1043:27)
+2025-09-03 05:37:19.97
+2a52a965
+User
+at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+2025-09-03 05:37:19.97
+2a52a965
+User
+at node:internal/main/run_main_module:28:49 {
+2025-09-03 05:37:19.97
+2a52a965
+User
+code: 'MODULE_NOT_FOUND',
+2025-09-03 05:37:19.97
+2a52a965
+User
+requireStack: []
+2025-09-03 05:37:19.97
+2a52a965
+User
+}
+2025-09-03 05:37:19.97
+2a52a965
+User
+2025-09-03 05:37:19.97
+2a52a965
+User
+Node.js v20.19.3
+2025-09-03 05:37:19.98
+2a52a965
+System
+command finished with error [sh -c NODE_ENV=production node dist/server/index.js]: exit status 1
+2025-09-03 05:37:25.20
+2a52a965
+System
+crash loop detected
