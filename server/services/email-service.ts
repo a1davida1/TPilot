@@ -11,6 +11,15 @@ const FRONTEND_URL = process.env.FRONTEND_URL
       ? `https://${process.env.REPLIT_DOMAINS}` 
       : 'https://thottopilot.com');
 
+// Log deployment environment detection
+if (process.env.REPLIT_DEPLOYMENT === '1') {
+  console.log('🚀 Running in DEPLOYED environment');
+  console.log('📧 Email config - SENDGRID_API_KEY exists:', !!SENDGRID_API_KEY);
+  console.log('📧 Email config - FROM_EMAIL:', FROM_EMAIL);
+} else {
+  console.log('🔧 Running in DEVELOPMENT/PREVIEW environment');
+}
+
 if (SENDGRID_API_KEY) {
   sgMail.setApiKey(SENDGRID_API_KEY);
 }
