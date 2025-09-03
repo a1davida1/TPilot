@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import { stripe } from "../lib/billing/stripe.js";
 import { bucketForUser, proPriceIdForBucket } from "../lib/pricing.js";
 import { trackEvent } from "../lib/analytics.js";
+import { logger } from "../middleware/security.js";
 
 function getBaseUrl(req: Request) {
   const h = req.headers["x-forwarded-host"] || req.headers.host;
@@ -23,23 +24,41 @@ export function mountBillingRoutes(app: Express) {
 
   // creates a Stripe Checkout Session and returns url
   app.post("/api/billing/checkout", async (req: any, res: Response) => {
-    const user = req.user;
-    if (!user) return res.status(401).json({ error: "unauthorized" });
-    const uid = user.id.toString();
-    const bucket = bucketForUser(uid);
-    const priceId = (req.body?.priceId as string) || proPriceIdForBucket(bucket);
+    try {
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "unauthorized" });
+      const uid = user.id.toString();
+      const bucket = bucketForUser(uid);
+      let priceId = req.body?.priceId as string | undefined;
+      const allowedPriceIds = [
+        process.env.STRIPE_PRICE_STARTER,
+        process.env.STRIPE_PRICE_PRO_29,
+        process.env.STRIPE_PRICE_PRO_39,
+        process.env.STRIPE_PRICE_PRO_49,
+      ].filter(Boolean) as string[];
+      if (priceId) {
+        if (!allowedPriceIds.includes(priceId)) {
+          return res.status(400).json({ error: "invalid priceId" });
+        }
+      } else {
+        priceId = proPriceIdForBucket(bucket);
+      }
 
-    const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
-      payment_method_types: ["card"],
-      line_items: [{ price: priceId, quantity: 1 }],
-      customer_email: user.email || undefined,
-      success_url: `${getBaseUrl(req)}/billing/success`,
-      cancel_url: `${getBaseUrl(req)}/billing/cancel`,
-      metadata: { userId: uid, bucket },
-    });
+      const session = await stripe.checkout.sessions.create({
+        mode: "subscription",
+        payment_method_types: ["card"],
+        line_items: [{ price: priceId, quantity: 1 }],
+        customer_email: user.email || undefined,
+        success_url: `${getBaseUrl(req)}/billing/success`,
+        cancel_url: `${getBaseUrl(req)}/billing/cancel`,
+        metadata: { userId: uid, bucket },
+      });
 
-    await trackEvent(user.id, "checkout_started", { priceId, bucket });
-    res.json({ url: session.url });
+      await trackEvent(user.id, "checkout_started", { priceId, bucket });
+      res.json({ url: session.url });
+    } catch (error) {
+      logger.error('Stripe checkout error:', error);
+      res.status(502).json({ message: "Checkout unavailable" });
+    }
   });
 }
