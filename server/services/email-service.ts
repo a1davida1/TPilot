@@ -87,6 +87,11 @@ export const emailService = {
   async sendPasswordResetEmail(to: string, username: string) {
     if (!SENDGRID_API_KEY) {
       console.log('❌ SendGrid not configured - password reset email skipped');
+      console.log('🔍 SENDGRID_API_KEY exists:', !!process.env.SENDGRID_API_KEY);
+      console.log('🔍 FROM_EMAIL:', process.env.FROM_EMAIL);
+      console.log('🔍 FRONTEND_URL:', process.env.FRONTEND_URL);
+      console.log('🔍 NODE_ENV:', process.env.NODE_ENV);
+      console.log('🔍 REPLIT_DEPLOYMENT:', process.env.REPLIT_DEPLOYMENT);
       return;
     }
 

@@ -6,15 +6,24 @@ import { env, config } from "./config.js";
 import { db } from "../db.js";
 import { mediaAssets, mediaUsages } from "@shared/schema.js";
 import { eq, sum, and } from "drizzle-orm";
+import fs from "fs/promises";
+import path from "path";
 
-// S3 client configuration
-const s3Client = new S3Client({
+// Check if S3 is configured
+const isS3Configured = !!(env.AWS_ACCESS_KEY_ID && env.AWS_SECRET_ACCESS_KEY && env.S3_BUCKET_MEDIA);
+
+// S3 client configuration (only if configured)
+const s3Client = isS3Configured ? new S3Client({
   region: env.AWS_REGION || 'us-east-1',
   credentials: {
-    accessKeyId: env.AWS_ACCESS_KEY_ID || '',
-    secretAccessKey: env.AWS_SECRET_ACCESS_KEY || '',
+    accessKeyId: env.AWS_ACCESS_KEY_ID!,
+    secretAccessKey: env.AWS_SECRET_ACCESS_KEY!,
   },
-});
+}) : null;
+
+// Ensure uploads directory exists
+const uploadsDir = path.join(process.cwd(), 'uploads');
+fs.mkdir(uploadsDir, { recursive: true }).catch(() => {});
 
 export interface MediaUploadOptions {
   visibility?: 'private' | 'preview-watermarked';
@@ -69,18 +78,24 @@ export class MediaManager {
       return existing;
     }
     
-    // Upload to S3
-    await s3Client.send(new PutObjectCommand({
-      Bucket: env.S3_BUCKET_MEDIA,
-      Key: key,
-      Body: finalBuffer,
-      ContentType: finalMime,
-      Metadata: {
-        'user-id': userId.toString(),
-        'original-filename': filename,
-        'visibility': visibility,
-      },
-    }));
+    // Upload to S3 or local filesystem
+    if (isS3Configured && s3Client) {
+      await s3Client.send(new PutObjectCommand({
+        Bucket: env.S3_BUCKET_MEDIA!,
+        Key: key,
+        Body: finalBuffer,
+        ContentType: finalMime,
+        Metadata: {
+          'user-id': userId.toString(),
+          'original-filename': filename,
+          'visibility': visibility,
+        },
+      }));
+    } else {
+      // Fallback to local filesystem
+      const localPath = path.join(uploadsDir, key.replace(/\//g, '_'));
+      await fs.writeFile(localPath, finalBuffer);
+    }
     
     // Save to database
     const [asset] = await db.insert(mediaAssets).values({
@@ -95,7 +110,7 @@ export class MediaManager {
     
     return {
       ...asset,
-      signedUrl: await this.getSignedUrl(key),
+      signedUrl: isS3Configured ? await this.getSignedUrl(key) : `/uploads/${key.replace(/\//g, '_')}`,
     };
   }
   
@@ -113,7 +128,7 @@ export class MediaManager {
     
     return {
       ...asset,
-      signedUrl: await this.getSignedUrl(asset.key),
+      signedUrl: isS3Configured ? await this.getSignedUrl(asset.key) : `/uploads/${asset.key.replace(/\//g, '_')}`,
       downloadUrl: env.S3_PUBLIC_CDN_DOMAIN 
         ? `${env.S3_PUBLIC_CDN_DOMAIN}/${asset.key}`
         : undefined,
@@ -130,7 +145,7 @@ export class MediaManager {
     
     return Promise.all(assets.map(async (asset) => ({
       ...asset,
-      signedUrl: await this.getSignedUrl(asset.key),
+      signedUrl: isS3Configured ? await this.getSignedUrl(asset.key) : `/uploads/${asset.key.replace(/\//g, '_')}`,
     })));
   }
   
@@ -144,11 +159,17 @@ export class MediaManager {
     if (!asset) return false;
     
     try {
-      // Delete from S3
-      await s3Client.send(new DeleteObjectCommand({
-        Bucket: env.S3_BUCKET_MEDIA,
-        Key: asset.key,
-      }));
+      // Delete from S3 or local filesystem
+      if (isS3Configured && s3Client) {
+        await s3Client.send(new DeleteObjectCommand({
+          Bucket: env.S3_BUCKET_MEDIA!,
+          Key: asset.key,
+        }));
+      } else {
+        // Delete from local filesystem
+        const localPath = path.join(uploadsDir, asset.key.replace(/\//g, '_'));
+        await fs.unlink(localPath).catch(() => {});
+      }
       
       // Delete from database
       await db.delete(mediaAssets).where(eq(mediaAssets.id, id));
@@ -216,8 +237,13 @@ export class MediaManager {
   }
   
   private static async getSignedUrl(key: string): Promise<string> {
+    if (!isS3Configured || !s3Client) {
+      // Return local URL if S3 not configured
+      return `/uploads/${key.replace(/\//g, '_')}`;
+    }
+    
     const command = new GetObjectCommand({
-      Bucket: env.S3_BUCKET_MEDIA,
+      Bucket: env.S3_BUCKET_MEDIA!,
       Key: key,
     });
     
@@ -235,7 +261,7 @@ export class MediaManager {
     
     return {
       ...existing,
-      signedUrl: await this.getSignedUrl(existing.key),
+      signedUrl: isS3Configured ? await this.getSignedUrl(existing.key) : `/uploads/${existing.key.replace(/\//g, '_')}`,
     };
   }
   

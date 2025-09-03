@@ -714,7 +714,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // PRODUCTION API ENDPOINTS - REAL IMPLEMENTATIONS
   // ==========================================
   
-  // Media management endpoints - REAL
+  // DISABLED - Using MediaManager endpoint from api-routes.ts instead
+  // This endpoint was conflicting with the proper implementation that uses MediaManager
+  /*
   app.get('/api/media', authenticateToken, async (req: any, res) => {
     try {
       const userId = req.user?.id;
@@ -729,7 +731,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Failed to fetch media' });
     }
   });
+  */
 
+  // DISABLED - Using MediaManager endpoint from api-routes.ts instead
+  // This endpoint was conflicting with the proper implementation that uses S3/database storage
+  /*
   app.post('/api/media/upload', authenticateToken, upload.single('file'), async (req: any, res) => {
     try {
       if (!req.file) {
@@ -755,7 +761,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Upload failed' });
     }
   });
+  */
 
+  // DISABLED - Using MediaManager endpoint from api-routes.ts instead
+  /*
   app.delete('/api/media/:id', authenticateToken, async (req: any, res) => {
     try {
       const imageId = parseInt(req.params.id);
@@ -777,6 +786,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Failed to delete media' });
     }
   });
+  */
 
   // Storage usage endpoint - REAL
   app.get('/api/storage/usage', authenticateToken, async (req: any, res) => {
