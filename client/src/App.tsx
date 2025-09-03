@@ -14,7 +14,6 @@ import Dashboard from "@/pages/dashboard";
 import { OnboardingWalkthrough } from "@/components/onboarding-walkthrough";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import NotFound from "@/pages/not-found";
-import Login from "@/pages/login";
 import ResetPasswordPage from "@/pages/reset-password";
 import History from "@/pages/history";
 import Settings from "@/pages/settings";
@@ -103,7 +102,14 @@ function AuthenticatedRoutes() {
 function UnauthenticatedRoutes() {
   return (
     <Switch>
-      <Route path="/login" component={Login} />
+      <Route path="/login">
+        <SEOOptimization {...seoConfigs.landing} />
+        <LandingPage showLoginModal={true} loginModalMode="login" />
+      </Route>
+      <Route path="/signup">
+        <SEOOptimization {...seoConfigs.landing} />
+        <LandingPage showLoginModal={true} loginModalMode="signup" />
+      </Route>
       <Route path="/reset-password" component={ResetPasswordPage} />
       <Route path="/caption-generator" component={CaptionGeneratorPage} />
       <Route path="/imageshield" component={ImageShieldPage} />

@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import { AuthModal } from "@/components/auth-modal";
 import { 
   Sparkles, 
   Shield, 
@@ -23,14 +24,27 @@ import {
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 
-export function LandingPage() {
+interface LandingPageProps {
+  showLoginModal?: boolean;
+  loginModalMode?: 'login' | 'signup';
+}
+
+export function LandingPage({ showLoginModal = false, loginModalMode = 'login' }: LandingPageProps) {
   const [scrollY, setScrollY] = useState(0);
+  const [showAuthModal, setShowAuthModal] = useState(showLoginModal);
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>(loginModalMode);
+  const [, setLocation] = useLocation();
   
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    setShowAuthModal(showLoginModal);
+    setAuthModalMode(loginModalMode);
+  }, [showLoginModal, loginModalMode]);
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 overflow-hidden">
@@ -49,16 +63,27 @@ export function LandingPage() {
           </div>
           <div className="flex items-center gap-3">
             <ThemeToggle />
-            <Link to="/login">
-              <Button variant="ghost" className="font-semibold text-pink-600 hover:text-pink-700 hover:bg-pink-50/80 dark:text-pink-400 dark:hover:text-pink-300 transition-all duration-200">
-                Sign In
-              </Button>
-            </Link>
-            <Link to="/modern-demo">
-              <Button className="bg-gradient-to-r from-pink-600 via-rose-500 to-yellow-500 hover:from-pink-700 hover:via-rose-600 hover:to-yellow-600 text-white font-semibold shadow-lg hover:shadow-pink-500/30 hover:scale-105 transition-all duration-300 border border-white/20">
-                Get Started
-              </Button>
-            </Link>
+            <Button 
+              variant="ghost" 
+              className="font-semibold text-pink-600 hover:text-pink-700 hover:bg-pink-50/80 dark:text-pink-400 dark:hover:text-pink-300 transition-all duration-200"
+              onClick={() => {
+                setAuthModalMode('login');
+                setShowAuthModal(true);
+              }}
+              data-testid="button-header-signin"
+            >
+              Sign In
+            </Button>
+            <Button 
+              className="bg-gradient-to-r from-pink-600 via-rose-500 to-yellow-500 hover:from-pink-700 hover:via-rose-600 hover:to-yellow-600 text-white font-semibold shadow-lg hover:shadow-pink-500/30 hover:scale-105 transition-all duration-300 border border-white/20"
+              onClick={() => {
+                setAuthModalMode('signup');
+                setShowAuthModal(true);
+              }}
+              data-testid="button-header-get-started"
+            >
+              Get Started
+            </Button>
           </div>
         </nav>
       </header>
@@ -160,16 +185,19 @@ export function LandingPage() {
                 Try Demo - Free
               </Button>
             </Link>
-            <Link to="/login">
-              <Button 
-                size="lg" 
-                variant="outline" 
-                className="border-2 border-white/30 text-white hover:bg-white/10 font-bold px-8 py-4 text-lg backdrop-blur-sm transition-all duration-300"
-              >
-                <ArrowRight className="mr-2 h-5 w-5" />
-                Sign In
-              </Button>
-            </Link>
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="border-2 border-white/30 text-white hover:bg-white/10 font-bold px-8 py-4 text-lg backdrop-blur-sm transition-all duration-300"
+              onClick={() => {
+                setAuthModalMode('login');
+                setShowAuthModal(true);
+              }}
+              data-testid="button-hero-signin"
+            >
+              <ArrowRight className="mr-2 h-5 w-5" />
+              Sign In
+            </Button>
           </div>
 
           <div className="text-center">
@@ -356,11 +384,16 @@ export function LandingPage() {
                     <span className="text-foreground">Analytics dashboard</span>
                   </li>
                 </ul>
-                <Link to="/login">
-                  <Button className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 font-semibold">
-                    Start Pro Trial
-                  </Button>
-                </Link>
+                <Button 
+                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 font-semibold"
+                  onClick={() => {
+                    setAuthModalMode('signup');
+                    setShowAuthModal(true);
+                  }}
+                  data-testid="button-start-pro-trial"
+                >
+                  Start Pro Trial
+                </Button>
               </CardContent>
             </Card>
 
@@ -390,11 +423,17 @@ export function LandingPage() {
                     <span className="text-foreground">Custom integrations</span>
                   </li>
                 </ul>
-                <Link to="/login">
-                  <Button variant="outline" className="w-full font-semibold">
-                    Contact Sales
-                  </Button>
-                </Link>
+                <Button 
+                  variant="outline" 
+                  className="w-full font-semibold"
+                  onClick={() => {
+                    setAuthModalMode('signup');
+                    setShowAuthModal(true);
+                  }}
+                  data-testid="button-contact-sales"
+                >
+                  Contact Sales
+                </Button>
               </CardContent>
             </Card>
           </div>
@@ -420,15 +459,18 @@ export function LandingPage() {
                 Start Free Trial
               </Button>
             </Link>
-            <Link to="/login">
-              <Button 
-                size="lg" 
-                variant="outline" 
-                className="border-2 border-white/30 text-white hover:bg-white/10 font-bold px-8 py-4 text-lg backdrop-blur-sm"
-              >
-                Sign In
-              </Button>
-            </Link>
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="border-2 border-white/30 text-white hover:bg-white/10 font-bold px-8 py-4 text-lg backdrop-blur-sm"
+              onClick={() => {
+                setAuthModalMode('login');
+                setShowAuthModal(true);
+              }}
+              data-testid="button-cta-signin"
+            >
+              Sign In
+            </Button>
           </div>
         </div>
       </section>
@@ -458,6 +500,17 @@ export function LandingPage() {
           </div>
         </div>
       </footer>
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        initialMode={authModalMode}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={() => {
+          setShowAuthModal(false);
+          setLocation('/dashboard');
+        }}
+      />
 
     </div>
   );

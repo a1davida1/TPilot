@@ -1,0 +1,124 @@
+In server/auth.ts, update the login endpoint:
+typescriptapp.post('/api/auth/login', authLimiter, async (req, res) => {
+  try {
+    const validationResult = loginSchema.safeParse(req.body);
+    if (!validationResult.success) {
+      return res.status(400).json({ 
+        message: 'Validation failed', 
+        errors: validationResult.error.flatten().fieldErrors 
+      });
+    }
+    
+    const { username, password, email } = validationResult.data;
+    const loginIdentifier = email || username;
+
+    // CHECK FOR ADMIN LOGIN FIRST
+    const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+    
+    if (ADMIN_EMAIL && ADMIN_PASSWORD && 
+        loginIdentifier === ADMIN_EMAIL && 
+        password === ADMIN_PASSWORD) {
+      
+      // Create admin token
+      const token = jwt.sign(
+        {
+          id: 999,
+          userId: 999,
+          username: 'admin',
+          isAdmin: true,
+          role: 'admin',
+          tier: 'premium'
+        },
+        JWT_SECRET_VALIDATED,
+        { expiresIn: '24h' }
+      );
+
+      res.cookie('authToken', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 24 * 60 * 60 * 1000
+      });
+
+      return res.json({
+        user: {
+          id: 999,
+          username: 'admin',
+          email: ADMIN_EMAIL,
+          tier: 'premium',
+          isAdmin: true,
+          role: 'admin'
+        }
+      });
+    }
+
+    // Regular user login continues...
+    let user;
+    if (loginIdentifier && loginIdentifier.includes('@')) {
+      user = await storage.getUserByEmail(loginIdentifier);
+    } else {
+      user = await storage.getUserByUsername(loginIdentifier || '');
+    }
+    
+    // ... rest of login code
+
+🔧 FIX #2: Update /api/auth/user Endpoint
+In server/auth.ts, update the user endpoint:
+typescriptapp.get('/api/auth/user', async (req: any, res) => {
+  try {
+    let token = null;
+    
+    if (req.cookies && req.cookies.authToken) {
+      token = req.cookies.authToken;
+    } else if (req.headers.authorization?.startsWith('Bearer ')) {
+      token = req.headers.authorization.substring(7);
+    }
+
+    if (!token) {
+      return res.status(401).json({ message: 'Access token required' });
+    }
+    
+    const decoded = jwt.verify(token, JWT_SECRET_VALIDATED) as any;
+    
+    // CHECK IF IT'S ADMIN TOKEN
+    if (decoded.id === 999 || decoded.isAdmin) {
+      return res.json({
+        id: 999,
+        username: 'admin',
+        email: process.env.ADMIN_EMAIL,
+        tier: 'premium',
+        isAdmin: true,
+        role: 'admin',
+        emailVerified: true
+      });
+    }
+    
+    // Regular user lookup
+    const user = await storage.getUser(decoded.userId || decoded.id);
+    if (user) {
+      const { password: _, ...userResponse } = user;
+      return res.json({
+        ...userResponse,
+        tier: userResponse.tier || 'free'
+      });
+    }
+
+    return res.status(404).json({ message: 'User not found' });
+  } catch (error) {
+    return res.status(401).json({ message: 'Invalid token' });
+  }
+});
+
+🧪 Debug Your Replit Secrets:
+1. Check if secrets are loaded:
+Add this debug endpoint to server/routes.ts:
+typescriptapp.get('/api/debug/env', (req, res) => {
+  res.json({
+    hasAdminEmail: !!process.env.ADMIN_EMAIL,
+    hasAdminPassword: !!process.env.ADMIN_PASSWORD,
+    adminEmailLength: process.env.ADMIN_EMAIL?.length || 0,
+    nodeEnv: process.env.NODE_ENV,
+    // Don't send actual values for security!
+  });
+});
