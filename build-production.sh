@@ -7,6 +7,9 @@ echo "🔨 Building ThottoPilot for production..."
 echo "📦 Cleaning previous builds..."
 rm -rf dist
 
+echo "📂 Creating dist directory structure..."
+mkdir -p dist/server
+
 # Temporarily move vite.ts to avoid compilation errors
 echo "🔧 Preparing TypeScript compilation..."
 mv server/vite.ts server/vite.ts.bak 2>/dev/null || true
@@ -16,15 +19,64 @@ mv server/vite-stub.ts server/vite.ts 2>/dev/null || true
 echo "⚙️ Compiling TypeScript..."
 tsc -p tsconfig.json 2>&1 | grep -v "TS5097" | grep -v "vite.ts" | grep -v "Found 1 error" || true
 
-echo "📝 Ensuring index.js exists..."
-# Manually compile index.ts if it doesn't exist
-if [ ! -f dist/server/index.js ]; then
-    echo "  Creating dist/server/index.js..."
-    mkdir -p dist/server
-    npx tsx server/index.ts --emit-only --outfile dist/server/index.js 2>/dev/null || \
-    npx esbuild server/index.ts --outfile=dist/server/index.js --platform=node --target=node20 --format=cjs --bundle --packages=external --minify 2>/dev/null || \
-    cp server/index.ts dist/server/index.js
-fi
+echo "📝 Creating production server entry point..."
+# Create package.json to ensure CommonJS mode in dist folder
+cat > dist/package.json << 'EOF'
+{
+  "type": "commonjs",
+  "description": "Production build output - ensures CommonJS module format"
+}
+EOF
+
+# Create the production server entry point that spawns tsx
+cat > dist/server/index.js << 'EOF'
+#!/usr/bin/env node
+
+/**
+ * Production server entry point for Replit deployment
+ * Spawns tsx to run the TypeScript server, avoiding module format issues
+ */
+
+const { spawn } = require('child_process');
+const path = require('path');
+
+// Ensure production environment
+process.env.NODE_ENV = 'production';
+
+// Path to the TypeScript server
+const serverFile = path.resolve(__dirname, '../../server/index.ts');
+
+console.log('Starting ThottoPilot production server...');
+
+// Spawn tsx to run the TypeScript server
+const tsxPath = require.resolve('tsx/cli');
+const server = spawn('node', [tsxPath, serverFile], {
+  stdio: 'inherit',
+  env: process.env
+});
+
+// Handle errors
+server.on('error', (err) => {
+  console.error('Failed to start server:', err);
+  process.exit(1);
+});
+
+// Forward the exit code
+server.on('exit', (code) => {
+  process.exit(code || 0);
+});
+
+// Handle termination signals
+process.on('SIGTERM', () => {
+  server.kill('SIGTERM');
+});
+
+process.on('SIGINT', () => {
+  server.kill('SIGINT');
+});
+EOF
+
+echo "  ✅ Created dist/server/index.js production entry point"
 
 # Restore vite.ts
 mv server/vite.ts server/vite-stub.ts 2>/dev/null || true
