@@ -343,6 +343,10 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: 'Token and new password are required' });
       }
 
+      console.log('🔍 Password reset attempt');
+      console.log('🔍 JWT_SECRET exists:', !!JWT_SECRET_VALIDATED);
+      console.log('🔍 Token length:', token.length);
+      
       // Verify token
       const decoded = jwt.verify(token, JWT_SECRET_VALIDATED) as any;
       
