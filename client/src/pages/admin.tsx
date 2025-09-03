@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { 
   Users, 
   DollarSign, 
@@ -40,6 +41,7 @@ import {
 
 export function AdminDashboard() {
   const { toast } = useToast();
+  const { token } = useAuth();
   const [selectedPeriod, setSelectedPeriod] = useState('7d');
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [actionType, setActionType] = useState<'ban' | 'suspend' | 'unban' | 'reset-password' | 'tier-management' | 'user-details' | null>(null);
@@ -48,34 +50,59 @@ export function AdminDashboard() {
   const [tempPassword, setTempPassword] = useState('');
   const [newTier, setNewTier] = useState('free');
 
+  // Authenticated API request helper
+  const authenticatedFetch = async (url: string) => {
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status}`);
+    }
+    return response.json();
+  };
+
   // Fetch admin stats
   const { data: stats } = useQuery({
     queryKey: ['/api/admin/stats', selectedPeriod],
+    queryFn: () => authenticatedFetch('/api/admin/stats'),
+    enabled: !!token
   });
 
   // Fetch user data
   const { data: users } = useQuery({
     queryKey: ['/api/admin/users'],
+    queryFn: () => authenticatedFetch('/api/admin/users'),
+    enabled: !!token
   });
 
   // Fetch provider costs
   const { data: providers } = useQuery({
     queryKey: ['/api/providers'],
+    queryFn: () => authenticatedFetch('/api/providers'),
+    enabled: !!token
   });
 
   // Fetch system health
   const { data: systemHealth } = useQuery({
     queryKey: ['/api/admin/system-health'],
+    queryFn: () => authenticatedFetch('/api/admin/system-health'),
+    enabled: !!token
   });
 
   // Fetch visitor analytics
   const { data: analytics } = useQuery({
     queryKey: ['/api/admin/analytics', selectedPeriod],
+    queryFn: () => authenticatedFetch('/api/admin/analytics'),
+    enabled: !!token
   });
 
   // Fetch system completeness
   const { data: completeness } = useQuery({
     queryKey: ['/api/admin/completeness'],
+    queryFn: () => authenticatedFetch('/api/admin/completeness'),
+    enabled: !!token
   });
 
   // User action mutation for admin operations
@@ -87,7 +114,10 @@ export function AdminDashboard() {
       
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(data),
       });
       if (!response.ok) {
