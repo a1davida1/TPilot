@@ -240,42 +240,58 @@ router.get("/user", async (req: any, res) => {
 // Logout route
 router.post("/logout", (req: any, res) => {
   logger.info('Logout attempt - session ID:', req.sessionID);
-  logger.info('Session data before destroy:', req.session);
+  logger.info('Session authenticated?:', req.isAuthenticated ? req.isAuthenticated() : false);
   
-  // Destroy session if it exists
-  if (req.session) {
-    // Clear user data first
-    delete (req.session as any).user;
-    delete (req.session as any).userId;
-    delete (req.session as any).isAdmin;
-    
-    req.session.destroy((err: any) => {
-      if (err) {
-        logger.error('Session destruction error:', err);
-        return res.status(500).json({ message: 'Error logging out' });
-      }
+  // Handle Passport logout first, then destroy session
+  const handleSessionDestroy = () => {
+    if (req.session) {
+      // Clear user data
+      delete (req.session as any).user;
+      delete (req.session as any).userId;
+      delete (req.session as any).isAdmin;
       
-      logger.info('Session destroyed successfully');
-      
-      // Clear the actual session cookie (thottopilot.sid is the session name we use)
+      req.session.destroy((err: any) => {
+        if (err) {
+          logger.error('Session destruction error:', err);
+          return res.status(500).json({ message: 'Error logging out' });
+        }
+        
+        logger.info('Session destroyed successfully');
+        
+        // Clear the session cookies
+        res.clearCookie('thottopilot.sid', { 
+          path: '/',
+          httpOnly: true,
+          sameSite: 'lax'
+        });
+        res.clearCookie('connect.sid', { path: '/' });
+        
+        res.json({ message: 'Logged out successfully' });
+      });
+    } else {
+      // Clear cookies even if no session
       res.clearCookie('thottopilot.sid', { 
         path: '/',
         httpOnly: true,
         sameSite: 'lax'
       });
-      res.clearCookie('connect.sid', { path: '/' }); // Just in case
-      
+      res.clearCookie('connect.sid', { path: '/' });
       res.json({ message: 'Logged out successfully' });
+    }
+  };
+
+  // Logout from Passport if authenticated
+  if (req.logout && typeof req.logout === 'function' && req.isAuthenticated && req.isAuthenticated()) {
+    req.logout((err: any) => {
+      if (err) {
+        logger.error('Passport logout error:', err);
+      }
+      // Proceed to destroy session after Passport logout
+      handleSessionDestroy();
     });
   } else {
-    // Clear cookies even if no session
-    res.clearCookie('thottopilot.sid', { 
-      path: '/',
-      httpOnly: true,
-      sameSite: 'lax'
-    });
-    res.clearCookie('connect.sid', { path: '/' });
-    res.json({ message: 'Logged out successfully' });
+    // No Passport session, just destroy the regular session
+    handleSessionDestroy();
   }
 });
 

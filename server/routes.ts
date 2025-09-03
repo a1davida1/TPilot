@@ -8,6 +8,7 @@ import * as connectRedis from 'connect-redis';
 import { Pool } from 'pg';
 import Redis from 'ioredis';
 import Stripe from 'stripe';
+import passport from 'passport';
 
 // Security and middleware
 import { validateEnvironment, securityMiddleware, ipLoggingMiddleware, errorHandler, logger, generationLimiter } from "./middleware/security.js";
@@ -144,6 +145,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     name: 'thottopilot.sid', // Custom session name
     rolling: true // Refresh session on activity
   }));
+
+  // Initialize Passport after session middleware
+  app.use(passport.initialize());
+  app.use(passport.session());
+
+  // Configure Passport serialization for admin
+  passport.serializeUser((user: any, done) => {
+    done(null, user.id || user);
+  });
+
+  passport.deserializeUser(async (id: any, done) => {
+    try {
+      // Handle admin user specially
+      if (id === 999 || id === 'admin') {
+        done(null, { id: 999, username: 'admin', isAdmin: true });
+      } else if (typeof id === 'object') {
+        // Already deserialized
+        done(null, id);
+      } else {
+        const user = await storage.getUser(id);
+        done(null, user);
+      }
+    } catch (error) {
+      done(error, null);
+    }
+  });
 
   // CSRF protection for session-based routes
   const csrfProtection = csrf({ 
