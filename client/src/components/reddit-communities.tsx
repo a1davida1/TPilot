@@ -195,12 +195,12 @@ export function RedditCommunities() {
   };
 
   return (
-    <Card className="bg-gray-900/50 backdrop-blur-xl border-purple-500/20">
+    <Card className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-pink-200/50 dark:border-pink-500/20 shadow-xl">
       <CardHeader>
-        <CardTitle className="text-2xl bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+        <CardTitle className="text-2xl bg-gradient-to-r from-pink-600 via-rose-500 to-purple-600 dark:from-pink-400 dark:via-rose-400 dark:to-purple-400 bg-clip-text text-transparent">
           Reddit Communities Database
         </CardTitle>
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-gray-600 dark:text-gray-300">
           100+ communities with success probability scoring, growth trends, and intelligent recommendations
         </p>
       </CardHeader>
@@ -213,12 +213,12 @@ export function RedditCommunities() {
               placeholder="Search communities..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-gray-800/50 border-purple-500/20"
+              className="pl-10 bg-white/60 dark:bg-gray-800/60 border-pink-200 dark:border-pink-500/30 focus:border-pink-400 dark:focus:border-pink-400"
             />
           </div>
           
           <Select value={filterCategory} onValueChange={setFilterCategory}>
-            <SelectTrigger className="w-[180px] bg-gray-800/50 border-purple-500/20">
+            <SelectTrigger className="w-[180px] bg-white/60 dark:bg-gray-800/60 border-pink-200 dark:border-pink-500/30">
               <SelectValue placeholder="Category" />
             </SelectTrigger>
             <SelectContent>
@@ -234,7 +234,7 @@ export function RedditCommunities() {
           </Select>
 
           <Select value={filterPromotion} onValueChange={setFilterPromotion}>
-            <SelectTrigger className="w-[180px] bg-gray-800/50 border-purple-500/20">
+            <SelectTrigger className="w-[180px] bg-white/60 dark:bg-gray-800/60 border-pink-200 dark:border-pink-500/30">
               <SelectValue placeholder="Promotion" />
             </SelectTrigger>
             <SelectContent>
@@ -247,7 +247,7 @@ export function RedditCommunities() {
           </Select>
 
           <Select value={filterVerification} onValueChange={setFilterVerification}>
-            <SelectTrigger className="w-[180px] bg-gray-800/50 border-purple-500/20">
+            <SelectTrigger className="w-[180px] bg-white/60 dark:bg-gray-800/60 border-pink-200 dark:border-pink-500/30">
               <SelectValue placeholder="Verification" />
             </SelectTrigger>
             <SelectContent>
@@ -258,7 +258,7 @@ export function RedditCommunities() {
           </Select>
 
           <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
-            <SelectTrigger className="w-[150px] bg-gray-800/50 border-purple-500/20">
+            <SelectTrigger className="w-[150px] bg-white/60 dark:bg-gray-800/60 border-pink-200 dark:border-pink-500/30">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>

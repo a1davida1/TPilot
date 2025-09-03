@@ -35,16 +35,25 @@ import { trackPageView, setUserId, trackFeatureUsage } from "@/lib/analytics-tra
 // Communities Page Component
 function CommunitiesPage() {
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Reddit Communities
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400">
-          Discover and explore 180+ active communities with detailed insights, engagement rates, and posting guidelines.
-        </p>
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-purple-100 dark:from-gray-900 dark:via-purple-950/20 dark:to-pink-950/20">
+      {/* Animated Background */}
+      <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-yellow-400/5 opacity-60"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,192,203,0.1),transparent_50%)]"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(255,235,59,0.05),transparent_50%)]"></div>
       </div>
-      <RedditCommunities />
+      
+      <div className="relative container mx-auto px-4 py-8 z-10">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 via-rose-500 to-purple-600 dark:from-pink-400 dark:via-rose-400 dark:to-purple-400 bg-clip-text text-transparent drop-shadow-sm mb-2">
+            Reddit Communities
+          </h1>
+          <p className="text-lg text-gray-700 dark:text-gray-300 max-w-2xl">
+            Discover and explore 180+ active communities with detailed insights, engagement rates, and posting guidelines.
+          </p>
+        </div>
+        <RedditCommunities />
+      </div>
     </div>
   );
 }
@@ -52,16 +61,25 @@ function CommunitiesPage() {
 // Gallery Page Component
 function GalleryPage() {
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Media Gallery
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400">
-          Upload, organize, and protect your images. Apply advanced protection to prevent reverse searches.
-        </p>
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-purple-100 dark:from-gray-900 dark:via-purple-950/20 dark:to-pink-950/20">
+      {/* Animated Background */}
+      <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-yellow-400/5 opacity-60"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,192,203,0.1),transparent_50%)]"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(255,235,59,0.05),transparent_50%)]"></div>
       </div>
-      <ImageGallery />
+      
+      <div className="relative container mx-auto px-4 py-8 z-10">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 via-rose-500 to-purple-600 dark:from-pink-400 dark:via-rose-400 dark:to-purple-400 bg-clip-text text-transparent drop-shadow-sm mb-2">
+            Media Gallery
+          </h1>
+          <p className="text-lg text-gray-700 dark:text-gray-300 max-w-2xl">
+            Upload, organize, and protect your images. Apply advanced protection to prevent reverse searches.
+          </p>
+        </div>
+        <ImageGallery />
+      </div>
     </div>
   );
 }
