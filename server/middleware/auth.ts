@@ -31,26 +31,33 @@ export const authenticateToken = async (req: AuthRequest, res: express.Response,
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
-  if (!token) {
-    return res.status(401).json({ message: 'Access token required' });
+  // Try JWT token first
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as { userId: number; email: string; iat: number; exp: number };
+      
+      // Fetch the full user object from database
+      const [user] = await db.select().from(users).where(eq(users.id, decoded.userId));
+      
+      if (!user) {
+        return res.status(401).json({ message: 'User not found' });
+      }
+      
+      req.user = user;
+      return next();
+    } catch (error) {
+      logger.error('Auth error:', error);
+      return res.status(403).json({ message: 'Invalid token' });
+    }
   }
 
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: number; email: string; iat: number; exp: number };
-    
-    // Fetch the full user object from database
-    const [user] = await db.select().from(users).where(eq(users.id, decoded.userId));
-    
-    if (!user) {
-      return res.status(401).json({ message: 'User not found' });
-    }
-    
-    req.user = user;
-    next();
-  } catch (error) {
-    logger.error('Auth error:', error);
-    return res.status(403).json({ message: 'Invalid token' });
+  // Fallback to session-based auth
+  if (req.session && (req.session as any).user) {
+    req.user = (req.session as any).user;
+    return next();
   }
+
+  return res.status(401).json({ message: 'Access token required' });
 };
 
 export const createToken = (user: UserType): string => {

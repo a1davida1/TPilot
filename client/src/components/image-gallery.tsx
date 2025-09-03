@@ -36,12 +36,13 @@ export function ImageGallery() {
   const queryClient = useQueryClient();
   const { token } = useAuth();
   
-  // Authenticated API request with JWT token
+  // Authenticated API request - use session-based auth like the rest of the app
   const authenticatedRequest = async (url: string, method: string = 'GET', data?: any) => {
     let body: FormData | string | undefined;
     const authToken = localStorage.getItem('authToken');
     const headers: { [key: string]: string } = {};
     
+    // Try token auth first if available
     if (authToken) {
       headers['Authorization'] = `Bearer ${authToken}`;
     }
@@ -57,7 +58,8 @@ export function ImageGallery() {
     const response = await fetch(url, {
       method,
       headers,
-      body
+      body,
+      credentials: 'include' // Include session cookies
     });
     
     if (!response.ok) {

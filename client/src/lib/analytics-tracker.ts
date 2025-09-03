@@ -253,6 +253,7 @@ class AnalyticsTracker {
           'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
         },
         body: JSON.stringify({ events }),
+        credentials: 'include', // Include session cookies
         keepalive: true // Important for events sent during page unload
       });
     } catch (error) {
