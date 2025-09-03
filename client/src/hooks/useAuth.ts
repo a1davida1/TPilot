@@ -81,20 +81,24 @@ export function useAuth() {
     localStorage.removeItem('user');
     setToken(null);
     
-    // Also try to logout from session
+    // Logout from session
     try {
-      await fetch('/api/auth/logout', {
+      const response = await fetch('/api/auth/logout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         credentials: 'include'
       });
+      
+      if (!response.ok) {
+        console.error('Session logout failed:', response.status);
+      }
     } catch (error) {
-      console.log('Session logout failed (expected if using token auth)');
+      console.error('Session logout error:', error);
     }
     
-    // Refetch to update user state immediately
+    // Force refetch to clear user state
     refetch();
   };
 

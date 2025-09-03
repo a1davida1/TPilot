@@ -246,10 +246,15 @@ router.post("/logout", (req: any, res) => {
         logger.error('Session destruction error:', err);
         return res.status(500).json({ message: 'Error logging out' });
       }
-      res.clearCookie('connect.sid'); // Clear session cookie
+      // Clear both possible session cookie names
+      res.clearCookie('connect.sid');
+      res.clearCookie('thottopilot.sid');
       res.json({ message: 'Logged out successfully' });
     });
   } else {
+    // Clear cookies even if no session
+    res.clearCookie('connect.sid');
+    res.clearCookie('thottopilot.sid');
     res.json({ message: 'Logged out successfully' });
   }
 });

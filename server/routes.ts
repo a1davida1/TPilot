@@ -176,7 +176,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ==========================================
   
   // Authentication routes
-  // app.use('/api/auth', authRoutes); // COMMENTED OUT - Using setupAuth(app) instead to avoid conflicts
+  app.use('/api/auth', authRoutes);
   
   // Upload routes
   app.use('/api/upload', uploadRoutes);
