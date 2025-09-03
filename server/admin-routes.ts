@@ -315,10 +315,9 @@ export function setupAdminRoutes(app: Express) {
           { path: '/register', views: Math.floor(baseVisitors * 0.12) }
         ],
         trafficSources: [
-          { source: 'Direct', visitors: Math.floor(baseVisitors * 0.42) },
-          { source: 'Search', visitors: Math.floor(baseVisitors * 0.33) },
-          { source: 'Social', visitors: Math.floor(baseVisitors * 0.18) },
-          { source: 'Referral', visitors: Math.floor(baseVisitors * 0.07) }
+          { source: 'Direct', visitors: Math.floor(baseVisitors * 0.45) },
+          { source: 'Search', visitors: Math.floor(baseVisitors * 0.35) },
+          { source: 'Social', visitors: Math.floor(baseVisitors * 0.20) }
         ]
       };
       
@@ -363,10 +362,9 @@ export function setupAdminRoutes(app: Express) {
           { path: '/register', views: Math.floor(baseVisitors * 0.12) }
         ],
         trafficSources: [
-          { source: 'Direct', visitors: Math.floor(baseVisitors * 0.42) },
-          { source: 'Search', visitors: Math.floor(baseVisitors * 0.33) },
-          { source: 'Social', visitors: Math.floor(baseVisitors * 0.18) },
-          { source: 'Referral', visitors: Math.floor(baseVisitors * 0.07) }
+          { source: 'Direct', visitors: Math.floor(baseVisitors * 0.45) },
+          { source: 'Search', visitors: Math.floor(baseVisitors * 0.35) },
+          { source: 'Social', visitors: Math.floor(baseVisitors * 0.20) }
         ],
         hourlyTraffic: Array.from({ length: 24 }, (_, i) => ({
           hour: i,
