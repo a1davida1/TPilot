@@ -884,6 +884,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Debug endpoint for environment variables
+  app.get('/api/debug/env', (req, res) => {
+    res.json({
+      hasAdminEmail: !!process.env.ADMIN_EMAIL,
+      hasAdminPassword: !!process.env.ADMIN_PASSWORD,
+      adminEmailLength: process.env.ADMIN_EMAIL?.length || 0,
+      nodeEnv: process.env.NODE_ENV,
+      // Don't send actual values for security!
+    });
+  });
+
   // ==========================================
   // ERROR HANDLER (MUST BE LAST)
   // ==========================================

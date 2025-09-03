@@ -152,10 +152,50 @@ export function setupAuth(app: Express) {
       }
       
       const { username, password, email } = validationResult.data;
-
       const loginIdentifier = email || username;
 
-      // Check if loginIdentifier is an email (contains @) or username
+      // CHECK FOR ADMIN LOGIN FIRST
+      const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+      const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+      
+      if (ADMIN_EMAIL && ADMIN_PASSWORD && 
+          loginIdentifier === ADMIN_EMAIL && 
+          password === ADMIN_PASSWORD) {
+        
+        // Create admin token
+        const token = jwt.sign(
+          {
+            id: 999,
+            userId: 999,
+            username: 'admin',
+            isAdmin: true,
+            role: 'admin',
+            tier: 'premium'
+          },
+          JWT_SECRET_VALIDATED,
+          { expiresIn: '24h' }
+        );
+
+        res.cookie('authToken', token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          maxAge: 24 * 60 * 60 * 1000
+        });
+
+        return res.json({
+          user: {
+            id: 999,
+            username: 'admin',
+            email: ADMIN_EMAIL,
+            tier: 'premium',
+            isAdmin: true,
+            role: 'admin'
+          }
+        });
+      }
+
+      // Regular user login continues...
       let user;
       if (loginIdentifier && loginIdentifier.includes('@')) {
         // It's an email
@@ -342,6 +382,20 @@ export function setupAuth(app: Express) {
       try {
         const decoded = jwt.verify(token, JWT_SECRET_VALIDATED) as any;
         
+        // CHECK IF IT'S ADMIN TOKEN
+        if (decoded.id === 999 || decoded.isAdmin) {
+          return res.json({
+            id: 999,
+            username: 'admin',
+            email: process.env.ADMIN_EMAIL,
+            tier: 'premium',
+            isAdmin: true,
+            role: 'admin',
+            emailVerified: true
+          });
+        }
+        
+        // Regular user lookup
         const user = await storage.getUser(decoded.userId || decoded.id);
         if (user) {
           const { password: _, ...userResponse } = user;
