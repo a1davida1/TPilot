@@ -244,6 +244,14 @@ router.post("/logout", (req: any, res) => {
   
   // Handle Passport logout first, then destroy session
   const handleSessionDestroy = () => {
+    // Always clear JWT authentication cookie first
+    res.clearCookie('authToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/'
+    });
+    
     if (req.session) {
       // Clear user data
       delete (req.session as any).user;
@@ -253,7 +261,7 @@ router.post("/logout", (req: any, res) => {
       req.session.destroy((err: any) => {
         if (err) {
           logger.error('Session destruction error:', err);
-          return res.status(500).json({ message: 'Error logging out' });
+          // Still clear cookies and return success as JWT is already cleared
         }
         
         logger.info('Session destroyed successfully');
@@ -280,17 +288,23 @@ router.post("/logout", (req: any, res) => {
     }
   };
 
-  // Logout from Passport if authenticated
-  if (req.logout && typeof req.logout === 'function' && req.isAuthenticated && req.isAuthenticated()) {
-    req.logout((err: any) => {
-      if (err) {
-        logger.error('Passport logout error:', err);
-      }
-      // Proceed to destroy session after Passport logout
+  // Logout from Passport if authenticated and session exists
+  if (req.logout && typeof req.logout === 'function' && req.session && req.isAuthenticated && req.isAuthenticated()) {
+    try {
+      req.logout((err: any) => {
+        if (err) {
+          logger.error('Passport logout error:', err);
+        }
+        // Proceed to destroy session after Passport logout
+        handleSessionDestroy();
+      });
+    } catch (logoutError) {
+      logger.error('Critical error during req.logout():', logoutError);
+      // If req.logout fails, still proceed with session cleanup
       handleSessionDestroy();
-    });
+    }
   } else {
-    // No Passport session, just destroy the regular session
+    // No Passport session or no session exists, just destroy the regular session
     handleSessionDestroy();
   }
 });

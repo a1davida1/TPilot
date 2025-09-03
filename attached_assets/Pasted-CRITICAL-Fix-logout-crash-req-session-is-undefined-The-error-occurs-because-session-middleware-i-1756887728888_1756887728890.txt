@@ -1,0 +1,127 @@
+CRITICAL: Fix logout crash - req.session is undefined
+
+The error occurs because session middleware isn't properly configured for the logout route.
+
+FIX IN server/auth.ts or wherever logout is defined:
+
+1. Find the logout endpoint (probably in server/auth.ts around line 200-210)
+
+REPLACE the current logout implementation:
+```typescript
+app.post('/api/auth/logout', (req: any, res) => {
+  if (req.logout) {
+    req.logout((err) => {
+      if (err) {
+        return res.status(500).json({ message: 'Error logging out' });
+      }
+      res.json({ message: 'Logged out successfully' });
+    });
+  } else {
+    res.json({ message: 'Logged out successfully' });
+  }
+});
+WITH this safer implementation:
+typescriptapp.post('/api/auth/logout', (req: any, res) => {
+  try {
+    // Check if session exists first
+    if (!req.session) {
+      // No session, just clear cookies and return success
+      res.clearCookie('connect.sid');
+      res.clearCookie('authToken');
+      res.clearCookie('thottopilot.sid');
+      return res.json({ message: 'Logged out successfully' });
+    }
+
+    // If using Passport and session exists
+    if (req.logout && typeof req.logout === 'function') {
+      req.logout((err: any) => {
+        if (err) {
+          console.error('Passport logout error:', err);
+          // Continue with logout anyway
+        }
+        
+        // Destroy session if it exists
+        if (req.session && req.session.destroy) {
+          req.session.destroy((destroyErr: any) => {
+            if (destroyErr) {
+              console.error('Session destroy error:', destroyErr);
+            }
+            // Clear cookies regardless
+            res.clearCookie('connect.sid');
+            res.clearCookie('authToken');
+            res.clearCookie('thottopilot.sid');
+            res.json({ message: 'Logged out successfully' });
+          });
+        } else {
+          // No session.destroy, just clear cookies
+          res.clearCookie('connect.sid');
+          res.clearCookie('authToken');
+          res.clearCookie('thottopilot.sid');
+          res.json({ message: 'Logged out successfully' });
+        }
+      });
+    } else {
+      // No passport logout, destroy session directly
+      if (req.session && req.session.destroy) {
+        req.session.destroy((err: any) => {
+          if (err) {
+            console.error('Session destroy error:', err);
+          }
+          res.clearCookie('connect.sid');
+          res.clearCookie('authToken');
+          res.clearCookie('thottopilot.sid');
+          res.json({ message: 'Logged out successfully' });
+        });
+      } else {
+        // Just clear cookies
+        res.clearCookie('connect.sid');
+        res.clearCookie('authToken');
+        res.clearCookie('thottopilot.sid');
+        res.json({ message: 'Logged out successfully' });
+      }
+    }
+  } catch (error) {
+    console.error('Logout error:', error);
+    // Even on error, clear cookies to help user
+    res.clearCookie('connect.sid');
+    res.clearCookie('authToken');
+    res.clearCookie('thottopilot.sid');
+    res.json({ message: 'Logged out (with errors)' });
+  }
+});
+
+ALSO check that session middleware is applied BEFORE auth routes in server/routes.ts:
+
+Make sure this order is correct:
+typescript// Session MUST come before auth routes
+app.use(session({
+  store,
+  secret: SESSION_SECRET,
+  resave: true,
+  saveUninitialized: true,
+  cookie: {
+    secure: false,
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000,
+    sameSite: 'lax'
+  },
+  name: 'thottopilot.sid',
+  rolling: true
+}));
+
+// Passport AFTER session
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Auth routes AFTER both session and passport
+setupAuth(app);
+
+If passport is not being used properly, also check server/social-auth-config.ts and ensure passport is initialized:
+
+typescriptexport function configureSocialAuth(app: Express) {
+  // Make sure passport is initialized
+  app.use(passport.initialize());
+  app.use(passport.session());
+  
+  // Rest of config...
+}
