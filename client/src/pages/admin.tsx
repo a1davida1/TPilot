@@ -975,7 +975,7 @@ export function AdminDashboard() {
                       <SelectContent>
                         <SelectItem value="free">Free</SelectItem>
                         <SelectItem value="pro">Pro</SelectItem>
-                        <SelectItem value="premium">Premium</SelectItem>
+                        <SelectItem value="starter">Starter</SelectItem>
                         <SelectItem value="banned">Banned</SelectItem>
                       </SelectContent>
                     </Select>

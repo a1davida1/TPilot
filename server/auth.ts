@@ -218,6 +218,18 @@ export function setupAuth(app: Express) {
         return res.status(403).json({ message: 'Email not verified' });
       }
 
+      // Check if user must change password (temporary password)
+      if (user.mustChangePassword) {
+        return res.status(202).json({ 
+          message: 'Password change required', 
+          mustChangePassword: true,
+          userId: user.id 
+        });
+      }
+
+      // Update last login time
+      await storage.updateUser(user.id, { lastLogin: new Date() });
+
       const token = jwt.sign(
         {
           id: user.id,
@@ -413,6 +425,77 @@ export function setupAuth(app: Express) {
     } catch (error) {
       safeLog('error', 'Get user failed', { error: error.message });
       res.status(500).json({ message: 'Error fetching user data' });
+    }
+  });
+
+  // Force password change endpoint (for temporary passwords)
+  app.post('/api/auth/change-password', async (req, res) => {
+    try {
+      const { userId, currentPassword, newPassword } = req.body;
+
+      if (!userId || !currentPassword || !newPassword) {
+        return res.status(400).json({ message: 'Missing required fields' });
+      }
+
+      if (newPassword.length < 6) {
+        return res.status(400).json({ message: 'New password must be at least 6 characters long' });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Verify current password
+      const validPassword = await bcrypt.compare(currentPassword, user.password);
+      if (!validPassword) {
+        return res.status(401).json({ message: 'Current password is incorrect' });
+      }
+
+      // Hash new password
+      const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+      // Update password and clear mustChangePassword flag
+      await storage.updateUserPassword(userId, hashedNewPassword);
+      await storage.updateUser(userId, { 
+        mustChangePassword: false,
+        lastLogin: new Date()
+      });
+
+      // Create token for immediate login
+      const token = jwt.sign(
+        {
+          id: user.id,
+          userId: user.id,
+          username: user.username,
+          isAdmin: user.isAdmin,
+          role: user.role
+        },
+        JWT_SECRET_VALIDATED,
+        { expiresIn: '24h' }
+      );
+
+      res.cookie('authToken', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 24 * 60 * 60 * 1000
+      });
+
+      res.json({
+        message: 'Password changed successfully',
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          tier: user.tier,
+          isAdmin: user.isAdmin,
+          role: user.role
+        }
+      });
+    } catch (error) {
+      safeLog('error', 'Password change failed', { error: error.message });
+      res.status(500).json({ message: 'Error changing password' });
     }
   });
 

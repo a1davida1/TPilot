@@ -36,6 +36,13 @@
       "when": 1756578015780,
       "tag": "0004_skinny_mockingbird",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1756866876681,
+      "tag": "0005_rapid_red_wolf",
+      "breakpoints": true
     }
   ]
 }

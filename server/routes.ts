@@ -433,8 +433,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let dailyLimit = 5;
         if (userTier === 'pro') {
           dailyLimit = 50;
-        } else if (userTier === 'premium') {
-          dailyLimit = -1;
+        } else if (userTier === 'starter') {
+          dailyLimit = 25;
         }
 
         if (dailyLimit !== -1 && dailyCount >= dailyLimit) {
@@ -552,8 +552,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         dailyLimit = 10;
       } else if (userTier === 'pro') {
         dailyLimit = 100;
-      } else if (userTier === 'premium') {
-        dailyLimit = -1; // Unlimited
+      } else if (userTier === 'starter') {
+        dailyLimit = 50;
       }
 
       const userStats = {
@@ -836,7 +836,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           nextBillDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
           createdAt: new Date().toISOString()
         } : null,
-        isPro: req.user?.tier === 'pro' || req.user?.tier === 'premium',
+        isPro: req.user?.tier === 'pro' || req.user?.tier === 'starter',
         tier: req.user?.tier || 'free'
       };
       res.json(subscription);

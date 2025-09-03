@@ -96,7 +96,7 @@ export interface IStorage {
   getTotalUserCount(): Promise<number>;
   getActiveUserCount(): Promise<number>;
   getTotalContentGenerated(): Promise<number>;
-  getSubscriptionCounts(): Promise<{ free: number; pro: number; premium: number; }>;
+  getSubscriptionCounts(): Promise<{ free: number; starter: number; pro: number; }>;
   
   // Generation limit operations
   getDailyGenerationCount(userId: number): Promise<number>;
@@ -603,24 +603,23 @@ class PostgreSQLStorage implements IStorage {
     }
   }
 
-  async getSubscriptionCounts(): Promise<{ free: number; pro: number; premium: number; }> {
+  async getSubscriptionCounts(): Promise<{ free: number; starter: number; pro: number; }> {
     try {
       const allUsers = await this.getAllUsers();
-      const counts = { free: 0, pro: 0, premium: 0 };
+      const counts = { free: 0, starter: 0, pro: 0 };
       
       for (const user of allUsers) {
         const tier = user.tier || 'free';
-        if (tier in counts) {
-          (counts as any)[tier]++;
-        } else {
-          counts.free++; // Default to free if tier is unknown
-        }
+        if (tier === 'free') counts.free++;
+        else if (tier === 'starter') counts.starter++;
+        else if (tier === 'pro') counts.pro++;
+        else counts.free++; // Default to free if tier is unknown
       }
       
       return counts;
     } catch (error) {
       console.error('Error getting subscription counts:', { error: error.message });
-      return { free: 0, pro: 0, premium: 0 };
+      return { free: 0, starter: 0, pro: 0 };
     }
   }
 

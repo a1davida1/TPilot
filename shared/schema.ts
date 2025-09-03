@@ -13,7 +13,8 @@ export const users = pgTable("users", {
   emailVerified: boolean("email_verified").default(false).notNull(),
   firstName: varchar("first_name", { length: 255 }),
   lastName: varchar("last_name", { length: 255 }),
-  tier: varchar("tier", { length: 50 }).default("free").notNull(), // free, starter, pro, premium
+  tier: varchar("tier", { length: 50 }).default("free").notNull(), // free, starter, pro
+  mustChangePassword: boolean("must_change_password").default(false).notNull(),
   subscriptionStatus: varchar("subscription_status", { length: 50 }).default("inactive").notNull(), // active, inactive, cancelled, past_due
   trialEndsAt: timestamp("trial_ends_at"),
   provider: varchar("provider", { length: 50 }), // google, facebook, reddit
@@ -35,6 +36,7 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   lastLogin: timestamp("last_login"),
+  passwordResetAt: timestamp("password_reset_at"),
 });
 
 export const contentGenerations = pgTable("content_generations", {

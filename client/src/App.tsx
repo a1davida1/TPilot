@@ -15,6 +15,7 @@ import { OnboardingWalkthrough } from "@/components/onboarding-walkthrough";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import NotFound from "@/pages/not-found";
 import ResetPasswordPage from "@/pages/reset-password";
+import ChangePasswordPage from "@/pages/change-password";
 import History from "@/pages/history";
 import Settings from "@/pages/settings";
 import Checkout from "@/pages/checkout";
@@ -129,6 +130,7 @@ function UnauthenticatedRoutes() {
         <LandingPage showLoginModal={true} loginModalMode="signup" />
       </Route>
       <Route path="/reset-password" component={ResetPasswordPage} />
+      <Route path="/change-password" component={ChangePasswordPage} />
       <Route path="/caption-generator" component={CaptionGeneratorPage} />
       <Route path="/imageshield" component={ImageShieldPage} />
       <Route path="/policy-demo" component={PolicyDemo} />

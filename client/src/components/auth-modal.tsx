@@ -53,6 +53,20 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
       return apiRequest('POST', endpoint, requestData);
     },
     onSuccess: async (response: Response) => {
+      // Check for temporary password status (202 response)
+      if (response.status === 202) {
+        const data = await response.json();
+        toast({
+          title: 'Password Change Required',
+          description: 'You must change your temporary password before continuing.'
+        });
+        setFormData({ username: '', email: '', password: '' });
+        onClose();
+        // Redirect to password change page with userId
+        window.location.href = `/change-password?userId=${data.userId}`;
+        return;
+      }
+
       const data = await response.json();
       
       if (mode === 'login') {

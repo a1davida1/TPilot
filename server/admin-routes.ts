@@ -77,8 +77,9 @@ export function setupAdminRoutes(app: Express) {
       // Hash the temporary password
       const hashedTempPassword = await bcrypt.hash(tempPassword, 10);
       
-      // Update user's password using the existing storage method
+      // Update user's password and set mustChangePassword flag
       await storage.updateUserPassword(userId, hashedTempPassword);
+      await storage.updateUser(userId, { mustChangePassword: true, passwordResetAt: new Date() });
       
       const adminUser = req.user as any;
       console.log(`Admin ${adminUser?.username || adminUser?.id} reset password for user ${user.username} (ID: ${userId})`);
@@ -112,7 +113,7 @@ export function setupAdminRoutes(app: Express) {
         totalUsers: users.length,
         freeUsers: users.filter(u => u.tier === 'free').length,
         proUsers: users.filter(u => u.tier === 'pro').length,
-        premiumUsers: users.filter(u => u.tier === 'premium').length,
+        starterUsers: users.filter(u => u.tier === 'starter').length,
         trialUsers: users.filter(u => u.trialEndsAt && new Date(u.trialEndsAt) > now).length,
         newUsersToday: users.filter(u => u.createdAt && new Date(u.createdAt) >= today).length,
         activeUsers: realActiveUsers,
@@ -489,12 +490,12 @@ export function setupAdminRoutes(app: Express) {
         },
         revenue: {
           mrr: users.filter(u => u.tier === 'pro').length * 20 + 
-               users.filter(u => u.tier === 'premium').length * 50,
+               users.filter(u => u.tier === 'starter').length * 10,
           arr: (users.filter(u => u.tier === 'pro').length * 20 + 
-               users.filter(u => u.tier === 'premium').length * 50) * 12,
+               users.filter(u => u.tier === 'starter').length * 10) * 12,
           avgRevenuePerUser: users.length > 0 
             ? ((users.filter(u => u.tier === 'pro').length * 20 + 
-               users.filter(u => u.tier === 'premium').length * 50) / users.length).toFixed(2)
+               users.filter(u => u.tier === 'starter').length * 10) / users.length).toFixed(2)
             : 0
         }
       };
