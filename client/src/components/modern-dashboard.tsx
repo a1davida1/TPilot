@@ -329,6 +329,9 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                           case 'communities':
                             setLocation('/communities');
                             break;
+                          case 'tax-tracker':
+                            setLocation('/tax-tracker');
+                            break;
                           default:
                             // For unimplemented pages, just update active section
                             setActiveSection(item.id);
