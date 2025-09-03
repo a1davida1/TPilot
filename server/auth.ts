@@ -40,8 +40,6 @@ if (!JWT_SECRET) {
 }
 // Type assertion after validation
 const JWT_SECRET_VALIDATED: string = JWT_SECRET;
-console.log(`🔐 Auth JWT_SECRET loaded: ${JWT_SECRET.length} characters`);
-console.log(`🔐 Auth JWT_SECRET first 5 chars: ${JWT_SECRET.substring(0, 5)}...`);
 
 export function setupAuth(app: Express) {
   // Regular signup
@@ -345,19 +343,12 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: 'Token and new password are required' });
       }
 
-      console.log('🔍 Password reset attempt');
-      console.log('🔍 JWT_SECRET exists:', !!JWT_SECRET_VALIDATED);
-      console.log('🔍 Token length:', token.length);
-      console.log('🔍 Token sample:', token.substring(0, 20) + '...');
       
       // Verify token
       let decoded: any;
       try {
         decoded = jwt.verify(token, JWT_SECRET_VALIDATED) as any;
-        console.log('✅ Token verified successfully');
       } catch (verifyError: any) {
-        console.error('❌ Token verification failed:', verifyError.message);
-        console.error('❌ Token verification error name:', verifyError.name);
         return res.status(400).json({ message: 'Invalid or expired reset token' });
       }
       

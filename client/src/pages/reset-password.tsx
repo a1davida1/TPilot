@@ -35,7 +35,9 @@ export default function ResetPasswordPage() {
       return;
     }
     
-    setToken(tokenParam);
+    // IMPORTANT: Decode the token (it's URL-encoded in the email)
+    const decodedToken = decodeURIComponent(tokenParam);
+    setToken(decodedToken);
   }, [setLocation, toast]);
 
   const resetMutation = useMutation({

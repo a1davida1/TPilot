@@ -111,8 +111,6 @@ export const emailService = {
       throw new Error('JWT_SECRET environment variable is required for password reset tokens');
     }
     
-    console.log(`🔑 JWT_SECRET length: ${JWT_SECRET.length} characters`);
-    console.log(`🔑 First 5 chars of JWT_SECRET: ${JWT_SECRET.substring(0, 5)}...`);
     
     const resetToken = jwt.sign(
       { email: to, type: 'password-reset' },
@@ -120,7 +118,9 @@ export const emailService = {
       { expiresIn: '1h' }
     );
     
-    const resetUrl = `${FRONTEND_URL}/reset-password?token=${resetToken}`;
+    // CRITICAL: URL-encode the token to prevent corruption
+    const encodedToken = encodeURIComponent(resetToken);
+    const resetUrl = `${FRONTEND_URL}/reset-password?token=${encodedToken}`;
     
     console.log(`🔍 Email URL being used: ${FRONTEND_URL}`);
     console.log(`🔗 Full reset URL: ${resetUrl}`);
