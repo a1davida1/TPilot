@@ -83,7 +83,7 @@ export function useAuth() {
     
     // Also try to logout from session
     try {
-      await fetch('/logout', {
+      await fetch('/api/auth/logout', {
         method: 'POST',
         credentials: 'include'
       });
