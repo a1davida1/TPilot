@@ -346,9 +346,18 @@ export function setupAuth(app: Express) {
       console.log('🔍 Password reset attempt');
       console.log('🔍 JWT_SECRET exists:', !!JWT_SECRET_VALIDATED);
       console.log('🔍 Token length:', token.length);
+      console.log('🔍 Token sample:', token.substring(0, 20) + '...');
       
       // Verify token
-      const decoded = jwt.verify(token, JWT_SECRET_VALIDATED) as any;
+      let decoded: any;
+      try {
+        decoded = jwt.verify(token, JWT_SECRET_VALIDATED) as any;
+        console.log('✅ Token verified successfully');
+      } catch (verifyError: any) {
+        console.error('❌ Token verification failed:', verifyError.message);
+        console.error('❌ Token verification error name:', verifyError.name);
+        return res.status(400).json({ message: 'Invalid or expired reset token' });
+      }
       
       if (decoded.type !== 'password-reset') {
         return res.status(400).json({ message: 'Invalid reset token' });
