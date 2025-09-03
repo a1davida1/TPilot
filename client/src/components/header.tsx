@@ -34,8 +34,8 @@ export function Header() {
     try {
       // Call the useAuth logout function which handles both frontend and backend logout
       await logout();
-      // Redirect to login page after successful logout
-      window.location.href = '/login';
+      // Redirect to home page after successful logout (shows landing page with login)
+      window.location.href = '/';
     } catch (error) {
       console.error('Logout failed:', error);
     }
