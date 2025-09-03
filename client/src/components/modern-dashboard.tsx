@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 // import { motion, AnimatePresence } from "framer-motion";
+import { RedditQuickPost } from "./reddit-quick-post";
 import { 
   Home,
   Sparkles, 
@@ -520,7 +521,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
           {/* Main Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
             {/* Quick Upload */}
-            <Card className="lg:col-span-2">
+            <Card className="lg:col-span-1">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Upload className="h-5 w-5" />
@@ -622,6 +623,9 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                 </div>
               </CardContent>
             </Card>
+
+            {/* Reddit Quick Post */}
+            <RedditQuickPost />
 
             {/* Recent Activity */}
             <Card>
