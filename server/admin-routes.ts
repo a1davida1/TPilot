@@ -5,29 +5,40 @@ import crypto from 'crypto';
 import { storage } from './storage';
 import { emailService } from './services/email-service';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required for secure token operations');
+}
+// Type assertion after validation
+const JWT_SECRET_VALIDATED: string = JWT_SECRET;
 
 export function setupAdminRoutes(app: Express) {
   // Admin middleware to check if user is admin
   const requireAdmin = (req: any, res: any, next: any) => {
     // Check if user is authenticated via session OR JWT
     let user = null;
+    let token = null;
     
-    // Try session-based authentication first
-    if (req.isAuthenticated && req.isAuthenticated()) {
+    // Try cookie-based authentication first (preferred)
+    if (req.cookies && req.cookies.authToken) {
+      token = req.cookies.authToken;
+    }
+    // Fallback to Bearer token authentication  
+    else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+      token = req.headers.authorization.substring(7);
+    }
+    // Also try session-based authentication
+    else if (req.isAuthenticated && req.isAuthenticated()) {
       user = req.user;
-    } else {
-      // Try JWT authentication
-      const authHeader = req.headers['authorization'];
-      const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
-      
-      if (token) {
-        try {
-          const decoded = jwt.verify(token, JWT_SECRET) as any;
-          user = decoded;
-        } catch (error) {
-          // JWT is invalid, continue to check session
-        }
+    }
+    
+    // If we have a token, verify it
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET_VALIDATED) as any;
+        user = decoded;
+      } catch (error) {
+        // JWT is invalid, user remains null
       }
     }
 
