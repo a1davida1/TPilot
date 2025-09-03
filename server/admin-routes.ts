@@ -101,6 +101,13 @@ export function setupAdminRoutes(app: Express) {
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       
+      // Get real active users (logged in within last 30 days)
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const realActiveUsers = users.filter(u => u.lastLogin && new Date(u.lastLogin) >= thirtyDaysAgo).length;
+      
+      // Get real revenue from paid invoices
+      const realRevenue = await storage.getRevenue() || 0;
+      
       const stats = {
         totalUsers: users.length,
         freeUsers: users.filter(u => u.tier === 'free').length,
@@ -108,10 +115,9 @@ export function setupAdminRoutes(app: Express) {
         premiumUsers: users.filter(u => u.tier === 'premium').length,
         trialUsers: users.filter(u => u.trialEndsAt && new Date(u.trialEndsAt) > now).length,
         newUsersToday: users.filter(u => u.createdAt && new Date(u.createdAt) >= today).length,
-        activeUsers: Math.floor(users.length * 0.3), // Activity tracking can be added later
+        activeUsers: realActiveUsers,
         contentGenerated: await storage.getContentGenerationCount() || 0,
-        revenue: (users.filter(u => u.tier === 'pro').length * 20 + 
-                 users.filter(u => u.tier === 'premium').length * 50),
+        revenue: realRevenue,
         emailConfigured: !!process.env.SENDGRID_API_KEY,
         jwtConfigured: process.env.JWT_SECRET !== undefined
       };

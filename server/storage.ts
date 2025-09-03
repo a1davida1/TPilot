@@ -38,7 +38,8 @@ import {
   socialMediaPosts,
   platformEngagement,
   postSchedule,
-  verificationTokens
+  verificationTokens,
+  invoices
 } from "@shared/schema";
 import { db } from "./db.js";
 import { eq, desc, and, gte, sql, count } from "drizzle-orm";
@@ -69,6 +70,9 @@ export interface IStorage {
   getContentGenerationCount(): Promise<number>;
   getContentGenerationStats(userId: number): Promise<{ total: number; thisWeek: number; thisMonth: number; totalGenerations?: number }>;
   getLastGenerated(userId: number): Promise<ContentGeneration | undefined>;
+  
+  // Revenue operations
+  getRevenue(): Promise<number>;
 
   // Sample operations
   createUserSample(sample: InsertUserSample): Promise<UserSample>;
@@ -332,6 +336,22 @@ class PostgreSQLStorage implements IStorage {
       return result[0]?.count || 0;
     } catch (error) {
       console.error('Error getting content generation count:', { error: error.message });
+      return 0;
+    }
+  }
+
+  async getRevenue(): Promise<number> {
+    try {
+      const result = await db
+        .select({ total: sql<number>`COALESCE(SUM(amount_cents), 0)` })
+        .from(invoices)
+        .where(eq(invoices.status, 'paid'));
+      
+      // Convert cents to dollars
+      const totalCents = result[0]?.total || 0;
+      return Math.round(totalCents / 100);
+    } catch (error) {
+      console.error('Error getting revenue:', { error: error.message });
       return 0;
     }
   }
