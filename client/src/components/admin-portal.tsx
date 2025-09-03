@@ -107,7 +107,6 @@ export function AdminPortal() {
   // Fetch user statistics
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['/api/admin/stats'],
-    queryFn: () => authenticatedRequest('/api/admin/stats'),
     refetchInterval: 30000, // Refresh every 30 seconds
     enabled: !!token
   });
@@ -115,15 +114,8 @@ export function AdminPortal() {
   // Fetch all users
   const { data: users, isLoading: usersLoading, error: usersError } = useQuery({
     queryKey: ['/api/admin/users'],
-    queryFn: () => authenticatedRequest('/api/admin/users'),
     enabled: !!token
   });
-  
-  // Debug logging
-  console.log('Admin Portal - Users data:', users);
-  console.log('Admin Portal - Users loading:', usersLoading);
-  console.log('Admin Portal - Users error:', usersError);
-  console.log('Admin Portal - Token exists:', !!token);
 
   // Create trial user mutation
   const createTrialMutation = useMutation({

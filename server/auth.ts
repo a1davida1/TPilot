@@ -109,6 +109,7 @@ export function setupAuth(app: Express) {
 
         res.status(201).json({
           message: 'User created successfully',
+          token,
           user: {
             id: user.id,
             username: user.username,
@@ -184,6 +185,7 @@ export function setupAuth(app: Express) {
         });
 
         return res.json({
+          token,
           user: {
             id: 999,
             username: 'admin',
@@ -251,6 +253,7 @@ export function setupAuth(app: Express) {
       });
 
       res.json({
+        token,
         user: {
           id: user.id,
           username: user.username,
