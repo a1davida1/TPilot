@@ -171,14 +171,74 @@ function setupAuthRoutes(app: Express) {
     }
   );
 
-  // Logout
-  app.post('/api/auth/logout', (req, res) => {
-    req.logout((err) => {
-      if (err) {
-        return res.status(500).json({ error: 'Logout failed' });
+  // Logout with comprehensive error handling
+  app.post('/api/auth/logout', (req: any, res) => {
+    try {
+      // Check if session exists first
+      if (!req.session) {
+        // No session, just clear cookies and return success
+        res.clearCookie('connect.sid');
+        res.clearCookie('authToken');
+        res.clearCookie('thottopilot.sid');
+        return res.json({ message: 'Logged out successfully' });
       }
-      res.json({ message: 'Logged out successfully' });
-    });
+
+      // If using Passport and session exists
+      if (req.logout && typeof req.logout === 'function') {
+        req.logout((err: any) => {
+          if (err) {
+            console.error('Passport logout error:', err);
+            // Continue with logout anyway
+          }
+          
+          // Destroy session if it exists
+          if (req.session && req.session.destroy) {
+            req.session.destroy((destroyErr: any) => {
+              if (destroyErr) {
+                console.error('Session destroy error:', destroyErr);
+              }
+              // Clear cookies regardless
+              res.clearCookie('connect.sid');
+              res.clearCookie('authToken');
+              res.clearCookie('thottopilot.sid');
+              res.json({ message: 'Logged out successfully' });
+            });
+          } else {
+            // No session.destroy, just clear cookies
+            res.clearCookie('connect.sid');
+            res.clearCookie('authToken');
+            res.clearCookie('thottopilot.sid');
+            res.json({ message: 'Logged out successfully' });
+          }
+        });
+      } else {
+        // No passport logout, destroy session directly
+        if (req.session && req.session.destroy) {
+          req.session.destroy((err: any) => {
+            if (err) {
+              console.error('Session destroy error:', err);
+            }
+            res.clearCookie('connect.sid');
+            res.clearCookie('authToken');
+            res.clearCookie('thottopilot.sid');
+            res.json({ message: 'Logged out successfully' });
+          });
+        } else {
+          // Just clear cookies
+          res.clearCookie('connect.sid');
+          res.clearCookie('authToken');
+          res.clearCookie('thottopilot.sid');
+          res.json({ message: 'Logged out successfully' });
+        }
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Even on error, clear cookies to help user
+      res.clearCookie('connect.sid');
+      res.clearCookie('authToken');
+      res.clearCookie('thottopilot.sid');
+      res.json({ message: 'Logged out (with errors)' });
+    }
   });
 
   // Get current user
