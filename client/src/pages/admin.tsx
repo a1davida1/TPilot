@@ -3,7 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useQuery } from '@tanstack/react-query';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Users, 
@@ -16,6 +19,9 @@ import {
   CreditCard,
   Eye,
   BarChart3,
+  Ban,
+  Clock3,
+  Key,
   AlertCircle,
   CheckCircle,
   XCircle,
@@ -35,6 +41,12 @@ import {
 export function AdminDashboard() {
   const { toast } = useToast();
   const [selectedPeriod, setSelectedPeriod] = useState('7d');
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [actionType, setActionType] = useState<'ban' | 'suspend' | 'unban' | 'reset-password' | 'tier-management' | 'user-details' | null>(null);
+  const [reason, setReason] = useState('');
+  const [duration, setDuration] = useState('24');
+  const [tempPassword, setTempPassword] = useState('');
+  const [newTier, setNewTier] = useState('free');
 
   // Fetch admin stats
   const { data: stats } = useQuery({
@@ -65,6 +77,52 @@ export function AdminDashboard() {
   const { data: completeness } = useQuery({
     queryKey: ['/api/admin/completeness'],
   });
+
+  // User action mutation for admin operations
+  const actionMutation = useMutation({
+    mutationFn: async (data: any) => {
+      let endpoint = '/api/admin/user-action';
+      if (data.action === 'reset-password') endpoint = '/api/admin/reset-password';
+      else if (data.action === 'tier-management') endpoint = '/api/admin/upgrade-user';
+      
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `Failed to ${data.action}`);
+      }
+      return response.json();
+    },
+    onSuccess: (data, variables) => {
+      if (variables.action === 'reset-password') {
+        setTempPassword(data.tempPassword);
+        toast({ title: "Password Reset Successful", description: "Temporary password generated." });
+      } else if (variables.action === 'tier-management') {
+        toast({ title: "Tier Updated", description: `User tier changed to ${variables.newTier}` });
+        setSelectedUser(null);
+        setActionType(null);
+      } else {
+        toast({ title: `User ${variables.action} successful` });
+        setSelectedUser(null);
+        setActionType(null);
+      }
+    },
+    onError: (error: any) => {
+      toast({ title: "Action Failed", description: error.message, variant: "destructive" });
+    }
+  });
+
+  const handleAction = () => {
+    if (!selectedUser || !actionType) return;
+    if (actionType === 'reset-password') {
+      actionMutation.mutate({ action: 'reset-password', userId: selectedUser.id });
+    } else if (actionType === 'tier-management') {
+      actionMutation.mutate({ action: 'tier-management', userId: selectedUser.id, tier: newTier });
+    }
+  };
 
   // Calculate real percentage changes
   const calculateChange = (current: number, previous: number) => {
@@ -284,26 +342,27 @@ export function AdminDashboard() {
                             <Button 
                               size="sm" 
                               variant="ghost"
-                              onClick={() => {
-                                toast({
-                                  title: "User Details",
-                                  description: `Viewing details for ${user.username}`,
-                                });
-                              }}
+                              onClick={() => { setSelectedUser(user); setActionType('user-details'); }}
+                              data-testid={`button-user-details-${user.id}`}
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
                             <Button 
                               size="sm" 
                               variant="ghost"
-                              onClick={() => {
-                                toast({
-                                  title: "Tier Management",
-                                  description: `Managing tier for ${user.username}`,
-                                });
-                              }}
+                              onClick={() => { setSelectedUser(user); setActionType('tier-management'); setNewTier(user.tier); }}
+                              data-testid={`button-tier-management-${user.id}`}
                             >
                               <Settings className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => { setSelectedUser(user); setActionType('reset-password'); }}
+                              data-testid={`button-reset-password-${user.id}`}
+                              className="text-orange-600 hover:text-orange-700"
+                            >
+                              <Key className="h-4 w-4" />
                             </Button>
                           </div>
                         </td>
@@ -873,6 +932,111 @@ export function AdminDashboard() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Action Modal */}
+      {selectedUser && actionType && (
+        <Dialog open={true} onOpenChange={() => { setSelectedUser(null); setActionType(null); setReason(''); setTempPassword(''); }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-red-600">
+                {actionType === 'user-details' ? 'User Details' : 
+                 actionType === 'tier-management' ? 'Tier Management' : 
+                 actionType === 'reset-password' ? 'Reset Password' : 
+                 actionType.toUpperCase()} - {selectedUser.username}
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              {actionType === 'user-details' && (
+                <div className="space-y-3">
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <h4 className="font-medium mb-2">Account Information</h4>
+                    <div className="space-y-1 text-sm">
+                      <p><strong>ID:</strong> {selectedUser.id}</p>
+                      <p><strong>Username:</strong> {selectedUser.username}</p>
+                      <p><strong>Email:</strong> {selectedUser.email}</p>
+                      <p><strong>Tier:</strong> {selectedUser.tier}</p>
+                      <p><strong>Joined:</strong> {new Date(selectedUser.createdAt).toLocaleDateString()}</p>
+                      <p><strong>Last Active:</strong> {selectedUser.lastLoginAt ? new Date(selectedUser.lastLoginAt).toLocaleDateString() : 'Never'}</p>
+                      <p><strong>Content Created:</strong> {selectedUser.contentCount || 0}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {actionType === 'tier-management' && (
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label>Change User Tier</Label>
+                    <Select value={newTier} onValueChange={setNewTier}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="free">Free</SelectItem>
+                        <SelectItem value="pro">Pro</SelectItem>
+                        <SelectItem value="premium">Premium</SelectItem>
+                        <SelectItem value="banned">Banned</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-gray-500">Current tier: {selectedUser.tier}</p>
+                  </div>
+                </div>
+              )}
+              
+              {actionType === 'reset-password' && (
+                <div className="space-y-4">
+                  <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                    <p className="text-sm text-yellow-800 mb-2">
+                      ⚠️ <strong>Security Notice:</strong> This will generate a temporary password that the user must change on their next login.
+                    </p>
+                  </div>
+                  {tempPassword && (
+                    <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                      <Label className="text-sm font-semibold text-green-800">Temporary Password Generated:</Label>
+                      <div className="mt-2 p-3 bg-white rounded border font-mono text-lg">
+                        <div className="flex justify-between items-center">
+                          <span className="select-all">{tempPassword}</span>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => {
+                              navigator.clipboard.writeText(tempPassword);
+                              toast({ title: "Copied to clipboard" });
+                            }}
+                          >
+                            📋 Copy
+                          </Button>
+                        </div>
+                      </div>
+                      <p className="text-xs text-green-700 mt-2">
+                        ✅ Share this with the user. They'll be required to change it on next login.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              <div className="flex gap-2 justify-end pt-4">
+                <Button variant="outline" onClick={() => { setSelectedUser(null); setActionType(null); setReason(''); setTempPassword(''); }}>
+                  {actionType === 'user-details' ? 'Close' : 'Cancel'}
+                </Button>
+                {actionType !== 'user-details' && (
+                  <Button 
+                    variant={actionType === 'reset-password' ? 'destructive' : 'default'} 
+                    onClick={handleAction}
+                    disabled={actionMutation.isPending}
+                  >
+                    {actionMutation.isPending ? 'Processing...' : 
+                     actionType === 'tier-management' ? 'Update Tier' : 
+                     actionType === 'reset-password' ? 'Generate Password' : 'Confirm'}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
