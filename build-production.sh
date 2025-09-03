@@ -41,10 +41,8 @@ find dist -name '*.js' -exec sed -i 's/\.js\.js/\.js/g' {} + 2>/dev/null || true
 find dist -name '*.js' -exec sed -i 's/\.js\.js/\.js/g' {} + 2>/dev/null || true
 
 # Build client for production
-if [ -d "client" ]; then
-  echo "🎨 Building client..."
-  npx vite build
-fi
+echo "🎨 Building client..."
+npx vite build
 
 echo "✅ Production build complete!"
 echo ""
