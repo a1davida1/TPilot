@@ -16,6 +16,16 @@ mv server/vite-stub.ts server/vite.ts 2>/dev/null || true
 echo "⚙️ Compiling TypeScript..."
 tsc -p tsconfig.json 2>&1 | grep -v "TS5097" | grep -v "vite.ts" | grep -v "Found 1 error" || true
 
+echo "📝 Ensuring index.js exists..."
+# Manually compile index.ts if it doesn't exist
+if [ ! -f dist/server/index.js ]; then
+    echo "  Creating dist/server/index.js..."
+    mkdir -p dist/server
+    npx tsx server/index.ts --emit-only --outfile dist/server/index.js 2>/dev/null || \
+    npx esbuild server/index.ts --outfile=dist/server/index.js --platform=node --target=node20 --format=cjs --bundle --packages=external --minify 2>/dev/null || \
+    cp server/index.ts dist/server/index.js
+fi
+
 # Restore vite.ts
 mv server/vite.ts server/vite-stub.ts 2>/dev/null || true
 mv server/vite.ts.bak server/vite.ts 2>/dev/null || true
