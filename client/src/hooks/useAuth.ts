@@ -85,6 +85,9 @@ export function useAuth() {
     try {
       await fetch('/api/auth/logout', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
         credentials: 'include'
       });
     } catch (error) {

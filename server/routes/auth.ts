@@ -239,12 +239,14 @@ router.get("/user", async (req: any, res) => {
 
 // Logout route
 router.post("/logout", (req: any, res) => {
-  if (req.logout) {
-    req.logout((err: any) => {
+  // Destroy session if it exists
+  if (req.session) {
+    req.session.destroy((err: any) => {
       if (err) {
-        logger.error('Logout error:', err);
+        logger.error('Session destruction error:', err);
         return res.status(500).json({ message: 'Error logging out' });
       }
+      res.clearCookie('connect.sid'); // Clear session cookie
       res.json({ message: 'Logged out successfully' });
     });
   } else {
