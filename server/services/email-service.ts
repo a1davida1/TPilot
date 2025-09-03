@@ -1,5 +1,6 @@
 import sgMail from '@sendgrid/mail';
 import { safeLog } from '../lib/logger-utils.js';
+import jwt from 'jsonwebtoken';
 
 // Initialize SendGrid
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
@@ -12,6 +13,12 @@ const FRONTEND_URL = process.env.FRONTEND_URL
 
 if (SENDGRID_API_KEY) {
   sgMail.setApiKey(SENDGRID_API_KEY);
+}
+
+// JWT configuration - validate once at startup
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('⚠️ JWT_SECRET is not configured - password reset emails will fail');
 }
 
 export const emailService = {
@@ -99,13 +106,15 @@ export const emailService = {
     console.log(`📧 FROM_EMAIL: ${FROM_EMAIL}`);
 
     // Generate reset token
-    const jwt = await import('jsonwebtoken');
-    const JWT_SECRET = process.env.JWT_SECRET;
     if (!JWT_SECRET) {
+      console.error('❌ JWT_SECRET not configured - cannot generate password reset token');
       throw new Error('JWT_SECRET environment variable is required for password reset tokens');
     }
     
-    const resetToken = jwt.default.sign(
+    console.log(`🔑 JWT_SECRET length: ${JWT_SECRET.length} characters`);
+    console.log(`🔑 First 5 chars of JWT_SECRET: ${JWT_SECRET.substring(0, 5)}...`);
+    
+    const resetToken = jwt.sign(
       { email: to, type: 'password-reset' },
       JWT_SECRET,
       { expiresIn: '1h' }

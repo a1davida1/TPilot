@@ -40,6 +40,8 @@ if (!JWT_SECRET) {
 }
 // Type assertion after validation
 const JWT_SECRET_VALIDATED: string = JWT_SECRET;
+console.log(`🔐 Auth JWT_SECRET loaded: ${JWT_SECRET.length} characters`);
+console.log(`🔐 Auth JWT_SECRET first 5 chars: ${JWT_SECRET.substring(0, 5)}...`);
 
 export function setupAuth(app: Express) {
   // Regular signup
