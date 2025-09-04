@@ -414,26 +414,28 @@ router.post("/resend-verification", authLimiter, async (req, res) => {
 
 // Request password reset route - REMOVED: Frontend now uses /api/auth/forgot-password
 
-// Verify reset token route
-router.post("/verify-reset-token", async (req, res) => {
-  try {
-    const { token } = req.body;
-    
-    if (!token) {
-      return res.status(400).json({ message: 'Token required' });
-    }
-    
-    const decoded = jwt.verify(decodeURIComponent(token), process.env.JWT_SECRET!) as any;
-    
-    if (decoded.type !== 'password-reset') {
-      return res.status(400).json({ message: 'Invalid token type' });
-    }
-    
-    res.json({ valid: true, email: decoded.email });
-  } catch (error) {
-    res.status(400).json({ message: 'Invalid or expired token' });
-  }
-});
+// [DEPRECATED - verify-reset-token]
+// This route is no longer used - verification is handled in main auth flow
+// // Verify reset token route
+// router.post("/verify-reset-token", async (req, res) => {
+//   try {
+//     const { token } = req.body;
+//     
+//     if (!token) {
+//       return res.status(400).json({ message: 'Token required' });
+//     }
+//     
+//     const decoded = jwt.verify(decodeURIComponent(token), process.env.JWT_SECRET!) as any;
+//     
+//     if (decoded.type !== 'password-reset') {
+//       return res.status(400).json({ message: 'Invalid token type' });
+//     }
+//     
+//     res.json({ valid: true, email: decoded.email });
+//   } catch (error) {
+//     res.status(400).json({ message: 'Invalid or expired token' });
+//   }
+// });
 
 // Complete password reset route - REMOVED: Frontend now uses /api/auth/reset-password
 

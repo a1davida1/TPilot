@@ -1,0 +1,392 @@
+ * SAFE INCREMENTAL AUTH ENHANCEMENT SCRIPT
+ * ==========================================
+ * Version: 1.0.0 (Safer, Step-by-Step Version)
+ * 
+ * This script implements enhancements ONE AT A TIME with:
+ * - Dry run mode by default
+ * - Rollback capability
+ * - Interactive confirmation
+ * - Testing hooks after each step
+ */
+
+const fs = require('fs').promises;
+const path = require('path');
+const readline = require('readline');
+
+// CONFIGURATION - SAFER DEFAULTS
+const CONFIG = {
+  dryRun: true,  // DEFAULT TO DRY RUN - Change to false to apply changes
+  interactive: true,  // Ask for confirmation at each step
+  testMode: true,  // Add test stubs after each enhancement
+  backupDir: './backups/auth-' + Date.now(),
+  logFile: './enhancement-log.txt',
+  rollbackFile: './rollback-commands.sh',
+};
+
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
+const ask = (question) => new Promise(resolve => rl.question(question, resolve));
+
+// Rollback tracking
+const ROLLBACK_COMMANDS = [];
+
+async function log(message, level = 'INFO') {
+  const timestamp = new Date().toISOString();
+  const entry = `[${timestamp}] [${level}] ${message}`;
+  console.log(entry);
+  await fs.appendFile(CONFIG.logFile, entry + '\n').catch(() => {});
+}
+
+// ============================================================================
+// ENHANCEMENT 1: SIMPLE RATE LIMITING (Minimal Dependencies)
+// ============================================================================
+
+const SIMPLE_RATE_LIMITER = `
+// Simple in-memory rate limiter - no Redis dependency
+const attemptStore = new Map();
+
+export function simpleRateLimiter(windowMs = 900000, maxAttempts = 3) {
+  return (req, res, next) => {
+    const key = req.body?.email || req.ip;
+    const now = Date.now();
+    
+    // Clean old entries
+    for (const [k, v] of attemptStore.entries()) {
+      if (v.resetTime < now) {
+        attemptStore.delete(k);
+      }
+    }
+    
+    const record = attemptStore.get(key) || { 
+      count: 0, 
+      resetTime: now + windowMs 
+    };
+    
+    if (record.resetTime < now) {
+      record.count = 0;
+      record.resetTime = now + windowMs;
+    }
+    
+    record.count++;
+    attemptStore.set(key, record);
+    
+    if (record.count > maxAttempts) {
+      const retryAfter = Math.ceil((record.resetTime - now) / 1000);
+      return res.status(429).json({
+        error: 'TOO_MANY_REQUESTS',
+        message: 'Too many attempts. Please try again later.',
+        retryAfter
+      });
+    }
+    
+    next();
+  };
+}
+
+// Export specific limiters
+export const verificationLimiter = simpleRateLimiter(15 * 60 * 1000, 3);  // 15 min, 3 attempts
+export const passwordResetLimiter = simpleRateLimiter(60 * 60 * 1000, 5); // 1 hour, 5 attempts
+`;
+
+// ============================================================================
+// ENHANCEMENT 2: BASIC METRICS (No Database Changes)
+// ============================================================================
+
+const BASIC_METRICS = `
+// Basic in-memory metrics - can be extended to database later
+class BasicAuthMetrics {
+  constructor() {
+    this.events = [];
+    this.maxEvents = 1000; // Keep last 1000 events in memory
+  }
+  
+  track(action, success, duration, error = null) {
+    const event = {
+      action,
+      success,
+      duration,
+      error,
+      timestamp: new Date().toISOString()
+    };
+    
+    this.events.push(event);
+    if (this.events.length > this.maxEvents) {
+      this.events.shift();
+    }
+    
+    // Log failures for monitoring
+    if (!success) {
+      console.log(\`⚠️ Auth failure: \${action} - \${error}\`);
+    }
+  }
+  
+  getSummary(hours = 24) {
+    const since = new Date(Date.now() - hours * 60 * 60 * 1000);
+    const recent = this.events.filter(e => new Date(e.timestamp) > since);
+    
+    const summary = {
+      total: recent.length,
+      successful: recent.filter(e => e.success).length,
+      failed: recent.filter(e => !e.success).length,
+      averageDuration: recent.reduce((sum, e) => sum + e.duration, 0) / recent.length || 0,
+      topErrors: {}
+    };
+    
+    // Count errors
+    recent.filter(e => e.error).forEach(e => {
+      summary.topErrors[e.error] = (summary.topErrors[e.error] || 0) + 1;
+    });
+    
+    return summary;
+  }
+}
+
+export const authMetrics = new BasicAuthMetrics();
+`;
+
+// ============================================================================
+// ENHANCEMENT 3: CLEAN DEPRECATED ROUTES (Safe Commenting)
+// ============================================================================
+
+async function commentOutDeprecatedRoutes() {
+  const filePath = './server/routes/auth.ts';
+  
+  if (!await fileExists(filePath)) {
+    await log('⚠️ File not found: ' + filePath, 'WARN');
+    return false;
+  }
+  
+  let content = await fs.readFile(filePath, 'utf8');
+  const original = content;
+  
+  // Comment out instead of delete
+  const patterns = [
+    { 
+      name: 'request-password-reset',
+      regex: /(router\.post\("\/request-password-reset"[\s\S]*?\}\);)/g 
+    },
+    { 
+      name: 'complete-reset',
+      regex: /(router\.post\("\/complete-reset"[\s\S]*?\}\);)/g 
+    },
+    { 
+      name: 'verify-reset-token',
+      regex: /(router\.post\("\/verify-reset-token"[\s\S]*?\}\);)/g 
+    }
+  ];
+  
+  for (const pattern of patterns) {
+    content = content.replace(pattern.regex, (match) => {
+      const lines = match.split('\n');
+      const commented = lines.map(line => '// ' + line).join('\n');
+      return `// [DEPRECATED - ${pattern.name}]\n${commented}`;
+    });
+  }
+  
+  if (CONFIG.dryRun) {
+    await log('🔍 DRY RUN: Would comment out deprecated routes', 'DRY_RUN');
+    return true;
+  }
+  
+  await fs.writeFile(filePath, content);
+  
+  // Add rollback command
+  ROLLBACK_COMMANDS.push(`cp ${CONFIG.backupDir}/${path.basename(filePath)} ${filePath}`);
+  
+  return content !== original;
+}
+
+// ============================================================================
+// MAIN IMPLEMENTATION - STEP BY STEP
+// ============================================================================
+
+async function fileExists(filePath) {
+  try {
+    await fs.access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function backup(filePath) {
+  if (CONFIG.dryRun) return true;
+  
+  try {
+    const content = await fs.readFile(filePath, 'utf8');
+    const backupPath = path.join(CONFIG.backupDir, path.basename(filePath));
+    await fs.mkdir(CONFIG.backupDir, { recursive: true });
+    await fs.writeFile(backupPath, content);
+    return true;
+  } catch (error) {
+    await log(`Failed to backup ${filePath}: ${error.message}`, 'ERROR');
+    return false;
+  }
+}
+
+async function runEnhancements() {
+  console.log('🔒 SAFE AUTH ENHANCEMENT SCRIPT');
+  console.log('================================');
+  console.log(`Mode: ${CONFIG.dryRun ? 'DRY RUN' : 'APPLY CHANGES'}`);
+  console.log(`Interactive: ${CONFIG.interactive ? 'YES' : 'NO'}`);
+  console.log('');
+  
+  const steps = [
+    {
+      name: 'Simple Rate Limiting',
+      description: 'Add in-memory rate limiting (no Redis required)',
+      action: async () => {
+        const filePath = './server/middleware/simple-rate-limit.ts';
+        
+        if (CONFIG.dryRun) {
+          await log('🔍 DRY RUN: Would create ' + filePath, 'DRY_RUN');
+          return true;
+        }
+        
+        await fs.mkdir(path.dirname(filePath), { recursive: true });
+        await fs.writeFile(filePath, SIMPLE_RATE_LIMITER);
+        ROLLBACK_COMMANDS.push(`rm ${filePath}`);
+        
+        await log('✅ Created simple rate limiter', 'SUCCESS');
+        return true;
+      },
+      test: 'Test by hitting /api/auth/resend-verification 4 times quickly'
+    },
+    {
+      name: 'Basic Metrics Tracking',
+      description: 'Add in-memory metrics (no database changes)',
+      action: async () => {
+        const filePath = './server/services/basic-metrics.ts';
+        
+        if (CONFIG.dryRun) {
+          await log('🔍 DRY RUN: Would create ' + filePath, 'DRY_RUN');
+          return true;
+        }
+        
+        await fs.mkdir(path.dirname(filePath), { recursive: true });
+        await fs.writeFile(filePath, BASIC_METRICS);
+        ROLLBACK_COMMANDS.push(`rm ${filePath}`);
+        
+        await log('✅ Created basic metrics tracker', 'SUCCESS');
+        return true;
+      },
+      test: 'Check console logs for auth failures'
+    },
+    {
+      name: 'Comment Deprecated Routes',
+      description: 'Comment out (not delete) deprecated routes',
+      action: commentOutDeprecatedRoutes,
+      test: 'Verify old routes return 404'
+    },
+    {
+      name: 'Add Admin Metrics Endpoint',
+      description: 'Single endpoint to view auth metrics',
+      action: async () => {
+        const code = `
+// Add to server/auth.ts
+app.get('/api/admin/auth-metrics', authenticateToken, async (req, res) => {
+  if (!req.user?.isAdmin) {
+    return res.status(403).json({ error: 'Admin only' });
+  }
+  const metrics = authMetrics.getSummary(24);
+  res.json(metrics);
+});`;
+        
+        if (CONFIG.dryRun) {
+          await log('🔍 DRY RUN: Would add admin metrics endpoint', 'DRY_RUN');
+          console.log(code);
+          return true;
+        }
+        
+        // In real implementation, you'd modify the file
+        await log('📝 Add this to server/auth.ts:', 'TODO');
+        console.log(code);
+        return true;
+      },
+      test: 'GET /api/admin/auth-metrics as admin user'
+    }
+  ];
+  
+  // Execute steps
+  for (let i = 0; i < steps.length; i++) {
+    const step = steps[i];
+    console.log(`\n📝 Step ${i + 1}/${steps.length}: ${step.name}`);
+    console.log(`   ${step.description}`);
+    
+    if (CONFIG.interactive) {
+      const answer = await ask('   Proceed? (y/n/skip): ');
+      if (answer.toLowerCase() === 'skip' || answer.toLowerCase() === 's') {
+        console.log('   ⏭️  Skipped');
+        continue;
+      }
+      if (answer.toLowerCase() !== 'y') {
+        console.log('   ❌ Cancelled');
+        break;
+      }
+    }
+    
+    try {
+      const result = await step.action();
+      if (result) {
+        console.log(`   ✅ Complete`);
+        if (step.test) {
+          console.log(`   🧪 Test: ${step.test}`);
+        }
+      } else {
+        console.log(`   ⚠️  No changes needed`);
+      }
+    } catch (error) {
+      console.log(`   ❌ Error: ${error.message}`);
+      
+      if (CONFIG.interactive) {
+        const answer = await ask('   Continue with next step? (y/n): ');
+        if (answer.toLowerCase() !== 'y') {
+          break;
+        }
+      }
+    }
+  }
+  
+  // Save rollback script
+  if (ROLLBACK_COMMANDS.length > 0 && !CONFIG.dryRun) {
+    const rollbackScript = `#!/bin/bash
+# Rollback script for auth enhancements
+# Generated: ${new Date().toISOString()}
+
+echo "Rolling back auth enhancements..."
+${ROLLBACK_COMMANDS.join('\n')}
+echo "Rollback complete!"
+`;
+    await fs.writeFile(CONFIG.rollbackFile, rollbackScript);
+    await fs.chmod(CONFIG.rollbackFile, '755');
+    console.log(`\n🔄 Rollback script saved: ${CONFIG.rollbackFile}`);
+  }
+  
+  // Summary
+  console.log('\n' + '='.repeat(50));
+  console.log('SUMMARY');
+  console.log('='.repeat(50));
+  
+  if (CONFIG.dryRun) {
+    console.log('🔍 DRY RUN COMPLETE - No changes were made');
+    console.log('To apply changes, set dryRun: false in CONFIG');
+  } else {
+    console.log('✅ Enhancements applied successfully!');
+    console.log('\n📝 Next Steps:');
+    console.log('1. Review the changes in your git diff');
+    console.log('2. Test each enhancement using the provided test instructions');
+    console.log('3. If issues occur, run: ./rollback-commands.sh');
+    console.log('4. Commit changes once verified');
+  }
+  
+  rl.close();
+}
+
+// Run the script
+runEnhancements().catch(error => {
+  console.error('Fatal error:', error);
+  process.exit(1);
+});

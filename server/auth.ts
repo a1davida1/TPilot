@@ -9,6 +9,8 @@ import { z } from 'zod';
 import { authLimiter } from './middleware/security.js';
 import { safeLog, redactUserData } from './lib/logger-utils.js';
 import { FRONTEND_URL } from './config.js';
+import { verificationLimiter, passwordResetLimiter, loginLimiter, signupLimiter } from './middleware/simple-rate-limit.js';
+import { authMetrics } from './services/basic-metrics.js';
 
 // Auth validation schemas
 const signupSchema = z.object({
@@ -44,7 +46,8 @@ const JWT_SECRET_VALIDATED: string = JWT_SECRET;
 
 export function setupAuth(app: Express) {
   // Regular signup
-  app.post('/api/auth/signup', authLimiter, async (req, res) => {
+  app.post('/api/auth/signup', signupLimiter, async (req, res) => {
+    const startTime = Date.now();
     try {
       // Validate input
       const validationResult = signupSchema.safeParse(req.body);
@@ -168,7 +171,8 @@ export function setupAuth(app: Express) {
   });
 
   // Regular login
-  app.post('/api/auth/login', authLimiter, async (req, res) => {
+  app.post('/api/auth/login', loginLimiter, async (req, res) => {
+    const startTime = Date.now();
     try {
       // Validate input
       const validationResult = loginSchema.safeParse(req.body);
@@ -765,8 +769,47 @@ export function setupAuth(app: Express) {
     }
   });
 
+  // Admin metrics endpoint
+  app.get('/api/admin/auth-metrics', async (req: any, res) => {
+    try {
+      // Check if user is authenticated
+      let token = null;
+      if (req.cookies && req.cookies.authToken) {
+        token = req.cookies.authToken;
+      } else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+        token = req.headers.authorization.substring(7);
+      }
+      
+      if (!token) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      // Verify token and check admin status
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET_VALIDATED) as any;
+        if (!decoded.isAdmin && decoded.role !== 'admin') {
+          return res.status(403).json({ error: 'Admin access required' });
+        }
+      } catch {
+        return res.status(401).json({ error: 'Invalid authentication token' });
+      }
+      
+      // Get metrics summary
+      const metrics = authMetrics.getSummary(24);
+      const recentEvents = authMetrics.getRecentEvents(20);
+      
+      res.json({
+        summary: metrics,
+        recentEvents
+      });
+    } catch (error) {
+      safeLog('error', 'Admin metrics error:', { error: error.message });
+      res.status(500).json({ error: 'Error fetching metrics' });
+    }
+  });
+
   // Resend verification email route
-  app.post('/api/auth/resend-verification', authLimiter, async (req, res) => {
+  app.post('/api/auth/resend-verification', verificationLimiter, async (req, res) => {
     try {
       const { email } = req.body;
       
