@@ -22,6 +22,13 @@ export function useAuth() {
     }
   );
 
+  // Check if we're on a public page that doesn't need auth
+  const isPublicPage = () => {
+    const path = window.location.pathname;
+    const publicPaths = ['/forgot-password', '/reset-password'];
+    return publicPaths.includes(path);
+  };
+
   const { data: user, isLoading, error, refetch } = useQuery<User>({
     queryKey: ['/api/auth/user', token],
     queryFn: async () => {
@@ -63,7 +70,7 @@ export function useAuth() {
       return null;
     },
     retry: false,
-    enabled: true,
+    enabled: !isPublicPage(), // Disable auth query on public pages
     refetchOnWindowFocus: false,
     refetchInterval: false,
   });
