@@ -1,0 +1,24 @@
+EMAIL WORKFLOW CHANGES - September 4, 2025
+===========================================
+
+Files Modified:
+---------------
+
+• server/services/email-service.ts
+  - Updated verification email URL from /verify-email to /email-verification
+  - Replaced local FRONTEND_URL declaration with import from centralized config
+
+• server/config.ts (NEW FILE)
+  - Created centralized FRONTEND_URL configuration
+  - Handles production vs development URL logic in one place
+
+• server/auth.ts
+  - Added import for FRONTEND_URL from config.ts
+  - Replaced all local frontendUrl declarations with centralized FRONTEND_URL
+  - Removed duplicate app.post('/api/auth/reset-password') handler (lines 407-457)
+  - Kept only the later, more complete implementation
+
+Summary:
+--------
+All email workflows now use consistent /email-verification routing and centralized
+FRONTEND_URL configuration for better maintainability.

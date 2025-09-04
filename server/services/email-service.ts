@@ -1,15 +1,11 @@
 import sgMail from '@sendgrid/mail';
 import { safeLog } from '../lib/logger-utils.js';
 import jwt from 'jsonwebtoken';
+import { FRONTEND_URL } from '../config.js';
 
 // Initialize SendGrid
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@thottopilot.com';
-// Use configured production URL first, fallback to Replit domain only in development
-const FRONTEND_URL = process.env.FRONTEND_URL 
-  || (process.env.NODE_ENV === 'development' && process.env.REPLIT_DOMAINS 
-      ? `https://${process.env.REPLIT_DOMAINS}` 
-      : 'https://thottopilot.com');
 
 // Log deployment environment detection
 if (process.env.REPLIT_DEPLOYMENT === '1') {
@@ -53,7 +49,7 @@ export const emailService = {
       return;
     }
 
-    const verificationUrl = `${FRONTEND_URL}/verify-email?token=${token}`;
+    const verificationUrl = `${FRONTEND_URL}/email-verification?token=${token}`;
     console.log('📧 Verification URL generated:', verificationUrl);
     
     const msg = {

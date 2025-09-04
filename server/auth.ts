@@ -8,6 +8,7 @@ import crypto from 'crypto';
 import { z } from 'zod';
 import { authLimiter } from './middleware/security.js';
 import { safeLog, redactUserData } from './lib/logger-utils.js';
+import { FRONTEND_URL } from './config.js';
 
 // Auth validation schemas
 const signupSchema = z.object({
@@ -403,58 +404,6 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // Reset password with token
-  app.post('/api/auth/reset-password', authLimiter, async (req, res) => {
-    try {
-      const { token, newPassword } = req.body;
-      
-      if (!token || !newPassword) {
-        return res.status(400).json({ message: 'Token and new password are required' });
-      }
-
-      // Decode the token (it might be URL encoded from the frontend)
-      const decodedToken = decodeURIComponent(token);
-      
-      // Verify token
-      let decoded: any;
-      try {
-        decoded = jwt.verify(decodedToken, JWT_SECRET_VALIDATED) as any;
-      } catch (verifyError: any) {
-        if (verifyError.name === 'TokenExpiredError') {
-          return res.status(400).json({ message: 'Reset link has expired. Please request a new one.' });
-        }
-        if (verifyError.name === 'JsonWebTokenError') {
-          return res.status(400).json({ message: 'Invalid reset token. Please request a new reset link.' });
-        }
-        return res.status(400).json({ message: 'Invalid or expired reset token' });
-      }
-      
-      if (decoded.type !== 'password-reset') {
-        return res.status(400).json({ message: 'Invalid reset token' });
-      }
-
-      // Find user and update password
-      const user = await storage.getUserByEmail(decoded.email);
-      
-      if (!user) {
-        return res.status(400).json({ message: 'Invalid reset token' });
-      }
-
-      // Hash new password
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
-      
-      // Update user password (would need to add this method to storage)
-      await storage.updateUserPassword(user.id, hashedPassword);
-
-      res.json({ message: 'Password reset successfully' });
-    } catch (error) {
-      if (error instanceof jwt.TokenExpiredError) {
-        return res.status(400).json({ message: 'Reset link has expired' });
-      }
-      safeLog('error', 'Password reset failed', { error: error.message });
-      res.status(500).json({ message: 'Error resetting password' });
-    }
-  });
 
   // Email service health check endpoint
   app.get('/api/auth/email-status', (req, res) => {
@@ -655,8 +604,7 @@ export function setupAuth(app: Express) {
       console.log('  ✅ Token deleted successfully');
       
       // Redirect to email verification page with success message
-      const frontendUrl = process.env.FRONTEND_URL || (process.env.NODE_ENV === 'production' ? 'https://thottopilot.com' : 'http://localhost:5000');
-      const redirectUrl = `${frontendUrl}/email-verification?verified=true&email=${encodeURIComponent(user?.email || '')}`;
+      const redirectUrl = `${FRONTEND_URL}/email-verification?verified=true&email=${encodeURIComponent(user?.email || '')}`;
       
       console.log('✅ EMAIL VERIFICATION SUCCESSFUL');
       console.log('  ├─ User:', user?.username || 'Unknown');
@@ -671,8 +619,7 @@ export function setupAuth(app: Express) {
       console.log('  └─ Time:', new Date().toISOString());
       
       safeLog('error', 'Email verification error:', { error: error.message });
-      const frontendUrl = process.env.FRONTEND_URL || (process.env.NODE_ENV === 'production' ? 'https://thottopilot.com' : 'http://localhost:5000');
-      res.redirect(`${frontendUrl}/email-verification?error=verification_failed`);
+      res.redirect(`${FRONTEND_URL}/email-verification?error=verification_failed`);
     }
   });
 
