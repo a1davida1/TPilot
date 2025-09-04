@@ -319,7 +319,7 @@ export function AdminPortal() {
 
         {/* FEATURE 3: User Management Tab */}
         <TabsContent value="user-management" className="space-y-4">
-          <UserManagementTab authenticatedRequest={authenticatedRequest} users={users} />
+          <UserManagementTab authenticatedRequest={authenticatedRequest} users={users || []} />
         </TabsContent>
 
         {/* FEATURE 4: Content Moderation Tab */}
