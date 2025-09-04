@@ -112,7 +112,7 @@ export function AdminPortal() {
   });
 
   // Fetch all users
-  const { data: users, isLoading: usersLoading, error: usersError } = useQuery({
+  const { data: users, isLoading: usersLoading, error: usersError } = useQuery<any[]>({
     queryKey: ['/api/admin/users'],
     enabled: !!token
   });
