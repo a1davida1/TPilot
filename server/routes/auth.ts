@@ -380,7 +380,7 @@ router.get("/verify-email", async (req, res) => {
       console.log('Found user:', user.email, 'Current verification status:', user.emailVerified);
 
       // Update the emailVerified field using storage method
-      await storage.updateUserEmailVerified(decoded.email, true);
+      await storage.updateUserEmailVerified(user.id, true);
 
       console.log('Email verified successfully for:', decoded.email);
 

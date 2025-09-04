@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,45 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
   const [showResendVerification, setShowResendVerification] = useState(false);
   const [resendEmail, setResendEmail] = useState('');
   const [isResending, setIsResending] = useState(false);
+
+  // Add URL parameter handling for email verification
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const verified = urlParams.get('verified');
+    const verificationError = urlParams.get('error');
+    const verifiedEmail = urlParams.get('email');
+    
+    if (verified === 'true') {
+      toast({
+        title: "✅ Email Verified!",
+        description: `Your email ${verifiedEmail || ''} has been verified. You can now login.`,
+        duration: 5000,
+      });
+      // Clear URL params
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+    
+    if (verificationError) {
+      const errorMessages: Record<string, string> = {
+        'missing_token': 'Verification link is invalid. Please request a new one.',
+        'invalid_token': 'Verification link has expired. Please request a new one.',
+        'invalid_token_type': 'Invalid verification link. Please request a new one.',
+        'user_not_found': 'Account not found. Please sign up first.',
+        'verification_failed': 'Verification failed. Please try again or contact support.'
+      };
+      
+      toast({
+        title: "❌ Verification Failed",
+        description: errorMessages[verificationError] || 'Verification failed. Please try again.',
+        variant: "destructive",
+        duration: 5000,
+      });
+      // Clear URL params
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [isOpen, toast]);
 
   // Reset mode when modal opens
   if (isOpen && mode !== initialMode && mode !== 'forgot-password') {
