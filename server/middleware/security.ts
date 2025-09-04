@@ -7,9 +7,9 @@ import winston from "winston";
 import dotenv from "dotenv";
 import crypto from "crypto";
 
-// Only load dotenv if NOT in Replit deployment
-// In Replit deployments, secrets are already available as env vars
-if (process.env.REPLIT_DEPLOYMENT !== '1') {
+// Only load dotenv if NOT in production
+// In production deployments, secrets are already available as env vars
+if (process.env.NODE_ENV !== 'production') {
   dotenv.config();
 }
 
