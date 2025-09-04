@@ -8,7 +8,8 @@ import { emailService } from '../services/email-service.js';
 
 const router = express.Router();
 
-// Signup route with rate limiting
+// Signup route - DEPRECATED: Frontend now uses /api/auth/signup in server/auth.ts  
+// This route is kept for backward compatibility but should not be used for new implementations
 router.post("/signup", authLimiter, async (req, res) => {
   try {
     const { email, password, username } = req.body;
@@ -87,7 +88,8 @@ router.post("/signup", authLimiter, async (req, res) => {
   }
 });
 
-// Login route with rate limiting (unused - handled by server/auth.ts)
+// Login route - DEPRECATED: Frontend now uses /api/auth/login in server/auth.ts
+// This route is kept for backward compatibility but should not be used for new implementations
 router.post("/login", authLimiter, async (req, res) => {
   try {
     const { email, username, password } = req.body;

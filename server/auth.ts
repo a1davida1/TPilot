@@ -348,36 +348,56 @@ export function setupAuth(app: Express) {
     try {
       const { email } = req.body;
       
-      // Production debugging
-      console.log('🔍 Password reset request received for:', email);
-      console.log('🔍 SENDGRID_API_KEY exists:', !!process.env.SENDGRID_API_KEY);
-      console.log('🔍 Email service configured:', emailService.isEmailServiceConfigured);
+      console.log('🔐 PASSWORD RESET WORKFLOW STARTED');
+      console.log('  ├─ 📧 Email received:', email ? email.replace(/(.{2})(.*)(@.*)/, '$1***$3') : 'No email');
+      console.log('  ├─ 🌐 Request IP:', req.ip || 'Unknown');
+      console.log('  ├─ 🔑 SendGrid configured:', !!process.env.SENDGRID_API_KEY);
+      console.log('  ├─ ✉️ Email service ready:', emailService.isEmailServiceConfigured);
+      console.log('  └─ 📅 Timestamp:', new Date().toISOString());
       
       if (!email) {
+        console.log('❌ PASSWORD RESET FAILED: No email provided');
         return res.status(400).json({ message: 'Email is required' });
       }
 
       // Find user by email
+      console.log('  🔍 Looking up user by email...');
       const user = await storage.getUserByEmail(email);
       
       if (!user) {
-        console.log('🔍 User not found for email:', email);
+        console.log('  ⚠️ User not found (security: returning generic message)');
+        console.log('  └─ Email:', email.replace(/(.{2})(.*)(@.*)/, '$1***$3'));
         // Don't reveal if email exists for security
         return res.json({ message: 'If the email exists, a reset link has been sent' });
       }
 
-      console.log('🔍 User found:', user.username, 'attempting to send email...');
+      console.log('  ✅ User found');
+      console.log('  ├─ Username:', user.username);
+      console.log('  ├─ User ID:', user.id);
+      console.log('  └─ Email verified:', user.emailVerified || false);
       
       // Send password reset email
       if (user.email) {
-        console.log('🔍 Calling emailService.sendPasswordResetEmail...');
+        console.log('  📤 Preparing to send password reset email...');
+        console.log('  ├─ To:', user.email.replace(/(.{2})(.*)(@.*)/, '$1***$3'));
+        console.log('  └─ Username:', user.username);
+        
         await emailService.sendPasswordResetEmail(user.email, user.username);
-        console.log('🔍 Email service call completed');
+        
+        console.log('  ✅ Password reset email sent successfully');
+        console.log('  └─ Check email service logs for delivery status');
       }
 
+      console.log('✅ PASSWORD RESET REQUEST COMPLETED');
+      console.log('  └─ Response: Generic success message (security)');
+      
       res.json({ message: 'If the email exists, a reset link has been sent' });
     } catch (error) {
-      console.error('❌ Password reset failed:', error.message);
+      console.log('❌ PASSWORD RESET ERROR:', error.message);
+      console.log('  ├─ Stack:', error.stack?.split('\n')[1]?.trim() || 'No stack trace');
+      console.log('  ├─ Email:', req.body?.email ? req.body.email.replace(/(.{2})(.*)(@.*)/, '$1***$3') : 'No email');
+      console.log('  └─ Time:', new Date().toISOString());
+      
       safeLog('error', 'Password reset request failed', { error: error.message });
       res.status(500).json({ message: 'Error processing password reset' });
     }
@@ -583,37 +603,73 @@ export function setupAuth(app: Express) {
     try {
       const { token } = req.query;
       
+      console.log('📧 EMAIL VERIFICATION WORKFLOW STARTED');
+      console.log('  ├─ 🔑 Token received:', token ? `${String(token).substring(0, 8)}...` : 'No token');
+      console.log('  ├─ 🌐 Request origin:', req.headers.origin || 'Unknown');
+      console.log('  └─ 📅 Timestamp:', new Date().toISOString());
+      
       if (!token) {
+        console.log('❌ EMAIL VERIFICATION FAILED: No token provided');
         return res.status(400).json({ message: 'Verification token required' });
       }
 
       // Get the verification token from database
+      console.log('  🔍 Looking up token in database...');
       const verificationToken = await storage.getVerificationToken(token as string);
       
       if (!verificationToken) {
+        console.log('❌ EMAIL VERIFICATION FAILED: Token not found in database');
+        console.log('  └─ Token:', String(token).substring(0, 8), '...');
         return res.status(400).json({ message: 'Invalid or expired verification token' });
       }
       
+      console.log('  ✅ Token found');
+      console.log('  ├─ User ID:', verificationToken.userId);
+      console.log('  ├─ Created:', 'N/A'); // createdAt not tracked in verification tokens
+      console.log('  └─ Expires:', new Date(verificationToken.expiresAt).toISOString());
+      
       // Check if token is expired
       if (new Date(verificationToken.expiresAt) < new Date()) {
+        console.log('❌ EMAIL VERIFICATION FAILED: Token expired');
+        console.log('  ├─ Expired at:', new Date(verificationToken.expiresAt).toISOString());
+        console.log('  └─ Current time:', new Date().toISOString());
         await storage.deleteVerificationToken(token as string);
         return res.status(400).json({ message: 'Verification token has expired' });
       }
 
       // Update user's email verification status
+      console.log('  📝 Updating user email verification status...');
       await storage.updateUserEmailVerified(verificationToken.userId, true);
+      console.log('  ✅ User email marked as verified');
       
       // Get user data for email
+      console.log('  🔍 Fetching user data...');
       const user = await storage.getUser(verificationToken.userId);
+      console.log('  ✅ User data retrieved');
+      console.log('  ├─ Username:', user?.username || 'Unknown');
+      console.log('  └─ Email:', user?.email ? user.email.replace(/(.{2})(.*)(@.*)/, '$1***$3') : 'No email');
       
       // Delete the used token
+      console.log('  🗑️ Deleting used verification token...');
       await storage.deleteVerificationToken(token as string);
+      console.log('  ✅ Token deleted successfully');
       
       // Redirect to email verification page with success message
       const frontendUrl = process.env.FRONTEND_URL || (process.env.NODE_ENV === 'production' ? 'https://thottopilot.com' : 'http://localhost:5000');
-      res.redirect(`${frontendUrl}/email-verification?verified=true&email=${encodeURIComponent(user?.email || '')}`);
+      const redirectUrl = `${frontendUrl}/email-verification?verified=true&email=${encodeURIComponent(user?.email || '')}`;
+      
+      console.log('✅ EMAIL VERIFICATION SUCCESSFUL');
+      console.log('  ├─ User:', user?.username || 'Unknown');
+      console.log('  ├─ Email:', user?.email ? user.email.replace(/(.{2})(.*)(@.*)/, '$1***$3') : 'No email');
+      console.log('  └─ Redirecting to:', redirectUrl.replace(/email=[^&]*/, 'email=***'));
+      
+      res.redirect(redirectUrl);
       
     } catch (error) {
+      console.log('❌ EMAIL VERIFICATION ERROR:', error.message);
+      console.log('  ├─ Stack:', error.stack?.split('\n')[1]?.trim() || 'No stack trace');
+      console.log('  └─ Time:', new Date().toISOString());
+      
       safeLog('error', 'Email verification error:', { error: error.message });
       const frontendUrl = process.env.FRONTEND_URL || (process.env.NODE_ENV === 'production' ? 'https://thottopilot.com' : 'http://localhost:5000');
       res.redirect(`${frontendUrl}/email-verification?error=verification_failed`);
