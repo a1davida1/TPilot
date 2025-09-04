@@ -132,7 +132,33 @@ export function setupAuth(app: Express) {
           await emailService.sendVerificationEmail(user.email, user.username, verificationToken);
         }
 
-        res.json({ message: 'Verification email sent' });
+        // Generate auth token for immediate login (but email verification still required for full access)
+        const token = jwt.sign(
+          {
+            id: user.id,
+            userId: user.id,
+            username: user.username,
+            isAdmin: user.isAdmin,
+            role: user.role,
+            emailVerified: false
+          },
+          JWT_SECRET_VALIDATED,
+          { expiresIn: '24h' }
+        );
+
+        res.status(201).json({
+          message: 'User created successfully. Please check your email to verify your account.',
+          token,
+          user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            tier: user.tier,
+            isAdmin: user.isAdmin,
+            role: user.role,
+            emailVerified: false
+          }
+        });
       }
     } catch (error) {
       safeLog('error', 'Authentication signup failed', { error: error.message });
@@ -540,6 +566,90 @@ export function setupAuth(app: Express) {
     } catch (error) {
       safeLog('error', 'Password change failed', { error: error.message });
       res.status(500).json({ message: 'Error changing password' });
+    }
+  });
+
+  // Email verification route
+  app.get('/api/auth/verify-email', async (req, res) => {
+    try {
+      const { token } = req.query;
+      
+      if (!token) {
+        return res.status(400).json({ message: 'Verification token required' });
+      }
+
+      // Get the verification token from database
+      const verificationToken = await storage.getVerificationToken(token as string);
+      
+      if (!verificationToken) {
+        return res.status(400).json({ message: 'Invalid or expired verification token' });
+      }
+      
+      // Check if token is expired
+      if (new Date(verificationToken.expiresAt) < new Date()) {
+        await storage.deleteVerificationToken(token as string);
+        return res.status(400).json({ message: 'Verification token has expired' });
+      }
+
+      // Update user's email verification status
+      await storage.updateUserEmailVerified(verificationToken.userId, true);
+      
+      // Delete the used token
+      await storage.deleteVerificationToken(token as string);
+      
+      // Redirect to login with success message
+      const frontendUrl = process.env.FRONTEND_URL || (process.env.NODE_ENV === 'production' ? 'https://thottopilot.com' : 'http://localhost:5000');
+      res.redirect(`${frontendUrl}/?verified=true`);
+      
+    } catch (error) {
+      safeLog('error', 'Email verification error:', { error: error.message });
+      const frontendUrl = process.env.FRONTEND_URL || (process.env.NODE_ENV === 'production' ? 'https://thottopilot.com' : 'http://localhost:5000');
+      res.redirect(`${frontendUrl}/?verification_failed=true`);
+    }
+  });
+
+  // Password reset token verification route
+  app.post('/api/auth/reset-password', async (req, res) => {
+    try {
+      const { token, newPassword } = req.body;
+      
+      if (!token || !newPassword) {
+        return res.status(400).json({ message: 'Token and new password required' });
+      }
+
+      // Get the verification token from database
+      const resetToken = await storage.getVerificationToken(token);
+      
+      if (!resetToken) {
+        return res.status(400).json({ message: 'Invalid or expired reset token' });
+      }
+      
+      // Check if token is expired
+      if (new Date(resetToken.expiresAt) < new Date()) {
+        await storage.deleteVerificationToken(token);
+        return res.status(400).json({ message: 'Reset token has expired' });
+      }
+
+      // Validate new password
+      if (newPassword.length < 8) {
+        return res.status(400).json({ message: 'Password must be at least 8 characters long' });
+      }
+
+      // Hash the new password
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      
+      // Update password and mark email as verified
+      await storage.updateUserPassword(resetToken.userId, hashedPassword);
+      await storage.updateUserEmailVerified(resetToken.userId, true);
+      
+      // Delete the used token
+      await storage.deleteVerificationToken(token);
+      
+      res.json({ message: 'Password reset successful' });
+      
+    } catch (error) {
+      safeLog('error', 'Password reset error:', { error: error.message });
+      res.status(400).json({ message: 'Invalid or expired token' });
     }
   });
 
