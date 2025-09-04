@@ -25,7 +25,7 @@ export function useAuth() {
   // Check if we're on a public page that doesn't need auth
   const isPublicPage = () => {
     const path = window.location.pathname;
-    const publicPaths = ['/forgot-password', '/reset-password'];
+    const publicPaths = ['/forgot-password', '/reset-password', '/email-verification', '/verify-email'];
     return publicPaths.includes(path);
   };
 

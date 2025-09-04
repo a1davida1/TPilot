@@ -16,6 +16,7 @@ import { useOnboarding } from "@/hooks/useOnboarding";
 import NotFound from "@/pages/not-found";
 import ResetPasswordPage from "@/pages/reset-password";
 import ForgotPasswordPage from "@/pages/forgot-password";
+import EmailVerificationPage from "@/pages/email-verification";
 import ChangePasswordPage from "@/pages/change-password";
 import History from "@/pages/history";
 import Settings from "@/pages/settings";
@@ -132,6 +133,8 @@ function UnauthenticatedRoutes() {
       </Route>
       <Route path="/reset-password" component={ResetPasswordPage} />
       <Route path="/forgot-password" component={ForgotPasswordPage} />
+      <Route path="/email-verification" component={EmailVerificationPage} />
+      <Route path="/verify-email" component={EmailVerificationPage} />
       <Route path="/change-password" component={ChangePasswordPage} />
       <Route path="/caption-generator" component={CaptionGeneratorPage} />
       <Route path="/imageshield" component={ImageShieldPage} />
