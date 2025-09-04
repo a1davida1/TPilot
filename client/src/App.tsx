@@ -131,10 +131,9 @@ function UnauthenticatedRoutes() {
         <SEOOptimization {...seoConfigs.landing} />
         <LandingPage showLoginModal={true} loginModalMode="signup" />
       </Route>
+      <Route path="/email-verification" component={EmailVerificationPage} />
       <Route path="/reset-password" component={ResetPasswordPage} />
       <Route path="/forgot-password" component={ForgotPasswordPage} />
-      <Route path="/email-verification" component={EmailVerificationPage} />
-      <Route path="/verify-email" component={EmailVerificationPage} />
       <Route path="/change-password" component={ChangePasswordPage} />
       <Route path="/caption-generator" component={CaptionGeneratorPage} />
       <Route path="/imageshield" component={ImageShieldPage} />
