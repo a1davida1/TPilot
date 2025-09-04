@@ -351,55 +351,63 @@ router.get("/verify-email", async (req, res) => {
     }
 
     console.log('Processing email verification token...');
-
-    // Verify and decode the token
-    let decoded: any;
-    try {
-      decoded = jwt.verify(token as string, process.env.JWT_SECRET!);
-      console.log('Token decoded successfully for email:', decoded.email);
-    } catch (error) {
-      console.error('Token verification failed:', error);
-      return res.redirect(`${process.env.FRONTEND_URL || 'https://thottopilot.com'}/login?error=invalid_token`);
-    }
-
-    // Check token type
-    if (decoded.type !== 'email-verification') {
-      console.error('Invalid token type:', decoded.type);
-      return res.redirect(`${process.env.FRONTEND_URL || 'https://thottopilot.com'}/login?error=invalid_token_type`);
+    
+    // Check if it's a JWT token (contains dots) or database token (hex string)
+    const isJWT = (token as string).includes('.');
+    
+    let userId: number;
+    
+    if (isJWT) {
+      // JWT token from new signup flow
+      try {
+        const decoded = jwt.verify(token as string, process.env.JWT_SECRET!) as any;
+        if (decoded.type !== 'email-verification') {
+          return res.redirect(`${process.env.FRONTEND_URL || 'https://thottopilot.com'}/login?error=invalid_token_type`);
+        }
+        userId = decoded.userId;
+      } catch (error) {
+        console.error('JWT verification failed:', error);
+        return res.redirect(`${process.env.FRONTEND_URL || 'https://thottopilot.com'}/login?error=invalid_token`);
+      }
+    } else {
+      // Database token from auth.ts flow
+      const verificationToken = await storage.getVerificationToken(token as string);
+      
+      if (!verificationToken) {
+        console.error('Token not found in database');
+        return res.redirect(`${process.env.FRONTEND_URL || 'https://thottopilot.com'}/login?error=invalid_token`);
+      }
+      
+      // Check if expired
+      if (new Date(verificationToken.expiresAt) < new Date()) {
+        await storage.deleteVerificationToken(token as string);
+        return res.redirect(`${process.env.FRONTEND_URL || 'https://thottopilot.com'}/login?error=expired_token`);
+      }
+      
+      userId = verificationToken.userId;
+      
+      // Delete the used token
+      await storage.deleteVerificationToken(token as string);
     }
 
     // Update user's email verification status
+    await storage.updateUserEmailVerified(userId, true);
+    
+    const user = await storage.getUser(userId);
+    
+    console.log('Email verified successfully for user:', userId);
+
+    // Send welcome email
     try {
-      const user = await storage.getUserByEmail(decoded.email);
-      
-      if (!user) {
-        console.error('User not found for email:', decoded.email);
-        return res.redirect(`${process.env.FRONTEND_URL || 'https://thottopilot.com'}/login?error=user_not_found`);
+      if (user?.email) {
+        await emailService.sendWelcomeEmail(user.email, user.username || 'User');
       }
-
-      console.log('Found user:', user.email, 'Current verification status:', user.emailVerified);
-
-      // Update the emailVerified field using storage method
-      await storage.updateUserEmailVerified(user.id, true);
-
-      console.log('Email verified successfully for:', decoded.email);
-
-      // Send welcome email after verification
-      try {
-        if (user.email) {
-          await emailService.sendWelcomeEmail(user.email, user.username || 'User');
-        }
-      } catch (emailError) {
-        console.error('Failed to send welcome email:', emailError);
-      }
-
-      // Redirect with success message
-      return res.redirect(`${process.env.FRONTEND_URL || 'https://thottopilot.com'}/login?verified=true&email=${encodeURIComponent(decoded.email)}`);
-      
-    } catch (dbError) {
-      console.error('Database update failed:', dbError);
-      return res.redirect(`${process.env.FRONTEND_URL || 'https://thottopilot.com'}/login?error=verification_failed`);
+    } catch (emailError) {
+      console.error('Failed to send welcome email:', emailError);
     }
+
+    // Redirect with success message
+    return res.redirect(`${process.env.FRONTEND_URL || 'https://thottopilot.com'}/login?verified=true&email=${encodeURIComponent(user?.email || '')}`);
     
   } catch (error) {
     console.error('Email verification error:', error);
