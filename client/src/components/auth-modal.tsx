@@ -49,13 +49,35 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
       const requestData = mode === 'login' 
         ? { username: data.username, password: data.password }
         : { username: data.username, email: data.email, password: data.password };
-        
-      return apiRequest('POST', endpoint, requestData);
-    },
-    onSuccess: async (response: Response) => {
-      // Check for temporary password status (202 response)
+      
+      // Handle response errors properly for email verification
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestData)
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        const error = new Error(responseData.message || 'Authentication failed');
+        (error as any).code = responseData.code;
+        (error as any).email = responseData.email;
+        throw error;
+      }
+
+      // Mark password change requirement in response data
       if (response.status === 202) {
-        const data = await response.json();
+        responseData.mustChangePassword = true;
+      }
+
+      return responseData;
+    },
+    onSuccess: async (data: any) => {
+      // Check for temporary password status (202 response) - handled in mutationFn
+      if (data.mustChangePassword) {
         toast({
           title: 'Password Change Required',
           description: 'You must change your temporary password before continuing.'
@@ -66,8 +88,6 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
         window.location.href = `/change-password?userId=${data.userId}`;
         return;
       }
-
-      const data = await response.json();
       
       if (mode === 'login') {
         toast({
@@ -94,12 +114,34 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
         setFormData({ username: '', email: '', password: '' });
       }
     },
-    onError: (error: any) => {
-      toast({
-        title: 'Error',
-        description: error.message || 'Authentication failed. Please try again.',
-        variant: 'destructive'
-      });
+    onError: async (error: any) => {
+      // Handle email not verified error specially
+      if (error.code === 'EMAIL_NOT_VERIFIED') {
+        toast({
+          title: 'Email Not Verified',
+          description: 'Please verify your email before logging in.',
+          variant: 'destructive',
+          action: (
+            <Button
+              size="sm"
+              onClick={() => {
+                if (error.email) {
+                  resendVerificationMutation.mutate(error.email);
+                }
+              }}
+              className="bg-gradient-to-r from-purple-600 to-pink-600"
+            >
+              Resend
+            </Button>
+          )
+        });
+      } else {
+        toast({
+          title: 'Error',
+          description: error.message || 'Authentication failed. Please try again.',
+          variant: 'destructive'
+        });
+      }
     }
   });
 
@@ -132,6 +174,38 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
       toast({
         title: 'Error',
         description: error.message || 'Failed to send reset email. Please try again.',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const resendVerificationMutation = useMutation({
+    mutationFn: async (email: string) => {
+      const response = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to resend verification email');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Verification Email Sent',
+        description: 'Please check your inbox and spam folder.'
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to resend verification email. Please try again.',
         variant: 'destructive'
       });
     }

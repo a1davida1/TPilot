@@ -243,7 +243,11 @@ export function setupAuth(app: Express) {
       }
 
       if (!user.emailVerified) {
-        return res.status(403).json({ message: 'Email not verified' });
+        return res.status(403).json({ 
+          message: 'Email not verified',
+          code: 'EMAIL_NOT_VERIFIED', // Add error code for frontend
+          email: user.email // Include email so frontend can offer resend
+        });
       }
 
       // Check if user must change password (temporary password)
@@ -292,42 +296,6 @@ export function setupAuth(app: Express) {
     } catch (error) {
       safeLog('error', 'Authentication login failed', { error: error.message });
       res.status(500).json({ message: 'Error logging in' });
-    }
-  });
-
-  // Email verification
-  app.get('/api/auth/verify-email', authLimiter, async (req, res) => {
-    try {
-      const token = req.query.token as string;
-      if (!token) {
-        return res.status(400).json({ message: 'Token is required' });
-      }
-
-      const record = await storage.getVerificationToken(token);
-      if (!record || record.expiresAt < new Date()) {
-        return res.status(400).json({ message: 'Invalid or expired token' });
-      }
-
-      // Get user details for welcome email
-      const user = await storage.getUser(record.userId);
-      if (!user) {
-        return res.status(400).json({ message: 'User not found' });
-      }
-
-      // In the email verification endpoint, after marking email as verified:
-      await storage.updateUserEmailVerified(user.id, true);
-      await storage.deleteVerificationToken(token);
-
-      // Send welcome email
-      if (user.email) {
-        await emailService.sendWelcomeEmail(user.email, user.username);
-      }
-
-      // Redirect to success page instead of returning JSON
-      res.redirect('/dashboard?verified=true&welcome=true');
-    } catch (error) {
-      safeLog('error', 'Email verification failed', { error: error.message });
-      res.status(500).json({ message: 'Error verifying email' });
     }
   });
 
@@ -650,6 +618,49 @@ export function setupAuth(app: Express) {
     } catch (error) {
       safeLog('error', 'Password reset error:', { error: error.message });
       res.status(400).json({ message: 'Invalid or expired token' });
+    }
+  });
+
+  // Resend verification email route
+  app.post('/api/auth/resend-verification', authLimiter, async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: 'Email required' });
+      }
+
+      // Find user
+      const user = await storage.getUserByEmail(email);
+      
+      if (!user) {
+        // Don't reveal if email exists or not for security
+        return res.json({ message: 'If that email exists, we sent a verification link' });
+      }
+
+      // Check if already verified
+      if (user.emailVerified) {
+        return res.status(400).json({ message: 'Email already verified' });
+      }
+
+      // Generate new verification token
+      const verificationToken = crypto.randomBytes(32).toString('hex');
+      await storage.createVerificationToken({
+        userId: user.id,
+        token: verificationToken,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+      });
+
+      // Send verification email
+      await emailService.sendVerificationEmail(user.email!, user.username || 'User', verificationToken);
+
+      res.json({ 
+        message: 'Verification email sent. Please check your inbox and spam folder.' 
+      });
+
+    } catch (error) {
+      safeLog('error', 'Resend verification error:', { error: error.message });
+      res.status(500).json({ message: 'Error sending verification email' });
     }
   });
 
