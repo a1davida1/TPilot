@@ -7,8 +7,11 @@ import winston from "winston";
 import dotenv from "dotenv";
 import crypto from "crypto";
 
-// Load environment variables
-dotenv.config();
+// Only load dotenv if NOT in Replit deployment
+// In Replit deployments, secrets are already available as env vars
+if (process.env.REPLIT_DEPLOYMENT !== '1') {
+  dotenv.config();
+}
 
 // ==========================================
 // VALIDATE ENVIRONMENT VARIABLES
