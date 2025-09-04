@@ -49,13 +49,23 @@ router.post("/signup", authLimiter, async (req, res) => {
     );
 
     // Send verification email
+    console.log('🔐 AUTH WORKFLOW: Preparing to send verification email');
+    console.log('🔐 User ID:', newUser.id);
+    console.log('🔐 Email:', newUser.email);
+    console.log('🔐 Username:', newUser.username);
+    console.log('🔐 Token generated:', !!verificationToken);
+    
     try {
       if (newUser.email) {
+        console.log('🔐 AUTH WORKFLOW: Calling email service for verification email');
         await emailService.sendVerificationEmail(newUser.email, newUser.username || 'User', verificationToken);
-        console.log('Verification email sent to:', newUser.email);
+        console.log('✅ AUTH WORKFLOW: Verification email workflow completed successfully');
+      } else {
+        console.log('❌ AUTH WORKFLOW: No email address available for user');
       }
     } catch (emailError) {
-      console.error('Failed to send verification email:', emailError);
+      console.error('❌ AUTH WORKFLOW: Verification email send failed');
+      console.error('🔐 Email error details:', emailError);
       // Continue anyway - user can request resend
     }
 
@@ -343,74 +353,109 @@ router.post("/logout", (req: any, res) => {
 // Email verification route
 router.get("/verify-email", async (req, res) => {
   try {
+    console.log('🔐 EMAIL VERIFICATION: Starting verification process');
     const { token } = req.query;
+    console.log('🔐 Token received:', !!token);
+    console.log('🔐 Token type:', typeof token);
+    console.log('🔐 Token length:', token ? (token as string).length : 0);
     
     if (!token) {
-      console.log('No token provided for email verification');
+      console.log('❌ EMAIL VERIFICATION: No token provided');
       return res.redirect(`${process.env.FRONTEND_URL || 'https://thottopilot.com'}/login?error=missing_token`);
     }
 
-    console.log('Processing email verification token...');
+    console.log('🔐 EMAIL VERIFICATION: Processing verification token...');
     
     // Check if it's a JWT token (contains dots) or database token (hex string)
     const isJWT = (token as string).includes('.');
+    console.log('🔐 EMAIL VERIFICATION: Token type detected:', isJWT ? 'JWT' : 'Database');
     
     let userId: number;
     
     if (isJWT) {
       // JWT token from new signup flow
+      console.log('🔐 EMAIL VERIFICATION: Processing JWT token');
       try {
         const decoded = jwt.verify(token as string, process.env.JWT_SECRET!) as any;
+        console.log('🔐 JWT decoded successfully');
+        console.log('🔐 JWT type:', decoded.type);
+        console.log('🔐 JWT userId:', decoded.userId);
+        console.log('🔐 JWT email:', decoded.email);
+        
         if (decoded.type !== 'email-verification') {
+          console.log('❌ EMAIL VERIFICATION: Invalid token type:', decoded.type);
           return res.redirect(`${process.env.FRONTEND_URL || 'https://thottopilot.com'}/login?error=invalid_token_type`);
         }
         userId = decoded.userId;
+        console.log('✅ EMAIL VERIFICATION: JWT token validated successfully');
       } catch (error) {
-        console.error('JWT verification failed:', error);
+        console.error('❌ EMAIL VERIFICATION: JWT verification failed:', error);
         return res.redirect(`${process.env.FRONTEND_URL || 'https://thottopilot.com'}/login?error=invalid_token`);
       }
     } else {
       // Database token from auth.ts flow
+      console.log('🔐 EMAIL VERIFICATION: Processing database token');
       const verificationToken = await storage.getVerificationToken(token as string);
       
       if (!verificationToken) {
-        console.error('Token not found in database');
+        console.error('❌ EMAIL VERIFICATION: Token not found in database');
         return res.redirect(`${process.env.FRONTEND_URL || 'https://thottopilot.com'}/login?error=invalid_token`);
       }
       
+      console.log('🔐 Database token found for user:', verificationToken.userId);
+      console.log('🔐 Token expires at:', verificationToken.expiresAt);
+      
       // Check if expired
       if (new Date(verificationToken.expiresAt) < new Date()) {
+        console.log('❌ EMAIL VERIFICATION: Token expired, deleting');
         await storage.deleteVerificationToken(token as string);
         return res.redirect(`${process.env.FRONTEND_URL || 'https://thottopilot.com'}/login?error=expired_token`);
       }
       
       userId = verificationToken.userId;
+      console.log('✅ EMAIL VERIFICATION: Database token validated successfully');
       
       // Delete the used token
+      console.log('🔐 EMAIL VERIFICATION: Deleting used token');
       await storage.deleteVerificationToken(token as string);
     }
 
     // Update user's email verification status
+    console.log('🔐 EMAIL VERIFICATION: Updating user email verification status');
+    console.log('🔐 User ID:', userId);
     await storage.updateUserEmailVerified(userId, true);
+    console.log('✅ EMAIL VERIFICATION: User email verification status updated successfully');
     
     const user = await storage.getUser(userId);
+    console.log('🔐 EMAIL VERIFICATION: Retrieved user data');
+    console.log('🔐 User email:', user?.email);
+    console.log('🔐 User username:', user?.username);
+    console.log('🔐 User emailVerified:', user?.emailVerified);
     
-    console.log('Email verified successfully for user:', userId);
+    console.log('✅ EMAIL VERIFICATION: Email verified successfully for user:', userId);
 
     // Send welcome email
+    console.log('🔐 EMAIL VERIFICATION: Starting welcome email workflow');
     try {
       if (user?.email) {
+        console.log('🔐 EMAIL VERIFICATION: Calling email service for welcome email');
         await emailService.sendWelcomeEmail(user.email, user.username || 'User');
+        console.log('✅ EMAIL VERIFICATION: Welcome email sent successfully');
+      } else {
+        console.log('❌ EMAIL VERIFICATION: No email available for welcome email');
       }
     } catch (emailError) {
-      console.error('Failed to send welcome email:', emailError);
+      console.error('❌ EMAIL VERIFICATION: Failed to send welcome email:', emailError);
     }
 
     // Redirect with success message
-    return res.redirect(`${process.env.FRONTEND_URL || 'https://thottopilot.com'}/login?verified=true&email=${encodeURIComponent(user?.email || '')}`);
+    const redirectUrl = `${process.env.FRONTEND_URL || 'https://thottopilot.com'}/login?verified=true&email=${encodeURIComponent(user?.email || '')}`;
+    console.log('🔐 EMAIL VERIFICATION: Redirecting to success page');
+    console.log('🔐 Redirect URL:', redirectUrl);
+    return res.redirect(redirectUrl);
     
   } catch (error) {
-    console.error('Email verification error:', error);
+    console.error('❌ EMAIL VERIFICATION: Verification process failed:', error);
     res.redirect(`${process.env.FRONTEND_URL || 'https://thottopilot.com'}/login?error=verification_failed`);
   }
 });
@@ -418,22 +463,33 @@ router.get("/verify-email", async (req, res) => {
 // Resend verification email route
 router.post("/resend-verification", authLimiter, async (req, res) => {
   try {
+    console.log('🔐 RESEND VERIFICATION: Starting resend verification process');
     const { email } = req.body;
+    console.log('🔐 Email provided:', email);
     
     if (!email) {
+      console.log('❌ RESEND VERIFICATION: No email provided');
       return res.status(400).json({ message: 'Email required' });
     }
     
+    console.log('🔐 RESEND VERIFICATION: Looking up user by email');
     const user = await storage.getUserByEmail(email);
     if (!user) {
+      console.log('❌ RESEND VERIFICATION: User not found for email (security response)');
       // Don't reveal if email exists for security
       return res.json({ message: 'If that email exists, we sent a verification link' });
     }
 
+    console.log('🔐 RESEND VERIFICATION: User found');
+    console.log('🔐 User ID:', user.id);
+    console.log('🔐 Email verified status:', user.emailVerified);
+
     if (user.emailVerified) {
+      console.log('❌ RESEND VERIFICATION: Email already verified');
       return res.status(400).json({ message: 'Email already verified' });
     }
 
+    console.log('🔐 RESEND VERIFICATION: Generating new verification token');
     const token = jwt.sign(
       { 
         email: user.email, 
@@ -443,14 +499,20 @@ router.post("/resend-verification", authLimiter, async (req, res) => {
       process.env.JWT_SECRET!,
       { expiresIn: '24h' }
     );
+    console.log('🔐 RESEND VERIFICATION: Token generated successfully');
 
+    console.log('🔐 RESEND VERIFICATION: Sending verification email');
     if (user.email) {
       await emailService.sendVerificationEmail(user.email, user.username || 'User', token);
+      console.log('✅ RESEND VERIFICATION: Verification email sent successfully');
+    } else {
+      console.log('❌ RESEND VERIFICATION: No email available for user');
     }
 
     res.json({ message: 'Verification email sent. Please check your inbox.' });
     
   } catch (error) {
+    console.error('❌ RESEND VERIFICATION: Process failed:', error);
     logger.error('Resend verification error:', error);
     res.status(500).json({ message: 'Error sending verification email' });
   }
@@ -459,29 +521,38 @@ router.post("/resend-verification", authLimiter, async (req, res) => {
 // Request password reset route
 router.post("/request-password-reset", authLimiter, async (req, res) => {
   try {
+    console.log('🔐 PASSWORD RESET: Starting password reset request');
     const { email } = req.body;
+    console.log('🔐 Email provided:', email);
+    console.log('🔐 SendGrid configured:', !!process.env.SENDGRID_API_KEY);
+    console.log('🔐 Email service configured:', emailService.isEmailServiceConfigured);
     
-    console.log('🔍 Password reset request received for:', email);
-    console.log('🔍 SENDGRID_API_KEY exists:', !!process.env.SENDGRID_API_KEY);
-    console.log('🔍 Email service configured:', emailService.isEmailServiceConfigured);
-    
+    console.log('🔐 PASSWORD RESET: Looking up user by email');
     const user = await storage.getUserByEmail(email);
     if (!user) {
-      console.log('🔍 User not found for email:', email);
+      console.log('❌ PASSWORD RESET: User not found for email (security response)');
       // Don't reveal if email exists
       return res.json({ message: 'If that email exists, we sent a reset link' });
     }
 
-    console.log('🔍 User found:', user.username);
+    console.log('🔐 PASSWORD RESET: User found');
+    console.log('🔐 User ID:', user.id);
+    console.log('🔐 Username:', user.username);
+    console.log('🔐 Email verified:', user.emailVerified);
 
     // Send password reset email (token is generated inside the email service)
+    console.log('🔐 PASSWORD RESET: Calling email service for password reset');
     if (user.email) {
       await emailService.sendPasswordResetEmail(user.email, user.username || 'User');
+      console.log('✅ PASSWORD RESET: Password reset email sent successfully');
+    } else {
+      console.log('❌ PASSWORD RESET: No email available for user');
     }
 
     res.json({ message: 'Password reset email sent' });
     
   } catch (error) {
+    console.error('❌ PASSWORD RESET: Process failed:', error);
     logger.error('Password reset request error:', error);
     res.status(500).json({ message: 'Error sending reset email' });
   }
@@ -511,28 +582,57 @@ router.post("/verify-reset-token", async (req, res) => {
 // Complete password reset route
 router.post("/complete-reset", async (req, res) => {
   try {
+    console.log('🔐 PASSWORD RESET COMPLETE: Starting password reset completion');
     const { token, newPassword } = req.body;
+    console.log('🔐 Token provided:', !!token);
+    console.log('🔐 New password provided:', !!newPassword);
+    console.log('🔐 Token length:', token ? token.length : 0);
     
     // Validate password strength
     if (!newPassword || newPassword.length < 8) {
+      console.log('❌ PASSWORD RESET COMPLETE: Password too short');
       return res.status(400).json({ message: 'Password must be at least 8 characters' });
     }
     
+    console.log('🔐 PASSWORD RESET COMPLETE: Decoding and verifying token');
     const decoded = jwt.verify(decodeURIComponent(token), process.env.JWT_SECRET!) as any;
+    console.log('🔐 Token decoded successfully');
+    console.log('🔐 Token type:', decoded.type);
+    console.log('🔐 Token email:', decoded.email);
     
     if (decoded.type !== 'password-reset') {
+      console.log('❌ PASSWORD RESET COMPLETE: Invalid token type:', decoded.type);
       return res.status(400).json({ message: 'Invalid reset token' });
     }
     
+    console.log('🔐 PASSWORD RESET COMPLETE: Hashing new password');
     const hashedPassword = await bcrypt.hash(newPassword, 10);
+    console.log('🔐 Password hashed successfully');
     
     // Update password and mark email as verified
+    console.log('🔐 PASSWORD RESET COMPLETE: Updating user password');
     await storage.updateUserPassword(decoded.email, hashedPassword);
-    await storage.updateUserEmailVerified(decoded.email, true);
+    console.log('✅ PASSWORD RESET COMPLETE: Password updated successfully');
     
+    console.log('🔐 PASSWORD RESET COMPLETE: Marking email as verified');
+    await storage.updateUserEmailVerified(decoded.email, true);
+    console.log('✅ PASSWORD RESET COMPLETE: Email verification status updated');
+    
+    console.log('✅ PASSWORD RESET COMPLETE: Process completed successfully');
     res.json({ message: 'Password reset successful' });
     
-  } catch (error) {
+  } catch (error: any) {
+    console.error('❌ PASSWORD RESET COMPLETE: Process failed:', error);
+    
+    if (error.name === 'TokenExpiredError') {
+      console.log('❌ PASSWORD RESET COMPLETE: Token expired');
+      return res.status(400).json({ message: 'Reset token has expired' });
+    }
+    if (error.name === 'JsonWebTokenError') {
+      console.log('❌ PASSWORD RESET COMPLETE: Invalid token format');
+      return res.status(400).json({ message: 'Invalid reset token' });
+    }
+    
     logger.error('Password reset error:', error);
     res.status(400).json({ message: 'Invalid or expired token' });
   }

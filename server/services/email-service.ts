@@ -36,12 +36,25 @@ export const emailService = {
   },
   
   async sendVerificationEmail(to: string, username: string, token: string) {
+    console.log('📧 EMAIL WORKFLOW: Starting verification email send');
+    console.log('📧 Target email:', to);
+    console.log('📧 Username:', username);
+    console.log('📧 Token length:', token?.length || 0);
+    console.log('📧 SendGrid configured:', !!SENDGRID_API_KEY);
+    console.log('📧 FROM_EMAIL:', FROM_EMAIL);
+    console.log('📧 FRONTEND_URL:', FRONTEND_URL);
+
     if (!SENDGRID_API_KEY) {
-      // SendGrid not configured - email skipped
+      console.log('❌ EMAIL WORKFLOW: SendGrid not configured - verification email skipped');
+      console.log('🔍 Environment check:');
+      console.log('  - SENDGRID_API_KEY exists:', !!process.env.SENDGRID_API_KEY);
+      console.log('  - NODE_ENV:', process.env.NODE_ENV);
+      console.log('  - REPLIT_DEPLOYMENT:', process.env.REPLIT_DEPLOYMENT);
       return;
     }
 
     const verificationUrl = `${FRONTEND_URL}/verify-email?token=${token}`;
+    console.log('📧 Verification URL generated:', verificationUrl);
     
     const msg = {
       to,
@@ -93,9 +106,20 @@ export const emailService = {
     };
 
     try {
-      await sgMail.send(msg);
-    } catch (error) {
-      safeLog('error', 'Verification email send failed', { error: error.message });
+      console.log('📤 EMAIL WORKFLOW: Attempting to send verification email via SendGrid...');
+      const result = await sgMail.send(msg);
+      console.log('✅ EMAIL WORKFLOW: Verification email sent successfully!');
+      console.log('📧 SendGrid response status:', result[0]?.statusCode);
+      console.log('📧 Email sent to:', to);
+      safeLog('info', 'Verification email sent successfully', { to, username });
+    } catch (error: any) {
+      console.error('❌ EMAIL WORKFLOW: Verification email send failed');
+      console.error('📧 Failed for email:', to);
+      console.error('📧 SendGrid error:', error.message);
+      if (error.response?.body) {
+        console.error('📧 SendGrid error details:', error.response.body);
+      }
+      safeLog('error', 'Verification email send failed', { error: error.message, to });
       throw error;
     }
   },
@@ -201,8 +225,12 @@ export const emailService = {
   },
 
   async sendWelcomeEmail(to: string, username: string) {
+    console.log('📧 EMAIL WORKFLOW: Starting welcome email send');
+    console.log('📧 Target email:', to);
+    console.log('📧 Username:', username);
+    
     if (!SENDGRID_API_KEY) {
-      // SendGrid not configured - email skipped
+      console.log('❌ EMAIL WORKFLOW: SendGrid not configured - welcome email skipped');
       return;
     }
 
@@ -256,9 +284,16 @@ export const emailService = {
     };
 
     try {
-      await sgMail.send(msg);
-    } catch (error) {
-      safeLog('error', 'Welcome email send failed', { error: error.message });
+      console.log('📤 EMAIL WORKFLOW: Attempting to send welcome email via SendGrid...');
+      const result = await sgMail.send(msg);
+      console.log('✅ EMAIL WORKFLOW: Welcome email sent successfully!');
+      console.log('📧 SendGrid response status:', result[0]?.statusCode);
+      safeLog('info', 'Welcome email sent successfully', { to, username });
+    } catch (error: any) {
+      console.error('❌ EMAIL WORKFLOW: Welcome email send failed');
+      console.error('📧 Failed for email:', to);
+      console.error('📧 SendGrid error:', error.message);
+      safeLog('error', 'Welcome email send failed', { error: error.message, to });
       // Don't throw for welcome emails - they're not critical
     }
   },
