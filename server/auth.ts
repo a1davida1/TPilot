@@ -244,9 +244,9 @@ export function setupAuth(app: Express) {
 
       if (!user.emailVerified) {
         return res.status(403).json({ 
-          message: 'Email not verified',
-          code: 'EMAIL_NOT_VERIFIED', // Add error code for frontend
-          email: user.email // Include email so frontend can offer resend
+          message: 'Email not verified. Please check your email or resend verification.',
+          code: 'EMAIL_NOT_VERIFIED',
+          email: user.email // Include email for resend option
         });
       }
 

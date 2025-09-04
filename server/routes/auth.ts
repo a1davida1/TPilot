@@ -1,8 +1,10 @@
 import express from 'express';
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 import { storage } from '../storage.js';
 import { logger, authLimiter } from '../middleware/security.js';
 import { createToken, ADMIN_EMAIL, ADMIN_PASSWORD } from '../middleware/auth.js';
+import { emailService } from '../services/email-service.js';
 
 const router = express.Router();
 
@@ -10,6 +12,11 @@ const router = express.Router();
 router.post("/signup", authLimiter, async (req, res) => {
   try {
     const { email, password, username } = req.body;
+    
+    // Validate password strength
+    if (!password || password.length < 8) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters' });
+    }
     
     // Check if user already exists
     const existingUser = await storage.getUserByEmail(email);
@@ -21,24 +28,48 @@ router.post("/signup", authLimiter, async (req, res) => {
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // Create user
+    // Create user with emailVerified set to false
     const newUser = await storage.createUser({
       email,
       password: hashedPassword,
       username: username || email.split('@')[0],
-      tier: 'free'
+      tier: 'free',
+      emailVerified: false // IMPORTANT: Set to false initially
     });
 
-    // Generate JWT token
+    // Generate verification token
+    const verificationToken = jwt.sign(
+      { 
+        email: newUser.email, 
+        userId: newUser.id, 
+        type: 'email-verification'  // CRITICAL: Include type
+      },
+      process.env.JWT_SECRET!,
+      { expiresIn: '24h' }
+    );
+
+    // Send verification email
+    try {
+      if (newUser.email) {
+        await emailService.sendVerificationEmail(newUser.email, newUser.username || 'User', verificationToken);
+        console.log('Verification email sent to:', newUser.email);
+      }
+    } catch (emailError) {
+      console.error('Failed to send verification email:', emailError);
+      // Continue anyway - user can request resend
+    }
+
+    // Generate JWT token for immediate login (optional)
     const token = createToken(newUser);
 
     // Remove password from response
     const { password: _, ...userResponse } = newUser;
 
     res.status(201).json({
-      message: 'User created successfully',
+      message: 'User created successfully. Please check your email to verify your account.',
       token,
-      user: userResponse
+      user: userResponse,
+      emailSent: true
     });
   } catch (error) {
     logger.error('Signup error:', error);
@@ -306,6 +337,236 @@ router.post("/logout", (req: any, res) => {
   } else {
     // No Passport session or no session exists, just destroy the regular session
     handleSessionDestroy();
+  }
+});
+
+// Email verification route
+router.get("/verify-email", async (req, res) => {
+  try {
+    const { token } = req.query;
+    
+    if (!token) {
+      console.log('No token provided for email verification');
+      return res.redirect(`${process.env.FRONTEND_URL || 'https://thottopilot.com'}/login?error=missing_token`);
+    }
+
+    console.log('Processing email verification token...');
+
+    // Verify and decode the token
+    let decoded: any;
+    try {
+      decoded = jwt.verify(token as string, process.env.JWT_SECRET!);
+      console.log('Token decoded successfully for email:', decoded.email);
+    } catch (error) {
+      console.error('Token verification failed:', error);
+      return res.redirect(`${process.env.FRONTEND_URL || 'https://thottopilot.com'}/login?error=invalid_token`);
+    }
+
+    // Check token type
+    if (decoded.type !== 'email-verification') {
+      console.error('Invalid token type:', decoded.type);
+      return res.redirect(`${process.env.FRONTEND_URL || 'https://thottopilot.com'}/login?error=invalid_token_type`);
+    }
+
+    // Update user's email verification status
+    try {
+      const user = await storage.getUserByEmail(decoded.email);
+      
+      if (!user) {
+        console.error('User not found for email:', decoded.email);
+        return res.redirect(`${process.env.FRONTEND_URL || 'https://thottopilot.com'}/login?error=user_not_found`);
+      }
+
+      console.log('Found user:', user.email, 'Current verification status:', user.emailVerified);
+
+      // Update the emailVerified field using storage method
+      await storage.updateUserEmailVerified(decoded.email, true);
+
+      console.log('Email verified successfully for:', decoded.email);
+
+      // Send welcome email after verification
+      try {
+        if (user.email) {
+          await emailService.sendWelcomeEmail(user.email, user.username || 'User');
+        }
+      } catch (emailError) {
+        console.error('Failed to send welcome email:', emailError);
+      }
+
+      // Redirect with success message
+      return res.redirect(`${process.env.FRONTEND_URL || 'https://thottopilot.com'}/login?verified=true&email=${encodeURIComponent(decoded.email)}`);
+      
+    } catch (dbError) {
+      console.error('Database update failed:', dbError);
+      return res.redirect(`${process.env.FRONTEND_URL || 'https://thottopilot.com'}/login?error=verification_failed`);
+    }
+    
+  } catch (error) {
+    console.error('Email verification error:', error);
+    res.redirect(`${process.env.FRONTEND_URL || 'https://thottopilot.com'}/login?error=verification_failed`);
+  }
+});
+
+// Resend verification email route
+router.post("/resend-verification", authLimiter, async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ message: 'Email required' });
+    }
+    
+    const user = await storage.getUserByEmail(email);
+    if (!user) {
+      // Don't reveal if email exists for security
+      return res.json({ message: 'If that email exists, we sent a verification link' });
+    }
+
+    if (user.emailVerified) {
+      return res.status(400).json({ message: 'Email already verified' });
+    }
+
+    const token = jwt.sign(
+      { 
+        email: user.email, 
+        userId: user.id, 
+        type: 'email-verification' 
+      },
+      process.env.JWT_SECRET!,
+      { expiresIn: '24h' }
+    );
+
+    if (user.email) {
+      await emailService.sendVerificationEmail(user.email, user.username || 'User', token);
+    }
+
+    res.json({ message: 'Verification email sent. Please check your inbox.' });
+    
+  } catch (error) {
+    logger.error('Resend verification error:', error);
+    res.status(500).json({ message: 'Error sending verification email' });
+  }
+});
+
+// Request password reset route
+router.post("/request-password-reset", authLimiter, async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    console.log('🔍 Password reset request received for:', email);
+    console.log('🔍 SENDGRID_API_KEY exists:', !!process.env.SENDGRID_API_KEY);
+    console.log('🔍 Email service configured:', emailService.isEmailServiceConfigured);
+    
+    const user = await storage.getUserByEmail(email);
+    if (!user) {
+      console.log('🔍 User not found for email:', email);
+      // Don't reveal if email exists
+      return res.json({ message: 'If that email exists, we sent a reset link' });
+    }
+
+    console.log('🔍 User found:', user.username);
+
+    // Send password reset email (token is generated inside the email service)
+    if (user.email) {
+      await emailService.sendPasswordResetEmail(user.email, user.username || 'User');
+    }
+
+    res.json({ message: 'Password reset email sent' });
+    
+  } catch (error) {
+    logger.error('Password reset request error:', error);
+    res.status(500).json({ message: 'Error sending reset email' });
+  }
+});
+
+// Verify reset token route
+router.post("/verify-reset-token", async (req, res) => {
+  try {
+    const { token } = req.body;
+    
+    if (!token) {
+      return res.status(400).json({ message: 'Token required' });
+    }
+    
+    const decoded = jwt.verify(decodeURIComponent(token), process.env.JWT_SECRET!) as any;
+    
+    if (decoded.type !== 'password-reset') {
+      return res.status(400).json({ message: 'Invalid token type' });
+    }
+    
+    res.json({ valid: true, email: decoded.email });
+  } catch (error) {
+    res.status(400).json({ message: 'Invalid or expired token' });
+  }
+});
+
+// Complete password reset route
+router.post("/complete-reset", async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+    
+    // Validate password strength
+    if (!newPassword || newPassword.length < 8) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters' });
+    }
+    
+    const decoded = jwt.verify(decodeURIComponent(token), process.env.JWT_SECRET!) as any;
+    
+    if (decoded.type !== 'password-reset') {
+      return res.status(400).json({ message: 'Invalid reset token' });
+    }
+    
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
+    // Update password and mark email as verified
+    await storage.updateUserPassword(decoded.email, hashedPassword);
+    await storage.updateUserEmailVerified(decoded.email, true);
+    
+    res.json({ message: 'Password reset successful' });
+    
+  } catch (error) {
+    logger.error('Password reset error:', error);
+    res.status(400).json({ message: 'Invalid or expired token' });
+  }
+});
+
+// Change password route (for logged-in users)
+router.post("/change-password", async (req: any, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+    
+    const token = authHeader.substring(7);
+    const { verifyToken } = await import('../middleware/auth.js');
+    const decoded = verifyToken(token) as any;
+    
+    const userId = decoded.userId || decoded.id;
+    const { currentPassword, newPassword } = req.body;
+    
+    if (!newPassword || newPassword.length < 8) {
+      return res.status(400).json({ message: 'New password must be at least 8 characters' });
+    }
+    
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Verify current password
+    const validPassword = await bcrypt.compare(currentPassword, user.password);
+    if (!validPassword) {
+      return res.status(400).json({ message: 'Current password is incorrect' });
+    }
+    
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await storage.updateUserPassword(user.id, hashedPassword);
+    
+    res.json({ message: 'Password changed successfully' });
+  } catch (error) {
+    logger.error('Change password error:', error);
+    res.status(500).json({ message: 'Error changing password' });
   }
 });
 
