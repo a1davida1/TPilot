@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { FaGoogle, FaFacebook, FaReddit } from "react-icons/fa";
@@ -16,7 +17,8 @@ import {
   User,
   ArrowRight,
   Sparkles,
-  CheckCircle
+  CheckCircle,
+  AlertCircle
 } from "lucide-react";
 
 interface AuthModalProps {
@@ -35,6 +37,9 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
     password: ''
   });
   const [resetEmail, setResetEmail] = useState('');
+  const [showResendVerification, setShowResendVerification] = useState(false);
+  const [resendEmail, setResendEmail] = useState('');
+  const [isResending, setIsResending] = useState(false);
 
   // Reset mode when modal opens
   if (isOpen && mode !== initialMode && mode !== 'forgot-password') {
@@ -117,19 +122,16 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
     onError: async (error: any) => {
       // Handle email not verified error specially
       if (error.code === 'EMAIL_NOT_VERIFIED') {
+        setShowResendVerification(true);
+        setResendEmail(error.email || formData.username);
         toast({
-          title: 'Email Not Verified',
-          description: 'Please verify your email before logging in.',
-          variant: 'destructive',
+          title: 'Email not verified',
+          description: 'Please verify your email to continue.',
           action: (
-            <Button
+            <Button 
               size="sm"
-              onClick={() => {
-                if (error.email) {
-                  resendVerificationMutation.mutate(error.email);
-                }
-              }}
-              className="bg-gradient-to-r from-purple-600 to-pink-600"
+              variant="outline"
+              onClick={() => resendVerification(error.email || formData.username)}
             >
               Resend
             </Button>
@@ -178,6 +180,33 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
       });
     }
   });
+
+  // Enhanced resend verification function
+  const resendVerification = async (email: string) => {
+    setIsResending(true);
+    try {
+      const res = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      
+      const data = await res.json();
+      toast({
+        title: "Verification email sent",
+        description: "Please check your inbox and spam folder"
+      });
+      setShowResendVerification(false);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to resend verification email",
+        variant: "destructive"
+      });
+    } finally {
+      setIsResending(false);
+    }
+  };
 
   const resendVerificationMutation = useMutation({
     mutationFn: async (email: string) => {
@@ -499,17 +528,36 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
               </div>
             </div>
 
+            {/* Resend Verification Alert for Login */}
+            {showResendVerification && mode === 'login' && (
+              <Alert className="mt-4 border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20">
+                <AlertCircle className="h-4 w-4 text-yellow-600" />
+                <AlertDescription className="flex items-center justify-between">
+                  <span>Email not verified</span>
+                  <Button 
+                    variant="link" 
+                    size="sm"
+                    className="p-0 ml-2 text-purple-600 hover:text-purple-700"
+                    onClick={() => resendVerification(resendEmail)}
+                    disabled={isResending}
+                    data-testid="button-resend-verification"
+                  >
+                    {isResending ? 'Sending...' : 'Resend verification'}
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
+
             {/* Forgot Password Link for Login */}
             {mode === 'login' && (
-              <div className="text-right">
-                <button
-                  type="button"
-                  onClick={() => setMode('forgot-password')}
-                  className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+              <div className="text-right mb-4">
+                <a 
+                  href="/forgot-password" 
+                  className="text-sm text-purple-600 hover:text-purple-700"
                   data-testid="link-forgot-password"
                 >
-                  Forgot password?
-                </button>
+                  Forgot your password?
+                </a>
               </div>
             )}
 
