@@ -346,7 +346,7 @@ export function registerRedditRoutes(app: Express) {
     }
   });
 
-  // Manual post submission
+  // Enhanced submit endpoint with image support
   app.post('/api/reddit/submit', authenticateToken, async (req: any, res) => {
     try {
       const userId = req.user?.id;
@@ -354,67 +354,142 @@ export function registerRedditRoutes(app: Express) {
         return res.status(401).json({ error: 'Authentication required' });
       }
       
-      const { subreddit, title, body, url, nsfw } = req.body;
+      const { subreddit, title, body, url, nsfw, spoiler, postType, imageData } = req.body;
 
       if (!subreddit || !title) {
         return res.status(400).json({ error: 'Subreddit and title are required' });
       }
 
-      // Get account from database
-      const accounts = await db
-        .select()
-        .from(creatorAccounts)
-        .where(
-          and(
-            eq(creatorAccounts.userId, userId),
-            eq(creatorAccounts.platform, 'reddit'),
-            eq(creatorAccounts.isActive, true)
-          )
-        )
-        .limit(1);
-
-      if (accounts.length === 0) {
-        return res.status(404).json({ error: 'No active Reddit account found. Please connect your Reddit account first.' });
+      // Get Reddit manager
+      const reddit = await RedditManager.forUser(userId);
+      if (!reddit) {
+        return res.status(404).json({ 
+          error: 'No active Reddit account found. Please connect your Reddit account first.' 
+        });
       }
 
-      const account = accounts[0];
+      let result;
       
-      // Decrypt tokens
-      const accessToken = account.oauthToken ? decrypt(account.oauthToken) : null;
-      const refreshToken = account.oauthRefresh ? decrypt(account.oauthRefresh) : null;
-      
-      if (!accessToken) {
-        return res.status(401).json({ error: 'Invalid tokens. Please reconnect your Reddit account.' });
+      // Handle different post types
+      switch (postType || 'text') {
+        case 'image':
+          // Single image post
+          if (!imageData && !url) {
+            return res.status(400).json({ error: 'Image data or URL required for image post' });
+          }
+          
+          let imageBuffer;
+          if (imageData) {
+            // Convert base64 to buffer if needed
+            const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
+            imageBuffer = Buffer.from(base64Data, 'base64');
+          }
+          
+          result = await reddit.submitImagePost({
+            subreddit,
+            title,
+            imageBuffer,
+            imageUrl: url,
+            nsfw: nsfw || false,
+            spoiler: spoiler || false
+          });
+          break;
+          
+        case 'gallery':
+          // Multiple images
+          if (!req.body.images || !Array.isArray(req.body.images)) {
+            return res.status(400).json({ error: 'Images array required for gallery post' });
+          }
+          
+          const images = req.body.images.map((img: any) => ({
+            url: img.url,
+            caption: img.caption || ''
+          }));
+          
+          result = await reddit.submitGalleryPost({
+            subreddit,
+            title,
+            images,
+            nsfw: nsfw || false
+          });
+          break;
+          
+        case 'link':
+          // Link post
+          if (!url) {
+            return res.status(400).json({ error: 'URL required for link post' });
+          }
+          
+          result = await reddit.submitPost({
+            subreddit,
+            title,
+            url,
+            nsfw: nsfw || false,
+            spoiler: spoiler || false
+          });
+          break;
+          
+        case 'text':
+        default:
+          // Text post
+          result = await reddit.submitPost({
+            subreddit,
+            title,
+            body: body || '',
+            nsfw: nsfw || false,
+            spoiler: spoiler || false
+          });
+          break;
       }
-      
-      // Create Reddit manager with decrypted tokens
-      const reddit = new RedditManager(accessToken, refreshToken || '', userId);
-      
-      const result = await reddit.submitPost({
-        subreddit,
-        title,
-        body,
-        url,
-        nsfw: nsfw || false
-      });
 
       if (result.success) {
+        console.log('Reddit post successful:', {
+          userId,
+          subreddit,
+          postType,
+          url: result.url
+        });
+        
         res.json({
           success: true,
           postId: result.postId,
           url: result.url,
-          message: 'Post submitted successfully to Reddit'
+          message: `Post submitted successfully to r/${subreddit}`
         });
       } else {
         res.status(400).json({
           success: false,
-          error: result.error
+          error: result.error || 'Failed to submit post'
         });
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Reddit submit error:', error);
-      res.status(500).json({ error: 'Failed to submit post to Reddit' });
+      res.status(500).json({ 
+        error: error.message || 'Failed to submit post to Reddit' 
+      });
+    }
+  });
+
+  // Add new endpoint to check subreddit capabilities
+  app.get('/api/reddit/subreddit/:name/capabilities', authenticateToken, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      const reddit = await RedditManager.forUser(userId);
+      if (!reddit) {
+        return res.status(404).json({ error: 'No Reddit account connected' });
+      }
+      
+      const capabilities = await reddit.checkSubredditCapabilities(req.params.name);
+      res.json(capabilities);
+      
+    } catch (error) {
+      console.error('Error checking subreddit:', error);
+      res.status(500).json({ error: 'Failed to check subreddit' });
     }
   });
 }

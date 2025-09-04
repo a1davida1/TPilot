@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
@@ -30,7 +31,9 @@ import {
   Shield,
   FileText,
   TestTube,
-  ExternalLink
+  ExternalLink,
+  ImageIcon,
+  Images
 } from 'lucide-react';
 
 interface RedditAccount {
@@ -75,12 +78,33 @@ export default function RedditPostingPage() {
   const [url, setUrl] = useState('');
   const [nsfw, setNsfw] = useState(false);
   const [spoiler, setSpoiler] = useState(false);
-  const [postType, setPostType] = useState<'text' | 'link'>('text');
+  const [postType, setPostType] = useState<'text' | 'link' | 'image' | 'gallery'>('image');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
+  const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
   const [scheduledAt, setScheduledAt] = useState('');
   
   // UI state
   const [selectedAccount, setSelectedAccount] = useState<string>('');
   const [isPreviewMode, setIsPreviewMode] = useState(false);
+
+  // Add image handling functions
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleGallerySelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []).slice(0, 20); // Max 20 images
+    setGalleryFiles(files);
+  };
 
   // Fetch Reddit accounts
   const { data: accounts = [], isLoading: accountsLoading } = useQuery({
@@ -159,7 +183,7 @@ export default function RedditPostingPage() {
 
   // Submit post
   const { mutate: submitPost, isPending: submitting } = useMutation({
-    mutationFn: async (data: { subreddit: string; title: string; body?: string; url?: string; nsfw: boolean; spoiler: boolean }) => {
+    mutationFn: async (data: any) => {
       const response = await apiRequest('POST', '/api/reddit/submit', data);
       return response.json();
     },
@@ -232,8 +256,8 @@ export default function RedditPostingPage() {
     });
   };
 
-  // Handle post submission
-  const handleSubmitPost = () => {
+  // Handle post submission - Enhanced for multiple post types
+  const handleSubmitPost = async () => {
     if (!subreddit || !title) {
       toast({
         title: "⚠️ Missing Required Fields",
@@ -243,15 +267,47 @@ export default function RedditPostingPage() {
       return;
     }
 
-    const postData = {
+    let postData: any = {
       subreddit,
       title,
       nsfw,
       spoiler,
-      ...(postType === 'text' ? { body } : { url })
+      postType
     };
 
-    submitPost(postData);
+    // Handle different post types
+    if (postType === 'image' && imageFile) {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        postData.imageData = reader.result;
+        submitPost(postData);
+      };
+      reader.readAsDataURL(imageFile);
+    } else if (postType === 'gallery' && galleryFiles.length > 0) {
+      // For gallery, we'll send URLs or process files
+      const images = await Promise.all(
+        galleryFiles.map(async (file) => {
+          return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              resolve({
+                data: reader.result,
+                caption: file.name
+              });
+            };
+            reader.readAsDataURL(file);
+          });
+        })
+      );
+      postData.images = images;
+      submitPost(postData);
+    } else if (postType === 'link') {
+      postData.url = url;
+      submitPost(postData);
+    } else {
+      postData.body = body;
+      submitPost(postData);
+    }
   };
 
   // Handle post scheduling
@@ -384,7 +440,25 @@ export default function RedditPostingPage() {
               <CardContent className="space-y-6">
                 
                 {/* Post Type Selection */}
-                <div className="flex gap-2">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                  <Button
+                    variant={postType === 'image' ? 'default' : 'outline'}
+                    onClick={() => setPostType('image')}
+                    className="flex-1"
+                    data-testid="button-post-type-image"
+                  >
+                    <ImageIcon className="h-4 w-4 mr-2" />
+                    Image
+                  </Button>
+                  <Button
+                    variant={postType === 'gallery' ? 'default' : 'outline'}
+                    onClick={() => setPostType('gallery')}
+                    className="flex-1"
+                    data-testid="button-post-type-gallery"
+                  >
+                    <Images className="h-4 w-4 mr-2" />
+                    Gallery
+                  </Button>
                   <Button
                     variant={postType === 'text' ? 'default' : 'outline'}
                     onClick={() => setPostType('text')}
@@ -392,7 +466,7 @@ export default function RedditPostingPage() {
                     data-testid="button-post-type-text"
                   >
                     <FileText className="h-4 w-4 mr-2" />
-                    Text Post
+                    Text
                   </Button>
                   <Button
                     variant={postType === 'link' ? 'default' : 'outline'}
@@ -401,7 +475,7 @@ export default function RedditPostingPage() {
                     data-testid="button-post-type-link"
                   >
                     <LinkIcon className="h-4 w-4 mr-2" />
-                    Link Post
+                    Link
                   </Button>
                 </div>
 
@@ -451,7 +525,74 @@ export default function RedditPostingPage() {
                 </div>
 
                 {/* Content Input */}
-                {postType === 'text' ? (
+                {postType === 'image' && (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="image">Select Image</Label>
+                      <Input
+                        id="image"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageSelect}
+                        className="cursor-pointer"
+                        data-testid="input-image-upload"
+                      />
+                    </div>
+                    {imagePreview && (
+                      <div className="space-y-2">
+                        <Label>Preview</Label>
+                        <div className="border-2 border-dashed border-pink-300 rounded-lg p-4">
+                          <img 
+                            src={imagePreview} 
+                            alt="Preview" 
+                            className="max-w-full h-auto max-h-64 mx-auto rounded" 
+                            data-testid="img-preview"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {postType === 'gallery' && (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="gallery">Select Images (Max 20)</Label>
+                      <Input
+                        id="gallery"
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleGallerySelect}
+                        className="cursor-pointer"
+                        data-testid="input-gallery-upload"
+                      />
+                    </div>
+                    {galleryFiles.length > 0 && (
+                      <div className="space-y-2">
+                        <Label>Preview ({galleryFiles.length} images)</Label>
+                        <div className="grid grid-cols-3 gap-2 p-4 border-2 border-dashed border-pink-300 rounded-lg">
+                          {galleryFiles.slice(0, 9).map((file, index) => (
+                            <div key={index} className="relative">
+                              <img
+                                src={URL.createObjectURL(file)}
+                                alt={`Gallery ${index + 1}`}
+                                className="w-full h-20 object-cover rounded"
+                                data-testid={`img-gallery-preview-${index}`}
+                              />
+                              {index === 8 && galleryFiles.length > 9 && (
+                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded text-white text-sm">
+                                  +{galleryFiles.length - 9} more
+                                </div>
+                              )}
+                            </div>
+                          ))}\n                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {postType === 'text' && (
                   <div className="space-y-2">
                     <Label htmlFor="body">Content (Optional)</Label>
                     <Textarea
@@ -465,7 +606,9 @@ export default function RedditPostingPage() {
                     />
                     <div className="text-xs text-gray-500 text-right">{body.length}/10,000</div>
                   </div>
-                ) : (
+                )}
+
+                {postType === 'link' && (
                   <div className="space-y-2">
                     <Label htmlFor="url">URL</Label>
                     <Input
@@ -537,6 +680,15 @@ export default function RedditPostingPage() {
                     )}
                   </div>
                 )}
+
+                {/* Rate Limiting Warning */}
+                <Alert className="bg-yellow-50 border-yellow-200">
+                  <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                  <AlertDescription className="text-yellow-800">
+                    <strong>Rate Limit Notice:</strong> Reddit enforces a 10-15 minute cooldown between posts. 
+                    Wait between submissions to avoid restrictions.
+                  </AlertDescription>
+                </Alert>
 
                 {/* Action Buttons */}
                 <div className="flex gap-3">

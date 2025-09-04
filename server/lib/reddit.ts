@@ -161,6 +161,187 @@ export class RedditManager {
   }
 
   /**
+   * Submit image post with direct upload to Reddit
+   */
+  async submitImagePost(options: {
+    subreddit: string;
+    title: string;
+    imageUrl?: string;
+    imageBuffer?: Buffer;
+    imagePath?: string;
+    nsfw?: boolean;
+    spoiler?: boolean;
+  }): Promise<RedditPostResult> {
+    try {
+      const reddit = await this.initReddit();
+      
+      // If we have a URL, download it to buffer
+      if (options.imageUrl && !options.imageBuffer) {
+        const response = await fetch(options.imageUrl);
+        const arrayBuffer = await response.arrayBuffer();
+        options.imageBuffer = Buffer.from(arrayBuffer);
+      }
+
+      // Direct image upload to Reddit
+      if (options.imageBuffer || options.imagePath) {
+        console.log('Uploading image directly to Reddit (i.redd.it)...');
+        
+        const subreddit = reddit.getSubreddit(options.subreddit);
+        
+        try {
+          // Try direct image upload first
+          const submission = await subreddit.submitImage({
+            title: options.title,
+            imageFile: options.imageBuffer || options.imagePath,
+            nsfw: options.nsfw || false,
+            spoiler: options.spoiler || false,
+            sendReplies: true,
+          });
+
+          return {
+            success: true,
+            postId: submission.name || submission.id,
+            url: `https://www.reddit.com${submission.permalink}`,
+          };
+        } catch (imgError: any) {
+          console.error('Direct image upload failed, falling back to link post:', imgError.message);
+          // Fallback to link post if image upload fails
+          if (options.imageUrl) {
+            return this.submitPost({
+              subreddit: options.subreddit,
+              title: options.title,
+              url: options.imageUrl,
+              nsfw: options.nsfw,
+              spoiler: options.spoiler
+            });
+          }
+          throw imgError;
+        }
+      }
+
+      // No image provided
+      return {
+        success: false,
+        error: 'No image provided for upload'
+      };
+
+    } catch (error: any) {
+      console.error('Image submission failed:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to upload image'
+      };
+    }
+  }
+
+  /**
+   * Submit gallery post with multiple images
+   */
+  async submitGalleryPost(options: {
+    subreddit: string;
+    title: string;
+    images: Array<{
+      url?: string;
+      buffer?: Buffer;
+      caption?: string;
+    }>;
+    nsfw?: boolean;
+  }): Promise<RedditPostResult> {
+    try {
+      const reddit = await this.initReddit();
+      const subreddit = reddit.getSubreddit(options.subreddit);
+      
+      // Prepare images for gallery
+      const galleryImages = await Promise.all(
+        options.images.slice(0, 20).map(async (img) => { // Max 20 images
+          let imageBuffer = img.buffer;
+          
+          if (!imageBuffer && img.url) {
+            const response = await fetch(img.url);
+            const arrayBuffer = await response.arrayBuffer();
+            imageBuffer = Buffer.from(arrayBuffer);
+          }
+          
+          return {
+            imageFile: imageBuffer,
+            caption: img.caption || ''
+          };
+        })
+      );
+
+      // Submit gallery
+      const submission = await subreddit.submitGallery({
+        title: options.title,
+        images: galleryImages,
+        nsfw: options.nsfw || false,
+        sendReplies: true
+      });
+
+      return {
+        success: true,
+        postId: submission.name || submission.id,
+        url: `https://www.reddit.com${submission.permalink}`
+      };
+
+    } catch (error: any) {
+      // Not all subreddits support galleries
+      if (error.message?.includes('INVALID_OPTION') || error.message?.includes('gallery')) {
+        console.log('Gallery not supported, falling back to single image');
+        return this.submitImagePost({
+          subreddit: options.subreddit,
+          title: options.title,
+          imageBuffer: options.images[0]?.buffer,
+          imageUrl: options.images[0]?.url,
+          nsfw: options.nsfw
+        });
+      }
+      
+      return {
+        success: false,
+        error: error.message || 'Failed to submit gallery'
+      };
+    }
+  }
+
+  /**
+   * Check if subreddit allows image posts
+   */
+  async checkSubredditCapabilities(subredditName: string): Promise<{
+    allowsImages: boolean;
+    allowsGalleries: boolean;
+    allowsVideos: boolean;
+    isNsfw: boolean;
+  }> {
+    try {
+      const reddit = await this.initReddit();
+      const subreddit = await reddit.getSubreddit(subredditName).fetch();
+      
+      return {
+        allowsImages: subreddit.allow_images !== false,
+        allowsGalleries: subreddit.allow_galleries === true,
+        allowsVideos: subreddit.allow_videos !== false,
+        isNsfw: subreddit.over18 || false
+      };
+    } catch (error) {
+      console.error('Failed to check subreddit capabilities:', error);
+      return {
+        allowsImages: true,
+        allowsGalleries: false,
+        allowsVideos: false,
+        isNsfw: false
+      };
+    }
+  }
+
+  /**
+   * Initialize Reddit instance (helper for new methods)
+   */
+  private async initReddit(): Promise<any> {
+    await this.refreshTokenIfNeeded();
+    return this.reddit;
+  }
+
+  /**
    * Check if user can post to a specific subreddit (rate limiting)
    */
   static async canPostToSubreddit(userId: number, subreddit: string): Promise<PostingPermission> {
