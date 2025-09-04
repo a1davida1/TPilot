@@ -621,6 +621,103 @@ export function setupAuth(app: Express) {
     }
   });
 
+  // Verify reset token route (check if token is valid without resetting)
+  app.post('/api/auth/verify-reset-token', async (req, res) => {
+    try {
+      const { token } = req.body;
+      
+      if (!token) {
+        return res.status(400).json({ message: 'Token required' });
+      }
+      
+      // Decode the token (it might be URL encoded from the frontend)
+      const decodedToken = decodeURIComponent(token);
+      
+      // Check if it's a JWT token or database token
+      try {
+        // Try JWT first (from forgot-password flow)
+        const decoded = jwt.verify(decodedToken, JWT_SECRET_VALIDATED) as any;
+        
+        if (decoded.type !== 'password-reset') {
+          return res.status(400).json({ message: 'Invalid token type' });
+        }
+        
+        res.json({ valid: true, email: decoded.email });
+      } catch (jwtError) {
+        // If JWT fails, try database token (from verification flow)
+        const resetToken = await storage.getVerificationToken(decodedToken);
+        
+        if (!resetToken) {
+          return res.status(400).json({ message: 'Invalid token' });
+        }
+        
+        // Check if token is expired
+        if (new Date(resetToken.expiresAt) < new Date()) {
+          return res.status(400).json({ message: 'Token has expired' });
+        }
+        
+        // Get user email for response
+        const user = await storage.getUser(resetToken.userId);
+        if (!user) {
+          return res.status(400).json({ message: 'Invalid token' });
+        }
+        
+        res.json({ valid: true, email: user.email });
+      }
+    } catch (error) {
+      safeLog('error', 'Token verification error:', { error: error.message });
+      res.status(400).json({ message: 'Invalid or expired token' });
+    }
+  });
+
+  // Delete account route
+  app.delete('/api/auth/delete-account', async (req: any, res) => {
+    try {
+      // Check authentication from JWT cookie or token
+      const token = req.cookies.authToken || req.headers.authorization?.replace('Bearer ', '');
+      
+      if (!token) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+      
+      let userId: number;
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET_VALIDATED) as any;
+        userId = decoded.userId || decoded.id;
+      } catch (jwtError) {
+        return res.status(401).json({ message: 'Invalid authentication token' });
+      }
+      
+      const { password } = req.body;
+      
+      if (!password) {
+        return res.status(400).json({ message: 'Password verification required' });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Verify password before deletion
+      const validPassword = await bcrypt.compare(password, user.password);
+      if (!validPassword) {
+        return res.status(400).json({ message: 'Password verification failed' });
+      }
+      
+      // Hard delete for now (soft delete requires schema changes)
+      await storage.deleteUser(userId);
+      
+      // Clear auth cookie
+      res.clearCookie('authToken');
+      
+      res.json({ message: 'Account deleted successfully' });
+    } catch (error) {
+      safeLog('error', 'Delete account error:', { error: error.message });
+      res.status(500).json({ message: 'Error deleting account' });
+    }
+  });
+
   // Resend verification email route
   app.post('/api/auth/resend-verification', authLimiter, async (req, res) => {
     try {
