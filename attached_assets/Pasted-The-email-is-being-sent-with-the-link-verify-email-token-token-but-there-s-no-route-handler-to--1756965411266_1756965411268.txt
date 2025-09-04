@@ -1,0 +1,111 @@
+The email is being sent with the link /verify-email?token=${token}, but there's no route handler to process it. That's why clicking the link just goes to the dashboard without verifying the email.
+Add the Missing Verification Route
+Add this to your server/routes/auth.ts file (after the other routes):
+typescript// Email verification route
+router.get("/verify-email", async (req, res) => {
+  try {
+    const { token } = req.query;
+    
+    if (!token) {
+      return res.status(400).json({ message: 'Verification token required' });
+    }
+
+    // Verify the token
+    const { verifyToken } = await import('../middleware/auth.js');
+    const decoded = verifyToken(token as string) as any;
+    
+    if (decoded.type !== 'email-verification') {
+      return res.status(400).json({ message: 'Invalid verification token' });
+    }
+
+    // Update user's email verification status
+    await storage.updateUserEmailVerified(decoded.email, true);
+    
+    // Redirect to login with success message
+    res.redirect(`${process.env.FRONTEND_URL || 'https://thottopilot.com'}/login?verified=true`);
+    
+  } catch (error) {
+    logger.error('Email verification error:', error);
+    res.redirect(`${process.env.FRONTEND_URL || 'https://thottopilot.com'}/login?verification_failed=true`);
+  }
+});
+
+// Password reset token verification route (if missing)
+router.post("/reset-password", async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+    
+    if (!token || !newPassword) {
+      return res.status(400).json({ message: 'Token and new password required' });
+    }
+
+    // Verify the token
+    const { verifyToken } = await import('../middleware/auth.js');
+    const decoded = verifyToken(token) as any;
+    
+    if (decoded.type !== 'password-reset') {
+      return res.status(400).json({ message: 'Invalid reset token' });
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
+    // Update password and mark email as verified
+    await storage.updateUserPassword(decoded.email, hashedPassword);
+    await storage.updateUserEmailVerified(decoded.email, true);
+    
+    res.json({ message: 'Password reset successful' });
+    
+  } catch (error) {
+    logger.error('Password reset error:', error);
+    res.status(400).json({ message: 'Invalid or expired token' });
+  }
+});
+Also Update Your Storage Layer
+You'll need these methods in your storage.ts if they don't exist:
+typescriptasync updateUserEmailVerified(email: string, verified: boolean) {
+  return await db.user.update({
+    where: { email },
+    data: { emailVerified: verified }
+  });
+},
+
+async updateUserPassword(email: string, hashedPassword: string) {
+  return await db.user.update({
+    where: { email },
+    data: { password: hashedPassword }
+  });
+}
+Fix the Token Generation
+In your signup route, you also need to generate a verification token. Update the signup route in auth.ts:
+typescriptrouter.post("/signup", authLimiter, async (req, res) => {
+  try {
+    // ... existing code ...
+
+    // Create user
+    const newUser = await storage.createUser({
+      email,
+      password: hashedPassword,
+      username: username || email.split('@')[0],
+      tier: 'free',
+      emailVerified: false // Make sure this is set to false initially
+    });
+
+    // Generate verification token
+    const verificationToken = createToken({
+      ...newUser,
+      type: 'email-verification'
+    });
+
+    // Send verification email
+    const { emailService } = await import('../lib/email-service.js');
+    await emailService.sendVerificationEmail(email, newUser.username, verificationToken);
+
+    // Generate auth token
+    const token = createToken(newUser);
+
+    // ... rest of the code ...
+  } catch (error) {
+    // ... error handling ...
+  }
+});
