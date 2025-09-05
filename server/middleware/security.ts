@@ -18,12 +18,16 @@ if (process.env.NODE_ENV !== 'production') {
 // ==========================================
 export function validateEnvironment() {
   const required = ['JWT_SECRET', 'SESSION_SECRET', 'DATABASE_URL'];
-  const missing = required.filter(key => !process.env[key]);
+  const placeholders = ['changeme', 'placeholder', 'your_jwt_secret_here', 'default_secret'];
+  const missing = required.filter(key => {
+    const val = process.env[key];
+    return !val || placeholders.some(p => val.toLowerCase().includes(p));
+  });
 
   if (missing.length > 0) {
-    console.error(`❌ Missing required environment variables: ${missing.join(', ')}`);
-    console.error('Please set them in Replit Secrets (lock icon)');
-    throw new Error(`Missing environment variables: ${missing.join(', ')}`);
+    console.error(`❌ Invalid or missing environment variables: ${missing.join(', ')}`);
+    console.error('Please set secure, non-placeholder values in your environment');
+    throw new Error(`Invalid environment variables: ${missing.join(', ')}`);
   }
 
   console.log('✅ Environment variables validated');
