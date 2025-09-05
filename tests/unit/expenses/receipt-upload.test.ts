@@ -1,3 +1,4 @@
+/* eslint-env node, jest */
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import request from 'supertest';
 import express from 'express';
@@ -34,7 +35,7 @@ describe('Receipt Upload with ImageShield Protection', () => {
     app.use(express.json());
     
     // Mock auth middleware to pass through with user
-    mockAuthenticateToken.mockImplementation((req: any, res: any, next: any) => {
+    mockAuthenticateToken.mockImplementation((req: express.Request & { user?: { id: number; tier: string } }, res: express.Response, next: express.NextFunction) => {
       req.user = { id: 1, tier: 'free' };
       next();
     });
@@ -72,7 +73,7 @@ describe('Receipt Upload with ImageShield Protection', () => {
     });
 
     test('should apply watermark for free users', async () => {
-      mockAuthenticateToken.mockImplementation((req: any, res: any, next: any) => {
+      mockAuthenticateToken.mockImplementation((req: express.Request & { user?: { id: number; tier: string } }, res: express.Response, next: express.NextFunction) => {
         req.user = { id: 2, tier: 'free' };
         next();
       });
@@ -97,7 +98,7 @@ describe('Receipt Upload with ImageShield Protection', () => {
     });
 
     test('should not apply watermark for premium users', async () => {
-      mockAuthenticateToken.mockImplementation((req: any, res: any, next: any) => {
+      mockAuthenticateToken.mockImplementation((req: express.Request & { user?: { id: number; tier: string } }, res: express.Response, next: express.NextFunction) => {
         req.user = { id: 3, tier: 'premium' };
         next();
       });
@@ -134,7 +135,7 @@ describe('Receipt Upload with ImageShield Protection', () => {
     });
 
     test('should handle missing authentication', async () => {
-      mockAuthenticateToken.mockImplementation((req: any, res: any, next: any) => {
+      mockAuthenticateToken.mockImplementation((req: express.Request & { user?: { id: number; tier: string } }, res: express.Response, next: express.NextFunction) => {
         req.user = null;
         next();
       });

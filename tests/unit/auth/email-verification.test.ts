@@ -1,3 +1,4 @@
+/* eslint-env node, jest */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import express from 'express';
 import request from 'supertest';
@@ -13,7 +14,7 @@ const mockStorage = {
     const user = mockUsers.get(userId);
     if (user) user.emailVerified = verified;
   }),
-  createVerificationToken: vi.fn(async (data: any) => {
+  createVerificationToken: vi.fn(async (data: { token: string; userId: number; expiresAt: Date }) => {
     mockTokens.set(data.token, data);
     return data;
   }),

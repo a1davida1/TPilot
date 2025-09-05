@@ -1,3 +1,4 @@
+/* eslint-env node, jest */
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { InsertExpenseCategory } from '@shared/schema';
 
@@ -43,7 +44,7 @@ describe('Expense Categories Unit Tests', () => {
         updatedAt: new Date()
       };
 
-      (db.returning as any).mockResolvedValueOnce([expectedCategory]);
+      (db.returning as ReturnType<typeof vi.fn>).mockResolvedValueOnce([expectedCategory]);
 
       const result = await storage.createExpenseCategory(categoryData);
 
@@ -60,7 +61,7 @@ describe('Expense Categories Unit Tests', () => {
         isActive: true
       };
 
-      (db.returning as any).mockRejectedValueOnce(new Error('Duplicate category name'));
+      (db.returning as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Duplicate category name'));
 
       await expect(storage.createExpenseCategory(categoryData)).rejects.toThrow('Duplicate category name');
     });
@@ -85,7 +86,7 @@ describe('Expense Categories Unit Tests', () => {
         }
       ];
 
-      (db.where as any).mockResolvedValueOnce(mockCategories);
+      (db.where as ReturnType<typeof vi.fn>).mockResolvedValueOnce(mockCategories);
 
       const result = await storage.getExpenseCategories();
 
@@ -95,7 +96,7 @@ describe('Expense Categories Unit Tests', () => {
     });
 
     test('should handle empty categories list', async () => {
-      (db.where as any).mockResolvedValueOnce([]);
+      (db.where as ReturnType<typeof vi.fn>).mockResolvedValueOnce([]);
 
       const result = await storage.getExpenseCategories();
 
@@ -103,7 +104,7 @@ describe('Expense Categories Unit Tests', () => {
     });
 
     test('should handle database error', async () => {
-      (db.where as any).mockRejectedValueOnce(new Error('Database connection failed'));
+      (db.where as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Database connection failed'));
 
       const result = await storage.getExpenseCategories();
 
@@ -127,7 +128,7 @@ describe('Expense Categories Unit Tests', () => {
         updatedAt: new Date()
       };
 
-      (db.returning as any).mockResolvedValueOnce([updatedCategory]);
+      (db.returning as ReturnType<typeof vi.fn>).mockResolvedValueOnce([updatedCategory]);
 
       const result = await storage.updateExpenseCategory(categoryId, updates);
 
@@ -141,7 +142,7 @@ describe('Expense Categories Unit Tests', () => {
       const categoryId = 999;
       const updates = { name: 'New Name' };
 
-      (db.returning as any).mockRejectedValueOnce(new Error('Category not found'));
+      (db.returning as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Category not found'));
 
       await expect(storage.updateExpenseCategory(categoryId, updates)).rejects.toThrow('Category not found');
     });
@@ -151,7 +152,7 @@ describe('Expense Categories Unit Tests', () => {
     test('should soft delete category (set isActive to false)', async () => {
       const categoryId = 2;
 
-      (db.where as any).mockResolvedValueOnce(undefined);
+      (db.where as ReturnType<typeof vi.fn>).mockResolvedValueOnce(undefined);
 
       await storage.deleteExpenseCategory(categoryId);
 
@@ -163,7 +164,7 @@ describe('Expense Categories Unit Tests', () => {
     test('should handle deletion error', async () => {
       const categoryId = 999;
 
-      (db.where as any).mockRejectedValueOnce(new Error('Category not found'));
+      (db.where as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Category not found'));
 
       await expect(storage.deleteExpenseCategory(categoryId)).rejects.toThrow('Category not found');
     });
@@ -180,7 +181,7 @@ describe('Expense Categories Unit Tests', () => {
         isActive: true
       };
 
-      (db.limit as any).mockResolvedValueOnce([mockCategory]);
+      (db.limit as ReturnType<typeof vi.fn>).mockResolvedValueOnce([mockCategory]);
 
       const result = await storage.getExpenseCategory(categoryId);
 
@@ -193,7 +194,7 @@ describe('Expense Categories Unit Tests', () => {
     test('should return undefined for non-existent category', async () => {
       const categoryId = 999;
 
-      (db.limit as any).mockResolvedValueOnce([]);
+      (db.limit as ReturnType<typeof vi.fn>).mockResolvedValueOnce([]);
 
       const result = await storage.getExpenseCategory(categoryId);
 
@@ -203,7 +204,7 @@ describe('Expense Categories Unit Tests', () => {
     test('should handle database error', async () => {
       const categoryId = 1;
 
-      (db.limit as any).mockRejectedValueOnce(new Error('Database error'));
+      (db.limit as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Database error'));
 
       const result = await storage.getExpenseCategory(categoryId);
 
