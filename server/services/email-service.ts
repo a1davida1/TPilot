@@ -1,6 +1,5 @@
 import sgMail from '@sendgrid/mail';
 import { safeLog } from '../lib/logger-utils.js';
-import jwt from 'jsonwebtoken';
 import { FRONTEND_URL } from '../config.js';
 
 // Initialize SendGrid
@@ -20,11 +19,6 @@ if (SENDGRID_API_KEY) {
   sgMail.setApiKey(SENDGRID_API_KEY);
 }
 
-// JWT configuration - validate once at startup
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  console.error('⚠️ JWT_SECRET is not configured - password reset emails will fail');
-}
 
 export const emailService = {
   get isEmailServiceConfigured(): boolean {
@@ -120,7 +114,7 @@ export const emailService = {
     }
   },
 
-  async sendPasswordResetEmail(to: string, username: string) {
+  async sendPasswordResetEmail(to: string, username: string, token: string) {
     if (!SENDGRID_API_KEY) {
       console.log('❌ SendGrid not configured - password reset email skipped');
       console.log('🔍 SENDGRID_API_KEY exists:', !!process.env.SENDGRID_API_KEY);
@@ -133,23 +127,9 @@ export const emailService = {
 
     console.log(`🔄 Sending password reset email to: ${to}`);
     console.log(`📧 FROM_EMAIL: ${FROM_EMAIL}`);
+    console.log(`🔑 Token length: ${token?.length || 0}`);
 
-    // Generate reset token
-    if (!JWT_SECRET) {
-      console.error('❌ JWT_SECRET not configured - cannot generate password reset token');
-      throw new Error('JWT_SECRET environment variable is required for password reset tokens');
-    }
-    
-    
-    const resetToken = jwt.sign(
-      { email: to, type: 'password-reset' },
-      JWT_SECRET,
-      { expiresIn: '1h' }
-    );
-    
-    // CRITICAL: URL-encode the token to prevent corruption
-    const encodedToken = encodeURIComponent(resetToken);
-    const resetUrl = `${FRONTEND_URL}/reset-password?token=${encodedToken}`;
+    const resetUrl = `${FRONTEND_URL}/reset-password?token=${encodeURIComponent(token)}`;
     
     console.log(`🔍 Email URL being used: ${FRONTEND_URL}`);
     console.log(`🔗 Full reset URL: ${resetUrl}`);

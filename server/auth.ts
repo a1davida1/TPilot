@@ -364,7 +364,13 @@ export function setupAuth(app: Express) {
         console.log('  ├─ To:', user.email.replace(/(.{2})(.*)(@.*)/, '$1***$3'));
         console.log('  └─ Username:', user.username);
         
-        await emailService.sendPasswordResetEmail(user.email, user.username);
+        const token = crypto.randomBytes(32).toString('hex');
+        await storage.createVerificationToken({
+          userId: user.id,
+          token,
+          expiresAt: new Date(Date.now() + 60 * 60 * 1000)
+        });
+        await emailService.sendPasswordResetEmail(user.email, user.username, token);
         
         console.log('  ✅ Password reset email sent successfully');
         console.log('  └─ Check email service logs for delivery status');
