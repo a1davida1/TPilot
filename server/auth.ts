@@ -164,8 +164,24 @@ export function setupAuth(app: Express) {
           }
         });
       }
+      
+      // Track signup metrics
+      authMetrics.track('signup', {
+        duration: Date.now() - startTime,
+        success: true,
+        userId: user.id
+      });
+      
     } catch (error) {
       safeLog('error', 'Authentication signup failed', { error: error.message });
+      
+      // Track failed signup
+      authMetrics.track('signup', {
+        duration: Date.now() - startTime,
+        success: false,
+        error: error.message
+      });
+      
       res.status(500).json({ message: 'Error creating user' });
     }
   });
@@ -298,8 +314,24 @@ export function setupAuth(app: Express) {
           role: user.role
         }
       });
+      
+      // Track successful login metrics
+      authMetrics.track('login', {
+        duration: Date.now() - startTime,
+        success: true,
+        userId: user?.id || 999 // 999 for admin
+      });
+      
     } catch (error) {
       safeLog('error', 'Authentication login failed', { error: error.message });
+      
+      // Track failed login metrics
+      authMetrics.track('login', {
+        duration: Date.now() - startTime,
+        success: false,
+        error: error.message
+      });
+      
       res.status(500).json({ message: 'Error logging in' });
     }
   });
@@ -310,7 +342,7 @@ export function setupAuth(app: Express) {
   // Note: Resend verification email route is defined at line 812 with proper rate limiting
 
   // Password reset request
-  app.post('/api/auth/forgot-password', authLimiter, async (req, res) => {
+  app.post('/api/auth/forgot-password', passwordResetLimiter, async (req, res) => {
     try {
       const { email } = req.body;
       
@@ -633,7 +665,8 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // Verify reset token route (check if token is valid without resetting)
+  // DEPRECATED ROUTE - REMOVED (use POST /api/auth/reset-password instead)
+  /*
   app.post('/api/auth/verify-reset-token', async (req, res) => {
     try {
       const { token } = req.body;
@@ -681,6 +714,7 @@ export function setupAuth(app: Express) {
       res.status(400).json({ message: 'Invalid or expired token' });
     }
   });
+  */
 
   // Delete account route
   app.delete('/api/auth/delete-account', async (req: any, res) => {
