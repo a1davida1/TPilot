@@ -38,8 +38,8 @@ const loginSchema = z.object({
 });
 
 const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  throw new Error('JWT_SECRET environment variable is required for secure token operations');
+if (!JWT_SECRET || /changeme|placeholder/i.test(JWT_SECRET)) {
+  throw new Error('JWT_SECRET environment variable is required and must not be a placeholder');
 }
 // Type assertion after validation
 const JWT_SECRET_VALIDATED: string = JWT_SECRET;
