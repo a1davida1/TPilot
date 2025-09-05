@@ -306,8 +306,47 @@ export function setupAuth(app: Express) {
 
   // OAuth routes removed - placeholder routes created unnecessary attack surface
   // When ready to implement, use proper OAuth libraries and security practices
-  
-  // Note: Resend verification email route is defined at line 812 with proper rate limiting
+
+  // Resend verification email
+  app.post('/api/auth/resend-verification', authLimiter, async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: 'Email is required' });
+      }
+
+      // Find user by email
+      const user = await storage.getUserByEmail(email);
+      
+      if (!user) {
+        // Don't reveal if email exists for security
+        return res.json({ message: 'If the email exists, a verification link has been sent' });
+      }
+
+      if (user.emailVerified) {
+        return res.status(400).json({ message: 'Email already verified' });
+      }
+
+      // Generate verification token
+      const verificationToken = crypto.randomBytes(32).toString('hex');
+      await storage.createVerificationToken({
+        userId: user.id,
+        token: verificationToken,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+      });
+
+      // Send verification email
+      if (user.email) {
+        await emailService.sendVerificationEmail(user.email, user.username, verificationToken);
+      }
+
+      res.json({ message: 'Verification email sent. Please check your inbox.' });
+    } catch (error) {
+      safeLog('error', 'Resend verification request failed', { error: error.message });
+      res.status(500).json({ message: 'Error sending verification email' });
+    }
+  });
 
   // Password reset request
   app.post('/api/auth/forgot-password', authLimiter, async (req, res) => {

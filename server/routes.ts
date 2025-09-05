@@ -15,7 +15,7 @@ import { validateEnvironment, securityMiddleware, ipLoggingMiddleware, errorHand
 import { authenticateToken } from "./middleware/auth.js";
 
 // Route modules
-import { authRoutes } from "./routes/auth.js";
+// import { authRoutes } from "./routes/auth.js"; // Removed - using server/auth.ts instead
 import { uploadRoutes } from "./routes/upload.js";
 import { registerExpenseRoutes } from "./expense-routes.js";
 
@@ -202,8 +202,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ROUTE REGISTRATION
   // ==========================================
   
-  // Authentication routes
-  app.use('/api/auth', authRoutes);
+  // Authentication routes - handled by setupAuth() in server/auth.ts
+  // app.use('/api/auth', authRoutes); // Removed - duplicate auth system
   
   // Upload routes
   app.use('/api/upload', uploadRoutes);
