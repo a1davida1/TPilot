@@ -87,6 +87,15 @@ app.use((req, res, next) => {
       try {
         const { setupVite } = await import("./vite");
         await setupVite(app, server);
+        
+        // Add 404 handler only for API routes in development (after Vite setup)
+        app.use((req, res, next) => {
+          // Only apply 404 handler to API routes, let Vite handle frontend routes
+          if (req.path.startsWith('/api/') || req.path.startsWith('/auth/') || req.path.startsWith('/webhook/')) {
+            return notFoundHandler(req, res, next);
+          }
+          next();
+        });
       } catch (error) {
         logger.warn("Could not setup Vite in development mode:", error);
       }
@@ -97,14 +106,28 @@ app.use((req, res, next) => {
       const __dirname = path.dirname(fileURLToPath(import.meta.url));
       const clientPath = path.join(__dirname, "..", "client", "dist");
       
+      // Check if build directory exists
+      const fs = await import("fs");
+      if (!fs.existsSync(clientPath)) {
+        logger.error(`Production build directory not found: ${clientPath}`);
+        logger.error("Please run 'npm run build' to create the production build");
+        process.exit(1);
+      }
+      
+      // Add 404 handler for API routes in production (before static serving)
+      app.use((req, res, next) => {
+        // Apply 404 handler only to API routes, let static serving handle frontend routes
+        if (req.path.startsWith('/api/') || req.path.startsWith('/auth/') || req.path.startsWith('/webhook/')) {
+          return notFoundHandler(req, res, next);
+        }
+        next();
+      });
+      
       app.use(express.static(clientPath));
       app.get("*", (_req, res) => {
         res.sendFile(path.join(clientPath, "index.html"));
       });
     }
-
-    // Add 404 handler for truly unmatched routes (after all routes AND frontend serving)
-    app.use(notFoundHandler);
 
     app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
       const status = err.status || err.statusCode || 500;
