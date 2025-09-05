@@ -8,14 +8,21 @@ import { generateEnhancedContent } from './services/enhanced-ai-service';
 import { SafetyManager as SafetySystems } from './lib/safety-systems';
 import { sql } from 'drizzle-orm';
 
+interface DeploymentTestResult {
+  name: string;
+  status: 'PASSED' | 'FAILED' | 'WARNING';
+  duration?: number;
+  error?: unknown;
+}
+
 export async function runDeploymentTests() {
   console.log('🚀 Starting Production Deployment Tests...\n');
   
-  const results = {
+  const results: { passed: number; failed: number; warnings: number; tests: DeploymentTestResult[] } = {
     passed: 0,
     failed: 0,
     warnings: 0,
-    tests: [] as any[]
+    tests: []
   };
 
   // Test 1: Database Connectivity
@@ -217,8 +224,8 @@ export async function runDeploymentTests() {
     // Test with invalid input
     const errorContent = await generateEnhancedContent({
       mode: 'text',
-      platform: 'invalid_platform' as any,
-      style: 'invalid_style' as any
+      platform: 'invalid_platform' as unknown as never,
+      style: 'invalid_style' as unknown as never
     });
     
     if (errorContent && errorContent.content) {
