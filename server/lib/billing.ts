@@ -72,7 +72,7 @@ export class CCBillProcessor {
     return `https://api.ccbill.com/wap-frontflex/flexforms/${formData.formName}?${params.toString()}`;
   }
   
-  static async handleWebhook(payload: any): Promise<{ success: boolean; message: string }> {
+  static async handleWebhook(payload: Record<string, unknown>): Promise<{ success: boolean; message: string }> {
     try {
       const {
         eventType,

@@ -43,7 +43,7 @@ export function AdminDashboard() {
   const { toast } = useToast();
   const { token } = useAuth();
   const [selectedPeriod, setSelectedPeriod] = useState('7d');
-  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [selectedUser, setSelectedUser] = useState<{ id: number; username: string; email: string; tier: string; isActive: boolean; isVerified: boolean } | null>(null);
   const [actionType, setActionType] = useState<'ban' | 'suspend' | 'unban' | 'reset-password' | 'tier-management' | 'user-details' | null>(null);
   const [reason, setReason] = useState('');
   const [duration, setDuration] = useState('24');

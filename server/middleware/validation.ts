@@ -64,7 +64,7 @@ export function validate(schema: ZodSchema, source: ValidationSource = Validatio
 // Multi-source validation for complex endpoints
 export function validateMultiple(validations: Array<{ schema: ZodSchema; source: ValidationSource }>) {
   return (req: Request, res: Response, next: NextFunction) => {
-    const errors: Record<string, any> = {};
+    const errors: Record<string, { fieldErrors: Record<string, string[] | undefined>; formErrors: string[] }> = {};
     
     for (const { schema, source } of validations) {
       const data = req[source];

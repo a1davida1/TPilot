@@ -1,10 +1,10 @@
 import crypto from 'crypto';
 
 // Memory-based state store (Redis can be added later if needed)
-const memoryStore = new Map<string, any>();
+const memoryStore = new Map<string, { data: string; expires: number }>();
 
 export const stateStore = {
-  async set(key: string, value: any, expiresIn = 3600) {
+  async set(key: string, value: unknown, expiresIn = 3600) {
     const data = JSON.stringify(value);
     memoryStore.set(key, { 
       data, 

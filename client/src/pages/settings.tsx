@@ -44,7 +44,7 @@ export default function SettingsPage() {
   });
 
   const { data: subscriptionData } = useQuery<{
-    subscription: any;
+    subscription: { id: string; status: string; plan: string; nextBillDate?: string; amount?: number } | null;
     isPro: boolean;
     tier: string;
   }>({
@@ -52,7 +52,7 @@ export default function SettingsPage() {
   });
 
   const updateSettingsMutation = useMutation({
-    mutationFn: async (settings: any) => {
+    mutationFn: async (settings: Record<string, unknown>) => {
       return apiRequest('PATCH', '/api/user/settings', settings);
     },
     onSuccess: () => {

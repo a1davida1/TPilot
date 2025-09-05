@@ -25,7 +25,7 @@ class PerformanceMonitor {
       const originalEnd = res.end;
       
       // Override end function to capture metrics
-      res.end = (...args: any[]) => {
+      res.end = (...args: Parameters<typeof originalEnd>) => {
         // Restore original end function
         res.end = originalEnd;
         
@@ -42,7 +42,7 @@ class PerformanceMonitor {
           timestamp: new Date(),
           memoryUsage: process.memoryUsage(),
           userAgent: req.get('user-agent'),
-          userId: (req as any).user?.id
+          userId: (req as { user?: { id: string } }).user?.id
         };
         
         // Store metric

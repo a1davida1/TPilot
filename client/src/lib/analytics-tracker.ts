@@ -7,7 +7,7 @@ interface AnalyticsEvent {
   type: string;
   element?: string;
   page: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   value?: number;
 }
 
@@ -35,7 +35,7 @@ class AnalyticsTracker {
   private pageStartTime: number = 0;
   private session: SessionData;
   private heartbeatInterval?: number;
-  private eventQueue: any[] = [];
+  private eventQueue: AnalyticsEvent[] = [];
   private isTracking: boolean = true;
   private maxScrollDepth: number = 0;
 

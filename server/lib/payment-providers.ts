@@ -44,8 +44,8 @@ abstract class BasePaymentProvider {
   abstract isConfigured: boolean;
   
   abstract generatePaymentLink(options: PaymentLinkOptions): Promise<PaymentResult>;
-  abstract verifyWebhook(signature: string, payload: any): Promise<boolean>;
-  abstract processWebhook(payload: any): Promise<{
+  abstract verifyWebhook(signature: string, payload: Record<string, unknown>): Promise<boolean>;
+  abstract processWebhook(payload: Record<string, unknown>): Promise<{
     userId: number;
     subscriptionType: string;
     status: 'active' | 'cancelled' | 'failed';

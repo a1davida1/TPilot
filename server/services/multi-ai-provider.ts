@@ -25,7 +25,7 @@ const anthropic = process.env.ANTHROPIC_API_KEY ? new Anthropic({ apiKey: proces
 const gemini = (process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY) ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY }) : null;
 
 interface MultiAIRequest {
-  user: any;
+  user: { id: number; email?: string; tier?: string };
   platform: string;
   imageDescription?: string;
   customPrompt?: string;
@@ -59,7 +59,7 @@ export async function generateWithMultiProvider(request: MultiAIRequest): Promis
     try {
       safeLog('info', 'AI provider attempt', { provider: provider.name, inputCost: provider.inputCost });
       
-      let result: any = null;
+      let result: MultiAIResponse | null = null;
       switch (provider.name) {
         case 'gemini-flash':
           result = await generateWithGemini(prompt);

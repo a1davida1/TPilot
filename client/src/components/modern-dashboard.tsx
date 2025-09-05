@@ -68,7 +68,7 @@ interface ActivityItem {
 
 interface ModernDashboardProps {
   isRedditConnected?: boolean;
-  user?: any;
+  user?: { id: number; username: string; email?: string; tier?: string; isVerified?: boolean };
   userTier?: 'guest' | 'free' | 'basic' | 'starter' | 'pro' | 'premium' | 'admin';
   isAdmin?: boolean;
 }

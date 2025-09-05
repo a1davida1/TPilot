@@ -57,8 +57,8 @@ export const authenticateToken = async (req: AuthRequest, res: express.Response,
   }
 
   // Fallback to session-based auth
-  if (req.session && (req.session as any).user) {
-    req.user = (req.session as any).user;
+  if (req.session && (req.session as { user?: UserType }).user) {
+    req.user = (req.session as { user: UserType }).user;
     return next();
   }
 
@@ -69,6 +69,6 @@ export const createToken = (user: UserType): string => {
   return jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
 };
 
-export const verifyToken = (token: string): any => {
+export const verifyToken = (token: string): { userId: number; email: string; iat: number; exp: number } => {
   return jwt.verify(token, JWT_SECRET);
 };

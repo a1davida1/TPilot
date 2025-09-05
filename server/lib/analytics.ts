@@ -1,7 +1,7 @@
 import { db } from "../db.js";
 import { eventLogs } from "../../shared/schema.js";
 
-export async function trackEvent(userId: number | null, type: string, meta: any = {}) {
+export async function trackEvent(userId: number | null, type: string, meta: Record<string, unknown> = {}) {
   try {
     await db.insert(eventLogs).values({
       userId: userId ?? null,

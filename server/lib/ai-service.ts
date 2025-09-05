@@ -62,7 +62,7 @@ export class AiService {
       
       return { ...response, cached: false };
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Gemini generation failed:', error);
       
       // Check if Gemini has quota issues too

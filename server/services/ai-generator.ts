@@ -55,7 +55,7 @@ Please provide:
 
 Make the content authentic and engaging.`;
 
-    const messages: any[] = [
+    const messages: Array<OpenAI.Chat.Completions.ChatCompletionMessageParam> = [
       { role: 'system', content: 'You are a professional social media content creator. Generate authentic, engaging content.' },
       { role: 'user', content: basePrompt }
     ];
