@@ -41,8 +41,8 @@ export default [
     rules: {
       // TypeScript rules - relaxed for current codebase state
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
-      '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-non-null-assertion': 'warn',
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-non-null-assertion': 'error',
       
       // React rules
       'react/react-in-jsx-scope': 'off',
