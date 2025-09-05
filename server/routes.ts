@@ -108,11 +108,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Validate required environment variables first
   validateEnvironment();
   
-  // Apply security middleware
-  app.use(securityMiddleware);
-  
-  // Apply IP logging middleware
+  // Log IPs first so downstream middleware can use req.userIP
   app.use(ipLoggingMiddleware);
+  app.use(securityMiddleware);
 
   // Session configuration (MUST BE BEFORE AUTH ROUTES)
   let store: session.Store | undefined;
