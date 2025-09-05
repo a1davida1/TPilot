@@ -7,7 +7,7 @@ import { emailService } from './services/email-service';
 import crypto from 'crypto';
 import { z } from 'zod';
 import { authLimiter } from './middleware/security.js';
-import { safeLog, redactUserData } from './lib/logger-utils.js';
+import { safeLog } from './lib/logger-utils.js';
 import { FRONTEND_URL } from './config.js';
 import { verificationLimiter, passwordResetLimiter, loginLimiter, signupLimiter, passwordChangeLimiter } from './middleware/simple-rate-limit.js';
 import { authMetrics } from './services/basic-metrics.js';

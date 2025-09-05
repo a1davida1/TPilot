@@ -40,7 +40,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db.js";
 import { eq, desc, and, gte, sql, count } from "drizzle-orm";
-import { safeLog, redactUserData } from './lib/logger-utils.js';
+import { safeLog } from './lib/logger-utils.js';
 
 export interface IStorage {
   // User operations
@@ -408,7 +408,6 @@ class PostgreSQLStorage implements IStorage {
         }
       }
 
-      const today = new Date().toISOString().split('T')[0];
       let streak = 0;
       let currentDate = new Date();
 
@@ -696,7 +695,7 @@ class PostgreSQLStorage implements IStorage {
       return results.map(r => ({
         ...r.expense,
         category: r.category
-      })) as any;
+      })) as (Expense & { category: ExpenseCategory | null })[];
     } catch (error) {
       console.error('Error getting user expenses:', { error: error.message });
       return [];
