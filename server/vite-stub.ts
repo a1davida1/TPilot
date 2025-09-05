@@ -1,3 +1,3 @@
-export function setupVite(app: any, server: any) { 
+export function setupVite(_app: unknown, _server: unknown) { 
   return Promise.resolve(); 
 }
