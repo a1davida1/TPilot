@@ -9,6 +9,7 @@ interface AudienceData {
   bestTime: string;
   activeUsers: string;
   engagement: number;
+  demographics: {
     age: string;
     location: string;
     interests: string[];
@@ -42,6 +43,7 @@ export function AudienceInsights() {
 
   const audienceData: AudienceData[] = insightsData?.audienceData || [];
   const topSubreddits = insightsData?.topSubreddits || [];
+  const postingSchedule: Record<string, string[]> = insightsData?.postingSchedule || {};
 
   // Show message when no data is available
   if (!isLoading && audienceData.length === 0) {
@@ -111,6 +113,7 @@ export function AudienceInsights() {
                 </div>
                 
                 <div className="mt-3 flex flex-wrap gap-1">
+                  {platform.demographics?.interests.map((interest) => (
                     <Badge key={interest} variant="secondary" className="text-xs">
                       {interest}
                     </Badge>
@@ -153,43 +156,44 @@ export function AudienceInsights() {
         </CardContent>
       </Card>
 
-      {/* Best Posting Schedule */}
-      <Card className="bg-gray-900/50 backdrop-blur-xl border-white/10">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-blue-400" />
-            Optimal Posting Schedule
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-7 gap-2 text-xs">
-            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
-              <div key={day} className="text-center">
-                <p className="font-medium mb-2">{day}</p>
-                <div className="space-y-1">
-                  <div className="h-6 bg-green-500/20 rounded text-green-400 flex items-center justify-center">9PM</div>
-                  <div className="h-6 bg-yellow-500/20 rounded text-yellow-400 flex items-center justify-center">3PM</div>
-                  <div className="h-6 bg-gray-500/20 rounded text-gray-400 flex items-center justify-center">11AM</div>
+      {Object.keys(postingSchedule).length > 0 ? (
+        <Card className="bg-gray-900/50 backdrop-blur-xl border-white/10">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-blue-400" />
+              Optimal Posting Schedule
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-7 gap-2 text-xs">
+              {Object.entries(postingSchedule).map(([day, times]) => (
+                <div key={day} className="text-center">
+                  <p className="font-medium mb-2">{day}</p>
+                  <div className="space-y-1">
+                    {times.map(t => (
+                      <div key={t} className="h-6 bg-green-500/20 rounded text-green-400 flex items-center justify-center">
+                        {t}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-          <div className="mt-4 flex items-center gap-4 text-xs">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-green-500/20 rounded" />
-              <span>High engagement</span>
+              ))}
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-yellow-500/20 rounded" />
-              <span>Medium</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-gray-500/20 rounded" />
-              <span>Low</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="bg-gray-900/50 backdrop-blur-xl border-white/10">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-blue-400" />
+              Optimal Posting Schedule
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-xs text-gray-400">No schedule data yet</p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
