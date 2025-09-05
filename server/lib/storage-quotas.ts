@@ -4,7 +4,7 @@
  */
 
 import { db } from '../db';
-import { mediaAssets, users, type User } from '@shared/schema';
+import { mediaAssets, users } from '@shared/schema';
 import { eq, sql, and } from 'drizzle-orm';
 import { env } from './config';
 

@@ -141,8 +141,7 @@ class PostgreSQLStorage implements IStorage {
   // User operations
   async getUser(id: number): Promise<User | undefined> {
     try {
-      const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
-      const user = result[0];
+      const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
       return user ?? undefined;
     } catch (error) {
       safeLog('error', 'Storage operation failed - getting user:', { error: error.message });
