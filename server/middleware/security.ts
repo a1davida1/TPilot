@@ -6,7 +6,7 @@ import hpp from "hpp";
 import winston from "winston";
 import dotenv from "dotenv";
 import crypto from "crypto";
-import { logger as appLogger } from "../bootstrap/logger.js";
+import { logger as appLogger, validateSentryDSN } from "../bootstrap/logger.js";
 
 // Only load dotenv if NOT in production
 // In production deployments, secrets are already available as env vars
@@ -39,7 +39,6 @@ const envValidationRules: EnvValidationRule[] = [
     required: false, 
     validator: (val) => {
       if (!val) return true; // Optional
-      const { validateSentryDSN } = require('../bootstrap/logger');
       const { isValid } = validateSentryDSN(val);
       return isValid;
     }, 
