@@ -63,6 +63,11 @@ export function TrendingTags() {
   // Get unique categories for filter
   const categories = Array.from(new Set(allTrendingTags.map(t => t.category))).sort();
 
+  const avgGrowth =
+    filteredTags.length > 0
+      ? (filteredTags.reduce((sum, t) => sum + parseFloat(t.growth), 0) / filteredTags.length).toFixed(1) + '%'
+      : 'N/A';
+
   const copyTag = async (tag: string) => {
     try {
       await navigator.clipboard.writeText(`#${tag}`);
@@ -150,7 +155,7 @@ export function TrendingTags() {
           </div>
           <div className="p-3 bg-green-900/20 rounded-lg border border-green-500/20">
             <p className="text-xs text-gray-400">Avg Growth</p>
-            <p className="text-xl font-bold">+22%</p>
+            <p className="text-xl font-bold">{avgGrowth}</p>
           </div>
         </div>
 
