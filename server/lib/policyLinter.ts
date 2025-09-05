@@ -1,4 +1,3 @@
-import { SubredditRule } from "@shared/schema.js";
 import { db } from "../db.js";
 import { eq } from "drizzle-orm";
 import { subredditRules } from "@shared/schema.js";
@@ -110,7 +109,7 @@ export class PolicyLinter {
     }
 
     // Check for links and validate domains
-    const linkRegex = /https?:\/\/(www\.)?([^\/\s]+)/gi;
+    const linkRegex = /https?:\/\/(www\.)?([^/\s]+)/gi;
     const links = Array.from(fullText.matchAll(linkRegex));
     
     for (const link of links) {
