@@ -313,12 +313,6 @@ function setupAuthRoutes(app: Express) {
     }
   });
 
-  // Get current user
-  app.get('/api/auth/user', (req, res) => {
-    if (req.isAuthenticated()) {
-      res.json(req.user);
-    } else {
-      res.status(401).json({ error: 'Not authenticated' });
-    }
-  });
+  // Get current user - REMOVED: Duplicate endpoint
+  // The main /api/auth/user endpoint is handled in server/auth.ts with JWT support
 }
