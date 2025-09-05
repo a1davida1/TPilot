@@ -2,7 +2,7 @@ import { InstagramAPI } from './instagram-api.js';
 import { TwitterAPI } from './twitter-api.js';
 import { TikTokAPI } from './tiktok-api.js';
 import { YouTubeAPI } from './youtube-api.js';
-import type { SocialMediaAccount, SocialMediaPost, InsertSocialMediaPost } from '@shared/schema.js';
+// Removed unused type imports
 
 export type Platform = 'instagram' | 'twitter' | 'tiktok' | 'youtube';
 
@@ -33,12 +33,12 @@ export interface EngagementMetrics {
 
 // Unified Social Media Manager
 export class SocialMediaManager {
-  private apis: Map<Platform, any> = new Map();
+  private apis: Map<Platform, InstagramAPI | TwitterAPI | TikTokAPI | YouTubeAPI> = new Map();
 
   constructor() {}
 
   // Connect a social media account
-  connectAccount(platform: Platform, credentials: any) {
+  connectAccount(platform: Platform, credentials: Record<string, string>) {
     switch (platform) {
       case 'instagram':
         this.apis.set(platform, new InstagramAPI(
@@ -79,32 +79,32 @@ export class SocialMediaManager {
     try {
       switch (platform) {
         case 'instagram':
-          return await api.createPost({
+          return await (api as InstagramAPI).createPost({
             imageUrl: content.mediaUrls?.[0],
             videoUrl: content.mediaUrls?.find(url => url.includes('.mp4')),
             caption: content.text,
             hashtags: content.hashtags,
           });
 
-        case 'twitter':
-          // Upload media first if provided
-          let mediaIds: string[] = [];
+        case 'twitter': {
+          const twitterApi = api as TwitterAPI;
+          const mediaIds: string[] = [];
           if (content.mediaUrls?.length) {
             for (const mediaUrl of content.mediaUrls) {
               const mediaType = mediaUrl.includes('.mp4') ? 'video' : 'image';
-              const uploadResult = await api.uploadMedia(mediaUrl, mediaType);
+              const uploadResult = await twitterApi.uploadMedia(mediaUrl, mediaType);
               if (uploadResult.success && uploadResult.mediaId) {
                 mediaIds.push(uploadResult.mediaId);
               }
             }
           }
-
-          return await api.createTweet({
-            text: content.hashtags 
+          return await twitterApi.createTweet({
+            text: content.hashtags
               ? `${content.text}\n\n${content.hashtags.map(tag => `#${tag}`).join(' ')}`
               : content.text,
             mediaIds: mediaIds.length > 0 ? mediaIds : undefined,
           });
+        }
 
         case 'tiktok':
           if (!content.mediaUrls?.[0]?.includes('.mp4')) {
@@ -114,7 +114,7 @@ export class SocialMediaManager {
               error: 'TikTok requires video content',
             };
           }
-          return await api.createPost({
+          return await (api as TikTokAPI).createPost({
             videoUrl: content.mediaUrls[0],
             caption: content.text,
             hashtags: content.hashtags,
@@ -128,7 +128,7 @@ export class SocialMediaManager {
               error: 'YouTube requires video content',
             };
           }
-          return await api.createPost({
+          return await (api as YouTubeAPI).createPost({
             videoUrl: content.mediaUrls[0],
             title: content.title || content.text.substring(0, 100),
             description: content.description || content.text,
@@ -184,7 +184,21 @@ export class SocialMediaManager {
     }
 
     try {
-      const result = await api.getPostMetrics?.(postId);
+      let result;
+      switch (platform) {
+        case 'instagram':
+          result = await (api as InstagramAPI).getPostMetrics?.(postId);
+          break;
+        case 'twitter':
+          result = await (api as TwitterAPI).getUserMetrics?.(postId);
+          break;
+        case 'tiktok':
+          result = await (api as TikTokAPI).getPostMetrics?.(postId);
+          break;
+        case 'youtube':
+          result = await (api as YouTubeAPI).getVideoMetrics?.(postId);
+          break;
+      }
       if (!result?.success) {
         return null;
       }
@@ -248,13 +262,13 @@ export class SocialMediaManager {
 
     switch (platform) {
       case 'instagram':
-        return await api.getAccountInsights?.();
+        return await (api as InstagramAPI).getAccountInsights?.();
       case 'twitter':
-        return await api.getUserMetrics?.('me'); // Or specific user ID
+        return await (api as TwitterAPI).getUserMetrics?.('me'); // Or specific user ID
       case 'tiktok':
-        return await api.getUserInfo?.();
+        return await (api as TikTokAPI).getUserInfo?.();
       case 'youtube':
-        return await api.getChannelMetrics?.();
+        return await (api as YouTubeAPI).getChannelMetrics?.();
       default:
         throw new Error(`Account metrics not implemented for ${platform}`);
     }

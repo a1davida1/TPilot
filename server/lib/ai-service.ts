@@ -183,7 +183,7 @@ Return ONLY the JSON object above with actual content. No other text.`;
   private static parseGeminiResponse(text: string, platforms: string[]): GeneratedContent[] {
     try {
       // Clean the response text
-      let cleanText = text.trim();
+      const cleanText = text.trim();
       
       // Try multiple JSON extraction strategies
       let jsonStr: string | null = null;

@@ -107,7 +107,7 @@ export async function rankAndSelect(variants:any){
 export async function pipelineRewrite({ platform, voice="flirty_playful", style, mood, existingCaption, imageUrl, nsfw=false }:{
   platform:"instagram"|"x"|"reddit"|"tiktok", voice?:string, style?:string, mood?:string, existingCaption:string, imageUrl?:string, nsfw?:boolean }){
   try {
-    let facts = imageUrl ? await extractFacts(imageUrl) : undefined;
+    const facts = imageUrl ? await extractFacts(imageUrl) : undefined;
     let variants = await variantsRewrite({ platform, voice, style, mood, existingCaption, facts, nsfw });
     let ranked = await rankAndSelect(variants);
     let out = ranked.final;

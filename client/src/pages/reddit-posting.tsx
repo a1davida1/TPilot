@@ -267,7 +267,7 @@ export default function RedditPostingPage() {
       return;
     }
 
-    let postData: any = {
+    const postData: any = {
       subreddit,
       title,
       nsfw,

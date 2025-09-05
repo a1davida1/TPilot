@@ -11,7 +11,9 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "fix-imports": "bash fix-all-imports.sh"
+    "fix-imports": "bash fix-all-imports.sh",
+    "lint": "eslint .",
+    "test": "vitest run"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.37.0",
