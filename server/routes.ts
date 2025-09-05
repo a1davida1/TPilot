@@ -138,7 +138,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     resave: true, // Changed to true for OAuth state persistence
     saveUninitialized: true, // Required for OAuth flows
     cookie: {
-      secure: false, // Always false for development OAuth to work
+      secure: IS_PRODUCTION,
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
       sameSite: 'lax' // Allows OAuth redirects
