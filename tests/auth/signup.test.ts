@@ -1,17 +1,18 @@
+/* eslint-env node, jest */
 import request from 'supertest';
 import express from 'express';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // In-memory stores for mocking  
-const users: any[] = [];
-const tokens: any[] = [];
+const users: Array<Record<string, unknown>> = [];
+const tokens: Array<Record<string, unknown>> = [];
 
 vi.mock('../../server/storage', () => ({
   storage: {
     getUser: vi.fn().mockImplementation(async (id: number) => users.find(u => u.id === id)),
     getUserByUsername: vi.fn().mockImplementation(async (username: string) => users.find(u => u.username === username)),
     getUserByEmail: vi.fn().mockImplementation(async (email: string) => users.find(u => u.email === email)),
-    createUser: vi.fn().mockImplementation(async (data: any) => {
+    createUser: vi.fn().mockImplementation(async (data: Record<string, unknown>) => {
       const user = { id: users.length + 1, emailVerified: false, ...data };
       users.push(user);
       return user;
@@ -20,7 +21,7 @@ vi.mock('../../server/storage', () => ({
       const user = users.find(u => u.id === userId);
       if (user) user.emailVerified = verified;
     }),
-    createVerificationToken: vi.fn().mockImplementation(async (data: any) => {
+    createVerificationToken: vi.fn().mockImplementation(async (data: Record<string, unknown>) => {
       const token = { id: tokens.length + 1, ...data };
       tokens.push(token);
       return token;
