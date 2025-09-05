@@ -20,7 +20,7 @@ export class TwitterAPI {
   }
 
   // Generate OAuth 1.0a signature (simplified version)
-  private generateAuthHeader(method: string, url: string, params: Record<string, string> = {}) {
+  private generateAuthHeader(method: string, url: string, _params: Record<string, string> = {}) {
     // In production, use a proper OAuth 1.0a library like 'oauth-1.0a'
     const timestamp = Math.floor(Date.now() / 1000).toString();
     const nonce = Math.random().toString(36).substring(2);
