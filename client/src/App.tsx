@@ -88,7 +88,7 @@ function GalleryPage() {
 
 function AuthenticatedRoutes() {
   const { user } = useAuth();
-  const isAdmin = user && (user.id === 999 || user.username === 'admin' || user.isAdmin);
+  const isAdmin = Boolean(user?.isAdmin);
   const userTier = user?.tier || 'free';
 
   return (
