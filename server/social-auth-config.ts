@@ -1,6 +1,8 @@
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as FacebookStrategy } from 'passport-facebook';
+import * as redditStrategyPkg from 'passport-reddit';       // CJS module
+const RedditStrategy = (redditStrategyPkg as any).Strategy;
 import { storage } from './storage';
 import type { User } from '@shared/schema';
 
@@ -71,11 +73,32 @@ export function configureSocialAuth() {
     }));
   }
 
-  // Reddit OAuth Strategy - temporarily disabled due to import issues
-  // Will be enabled once passport-reddit ES module compatibility is resolved
-  // if (process.env.REDDIT_CLIENT_ID && process.env.REDDIT_CLIENT_SECRET) {
-  //   // Reddit strategy implementation
-  // }
+  // Reddit OAuth Strategy
+  if (process.env.REDDIT_CLIENT_ID && process.env.REDDIT_CLIENT_SECRET) {
+    passport.use(
+      new RedditStrategy(
+        {
+          clientID: process.env.REDDIT_CLIENT_ID,
+          clientSecret: process.env.REDDIT_CLIENT_SECRET,
+          callbackURL: '/api/reddit/callback',
+          scope: ['identity'],
+          state: true,
+        } as any,
+        async (accessToken, refreshToken, profile, done) => {
+          await handleSocialAuth(
+            'reddit',
+            {
+              id: profile.id,
+              username: profile.name,
+              emails: [],
+              photos: [{ value: (profile as any).icon_img }],
+            },
+            done,
+          );
+        },
+      ),
+    );
+  }
 
   // Serialize and deserialize user
   passport.serializeUser((user: any, done) => {
@@ -98,14 +121,14 @@ export const socialAuthRoutes = {
   googleAuth: passport.authenticate('google', { scope: ['profile', 'email'] }),
   googleCallback: passport.authenticate('google', { 
     failureRedirect: '/login?error=google_auth_failed',
-    successRedirect: '/' 
+    successRedirect: '/dashboard' 
   }),
 
   // Facebook routes
   facebookAuth: passport.authenticate('facebook', { scope: ['email'] }),
   facebookCallback: passport.authenticate('facebook', { 
     failureRedirect: '/login?error=facebook_auth_failed',
-    successRedirect: '/' 
+    successRedirect: '/dashboard' 
   }),
 
   // Reddit routes
@@ -115,6 +138,6 @@ export const socialAuthRoutes = {
   } as any),
   redditCallback: passport.authenticate('reddit', { 
     failureRedirect: '/login?error=reddit_auth_failed',
-    successRedirect: '/' 
+    successRedirect: '/dashboard?reddit=connected' 
   })
 };

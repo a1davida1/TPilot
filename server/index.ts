@@ -92,7 +92,7 @@ app.use((req, res, next) => {
         app.use((req, res, next) => {
           // Only apply 404 handler to API routes, let Vite handle frontend routes
           if (req.path.startsWith('/api/') || req.path.startsWith('/auth/') || req.path.startsWith('/webhook/')) {
-            return notFoundHandler(req, res, next);
+            return notFoundHandler(req, res);
           }
           next();
         });
@@ -118,7 +118,7 @@ app.use((req, res, next) => {
       app.use((req, res, next) => {
         // Apply 404 handler only to API routes, let static serving handle frontend routes
         if (req.path.startsWith('/api/') || req.path.startsWith('/auth/') || req.path.startsWith('/webhook/')) {
-          return notFoundHandler(req, res, next);
+          return notFoundHandler(req, res);
         }
         next();
       });
