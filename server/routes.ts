@@ -158,16 +158,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   passport.deserializeUser(async (id: any, done) => {
     try {
-      // Handle admin user specially
-      if (id === 999 || id === 'admin') {
-        done(null, { id: 999, username: 'admin', isAdmin: true });
-      } else if (typeof id === 'object') {
-        // Already deserialized
-        done(null, id);
-      } else {
-        const user = await storage.getUser(id);
-        done(null, user);
-      }
+      if (typeof id === 'object') return done(null, id);
+      const user = await storage.getUser(id);
+      done(null, user);
     } catch (error) {
       done(error, null);
     }
