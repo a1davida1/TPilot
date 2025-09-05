@@ -43,7 +43,7 @@ export class RedisBullQueue implements IQueue {
     console.log('📦 Redis BullMQ Queue backend closed');
   }
 
-  async enqueue<T = any>(
+  async enqueue<T = unknown>(
     queueName: string,
     payload: T,
     options: QueueJobOptions = {}
@@ -65,7 +65,7 @@ export class RedisBullQueue implements IQueue {
     return job.id ?? '';
   }
 
-  async process<T = any>(
+  async process<T = unknown>(
     queueName: string,
     handler: QueueJobHandler<T>,
     options: { concurrency?: number } = {}

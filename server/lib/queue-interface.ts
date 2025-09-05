@@ -26,7 +26,7 @@ export interface IQueue {
   /**
    * Add a job to the queue
    */
-  enqueue<T = any>(
+  enqueue<T = unknown>(
     queueName: string,
     payload: T,
     options?: QueueJobOptions
@@ -35,7 +35,7 @@ export interface IQueue {
   /**
    * Register a processor for a queue
    */
-  process<T = any>(
+  process<T = unknown>(
     queueName: string,
     handler: QueueJobHandler<T>,
     options?: { concurrency?: number }
@@ -84,7 +84,7 @@ export interface IQueue {
   /**
    * Get recent jobs for monitoring (optional)
    */
-  getRecentJobs?(queueName: string, limit?: number): Promise<any[]>;
+  getRecentJobs?(queueName: string, limit?: number): Promise<unknown[]>;
 
   /**
    * Retry failed jobs (optional)

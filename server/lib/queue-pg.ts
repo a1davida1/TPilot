@@ -33,7 +33,7 @@ export class PgQueue implements IQueue {
     console.log('📦 PostgreSQL Queue backend closed');
   }
 
-  async enqueue<T = any>(
+  async enqueue<T = unknown>(
     queueName: string,
     payload: T,
     options: QueueJobOptions = {}
@@ -42,7 +42,7 @@ export class PgQueue implements IQueue {
     
     const [job] = await db.insert(queueJobs).values({
       queueName,
-      payload: payload as any,
+      payload: payload as unknown,
       maxAttempts: options.attempts || 3,
       delayUntil,
       status: delayUntil ? 'delayed' : 'pending',
@@ -51,7 +51,7 @@ export class PgQueue implements IQueue {
     return job.id.toString();
   }
 
-  async process<T = any>(
+  async process<T = unknown>(
     queueName: string,
     handler: QueueJobHandler<T>,
     options: { concurrency?: number } = {}
@@ -178,7 +178,7 @@ export class PgQueue implements IQueue {
     }
   }
 
-  private async processJob(job: any, handler: QueueJobHandler): Promise<void> {
+  private async processJob(job: unknown, handler: QueueJobHandler): Promise<void> {
     try {
       // Mark job as active
       await db
