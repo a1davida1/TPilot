@@ -51,16 +51,8 @@ export function setupAuth(app: Express) {
   app.post('/api/auth/signup', signupLimiter, validate(signupValidationSchema), async (req, res) => {
     const startTime = Date.now();
     try {
-      // Validate input
-      const validationResult = signupSchema.safeParse(req.body);
-      if (!validationResult.success) {
-        return res.status(400).json({ 
-          message: 'Validation failed', 
-          errors: validationResult.error.flatten().fieldErrors 
-        });
-      }
-      
-      const { username, password, email } = validationResult.data;
+      // Input already validated by middleware
+      const { username, password, email } = req.body;
 
       // Check if user exists by username OR email
       const existingUserByUsername = await storage.getUserByUsername(username);
