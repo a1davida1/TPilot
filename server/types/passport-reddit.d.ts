@@ -4,7 +4,7 @@ declare module 'passport-reddit' {
   export interface Profile {
     id: string;
     name?: string;
-    _json: any;
+    _json: Record<string, unknown>;
     provider: string;
   }
   
@@ -15,7 +15,7 @@ declare module 'passport-reddit' {
     scope?: string[];
   }
   
-  export type VerifyCallback = (error: any, user?: any, info?: any) => void;
+  export type VerifyCallback = (error: Error | null, user?: unknown, info?: unknown) => void;
   export type VerifyFunction = (accessToken: string, refreshToken: string, profile: Profile, done: VerifyCallback) => void;
   
   export class Strategy extends OAuth2Strategy {
