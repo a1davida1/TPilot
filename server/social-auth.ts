@@ -177,9 +177,21 @@ function setupAuthRoutes(app: Express) {
       // Check if session exists first
       if (!req.session) {
         // No session, just clear cookies and return success
-        res.clearCookie('connect.sid');
-        res.clearCookie('authToken');
-        res.clearCookie('thottopilot.sid');
+        res.clearCookie('connect.sid', {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict'
+        });
+        res.clearCookie('authToken', {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict'
+        });
+        res.clearCookie('thottopilot.sid', {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict'
+        });
         return res.json({ message: 'Logged out successfully' });
       }
 
@@ -198,16 +210,40 @@ function setupAuthRoutes(app: Express) {
                 console.error('Session destroy error:', destroyErr);
               }
               // Clear cookies regardless
-              res.clearCookie('connect.sid');
-              res.clearCookie('authToken');
-              res.clearCookie('thottopilot.sid');
+              res.clearCookie('connect.sid', {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'strict'
+              });
+              res.clearCookie('authToken', {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'strict'
+              });
+              res.clearCookie('thottopilot.sid', {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'strict'
+              });
               res.json({ message: 'Logged out successfully' });
             });
           } else {
             // No session.destroy, just clear cookies
-            res.clearCookie('connect.sid');
-            res.clearCookie('authToken');
-            res.clearCookie('thottopilot.sid');
+            res.clearCookie('connect.sid', {
+              httpOnly: true,
+              secure: process.env.NODE_ENV === 'production',
+              sameSite: 'strict'
+            });
+            res.clearCookie('authToken', {
+              httpOnly: true,
+              secure: process.env.NODE_ENV === 'production',
+              sameSite: 'strict'
+            });
+            res.clearCookie('thottopilot.sid', {
+              httpOnly: true,
+              secure: process.env.NODE_ENV === 'production',
+              sameSite: 'strict'
+            });
             res.json({ message: 'Logged out successfully' });
           }
         });
@@ -218,25 +254,61 @@ function setupAuthRoutes(app: Express) {
             if (err) {
               console.error('Session destroy error:', err);
             }
-            res.clearCookie('connect.sid');
-            res.clearCookie('authToken');
-            res.clearCookie('thottopilot.sid');
+            res.clearCookie('connect.sid', {
+              httpOnly: true,
+              secure: process.env.NODE_ENV === 'production',
+              sameSite: 'strict'
+            });
+            res.clearCookie('authToken', {
+              httpOnly: true,
+              secure: process.env.NODE_ENV === 'production',
+              sameSite: 'strict'
+            });
+            res.clearCookie('thottopilot.sid', {
+              httpOnly: true,
+              secure: process.env.NODE_ENV === 'production',
+              sameSite: 'strict'
+            });
             res.json({ message: 'Logged out successfully' });
           });
         } else {
           // Just clear cookies
-          res.clearCookie('connect.sid');
-          res.clearCookie('authToken');
-          res.clearCookie('thottopilot.sid');
+          res.clearCookie('connect.sid', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict'
+          });
+          res.clearCookie('authToken', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict'
+          });
+          res.clearCookie('thottopilot.sid', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict'
+          });
           res.json({ message: 'Logged out successfully' });
         }
       }
     } catch (error) {
       console.error('Logout error:', error);
       // Even on error, clear cookies to help user
-      res.clearCookie('connect.sid');
-      res.clearCookie('authToken');
-      res.clearCookie('thottopilot.sid');
+      res.clearCookie('connect.sid', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      });
+      res.clearCookie('authToken', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      });
+      res.clearCookie('thottopilot.sid', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      });
       res.json({ message: 'Logged out (with errors)' });
     }
   });
