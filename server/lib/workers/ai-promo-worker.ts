@@ -29,7 +29,13 @@ export class AiPromoWorker {
       logger.info(`Processing AI promo job for generation ${generationId}`);
 
       // Generate promotional content variants
-      const results: any[] = [];
+      interface ContentResult {
+        success: boolean;
+        content?: string;
+        error?: string;
+        variant: number;
+      }
+      const results: ContentResult[] = [];
       
       for (let i = 0; i < variants; i++) {
         logger.info(`Generating variant ${i + 1}/${variants}`);
@@ -64,7 +70,7 @@ export class AiPromoWorker {
 
       return { success: true, results };
 
-    } catch (error: any) {
+    } catch (error: Error) {
       logger.error(`AI promo job for generation ${generationId} failed:`, { error: error.message, stack: error.stack });
 
       // Update generation status to failed
@@ -95,7 +101,7 @@ export class AiPromoWorker {
     }
   }
 
-  private async updateGenerationResults(generationId: number, results: any[]) {
+  private async updateGenerationResults(generationId: number, results: ContentResult[]) {
     try {
       // Use the first result to update the generation record
       const firstResult = results[0];
@@ -137,7 +143,7 @@ export class AiPromoWorker {
     }
   }
 
-  private async logEvent(userId: number, type: string, meta: any) {
+  private async logEvent(userId: number, type: string, meta: Record<string, unknown>) {
     try {
       await db.insert(eventLogs).values({
         userId,

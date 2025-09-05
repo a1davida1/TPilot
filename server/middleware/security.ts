@@ -6,6 +6,7 @@ import hpp from "hpp";
 import winston from "winston";
 import dotenv from "dotenv";
 import crypto from "crypto";
+import express from "express";
 import { logger as appLogger, validateSentryDSN } from "../bootstrap/logger.js";
 
 // Only load dotenv if NOT in production
@@ -198,7 +199,7 @@ export const generationLimiter = rateLimit({
 // ==========================================
 // INPUT SANITIZATION MIDDLEWARE
 // ==========================================
-export const inputSanitizer = (req: any, res: any, next: any) => {
+export const inputSanitizer = (req: express.Request, res: express.Response, next: express.NextFunction) => {
   // Sanitize request body, query, and params
   mongoSanitize({
     replaceWith: '_',
@@ -218,7 +219,7 @@ export const inputSanitizer = (req: any, res: any, next: any) => {
 };
 
 // Custom sanitization for specific threats
-function sanitizeObject(obj: any): void {
+function sanitizeObject(obj: Record<string, unknown>): void {
   for (const key in obj) {
     if (typeof obj[key] === 'string') {
       // Remove potential XSS payloads
@@ -242,7 +243,7 @@ function sanitizeObject(obj: any): void {
 // ==========================================
 // API KEY VALIDATION MIDDLEWARE
 // ==========================================
-export const validateApiKey = (req: any, res: any, next: any) => {
+export const validateApiKey = (req: express.Request, res: express.Response, next: express.NextFunction) => {
   const apiKey = req.headers['x-api-key'];
   
   // Skip validation for non-API routes
@@ -280,7 +281,7 @@ function isValidApiKeyFormat(key: string): boolean {
 // ==========================================
 // CONTENT-TYPE VALIDATION MIDDLEWARE
 // ==========================================
-export const validateContentType = (req: any, res: any, next: any) => {
+export const validateContentType = (req: express.Request, res: express.Response, next: express.NextFunction) => {
   // Only validate POST, PUT, PATCH requests
   if (!['POST', 'PUT', 'PATCH'].includes(req.method)) {
     return next();
@@ -381,7 +382,7 @@ export const securityMiddleware = [
   compression(),
 
   // General rate limiting for API routes
-  (req: any, res: any, next: any) => {
+  (req: express.Request, res: express.Response, next: express.NextFunction) => {
     if (req.path.startsWith('/api/')) {
       return generalLimiter(req, res, next);
     }
@@ -392,7 +393,7 @@ export const securityMiddleware = [
 // ==========================================
 // IP LOGGING MIDDLEWARE
 // ==========================================
-export const ipLoggingMiddleware = (req: any, res: any, next: any) => {
+export const ipLoggingMiddleware = (req: express.Request, res: express.Response, next: express.NextFunction) => {
   const userIP = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 
                  req.headers['x-real-ip'] || 
                  req.connection?.remoteAddress || 
@@ -419,7 +420,7 @@ export const ipLoggingMiddleware = (req: any, res: any, next: any) => {
 // ==========================================
 // ERROR HANDLER MIDDLEWARE
 // ==========================================
-export const errorHandler = (err: any, req: any, res: any, next: any) => {
+export const errorHandler = (err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
   logger.error('Error:', {
     message: err.message,
     stack: err.stack,
@@ -445,7 +446,7 @@ export const errorHandler = (err: any, req: any, res: any, next: any) => {
 // ==========================================
 // 404 NOT FOUND HANDLER
 // ==========================================
-export const notFoundHandler = (req: any, res: any) => {
+export const notFoundHandler = (req: express.Request, res: express.Response) => {
   const userIP = req.userIP || req.ip || 'unknown';
   const path = req.path || req.url || 'unknown';
   const method = req.method || 'unknown';

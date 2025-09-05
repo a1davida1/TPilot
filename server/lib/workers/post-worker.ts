@@ -48,7 +48,15 @@ export class PostWorker {
       }
 
       // Prepare post options
-      const postOptions: any = {
+      interface RedditPostOptions {
+        subreddit: string;
+        title: string;
+        body: string;
+        nsfw: boolean;
+        url?: string;
+      }
+      
+      const postOptions: RedditPostOptions = {
         subreddit,
         title: titleFinal,
         body: bodyFinal,
@@ -91,7 +99,7 @@ export class PostWorker {
         throw new Error(result.error || 'Reddit posting failed');
       }
 
-    } catch (error: any) {
+    } catch (error: Error) {
       logger.error(`Post job ${postJobId} failed:`, { error });
 
       // Update job status to failed
@@ -162,7 +170,7 @@ export class PostWorker {
     }
   }
 
-  private async updateJobStatus(postJobId: number, status: string, resultData: any) {
+  private async updateJobStatus(postJobId: number, status: string, resultData: Record<string, unknown>) {
     try {
       await db
         .update(postJobs)
@@ -187,7 +195,7 @@ export class PostWorker {
     }
   }
 
-  private async logEvent(userId: number, type: string, meta: any) {
+  private async logEvent(userId: number, type: string, meta: Record<string, unknown>) {
     try {
       await db.insert(eventLogs).values({
         userId,
