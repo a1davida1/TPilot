@@ -27,11 +27,18 @@ import {
 
 export function UnifiedLanding() {
   const [scrollY, setScrollY] = useState(0);
+  const [metrics, setMetrics] = useState<{ creators: number; posts: number; rating: number } | null>(null);
   const { toast } = useToast();
   
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
     window.addEventListener('scroll', handleScroll);
+    
+    fetch('/api/metrics')
+      .then(res => (res.ok ? res.json() : null))
+      .then(setMetrics)
+      .catch(() => {});
+      
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -63,7 +70,7 @@ export function UnifiedLanding() {
           <div className="text-center max-w-4xl mx-auto">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-100 dark:bg-purple-900/30 rounded-full text-purple-700 dark:text-purple-300 text-sm font-semibold mb-8">
               <Crown className="h-4 w-4" />
-              Trusted by 10,000+ Content Creators
+              {metrics ? `Trusted by ${metrics.creators.toLocaleString()} Content Creators` : 'Trusted by creators'}
             </div>
             
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 dark:text-white mb-8 leading-tight">
@@ -106,7 +113,7 @@ export function UnifiedLanding() {
                     <div key={i} className="w-8 h-8 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full border-2 border-white" />
                   ))}
                 </div>
-                <span className="font-semibold">10k+ creators</span>
+                <span className="font-semibold">{metrics ? `${metrics.creators.toLocaleString()} creators` : '—'}</span>
               </div>
               <div className="flex items-center gap-1">
                 <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
@@ -114,7 +121,7 @@ export function UnifiedLanding() {
               </div>
               <div className="flex items-center gap-1">
                 <TrendingUp className="h-4 w-4" />
-                <span className="font-semibold">2.4M+ posts created</span>
+                <span className="font-semibold">{metrics ? `${metrics.posts.toLocaleString()} posts created` : '—'}</span>
               </div>
             </div>
           </div>
