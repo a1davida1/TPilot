@@ -85,26 +85,27 @@ Keep it authentic and engaging for ${platform}.
       throw new Error('No image provided');
     }
 
-    // Use multi-provider system with Gemini first (70x cheaper than OpenAI)
-    // Note: This require() will be converted to import() in future refactor
-    const { generateWithMultiProvider } = require('./services/multi-ai-provider');
-    
-    const response = await generateWithMultiProvider(
-      [
+    // Use OpenAI for image analysis and caption generation
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
         {
-          type: "text",
-          text: "You are an expert content creator specializing in adult content creation. Analyze images and create engaging, authentic social media content that respects platform guidelines while being appealing and personality-driven.\n\n" + prompt
-        },
-        imageContent
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "You are an expert content creator specializing in adult content creation. Analyze images and create engaging, authentic social media content that respects platform guidelines while being appealing and personality-driven.\n\n" + prompt
+            },
+            imageContent
+          ]
+        }
       ],
-      { 
-        responseFormat: "json_object",
-        maxTokens: 1000,
-        temperature: 0.8
-      }
-    );
+      response_format: { type: "json_object" },
+      max_tokens: 1000,
+      temperature: 0.8
+    });
 
-    const result = JSON.parse(response.content || '{}');
+    const result = JSON.parse(response.choices[0]?.message?.content || '{}');
     
     return {
       caption: result.caption || "Beautiful moment captured",
