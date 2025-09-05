@@ -31,6 +31,24 @@ interface AnalyticsRequest extends express.Request {
   sessionID: string;
 }
 
+// Import users table for type inference
+import { users } from "@shared/schema.js";
+
+// Auth request interface that includes user  
+interface AuthenticatedRequest extends express.Request {
+  user?: typeof users.$inferSelect;
+}
+
+// Session interface with Reddit OAuth properties
+interface RedditSessionData {
+  redditOAuthState?: string;
+  redditConnected?: boolean;
+}
+
+declare module 'express-session' {
+  interface SessionData extends RedditSessionData {}
+}
+
 // Service imports
 import { generateContent } from "./services/content-generator.js";
 import { generateAIContent, analyzeImageForContent } from "./services/ai-generator.js";
@@ -570,7 +588,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Get user stats
   // Debug endpoint for Reddit OAuth troubleshooting (temporary)
-  app.get('/api/debug/session', (req: any, res) => {
+  app.get('/api/debug/session', (req: express.Request, res) => {
     res.json({
       sessionId: req.sessionID,
       hasSession: !!req.session,
@@ -751,7 +769,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // DISABLED - Using MediaManager endpoint from api-routes.ts instead
   // This endpoint was conflicting with the proper implementation that uses MediaManager
   /*
-  app.get('/api/media', authenticateToken, async (req: any, res) => {
+  app.get('/api/media', authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       const userId = req.user?.id;
       if (!userId) {
@@ -770,7 +788,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // DISABLED - Using MediaManager endpoint from api-routes.ts instead
   // This endpoint was conflicting with the proper implementation that uses S3/database storage
   /*
-  app.post('/api/media/upload', authenticateToken, upload.single('file'), async (req: any, res) => {
+  app.post('/api/media/upload', authenticateToken, upload.single('file'), async (req: AuthenticatedRequest, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
@@ -799,7 +817,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // DISABLED - Using MediaManager endpoint from api-routes.ts instead
   /*
-  app.delete('/api/media/:id', authenticateToken, async (req: any, res) => {
+  app.delete('/api/media/:id', authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       const imageId = parseInt(req.params.id);
       const userId = req.user.id;
@@ -823,7 +841,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   */
 
   // Storage usage endpoint - REAL
-  app.get('/api/storage/usage', authenticateToken, async (req: any, res) => {
+  app.get('/api/storage/usage', authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       const userId = req.user.id;
       const images = await storage.getUserImages(userId);
@@ -858,7 +876,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI generation endpoint - REAL
-  app.post('/api/ai/generate', authenticateToken, async (req: any, res) => {
+  app.post('/api/ai/generate', authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       const { prompt, platforms, styleHints, variants } = req.body;
       
@@ -914,7 +932,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Billing payment link endpoint - REAL
-  app.post('/api/billing/payment-link', authenticateToken, async (req: any, res) => {
+  app.post('/api/billing/payment-link', authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       const { plan, provider = 'stripe' } = req.body;
       const engines = {
@@ -940,7 +958,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User settings endpoints - REAL
-  app.get('/api/user/settings', authenticateToken, async (req: any, res) => {
+  app.get('/api/user/settings', authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       const preferences = await storage.getUserPreferences(req.user.id);
       
@@ -959,7 +977,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch('/api/user/settings', authenticateToken, async (req: any, res) => {
+  app.patch('/api/user/settings', authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       const updated = await storage.updateUserPreferences(req.user.id, req.body);
       res.json({ success: true, settings: updated });
@@ -970,7 +988,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Reddit communities endpoint - REAL (uses actual data)
-  app.get('/api/reddit/communities', authenticateToken, async (req: any, res) => {
+  app.get('/api/reddit/communities', authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       // This will use the real communities data file
       const communities = [
@@ -987,7 +1005,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Subscription status endpoint - REAL
-  app.get('/api/subscription', authenticateToken, async (req: any, res) => {
+  app.get('/api/subscription', authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       const user = await storage.getUser(req.user.id);
       
@@ -1033,7 +1051,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Social media quick post endpoint - REAL
-  app.post('/api/social-media/quick-post', authenticateToken, async (req: any, res) => {
+  app.post('/api/social-media/quick-post', authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       const { platform, content, title, subreddit } = req.body;
       
@@ -1057,7 +1075,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Social media posts history - REAL
-  app.get('/api/social-media/posts', authenticateToken, async (req: any, res) => {
+  app.get('/api/social-media/posts', authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       const posts = await storage.getUserSocialMediaPosts(req.user.id, {
         limit: parseInt(req.query.limit as string) || 50,
@@ -1074,7 +1092,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Image protection endpoint - REAL
-  app.post('/api/protect-image/:imageId', authenticateToken, async (req: any, res) => {
+  app.post('/api/protect-image/:imageId', authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       const imageId = parseInt(req.params.imageId);
       const { protectionLevel } = req.body;

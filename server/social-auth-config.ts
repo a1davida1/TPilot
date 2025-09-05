@@ -2,15 +2,15 @@ import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as FacebookStrategy } from 'passport-facebook';
 import * as redditStrategyPkg from 'passport-reddit';       // CJS module
-const RedditStrategy = (redditStrategyPkg as any).Strategy;
+const RedditStrategy = (redditStrategyPkg as unknown as { Strategy: typeof import('passport-reddit').Strategy }).Strategy;
 import { storage } from './storage';
 import type { User } from '@shared/schema';
 
 // Helper function to handle social auth user creation/update
 async function handleSocialAuth(
   provider: string,
-  profile: any,
-  done: (error: any, user?: any) => void
+  profile: { id: string; emails?: { value: string }[]; username?: string; displayName?: string; photos?: { value: string }[]; },
+  done: (error: Error | null, user?: User) => void
 ) {
   try {
     const email = profile.emails?.[0]?.value || `${profile.id}@${provider}.social`;

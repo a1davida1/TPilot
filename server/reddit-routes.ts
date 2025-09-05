@@ -4,7 +4,7 @@ import { RedditManager, getRedditAuthUrl, exchangeRedditCode } from './lib/reddi
 import { db } from './db.js';
 import { creatorAccounts } from '@shared/schema.js';
 import { eq, and } from 'drizzle-orm';
-import { authenticateToken } from './middleware/auth.js';
+import { authenticateToken, type AuthRequest } from './middleware/auth.js';
 import { stateStore, encrypt, decrypt, rateLimit } from './services/state-store.js';
 import {
   listCommunities,
@@ -19,7 +19,7 @@ import { logger } from './bootstrap/logger.js';
 export function registerRedditRoutes(app: Express) {
   
   // Start Reddit OAuth flow - SECURE VERSION
-  app.get('/api/reddit/connect', rateLimit, authenticateToken, async (req: any, res) => {
+  app.get('/api/reddit/connect', rateLimit, authenticateToken, async (req: AuthRequest, res) => {
     try {
       if (!process.env.REDDIT_CLIENT_ID) {
         return res.status(503).json({ 
@@ -204,7 +204,7 @@ export function registerRedditRoutes(app: Express) {
   });
 
   // Get user's Reddit connections
-  app.get('/api/reddit/accounts', authenticateToken, async (req: any, res) => {
+  app.get('/api/reddit/accounts', authenticateToken, async (req: AuthRequest, res) => {
     try {
       const userId = req.user?.id;
       if (!userId) {
@@ -237,7 +237,7 @@ export function registerRedditRoutes(app: Express) {
   });
 
   // Disconnect Reddit account
-  app.delete('/api/reddit/accounts/:accountId', authenticateToken, async (req: any, res) => {
+  app.delete('/api/reddit/accounts/:accountId', authenticateToken, async (req: AuthRequest, res) => {
     try {
       const { accountId } = req.params;
       const userId = req.user?.id;
@@ -270,7 +270,7 @@ export function registerRedditRoutes(app: Express) {
   });
 
   // Test Reddit connection
-  app.post('/api/reddit/test', authenticateToken, async (req: any, res) => {
+  app.post('/api/reddit/test', authenticateToken, async (req: AuthRequest, res) => {
     try {
       const userId = req.user?.id;
       if (!userId) {
@@ -345,7 +345,7 @@ export function registerRedditRoutes(app: Express) {
   });
 
   // Enhanced submit endpoint with image support
-  app.post('/api/reddit/submit', authenticateToken, async (req: any, res) => {
+  app.post('/api/reddit/submit', authenticateToken, async (req: AuthRequest, res) => {
     try {
       const userId = req.user?.id;
       if (!userId) {
@@ -470,7 +470,7 @@ export function registerRedditRoutes(app: Express) {
   });
 
   // Add new endpoint to check subreddit capabilities
-  app.get('/api/reddit/subreddit/:name/capabilities', authenticateToken, async (req: any, res) => {
+  app.get('/api/reddit/subreddit/:name/capabilities', authenticateToken, async (req: AuthRequest, res) => {
     try {
       const userId = req.user?.id;
       if (!userId) {
@@ -492,7 +492,7 @@ export function registerRedditRoutes(app: Express) {
   });
 
   // Admin CRUD endpoints
-  app.post('/api/reddit/communities', authenticateToken, async (req: any, res) => {
+  app.post('/api/reddit/communities', authenticateToken, async (req: AuthRequest, res) => {
     if (!req.user?.isAdmin) return res.status(403).json({ error: 'Forbidden' });
     try {
       const community = await createCommunity(req.body);
@@ -502,7 +502,7 @@ export function registerRedditRoutes(app: Express) {
     }
   });
 
-  app.put('/api/reddit/communities/:id', authenticateToken, async (req: any, res) => {
+  app.put('/api/reddit/communities/:id', authenticateToken, async (req: AuthRequest, res) => {
     if (!req.user?.isAdmin) return res.status(403).json({ error: 'Forbidden' });
     try {
       const community = await updateCommunity(req.params.id, req.body);
@@ -512,7 +512,7 @@ export function registerRedditRoutes(app: Express) {
     }
   });
 
-  app.delete('/api/reddit/communities/:id', authenticateToken, async (req: any, res) => {
+  app.delete('/api/reddit/communities/:id', authenticateToken, async (req: AuthRequest, res) => {
     if (!req.user?.isAdmin) return res.status(403).json({ error: 'Forbidden' });
     try {
       await deleteCommunity(req.params.id);

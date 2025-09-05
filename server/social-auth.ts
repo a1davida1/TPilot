@@ -12,7 +12,7 @@ export function setupSocialAuth(app: Express) {
   app.use(passport.session());
 
   // Serialize user for session
-  passport.serializeUser((user: any, done) => {
+  passport.serializeUser((user: User, done) => {
     done(null, user.id);
   });
 

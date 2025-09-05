@@ -1,4 +1,5 @@
 import type { RequestHandler } from "express";
+import express from "express";
 import { db } from "../db.js";
 import { users, subscriptions } from "../../shared/schema.js";
 import { eq } from "drizzle-orm";
@@ -12,7 +13,7 @@ function rankOf(tier: string | null | undefined): number {
 }
 
 export function requireTier(minTier: Tier): RequestHandler {
-  return async (req: any, res, next) => {
+  return async (req: express.Request & { user?: any }, res: express.Response, next: express.NextFunction) => {
     try {
       const uid = req.user?.id as number | undefined;
       if (!uid) return res.status(401).json({ error: "unauthorized" });

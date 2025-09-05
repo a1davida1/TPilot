@@ -1,4 +1,5 @@
 import { Express } from 'express';
+import express from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
@@ -14,7 +15,7 @@ const JWT_SECRET_VALIDATED: string = JWT_SECRET;
 
 export function setupAdminRoutes(app: Express) {
   // Admin middleware to check if user is admin
-  const requireAdmin = (req: any, res: any, next: any) => {
+  const requireAdmin = (req: express.Request & { user?: any; isAuthenticated?: () => boolean }, res: express.Response, next: express.NextFunction) => {
     // Check if user is authenticated via session OR JWT
     let user = null;
     let token = null;
@@ -35,7 +36,7 @@ export function setupAdminRoutes(app: Express) {
     // If we have a token, verify it
     if (token) {
       try {
-        const decoded = jwt.verify(token, JWT_SECRET_VALIDATED) as any;
+        const decoded = jwt.verify(token, JWT_SECRET_VALIDATED) as { id: number; username?: string; isAdmin?: boolean; iat: number; exp: number };
         user = decoded;
       } catch (error) {
         // JWT is invalid, user remains null
@@ -47,7 +48,7 @@ export function setupAdminRoutes(app: Express) {
     }
 
     // Check if user is admin (ID 999, username 'admin', or has isAdmin flag)
-    if ((user as any).id !== 999 && (user as any).username !== 'admin' && !(user as any).isAdmin) {
+    if ((user as { id: number; username?: string; isAdmin?: boolean }).id !== 999 && (user as { username?: string }).username !== 'admin' && !(user as { isAdmin?: boolean }).isAdmin) {
       return res.status(403).json({ message: 'Admin access required' });
     }
 
