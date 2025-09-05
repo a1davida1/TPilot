@@ -1,9 +1,11 @@
+import { Request, Response, NextFunction } from 'express';
+
 // Simple in-memory rate limiter - no Redis dependency
 // Each limiter instance gets its own Map to prevent cross-contamination
 export function simpleRateLimiter(windowMs = 900000, maxAttempts = 3) {
-  const attemptStore = new Map(); // Unique Map per limiter instance
+  const attemptStore = new Map<string, { count: number; resetTime: number }>(); // Unique Map per limiter instance
   
-  return (req: any, res: any, next: any) => {
+  return (req: Request, res: Response, next: NextFunction) => {
     const key = req.body?.email || req.ip;
     const now = Date.now();
     
