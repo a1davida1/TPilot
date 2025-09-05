@@ -265,7 +265,8 @@ export const validateApiKey = (req: any, res: any, next: any) => {
   
   // Validate API key format if provided
   if (apiKey && !isValidApiKeyFormat(apiKey)) {
-    logger.warn(`Invalid API key format from ${req.userIP}`);
+    const originIP = req.userIP || req.ip;
+    logger.warn(`Invalid API key format from ${originIP}`);
     return res.status(401).json({ error: 'Invalid API key format' });
   }
   
