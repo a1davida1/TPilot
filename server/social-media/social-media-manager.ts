@@ -209,10 +209,10 @@ export class SocialMediaManager {
         case 'instagram':
           return {
             platform,
-            likes: metrics.find((m: any) => m.name === 'likes')?.values[0]?.value || 0,
-            comments: metrics.find((m: any) => m.name === 'comments')?.values[0]?.value || 0,
-            shares: metrics.find((m: any) => m.name === 'shares')?.values[0]?.value || 0,
-            views: metrics.find((m: any) => m.name === 'impressions')?.values[0]?.value || 0,
+            likes: metrics.find((m: { name: string; values: { value: number }[] }) => m.name === 'likes')?.values[0]?.value || 0,
+            comments: metrics.find((m: { name: string; values: { value: number }[] }) => m.name === 'comments')?.values[0]?.value || 0,
+            shares: metrics.find((m: { name: string; values: { value: number }[] }) => m.name === 'shares')?.values[0]?.value || 0,
+            views: metrics.find((m: { name: string; values: { value: number }[] }) => m.name === 'impressions')?.values[0]?.value || 0,
           };
 
         case 'twitter':
@@ -254,7 +254,7 @@ export class SocialMediaManager {
   }
 
   // Get account metrics
-  async getAccountMetrics(platform: Platform): Promise<any> {
+  async getAccountMetrics(platform: Platform): Promise<unknown> {
     const api = this.apis.get(platform);
     if (!api) {
       throw new Error(`${platform} not connected`);
