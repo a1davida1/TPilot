@@ -23,9 +23,14 @@ import {
 export function PremiumLanding() {
   const [isVisible, setIsVisible] = useState(false);
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
+  const [metrics, setMetrics] = useState<{ creators: number; posts: number; engagement: number } | null>(null);
 
   useEffect(() => {
     setIsVisible(true);
+    fetch('/api/metrics')
+      .then(res => (res.ok ? res.json() : null))
+      .then(setMetrics)
+      .catch(() => {});
     
     // Rotate testimonials
     const interval = setInterval(() => {
@@ -86,12 +91,14 @@ export function PremiumLanding() {
     }
   ];
 
-  const stats = [
-    { number: "10,000+", label: "Active Creators", icon: <Users className="h-5 w-5" /> },
-    { number: "2.4M+", label: "Posts Generated", icon: <Sparkles className="h-5 w-5" /> },
-    { number: "340%", label: "Avg. Engagement Boost", icon: <TrendingUp className="h-5 w-5" /> },
-    { number: "98%", label: "Cost Reduction vs Competitors", icon: <DollarSign className="h-5 w-5" /> }
-  ];
+  const stats = metrics
+    ? [
+        { number: metrics.creators.toLocaleString(), label: "Active Creators", icon: <Users className="h-5 w-5" /> },
+        { number: metrics.posts.toLocaleString(), label: "Posts Generated", icon: <Sparkles className="h-5 w-5" /> },
+        { number: `${metrics.engagement}%`, label: "Avg. Engagement Boost", icon: <TrendingUp className="h-5 w-5" /> },
+        { number: "98%", label: "Cost Reduction vs Competitors", icon: <DollarSign className="h-5 w-5" /> }
+      ]
+    : [];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
