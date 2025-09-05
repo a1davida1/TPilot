@@ -49,6 +49,10 @@ export async function extractFacts(imageUrl:string){
       // Validate and clean Base64 data
       imageData = imageData.replace(/\s/g, ''); // Remove any whitespace
       
+      // Re-encode to ensure proper Base64 formatting and padding
+      imageData = Buffer.from(imageData, 'base64').toString('base64');
+      imageData += '='.repeat((4 - imageData.length % 4) % 4); // ensure padding
+      
       // Test Base64 validity by attempting to decode it
       let decodedBuffer;
       try {
