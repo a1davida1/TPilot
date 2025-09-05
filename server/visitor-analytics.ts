@@ -1,3 +1,5 @@
+import type { Request } from 'express';
+
 // Visitor Analytics System
 interface VisitorSession {
   id: string;
@@ -34,7 +36,7 @@ class VisitorAnalytics {
   private dailyStats: Map<string, AnalyticsStats> = new Map();
 
   // Generate session ID from IP + User Agent
-  private generateSessionId(req: any): string {
+  private generateSessionId(req: Request): string {
     const ip = req.ip || req.connection.remoteAddress || 'unknown';
     const userAgent = req.get('user-agent') || 'unknown';
     return Buffer.from(`${ip}-${userAgent}`).toString('base64').slice(0, 16);
@@ -52,7 +54,7 @@ class VisitorAnalytics {
   }
 
   // Track page view
-  trackPageView(req: any, path: string) {
+  trackPageView(req: Request, path: string) {
     const sessionId = this.generateSessionId(req);
     const now = new Date();
     const userAgent = req.get('user-agent') || 'unknown';
