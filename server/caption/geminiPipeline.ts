@@ -4,15 +4,25 @@ import { visionModel, textModel } from "../lib/gemini";
 import { CaptionArray, RankResult, platformChecks } from "./schema";
 
 async function load(p:string){ return fs.readFile(path.join(process.cwd(),"prompts",p),"utf8"); }
-async function b64(url:string){ 
+async function b64(url: string) {
   try {
-    const r=await fetch(url); 
-    if(!r.ok) throw new Error(`fetch failed: ${r.status} ${r.statusText}`); 
-    const b=Buffer.from(await r.arrayBuffer()); 
-    return b.toString("base64"); 
-  } catch (error) {
-    console.error('Error fetching image:', error);
-    throw new Error(`Failed to fetch image: ${error instanceof Error ? error.message : String(error)}`);
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`fetch failed: ${r.status} ${r.statusText}`);
+
+    const ct = r.headers.get("content-type") || "";
+    if (!ct.startsWith("image/"))
+      throw new Error(`unsupported content-type: ${ct}`);
+
+    const b = Buffer.from(await r.arrayBuffer());
+    const base64 = b.toString("base64");
+    if (base64.length < 100) throw new Error("image data too small");
+
+    return { base64, mimeType: ct.split(";")[0] };
+  } catch (err) {
+    console.error("Error fetching image:", err);
+    throw new Error(
+      `Failed to fetch image: ${err instanceof Error ? err.message : String(err)}`
+    );
   }
 }
 function stripToJSON(txt:string){ const i=Math.min(...[txt.indexOf("{"),txt.indexOf("[")].filter(x=>x>=0));
@@ -83,11 +93,13 @@ export async function extractFacts(imageUrl:string){
       console.log(`Processing data URL with mime type: ${mimeType}, data length: ${imageData.length}`);
       console.log(`Base64 starts with: ${imageData.substring(0, 50)}...`);
     } else {
-      console.log('Fetching image from URL:', imageUrl);
-      imageData = await b64(imageUrl);
+      console.log("Fetching image from URL:", imageUrl);
+      const fetched = await b64(imageUrl);
+      imageData = fetched.base64;
+      mimeType = fetched.mimeType;
     }
-    
-    const img={ inlineData:{ data: imageData, mimeType } };
+
+    const img = { inlineData: { data: imageData, mimeType } };
     console.log('Sending to Gemini for fact extraction...');
     try {
       const res=await visionModel.generateContent([{text:sys+"\n"+guard+"\n"+prompt}, img]);
