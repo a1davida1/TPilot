@@ -62,7 +62,7 @@ export class RedisBullQueue implements IQueue {
       },
     });
 
-    return job.id!;
+    return job.id ?? '';
   }
 
   async process<T = any>(
@@ -73,7 +73,7 @@ export class RedisBullQueue implements IQueue {
     const worker = new Worker(
       queueName,
       async (job) => {
-        await handler(job.data, job.id!);
+        await handler(job.data, job.id ?? '');
       },
       {
         connection: this.redis,
