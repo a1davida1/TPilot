@@ -89,10 +89,15 @@ export async function extractFacts(imageUrl:string){
     
     const img={ inlineData:{ data: imageData, mimeType } };
     console.log('Sending to Gemini for fact extraction...');
-    const res=await visionModel.generateContent([{text:sys+"\n"+guard+"\n"+prompt}, img]);
-    const result = stripToJSON(res.response.text());
-    console.log('Fact extraction completed successfully');
-    return result;
+    try {
+      const res=await visionModel.generateContent([{text:sys+"\n"+guard+"\n"+prompt}, img]);
+      const result = stripToJSON(res.response.text());
+      console.log('Fact extraction completed successfully');
+      return result;
+    } catch (error) {
+      console.error('Gemini visionModel.generateContent failed:', error);
+      throw error;
+    }
   } catch (error) {
     console.error('Error in extractFacts:', error);
     throw new Error(`Failed to extract facts: ${error instanceof Error ? error.message : String(error)}`);
@@ -102,13 +107,20 @@ export async function extractFacts(imageUrl:string){
 export async function generateVariants(params:{platform:"instagram"|"x"|"reddit"|"tiktok", voice:string, style?:string, mood?:string, facts:any, hint?:string, nsfw?:boolean}){
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("variants.txt");
   const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\n${params.style ? `STYLE: ${params.style}\n` : ''}${params.mood ? `MOOD: ${params.mood}\n` : ''}IMAGE_FACTS: ${JSON.stringify(params.facts)}\nNSFW: ${params.nsfw || false}\n${params.hint?`HINT:${params.hint}`:""}`;
-  const res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+user }]);
+  let res;
+  try {
+    res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+user }]);
+  } catch (error) {
+    console.error('Gemini textModel.generateContent failed:', error);
+    throw error;
+  }
   const json=stripToJSON(res.response.text());
   // Fix common safety_level values and missing fields
   if(Array.isArray(json)){
     json.forEach((item:any)=>{
-      // Accept any safety_level from AI
+      // Accept any safety_level from AI but normalize "suggestive"
       if(!item.safety_level) item.safety_level="normal";
+      else if(item.safety_level === 'suggestive') item.safety_level = 'spicy_safe';
       // Fix other fields
       if(!item.mood || item.mood.length<2) item.mood="engaging";
       if(!item.style || item.style.length<2) item.style="authentic";
@@ -143,7 +155,13 @@ export async function generateVariants(params:{platform:"instagram"|"x"|"reddit"
 
 export async function rankAndSelect(variants:any){
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rank.txt");
-  const res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+JSON.stringify(variants) }]);
+  let res;
+  try {
+    res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+JSON.stringify(variants) }]);
+  } catch (error) {
+    console.error('Gemini textModel.generateContent failed:', error);
+    throw error;
+  }
   let json=stripToJSON(res.response.text());
   
   // Handle case where AI returns array instead of ranking object
@@ -172,17 +190,23 @@ export async function rankAndSelect(variants:any){
 
 export async function pipeline({ imageUrl, platform, voice="flirty_playful", style, mood, nsfw=false }:{
   imageUrl:string, platform:"instagram"|"x"|"reddit"|"tiktok", voice?:string, style?:string, mood?:string, nsfw?:boolean }){
-  const facts = await extractFacts(imageUrl);
-  let variants = await generateVariants({ platform, voice, style, mood, facts, nsfw });
-  let ranked = await rankAndSelect(variants);
-  let out = ranked.final;
+  try {
+    const facts = await extractFacts(imageUrl);
+    let variants = await generateVariants({ platform, voice, style, mood, facts, nsfw });
+    let ranked = await rankAndSelect(variants);
+    let out = ranked.final;
 
-  const err = platformChecks(platform, out);
-  if (err) {
-    variants = await generateVariants({ platform, voice, facts, hint:`Fix: ${err}. Use IMAGE_FACTS nouns/colors/setting explicitly.`, nsfw });
-    ranked = await rankAndSelect(variants);
-    out = ranked.final;
+    const err = platformChecks(platform, out);
+    if (err) {
+      variants = await generateVariants({ platform, voice, facts, hint:`Fix: ${err}. Use IMAGE_FACTS nouns/colors/setting explicitly.`, nsfw });
+      ranked = await rankAndSelect(variants);
+      out = ranked.final;
+    }
+
+    return { provider: 'gemini', facts, variants, ranked, final: out };
+  } catch (error) {
+    const { openAICaptionFallback } = await import('./openaiFallback');
+    const final = await openAICaptionFallback({ platform, voice, imageUrl });
+    return { provider: 'openai', final } as any;
   }
-
-  return { facts, variants, ranked, final: out };
 }
