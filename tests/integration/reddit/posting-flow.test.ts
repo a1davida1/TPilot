@@ -1,3 +1,4 @@
+/* eslint-env node, jest */
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { RedditManager } from '../../../server/lib/reddit';
 
@@ -62,12 +63,12 @@ describe('Reddit Integration', () => {
     // Mock submission error by creating a new RedditManager with error-throwing reddit instance
     const errorRedditManager = {
       ...redditManager,
-      submitPost: async (options: any) => {
+      submitPost: async (_options: Record<string, unknown>) => {
         try {
           throw new Error('RATELIMIT: Rate limit exceeded');
-        } catch (error: any) {
+        } catch (error: unknown) {
           let errorMessage = 'Failed to submit post';
-          if (error.message?.includes('RATELIMIT')) {
+          if (error instanceof Error && error.message?.includes('RATELIMIT')) {
             errorMessage = 'Rate limited by Reddit. Please try again later.';
           }
           return { success: false, error: errorMessage };

@@ -1,3 +1,4 @@
+/* eslint-env node, jest */
 import express from 'express';
 import session from 'express-session';
 import request from 'supertest';
@@ -15,7 +16,7 @@ interface TestUser {
 
 const SECRET = 'test-secret';
 let app: express.Express;
-let server: any;
+let server: unknown;
 let users: TestUser[] = [];
 let sentEmails: string[] = [];
 
@@ -88,17 +89,17 @@ describe('Authentication Integration Tests', () => {
       if (!match)
         return res.status(401).json({ message: 'Invalid credentials' });
       const token = jwt.sign({ id: user.id }, SECRET, { expiresIn: '1h' });
-      (req.session as any).userId = user.id;
+      (req.session as { userId?: number }).userId = user.id;
       const { password: _pw, ...safe } = user;
       res.json({ token, user: safe });
     });
 
     // Protected user route
-    app.get('/api/auth/user', (req: any, res) => {
+    app.get('/api/auth/user', (req: express.Request & { session: { userId?: number } }, res) => {
       const auth = req.headers.authorization;
       if (auth && auth.startsWith('Bearer ')) {
         try {
-          const decoded: any = jwt.verify(auth.substring(7), SECRET);
+          const decoded = jwt.verify(auth.substring(7), SECRET) as { id: number };
           const user = users.find((u) => u.id === decoded.id);
           if (user) {
             const { password: _pw, ...safe } = user;
@@ -119,7 +120,7 @@ describe('Authentication Integration Tests', () => {
     });
 
     // Logout
-    app.post('/api/auth/logout', (req: any, res) => {
+    app.post('/api/auth/logout', (req: express.Request & { session: { destroy: (callback: () => void) => void } }, res) => {
       req.session.destroy(() => res.json({ message: 'logged out' }));
     });
 
