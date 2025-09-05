@@ -25,6 +25,7 @@ import { setupAuth } from "./auth.js";
 import { setupAdminRoutes } from "./admin-routes.js";
 import { configureSocialAuth, socialAuthRoutes } from "./social-auth-config.js";
 import { visitorAnalytics } from "./visitor-analytics.js";
+import { makePaxum, makeCoinbase, makeStripe } from "./payments/payment-providers.js";
 // Analytics request type
 interface AnalyticsRequest extends express.Request {
   sessionID: string;
@@ -882,48 +883,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Billing payment link endpoint - REAL
   app.post('/api/billing/payment-link', authenticateToken, async (req: any, res) => {
     try {
-      const { plan } = req.body;
-      
-      if (!stripe) {
+      const { plan, provider = 'stripe' } = req.body;
+      const engines = {
+        stripe: makeStripe(),
+        paxum: makePaxum(),
+        coinbase: makeCoinbase(),
+      } as const;
+      const engine = engines[provider as keyof typeof engines];
+      if (!engine || !engine.enabled) {
         return res.status(503).json({ message: 'Payment system not configured' });
       }
-      
-      const prices = {
-        starter: 999,
-        pro: 2999,
-        premium: 4999
-      };
-      
-      const session = await stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
-        line_items: [{
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: `ThottoPilot ${plan.charAt(0).toUpperCase() + plan.slice(1)}`,
-              description: `Monthly subscription to ${plan} plan`
-            },
-            unit_amount: prices[plan] || 2999,
-            recurring: {
-              interval: 'month'
-            }
-          },
-          quantity: 1
-        }],
-        mode: 'subscription',
-        success_url: `https://thottopilot.com/dashboard?payment=success&plan=${plan}`,
-        cancel_url: 'https://thottopilot.com/checkout?payment=cancelled',
-        customer_email: req.user.email,
-        metadata: {
-          userId: req.user.id.toString(),
-          plan: plan
-        }
+      const { url } = await engine.createCheckout({
+        userId: req.user.id.toString(),
+        planId: plan,
+        amountCents: 0,
+        returnUrl: `${process.env.APP_BASE_URL}/dashboard`,
       });
-      
-      res.json({ 
-        paymentUrl: session.url,
-        sessionId: session.id
-      });
+      res.json({ paymentUrl: url });
     } catch (error) {
       logger.error('Failed to generate payment link:', error);
       res.status(500).json({ message: 'Failed to generate payment link' });

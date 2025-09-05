@@ -1,3 +1,5 @@
+import { FRONTEND_URL } from '../config.js';
+
 export interface PaymentProvider {
   name: "paxum" | "coinbase" | "stripe";
   enabled: boolean;
@@ -17,12 +19,9 @@ function disabled(name: PaymentProvider["name"]): PaymentProvider {
 // Paxum
 export function makePaxum(): PaymentProvider {
   const key = process.env.PAXUM_API_KEY;
-  const baseUrl = process.env.APP_BASE_URL;
+  const baseUrl = FRONTEND_URL;
   
   if (!key) return disabled("paxum");
-  if (!baseUrl) {
-    throw new Error('APP_BASE_URL environment variable is required');
-  }
   
   return {
     name: "paxum",
@@ -98,8 +97,8 @@ export function makeCoinbase(): PaymentProvider {
               user_id: userId,
               plan_id: planId
             },
-            redirect_url: returnUrl || `${process.env.APP_BASE_URL}/billing/success`,
-            cancel_url: `${process.env.APP_BASE_URL}/billing/cancelled`,
+            redirect_url: returnUrl || `${FRONTEND_URL}/billing/success`,
+            cancel_url: `${FRONTEND_URL}/billing/cancelled`,
           })
         });
 
@@ -132,12 +131,9 @@ export function makeCoinbase(): PaymentProvider {
 // Stripe
 export function makeStripe(): PaymentProvider {
   const secretKey = process.env.STRIPE_SECRET_KEY;
-  const baseUrl = process.env.APP_BASE_URL;
+  const baseUrl = FRONTEND_URL;
   
   if (!secretKey) return disabled("stripe");
-  if (!baseUrl) {
-    throw new Error('APP_BASE_URL environment variable is required');
-  }
   
   return {
     name: "stripe",
