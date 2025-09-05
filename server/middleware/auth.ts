@@ -29,7 +29,12 @@ export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 export const authenticateToken = async (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+  let token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+  // Fall back to JWT stored in httpOnly cookie
+  if (!token && req.cookies?.authToken) {
+    token = req.cookies.authToken;
+  }
 
   // Try JWT token first
   if (token) {
