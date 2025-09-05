@@ -27,11 +27,10 @@ export function useAuth() {
   const isPublicPage = () => {
     const path = window.location.pathname;
     const publicPaths = [
-      '/forgot-password', 
+      '/forgot-password',
       '/reset-password',
       '/email-verification',
-      '/change-password',
-      '/'
+      '/change-password'
     ];
     return publicPaths.includes(path);
   };
