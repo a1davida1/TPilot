@@ -1,3 +1,4 @@
+/* eslint-env node */
 // Test Suite for ThottoPilot Critical Endpoints
 const axios = require('axios');
 
