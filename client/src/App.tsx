@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, Suspense } from "react";
 import { Switch, Route, Redirect, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -10,7 +10,7 @@ import { Header } from "@/components/header";
 import { useAuth } from "@/hooks/useAuth";
 import { SEOOptimization, seoConfigs } from "@/components/seo-optimization";
 import { LandingPage } from "@/components/landing-page";
-import Dashboard from "@/pages/dashboard";
+const Dashboard = React.lazy(() => import("@/pages/dashboard"));
 import { OnboardingWalkthrough } from "@/components/onboarding-walkthrough";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import NotFound from "@/pages/not-found";
@@ -23,12 +23,12 @@ import Settings from "@/pages/settings";
 import Checkout from "@/pages/checkout";
 import Enterprise from "@/pages/enterprise";
 import Phase4Dashboard from "@/pages/phase4";
-import { AdminDashboard } from "@/pages/admin";
-import { AdminLeadsPage } from "@/pages/admin-leads";
-import CaptionGeneratorPage from "@/pages/caption-generator";
-import RedditPostingPage from "@/pages/reddit-posting";
-import ImageShieldPage from "@/pages/imageshield";
-import TaxTracker from "@/pages/tax-tracker";
+const AdminDashboard = React.lazy(() => import("@/pages/admin").then(module => ({ default: module.AdminDashboard })));
+const AdminLeadsPage = React.lazy(() => import("@/pages/admin-leads").then(module => ({ default: module.AdminLeadsPage })));
+const CaptionGeneratorPage = React.lazy(() => import("@/pages/caption-generator"));
+const RedditPostingPage = React.lazy(() => import("@/pages/reddit-posting"));
+const ImageShieldPage = React.lazy(() => import("@/pages/imageshield"));
+const TaxTracker = React.lazy(() => import("@/pages/tax-tracker"));
 import { RedditCommunities } from "@/components/reddit-communities";
 import { ImageGallery } from "@/components/image-gallery";
 // Phase 1: Real Analytics Tracking
@@ -179,7 +179,9 @@ function Router() {
     <div className="min-h-screen bg-background">
       <Header />
       <main>
-        {isAuthenticated ? <AuthenticatedRoutes /> : <UnauthenticatedRoutes />}
+        <Suspense fallback={<div className="p-4">Loading...</div>}>
+          {isAuthenticated ? <AuthenticatedRoutes /> : <UnauthenticatedRoutes />}
+        </Suspense>
       </main>
       
       {/* Onboarding Walkthrough */}
