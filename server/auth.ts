@@ -105,10 +105,9 @@ export function setupAuth(app: Express) {
           maxAge: 24 * 60 * 60 * 1000 // 24 hours
         });
 
-        res.status(201).json({
-          message: 'User created successfully',
-          token,
-          user: {
+          res.status(201).json({
+            message: 'User created successfully',
+            user: {
             id: user.id,
             username: user.username,
             email: user.email,
@@ -144,10 +143,9 @@ export function setupAuth(app: Express) {
           { expiresIn: '24h' }
         );
 
-        res.status(201).json({
-          message: 'User created successfully. Please check your email to verify your account.',
-          token,
-          user: {
+          res.status(201).json({
+            message: 'User created successfully. Please check your email to verify your account.',
+            user: {
             id: user.id,
             username: user.username,
             email: user.email,
@@ -188,13 +186,12 @@ export function setupAuth(app: Express) {
       const { username, password, email } = validationResult.data;
       const loginIdentifier = email || username;
 
-      // CHECK FOR ADMIN LOGIN FIRST
       const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
-      const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
-      
-      if (ADMIN_EMAIL && ADMIN_PASSWORD && 
-          loginIdentifier === ADMIN_EMAIL && 
-          password === ADMIN_PASSWORD) {
+      const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH;
+
+      if (ADMIN_EMAIL && ADMIN_PASSWORD_HASH &&
+          loginIdentifier === ADMIN_EMAIL &&
+          await bcrypt.compare(password, ADMIN_PASSWORD_HASH)) {
         
         // Create admin token
         const token = jwt.sign(
@@ -217,17 +214,16 @@ export function setupAuth(app: Express) {
           maxAge: 24 * 60 * 60 * 1000
         });
 
-        return res.json({
-          token,
-          user: {
-            id: 999,
-            username: 'admin',
-            email: ADMIN_EMAIL,
-            tier: 'premium',
-            isAdmin: true,
-            role: 'admin'
-          }
-        });
+          return res.json({
+            user: {
+              id: 999,
+              username: 'admin',
+              email: ADMIN_EMAIL,
+              tier: 'premium',
+              isAdmin: true,
+              role: 'admin'
+            }
+          });
       }
 
       // Regular user login continues...
@@ -289,9 +285,8 @@ export function setupAuth(app: Express) {
         maxAge: 24 * 60 * 60 * 1000 // 24 hours
       });
 
-      res.json({
-        token,
-        user: {
+        res.json({
+          user: {
           id: user.id,
           username: user.username,
           email: user.email,

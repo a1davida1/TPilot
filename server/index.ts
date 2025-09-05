@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+import cors from "cors";
 import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
 import { setupAuth } from "./auth";
@@ -18,6 +19,9 @@ declare global {
 }
 
 const app = express();
+
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",").map(o => o.trim());
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 
 // Initialize Sentry with proper validation
 const Sentry = await initializeSentry();

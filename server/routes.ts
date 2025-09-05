@@ -133,10 +133,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(session({
     store,
     secret: SESSION_SECRET,
-    resave: true, // Changed to true for OAuth state persistence
-    saveUninitialized: true, // Required for OAuth flows
+    resave: false, // Prevent session fixation
+    saveUninitialized: false, // Only create sessions when needed
     cookie: {
-      secure: IS_PRODUCTION,
+      secure: IS_PRODUCTION, // HTTPS-only in production
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
       sameSite: 'lax' // Allows OAuth redirects
