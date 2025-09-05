@@ -166,21 +166,13 @@ export function setupAuth(app: Express) {
       }
       
       // Track signup metrics
-      authMetrics.track('signup', {
-        duration: Date.now() - startTime,
-        success: true,
-        userId: user.id
-      });
+      authMetrics.track('signup', true, Date.now() - startTime);
       
     } catch (error) {
       safeLog('error', 'Authentication signup failed', { error: error.message });
       
       // Track failed signup
-      authMetrics.track('signup', {
-        duration: Date.now() - startTime,
-        success: false,
-        error: error.message
-      });
+      authMetrics.track('signup', false, Date.now() - startTime, error.message);
       
       res.status(500).json({ message: 'Error creating user' });
     }
@@ -316,21 +308,13 @@ export function setupAuth(app: Express) {
       });
       
       // Track successful login metrics
-      authMetrics.track('login', {
-        duration: Date.now() - startTime,
-        success: true,
-        userId: user?.id || 999 // 999 for admin
-      });
+      authMetrics.track('login', true, Date.now() - startTime);
       
     } catch (error) {
       safeLog('error', 'Authentication login failed', { error: error.message });
       
       // Track failed login metrics
-      authMetrics.track('login', {
-        duration: Date.now() - startTime,
-        success: false,
-        error: error.message
-      });
+      authMetrics.track('login', false, Date.now() - startTime, error.message);
       
       res.status(500).json({ message: 'Error logging in' });
     }
