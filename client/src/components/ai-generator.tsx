@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -52,6 +52,38 @@ export function AIGenerator({ onContentGenerated }: AIGeneratorProps) {
     includeEmojis: true,
     promotionLevel: 'moderate' as 'subtle' | 'moderate' | 'direct'
   });
+
+  useEffect(() => {
+    async function loadProfile() {
+      const token = localStorage.getItem('authToken');
+      if (!token) return;
+      try {
+        const res = await fetch('/api/user/profile', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) setUserProfile(await res.json());
+      } catch {}
+    }
+    loadProfile();
+  }, []);
+
+  const saveProfile = async (profile: typeof userProfile) => {
+    setUserProfile(profile);
+    const token = localStorage.getItem('authToken');
+    try {
+      await fetch('/api/user/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token || ''}`
+        },
+        body: JSON.stringify(profile)
+      });
+    } catch {}
+  };
+
+  const updateProfile = (patch: Partial<typeof userProfile>) =>
+    saveProfile({ ...userProfile, ...patch });
   
   // Output display states
   const [generatedContent, setGeneratedContent] = useState<GeneratedContentDisplay | null>(null);
@@ -331,8 +363,8 @@ export function AIGenerator({ onContentGenerated }: AIGeneratorProps) {
             <div className="space-y-2">
               <Label className="text-xs">Tone of Voice</Label>
               <Select 
-                value={userProfile.toneOfVoice} 
-                onValueChange={(value) => setUserProfile(prev => ({ ...prev, toneOfVoice: value }))}
+                value={userProfile.toneOfVoice}
+                onValueChange={(value) => updateProfile({ toneOfVoice: value })}
               >
                 <SelectTrigger className="h-8">
                   <SelectValue />
@@ -349,8 +381,8 @@ export function AIGenerator({ onContentGenerated }: AIGeneratorProps) {
             <div className="space-y-2">
               <Label className="text-xs">Content Style</Label>
               <Select 
-                value={userProfile.contentStyle} 
-                onValueChange={(value) => setUserProfile(prev => ({ ...prev, contentStyle: value }))}
+                value={userProfile.contentStyle}
+                onValueChange={(value) => updateProfile({ contentStyle: value }))
               >
                 <SelectTrigger className="h-8">
                   <SelectValue />
@@ -367,8 +399,8 @@ export function AIGenerator({ onContentGenerated }: AIGeneratorProps) {
             <div className="space-y-2">
               <Label className="text-xs">Personal Brand</Label>
               <Select 
-                value={userProfile.personalBrand} 
-                onValueChange={(value) => setUserProfile(prev => ({ ...prev, personalBrand: value }))}
+                value={userProfile.personalBrand}
+                onChange={(e) => updateProfile({ personalBrand: e.target.value }))
               >
                 <SelectTrigger className="h-8">
                   <SelectValue />
@@ -386,8 +418,8 @@ export function AIGenerator({ onContentGenerated }: AIGeneratorProps) {
             <div className="space-y-2">
               <Label className="text-xs">Content Length</Label>
               <Select 
-                value={userProfile.contentLength} 
-                onValueChange={(value: 'short' | 'medium' | 'long') => setUserProfile(prev => ({ ...prev, contentLength: value }))}
+                value={userProfile.contentLength}
+                onValueChange={(value) => updateProfile({ contentLength: value as 'short' | 'medium' | 'long' }))
               >
                 <SelectTrigger className="h-8">
                   <SelectValue />
@@ -405,7 +437,7 @@ export function AIGenerator({ onContentGenerated }: AIGeneratorProps) {
             <Label className="text-xs">Include Emojis</Label>
             <Switch
               checked={userProfile.includeEmojis}
-              onCheckedChange={(checked) => setUserProfile(prev => ({ ...prev, includeEmojis: checked }))}
+              onCheckedChange={(checked) => updateProfile({ includeEmojis: checked }))
             />
           </div>
         </div>

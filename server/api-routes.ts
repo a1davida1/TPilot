@@ -1,6 +1,8 @@
 import type { Express } from "express";
 import { z } from "zod";
 import { db } from "./db.js";
+import { storage } from "./storage.js";
+import { insertUserPreferenceSchema } from "@shared/schema.js";
 import { AiService } from "./lib/ai-service.js";
 import { generateEnhancedContent } from "./services/enhanced-ai-service.js";
 import { MediaManager } from "./lib/media.js";
@@ -443,6 +445,29 @@ export function registerApiRoutes(app: Express) {
       console.error('Failed to get storage usage:', error);
       res.status(500).json({ error: error.message });
     }
+  });
+
+  // User profile preferences
+  app.get('/api/user/profile', authenticateToken, async (req: Request, res) => {
+    if (!req.user?.id) return res.status(401).json({ error: 'Authentication required' });
+    const prefs = await storage.getUserPreferences(req.user.id);
+    res.json(prefs?.contentPreferences || {});
+  });
+
+  app.put('/api/user/profile', authenticateToken, async (req: Request, res) => {
+    if (!req.user?.id) return res.status(401).json({ error: 'Authentication required' });
+    const body = insertUserPreferenceSchema.pick({ contentPreferences: true }).parse({
+      contentPreferences: {
+        toneOfVoice: req.body.toneOfVoice,
+        contentStyle: req.body.contentStyle,
+        personalBrand: req.body.personalBrand,
+        contentLength: req.body.contentLength,
+        includeEmojis: req.body.includeEmojis,
+        promotionLevel: req.body.promotionLevel
+      }
+    });
+    await storage.updateUserPreferences(req.user.id, { userId: req.user.id, ...body });
+    res.json(req.body);
   });
 
   // AI Generation History
