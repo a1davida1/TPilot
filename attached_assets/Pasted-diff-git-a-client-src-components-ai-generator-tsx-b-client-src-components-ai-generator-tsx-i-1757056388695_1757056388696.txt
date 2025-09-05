@@ -1,0 +1,65 @@
+diff --git a/client/src/components/ai-generator.tsx b/client/src/components/ai-generator.tsx
+@@
+-import { useState } from 'react';
++import { useState, useEffect } from 'react';
+@@
+   const [userProfile, setUserProfile] = useState({
+@@
+   });
++
++  useEffect(() => {
++    async function loadProfile() {
++      const token = localStorage.getItem('authToken');
++      if (!token) return;
++      try {
++        const res = await fetch('/api/user/profile', {
++          headers: { Authorization: `Bearer ${token}` }
++        });
++        if (res.ok) setUserProfile(await res.json());
++      } catch {}
++    }
++    loadProfile();
++  }, []);
++
++  const saveProfile = async (profile: typeof userProfile) => {
++    setUserProfile(profile);
++    const token = localStorage.getItem('authToken');
++    try {
++      await fetch('/api/user/profile', {
++        method: 'PUT',
++        headers: {
++          'Content-Type': 'application/json',
++          Authorization: `Bearer ${token || ''}`
++        },
++        body: JSON.stringify(profile)
++      });
++    } catch {}
++  };
++
++  const updateProfile = (patch: Partial<typeof userProfile>) =>
++    saveProfile({ ...userProfile, ...patch });
+@@
+-                value={userProfile.toneOfVoice}
+-                onValueChange={(value) => setUserProfile(prev => ({ ...prev, toneOfVoice: value }))}
++                value={userProfile.toneOfVoice}
++                onValueChange={(value) => updateProfile({ toneOfVoice: value })}
+@@
+-                value={userProfile.contentStyle}
+-                onValueChange={(value) => setUserProfile(prev => ({ ...prev, contentStyle: value }))}
++                value={userProfile.contentStyle}
++                onValueChange={(value) => updateProfile({ contentStyle: value })}
+@@
+-                value={userProfile.personalBrand}
+-                onChange={(e) => setUserProfile(prev => ({ ...prev, personalBrand: e.target.value }))}
++                value={userProfile.personalBrand}
++                onChange={(e) => updateProfile({ personalBrand: e.target.value })}
+@@
+-                value={userProfile.contentLength}
+-                onValueChange={(value) => setUserProfile(prev => ({ ...prev, contentLength: value as 'short' | 'medium' | 'long' }))}
++                value={userProfile.contentLength}
++                onValueChange={(value) => updateProfile({ contentLength: value as 'short' | 'medium' | 'long' })}
+@@
+-              checked={userProfile.includeEmojis}
+-              onCheckedChange={(checked) => setUserProfile(prev => ({ ...prev, includeEmojis: checked }))}
++              checked={userProfile.includeEmojis}
++              onCheckedChange={(checked) => updateProfile({ includeEmojis: checked })}
