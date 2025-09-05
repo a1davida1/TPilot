@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 // import { motion, AnimatePresence } from "framer-motion";
 import { RedditQuickPost } from "./reddit-quick-post";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   Home,
   Sparkles, 
@@ -80,6 +81,21 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const { user: authUser } = useAuth();
+  
+  // Extract token from session for API requests
+  const getAuthToken = () => {
+    try {
+      const session = localStorage.getItem('session');
+      if (session) {
+        const parsed = JSON.parse(session);
+        return parsed.token;
+      }
+    } catch (error) {
+      console.error('Error extracting auth token:', error);
+    }
+    return null;
+  };
   
   // Determine premium status
   const isPremium = isAdmin || userTier === 'premium' || userTier === 'pro' || userTier === 'admin';
@@ -220,23 +236,59 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
       return;
     }
     
-    // Show immediate success - we'll store the file locally for now
+    // Show upload progress
     toast({
-      title: "Image ready! 🎉",
-      description: `${file.name} loaded successfully. Switching to Content Creator...`,
+      title: "Uploading...",
+      description: "Processing your image",
     });
     
-    // Store the file in window for the content creator to use
-    (window as any).selectedImageFile = file;
-    
-    // Create a preview URL
-    const previewUrl = URL.createObjectURL(file);
-    (window as any).selectedImagePreview = previewUrl;
-    
-    // Switch to the content generator section
-    setTimeout(() => {
-      setActiveSection('generate');
-    }, 500);
+    try {
+      // Create FormData for upload
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      // Get auth token
+      const token = getAuthToken();
+      
+      // Upload to /api/media/upload endpoint
+      const response = await fetch('/api/media/upload', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Upload failed: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      
+      // Show success message
+      toast({
+        title: "Upload successful! 🎉",
+        description: `${file.name} uploaded successfully. Switching to Content Creator...`,
+      });
+      
+      // Store the uploaded file info for the content creator to use
+      (window as any).selectedImageFile = file;
+      (window as any).selectedImagePreview = URL.createObjectURL(file);
+      (window as any).uploadedImageUrl = result.url;
+      
+      // Switch to the content generator section
+      setTimeout(() => {
+        setActiveSection('generate');
+      }, 500);
+      
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({
+        title: "Upload failed",
+        description: "There was an error uploading your image. Please try again.",
+        variant: "destructive",
+      });
+    }
     
     // Reset the input so the same file can be selected again
     event.target.value = '';
@@ -680,11 +732,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                     variant="outline" 
                     size="sm"
                     onClick={() => {
-                      setActiveSection('gallery');
-                      toast({
-                        title: "Coming Soon",
-                        description: "Media Gallery feature is being developed.",
-                      });
+                      setLocation('/gallery');
                     }}
                   >
                     View All
