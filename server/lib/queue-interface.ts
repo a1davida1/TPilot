@@ -11,7 +11,7 @@ export interface QueueJobOptions {
   removeOnFail?: number;
 }
 
-export interface QueueJobHandler<T = any> {
+export interface QueueJobHandler<T = unknown> {
   (payload: T, jobId: string): Promise<void>;
 }
 
