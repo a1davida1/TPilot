@@ -137,7 +137,6 @@ export default function PostScheduler() {
                 <Input
                   value={formData.subreddit}
                   onChange={(e) => setFormData({ ...formData, subreddit: e.target.value })}
-                  placeholder="e.g., OnlyFansPromotions"
                   data-testid="input-subreddit"
                 />
               </div>
@@ -147,7 +146,6 @@ export default function PostScheduler() {
                 <Input
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="Your engaging post title"
                   data-testid="input-title"
                 />
               </div>
@@ -157,7 +155,6 @@ export default function PostScheduler() {
                 <Textarea
                   value={formData.body}
                   onChange={(e) => setFormData({ ...formData, body: e.target.value })}
-                  placeholder="Additional post content..."
                   rows={4}
                   data-testid="textarea-body"
                 />
@@ -169,7 +166,6 @@ export default function PostScheduler() {
                   setFormData({ ...formData, scheduledAt: value === 'optimal' ? undefined : value })
                 }>
                   <SelectTrigger data-testid="select-schedule-time">
-                    <SelectValue placeholder="Choose scheduling option" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="optimal">Optimal Time (AI-determined)</SelectItem>

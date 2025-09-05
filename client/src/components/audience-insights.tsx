@@ -9,7 +9,6 @@ interface AudienceData {
   bestTime: string;
   activeUsers: string;
   engagement: number;
-  demographics: {
     age: string;
     location: string;
     interests: string[];
@@ -80,7 +79,6 @@ export function AudienceInsights() {
             Audience Insights
           </CardTitle>
           <CardDescription>
-            Optimal posting times and audience demographics
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -101,7 +99,6 @@ export function AudienceInsights() {
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <Globe className="h-4 w-4 text-gray-400" />
-                    <span className="text-gray-300">{platform.demographics.location}</span>
                   </div>
                 </div>
                 
@@ -114,7 +111,6 @@ export function AudienceInsights() {
                 </div>
                 
                 <div className="mt-3 flex flex-wrap gap-1">
-                  {platform.demographics.interests.map((interest) => (
                     <Badge key={interest} variant="secondary" className="text-xs">
                       {interest}
                     </Badge>

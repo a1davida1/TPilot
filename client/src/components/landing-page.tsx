@@ -176,13 +176,14 @@ export function LandingPage({ showLoginModal = false, loginModalMode = 'login' }
 
           {/* CTA Buttons */}
           <div className="flex gap-6 justify-center mb-16 flex-wrap">
-            <Link to="/modern-demo">
+            <Link href="/signup">
               <Button 
                 size="lg" 
                 className="relative overflow-hidden bg-gradient-to-r from-yellow-400 to-yellow-300 text-gray-900 hover:from-yellow-300 hover:to-yellow-200 font-bold px-12 py-6 text-xl shadow-2xl hover:shadow-yellow-400/50 transition-all duration-300 hover:scale-110 border-2 border-yellow-200/50 group"
+                data-testid="button-hero-get-started"
               >
                 <Zap className="mr-2 h-5 w-5" />
-                Try Demo - Free
+                Get Started Free
               </Button>
             </Link>
             <Button 
@@ -202,13 +203,10 @@ export function LandingPage({ showLoginModal = false, loginModalMode = 'login' }
 
           <div className="text-center">
             <p className="text-white/80 mb-2">
-              <Link to="/modern-demo" className="underline underline-offset-4 hover:text-white transition-colors">
-                Continue as Guest - Try Demo
-              </Link>
+              Join thousands of creators maximizing their content potential
             </p>
           </div>
 
-          {/* Demo Flow */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/20">
             <div className="text-center">
               <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
@@ -343,7 +341,7 @@ export function LandingPage({ showLoginModal = false, loginModalMode = 'login' }
                     <span className="text-foreground">1 platform connection</span>
                   </li>
                 </ul>
-                <Link to="/modern-demo">
+                <Link href="/signup">
                   <Button className="w-full font-semibold">
                     Get Started Free
                   </Button>
@@ -450,10 +448,11 @@ export function LandingPage({ showLoginModal = false, loginModalMode = 'login' }
             Join thousands of creators who've already automated their workflow and 3x'd their engagement with ThottoPilot
           </p>
           <div className="flex gap-6 justify-center flex-wrap">
-            <Link to="/modern-demo">
+            <Link href="/signup">
               <Button 
                 size="lg" 
                 className="bg-white text-indigo-600 hover:bg-gray-50 font-bold px-8 py-4 text-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
+                data-testid="button-cta-free-trial"
               >
                 <Star className="mr-2 h-5 w-5" />
                 Start Free Trial

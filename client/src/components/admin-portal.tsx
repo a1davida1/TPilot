@@ -510,7 +510,6 @@ export function AdminPortal() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="user@example.com"
                     value={trialForm.email}
                     onChange={(e) => setTrialForm({...trialForm, email: e.target.value})}
                   />
@@ -519,7 +518,6 @@ export function AdminPortal() {
                   <Label htmlFor="username">Username</Label>
                   <Input
                     id="username"
-                    placeholder="username"
                     value={trialForm.username}
                     onChange={(e) => setTrialForm({...trialForm, username: e.target.value})}
                   />
@@ -1368,7 +1366,6 @@ function UserManagementTab({ authenticatedRequest, users }: { authenticatedReque
                 <Label>Reason *</Label>
                 <textarea 
                   className="w-full p-2 border rounded" 
-                  placeholder="Explain the reason for this action..."
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   rows={3}

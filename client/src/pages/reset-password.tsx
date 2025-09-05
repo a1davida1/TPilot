@@ -147,7 +147,6 @@ export default function ResetPasswordPage() {
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
                   minLength={6}
-                  placeholder="Enter new password"
                   data-testid="input-new-password"
                 />
                 <Button
@@ -176,7 +175,6 @@ export default function ResetPasswordPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 minLength={6}
-                placeholder="Confirm new password"
                 data-testid="input-confirm-password"
               />
             </div>

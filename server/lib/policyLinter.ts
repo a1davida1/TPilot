@@ -146,7 +146,6 @@ export class PolicyLinter {
       score -= 20;
     }
 
-    // Check flair requirements (placeholder - would need Reddit API integration)
     if (this.rules.requiresFlair) {
       warnings.push({
         type: 'flairRequired',

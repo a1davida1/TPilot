@@ -102,12 +102,10 @@ export function PasswordChangeForm({ userId, onSuccess }: PasswordChangeFormProp
             <Input
               id="currentPassword"
               type="password"
-              placeholder="Enter your current (temporary) password"
               value={formData.currentPassword}
               onChange={(e) => setFormData(prev => ({ ...prev, currentPassword: e.target.value }))}
               required
               data-testid="input-current-password"
-              className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-400"
             />
           </div>
           
@@ -116,13 +114,11 @@ export function PasswordChangeForm({ userId, onSuccess }: PasswordChangeFormProp
             <Input
               id="newPassword"
               type="password"
-              placeholder="Enter your new password"
               value={formData.newPassword}
               onChange={(e) => setFormData(prev => ({ ...prev, newPassword: e.target.value }))}
               required
               minLength={6}
               data-testid="input-new-password"
-              className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-400"
             />
           </div>
           
@@ -131,13 +127,11 @@ export function PasswordChangeForm({ userId, onSuccess }: PasswordChangeFormProp
             <Input
               id="confirmPassword"
               type="password"
-              placeholder="Confirm your new password"
               value={formData.confirmPassword}
               onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
               required
               minLength={6}
               data-testid="input-confirm-password"
-              className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-400"
             />
           </div>
 

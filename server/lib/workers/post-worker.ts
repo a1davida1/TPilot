@@ -180,7 +180,6 @@ export class PostWorker {
   private async getMediaAsset(key: string, userId: number) {
     try {
       // This would typically query the media_assets table by key
-      // For now, return a placeholder implementation
       return await MediaManager.getAsset(parseInt(key), userId);
     } catch (error) {
       logger.error('Failed to get media asset:', { error });

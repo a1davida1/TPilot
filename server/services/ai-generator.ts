@@ -3,7 +3,6 @@ import OpenAI from 'openai';
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// Production-ready AI content generation - no demo content
 export interface AIGenerationRequest {
   customPrompt?: string;
   platform: string;
@@ -129,7 +128,6 @@ Make the content authentic and engaging.`;
   } catch (error) {
     console.error('AI generation error:', error);
     
-    // Production error handling - no demo content
     if (error instanceof Error) {
       if (error.message.includes('quota') || error.message.includes('billing')) {
         throw new Error('AI service quota exceeded. Please upgrade your plan or try again later.');

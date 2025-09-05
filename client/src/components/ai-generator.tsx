@@ -234,7 +234,6 @@ export function AIGenerator({ onContentGenerated }: AIGeneratorProps) {
           <div className="space-y-2">
             <Label>Custom Prompt</Label>
             <Textarea
-              placeholder="Describe the content you want to create... e.g., 'Create a post about trying a new workout routine' or 'Generate content for a cozy morning routine'"
               value={customPrompt}
               onChange={(e) => setCustomPrompt(e.target.value)}
               className="min-h-[100px]"
@@ -298,7 +297,6 @@ export function AIGenerator({ onContentGenerated }: AIGeneratorProps) {
           <div className="space-y-2">
             <Label>Subreddit (optional)</Label>
             <Input
-              placeholder="e.g., selfie, pics, etc."
               value={subreddit}
               onChange={(e) => setSubreddit(e.target.value)}
             />

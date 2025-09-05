@@ -42,9 +42,7 @@ export function UnifiedLanding() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleDemoAccess = () => {
     toast({
-      title: "Demo Access",
       description: "Try our features without signing up!",
     });
   };
@@ -97,11 +95,9 @@ export function UnifiedLanding() {
               <Button 
                 size="lg" 
                 variant="outline" 
-                onClick={handleDemoAccess}
                 className="font-semibold text-lg px-8 py-4 border-2"
               >
                 <Play className="h-5 w-5 mr-2" />
-                Watch Demo
               </Button>
             </div>
 
@@ -233,10 +229,8 @@ export function UnifiedLanding() {
             <Button 
               size="lg" 
               variant="outline" 
-              onClick={handleDemoAccess}
               className="border-white text-white hover:bg-white/10 font-semibold text-lg px-8 py-4"
             >
-              Try Demo
               <ArrowRight className="h-5 w-5 ml-2" />
             </Button>
           </div>

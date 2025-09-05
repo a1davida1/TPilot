@@ -24,7 +24,6 @@ import {
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
-interface SampleData {
   id: number;
   type: 'post' | 'image' | 'caption';
   content: string;
@@ -37,9 +36,6 @@ interface SampleData {
 
 export function IntegratedFineTuning() {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("samples");
-  const [uploadedSamples, setUploadedSamples] = useState<SampleData[]>([]);
-  const [selectedSamples, setSelectedSamples] = useState<number[]>([]);
   
   // Fine-tuning settings
   const [writingStyle, setWritingStyle] = useState({
@@ -60,9 +56,6 @@ export function IntegratedFineTuning() {
     prohibitedWords: [] as string[]
   });
 
-  // Load existing samples
-  const { data: existingSamples } = useQuery<SampleData[]>({
-    queryKey: ["/api/user-samples"],
     retry: false
   });
 
@@ -74,17 +67,13 @@ export function IntegratedFineTuning() {
     onSuccess: () => {
       toast({
         title: "Personalization Updated",
-        description: "Your samples and preferences have been saved successfully"
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/user-samples"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user-preferences"] });
     }
   });
 
-  const handleSampleUpload = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const content = e.target.value;
     if (content.trim()) {
-      const newSample: SampleData = {
         id: Date.now(),
         type: 'post',
         content: content.trim(),
@@ -93,31 +82,20 @@ export function IntegratedFineTuning() {
           performance: Math.floor(Math.random() * 100)
         }
       };
-      setUploadedSamples([...uploadedSamples, newSample]);
       e.target.value = '';
       toast({
-        title: "Sample Added",
-        description: "Your content sample has been added to the library"
       });
     }
   };
 
-  const toggleSampleSelection = (sampleId: number) => {
-    setSelectedSamples(prev => 
-      prev.includes(sampleId) 
-        ? prev.filter(id => id !== sampleId)
-        : [...prev, sampleId]
     );
   };
 
   const handleSaveAll = () => {
     const data = {
-      samples: uploadedSamples,
-      selectedSamples,
       writingStyle,
       photoStyle,
       contentPreferences,
-      fineTuningEnabled: selectedSamples.length > 0
     };
     
     saveMutation.mutate(data);
@@ -137,15 +115,12 @@ export function IntegratedFineTuning() {
           Integrated Personalization Studio
         </CardTitle>
         <CardDescription className="text-gray-400">
-          Upload samples and fine-tune your content generation in one streamlined workflow
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid grid-cols-4 w-full bg-gray-800/50">
-            <TabsTrigger value="samples" className="data-[state=active]:bg-purple-600">
               <FileText className="h-4 w-4 mr-2" />
-              Samples
             </TabsTrigger>
             <TabsTrigger value="writing" className="data-[state=active]:bg-purple-600">
               <Type className="h-4 w-4 mr-2" />
@@ -161,51 +136,35 @@ export function IntegratedFineTuning() {
             </TabsTrigger>
           </TabsList>
 
-          {/* Samples Tab */}
-          <TabsContent value="samples" className="space-y-4">
             <div className="bg-gradient-to-r from-purple-900/20 to-pink-900/20 rounded-lg p-4 border border-purple-500/20">
               <h3 className="font-semibold mb-2 text-white">Upload Your Best Content</h3>
               <p className="text-sm text-gray-400 mb-4">
-                Add samples of your best-performing posts to train the system on your unique style
               </p>
               <Textarea
-                placeholder="Paste a sample post here..."
                 className="min-h-[100px] bg-gray-800/50 border-white/10 text-white"
-                onBlur={handleSampleUpload}
               />
             </div>
 
             <div className="space-y-2">
-              <h3 className="font-semibold text-white mb-3">Sample Library ({uploadedSamples.length + (existingSamples?.length || 0)} total)</h3>
               <div className="grid gap-2 max-h-[300px] overflow-y-auto">
-                {uploadedSamples.map((sample) => (
                   <div
-                    key={sample.id}
-                    onClick={() => toggleSampleSelection(sample.id)}
                     className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                      selectedSamples.includes(sample.id)
                         ? 'bg-purple-900/30 border-purple-500'
                         : 'bg-gray-800/30 border-white/10 hover:border-white/20'
                     }`}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <p className="text-sm text-gray-300 line-clamp-2">{sample.content}</p>
                         <div className="flex gap-2 mt-2">
-                          {sample.metadata?.platform && (
                             <Badge variant="outline" className="text-xs">
-                              {sample.metadata.platform}
                             </Badge>
                           )}
-                          {sample.metadata?.performance && (
                             <Badge variant="outline" className="text-xs text-green-400">
-                              {sample.metadata.performance}% engagement
                             </Badge>
                           )}
                         </div>
                       </div>
                       <div className="ml-2">
-                        {selectedSamples.includes(sample.id) ? (
                           <Check className="h-5 w-5 text-purple-400" />
                         ) : (
                           <div className="h-5 w-5 border border-white/30 rounded" />
@@ -281,7 +240,6 @@ export function IntegratedFineTuning() {
               <div>
                 <Label className="text-white mb-2 block">Preferred Themes</Label>
                 <Textarea
-                  placeholder="e.g., confidence, empowerment, playfulness..."
                   value={contentPreferences.themes}
                   onChange={(e) => setContentPreferences({...contentPreferences, themes: e.target.value})}
                   className="bg-gray-800/50 border-white/10 text-white"
@@ -291,7 +249,6 @@ export function IntegratedFineTuning() {
               <div>
                 <Label className="text-white mb-2 block">Words/Phrases to Avoid</Label>
                 <Textarea
-                  placeholder="Enter words or phrases you never want to use..."
                   value={contentPreferences.avoid}
                   onChange={(e) => setContentPreferences({...contentPreferences, avoid: e.target.value})}
                   className="bg-gray-800/50 border-white/10 text-white"
@@ -301,7 +258,6 @@ export function IntegratedFineTuning() {
 
             <div className="flex justify-between">
               <Button 
-                onClick={() => setActiveTab("samples")}
                 variant="outline"
                 className="border-white/20"
               >
@@ -404,8 +360,6 @@ export function IntegratedFineTuning() {
               
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-400">Samples Selected</span>
-                  <Badge className="bg-purple-600">{selectedSamples.length} samples</Badge>
                 </div>
                 
                 <div className="flex justify-between items-center">
@@ -436,7 +390,6 @@ export function IntegratedFineTuning() {
             <div className="bg-yellow-900/20 border border-yellow-500/20 rounded-lg p-4">
               <p className="text-sm text-yellow-300">
                 <strong>Note:</strong> Your personalization settings will be applied to all future content generation. 
-                The more samples you provide, the better the system can match your unique style.
               </p>
             </div>
 

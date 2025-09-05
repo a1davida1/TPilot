@@ -394,7 +394,6 @@ class ContentPerformancePredictor {
   async updateModel(actualPerformance: { features: ContentFeatures; engagement: number }[]): Promise<void> {
     // In production, this would update ML model weights
     // For now, log for analysis
-    console.log('Model update data collected:', actualPerformance.length, 'samples');
   }
 }
 

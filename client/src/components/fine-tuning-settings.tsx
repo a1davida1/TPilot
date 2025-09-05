@@ -175,7 +175,6 @@ export function FineTuningSettings() {
             <div>
               <h3 className="text-lg font-semibold text-white">Enable Fine-Tuning</h3>
               <p className="text-sm text-gray-400 mt-1">
-                Use your sample posts and preferences to personalize AI content generation
               </p>
             </div>
           </div>
@@ -282,7 +281,6 @@ export function FineTuningSettings() {
                 contentPreferences: { ...settings.contentPreferences, themes: e.target.value }
               })}
               className="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-              placeholder="e.g., fitness, travel, fashion, lifestyle"
             />
             <p className="text-xs text-gray-500 mt-1">
               Comma-separated themes the AI should focus on
@@ -300,7 +298,6 @@ export function FineTuningSettings() {
                 contentPreferences: { ...settings.contentPreferences, avoid: e.target.value }
               })}
               className="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-              placeholder="e.g., politics, religion"
             />
             <p className="text-xs text-gray-500 mt-1">
               Comma-separated topics to exclude from content
@@ -324,7 +321,6 @@ export function FineTuningSettings() {
               onChange={(e) => setNewProhibitedWord(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && addProhibitedWord()}
               className="flex-1 bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-              placeholder="Add a word to avoid..."
             />
             <Button
               onClick={addProhibitedWord}
@@ -440,7 +436,6 @@ export function FineTuningSettings() {
           <div className="text-sm text-purple-300">
             <p className="font-medium mb-1">Pro Tip</p>
             <p className="text-purple-300/80">
-              Fine-tuning works best when you have at least 10 sample posts uploaded. 
               The AI will analyze your writing patterns and adapt its generation style accordingly.
             </p>
           </div>

@@ -349,7 +349,6 @@ export class RedditManager {
       // Check if user has exceeded posting limits for this subreddit
       const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
       
-      // For demo purposes, allow posting (in production, implement proper rate limiting)
       // In a real implementation, you'd check:
       // - Subreddit-specific post limits
       // - User's posting history

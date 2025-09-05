@@ -583,7 +583,6 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                   id="description"
                   value={expenseForm.description}
                   onChange={(e) => setExpenseForm({...expenseForm, description: e.target.value})}
-                  placeholder="e.g., Professional makeup session"
                   data-testid="input-expense-description"
                 />
               </div>
@@ -596,7 +595,6 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                   step="0.01"
                   value={expenseForm.amount}
                   onChange={(e) => setExpenseForm({...expenseForm, amount: e.target.value})}
-                  placeholder="0.00"
                   data-testid="input-expense-amount"
                 />
               </div>
@@ -608,7 +606,6 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                   onValueChange={(value) => setExpenseForm({...expenseForm, category: value})}
                 >
                   <SelectTrigger data-testid="select-expense-category">
-                    <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                   <SelectContent>
                     {expenseCategories.map(category => (
@@ -637,7 +634,6 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                   id="notes"
                   value={expenseForm.notes}
                   onChange={(e) => setExpenseForm({...expenseForm, notes: e.target.value})}
-                  placeholder="Additional details about this expense"
                   data-testid="textarea-expense-notes"
                 />
               </div>
@@ -676,7 +672,6 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
             <div className="space-y-4">
               <Select value={receiptExpenseId} onValueChange={setReceiptExpenseId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select expense" />
                 </SelectTrigger>
                 <SelectContent>
                   {recentExpenses.map((exp: any) => (

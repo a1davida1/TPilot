@@ -10,13 +10,11 @@ import {
   Gift 
 } from "lucide-react";
 
-interface DemoFallbackProps {
   error?: string;
   onRetry?: () => void;
   onSignUp?: () => void;
 }
 
-export function DemoFallback({ error, onRetry, onSignUp }: DemoFallbackProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
       <Card className="max-w-2xl w-full shadow-premium">
@@ -24,7 +22,6 @@ export function DemoFallback({ error, onRetry, onSignUp }: DemoFallbackProps) {
           <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
             <Sparkles className="h-8 w-8 text-white" />
           </div>
-          <CardTitle className="text-2xl">Demo Mode Active</CardTitle>
           <CardDescription className="text-lg">
             You're experiencing ThottoPilot with limited functionality
           </CardDescription>
@@ -35,21 +32,17 @@ export function DemoFallback({ error, onRetry, onSignUp }: DemoFallbackProps) {
             <Alert className="border-orange-200 bg-orange-50">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                <strong>Demo Limitation:</strong> {error}
               </AlertDescription>
             </Alert>
           )}
 
-          {/* Demo Features Available */}
           <div className="space-y-4">
             <h3 className="font-semibold text-gray-900 flex items-center">
               <CheckCircle className="mr-2 h-5 w-5 text-green-600" />
-              Available in Demo Mode:
             </h3>
             <div className="grid gap-3">
               <div className="flex items-center space-x-3 p-3 bg-green-50 border border-green-200 rounded-lg">
                 <CheckCircle className="h-5 w-5 text-green-600" />
-                <span className="text-green-800">AI Content Generation (with demo data)</span>
               </div>
               <div className="flex items-center space-x-3 p-3 bg-green-50 border border-green-200 rounded-lg">
                 <CheckCircle className="h-5 w-5 text-green-600" />
@@ -83,7 +76,6 @@ export function DemoFallback({ error, onRetry, onSignUp }: DemoFallbackProps) {
               </div>
               <div className="flex items-center space-x-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <Star className="h-5 w-5 text-blue-600" />
-                <span className="text-blue-800">Real AI generation (no demo data)</span>
               </div>
             </div>
           </div>

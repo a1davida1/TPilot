@@ -39,7 +39,6 @@ import {
 import { SimpleContentGenerator } from "@/components/simple-content-generator";
 import { SocialAuth } from "@/components/social-auth";
 import { ProviderStatus } from "@/components/provider-status";
-import { SampleUpload } from "@/components/sample-upload";
 import { IntegratedFineTuning } from "@/components/integrated-fine-tuning";
 import { AuthModal } from "@/components/auth-modal";
 import { TrendingTagsExpanded } from "@/components/trending-tags-expanded";
@@ -76,7 +75,6 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
     { id: "generate", label: "Content Creator", icon: <Brain className="h-5 w-5" />, badge: "NEW" },
     { id: "dual", label: "Dual Workflow", icon: <Zap className="h-5 w-5" />, badge: "HOT" },
     { id: "protect", label: "Image Shield", icon: <Shield className="h-5 w-5" />, badge: "FREE" },
-    { id: "samples", label: "Sample Library", icon: <FileText className="h-5 w-5" />, badge: "PRO" },
     { id: "finetune", label: "Personalization", icon: <Sparkles className="h-5 w-5" />, badge: "PRO" },
     { id: "perks", label: "ProPerks", icon: <Gift className="h-5 w-5" />, badge: "15+" },
     { id: "gallery", label: "Image Gallery", icon: <ImageIcon className="h-5 w-5" /> },
@@ -490,9 +488,7 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
               </div>
             )}
 
-            {activeView === "samples" && (
               <div className="max-w-6xl mx-auto">
-                <SampleUpload />
               </div>
             )}
 

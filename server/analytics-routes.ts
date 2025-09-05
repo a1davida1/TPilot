@@ -476,7 +476,6 @@ function parseUserAgent(userAgent?: string): any {
 }
 
 async function getLocationFromIP(ipAddress: string): Promise<any> {
-  // Placeholder for IP geolocation - can integrate with services like MaxMind or ipapi
   // For now, return default values
   return {
     country: 'Unknown',

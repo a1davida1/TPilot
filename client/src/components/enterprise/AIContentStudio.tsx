@@ -147,7 +147,6 @@ export default function AIContentStudio() {
               <Textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Describe what you want to create... e.g., 'Cozy morning vibes with coffee'"
                 rows={3}
                 data-testid="textarea-prompt"
               />

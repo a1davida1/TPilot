@@ -175,7 +175,6 @@ export function PremiumLanding() {
                     onClick={() => window.location.href = '/dashboard?guest=true'}
                   >
                     <Eye className="mr-2 h-5 w-5" />
-                    Try Demo
                   </Button>
                 </div>
 

@@ -133,7 +133,6 @@ export function ProviderStatus() {
             <ul className="text-sm text-blue-800 space-y-1">
               <li>• Gemini Flash offers 98% savings ($0.075 vs $5.00 per 1M tokens)</li>
               <li>• Claude Haiku provides 75% savings with excellent quality</li>
-              <li>• Demo mode ensures your app never breaks when quotas are exceeded</li>
             </ul>
           </div>
         </div>

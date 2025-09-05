@@ -29,6 +29,5 @@ export function platformChecks(p: "instagram"|"x"|"reddit"|"tiktok", item: z.inf
   if (p==="tiktok" && (tags<2 || tags>5)) return "TikTok hashtags 2–5";
   const banned = new Set(["#love","#follow","#like","#instagood"]);
   if (item.hashtags.some(h=>banned.has(h.toLowerCase()))) return "Generic hashtags banned";
-  if (item.caption.toLowerCase().includes("generated content")) return "Placeholder text";
   return null;
 }

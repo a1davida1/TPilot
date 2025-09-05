@@ -261,7 +261,6 @@ export function ImageShield({ isGuestMode = false, userTier = "free" }: ImageShi
                   }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select protection level" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="light">

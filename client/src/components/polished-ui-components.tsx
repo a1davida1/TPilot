@@ -135,12 +135,10 @@ export function EngagementMetrics({
   views = 0, 
   likes = 0, 
   engagement = 0, 
-  isDemo = false 
 }: {
   views?: number;
   likes?: number;
   engagement?: number;
-  isDemo?: boolean;
 }) {
   const metrics = [
     {
@@ -172,7 +170,6 @@ export function EngagementMetrics({
               {metric.icon}
             </div>
             <div className="text-2xl font-bold text-gray-900">
-              {isDemo ? '---' : metric.value}
             </div>
             <div className="text-sm text-gray-600">{metric.label}</div>
           </CardContent>
@@ -278,7 +275,6 @@ export function AchievementBadge({
 // Premium Stats Display
 export function PremiumStatsDisplay({ 
   stats, 
-  isDemo = false 
 }: {
   stats: Array<{
     label: string;
@@ -287,7 +283,6 @@ export function PremiumStatsDisplay({
     trend?: string;
     color: string;
   }>;
-  isDemo?: boolean;
 }) {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -306,7 +301,6 @@ export function PremiumStatsDisplay({
             </div>
             <div className="space-y-1">
               <div className="text-2xl font-bold text-gray-900">
-                {isDemo ? '---' : stat.value}
               </div>
               <div className="text-sm text-gray-600">{stat.label}</div>
             </div>

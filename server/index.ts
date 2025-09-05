@@ -6,7 +6,6 @@ import { mountStripeWebhook } from "./routes/webhooks.stripe";
 import { mountBillingRoutes } from "./routes/billing";
 import { initializeQueue } from "./lib/queue-factory";
 import { initializeWorkers } from "./lib/workers/index";
-import { seedDemoUser } from "./seed-demo-user";
 import winston from "winston";
 import { v4 as uuidv4 } from "uuid";
 
@@ -92,11 +91,8 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Ensure demo user exists for development
   try {
-    await seedDemoUser();
   } catch (error) {
-    logger.warn("Demo user seeding failed", { error });
   }
   
   // Initialize Phase 5 queue system

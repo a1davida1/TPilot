@@ -192,8 +192,6 @@ export const redditCommunitiesDatabase: RedditCommunity[] = [
     successProbability: 84,
     growthTrend: 'stable',
     modActivity: 'high',
-    description: 'Mature women community. Strong engagement with specific demographic.',
-    tags: ['mature', 'mothers', 'loyal', 'specific-demographic'],
     competitionLevel: 'medium'
   },
 
@@ -309,7 +307,6 @@ export const redditCommunitiesDatabase: RedditCommunity[] = [
     competitionLevel: 'low'
   },
 
-  // Niche/Fetish Communities (Sample of popular ones)
   {
     id: 'biggerthanyouthought',
     name: 'r/BiggerThanYouThought',

@@ -117,18 +117,7 @@ Keep it authentic and engaging for ${platform}.
   } catch (error) {
     console.error('Error generating image caption:', error);
     
-    // Return demo content if AI fails
-    return {
-      caption: "Beautiful moment captured with perfect lighting and composition",
-      titles: [
-        "Feeling absolutely radiant today ✨",
-        "Sometimes you just gotta capture the moment",
-        "Living my best life and loving every second"
-      ],
-      hashtags: ["#confidence", "#lifestyle", "#mood", "#authentic", "#beautiful"],
-      postContent: "This is demo content! In the full version, ThottoPilot would analyze your image and create personalized captions that match your style perfectly. The AI would understand your photo's mood, lighting, and composition to craft engaging content that feels authentically you. Ready to unlock real image-to-caption generation? 🚀",
-      photoDescription: "Professional composition with natural lighting, authentic mood, and engaging visual appeal that would resonate perfectly with your audience"
-    };
+    throw new Error("AI generation failed");
   }
 }
 

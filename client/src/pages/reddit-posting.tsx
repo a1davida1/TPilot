@@ -488,7 +488,6 @@ export default function RedditPostingPage() {
                       id="subreddit"
                       value={subreddit}
                       onChange={(e) => setSubreddit(e.target.value)}
-                      placeholder="gonewild"
                       className="pl-8"
                       data-testid="input-subreddit"
                     />
@@ -517,7 +516,6 @@ export default function RedditPostingPage() {
                     id="title"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Enter an engaging title..."
                     maxLength={300}
                     data-testid="input-title"
                   />
@@ -599,7 +597,6 @@ export default function RedditPostingPage() {
                       id="body"
                       value={body}
                       onChange={(e) => setBody(e.target.value)}
-                      placeholder="Write your post content..."
                       rows={6}
                       maxLength={10000}
                       data-testid="textarea-body"
@@ -615,7 +612,6 @@ export default function RedditPostingPage() {
                       id="url"
                       value={url}
                       onChange={(e) => setUrl(e.target.value)}
-                      placeholder="https://example.com"
                       type="url"
                       data-testid="input-url"
                     />

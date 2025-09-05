@@ -4,8 +4,6 @@ import {
   type InsertUser,
   type ContentGeneration,
   type InsertContentGeneration,
-  type UserSample,
-  type InsertUserSample,
   type UserPreference,
   type InsertUserPreference,
   type UserImage,
@@ -28,7 +26,6 @@ import {
   type InsertVerificationToken,
   users,
   contentGenerations,
-  userSamples,
   userPreferences,
   userImages,
   expenseCategories,
@@ -74,10 +71,6 @@ export interface IStorage {
   // Revenue operations
   getRevenue(): Promise<number>;
 
-  // Sample operations
-  createUserSample(sample: InsertUserSample): Promise<UserSample>;
-  getUserSamples(userId: number): Promise<UserSample[]>;
-  deleteUserSample(sampleId: number, userId: number): Promise<void>;
 
   // Preference operations
   getUserPreferences(userId: number): Promise<UserPreference | undefined>;
@@ -455,36 +448,6 @@ class PostgreSQLStorage implements IStorage {
     }
   }
 
-  // Sample operations
-  async createUserSample(sample: InsertUserSample): Promise<UserSample> {
-    try {
-      const result = await db.insert(userSamples).values(sample).returning();
-      return result[0];
-    } catch (error) {
-      safeLog('error', 'Storage operation failed - creating user sample:', { error: error.message });
-      throw error;
-    }
-  }
-
-  async getUserSamples(userId: number): Promise<UserSample[]> {
-    try {
-      return await db.select().from(userSamples)
-        .where(eq(userSamples.userId, userId))
-        .orderBy(desc(userSamples.createdAt));
-    } catch (error) {
-      safeLog('error', 'Storage operation failed - getting user samples:', { error: error.message });
-      return [];
-    }
-  }
-
-  async deleteUserSample(sampleId: number, userId: number): Promise<void> {
-    try {
-      await db.delete(userSamples).where(and(eq(userSamples.id, sampleId), eq(userSamples.userId, userId)));
-    } catch (error) {
-      safeLog('error', 'Storage operation failed - deleting user sample:', { error: error.message });
-      throw error;
-    }
-  }
 
   // Preference operations
   async getUserPreferences(userId: number): Promise<UserPreference | undefined> {

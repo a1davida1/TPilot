@@ -25,7 +25,6 @@ import Enterprise from "@/pages/enterprise";
 import Phase4Dashboard from "@/pages/phase4";
 import { AdminDashboard } from "@/pages/admin";
 import { AdminLeadsPage } from "@/pages/admin-leads";
-import PolicyDemo from "@/pages/PolicyDemo";
 import CaptionGeneratorPage from "@/pages/caption-generator";
 import RedditPostingPage from "@/pages/reddit-posting";
 import ImageShieldPage from "@/pages/imageshield";
@@ -137,7 +136,6 @@ function UnauthenticatedRoutes() {
       <Route path="/change-password" component={ChangePasswordPage} />
       <Route path="/caption-generator" component={CaptionGeneratorPage} />
       <Route path="/imageshield" component={ImageShieldPage} />
-      <Route path="/policy-demo" component={PolicyDemo} />
       <Route path="/reddit" component={RedditPostingPage} />
       <Route path="/">
         <SEOOptimization {...seoConfigs.landing} />

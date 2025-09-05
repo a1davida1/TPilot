@@ -135,7 +135,6 @@ export function AestheticLanding() {
           </div>
         </header>
 
-        {/* Hero Section with Live Demo */}
         <section className="pt-32 pb-20 px-4">
           <div className="max-w-7xl mx-auto">
             <div className={`text-center mb-12 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
@@ -171,7 +170,6 @@ export function AestheticLanding() {
               </div>
             </div>
 
-            {/* Live Demo Section */}
             <Card className="max-w-6xl mx-auto bg-gray-900/50 backdrop-blur-xl border-white/10 shadow-2xl">
               <CardHeader className="border-b border-white/10">
                 <div className="flex items-center justify-between">
@@ -183,7 +181,6 @@ export function AestheticLanding() {
                   </div>
                   <Badge className="bg-green-500/20 text-green-300 border-green-500/50">
                     <div className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse" />
-                    Live Demo
                   </Badge>
                 </div>
               </CardHeader>
@@ -226,7 +223,6 @@ export function AestheticLanding() {
                         <div className="space-y-4">
                           <Card className="bg-purple-600/10 border-purple-500/50">
                             <CardHeader>
-                              <CardTitle className="text-purple-300">Demo Features</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-3">
                               <div className="flex items-center text-green-400">

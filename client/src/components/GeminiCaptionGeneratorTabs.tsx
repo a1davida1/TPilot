@@ -221,7 +221,6 @@ export function GeminiCaptionGeneratorTabs() {
           <Label htmlFor="platform">Platform</Label>
           <Select value={platform} onValueChange={setPlatform}>
             <SelectTrigger id="platform">
-              <SelectValue placeholder="Select platform" />
             </SelectTrigger>
             <SelectContent>
               {PLATFORMS.map(p => (
@@ -237,7 +236,6 @@ export function GeminiCaptionGeneratorTabs() {
           <Label htmlFor="voice">Content Voice</Label>
           <Select value={voice} onValueChange={setVoice}>
             <SelectTrigger id="voice">
-              <SelectValue placeholder="Select voice" />
             </SelectTrigger>
             <SelectContent>
               {VOICES.map(v => (
@@ -253,7 +251,6 @@ export function GeminiCaptionGeneratorTabs() {
           <Label htmlFor="style">Content Style</Label>
           <Select value={style} onValueChange={setStyle}>
             <SelectTrigger id="style">
-              <SelectValue placeholder="Select style" />
             </SelectTrigger>
             <SelectContent>
               {STYLES.map(s => (
@@ -269,7 +266,6 @@ export function GeminiCaptionGeneratorTabs() {
           <Label htmlFor="mood">Content Mood</Label>
           <Select value={mood} onValueChange={setMood}>
             <SelectTrigger id="mood">
-              <SelectValue placeholder="Select mood" />
             </SelectTrigger>
             <SelectContent>
               {MOODS.map(m => (
@@ -329,7 +325,6 @@ export function GeminiCaptionGeneratorTabs() {
                 <div className="space-y-2">
                   <Input
                     type="url"
-                    placeholder="https://example.com/image.jpg"
                     value={imageFile ? "" : imageUrl}
                     onChange={(e) => setImageUrl(e.target.value)}
                     disabled={!!imageFile}
@@ -422,7 +417,6 @@ export function GeminiCaptionGeneratorTabs() {
                 <Input
                   id="theme"
                   type="text"
-                  placeholder="e.g., 'Morning coffee vibes' or 'Workout motivation'"
                   value={theme}
                   onChange={(e) => setTheme(e.target.value)}
                   className="w-full"
@@ -434,7 +428,6 @@ export function GeminiCaptionGeneratorTabs() {
                 <Label htmlFor="context">Additional Context (Optional)</Label>
                 <Textarea
                   id="context"
-                  placeholder="Any additional details or specific requirements..."
                   value={context}
                   onChange={(e) => setContext(e.target.value)}
                   rows={3}
@@ -488,7 +481,6 @@ export function GeminiCaptionGeneratorTabs() {
                 <Label htmlFor="existing">Existing Content</Label>
                 <Textarea
                   id="existing"
-                  placeholder="Paste your existing content here..."
                   value={existingCaption}
                   onChange={(e) => setExistingCaption(e.target.value)}
                   rows={4}
@@ -501,7 +493,6 @@ export function GeminiCaptionGeneratorTabs() {
                 <Input
                   id="rewrite-image"
                   type="url"
-                  placeholder="https://example.com/image.jpg (optional)"
                   value={rewriteImageUrl}
                   onChange={(e) => setRewriteImageUrl(e.target.value)}
                   data-testid="input-rewrite-image-url"

@@ -111,7 +111,6 @@ export default function HistoryPage() {
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">Search content</label>
                 <Input
-                  placeholder="Search by title or content..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="border-gray-300"

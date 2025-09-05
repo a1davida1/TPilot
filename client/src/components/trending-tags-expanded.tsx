@@ -50,7 +50,6 @@ export function TrendingTagsExpanded() {
   const generateTrendingData = (): TrendingTag[] => {
     const baseData = [
       { tag: "verified", posts: 28500, growth: 68, engagement: 94, category: "status", platforms: ["Reddit", "OnlyFans", "Twitter"] },
-      { tag: "milf", posts: 24200, growth: 45, engagement: 89, category: "demographic", platforms: ["Reddit", "OnlyFans"] },
       { tag: "asian", posts: 21800, growth: 42, engagement: 87, category: "ethnicity", platforms: ["Reddit", "Twitter", "Instagram"] },
       { tag: "curvy", posts: 19500, growth: 38, engagement: 85, category: "body type", platforms: ["Reddit", "OnlyFans"] },
       { tag: "petite", posts: 18900, growth: 35, engagement: 83, category: "body type", platforms: ["Reddit", "Twitter"] },
@@ -68,7 +67,6 @@ export function TrendingTagsExpanded() {
       { tag: "amateur", posts: 11200, growth: 10, engagement: 70, category: "content type", platforms: ["Reddit"] },
       { tag: "feet", posts: 10800, growth: 8, engagement: 69, category: "niche", platforms: ["Reddit", "OnlyFans"] },
       { tag: "bdsm", posts: 10400, growth: 6, engagement: 68, category: "niche", platforms: ["Reddit", "OnlyFans"] },
-      { tag: "trans", posts: 10100, growth: 4, engagement: 67, category: "demographic", platforms: ["Reddit", "Twitter"] },
       { tag: "ebony", posts: 9800, growth: 2, engagement: 66, category: "ethnicity", platforms: ["Reddit", "OnlyFans"] },
       { tag: "lingerie", posts: 9500, growth: 0, engagement: 65, category: "content type", platforms: ["Reddit", "Instagram"] },
       { tag: "yoga", posts: 9200, growth: -2, engagement: 64, category: "lifestyle", platforms: ["Reddit", "Instagram"] },
@@ -250,7 +248,6 @@ export function TrendingTagsExpanded() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
-            placeholder="Search tags..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10 bg-gray-900/50 border-purple-500/20"
@@ -259,7 +256,6 @@ export function TrendingTagsExpanded() {
         
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
           <SelectTrigger className="w-[180px] bg-gray-900/50 border-purple-500/20">
-            <SelectValue placeholder="Category" />
           </SelectTrigger>
           <SelectContent>
             {categories.map(cat => (
@@ -272,7 +268,6 @@ export function TrendingTagsExpanded() {
 
         <Select value={platformFilter} onValueChange={setPlatformFilter}>
           <SelectTrigger className="w-[180px] bg-gray-900/50 border-purple-500/20">
-            <SelectValue placeholder="Platform" />
           </SelectTrigger>
           <SelectContent>
             {platforms.map(platform => (

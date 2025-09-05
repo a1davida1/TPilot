@@ -128,7 +128,6 @@ export function GeminiCaptionGenerator() {
             <div className="space-y-2">
               <Input
                 type="url"
-                placeholder="https://example.com/image.jpg"
                 value={imageFile ? "" : imageUrl}
                 onChange={(e) => setImageUrl(e.target.value)}
                 disabled={!!imageFile}
@@ -178,7 +177,6 @@ export function GeminiCaptionGenerator() {
             <Label htmlFor="platform">Platform</Label>
             <Select value={platform} onValueChange={setPlatform}>
               <SelectTrigger id="platform">
-                <SelectValue placeholder="Select platform" />
               </SelectTrigger>
               <SelectContent>
                 {PLATFORMS.map(p => (
@@ -195,7 +193,6 @@ export function GeminiCaptionGenerator() {
             <Label htmlFor="voice">Content Voice</Label>
             <Select value={voice} onValueChange={setVoice}>
               <SelectTrigger id="voice">
-                <SelectValue placeholder="Select voice" />
               </SelectTrigger>
               <SelectContent>
                 {VOICES.map(v => (

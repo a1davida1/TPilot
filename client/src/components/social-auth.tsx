@@ -219,14 +219,12 @@ export function SocialAuth({ onSuccess, isLoading = false }: SocialAuthProps) {
               Want to try first?
             </h4>
             <p className="text-sm text-orange-700 mb-3">
-              Explore ThottoPilot with a free demo - no signup required
             </p>
             <Button 
               variant="outline" 
               className="border-orange-300 text-orange-700 hover:bg-orange-100"
               onClick={() => window.location.href = '/dashboard?guest=true'}
             >
-              Try Demo Mode
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>

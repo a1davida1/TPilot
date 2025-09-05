@@ -31,11 +31,8 @@ import { protectImage, protectionPresets, downloadProtectedImage } from "@/lib/i
 
 // Assuming ThemeToggle and other necessary components/hooks are imported correctly.
 // For example: import ThemeToggle from "@/components/ThemeToggle";
-// And placeholder functions/types like photoTypes, textTones, availableHashtags, setSelectedPhotoType, etc. are defined or imported.
 
-// Dummy definitions for placeholder types and states to make the code runnable for demonstration.
 // In a real app, these would be imported or defined elsewhere.
-const ThemeToggle = () => null; // Placeholder for ThemeToggle component
 const photoTypes = [
   { id: 'realistic', label: 'Realistic', emoji: '📸' },
   { id: 'artistic', label: 'Artistic', emoji: '🎨' },
@@ -50,14 +47,12 @@ const availableHashtags = ['#model', '#photography', '#fashion', '#lifestyle', '
 
 // Extended interface for frontend display with dynamic server properties
 interface GeneratedContentDisplay extends Omit<ContentGeneration, 'photoInstructions'> {
-  contentSource?: 'ai' | 'template' | 'demo';
   aiProvider?: string;
   estimatedCost?: number;
   upgradeMessage?: string;
   userTier?: string;
   variationCount?: number;
   apiStatus?: string;
-  isDemo?: boolean;
   titles: string[]; // Ensure titles is always an array
   photoInstructions: {
     lighting: string;
@@ -564,7 +559,6 @@ export function UnifiedContentCreator({
               <Label htmlFor="prompt">Custom Content Prompt</Label>
               <Textarea
                 id="prompt"
-                placeholder="Describe what you want to create... (e.g., 'playful tease about trying on new lingerie')"
                 value={customPrompt}
                 onChange={(e) => setCustomPrompt(e.target.value)}
                 className="min-h-[100px]"
@@ -786,7 +780,6 @@ export function UnifiedContentCreator({
             <Label>Platform</Label>
             <Select value={platform} onValueChange={setPlatform}>
               <SelectTrigger>
-                <SelectValue placeholder="Select platform" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="reddit">Reddit</SelectItem>
@@ -800,7 +793,6 @@ export function UnifiedContentCreator({
           <div className="space-y-2">
             <Label>Subreddit (Optional)</Label>
             <Textarea
-              placeholder="e.g., r/selfie, r/gonewild"
               value={subreddit}
               onChange={(e) => setSubreddit(e.target.value)}
               className="h-10"
@@ -812,7 +804,6 @@ export function UnifiedContentCreator({
           <Label>Promotion Level</Label>
           <Select value={allowsPromotion} onValueChange={setAllowsPromotion}>
             <SelectTrigger>
-              <SelectValue placeholder="Select promotion level" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">No Promotion</SelectItem>
@@ -839,7 +830,6 @@ export function UnifiedContentCreator({
               <Label>Provider Preference</Label>
               <Select value={selectedProvider} onValueChange={setSelectedProvider}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select provider" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="auto">Auto (Optimized)</SelectItem>
@@ -882,14 +872,11 @@ export function UnifiedContentCreator({
               <div className="flex gap-2">
                 {generatedContent.contentSource && (
                   <Badge 
-                    variant={generatedContent.contentSource === 'demo' ? 'destructive' : 'secondary'} 
                     className="text-xs"
                   >
-                    {generatedContent.contentSource === 'demo' ? 'DEMO - AI Unavailable' : 
                      generatedContent.contentSource === 'template' ? 'Template' : 'AI Generated'}
                   </Badge>
                 )}
-                {(generatedContent as any).isDemo && (
                   <Badge variant="outline" className="text-xs text-orange-600 border-orange-600">
                     OpenAI Quota Exceeded
                   </Badge>

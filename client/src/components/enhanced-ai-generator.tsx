@@ -315,7 +315,6 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
         <div className="space-y-2">
           <Label className="text-base font-medium">Custom Prompt (Optional)</Label>
           <Textarea
-            placeholder="Add specific details about your content... (e.g., 'Cozy morning selfie with coffee')"
             value={customPrompt}
             onChange={(e) => setCustomPrompt(e.target.value)}
             rows={3}
@@ -461,7 +460,6 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
                 <Label>Subreddit (optional)</Label>
                 <input
                   type="text"
-                  placeholder="e.g., selfie, photography"
                   value={subreddit}
                   onChange={(e) => setSubreddit(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
@@ -583,7 +581,6 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
         {isGuestMode && (
           <div className="text-center p-4 bg-pink-50 border border-pink-200 rounded-lg">
             <p className="text-sm text-pink-700">
-              ✨ <strong>Guest Mode:</strong> Limited to demo content. 
               <a href="/login" className="text-pink-800 underline ml-1 font-medium">
                 Sign up for full access
               </a>

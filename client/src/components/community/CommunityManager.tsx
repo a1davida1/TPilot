@@ -367,7 +367,6 @@ export function CommunityManager() {
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <Input
-                  placeholder="Search engagements..."
                   className="pl-10 bg-gray-900/50 border-gray-700"
                   data-testid="search-engagements"
                 />
@@ -543,7 +542,6 @@ export function CommunityManager() {
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-300">Trigger Keywords</label>
                 <Input
-                  placeholder="e.g., outfit, where to buy, collaboration"
                   className="bg-gray-900/50 border-gray-700"
                   data-testid="input-trigger-keywords"
                 />
@@ -551,7 +549,6 @@ export function CommunityManager() {
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-300">Reply Template</label>
                 <Textarea
-                  placeholder="Enter your reply template..."
                   className="bg-gray-900/50 border-gray-700 min-h-[100px]"
                   data-testid="textarea-reply-template"
                 />

@@ -191,7 +191,6 @@ export function RedditQuickPost() {
               <Label>Quick Template</Label>
               <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
                 <SelectTrigger data-testid="select-reddit-template">
-                  <SelectValue placeholder="Choose a posting template..." />
                 </SelectTrigger>
                 <SelectContent>
                   {QUICK_TEMPLATES.map((template) => (
@@ -220,7 +219,6 @@ export function RedditQuickPost() {
                 id="quick-title"
                 value={customTitle}
                 onChange={(e) => setCustomTitle(e.target.value)}
-                placeholder="Leave empty to use template title..."
                 data-testid="input-quick-title"
               />
             </div>
@@ -232,7 +230,6 @@ export function RedditQuickPost() {
                 id="quick-content"
                 value={customContent}
                 onChange={(e) => setCustomContent(e.target.value)}
-                placeholder="Leave empty to use template content..."
                 rows={3}
                 data-testid="textarea-quick-content"
               />

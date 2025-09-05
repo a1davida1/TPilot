@@ -500,8 +500,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         customInstructions
       });
 
-      // Check if this is demo content and add metadata
-      const isDemoContent = result.titles[0]?.includes('[DEMO]') || result.content?.includes('[DEMO CONTENT]');
 
       // Save to database if user is authenticated
       if (req.user?.id) {
@@ -520,9 +518,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const response = {
         ...result,
-        contentSource: isDemoContent ? 'demo' : 'ai',
-        isDemo: isDemoContent,
-        apiStatus: isDemoContent ? 'unavailable' : 'active'
       };
 
       res.json(response);

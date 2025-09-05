@@ -115,7 +115,6 @@ export function ProPerks({ userTier = 'pro' }: ProPerksProps) {
     );
   }
 
-  const sampleForDevelopment = [{
       id: '1',
       title: 'Content Creator Tax Guide 2025',
       description: 'Complete guide to managing taxes as an adult content creator, including deductions and quarterly payments',
@@ -402,7 +401,6 @@ export function ProPerks({ userTier = 'pro' }: ProPerksProps) {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
-            placeholder="Search perks, guides, and discounts..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10 bg-gray-900/50 border-purple-500/20"

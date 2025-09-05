@@ -140,7 +140,6 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                   type="text"
                   required
                   className="bg-gray-800 border-purple-500/20 text-white"
-                  placeholder="Enter your username"
                 />
               </div>
               <div className="space-y-2">
@@ -151,7 +150,6 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                   type="password"
                   required
                   className="bg-gray-800 border-purple-500/20 text-white"
-                  placeholder="Enter your password"
                 />
               </div>
               <Button
@@ -184,7 +182,6 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                   type="text"
                   required
                   className="bg-gray-800 border-purple-500/20 text-white"
-                  placeholder="Choose a username"
                 />
               </div>
               <div className="space-y-2">
@@ -195,7 +192,6 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                   type="email"
                   required
                   className="bg-gray-800 border-purple-500/20 text-white"
-                  placeholder="your@email.com"
                 />
               </div>
               <div className="space-y-2">
@@ -207,7 +203,6 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                   required
                   minLength={6}
                   className="bg-gray-800 border-purple-500/20 text-white"
-                  placeholder="Choose a secure password"
                 />
               </div>
               <Button

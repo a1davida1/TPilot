@@ -147,7 +147,6 @@ Create content that's perfect for ${platform}.`;
     const errorMessage = error instanceof Error ? error.message : String(error);
     const isQuotaError = errorMessage.includes('quota') || errorMessage.includes('billing');
     
-    // Don't return demo content - throw proper error for production
     throw new Error(isQuotaError ? 
       'AI service quota exceeded. Please upgrade your plan or try again later.' : 
       'AI content generation temporarily unavailable. Please try again in a few moments.'

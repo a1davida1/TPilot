@@ -146,7 +146,6 @@ export function ImageGallery() {
       
       // Store locally for now if no auth
       if (!localStorage.getItem('authToken')) {
-        // Store in local state for demo purposes
         const localImage = {
           id: Date.now().toString(),
           originalUrl: previewUrl,
@@ -224,7 +223,6 @@ export function ImageGallery() {
           <div className="space-y-2">
             <label className="text-sm font-medium">Tags (optional)</label>
             <Input
-              placeholder="e.g., selfie, outfit, workout"
               value={selectedTags}
               onChange={(e) => setSelectedTags(e.target.value)}
             />

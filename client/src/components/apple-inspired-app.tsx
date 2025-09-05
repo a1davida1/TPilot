@@ -87,7 +87,6 @@ export function AppleInspiredApp() {
     { id: "generate", label: "Content Creator", icon: <Brain className="h-4 w-4" />, badge: "NEW" },
     { id: "dual", label: "Dual Workflow", icon: <Zap className="h-4 w-4" />, badge: "HOT" },
     { id: "protect", label: "Image Shield", icon: <Shield className="h-4 w-4" />, badge: "FREE" },
-    { id: "samples", label: "Sample Library", icon: <FileText className="h-4 w-4" />, badge: "PRO" },
     { id: "finetune", label: "Personalization", icon: <Sparkles className="h-4 w-4" />, badge: "PRO" },
     { id: "perks", label: "ProPerks", icon: <Gift className="h-4 w-4" />, badge: "15+" },
     { id: "gallery", label: "Image Gallery", icon: <ImageIcon className="h-4 w-4" /> },
@@ -521,7 +520,6 @@ export function AppleInspiredApp() {
                       <textarea
                         value={customPrompt}
                         onChange={(e) => setCustomPrompt(e.target.value)}
-                        placeholder="Add any specific ideas or requirements..."
                         className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none h-24"
                       />
                     </div>
@@ -806,7 +804,6 @@ export function AppleInspiredApp() {
               </motion.div>
             )}
 
-            {/* Placeholder for other sections */}
             {activeSection !== "generate" && activeSection !== "protect" && (
               <motion.div
                 key={activeSection}

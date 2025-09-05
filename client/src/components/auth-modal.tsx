@@ -472,7 +472,6 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
                     value={resetEmail}
                     onChange={(e) => setResetEmail(e.target.value)}
                     className="pl-10 bg-background border-input text-foreground focus:border-purple-500"
-                    placeholder="Enter your email address"
                     required
                     data-testid="input-reset-email"
                   />
@@ -524,7 +523,6 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
                   value={formData.username}
                   onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                   className="pl-10 bg-background border-input text-foreground focus:border-purple-500"
-                  placeholder={mode === 'login' ? 'Username or email address' : 'Enter your username'}
                   required
                 />
               </div>
@@ -543,7 +541,6 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     className="pl-10 bg-background border-input text-foreground focus:border-purple-500"
-                    placeholder="your@email.com"
                   />
                 </div>
               </div>
@@ -561,7 +558,6 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   className="pl-10 bg-background border-input text-foreground focus:border-purple-500"
-                  placeholder="••••••••"
                   required
                 />
               </div>
@@ -654,7 +650,6 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckCircle className="h-3 w-3" />
-                  Sample library & personalization
                 </li>
               </ul>
             </div>

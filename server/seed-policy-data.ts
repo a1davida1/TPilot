@@ -6,8 +6,6 @@ export async function seedPolicyData() {
   console.log("🌱 Seeding policy data...");
 
   try {
-    // Sample subreddit rules with professional content creation constraints
-    const sampleRules: Array<{
       subreddit: string;
       rules: RuleSpec;
     }> = [
@@ -59,7 +57,6 @@ export async function seedPolicyData() {
     ];
 
     // Insert subreddit rules
-    for (const { subreddit, rules } of sampleRules) {
       await db
         .insert(subredditRules)
         .values({

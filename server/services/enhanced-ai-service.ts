@@ -663,7 +663,6 @@ Create content that feels authentic, drives engagement, and perfectly matches th
   private suggestProps(contentType?: string): string[] {
     const props = {
       teasing: ["silk scarf", "feather", "mirror"],
-      promotional: ["product samples", "branded items"],
       engagement: ["coffee cup", "book", "flowers"],
       lifestyle: ["yoga mat", "healthy snacks", "plants"],
       announcement: ["balloons", "confetti", "signs"],

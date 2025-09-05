@@ -320,7 +320,6 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // OAuth routes removed - placeholder routes created unnecessary attack surface
   // When ready to implement, use proper OAuth libraries and security practices
   
   // Note: Resend verification email route is defined at line 812 with proper rate limiting

@@ -210,7 +210,6 @@ export function RedditCommunities() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
-              placeholder="Search communities..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 bg-white/60 dark:bg-gray-800/60 border-pink-200 dark:border-pink-500/30 focus:border-pink-400 dark:focus:border-pink-400"
@@ -219,7 +218,6 @@ export function RedditCommunities() {
           
           <Select value={filterCategory} onValueChange={setFilterCategory}>
             <SelectTrigger className="w-[180px] bg-white/60 dark:bg-gray-800/60 border-pink-200 dark:border-pink-500/30">
-              <SelectValue placeholder="Category" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Categories</SelectItem>
@@ -235,7 +233,6 @@ export function RedditCommunities() {
 
           <Select value={filterPromotion} onValueChange={setFilterPromotion}>
             <SelectTrigger className="w-[180px] bg-white/60 dark:bg-gray-800/60 border-pink-200 dark:border-pink-500/30">
-              <SelectValue placeholder="Promotion" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Promotion</SelectItem>
@@ -248,7 +245,6 @@ export function RedditCommunities() {
 
           <Select value={filterVerification} onValueChange={setFilterVerification}>
             <SelectTrigger className="w-[180px] bg-white/60 dark:bg-gray-800/60 border-pink-200 dark:border-pink-500/30">
-              <SelectValue placeholder="Verification" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Verification</SelectItem>
@@ -259,7 +255,6 @@ export function RedditCommunities() {
 
           <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
             <SelectTrigger className="w-[150px] bg-white/60 dark:bg-gray-800/60 border-pink-200 dark:border-pink-500/30">
-              <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="success">Success Rate</SelectItem>
