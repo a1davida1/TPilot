@@ -221,7 +221,7 @@ export async function confirmLead(req: Request, res: Response) {
             </p>
             
             <div style="margin: 32px 0;">
-              <a href="https://forms.gle/survey-placeholder" 
+              <a href="https://forms.gle/thottopilot-launch-survey" 
                  style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
                 Take 30-Second Survey
               </a>
