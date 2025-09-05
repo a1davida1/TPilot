@@ -33,9 +33,14 @@ export function AestheticLanding() {
   const [activeTab, setActiveTab] = useState("generate");
   const [isVisible, setIsVisible] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [metrics, setMetrics] = useState<any>(null);
 
   useEffect(() => {
     setIsVisible(true);
+    fetch('/api/metrics')
+      .then(res => (res.ok ? res.json() : null))
+      .then(setMetrics)
+      .catch(() => {});
     
     const handleMouseMove = (e: MouseEvent) => {
       setMousePosition({ x: e.clientX, y: e.clientY });
@@ -45,12 +50,14 @@ export function AestheticLanding() {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  const stats = [
-    { icon: <Users className="h-5 w-5" />, value: "Beta", label: "Early Access" },
-    { icon: <Sparkles className="h-5 w-5" />, value: "50+", label: "Templates" },
-    { icon: <TrendingUp className="h-5 w-5" />, value: "24/7", label: "Support" },
-    { icon: <Star className="h-5 w-5" />, value: "New", label: "Platform" }
-  ];
+  const stats = metrics
+    ? [
+        { icon: <Users className="h-5 w-5" />, value: "Beta", label: "Early Access" },
+        { icon: <Sparkles className="h-5 w-5" />, value: `${metrics.templates}+`, label: "Templates" },
+        { icon: <TrendingUp className="h-5 w-5" />, value: metrics.support || "24/7", label: "Support" },
+        { icon: <Star className="h-5 w-5" />, value: "New", label: "Platform" }
+      ]
+    : [];
 
   const features = [
     {
