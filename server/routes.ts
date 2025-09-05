@@ -182,8 +182,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Apply CSRF to session-based auth routes only (not JWT routes)
-  app.use('/api/auth/verify-email', csrfProtection);
+  // CSRF error handling middleware
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (err.code === 'EBADCSRFTOKEN') {
+      logger.warn('CSRF token validation failed', {
+        ip: req.ip,
+        userAgent: req.get('User-Agent'),
+        path: req.path,
+        method: req.method,
+        hasSession: !!req.session
+      });
+      return res.status(403).json({ 
+        message: 'Invalid CSRF token',
+        code: 'CSRF_TOKEN_INVALID' 
+      });
+    }
+    next(err);
+  });
+  
+  // Apply CSRF protection to sensitive state-changing routes
+  // Note: JWT-based routes rely on token authentication instead of CSRF
+  
+  // CSRF-protected routes (session-based and sensitive operations)
+  const csrfProtectedRoutes = [
+    '/api/auth/verify-email',
+    '/api/auth/change-password',
+    '/api/auth/forgot-password',
+    '/api/auth/reset-password',
+    '/api/upload/image',
+    '/api/content/generate',
+    '/api/reddit/connect',
+    '/api/reddit/post',
+    '/api/admin/*', // All admin routes
+    '/api/billing/*', // All billing operations
+    '/api/account/delete',
+    '/api/account/update-preferences'
+  ];
+  
+  // Apply CSRF protection to sensitive routes
+  csrfProtectedRoutes.forEach(route => {
+    if (route.includes('*')) {
+      // Handle wildcard routes
+      const baseRoute = route.replace('/*', '');
+      app.use(baseRoute, csrfProtection);
+    } else {
+      app.use(route, csrfProtection);
+    }
+  });
+  
+  // CSRF token endpoint
   app.get('/api/csrf-token', csrfProtection, (req, res) => {
     res.json({ csrfToken: req.csrfToken() });
   });

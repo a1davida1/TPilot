@@ -6,6 +6,7 @@ import hpp from "hpp";
 import winston from "winston";
 import dotenv from "dotenv";
 import crypto from "crypto";
+import { logger as appLogger } from "../bootstrap/logger.js";
 
 // Only load dotenv if NOT in production
 // In production deployments, secrets are already available as env vars
@@ -16,21 +17,115 @@ if (process.env.NODE_ENV !== 'production') {
 // ==========================================
 // VALIDATE ENVIRONMENT VARIABLES
 // ==========================================
+
+interface EnvValidationRule {
+  key: string;
+  required: boolean;
+  validator?: (value: string) => boolean;
+  description?: string;
+}
+
+const envValidationRules: EnvValidationRule[] = [
+  // Critical security variables
+  { key: 'JWT_SECRET', required: true, validator: (val) => val.length >= 32, description: 'JWT secret must be at least 32 characters' },
+  { key: 'SESSION_SECRET', required: true, validator: (val) => val.length >= 32, description: 'Session secret must be at least 32 characters' },
+  { key: 'DATABASE_URL', required: true, validator: (val) => val.startsWith('postgres://') || val.startsWith('postgresql://'), description: 'Database URL must be a valid PostgreSQL connection string' },
+  
+  // API Keys (optional but validated if present)
+  { key: 'GOOGLE_GENAI_API_KEY', required: false, validator: (val) => val.startsWith('AIza') || val.length > 30, description: 'Google GenAI API key format validation' },
+  { key: 'OPENAI_API_KEY', required: false, validator: (val) => val.startsWith('sk-'), description: 'OpenAI API key must start with sk-' },
+  { 
+    key: 'SENTRY_DSN', 
+    required: false, 
+    validator: (val) => {
+      if (!val) return true; // Optional
+      const { validateSentryDSN } = require('../bootstrap/logger');
+      const { isValid } = validateSentryDSN(val);
+      return isValid;
+    }, 
+    description: 'Sentry DSN must be a valid Sentry DSN URL format' 
+  },
+  { key: 'SENDGRID_API_KEY', required: false, validator: (val) => val.startsWith('SG.'), description: 'SendGrid API key must start with SG.' },
+  
+  // Stripe configuration (optional)
+  { key: 'STRIPE_SECRET_KEY', required: false, validator: (val) => val.startsWith('sk_'), description: 'Stripe secret key must start with sk_' },
+  { key: 'STRIPE_PUBLISHABLE_KEY', required: false, validator: (val) => val.startsWith('pk_'), description: 'Stripe publishable key must start with pk_' },
+  { key: 'STRIPE_WEBHOOK_SECRET', required: false, validator: (val) => val.startsWith('whsec_'), description: 'Stripe webhook secret must start with whsec_' },
+  
+  // Reddit OAuth (optional)
+  { key: 'REDDIT_CLIENT_ID', required: false, validator: (val) => val.length >= 14, description: 'Reddit client ID validation' },
+  { key: 'REDDIT_CLIENT_SECRET', required: false, validator: (val) => val.length >= 20, description: 'Reddit client secret validation' },
+  
+  // Environment configuration
+  { key: 'NODE_ENV', required: true, validator: (val) => ['development', 'production', 'test'].includes(val), description: 'NODE_ENV must be development, production, or test' },
+  { key: 'PORT', required: false, validator: (val) => !isNaN(parseInt(val)) && parseInt(val) > 0, description: 'PORT must be a positive number' },
+  
+  // Optional email configuration
+  { key: 'FROM_EMAIL', required: false, validator: (val) => val.includes('@'), description: 'FROM_EMAIL must be a valid email format' },
+];
+
 export function validateEnvironment() {
-  const required = ['JWT_SECRET', 'SESSION_SECRET', 'DATABASE_URL'];
-  const placeholders = ['changeme', 'placeholder', 'your_jwt_secret_here', 'default_secret'];
-  const missing = required.filter(key => {
-    const val = process.env[key];
-    return !val || placeholders.some(p => val.toLowerCase().includes(p));
-  });
-
-  if (missing.length > 0) {
-    console.error(`❌ Invalid or missing environment variables: ${missing.join(', ')}`);
-    console.error('Please set secure, non-placeholder values in your environment');
-    throw new Error(`Invalid environment variables: ${missing.join(', ')}`);
+  const placeholders = ['changeme', 'placeholder', 'your_jwt_secret_here', 'default_secret', 'your_api_key_here'];
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  
+  for (const rule of envValidationRules) {
+    const value = process.env[rule.key];
+    
+    if (rule.required && !value) {
+      errors.push(`${rule.key} is required but not set`);
+      continue;
+    }
+    
+    if (!value) {
+      // Optional variable not set, skip validation
+      continue;
+    }
+    
+    // Check for placeholder values
+    if (placeholders.some(p => value.toLowerCase().includes(p))) {
+      errors.push(`${rule.key} contains placeholder value`);
+      continue;
+    }
+    
+    // Run custom validator if provided
+    if (rule.validator && !rule.validator(value)) {
+      errors.push(`${rule.key} validation failed: ${rule.description || 'Invalid format'}`);
+      continue;
+    }
+    
+    // Log successful validation for important keys
+    if (rule.required) {
+      appLogger.debug(`Environment variable ${rule.key} validated successfully`);
+    }
   }
-
-  console.log('✅ Environment variables validated');
+  
+  // Additional security checks
+  if (process.env.NODE_ENV === 'production') {
+    if (!process.env.GOOGLE_GENAI_API_KEY && !process.env.OPENAI_API_KEY) {
+      warnings.push('No AI API keys configured - content generation may not work');
+    }
+    
+    if (!process.env.SENDGRID_API_KEY) {
+      warnings.push('No email service configured - password resets and notifications will fail');
+    }
+  }
+  
+  // Report validation results
+  if (errors.length > 0) {
+    appLogger.error('Environment variable validation failed', { errors });
+    throw new Error(`Invalid environment variables: ${errors.join(', ')}`);
+  }
+  
+  if (warnings.length > 0) {
+    appLogger.warn('Environment variable warnings', { warnings });
+  }
+  
+  appLogger.info('Environment variables validated successfully', {
+    validated: envValidationRules.filter(r => process.env[r.key]).length,
+    total: envValidationRules.length,
+    environment: process.env.NODE_ENV
+  });
 }
 
 // ==========================================
@@ -345,4 +440,52 @@ export const errorHandler = (err: any, req: any, res: any, next: any) => {
     error: err.message,
     stack: err.stack
   });
+};
+
+// ==========================================
+// 404 NOT FOUND HANDLER
+// ==========================================
+export const notFoundHandler = (req: any, res: any) => {
+  const userIP = req.userIP || req.ip || 'unknown';
+  const path = req.path || req.url || 'unknown';
+  const method = req.method || 'unknown';
+  
+  // Log the 404 for monitoring purposes
+  logger.warn('404 Not Found', {
+    path,
+    method,
+    ip: userIP,
+    userAgent: req.userAgent || req.headers['user-agent'],
+    referer: req.headers.referer || req.headers.referrer,
+    timestamp: new Date().toISOString()
+  });
+  
+  // Send appropriate response based on request type
+  if (req.accepts('json') && req.path.startsWith('/api/')) {
+    // API request - return JSON
+    return res.status(404).json({
+      error: 'Not Found',
+      message: 'The requested API endpoint does not exist',
+      path,
+      method,
+      timestamp: new Date().toISOString(),
+      suggestions: [
+        'Check the URL for typos',
+        'Verify the HTTP method (GET, POST, etc.)',
+        'Consult the API documentation',
+        'Contact support if the issue persists'
+      ]
+    });
+  } else if (req.accepts('html')) {
+    // Web request - return HTML (or redirect to client-side router)
+    return res.status(404).json({
+      error: 'Page Not Found',
+      message: 'The requested page does not exist',
+      path,
+      timestamp: new Date().toISOString()
+    });
+  } else {
+    // Default - return plain text
+    return res.status(404).type('txt').send(`404 Not Found: ${path}`);
+  }
 };

@@ -9,8 +9,10 @@ import { z } from 'zod';
 import { authLimiter } from './middleware/security.js';
 import { safeLog, redactUserData } from './lib/logger-utils.js';
 import { FRONTEND_URL } from './config.js';
-import { verificationLimiter, passwordResetLimiter, loginLimiter, signupLimiter } from './middleware/simple-rate-limit.js';
+import { verificationLimiter, passwordResetLimiter, loginLimiter, signupLimiter, passwordChangeLimiter } from './middleware/simple-rate-limit.js';
 import { authMetrics } from './services/basic-metrics.js';
+import { logger } from './bootstrap/logger.js';
+import { validate, ValidationSource, loginValidationSchema, signupValidationSchema, passwordChangeValidationSchema } from './middleware/validation.js';
 
 // Auth validation schemas
 const signupSchema = z.object({
@@ -46,7 +48,7 @@ const JWT_SECRET_VALIDATED: string = JWT_SECRET;
 
 export function setupAuth(app: Express) {
   // Regular signup
-  app.post('/api/auth/signup', signupLimiter, async (req, res) => {
+  app.post('/api/auth/signup', signupLimiter, validate(signupValidationSchema), async (req, res) => {
     const startTime = Date.now();
     try {
       // Validate input
@@ -179,7 +181,7 @@ export function setupAuth(app: Express) {
   });
 
   // Regular login
-  app.post('/api/auth/login', loginLimiter, async (req, res) => {
+  app.post('/api/auth/login', loginLimiter, validate(loginValidationSchema), async (req, res) => {
     const startTime = Date.now();
     try {
       // Validate input
@@ -329,39 +331,43 @@ export function setupAuth(app: Express) {
     try {
       const { email } = req.body;
       
-      console.log('🔐 PASSWORD RESET WORKFLOW STARTED');
-      console.log('  ├─ 📧 Email received:', email ? email.replace(/(.{2})(.*)(@.*)/, '$1***$3') : 'No email');
-      console.log('  ├─ 🌐 Request IP:', req.ip || 'Unknown');
-      console.log('  ├─ 🔑 SendGrid configured:', !!process.env.SENDGRID_API_KEY);
-      console.log('  ├─ ✉️ Email service ready:', emailService.isEmailServiceConfigured);
-      console.log('  └─ 📅 Timestamp:', new Date().toISOString());
+      logger.info('Password reset workflow started', {
+        email: email ? email.replace(/(.{2})(.*)(@.*)/, '$1***$3') : 'No email',
+        requestIP: req.ip || 'Unknown',
+        sendGridConfigured: !!process.env.SENDGRID_API_KEY,
+        emailServiceReady: emailService.isEmailServiceConfigured,
+        timestamp: new Date().toISOString()
+      });
       
       if (!email) {
-        console.log('❌ PASSWORD RESET FAILED: No email provided');
+        logger.warn('Password reset failed: No email provided');
         return res.status(400).json({ message: 'Email is required' });
       }
 
       // Find user by email
-      console.log('  🔍 Looking up user by email...');
+      logger.debug('Looking up user by email');
       const user = await storage.getUserByEmail(email);
       
       if (!user) {
-        console.log('  ⚠️ User not found (security: returning generic message)');
-        console.log('  └─ Email:', email.replace(/(.{2})(.*)(@.*)/, '$1***$3'));
+        logger.warn('User not found for password reset (returning generic message for security)', {
+          email: email.replace(/(.{2})(.*)(@.*)/, '$1***$3')
+        });
         // Don't reveal if email exists for security
         return res.json({ message: 'If the email exists, a reset link has been sent' });
       }
 
-      console.log('  ✅ User found');
-      console.log('  ├─ Username:', user.username);
-      console.log('  ├─ User ID:', user.id);
-      console.log('  └─ Email verified:', user.emailVerified || false);
+      logger.info('User found for password reset', {
+        username: user.username,
+        userId: user.id,
+        emailVerified: user.emailVerified || false
+      });
       
       // Send password reset email
       if (user.email) {
-        console.log('  📤 Preparing to send password reset email...');
-        console.log('  ├─ To:', user.email.replace(/(.{2})(.*)(@.*)/, '$1***$3'));
-        console.log('  └─ Username:', user.username);
+        logger.info('Preparing to send password reset email', {
+          to: user.email.replace(/(.{2})(.*)(@.*)/, '$1***$3'),
+          username: user.username
+        });
         
         const token = crypto.randomBytes(32).toString('hex');
         await storage.createVerificationToken({
@@ -371,19 +377,19 @@ export function setupAuth(app: Express) {
         });
         await emailService.sendPasswordResetEmail(user.email, user.username, token);
         
-        console.log('  ✅ Password reset email sent successfully');
-        console.log('  └─ Check email service logs for delivery status');
+        logger.info('Password reset email sent successfully - check email service logs for delivery status');
       }
 
-      console.log('✅ PASSWORD RESET REQUEST COMPLETED');
-      console.log('  └─ Response: Generic success message (security)');
+      logger.info('Password reset request completed - returning generic success message for security');
       
       res.json({ message: 'If the email exists, a reset link has been sent' });
     } catch (error) {
-      console.log('❌ PASSWORD RESET ERROR:', error.message);
-      console.log('  ├─ Stack:', error.stack?.split('\n')[1]?.trim() || 'No stack trace');
-      console.log('  ├─ Email:', req.body?.email ? req.body.email.replace(/(.{2})(.*)(@.*)/, '$1***$3') : 'No email');
-      console.log('  └─ Time:', new Date().toISOString());
+      logger.error('Password reset error', {
+        error: error.message,
+        stack: error.stack?.split('\n')[1]?.trim() || 'No stack trace',
+        email: req.body?.email ? req.body.email.replace(/(.{2})(.*)(@.*)/, '$1***$3') : 'No email',
+        timestamp: new Date().toISOString()
+      });
       
       safeLog('error', 'Password reset request failed', { error: error.message });
       res.status(500).json({ message: 'Error processing password reset' });
@@ -403,7 +409,7 @@ export function setupAuth(app: Express) {
       deployment: process.env.REPLIT_DEPLOYMENT || 'not set'
     };
     
-    console.log('📊 Email service status check:', status);
+    logger.info('Email service status check', status);
     res.json(status);
   });
 
@@ -463,7 +469,7 @@ export function setupAuth(app: Express) {
   });
 
   // Force password change endpoint (for temporary passwords)
-  app.post('/api/auth/change-password', async (req, res) => {
+  app.post('/api/auth/change-password', passwordChangeLimiter, validate(passwordChangeValidationSchema), async (req, res) => {
     try {
       const { userId, currentPassword, newPassword } = req.body;
 
@@ -610,7 +616,7 @@ export function setupAuth(app: Express) {
   });
 
   // Password reset token verification route
-  app.post('/api/auth/reset-password', async (req, res) => {
+  app.post('/api/auth/reset-password', passwordResetLimiter, async (req, res) => {
     try {
       const { token, newPassword } = req.body;
       
@@ -656,7 +662,7 @@ export function setupAuth(app: Express) {
 
   // DEPRECATED ROUTE - REMOVED (use POST /api/auth/reset-password instead)
   /*
-  app.post('/api/auth/verify-reset-token', async (req, res) => {
+  app.post('/api/auth/verify-reset-token', passwordResetLimiter, async (req, res) => {
     try {
       const { token } = req.body;
       

@@ -4,9 +4,13 @@ import path from 'path';
 import fs from 'fs/promises';
 import crypto from 'crypto';
 import sharp from 'sharp';
+import { fileTypeFromBuffer } from 'file-type';
 import { authenticateToken } from '../middleware/auth.js';
 import { uploadLimiter, logger } from '../middleware/security.js';
 import { imageProtectionLimiter as tierProtectionLimiter } from '../middleware/tiered-rate-limit.js';
+import { uploadRequestSchema, type ProtectionLevel, type UploadRequest } from '@shared/schema.js';
+import { ZodError } from 'zod';
+import { imageStreamingUpload, cleanupUploadedFiles } from '../middleware/streaming-upload.js';
 
 const router = express.Router();
 
@@ -110,19 +114,219 @@ async function applyImageShieldProtection(
   await pipeline.toFile(outputPath);
 }
 
+// Real MIME type detection using file content analysis
+async function validateImageFile(filePath: string, originalMimeType: string): Promise<{ isValid: boolean; detectedType?: string; error?: string }> {
+  try {
+    // Read first 4KB for file type detection (enough for headers)
+    const buffer = await fs.readFile(filePath);
+    const firstBytes = buffer.slice(0, 4096);
+    
+    // Detect actual file type from content
+    const detectedFileType = await fileTypeFromBuffer(firstBytes);
+    
+    if (!detectedFileType) {
+      return { isValid: false, error: 'Unable to determine file type from content' };
+    }
+    
+    // Define allowed image types with their MIME types
+    const allowedImageTypes = {
+      'jpg': 'image/jpeg',
+      'jpeg': 'image/jpeg', 
+      'png': 'image/png',
+      'webp': 'image/webp',
+      'gif': 'image/gif'
+    };
+    
+    // Check if detected file type is an allowed image format
+    if (!allowedImageTypes[detectedFileType.ext as keyof typeof allowedImageTypes]) {
+      return { 
+        isValid: false, 
+        detectedType: detectedFileType.mime,
+        error: `File content indicates ${detectedFileType.ext} format, which is not allowed` 
+      };
+    }
+    
+    const expectedMime = allowedImageTypes[detectedFileType.ext as keyof typeof allowedImageTypes];
+    
+    // Compare detected type with declared type (allow some flexibility)
+    if (detectedFileType.mime !== expectedMime) {
+      logger.warn('MIME type mismatch detected', {
+        declared: originalMimeType,
+        detected: detectedFileType.mime,
+        extension: detectedFileType.ext
+      });
+    }
+    
+    // Additional validation using Sharp for image integrity
+    try {
+      const metadata = await sharp(buffer).metadata();
+      if (!metadata.width || !metadata.height) {
+        return { isValid: false, error: 'Invalid image: missing dimensions' };
+      }
+      
+      // Check for reasonable image dimensions (prevent zip bombs)
+      if (metadata.width > 20000 || metadata.height > 20000) {
+        return { isValid: false, error: 'Image dimensions too large' };
+      }
+      
+    } catch (sharpError) {
+      return { isValid: false, error: 'File is not a valid image format' };
+    }
+    
+    return { isValid: true, detectedType: detectedFileType.mime };
+    
+  } catch (error) {
+    logger.error('File validation error', { error: error.message, filePath });
+    return { isValid: false, error: 'File validation failed' };
+  }
+}
+
 // Basic malware detection patterns (enhanced in production)
 function performBasicMalwareCheck(buffer: Buffer): boolean {
   const malwareSignatures = [
     Buffer.from('eval('), // JavaScript injection
     Buffer.from('<?php'), // PHP injection
     Buffer.from('<script'), // Script injection
-    Buffer.from('javascript:') // JavaScript protocol
+    Buffer.from('javascript:'), // JavaScript protocol
+    Buffer.from('%PDF-'), // PDF files
+    Buffer.from('PK\x03\x04'), // ZIP files (potential zip bombs)
+    Buffer.from('\x7fELF'), // ELF executables
+    Buffer.from('MZ'), // Windows executables
   ];
   
   return malwareSignatures.some(sig => buffer.includes(sig));
 }
 
-// Upload endpoint with authentication, rate limiting, and ImageShield protection
+// New streaming upload endpoint with enhanced progress tracking
+router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, cleanupUploadedFiles, imageStreamingUpload, async (req: any, res) => {
+  let processedFilePath: string | null = null;
+  
+  try {
+    // Check if files were uploaded via streaming
+    if (!req.streamingFiles || req.streamingFiles.length === 0) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const uploadedFile = req.streamingFiles[0];
+    const tempFilePath = uploadedFile.path;
+
+    if (!tempFilePath) {
+      return res.status(400).json({ message: 'Invalid file path' });
+    }
+    
+    // Real MIME type validation using file content analysis
+    const fileValidation = await validateImageFile(tempFilePath, uploadedFile.mimetype);
+    if (!fileValidation.isValid) {
+      await fs.unlink(tempFilePath);
+      logger.warn('Streaming file validation failed', {
+        userId: req.user.id,
+        originalName: uploadedFile.originalname,
+        declaredMime: uploadedFile.mimetype,
+        detectedType: fileValidation.detectedType,
+        error: fileValidation.error
+      });
+      return res.status(400).json({ 
+        message: 'File validation failed',
+        error: fileValidation.error 
+      });
+    }
+    
+    // Basic malware check
+    const fileBuffer = await fs.readFile(tempFilePath);
+    if (performBasicMalwareCheck(fileBuffer)) {
+      await fs.unlink(tempFilePath);
+      logger.warn('Malware detected in streaming upload', {
+        userId: req.user.id,
+        originalName: uploadedFile.originalname,
+        detectedType: fileValidation.detectedType
+      });
+      return res.status(400).json({ message: 'File failed security check' });
+    }
+    
+    logger.info('Streaming file validation successful', {
+      userId: req.user.id,
+      originalName: uploadedFile.originalname,
+      declaredMime: uploadedFile.mimetype,
+      detectedType: fileValidation.detectedType,
+      uploadSize: uploadedFile.size
+    });
+    
+    // Validate request body with Zod schema
+    let validatedRequest: UploadRequest;
+    try {
+      validatedRequest = uploadRequestSchema.parse(req.body);
+    } catch (error) {
+      await fs.unlink(tempFilePath);
+      if (error instanceof ZodError) {
+        logger.warn('Streaming upload validation failed', {
+          userId: req.user.id,
+          errors: error.errors
+        });
+        return res.status(400).json({ 
+          message: 'Invalid request parameters',
+          errors: error.errors 
+        });
+      }
+      throw error;
+    }
+
+    // Generate secure output filename
+    const outputFilename = `protected-${crypto.randomBytes(16).toString('hex')}.jpg`;
+    processedFilePath = path.join(process.cwd(), 'uploads', outputFilename);
+    
+    // Apply ImageShield protection with configured settings
+    await applyImageShieldProtection(
+      tempFilePath, 
+      processedFilePath, 
+      validatedRequest.protectionLevel,
+      validatedRequest.watermark
+    );
+    
+    // Clean up original uploaded file
+    await fs.unlink(tempFilePath);
+    
+    logger.info('ImageShield protection applied successfully (streaming)', {
+      userId: req.user.id,
+      originalName: uploadedFile.originalname,
+      protectionLevel: validatedRequest.protectionLevel,
+      watermark: validatedRequest.watermark,
+      outputFile: outputFilename
+    });
+    
+    // Return success response with file info
+    res.json({
+      message: 'Image uploaded and protected successfully',
+      filename: outputFilename,
+      protectionLevel: validatedRequest.protectionLevel,
+      watermark: validatedRequest.watermark,
+      originalSize: uploadedFile.size,
+      uploadProgress: req.uploadProgress
+    });
+    
+  } catch (error) {
+    logger.error('Streaming upload processing error', {
+      userId: req.user?.id,
+      error: error.message,
+      stack: error.stack
+    });
+    
+    // Clean up files on error
+    try {
+      if (req.streamingFiles?.[0]?.path) {
+        await fs.unlink(req.streamingFiles[0].path).catch(() => {});
+      }
+      if (processedFilePath) {
+        await fs.unlink(processedFilePath).catch(() => {});
+      }
+    } catch (cleanupError) {
+      logger.warn('File cleanup failed', { error: cleanupError.message });
+    }
+    
+    res.status(500).json({ message: 'Upload processing failed' });
+  }
+});
+
+// Traditional upload endpoint with authentication, rate limiting, and ImageShield protection
 router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken, upload.single('image'), async (req: any, res) => {
   let tempFilePath: string | null = null;
   let protectedFilePath: string | null = null;
@@ -138,18 +342,75 @@ router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken, u
       return res.status(400).json({ message: 'Invalid file path' });
     }
     
+    // Real MIME type validation using file content analysis
+    const fileValidation = await validateImageFile(tempFilePath, req.file.mimetype);
+    if (!fileValidation.isValid) {
+      await fs.unlink(tempFilePath);
+      logger.warn('File validation failed', {
+        userId: req.user.id,
+        originalName: req.file.originalname,
+        declaredMime: req.file.mimetype,
+        detectedType: fileValidation.detectedType,
+        error: fileValidation.error
+      });
+      return res.status(400).json({ 
+        message: 'File validation failed',
+        error: fileValidation.error 
+      });
+    }
+    
     // Basic malware check
     const fileBuffer = await fs.readFile(tempFilePath);
     if (performBasicMalwareCheck(fileBuffer)) {
       await fs.unlink(tempFilePath);
-      logger.warn(`Malware detected in upload from user ${req.user.id}`);
+      logger.warn('Malware detected in upload', {
+        userId: req.user.id,
+        originalName: req.file.originalname,
+        detectedType: fileValidation.detectedType
+      });
       return res.status(400).json({ message: 'File failed security check' });
     }
     
-    // Determine protection level and watermark based on user tier
+    logger.info('File validation successful', {
+      userId: req.user.id,
+      originalName: req.file.originalname,
+      declaredMime: req.file.mimetype,
+      detectedType: fileValidation.detectedType
+    });
+    
+    // Validate request body with Zod schema
+    let validatedRequest: UploadRequest;
+    try {
+      validatedRequest = uploadRequestSchema.parse(req.body);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        logger.warn('Upload request validation failed', { 
+          userId: req.user.id, 
+          errors: error.errors,
+          body: req.body 
+        });
+        return res.status(400).json({ 
+          message: 'Invalid request parameters',
+          errors: error.errors.map(e => `${e.path.join('.')}: ${e.message}`)
+        });
+      }
+      throw error;
+    }
+    
+    // Determine protection level and watermark based on user tier and validated input
     const userTier = req.user.tier || 'free';
-    const protectionLevel = req.body.protectionLevel || 'standard';
-    const addWatermark = ['free', 'starter'].includes(userTier);
+    const protectionLevel = validatedRequest.protectionLevel;
+    const addWatermark = validatedRequest.addWatermark !== undefined 
+      ? validatedRequest.addWatermark 
+      : ['free', 'starter'].includes(userTier);
+    
+    logger.info('Upload request validated', {
+      userId: req.user.id,
+      userTier,
+      protectionLevel,
+      addWatermark,
+      useCustom: validatedRequest.useCustom
+    });
     
     // Apply ImageShield protection
     const protectedFileName = `protected_${req.file.filename}`;
@@ -178,7 +439,8 @@ router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken, u
       size: protectedStats.size,
       originalSize: req.file.size,
       protectionLevel,
-      watermarked: addWatermark
+      watermarked: addWatermark,
+      settings: validatedRequest.useCustom ? validatedRequest.customSettings : undefined
     });
   } catch (error) {
     logger.error('Upload error:', error);

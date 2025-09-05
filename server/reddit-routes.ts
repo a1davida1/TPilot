@@ -14,6 +14,7 @@ import {
   updateCommunity,
   deleteCommunity
 } from './reddit-communities.js';
+import { logger } from './bootstrap/logger.js';
 
 export function registerRedditRoutes(app: Express) {
   
@@ -42,17 +43,17 @@ export function registerRedditRoutes(app: Express) {
         timestamp: Date.now()
       }, 600); // 10 minute expiry
       
-      console.log('Reddit OAuth initiated:', {
+      logger.info('Reddit OAuth initiated', {
         userId,
-        state: state.substring(0, 8) + '...',
-        ip: req.ip
+        statePreview: state.substring(0, 8) + '...',
+        requestIP: req.ip
       });
       
       const authUrl = getRedditAuthUrl(state);
       res.json({ authUrl });
       
     } catch (error) {
-      console.error('Reddit connect error:', error);
+      logger.error('Reddit connect error', { error: error.message, stack: error.stack });
       res.status(500).json({ error: 'Failed to initiate Reddit connection' });
     }
   });
@@ -63,12 +64,12 @@ export function registerRedditRoutes(app: Express) {
       const { code, state, error } = req.query;
 
       if (error) {
-        console.log('Reddit OAuth error:', error);
+        logger.warn('Reddit OAuth error', { error });
         return res.redirect('/dashboard?error=reddit_access_denied');
       }
 
       if (!code || !state) {
-        console.log('Missing OAuth params:', { code: !!code, state: !!state });
+        logger.warn('Missing OAuth params', { hasCode: !!code, hasState: !!state });
         return res.redirect('/dashboard?error=reddit_missing_params');
       }
 
@@ -76,15 +77,15 @@ export function registerRedditRoutes(app: Express) {
       const stateData = await stateStore.get(`reddit_state:${state}`);
       
       if (!stateData) {
-        console.error('Invalid or expired state:', state?.toString().substring(0, 8) + '...');
+        logger.error('Invalid or expired state', { statePreview: state?.toString().substring(0, 8) + '...' });
         return res.redirect('/dashboard?error=invalid_state');
       }
       
       // Additional security check - log if IP differs (but don't block)
       if (stateData.ip !== req.ip) {
-        console.warn('IP mismatch in OAuth callback:', {
-          original: stateData.ip,
-          callback: req.ip,
+        logger.warn('IP mismatch in OAuth callback', {
+          originalIP: stateData.ip,
+          callbackIP: req.ip,
           userId: stateData.userId
         });
       }
@@ -93,24 +94,24 @@ export function registerRedditRoutes(app: Express) {
       await stateStore.delete(`reddit_state:${state}`);
       
       const userId = stateData.userId;
-      console.log('Processing Reddit OAuth for user:', userId);
+      logger.info('Processing Reddit OAuth for user', { userId });
 
       // Exchange code for tokens
       let tokenData;
       try {
         tokenData = await exchangeRedditCode(code.toString());
       } catch (err) {
-        console.error('Reddit token exchange error:', err);
+        logger.error('Reddit token exchange error', { error: err.message, stack: err.stack });
         return res.redirect('/dashboard?error=reddit_token_exchange_failed');
       }
 
       if (!tokenData || !tokenData.accessToken) {
-        console.error('Failed to exchange code for tokens');
+        logger.error('Failed to exchange code for tokens');
         return res.redirect('/dashboard?error=reddit_token_exchange_failed');
       }
 
       if (!tokenData.refreshToken) {
-        console.warn('Reddit token response missing refresh token for user:', userId);
+        logger.warn('Reddit token response missing refresh token', { userId });
       }
       
       // Get Reddit user info
@@ -118,11 +119,11 @@ export function registerRedditRoutes(app: Express) {
       const profile = await tempReddit.getProfile();
       
       if (!profile) {
-        console.error('Failed to fetch Reddit profile');
+        logger.error('Failed to fetch Reddit profile');
         return res.redirect('/dashboard?error=reddit_profile_failed');
       }
 
-      console.log('Reddit profile fetched:', profile.username);
+      logger.info('Reddit profile fetched', { username: profile.username });
 
       // Encrypt tokens before storing
       const encryptedAccessToken = encrypt(tokenData.accessToken);

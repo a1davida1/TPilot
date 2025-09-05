@@ -43,8 +43,15 @@ export function simpleRateLimiter(windowMs = 900000, maxAttempts = 3) {
   };
 }
 
-// Export specific limiters
+// Export specific limiters with enhanced configurations
 export const verificationLimiter = simpleRateLimiter(15 * 60 * 1000, 3);  // 15 min, 3 attempts
 export const passwordResetLimiter = simpleRateLimiter(60 * 60 * 1000, 5); // 1 hour, 5 attempts
 export const loginLimiter = simpleRateLimiter(15 * 60 * 1000, 5);         // 15 min, 5 attempts
 export const signupLimiter = simpleRateLimiter(60 * 60 * 1000, 3);        // 1 hour, 3 attempts
+
+// Additional specialized rate limiters for enhanced security
+export const passwordChangeLimiter = simpleRateLimiter(60 * 60 * 1000, 3); // 1 hour, 3 attempts
+export const emailChangeLimiter = simpleRateLimiter(60 * 60 * 1000, 2);   // 1 hour, 2 attempts  
+export const accountDeletionLimiter = simpleRateLimiter(24 * 60 * 60 * 1000, 1); // 24 hours, 1 attempt
+export const twoFactorLimiter = simpleRateLimiter(5 * 60 * 1000, 10);     // 5 min, 10 attempts
+export const refreshTokenLimiter = simpleRateLimiter(60 * 60 * 1000, 10); // 1 hour, 10 attempts

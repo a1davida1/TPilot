@@ -3,6 +3,33 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
 
+// ==========================================
+// PROTECTION LEVEL VALIDATION SCHEMAS
+// ==========================================
+
+export const protectionLevelEnum = z.enum(['light', 'standard', 'heavy'], {
+  errorMap: () => ({ message: 'Protection level must be light, standard, or heavy' })
+});
+
+export const imageProcessingOptionsSchema = z.object({
+  blurIntensity: z.number().min(0).max(5).optional().default(1),
+  noiseIntensity: z.number().min(0).max(50).optional().default(10),
+  resizePercent: z.number().min(50).max(100).optional().default(90),
+  cropPercent: z.number().min(0).max(15).optional().default(0),
+  quality: z.number().min(60).max(100).optional().default(88)
+});
+
+export const uploadRequestSchema = z.object({
+  protectionLevel: protectionLevelEnum.optional().default('standard'),
+  customSettings: imageProcessingOptionsSchema.optional(),
+  useCustom: z.boolean().optional().default(false),
+  addWatermark: z.boolean().optional()
+});
+
+export type ProtectionLevel = z.infer<typeof protectionLevelEnum>;
+export type ImageProcessingOptions = z.infer<typeof imageProcessingOptionsSchema>;
+export type UploadRequest = z.infer<typeof uploadRequestSchema>;
+
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: varchar("username", { length: 255 }).unique().notNull(),
