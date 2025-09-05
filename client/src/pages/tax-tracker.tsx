@@ -605,7 +605,8 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                   value={expenseForm.category} 
                   onValueChange={(value) => setExpenseForm({...expenseForm, category: value})}
                 >
-                  <SelectTrigger data-testid="select-expense-category">
+                  <SelectTrigger className="w-full" data-testid="select-expense-category">
+                    <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
                     {expenseCategories.map(category => (
@@ -671,7 +672,8 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
             </DialogHeader>
             <div className="space-y-4">
               <Select value={receiptExpenseId} onValueChange={setReceiptExpenseId}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select expense" />
                 </SelectTrigger>
                 <SelectContent>
                   {recentExpenses.map((exp: any) => (
