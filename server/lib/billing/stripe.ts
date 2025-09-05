@@ -1,12 +1,10 @@
 import Stripe from "stripe";
 
-// Use placeholder key if STRIPE_SECRET_KEY is not configured
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY || "sk_test_placeholder_key_for_development_only";
-
-if (!process.env.STRIPE_SECRET_KEY) {
-  console.warn("⚠️ STRIPE_SECRET_KEY not configured. Stripe billing functionality disabled.");
+const secret = process.env.STRIPE_SECRET_KEY;
+if (!secret) {
+  throw new Error("STRIPE_SECRET_KEY is required");
 }
 
-export const stripe = new Stripe(stripeSecretKey, {
+export const stripe = new Stripe(secret, {
   apiVersion: "2025-08-27.basil",
 });
