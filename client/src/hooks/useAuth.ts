@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 
 interface User {
@@ -15,6 +15,7 @@ interface User {
 }
 
 export function useAuth() {
+  const queryClient = useQueryClient();
   const [token, setToken] = useState<string | null>(
     () => {
       const storedToken = localStorage.getItem('authToken');
@@ -89,6 +90,9 @@ export function useAuth() {
   };
 
   const logout = async () => {
+    // Invalidate user cache immediately
+    queryClient.removeQueries({ queryKey: ['/api/auth/user'] });
+    
     // Clear local storage
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
