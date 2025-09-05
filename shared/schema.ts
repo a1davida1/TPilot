@@ -190,6 +190,29 @@ export const postJobs = pgTable("post_jobs", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const redditCommunities = pgTable("reddit_communities", {
+  id: varchar("id", { length: 100 }).primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  displayName: varchar("display_name", { length: 255 }).notNull(),
+  members: integer("members").notNull(),
+  engagementRate: integer("engagement_rate").notNull(),
+  category: varchar("category", { length: 50 }).notNull(),
+  verificationRequired: boolean("verification_required").default(false).notNull(),
+  promotionAllowed: varchar("promotion_allowed", { length: 20 }).default("no").notNull(),
+  postingLimits: jsonb("posting_limits"),
+  rules: jsonb("rules"),
+  bestPostingTimes: jsonb("best_posting_times").$type<string[]>(),
+  averageUpvotes: integer("average_upvotes"),
+  successProbability: integer("success_probability"),
+  growthTrend: varchar("growth_trend", { length: 20 }),
+  modActivity: varchar("mod_activity", { length: 20 }),
+  description: text("description"),
+  tags: jsonb("tags").$type<string[]>(),
+  competitionLevel: varchar("competition_level", { length: 20 })
+});
+export type RedditCommunity = typeof redditCommunities.$inferSelect;
+export const insertRedditCommunitySchema = createInsertSchema(redditCommunities);
+
 export const subscriptions = pgTable("subscriptions", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).unique().notNull(),
