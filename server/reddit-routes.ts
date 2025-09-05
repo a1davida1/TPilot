@@ -6,7 +6,14 @@ import { creatorAccounts } from '@shared/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { authenticateToken } from './middleware/auth.js';
 import { stateStore, encrypt, decrypt, rateLimit } from './services/state-store.js';
-import { redditCommunitiesDatabase, getCommunityInsights } from './reddit-communities.js';
+import {
+  listCommunities,
+  searchCommunities,
+  getCommunityInsights,
+  createCommunity,
+  updateCommunity,
+  deleteCommunity
+} from './reddit-communities.js';
 
 export function registerRedditRoutes(app: Express) {
   
@@ -170,22 +177,12 @@ export function registerRedditRoutes(app: Express) {
   app.get('/api/reddit/communities', async (req, res) => {
     try {
       const { category, search } = req.query;
-      let communities = redditCommunitiesDatabase;
-
+      let communities = search
+        ? await searchCommunities(search as string)
+        : await listCommunities();
       if (category && category !== 'all') {
         communities = communities.filter(c => c.category === category);
       }
-
-      if (search) {
-        const term = (search as string).toLowerCase();
-        communities = communities.filter(c =>
-          c.name.toLowerCase().includes(term) ||
-          c.displayName.toLowerCase().includes(term) ||
-          c.description.toLowerCase().includes(term) ||
-          c.tags.some(tag => tag.toLowerCase().includes(term))
-        );
-      }
-
       res.json(communities);
     } catch (error) {
       console.error('Error fetching Reddit communities:', error);
@@ -197,7 +194,7 @@ export function registerRedditRoutes(app: Express) {
   app.get('/api/reddit/community-insights/:communityId', async (req, res) => {
     try {
       const { communityId } = req.params;
-      const insights = getCommunityInsights(communityId);
+      const insights = await getCommunityInsights(communityId);
       res.json(insights);
     } catch (error) {
       console.error('Error fetching community insights:', error);
@@ -490,6 +487,37 @@ export function registerRedditRoutes(app: Express) {
     } catch (error) {
       console.error('Error checking subreddit:', error);
       res.status(500).json({ error: 'Failed to check subreddit' });
+    }
+  });
+
+  // Admin CRUD endpoints
+  app.post('/api/reddit/communities', authenticateToken, async (req: any, res) => {
+    if (!req.user?.isAdmin) return res.status(403).json({ error: 'Forbidden' });
+    try {
+      const community = await createCommunity(req.body);
+      res.json(community);
+    } catch (e) {
+      res.status(400).json({ error: 'Invalid community data' });
+    }
+  });
+
+  app.put('/api/reddit/communities/:id', authenticateToken, async (req: any, res) => {
+    if (!req.user?.isAdmin) return res.status(403).json({ error: 'Forbidden' });
+    try {
+      const community = await updateCommunity(req.params.id, req.body);
+      res.json(community);
+    } catch (e) {
+      res.status(400).json({ error: 'Invalid community data' });
+    }
+  });
+
+  app.delete('/api/reddit/communities/:id', authenticateToken, async (req: any, res) => {
+    if (!req.user?.isAdmin) return res.status(403).json({ error: 'Forbidden' });
+    try {
+      await deleteCommunity(req.params.id);
+      res.json({ success: true });
+    } catch (e) {
+      res.status(500).json({ error: 'Failed to delete community' });
     }
   });
 }
