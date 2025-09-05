@@ -1,5 +1,17 @@
-import React, { useState } from 'react';
-import { Calendar, Plus, TrendingUp, FileText, Calculator, Info, DollarSign, Receipt, Sparkles, Upload, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import {
+  Calendar,
+  Plus,
+  TrendingUp,
+  FileText,
+  Calculator,
+  Info,
+  DollarSign,
+  Receipt,
+  Sparkles,
+  Upload,
+  X
+} from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,89 +28,21 @@ import { apiRequest } from '@/lib/queryClient';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
 
-// Apple-inspired color palette
-const colors = {
-  blue: '#007AFF',
-  purple: '#AF52DE',
-  pink: '#FF2D92', 
-  orange: '#FF9500',
-  green: '#34C759',
-  red: '#FF3B30',
-  yellow: '#FFCC00',
-  indigo: '#5856D6',
-  teal: '#5AC8FA',
-  mint: '#00C7BE'
+const iconMap: Record<string, React.ComponentType<any>> = {
+  Sparkles,
+  Receipt,
+  Calculator,
+  TrendingUp,
+  FileText,
+  DollarSign
 };
-
-const expenseCategories = [
-  {
-    id: 1,
-    name: 'Beauty & Wellness',
-    icon: Sparkles,
-    color: colors.pink,
-    deductionPercentage: 100,
-    description: 'Professional beauty treatments, skincare, wellness services',
-    legalExplanation: 'Beauty and wellness expenses are 100% deductible for content creators as they directly relate to maintaining your professional appearance and brand image.',
-    examples: ['Professional makeup', 'Skincare treatments', 'Hair styling', 'Nail services', 'Spa treatments', 'Fitness training']
-  },
-  {
-    id: 2,
-    name: 'Wardrobe & Fashion',
-    icon: Receipt,
-    color: colors.purple,
-    deductionPercentage: 100,
-    description: 'Clothing, accessories, and fashion items for content',
-    legalExplanation: 'Clothing and accessories purchased specifically for content creation are fully deductible business expenses.',
-    examples: ['Lingerie & outfits', 'Shoes & accessories', 'Costumes', 'Jewelry', 'Designer pieces', 'Seasonal wardrobe']
-  },
-  {
-    id: 3,
-    name: 'Technology & Equipment',
-    icon: Calculator,
-    color: colors.blue,
-    deductionPercentage: 100,
-    description: 'Cameras, lighting, computers, and tech gear',
-    legalExplanation: 'All technology and equipment used for content creation and business operations are fully deductible.',
-    examples: ['Cameras & lenses', 'Lighting equipment', 'Computers & tablets', 'Editing software', 'Storage devices', 'Audio equipment']
-  },
-  {
-    id: 4,
-    name: 'Travel & Entertainment',
-    icon: TrendingUp,
-    color: colors.teal,
-    deductionPercentage: 100,
-    description: 'Business travel, events, and entertainment expenses',
-    legalExplanation: 'Travel for business purposes, including content creation trips and industry events, is fully deductible.',
-    examples: ['Business travel', 'Hotel stays', 'Convention tickets', 'Networking events', 'Content creation trips', 'Transportation']
-  },
-  {
-    id: 5,
-    name: 'Home Office & Utilities',
-    icon: FileText,
-    color: colors.green,
-    deductionPercentage: 100,
-    description: 'Home office expenses, internet, phone, utilities',
-    legalExplanation: 'Home office expenses including utilities, internet, and phone bills are deductible based on business use percentage.',
-    examples: ['Internet & phone', 'Utilities (portion)', 'Home office furniture', 'Decorations & props', 'Office supplies', 'Storage solutions']
-  },
-  {
-    id: 6,
-    name: 'Marketing & Promotion',
-    icon: DollarSign,
-    color: colors.orange,
-    deductionPercentage: 100,
-    description: 'Advertising, promotions, and marketing expenses',
-    legalExplanation: 'All marketing and promotional expenses to grow your business are fully deductible.',
-    examples: ['Social media ads', 'Website costs', 'Professional photography', 'Graphic design', 'Business cards', 'Promotional materials']
-  }
-];
 
 interface TaxTrackerProps {
   userTier?: 'guest' | 'free' | 'pro' | 'premium';
 }
 
 const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
-  const [selectedCategory, setSelectedCategory] = useState(expenseCategories[0]);
+  const [selectedCategory, setSelectedCategory] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
@@ -115,6 +59,22 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
   
   const queryClient = useQueryClient();
 
+  const { data: expenseCategories = [], isLoading: categoriesLoading } = useQuery({
+    queryKey: ['/api/expense-categories'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/expense-categories');
+      return res.json();
+    }
+  });
+
+  useEffect(() => {
+    if (!selectedCategory && expenseCategories.length > 0) {
+      setSelectedCategory(expenseCategories[0]);
+    }
+  }, [expenseCategories, selectedCategory]);
+
+  const SelectedIcon = selectedCategory ? iconMap[selectedCategory.icon] || Sparkles : Sparkles;
+
   // Fetch expense totals
   const { data: expenseTotals = { total: 0, deductible: 0, byCategory: {} } } = useQuery({
     queryKey: ['/api/expenses/totals'],
@@ -123,6 +83,8 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
       return res.json();
     }
   });
+
+  const estimatedSavings = Math.round((expenseTotals?.deductible || 0) * 0.22);
 
   // Fetch recent expenses
   const { data: recentExpenses = [] } = useQuery({
@@ -165,23 +127,14 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
     mutationFn: async ({ expenseId, file }: { expenseId: string; file: File }) => {
       const formData = new FormData();
       formData.append('receipt', file);
-      // For file uploads, we need to use fetch directly but with proper auth headers
-      const token = localStorage.getItem('authToken');
-      const headers: Record<string, string> = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      const res = await fetch(`/api/expenses/${expenseId}/receipt`, {
-        method: 'POST',
-        headers,
-        body: formData,
-        credentials: 'include'
-      });
-      if (!res.ok) throw new Error('Failed to upload receipt');
+      const res = await apiRequest('POST', `/api/expenses/${expenseId}/receipt`, formData);
       return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/expenses'] });
+    onSuccess: (updatedExpense) => {
+      queryClient.setQueryData(['/api/expenses'], (old: any[] = []) =>
+        old.map(exp => (exp.id === updatedExpense.id ? updatedExpense : exp))
+      );
+      queryClient.invalidateQueries({ queryKey: ['/api/expenses/range'] });
       setShowReceiptModal(false);
       setReceiptFile(null);
       setReceiptExpenseId('');
@@ -193,7 +146,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
 
     createExpenseMutation.mutate({
       description: expenseForm.description,
-      amount: parseFloat(expenseForm.amount),
+      amount: Math.round(parseFloat(expenseForm.amount) * 100),
       categoryId: parseInt(expenseForm.category),
       expenseDate: expenseForm.date,
       notes: expenseForm.notes
@@ -213,14 +166,16 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
     
     return daysInMonth.map(day => {
       const dayExpenses = calendarExpenses.filter((expense: any) => 
-        isSameDay(parseISO(expense.date), day)
+        isSameDay(parseISO(expense.expenseDate), day)
       );
       const totalAmount = dayExpenses.reduce((sum: number, expense: any) => sum + expense.amount, 0);
-      
+      const hasReceipt = dayExpenses.some((expense: any) => expense.receiptUrl);
+
       return {
         date: day,
         expenses: dayExpenses,
-        totalAmount
+        totalAmount,
+        hasReceipt
       };
     });
   };
@@ -255,7 +210,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-500">Total Expenses</p>
-                  <p className="text-2xl font-bold text-gray-900">${(expenseTotals?.totalExpenses || 0).toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-gray-900">${((expenseTotals?.total || 0) / 100).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
                 </div>
               </div>
             </CardContent>
@@ -269,7 +224,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-500">Tax Deductions</p>
-                  <p className="text-2xl font-bold text-gray-900">${(expenseTotals?.totalDeductions || 0).toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-gray-900">${((expenseTotals?.deductible || 0) / 100).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
                 </div>
               </div>
             </CardContent>
@@ -283,7 +238,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-500">Estimated Savings</p>
-                  <p className="text-2xl font-bold text-gray-900">${(expenseTotals?.estimatedSavings || 0).toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-gray-900">${(estimatedSavings / 100).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
                 </div>
               </div>
             </CardContent>
@@ -393,27 +348,32 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
 
           <TabsContent value="categories" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {expenseCategories.map((category, index) => {
-                const IconComponent = category.icon;
-                return (
-                  <div key={category.id}>
-                    <Card 
-                      className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300 cursor-pointer group"
-                      onClick={() => setSelectedCategory(category)}
-                    >
-                      <CardContent className="p-6">
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <div 
-                              className="p-3 rounded-xl text-white shadow-lg"
-                              style={{ backgroundColor: category.color }}
-                            >
-                              <IconComponent className="h-6 w-6" />
+              {categoriesLoading ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Loading categories...</p>
+                </div>
+              ) : (
+                expenseCategories.map((category, index) => {
+                  const IconComponent = iconMap[category.icon] || Sparkles;
+                  return (
+                    <div key={category.id}>
+                      <Card 
+                        className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300 cursor-pointer group"
+                        onClick={() => setSelectedCategory(category)}
+                      >
+                        <CardContent className="p-6">
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <div 
+                                className="p-3 rounded-xl text-white shadow-lg"
+                                style={{ backgroundColor: category.color }}
+                              >
+                                <IconComponent className="h-6 w-6" />
+                              </div>
+                              <Badge className="bg-green-100 text-green-700">
+                                {category.deductionPercentage}% Deductible
+                              </Badge>
                             </div>
-                            <Badge className="bg-green-100 text-green-700">
-                              {category.deductionPercentage}% Deductible
-                            </Badge>
-                          </div>
                           
                           <div>
                             <h3 className="font-bold text-lg text-gray-900 group-hover:text-purple-600 transition-colors">
@@ -444,7 +404,8 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                     </Card>
                   </div>
                 );
-              })}
+              })
+              )}
             </div>
 
             {/* Selected Category Details */}
@@ -651,7 +612,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                   </SelectTrigger>
                   <SelectContent>
                     {expenseCategories.map(category => (
-                      <SelectItem key={category.id} value={category.name}>
+                      <SelectItem key={category.id} value={category.id.toString()}>
                         {category.name}
                       </SelectItem>
                     ))}
