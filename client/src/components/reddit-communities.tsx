@@ -8,7 +8,6 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select";
 import {
   Table,
@@ -23,15 +22,11 @@ import {
   TrendingUp, 
   Shield, 
   Megaphone, 
-  Clock,
   Search,
-  Filter,
   ChevronUp,
   ChevronDown,
-  Info,
   CheckCircle,
   XCircle,
-  AlertCircle
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";

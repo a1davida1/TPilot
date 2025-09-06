@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -43,7 +43,7 @@ export function RedditAccounts() {
         });
       }
     },
-    onError: (error) => {
+    onError: (_error) => {
       toast({
         title: "Connection Test Failed",
         description: "Unable to test Reddit connection",
@@ -62,7 +62,7 @@ export function RedditAccounts() {
       });
       queryClient.invalidateQueries({ queryKey: ['/api/reddit/accounts'] });
     },
-    onError: (error) => {
+    onError: (_error) => {
       toast({
         title: "Disconnection Failed",
         description: "Unable to disconnect Reddit account",
@@ -84,7 +84,7 @@ export function RedditAccounts() {
           description: "Please complete the authorization in the new window",
         });
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Connection Failed",
         description: "Unable to start Reddit connection process",
