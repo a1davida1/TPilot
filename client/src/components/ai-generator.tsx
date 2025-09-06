@@ -382,7 +382,7 @@ export function AIGenerator({ onContentGenerated }: AIGeneratorProps) {
               <Label className="text-xs">Content Style</Label>
               <Select 
                 value={userProfile.contentStyle}
-                onValueChange={(value) => updateProfile({ contentStyle: value }))
+                onValueChange={(value) => updateProfile({ contentStyle: value })}
               >
                 <SelectTrigger className="h-8">
                   <SelectValue />
@@ -400,7 +400,7 @@ export function AIGenerator({ onContentGenerated }: AIGeneratorProps) {
               <Label className="text-xs">Personal Brand</Label>
               <Select 
                 value={userProfile.personalBrand}
-                onChange={(e) => updateProfile({ personalBrand: e.target.value }))
+                onValueChange={(value) => updateProfile({ personalBrand: value })}
               >
                 <SelectTrigger className="h-8">
                   <SelectValue />
@@ -419,7 +419,7 @@ export function AIGenerator({ onContentGenerated }: AIGeneratorProps) {
               <Label className="text-xs">Content Length</Label>
               <Select 
                 value={userProfile.contentLength}
-                onValueChange={(value) => updateProfile({ contentLength: value as 'short' | 'medium' | 'long' }))
+                onValueChange={(value) => updateProfile({ contentLength: value as 'short' | 'medium' | 'long' })}
               >
                 <SelectTrigger className="h-8">
                   <SelectValue />
@@ -437,7 +437,7 @@ export function AIGenerator({ onContentGenerated }: AIGeneratorProps) {
             <Label className="text-xs">Include Emojis</Label>
             <Switch
               checked={userProfile.includeEmojis}
-              onCheckedChange={(checked) => updateProfile({ includeEmojis: checked }))
+              onCheckedChange={(checked) => updateProfile({ includeEmojis: checked })}
             />
           </div>
         </div>

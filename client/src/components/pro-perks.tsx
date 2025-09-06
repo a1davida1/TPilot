@@ -115,6 +115,8 @@ export function ProPerks({ userTier = 'pro' }: ProPerksProps) {
     );
   }
 
+  const defaultResources = [
+    {
       id: '1',
       title: 'Content Creator Tax Guide 2025',
       description: 'Complete guide to managing taxes as an adult content creator, including deductions and quarterly payments',

@@ -24,6 +24,7 @@ import {
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
+interface TrainingData {
   id: number;
   type: 'post' | 'image' | 'caption';
   content: string;
@@ -56,7 +57,10 @@ export function IntegratedFineTuning() {
     prohibitedWords: [] as string[]
   });
 
-    retry: false
+  // Fetch user preferences
+  const { data: userPrefs } = useQuery({
+    queryKey: ["/api/user-preferences"],
+    retry: false,
   });
 
   // Save integrated settings
@@ -72,24 +76,27 @@ export function IntegratedFineTuning() {
     }
   });
 
-    const content = e.target.value;
+  const handleAddTrainingData = (e: React.FormEvent<HTMLTextAreaElement>) => {
+    const content = (e.target as HTMLTextAreaElement).value;
     if (content.trim()) {
+      const newData = {
         id: Date.now(),
-        type: 'post',
+        type: 'post' as const,
         content: content.trim(),
         metadata: {
           platform: 'reddit',
           performance: Math.floor(Math.random() * 100)
         }
       };
-      e.target.value = '';
+      (e.target as HTMLTextAreaElement).value = '';
       toast({
+        title: "Training data added",
+        description: "Your content has been added to the training dataset"
       });
     }
   };
 
-    );
-  };
+  const [activeTab, setActiveTab] = useState("writing");
 
   const handleSaveAll = () => {
     const data = {

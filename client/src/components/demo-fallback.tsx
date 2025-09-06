@@ -10,11 +10,13 @@ import {
   Gift 
 } from "lucide-react";
 
+interface DemoFallbackProps {
   error?: string;
   onRetry?: () => void;
   onSignUp?: () => void;
 }
 
+export function DemoFallback({ error, onRetry, onSignUp }: DemoFallbackProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
       <Card className="max-w-2xl w-full shadow-premium">

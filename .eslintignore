@@ -1,0 +1,35 @@
+# Build outputs
+client/dist/
+node_modules/
+build/
+coverage/
+
+# Generated files
+*.min.js
+*.bundle.js
+
+# Environment files
+.env
+.env.*
+
+# Cache directories
+.next/
+.nuxt/
+.cache/
+.temp/
+
+# Package manager lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Browser extension files (often have different lint rules)
+browser-extension/
