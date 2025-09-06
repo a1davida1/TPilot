@@ -488,6 +488,7 @@ export function UltraAestheticApp({ isGuestMode = true }: UltraAestheticAppProps
               </div>
             )}
 
+            {activeView === "history" && (
               <div className="max-w-6xl mx-auto">
               </div>
             )}

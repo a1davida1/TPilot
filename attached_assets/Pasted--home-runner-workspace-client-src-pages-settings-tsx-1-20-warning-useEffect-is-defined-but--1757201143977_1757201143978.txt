@@ -1,0 +1,442 @@
+/home/runner/workspace/client/src/pages/settings.tsx
+    1:20  warning  'useEffect' is defined but never used                            @typescript-eslint/no-unused-vars
+    4:10  warning  'Input' is defined but never used                                @typescript-eslint/no-unused-vars
+    8:10  warning  'Textarea' is defined but never used                             @typescript-eslint/no-unused-vars
+   38:20  warning  'setApiUsage' is assigned a value but never used                 @typescript-eslint/no-unused-vars
+   42:17  warning  'userSettings' is assigned a value but never used                @typescript-eslint/no-unused-vars
+  405:66  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+/home/runner/workspace/client/src/pages/tax-tracker.tsx
+   28:22  warning  'CalendarComponent' is defined but never used                                        @typescript-eslint/no-unused-vars
+   31:51  error    Unexpected any. Specify a different type                                             @typescript-eslint/no-explicit-any
+   44:50  warning  'userTier' is assigned a value but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+   45:60  error    Unexpected any. Specify a different type                                             @typescript-eslint/no-explicit-any
+   76:9   warning  'SelectedIcon' is assigned a value but never used                                    @typescript-eslint/no-unused-vars
+  326:71  warning  'index' is defined but never used. Allowed unused args must match /^_/u              @typescript-eslint/no-unused-vars
+  356:50  warning  'index' is defined but never used. Allowed unused args must match /^_/u              @typescript-eslint/no-unused-vars
+  440:78  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                      react/no-unescaped-entities
+  527:63  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                      react/no-unescaped-entities
+
+/home/runner/workspace/scripts/_quarantine/db-guarded-fixes.cjs
+   71:7   error  'OPTIONAL_RETIRE_SAVED' is assigned a value but never used  no-unused-vars
+  102:49  error  'process' is not defined                                    no-undef
+  105:3   error  'console' is not defined                                    no-undef
+  108:3   error  'console' is not defined                                    no-undef
+  112:3   error  'console' is not defined                                    no-undef
+  119:3   error  'console' is not defined                                    no-undef
+  121:3   error  'console' is not defined                                    no-undef
+  123:3   error  'console' is not defined                                    no-undef
+  125:3   error  'console' is not defined                                    no-undef
+  128:3   error  'console' is not defined                                    no-undef
+  131:23  error  'console' is not defined                                    no-undef
+  131:41  error  'process' is not defined                                    no-undef
+
+/home/runner/workspace/scripts/_quarantine/db-simple-fix.cjs
+   4:49  error  'process' is not defined  no-undef
+   7:3   error  'console' is not defined  no-undef
+  11:5   error  'console' is not defined  no-undef
+  26:7   error  'console' is not defined  no-undef
+  28:7   error  'console' is not defined  no-undef
+  30:7   error  'console' is not defined  no-undef
+  34:5   error  'console' is not defined  no-undef
+  44:7   error  'console' is not defined  no-undef
+  46:7   error  'console' is not defined  no-undef
+  50:5   error  'console' is not defined  no-undef
+  59:7   error  'console' is not defined  no-undef
+  61:7   error  'console' is not defined  no-undef
+  65:5   error  'console' is not defined  no-undef
+  77:7   error  'console' is not defined  no-undef
+  79:7   error  'console' is not defined  no-undef
+  82:5   error  'console' is not defined  no-undef
+  83:5   error  'console' is not defined  no-undef
+  86:5   error  'console' is not defined  no-undef
+  94:3   error  'console' is not defined  no-undef
+  95:3   error  'process' is not defined  no-undef
+
+/home/runner/workspace/scripts/_quarantine/db-verify.cjs
+   8:44  error  'process' is not defined  no-undef
+  11:3   error  'console' is not defined  no-undef
+  13:19  error  'console' is not defined  no-undef
+  13:37  error  'process' is not defined  no-undef
+
+/home/runner/workspace/scripts/perf/benchmark.js
+  113:16  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/admin-routes.ts
+   41:16  warning  'error' is defined but never used                      @typescript-eslint/no-unused-vars
+   85:37  error    Unexpected any. Specify a different type               @typescript-eslint/no-explicit-any
+  300:13  warning  'period' is assigned a value but never used            @typescript-eslint/no-unused-vars
+  417:24  warning  'subject' is assigned a value but never used           @typescript-eslint/no-unused-vars
+  417:33  warning  'content' is assigned a value but never used           @typescript-eslint/no-unused-vars
+  585:13  warning  'level' is assigned a value but never used             @typescript-eslint/no-unused-vars
+  586:13  warning  'limit' is assigned a value but never used             @typescript-eslint/no-unused-vars
+  602:36  error    Unexpected any. Specify a different type               @typescript-eslint/no-explicit-any
+  635:13  warning  'adminId' is assigned a value but never used           @typescript-eslint/no-unused-vars
+  635:36  error    Unexpected any. Specify a different type               @typescript-eslint/no-explicit-any
+  653:13  warning  'adminId' is assigned a value but never used           @typescript-eslint/no-unused-vars
+  653:36  error    Unexpected any. Specify a different type               @typescript-eslint/no-explicit-any
+  674:15  warning  'userId' is assigned a value but never used            @typescript-eslint/no-unused-vars
+  687:13  warning  'status' is assigned a value but never used            @typescript-eslint/no-unused-vars
+  702:36  error    Unexpected any. Specify a different type               @typescript-eslint/no-explicit-any
+  724:13  warning  'totalGenerations' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  759:38  error    Unexpected any. Specify a different type               @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/advanced-content-generator.ts
+   209:42  error    Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+  1223:9   warning  'mood' is assigned a value but never used    @typescript-eslint/no-unused-vars
+  1226:9   warning  'emojis' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/analytics-routes.ts
+   12:3   warning  'socialMetrics' is defined but never used                                    @typescript-eslint/no-unused-vars
+   13:3   warning  'analyticsMetrics' is defined but never used                                 @typescript-eslint/no-unused-vars
+   15:3   warning  'users' is defined but never used                                            @typescript-eslint/no-unused-vars
+  478:34  warning  'ipAddress' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/api-routes.ts
+   14:20  warning  'subscriptions' is defined but never used  @typescript-eslint/no-unused-vars
+   14:35  warning  'mediaAssets' is defined but never used    @typescript-eslint/no-unused-vars
+   17:24  warning  'Response' is defined but never used       @typescript-eslint/no-unused-vars
+   17:34  warning  'NextFunction' is defined but never used   @typescript-eslint/no-unused-vars
+  240:33  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/api/leads.ts
+    6:10  warning  'parseUTMFromCookie' is defined but never used  @typescript-eslint/no-unused-vars
+   77:12  warning  'lead' is assigned a value but never used       @typescript-eslint/no-unused-vars
+  175:30  error    Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
+
+/home/runner/workspace/server/auth.ts
+    1:19  warning  'Request' is defined but never used                @typescript-eslint/no-unused-vars
+    1:28  warning  'Response' is defined but never used               @typescript-eslint/no-unused-vars
+    4:8   warning  'session' is defined but never used                @typescript-eslint/no-unused-vars
+    9:10  warning  'authLimiter' is defined but never used            @typescript-eslint/no-unused-vars
+   15:20  warning  'ValidationSource' is defined but never used       @typescript-eslint/no-unused-vars
+   18:7   warning  'signupSchema' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  133:15  warning  'token' is assigned a value but never used         @typescript-eslint/no-unused-vars
+  440:29  warning  '_' is assigned a value but never used             @typescript-eslint/no-unused-vars
+  715:16  warning  'jwtError' is defined but never used               @typescript-eslint/no-unused-vars
+  819:48  error    Forbidden non-null assertion                       @typescript-eslint/no-non-null-assertion
+
+/home/runner/workspace/server/bootstrap/logger.ts
+  291:57  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/caption/geminiPipeline.ts
+  119:141  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  132:24   error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  168:46   error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  219:12   warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+  222:45   error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/caption/rewritePipeline.ts
+   23:165  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   36:24   error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   72:46   error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  128:12   warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+  131:45   error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/caption/textOnlyPipeline.ts
+  17:24  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  58:46  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/content-templates.ts
+  1279:43  error  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  1279:88  error  Do not access Object.prototype method 'hasOwnProperty' from target object  no-prototype-builtins
+  1283:43  error  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  1290:31  error  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/expense-routes.ts
+  6:8  warning  'crypto' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/lib/ai-service.ts
+  130:7   error  Forbidden non-null assertion      @typescript-eslint/no-non-null-assertion
+  207:76  error  Unnecessary escape character: \-  no-useless-escape
+  215:19  error  Forbidden non-null assertion      @typescript-eslint/no-non-null-assertion
+  369:27  error  Forbidden non-null assertion      @typescript-eslint/no-non-null-assertion
+
+/home/runner/workspace/server/lib/gemini.ts
+  3:45  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+/home/runner/workspace/server/lib/media.ts
+   19:18  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+   20:22  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+   84:17  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  165:19  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  246:15  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+/home/runner/workspace/server/lib/payment-providers.ts
+   97:23  warning  'signature' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+   97:42  warning  'payload' is defined but never used. Allowed unused args must match /^_/u    @typescript-eslint/no-unused-vars
+  102:51  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  153:23  warning  'signature' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  153:42  warning  'payload' is defined but never used. Allowed unused args must match /^_/u    @typescript-eslint/no-unused-vars
+  157:51  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  206:23  warning  'signature' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  206:42  warning  'payload' is defined but never used. Allowed unused args must match /^_/u    @typescript-eslint/no-unused-vars
+  210:51  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  259:23  warning  'signature' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  259:42  warning  'payload' is defined but never used. Allowed unused args must match /^_/u    @typescript-eslint/no-unused-vars
+  263:51  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/lib/policy-linter.ts
+   91:18  warning  'e' is defined but never used      @typescript-eslint/no-unused-vars
+  107:18  warning  'e' is defined but never used      @typescript-eslint/no-unused-vars
+  191:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  191:19  error    Unreachable code                   no-unreachable
+
+/home/runner/workspace/server/lib/pricing.ts
+  15:8  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  16:8  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  17:8  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+/home/runner/workspace/server/lib/queue-factory.ts
+  45:35  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  54:41  warning  'T' is defined but never used             @typescript-eslint/no-unused-vars
+  54:45  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/lib/queue-monitor.ts
+  79:11  warning  'now' is assigned a value but never used       @typescript-eslint/no-unused-vars
+  81:17  warning  'queueKey' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/lib/queue-pg.ts
+  7:26  warning  'InsertQueueJob' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/lib/queue-redis.ts
+  121:11  warning  'queueEvents' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  163:12  error    Forbidden non-null assertion                      @typescript-eslint/no-non-null-assertion
+  173:12  error    Forbidden non-null assertion                      @typescript-eslint/no-non-null-assertion
+
+/home/runner/workspace/server/lib/queue/index.ts
+    6:36  warning  'registerProcessor' is defined but never used  @typescript-eslint/no-unused-vars
+  101:32  error    Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/lib/reddit.ts
+    3:10  warning  'users' is defined but never used                                            @typescript-eslint/no-unused-vars
+   37:17  error    Forbidden non-null assertion                                                 @typescript-eslint/no-non-null-assertion
+   38:21  error    Forbidden non-null assertion                                                 @typescript-eslint/no-non-null-assertion
+  100:44  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  111:44  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  339:39  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  347:35  warning  'userId' is defined but never used. Allowed unused args must match /^_/u     @typescript-eslint/no-unused-vars
+  347:51  warning  'subreddit' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  350:13  warning  'oneDayAgo' is assigned a value but never used                               @typescript-eslint/no-unused-vars
+  390:31  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  392:42  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  412:29  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  426:29  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/lib/safety-systems.ts
+  7:42  warning  'users' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/lib/scheduling.ts
+  49:5  warning  'timezone' is assigned a value but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/lib/workers/ai-promo-worker.ts
+  25:46  warning  'jobId' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/lib/workers/batch-posting-worker.ts
+  25:46  warning  'jobId' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/lib/workers/dunning-worker.ts
+   24:46  warning  'jobId' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  146:33  error    Forbidden non-null assertion                                             @typescript-eslint/no-non-null-assertion
+
+/home/runner/workspace/server/lib/workers/metrics-worker.ts
+  25:46  warning  'jobId' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/lib/workers/post-worker.ts
+   45:70  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+   84:36  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  106:34  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+/home/runner/workspace/server/middleware/auth.ts
+  17:20  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+/home/runner/workspace/server/middleware/performance.ts
+  22:13  warning  'startMemory' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/middleware/security.ts
+    8:8   warning  'crypto' is defined but never used                                      @typescript-eslint/no-unused-vars
+  423:87  warning  'next' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/middleware/streaming-upload.ts
+  66:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/middleware/tiered-rate-limit.ts
+  116:36  error    Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  138:24  warning  'req' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  157:24  warning  'req' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  190:11  warning  'usage' is assigned a value but never used                             @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/middleware/validation.ts
+  2:24  warning  'ZodError' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/policy-routes.ts
+   22:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   22:67  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   81:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   81:67  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  105:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  105:67  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/reddit-communities.ts
+  2:34  warning  'RedditCommunity' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/reddit-routes.ts
+  229:37  error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  230:40  error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  379:11  error    Unexpected lexical declaration in case block  no-case-declarations
+  402:11  error    Unexpected lexical declaration in case block  no-case-declarations
+  500:14  warning  'e' is defined but never used                 @typescript-eslint/no-unused-vars
+  510:14  warning  'e' is defined but never used                 @typescript-eslint/no-unused-vars
+  520:14  warning  'e' is defined but never used                 @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/routes.ts
+     1:24   warning  'Response' is defined but never used                       @typescript-eslint/no-unused-vars
+     1:34   warning  'NextFunction' is defined but never used                   @typescript-eslint/no-unused-vars
+    27:10   warning  'visitorAnalytics' is defined but never used               @typescript-eslint/no-unused-vars
+    30:11   warning  'AnalyticsRequest' is defined but never used               @typescript-eslint/no-unused-vars
+    54:10   warning  'generateAIContent' is defined but never used              @typescript-eslint/no-unused-vars
+    54:29   warning  'analyzeImageForContent' is defined but never used         @typescript-eslint/no-unused-vars
+    55:10   warning  'generateWithMultiProvider' is defined but never used      @typescript-eslint/no-unused-vars
+    55:37   warning  'getProviderStatus' is defined but never used              @typescript-eslint/no-unused-vars
+    56:36   warning  'analyzeImage' is defined but never used                   @typescript-eslint/no-unused-vars
+    57:10   warning  'generateImageCaption' is defined but never used           @typescript-eslint/no-unused-vars
+    58:10   warning  'ObjectStorageService' is defined but never used           @typescript-eslint/no-unused-vars
+    58:32   warning  'ObjectNotFoundError' is defined but never used            @typescript-eslint/no-unused-vars
+    59:10   warning  'getRandomTemplates' is defined but never used             @typescript-eslint/no-unused-vars
+    59:30   warning  'addWatermark' is defined but never used                   @typescript-eslint/no-unused-vars
+    59:44   warning  'getTemplateByMood' is defined but never used              @typescript-eslint/no-unused-vars
+    60:10   warning  'generateAdvancedContent' is defined but never used        @typescript-eslint/no-unused-vars
+    60:40   warning  'ContentParameters' is defined but never used              @typescript-eslint/no-unused-vars
+    62:10   warning  'getAvailablePerks' is defined but never used              @typescript-eslint/no-unused-vars
+    62:29   warning  'getPerksByCategory' is defined but never used             @typescript-eslint/no-unused-vars
+    62:49   warning  'generateReferralCode' is defined but never used           @typescript-eslint/no-unused-vars
+    62:71   warning  'getSignupInstructions' is defined but never used          @typescript-eslint/no-unused-vars
+    75:10   warning  'insertContentGenerationSchema' is defined but never used  @typescript-eslint/no-unused-vars
+    75:41   warning  'insertUserImageSchema' is defined but never used          @typescript-eslint/no-unused-vars
+    80:8    warning  'crypto' is defined but never used                         @typescript-eslint/no-unused-vars
+    81:8    warning  'jwt' is defined but never used                            @typescript-eslint/no-unused-vars
+    82:8    warning  'bcrypt' is defined but never used                         @typescript-eslint/no-unused-vars
+    86:24   error    Forbidden non-null assertion                               @typescript-eslint/no-non-null-assertion
+    94:37   error    Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   138:43   error    Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   342:16   error    Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   354:41   error    Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   400:46   error    Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   471:42   error    Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   478:44   error    Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   481:42   error    Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   505:106  error    Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   758:36   error    Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   881:46   warning  'variants' is assigned a value but never used              @typescript-eslint/no-unused-vars
+  1034:44   error    Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  1056:34   warning  'title' is assigned a value but never used                 @typescript-eslint/no-unused-vars
+  1056:41   warning  'subreddit' is assigned a value but never used             @typescript-eslint/no-unused-vars
+  1098:15   warning  'protectionLevel' is assigned a value but never used       @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/routes/caption.ts
+  1:18  warning  'Request' is defined but never used                        @typescript-eslint/no-unused-vars
+  7:10  warning  'insertContentGenerationSchema' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/routes/upload.ts
+   11:36  warning  'ProtectionLevel' is defined but never used  @typescript-eslint/no-unused-vars
+  172:14  warning  'sharpError' is defined but never used       @typescript-eslint/no-unused-vars
+  450:53  warning  'e' is defined but never used                @typescript-eslint/no-unused-vars
+  453:58  warning  'e' is defined but never used                @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/routes/webhooks.stripe.ts
+  13:71  error  Forbidden non-null assertion              @typescript-eslint/no-non-null-assertion
+  22:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  54:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/seed-policy-data.ts
+  11:5  error  Parsing error: 'catch' or 'finally' expected
+
+/home/runner/workspace/server/seeds/expense-categories.ts
+   80:16  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  165:16  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/services/analytics-service.ts
+    3:34  warning  'desc' is defined but never used                   @typescript-eslint/no-unused-vars
+    8:30  error    Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+   49:36  error    Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+  221:86  error    Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+  282:11  warning  'eventsToSend' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  296:11  warning  'lastActive' is assigned a value but never used    @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/services/basic-metrics.ts
+  66:25  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  66:56  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+/home/runner/workspace/server/services/content-generator.ts
+  185:71  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  186:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/services/content-performance-predictor.ts
+  290:62  warning  'score' is defined but never used. Allowed unused args must match /^_/u              @typescript-eslint/no-unused-vars
+  394:21  warning  'actualPerformance' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/services/enhanced-ai-service.ts
+  200:7   warning  'mode' is assigned a value but never used                                  @typescript-eslint/no-unused-vars
+  293:86  error    Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  477:35  warning  'request' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  510:22  error    Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  522:28  error    Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  604:25  error    Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  618:23  error    Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  632:28  error    Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  646:24  error    Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  660:28  error    Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  671:22  error    Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  685:26  error    Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  699:22  error    Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  710:21  error    Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  724:21  error    Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/services/multi-ai-provider.ts
+  123:14  warning  'parseError' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/services/scheduling-optimizer.ts
+    2:28  warning  'platformEngagement' is defined but never used                            @typescript-eslint/no-unused-vars
+    3:19  warning  'gte' is defined but never used                                           @typescript-eslint/no-unused-vars
+    3:24  warning  'lte' is defined but never used                                           @typescript-eslint/no-unused-vars
+    3:29  warning  'sql' is defined but never used                                           @typescript-eslint/no-unused-vars
+  224:46  error    Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+  236:30  warning  'userId' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/social-auth-config.ts
+   86:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   94:45  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  138:8   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/social-auth.ts
+  164:10  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/social-media-routes.ts
+  5:10  warning  'z' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/test-endpoints.cjs
+    5:18  error  'process' is not defined     no-undef
+  217:3   error  'console' is not defined     no-undef
+  218:3   error  'console' is not defined     no-undef
+  219:3   error  'console' is not defined     no-undef
+  220:3   error  'console' is not defined     no-undef
+  223:5   error  'process' is not defined     no-undef
+  231:7   error  'console' is not defined     no-undef
+  235:7   error  'console' is not defined     no-undef
+  245:9   error  'console' is not defined     no-undef
+  250:34  error  'setTimeout' is not defined  no-undef
+  254:3   error  'console' is not defined     no-undef
+  255:3   error  'console' is not defined     no-undef
+  256:3   error  'console' is not defined     no-undef
+  258:3   error  'console' is not defined     no-undef
+  259:3   error  'console' is not defined     no-undef
+  262:5   error  'console' is not defined     no-undef
+  264:7   error  'console' is not defined     no-undef
+  266:9   error  'console' is not defined     no-undef
+  272:3   error  'console' is not defined     no-undef
+  273:3   error  'console' is not defined     no-undef
+  274:3   error  'console' is not defined     no-undef
+  278:3   error  'console' is not defined     no-undef
+  285:3   error  'process' is not defined     no-undef
+  287:3   error  'console' is not defined     no-undef
+  288:3   error  'process' is not defined     no-undef

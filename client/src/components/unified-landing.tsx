@@ -263,3 +263,5 @@ export function UnifiedLanding() {
     </div>
   );
 }
+
+export default UnifiedLanding;

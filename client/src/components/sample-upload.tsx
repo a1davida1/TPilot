@@ -18,6 +18,7 @@ import {
   AlertCircle
 } from "lucide-react";
 
+interface SamplePost {
   id: number;
   userId: number;
   title: string;
@@ -31,6 +32,7 @@ import {
   updatedAt: string;
 }
 
+export default function SampleUpload() {
   const { toast } = useToast();
   const [showAddForm, setShowAddForm] = useState(false);
   const [formData, setFormData] = useState({

@@ -874,7 +874,7 @@ export function UnifiedContentCreator({
                   <Badge 
                     className="text-xs"
                   >
-                     generatedContent.contentSource === 'template' ? 'Template' : 'AI Generated'}
+                    {generatedContent.contentSource === 'template' ? 'Template' : 'AI Generated'}
                   </Badge>
                 )}
                   <Badge variant="outline" className="text-xs text-orange-600 border-orange-600">
