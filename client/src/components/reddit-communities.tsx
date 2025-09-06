@@ -253,7 +253,7 @@ export function RedditCommunities() {
             </SelectContent>
           </Select>
 
-          <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+          <Select value={sortBy} onValueChange={(v: 'success' | 'engagement' | 'members' | 'upvotes' | 'name') => setSortBy(v)}>
             <SelectTrigger className="w-[150px] bg-white/60 dark:bg-gray-800/60 border-pink-200 dark:border-pink-500/30">
             </SelectTrigger>
             <SelectContent>

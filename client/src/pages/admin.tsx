@@ -39,6 +39,14 @@ import {
   FileCheck
 } from 'lucide-react';
 
+interface AdminStats {
+  totalUsers: number;
+  revenue: number;
+  activeUsers: number;
+  contentGenerated: number;
+  newUsersToday: number;
+}
+
 export function AdminDashboard() {
   const { toast } = useToast();
   const { token } = useAuth();
@@ -64,7 +72,7 @@ export function AdminDashboard() {
   };
 
   // Fetch admin stats
-  const { data: stats } = useQuery({
+  const { data: stats } = useQuery<AdminStats>({
     queryKey: ['/api/admin/stats', selectedPeriod],
     queryFn: () => authenticatedFetch('/api/admin/stats'),
     enabled: !!token
@@ -164,29 +172,29 @@ export function AdminDashboard() {
   const adminStats = [
     { 
       label: 'Total Users', 
-      value: (stats as any)?.totalUsers || 0, 
-      change: calculateChange((stats as any)?.totalUsers || 0, Math.max(1, ((stats as any)?.totalUsers || 0) - (stats as any)?.newUsersToday || 1)),
+      value: stats?.totalUsers || 0, 
+      change: calculateChange(stats?.totalUsers || 0, Math.max(1, (stats?.totalUsers || 0) - (stats?.newUsersToday || 1))),
       icon: <Users className="h-4 w-4" />,
       color: 'text-blue-500'
     },
     { 
       label: 'Revenue', 
-      value: `$${(stats as any)?.revenue || '0'}`, 
-      change: calculateChange((stats as any)?.revenue || 0, Math.max(1, ((stats as any)?.revenue || 0) * 0.85)),
+      value: `$${stats?.revenue || '0'}`, 
+      change: calculateChange(stats?.revenue || 0, Math.max(1, (stats?.revenue || 0) * 0.85)),
       icon: <DollarSign className="h-4 w-4" />,
       color: 'text-green-500'
     },
     { 
       label: 'Active Users (30d)', 
-      value: (stats as any)?.activeUsers || 0, 
-      change: calculateChange((stats as any)?.activeUsers || 0, Math.max(1, ((stats as any)?.activeUsers || 0) * 0.92)),
+      value: stats?.activeUsers || 0, 
+      change: calculateChange(stats?.activeUsers || 0, Math.max(1, (stats?.activeUsers || 0) * 0.92)),
       icon: <Activity className="h-4 w-4" />,
       color: 'text-purple-500'
     },
     { 
       label: 'Content Generated', 
-      value: (stats as any)?.contentGenerated || 0, 
-      change: calculateChange((stats as any)?.contentGenerated || 0, Math.max(1, ((stats as any)?.contentGenerated || 0) * 0.75)),
+      value: stats?.contentGenerated || 0, 
+      change: calculateChange(stats?.contentGenerated || 0, Math.max(1, (stats?.contentGenerated || 0) * 0.75)),
       icon: <BarChart3 className="h-4 w-4" />,
       color: 'text-pink-500'
     }

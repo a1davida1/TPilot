@@ -24,7 +24,18 @@ interface SocialAuthProps {
 export function SocialAuth({ onSuccess, isLoading = false }: SocialAuthProps) {
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
 
-  const socialProviders = [
+  interface SocialProvider {
+    id: string;
+    name: string;
+    icon: React.ReactNode;
+    color: string;
+    description: string;
+    url?: string;
+    handler?: () => Promise<void>;
+    recommended?: boolean;
+  }
+
+  const socialProviders: SocialProvider[] = [
     {
       id: 'google',
       name: 'Google',
@@ -73,8 +84,8 @@ export function SocialAuth({ onSuccess, isLoading = false }: SocialAuthProps) {
     
     try {
       // Check if provider has custom handler
-      if ((provider as any).handler) {
-        await (provider as any).handler();
+      if (provider.handler) {
+        await provider.handler();
       } else if (provider.url) {
         // Redirect to OAuth provider
         window.location.href = provider.url;

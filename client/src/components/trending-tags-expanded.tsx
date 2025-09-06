@@ -278,7 +278,7 @@ export function TrendingTagsExpanded() {
           </SelectContent>
         </Select>
 
-        <Select value={timeRange} onValueChange={(v) => setTimeRange(v as any)}>
+        <Select value={timeRange} onValueChange={(v: '1h' | '24h' | '7d' | '30d') => setTimeRange(v)}>
           <SelectTrigger className="w-[140px] bg-gray-900/50 border-purple-500/20">
             <SelectValue />
           </SelectTrigger>

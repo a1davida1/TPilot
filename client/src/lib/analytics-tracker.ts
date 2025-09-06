@@ -154,7 +154,7 @@ class AnalyticsTracker {
     if (!target) return;
 
     let element = '';
-    const metadata: Record<string, any> = {};
+    const metadata: Record<string, string | number | boolean | undefined> = {};
 
     // Get element identifier
     if (target.id) {
@@ -179,7 +179,7 @@ class AnalyticsTracker {
     this.trackEvent('click', { element, ...metadata });
   }
 
-  public trackEvent(type: string, metadata?: Record<string, any>, value?: number) {
+  public trackEvent(type: string, metadata?: Record<string, string | number | boolean | undefined>, value?: number) {
     const event: AnalyticsEvent = {
       type,
       page: this.currentPage,
