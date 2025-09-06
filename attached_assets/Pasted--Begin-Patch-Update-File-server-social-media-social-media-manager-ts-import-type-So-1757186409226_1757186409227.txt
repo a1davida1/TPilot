@@ -1,0 +1,192 @@
+*** Begin Patch
+*** Update File: server/social-media/social-media-manager.ts
+@@
+-import type { SocialMediaAccount, SocialMediaPost, InsertSocialMediaPost } from '@shared/schema.js';
++// Removed unused schema type imports
+@@
+-  private apis: Map<Platform, any> = new Map();
++  private apis: Map<Platform, InstagramAPI | TwitterAPI | TikTokAPI | YouTubeAPI> = new Map();
+@@
+-  registerAPI(platform: Platform, api: any) {
+-    this.apis.set(platform, api);
++  registerAPI(
++    platform: Platform,
++    api: InstagramAPI | TwitterAPI | TikTokAPI | YouTubeAPI
++  ) {
++    this.apis.set(platform, api);
+   }
+ 
+-  getAPI(platform: Platform): any {
+-    return this.apis.get(platform);
++  getAPI(
++    platform: Platform
++  ): InstagramAPI | TwitterAPI | TikTokAPI | YouTubeAPI | undefined {
++    return this.apis.get(platform);
+   }
+@@
+-        case 'twitter':
+-          // Upload media first if provided
+-          let mediaIds: string[] = [];
++        case 'twitter': {
++          // Upload media first if provided
++          const mediaIds: string[] = [];
+           if (content.mediaUrls?.length) {
+             for (const mediaUrl of content.mediaUrls) {
+               const mediaType = mediaUrl.includes('.mp4') ? 'video' : 'image';
+               const uploadResult = await api.uploadMedia(mediaUrl, mediaType);
+               if (uploadResult.success && uploadResult.mediaId) {
+                 mediaIds.push(uploadResult.mediaId);
+               }
+             }
+           }
+ 
+-          return await api.createTweet({
++          return await api.createTweet({
+             text: content.hashtags
+               ? `${content.text}\n\n${content.hashtags.map(tag => `#${tag}`).join(' ')}`
+               : content.text,
+             mediaIds: mediaIds.length > 0 ? mediaIds : undefined,
+           });
++        }
+@@
+-          likes: metrics.find((m: any) => m.name === 'likes')?.values[0]?.value || 0,
+-          comments: metrics.find((m: any) => m.name === 'comments')?.values[0]?.value || 0,
+-          shares: metrics.find((m: any) => m.name === 'shares')?.values[0]?.value || 0,
+-          views: metrics.find((m: any) => m.name === 'impressions')?.values[0]?.value || 0,
++          likes: metrics.find((m: { name: string; values: { value: number }[] }) => m.name === 'likes')?.values[0]?.value || 0,
++          comments: metrics.find((m: { name: string; values: { value: number }[] }) => m.name === 'comments')?.values[0]?.value || 0,
++          shares: metrics.find((m: { name: string; values: { value: number }[] }) => m.name === 'shares')?.values[0]?.value || 0,
++          views: metrics.find((m: { name: string; values: { value: number }[] }) => m.name === 'impressions')?.values[0]?.value || 0,
+@@
+-  async getAccountMetrics(platform: Platform): Promise<any> {
+-    const api = this.apis.get(platform);
+-    return await api.getMetrics();
++  async getAccountMetrics(platform: Platform): Promise<unknown> {
++    const api = this.apis.get(platform);
++    return api.getMetrics();
+   }
+ }
+*** End Patch
+*** Update File: server/social-media/twitter-api.ts
+@@
+-  private generateAuthHeader(method: string, url: string, params: Record<string, string> = {}) {
++  private generateAuthHeader(
++    method: string,
++    url: string,
++    _params: Record<string, string> = {}
++  ) {
+*** End Patch
+*** Update File: server/start-production.js
+@@
+-import('tsx').then(tsx => {
++import('tsx').then(() => {
+*** End Patch
+*** Update File: server/storage.ts
+@@
+-import { safeLog, redactUserData } from './lib/logger-utils.js';
++import { safeLog } from './lib/logger-utils.js';
+@@
+-      const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+-      const user = result[0];
+-      if (user) {
+-      } else {
+-      }
+-      return user;
++      const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
++      const [user] = result;
++      return user ?? undefined;
+@@
+-      const today = new Date().toISOString().split('T')[0];
+       let streak = 0;
+       let currentDate = new Date();
+@@
+-        })) as any;
++        })) as (Expense & { category: ExpenseCategory | null })[];
+@@
+-    } catch (error) {
+-    }
+-    {
+-    }
++    } catch (error) {
++      safeLog('deleteUser failed', error);
++    }
+*** End Patch
+*** Update File: server/test-endpoints.cjs
+@@
+-// Test Suite for ThottoPilot Critical Endpoints
++/* eslint-env node */
++// Test Suite for ThottoPilot Critical Endpoints
+*** End Patch
+*** Update File: server/types/passport-reddit.d.ts
+@@
+-    _json: any;
++    _json: Record<string, unknown>;
+@@
+-  export type VerifyCallback = (error: any, user?: any, info?: any) => void;
+-  export type VerifyFunction = (accessToken: string, refreshToken: string, profile: Profile, done: VerifyCallback) => void;
++  export type VerifyCallback = (error: Error | null, user?: unknown, info?: unknown) => void;
++  export type VerifyFunction = (
++    accessToken: string,
++    refreshToken: string,
++    profile: Profile,
++    done: VerifyCallback
++  ) => void;
+*** End Patch
+*** Update File: server/visitor-analytics.ts
+@@
+-import type { Request } from 'express';
++import type { Request } from 'express';
+@@
+-  private sessions: Map<string, any> = new Map();
++  private sessions: Map<string, Record<string, unknown>> = new Map();
+@@
+-  private generateSessionId(req: any): string {
++  private generateSessionId(req: Request): string {
+@@
+-  trackPageView(req: any, path: string) {
+-    const sessionId = this.generateSessionId(req);
+-    const currentDate = new Date().toISOString().split('T')[0];
+-    let session = this.sessions.get(sessionId) || { views: 0, lastSeen: Date.now() };
+-    session.views++;
+-    session.lastSeen = Date.now();
+-    this.sessions.set(sessionId, session as any);
++  trackPageView(req: Request, path: string) {
++    const sessionId = this.generateSessionId(req);
++    const currentDate = new Date().toISOString().split('T')[0];
++    const session = (this.sessions.get(sessionId) || { views: 0, lastSeen: Date.now() }) as { views: number; lastSeen: number };
++    session.views++;
++    session.lastSeen = Date.now();
++    this.sessions.set(sessionId, session);
+*** End Patch
+*** Update File: server/vite-stub.ts
+@@
+-export function setupVite(app: any, server: any) {
+-  return Promise.resolve();
+-}
++export function setupVite(_app: unknown, _server: unknown) {
++  return Promise.resolve();
++}
+*** End Patch
+*** Update File: shared/schema.ts
+@@
+-import { pgTable, serial, varchar, text, integer, timestamp, jsonb, boolean, uuid, unique } from "drizzle-orm/pg-core";
++import { pgTable, serial, varchar, text, integer, timestamp, jsonb, boolean, unique } from "drizzle-orm/pg-core";
+*** End Patch
+*** Update File: tests/auth/signup.test.ts
+@@
+-const users: any[] = [];
+-const tokens: any[] = [];
++const users: Array<Record<string, unknown>> = [];
++const tokens: Array<Record<string, unknown>> = [];
+@@
+-  const app: any = express();
++  const app = express();
+@@
+-        async (req: any, res: any) => {
+-          res.json({ success: true });
+-        }
++        async (req: express.Request, res: express.Response) => {
++          res.json({ success: true });
++        }
+*** End Patch
+*** End Patch
