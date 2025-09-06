@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { storage } from '../../server/storage.js';
 import { pipeline } from '../../server/caption/geminiPipeline.js';
 import { pipelineRewrite } from '../../server/caption/rewritePipeline.js';
 import { pipelineTextOnly } from '../../server/caption/textOnlyPipeline.js';

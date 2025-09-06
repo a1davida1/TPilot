@@ -5,7 +5,6 @@ import { db } from '../../server/db';
 import { users, contentGenerations } from '../../shared/schema';
 import { eq } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
-import { registerRoutes } from '../../server/routes';
 
 // Mock AI providers
 const mockOpenAI = vi.fn();
@@ -63,7 +62,7 @@ describe('Content Generation Integration Tests', () => {
           },
           provider: 'gemini-flash'
         });
-      } catch (error) {
+      } catch (_error) {
         res.status(500).json({ message: 'Generation failed' });
       }
     });
@@ -245,7 +244,7 @@ describe('Content Generation Integration Tests', () => {
         tier: 'free'
       }).returning();
 
-      const freeToken = jwt.sign({ userId: freeUser.id }, process.env.JWT_SECRET!);
+      const freeToken = jwt.sign({ userId: freeUser.id }, process.env.JWT_SECRET || 'test-secret');
 
       const response = await request(app)
         .post('/api/caption/generate')

@@ -71,7 +71,7 @@ describe('Authentication Integration Tests', () => {
       };
       users.push(user);
       sendVerificationEmail(email);
-      const { password: _pw, ...safe } = user;
+      const { password: _, ...safe } = user;
       res.status(201).json(safe);
     });
 
@@ -90,7 +90,7 @@ describe('Authentication Integration Tests', () => {
         return res.status(401).json({ message: 'Invalid credentials' });
       const token = jwt.sign({ id: user.id }, SECRET, { expiresIn: '1h' });
       (req.session as { userId?: number }).userId = user.id;
-      const { password: _pw, ...safe } = user;
+      const { password: _, ...safe } = user;
       res.json({ token, user: safe });
     });
 
@@ -102,17 +102,17 @@ describe('Authentication Integration Tests', () => {
           const decoded = jwt.verify(auth.substring(7), SECRET) as { id: number };
           const user = users.find((u) => u.id === decoded.id);
           if (user) {
-            const { password: _pw, ...safe } = user;
+            const { password: _, ...safe } = user;
             return res.json(safe);
           }
-        } catch (e) {
+        } catch (_e) {
           return res.status(401).json({ message: 'Invalid token' });
         }
       }
       if (req.session.userId) {
         const user = users.find((u) => u.id === req.session.userId);
         if (user) {
-          const { password: _pw, ...safe } = user;
+          const { password: _, ...safe } = user;
           return res.json(safe);
         }
       }

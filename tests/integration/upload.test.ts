@@ -41,7 +41,7 @@ describe('Upload and ImageShield Integration Tests', () => {
 
         // Simulate image processing
         const processedImage = await mockImageShieldProtection(imageData, protectionLevel);
-        const watermarkedImage = await mockWatermarkApplication(processedImage);
+        await mockWatermarkApplication(processedImage);
 
         // Save to database
         const [savedImage] = await db.insert(userImages).values({
@@ -80,7 +80,7 @@ describe('Upload and ImageShield Integration Tests', () => {
         };
 
         res.json(scanResult);
-      } catch (error) {
+      } catch (_error) {
         res.status(500).json({ message: 'Scan failed' });
       }
     });
@@ -99,7 +99,7 @@ describe('Upload and ImageShield Integration Tests', () => {
           isProtected: image[0].isProtected,
           protectionLevel: image[0].protectionLevel
         });
-      } catch (error) {
+      } catch (_error) {
         res.status(500).json({ message: 'Failed to retrieve image' });
       }
     });
@@ -141,7 +141,7 @@ describe('Upload and ImageShield Integration Tests', () => {
     try {
       await fs.promises.unlink(testImagePath);
       await fs.promises.rmdir(path.dirname(testImagePath));
-    } catch (error) {
+    } catch (_error) {
       // Ignore cleanup errors
     }
   });
@@ -415,7 +415,7 @@ describe('Upload and ImageShield Integration Tests', () => {
       const imageBuffer = await fs.promises.readFile(testImagePath);
       const imageData = imageBuffer.toString('base64');
 
-      const uploadPromises = Array.from({ length: 5 }, (_, i) =>
+      const uploadPromises = Array.from({ length: 5 }, () =>
         request(app)
           .post('/api/upload/image')
           .send({

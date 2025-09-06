@@ -72,18 +72,6 @@ describe('Billing System', () => {
     });
 
     it('should validate user tier permissions', async () => {
-      const mockFreeUser = {
-        id: 1,
-        tier: 'free',
-        dailyGenerations: 3,
-      };
-
-      const mockProUser = {
-        id: 2,
-        tier: 'pro',
-        dailyGenerations: 25,
-      };
-
       storage.getUserUsage.mockImplementation((userId) => {
         if (userId === 1) return Promise.resolve({ dailyGenerations: 5 }); // Over limit
         if (userId === 2) return Promise.resolve({ dailyGenerations: 25 }); // Under limit
