@@ -178,10 +178,10 @@ describe('Payment Providers', () => {
         amountCents: 2999
       });
 
-      expect(capturedBody.local_price.amount).toBe('29.99');
-      expect(capturedBody.local_price.currency).toBe('USD');
-      expect(capturedBody.metadata.user_id).toBe('user456');
-      expect(capturedBody.metadata.plan_id).toBe('pro');
+      expect((capturedBody as { local_price: { amount: string } }).local_price.amount).toBe('29.99');
+      expect((capturedBody as { local_price: { currency: string } }).local_price.currency).toBe('USD');
+      expect((capturedBody as { metadata: { user_id: string } }).metadata.user_id).toBe('user456');
+      expect((capturedBody as { metadata: { plan_id: string } }).metadata.plan_id).toBe('pro');
 
       // Restore original fetch
       global.fetch = originalFetch;
@@ -340,13 +340,13 @@ describe('Payment Providers', () => {
         expect(provider.createCheckout({
           userId: '',
           planId: 'pro'
-        } as any)).rejects.toThrow();
+        } as { userId: string; planId: string })).rejects.toThrow();
 
         // Test with missing planId
         expect(provider.createCheckout({
           userId: 'user123',
           planId: ''
-        } as any)).rejects.toThrow();
+        } as { userId: string; planId: string })).rejects.toThrow();
       });
 
       test('validates amount ranges for Coinbase', async () => {
@@ -386,7 +386,7 @@ describe('Payment Providers', () => {
       const { providers } = require('../../server/payments/payment-providers');
       
       expect(providers).toHaveLength(0);
-      expect(providers.every((p: unknown) => p.enabled)).toBe(true);
+      expect(providers.every((p: { enabled: boolean }) => p.enabled)).toBe(true);
     });
 
     test('includes enabled providers', () => {
@@ -397,7 +397,7 @@ describe('Payment Providers', () => {
       const { providers } = require('../../server/payments/payment-providers');
       
       expect(providers.length).toBeGreaterThan(0);
-      expect(providers.every((p: unknown) => p.enabled)).toBe(true);
+      expect(providers.every((p: { enabled: boolean }) => p.enabled)).toBe(true);
     });
   });
 

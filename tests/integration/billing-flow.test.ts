@@ -84,7 +84,10 @@ describe('Billing Integration Tests', () => {
   });
 
   afterAll(async () => {
-    await new Promise((r) => (server as any).close(r));
+    await new Promise<void>((resolve) => {
+      const httpServer = server as { close: (callback: () => void) => void };
+      httpServer.close(resolve);
+    });
   });
 
   beforeEach(async () => {
@@ -100,7 +103,7 @@ describe('Billing Integration Tests', () => {
     test('should return available payment providers', async () => {
       const res = await request(app).get('/api/billing/providers');
       expect(res.status).toBe(200);
-      const names = res.body.map((p: unknown) => p.name);
+      const names = res.body.map((p: { name: string }) => p.name);
       expect(names).toContain('stripe');
       expect(names).toContain('paxum');
       expect(names).not.toContain('coinbase');

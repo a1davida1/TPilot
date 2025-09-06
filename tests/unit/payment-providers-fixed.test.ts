@@ -37,13 +37,13 @@ describe('Payment Providers - Fixed', () => {
       await expect(provider.createCheckout({
         userId: '',
         planId: 'pro'
-      } as any)).rejects.toThrow('userId and planId are required');
+      } as { userId: string; planId: string })).rejects.toThrow('userId and planId are required');
 
       // Test with missing planId - properly awaited
       await expect(provider.createCheckout({
         userId: 'user123',
         planId: ''
-      } as any)).rejects.toThrow('userId and planId are required');
+      } as { userId: string; planId: string })).rejects.toThrow('userId and planId are required');
     });
   });
 
@@ -122,7 +122,7 @@ describe('Payment Providers - Fixed', () => {
       await expect(provider.createCheckout({
         userId: '',
         planId: 'pro'
-      } as any)).rejects.toThrow('userId and planId are required');
+      } as { userId: string; planId: string })).rejects.toThrow('userId and planId are required');
 
       global.fetch = originalFetch;
     });

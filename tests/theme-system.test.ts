@@ -222,11 +222,11 @@ describe('Theme System', () => {
         setItem: vi.fn(),
         removeItem: vi.fn(),
         clear: vi.fn(),
-      } as any;
+      } as Storage;
     });
 
     it('should save theme preference to localStorage', () => {
-      const mockSetItem = localStorage.setItem as any;
+      const mockSetItem = localStorage.setItem as unknown as jest.MockedFunction<typeof localStorage.setItem>;
       
       // Simulate theme change
       const storageKey = 'thottopilot-ui-theme';
@@ -238,7 +238,7 @@ describe('Theme System', () => {
     });
 
     it('should load theme preference from localStorage', () => {
-      const mockGetItem = localStorage.getItem as any;
+      const mockGetItem = localStorage.getItem as unknown as jest.MockedFunction<typeof localStorage.getItem>;
       mockGetItem.mockReturnValue('dark');
       
       const theme = localStorage.getItem('thottopilot-ui-theme');
