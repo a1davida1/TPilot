@@ -1,11 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
@@ -35,7 +33,7 @@ export default function SettingsPage() {
   const [emailUpdates, setEmailUpdates] = useState(true);
   const [autoSave, setAutoSave] = useState(true);
   const [defaultPlatform, setDefaultPlatform] = useState('reddit');
-  const [apiUsage, setApiUsage] = useState({ used: 0, limit: 1000 });
+  const [apiUsage] = useState({ used: 0, limit: 1000 });
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -402,7 +400,7 @@ export default function SettingsPage() {
                     <div className="space-y-2">
                       <h4 className="font-medium text-red-600">Cancel Subscription</h4>
                       <p className="text-sm text-gray-600">
-                        Cancel your subscription at any time. You'll retain access until the end of your billing period.
+                        Cancel your subscription at any time. You&apos;ll retain access until the end of your billing period.
                       </p>
                       <Button variant="outline" size="sm" className="w-full border-red-300 text-red-600 hover:bg-red-50">
                         Cancel Subscription

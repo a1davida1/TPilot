@@ -25,10 +25,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 // Temporarily disabled framer-motion to fix runtime errors
 // import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
 
-const iconMap: Record<string, React.ComponentType<any>> = {
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Sparkles,
   Receipt,
   Calculator,
@@ -73,7 +72,6 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
     }
   }, [expenseCategories, selectedCategory]);
 
-  const SelectedIcon = selectedCategory ? iconMap[selectedCategory.icon] || Sparkles : Sparkles;
 
   // Fetch expense totals
   const { data: expenseTotals = { total: 0, deductible: 0, byCategory: {} } } = useQuery({
@@ -439,8 +437,8 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                       <div>
                         <h4 className="font-semibold text-gray-900 mb-3">What's Included:</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                          {selectedCategory.examples.map((example, idx) => (
-                            <div key={idx} className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
+                          {selectedCategory.examples.map((example: string, _idx: number) => (
+                            <div key={_idx} className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
                               <div className="w-2 h-2 rounded-full bg-green-500"></div>
                               <span className="text-sm text-gray-700">{example}</span>
                             </div>
@@ -509,7 +507,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                             ${dayData.totalAmount.toLocaleString()}
                           </div>
                           <div className="text-xs text-gray-500">
-                            {dayData.expenses.length} expense{dayData.expenses.length !== 1 ? 's' : ''}
+                            {dayData.expenses.length} {dayData.expenses.length === 1 ? 'expense' : 'expenses'}
                           </div>
                         </div>
                       )}
