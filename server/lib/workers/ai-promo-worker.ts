@@ -23,6 +23,10 @@ export class AiPromoWorker {
   }
 
   private async processJob(jobData: unknown, jobId: string) {
+    // Validate job data structure
+    if (!jobData || typeof jobData !== 'object') {
+      throw new Error('Invalid job data: expected object');
+    }
     const { userId, generationId, promptText, imageKey, platforms, styleHints, variants = 1 } = jobData as AiPromoJobData;
 
     try {
@@ -50,7 +54,13 @@ export class AiPromoWorker {
         };
 
         const content = await AiService.generateContent(aiRequest);
-        results.push(content);
+        const contentResult: ContentResult = {
+          success: !!content && Array.isArray(content) && content.length > 0,
+          content: Array.isArray(content) ? JSON.stringify(content) : 'No content generated',
+          error: !content ? 'Generation failed' : undefined,
+          variant: i + 1
+        };
+        results.push(contentResult);
 
         // Add delay between variants to avoid rate limits
         if (i < variants - 1) {
@@ -70,7 +80,7 @@ export class AiPromoWorker {
 
       return { success: true, results };
 
-    } catch (error: Error) {
+    } catch (error: any) {
       logger.error(`AI promo job for generation ${generationId} failed:`, { error: error.message, stack: error.stack });
 
       // Update generation status to failed
@@ -101,7 +111,7 @@ export class AiPromoWorker {
     }
   }
 
-  private async updateGenerationResults(generationId: number, results: ContentResult[]) {
+  private async updateGenerationResults(generationId: number, results: any[]) {
     try {
       // Use the first result to update the generation record
       const firstResult = results[0];

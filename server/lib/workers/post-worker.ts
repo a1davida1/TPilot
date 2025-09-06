@@ -26,6 +26,10 @@ export class PostWorker {
   }
 
   private async processJob(jobData: unknown, jobId: string) {
+    // Validate job data structure
+    if (!jobData || typeof jobData !== 'object') {
+      throw new Error('Invalid job data: expected object');
+    }
     const data = jobData as PostJobData;
     if (data.platforms && data.content) {
       return this.processSocialMediaJob(data, jobId);
@@ -42,7 +46,10 @@ export class PostWorker {
       }
 
       // Check if we can post to this subreddit
-      const canPost = await RedditManager.canPostToSubreddit(userId, subreddit!);
+      if (!subreddit) {
+        throw new Error('Subreddit is required for Reddit posting');
+      }
+      const canPost = await RedditManager.canPostToSubreddit(userId, subreddit);
       if (!canPost.canPost) {
         throw new Error(`Cannot post: ${canPost.reason}`);
       }
@@ -58,8 +65,8 @@ export class PostWorker {
       
       const postOptions: RedditPostOptions = {
         subreddit,
-        title: titleFinal,
-        body: bodyFinal,
+        title: titleFinal || '',
+        body: bodyFinal || '',
         nsfw: true, // Assume NSFW for adult content
       };
 
@@ -99,7 +106,7 @@ export class PostWorker {
         throw new Error(result.error || 'Reddit posting failed');
       }
 
-    } catch (error: Error) {
+    } catch (error: any) {
       logger.error(`Post job ${postJobId} failed:`, { error });
 
       // Update job status to failed
@@ -132,9 +139,9 @@ export class PostWorker {
 
       for (const acc of accounts) {
         if (connected.includes(acc.platform as Platform) && acc.accessToken) {
-          const credentials = {
-            accessToken: acc.accessToken,
-            refreshToken: acc.refreshToken,
+          const credentials: Record<string, string> = {
+            accessToken: acc.accessToken || '',
+            ...(acc.refreshToken && { refreshToken: acc.refreshToken }),
             ...(acc.metadata || {}),
           };
           socialMediaManager.connectAccount(acc.platform as Platform, credentials);

@@ -5,10 +5,10 @@ import { authenticateToken } from "./middleware/auth.js";
 import { z } from "zod";
 
 interface AuthRequest extends Express.Request {
-  user?: unknown;
-  body: unknown;
-  params: unknown;
-  query: unknown;
+  user?: any;
+  body: any;
+  params: any;
+  query: any;
 }
 
 // PHASE 2: Social Media API Routes
@@ -154,13 +154,15 @@ export function registerSocialMediaRoutes(app: Express) {
       // Initialize social media connections
       for (const account of userAccounts) {
         if (connectedPlatforms.includes(account.platform) && account.accessToken) {
-          const credentials = {
-            accessToken: account.accessToken,
-            refreshToken: account.refreshToken,
+          const credentials: Record<string, string> = {
+            accessToken: account.accessToken || '',
+            ...(account.refreshToken && { refreshToken: account.refreshToken }),
             // Add platform-specific credentials based on metadata
             ...(typeof account.metadata === 'object' && account.metadata ? account.metadata : {}),
           };
-          socialMediaManager.connectAccount(account.platform as Platform, credentials);
+          if (account.platform) {
+            socialMediaManager.connectAccount(account.platform as Platform, credentials);
+          }
         }
       }
 
@@ -195,8 +197,9 @@ export function registerSocialMediaRoutes(app: Express) {
           description: content.description,
         };
 
+        const validPlatforms = connectedPlatforms.filter(p => typeof p === 'string') as Platform[];
         results = await socialMediaManager.postToMultiplePlatforms(
-          connectedPlatforms as Platform[],
+          validPlatforms,
           postContent
         );
 
@@ -303,9 +306,9 @@ export function registerSocialMediaRoutes(app: Express) {
       }
 
       // Initialize connection
-      const credentials = {
-        accessToken: account.accessToken,
-        refreshToken: account.refreshToken,
+      const credentials: Record<string, string> = {
+        accessToken: account.accessToken || '',
+        ...(account.refreshToken && { refreshToken: account.refreshToken }),
         ...(typeof account.metadata === 'object' && account.metadata ? account.metadata : {}),
       };
       socialMediaManager.connectAccount(account.platform as Platform, credentials);
