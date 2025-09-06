@@ -94,7 +94,7 @@ export function getEnvConfig() {
       DATABASE_URL: process.env.DATABASE_URL || '',
       APP_BASE_URL: process.env.APP_BASE_URL || 'http://localhost:5000',
       UTM_COOKIE_TTL_DAYS: 30,
-    } as any;
+    } as Environment;
   }
 }
 
@@ -162,7 +162,7 @@ try {
       TURNSTILE_SECRET_KEY: process.env.TURNSTILE_SECRET_KEY || '',
       ANALYTICS_WRITE_KEY: process.env.ANALYTICS_WRITE_KEY || '',
       ADMIN_EMAIL_WHITELIST: process.env.ADMIN_EMAIL_WHITELIST || '',
-    } as any;
+    } as Environment;
   } else {
     console.error("❌ Environment validation failed:");
     if (error instanceof z.ZodError) {

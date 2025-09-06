@@ -99,7 +99,7 @@ async function generateWithGemini(prompt: string) {
   
   try {
     // Use the generate method for @google/genai
-    const response = await (gemini as any).generate({
+    const response = await (gemini as { generate: (params: { prompt: string; temperature: number; maxOutputTokens: number }) => Promise<{ text?: string }> }).generate({
       prompt: prompt,
       temperature: 0.8,
       maxOutputTokens: 1500
