@@ -25,22 +25,22 @@ vi.mock('../../server/storage.js', () => ({
 }));
 
 vi.mock('../../server/middleware/auth.js', () => ({
-  authenticateToken: (req: any, res: any, next: any) => {
+  authenticateToken: (req: Record<string, unknown>, res: Record<string, unknown>, next: () => void) => {
     req.user = { id: 999, username: 'admin', isAdmin: true };
     next();
   }
 }));
 
 vi.mock('../../server/admin-routes.js', () => ({
-  setupAdminRoutes: (app: any) => {
-    app.get('/api/admin/users', (req: any, res: any) => {
+  setupAdminRoutes: (app: express.Application) => {
+    app.get('/api/admin/users', (req: express.Request, res: express.Response) => {
       res.json([
         { id: 1, username: 'user1', email: 'user1@test.com', tier: 'free' },
         { id: 2, username: 'user2', email: 'user2@test.com', tier: 'pro' }
       ]);
     });
     
-    app.get('/api/admin/stats', (req: any, res: any) => {
+    app.get('/api/admin/stats', (req: express.Request, res: express.Response) => {
       res.json({
         totalUsers: 7,
         freeUsers: 6,
@@ -50,7 +50,7 @@ vi.mock('../../server/admin-routes.js', () => ({
       });
     });
 
-    app.post('/api/admin/upgrade-user', (req: any, res: any) => {
+    app.post('/api/admin/upgrade-user', (req: express.Request, res: express.Response) => {
       res.json({ message: 'User upgraded successfully' });
     });
   }

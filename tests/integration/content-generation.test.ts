@@ -37,7 +37,7 @@ vi.mock('@anthropic-ai/sdk', () => ({
 }));
 
 describe('Content Generation Integration Tests', () => {
-  let testUser: any;
+  let testUser: { id: number; username: string; email: string | null };
   let authToken: string;
   let app: express.Application;
 

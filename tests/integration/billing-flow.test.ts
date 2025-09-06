@@ -11,7 +11,7 @@ interface Subscription {
 }
 
 let app: express.Express;
-let server: any;
+let server: unknown;
 let providerKeys: Record<string, string | undefined> = {};
 let subscriptions: Record<number, Subscription> = {};
 let processedWebhooks = new Set<string>();
@@ -84,7 +84,7 @@ describe('Billing Integration Tests', () => {
   });
 
   afterAll(async () => {
-    await new Promise((r) => server.close(r));
+    await new Promise((r) => (server as any).close(r));
   });
 
   beforeEach(async () => {
