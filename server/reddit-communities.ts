@@ -47,7 +47,8 @@ export async function getCommunityInsights(communityId: string) {
   if (community.competitionLevel === 'low') successTips.push('Low competition - your content will stand out');
 
   if (community.verificationRequired) warnings.push('Verification required - complete r/GetVerified');
-  if ((community.rules as any)?.minKarma > 50) warnings.push(`Requires ${(community.rules as any).minKarma}+ karma`);
+  const rules = community.rules as { minKarma?: number } | null;
+  if (rules?.minKarma && rules.minKarma > 50) warnings.push(`Requires ${rules.minKarma}+ karma`);
   if (community.promotionAllowed === 'no') warnings.push('No promotion allowed - content only');
 
   return { bestTimes: community.bestPostingTimes || [], successTips, warnings };

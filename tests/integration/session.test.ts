@@ -189,7 +189,7 @@ describe('Session Storage Integration', () => {
     };
 
     errorApp.use(session({
-      store: failingStore as any,
+      store: failingStore as { get: () => void; set: () => void; destroy: () => void },
       secret: 'test-secret',
       resave: false,
       saveUninitialized: false

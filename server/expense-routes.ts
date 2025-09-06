@@ -142,7 +142,7 @@ export function registerExpenseRoutes(app: Express) {
         amount: Math.round(parseFloat(req.body.amount) * 100)
       };
 
-      const expense = await storage.createExpense(expenseData as any);
+      const expense = await storage.createExpense(expenseData as InsertExpense);
       res.status(201).json(expense);
     } catch (error) {
       console.error('Error creating expense:', error);

@@ -467,7 +467,7 @@ describe('Upload and ImageShield Integration Tests', () => {
     test('should handle database connection failures during upload', async () => {
       // Mock database failure
       const originalDB = db;
-      (global as any).db = null;
+      (global as { db?: unknown }).db = undefined;
 
       const imageBuffer = await fs.promises.readFile(testImagePath);
       const imageData = imageBuffer.toString('base64');
@@ -482,7 +482,7 @@ describe('Upload and ImageShield Integration Tests', () => {
       expect(response.status).toBe(500);
 
       // Restore database
-      (global as any).db = originalDB;
+      (global as { db?: unknown }).db = originalDB;
     });
 
     test('should clean up partial uploads on failure', async () => {

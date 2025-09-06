@@ -414,7 +414,7 @@ async function getContentAnalytics(contentId: number, userId: number | null) {
 // Utility functions
 function getUserIdFromRequest(req: Request): number | null {
   // Try to get user ID from auth middleware or session
-  const user = (req as any).user;
+  const user = (req as { user?: { id: string } }).user;
   return user?.id || user?.userId || null;
 }
 
@@ -475,7 +475,7 @@ function parseUserAgent(userAgent?: string): unknown {
   return { deviceType, browser, os };
 }
 
-async function getLocationFromIP(ipAddress: string): Promise<any> {
+async function getLocationFromIP(ipAddress: string): Promise<{ country?: string; city?: string } | null> {
   // For now, return default values
   return {
     country: 'Unknown',

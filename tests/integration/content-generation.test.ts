@@ -482,7 +482,7 @@ describe('Content Generation Integration Tests', () => {
     test('should handle database connection failures', async () => {
       // Mock database connection failure
       const originalDB = db;
-      (global as any).db = null;
+      (global as { db?: unknown }).db = undefined;
 
       const response = await request(app)
         .post('/api/caption/generate')
@@ -498,7 +498,7 @@ describe('Content Generation Integration Tests', () => {
       expect(response.body.fallbackAvailable).toBe(true);
 
       // Restore database
-      (global as any).db = originalDB;
+      (global as { db?: unknown }).db = originalDB;
     });
 
     test('should recover from temporary AI provider outages', async () => {
