@@ -56,7 +56,7 @@ export async function protectImage(
     img.onload = () => {
       try {
         // Calculate new dimensions
-        const scaleFactor = settings.resize! / 100;
+        const scaleFactor = (settings.resize || 100) / 100;
         canvas.width = img.width * scaleFactor;
         canvas.height = img.height * scaleFactor;
         
