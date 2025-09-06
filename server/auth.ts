@@ -401,9 +401,9 @@ export function setupAuth(app: Express) {
   });
 
   // Get current user endpoint (CRITICAL - this was missing!)
-  app.get('/api/auth/user', async (req: express.Request, res) => {
+  app.get('/api/auth/user', async (req: Request, res: Response) => {
     try {
-      let token = null;
+      let token: string | null = null;
 
       // Try cookie-based authentication first (preferred)
       if (req.cookies && req.cookies.authToken) {
@@ -435,7 +435,11 @@ export function setupAuth(app: Express) {
         }
         
         // Regular user lookup
-        const user = await storage.getUser(decoded.userId || decoded.id);
+        const userId = decoded.userId || decoded.id;
+        if (!userId) {
+          return res.status(401).json({ message: 'Invalid token: missing user ID' });
+        }
+        const user = await storage.getUser(userId);
         if (user) {
           const { password: _, ...userResponse } = user;
           return res.json({
@@ -699,7 +703,7 @@ export function setupAuth(app: Express) {
   */
 
   // Delete account route
-  app.delete('/api/auth/delete-account', async (req: express.Request, res) => {
+  app.delete('/api/auth/delete-account', async (req: Request, res: Response) => {
     try {
       // Check authentication from JWT cookie or token
       const token = req.cookies.authToken || req.headers.authorization?.replace('Bearer ', '');
@@ -711,7 +715,11 @@ export function setupAuth(app: Express) {
       let userId: number;
       try {
         const decoded = jwt.verify(token, JWT_SECRET_VALIDATED) as { userId?: number; id?: number; isAdmin?: boolean; };
-        userId = decoded.userId || decoded.id;
+        const decodedUserId = decoded.userId || decoded.id;
+        if (!decodedUserId) {
+          return res.status(401).json({ message: 'Invalid token: missing user ID' });
+        }
+        userId = decodedUserId;
       } catch (jwtError) {
         return res.status(401).json({ message: 'Invalid authentication token' });
       }
@@ -747,10 +755,10 @@ export function setupAuth(app: Express) {
   });
 
   // Admin metrics endpoint
-  app.get('/api/admin/auth-metrics', async (req: express.Request, res) => {
+  app.get('/api/admin/auth-metrics', async (req: Request, res: Response) => {
     try {
       // Check if user is authenticated
-      let token = null;
+      let token: string | null = null;
       if (req.cookies && req.cookies.authToken) {
         token = req.cookies.authToken;
       } else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
@@ -763,7 +771,7 @@ export function setupAuth(app: Express) {
       
       // Verify token and check admin status
       try {
-        const decoded = jwt.verify(token, JWT_SECRET_VALIDATED) as { userId?: number; id?: number; isAdmin?: boolean; };
+        const decoded = jwt.verify(token, JWT_SECRET_VALIDATED) as { userId?: number; id?: number; isAdmin?: boolean; role?: string; };
         if (!decoded.isAdmin && decoded.role !== 'admin') {
           return res.status(403).json({ error: 'Admin access required' });
         }

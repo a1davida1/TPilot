@@ -15,10 +15,10 @@ const JWT_SECRET_VALIDATED: string = JWT_SECRET;
 
 export function setupAdminRoutes(app: Express) {
   // Admin middleware to check if user is admin
-  const requireAdmin = (req: express.Request & { user?: unknown; isAuthenticated?: () => boolean }, res: express.Response, next: express.NextFunction) => {
+  const requireAdmin = (req: express.Request & { user?: { id: number; username?: string | null; isAdmin?: boolean | null }; isAuthenticated?: () => boolean }, res: express.Response, next: express.NextFunction) => {
     // Check if user is authenticated via session OR JWT
-    let user = null;
-    let token = null;
+    let user: any = null;
+    let token: string | null = null;
     
     // Try cookie-based authentication first (preferred)
     if (req.cookies && req.cookies.authToken) {
@@ -47,8 +47,9 @@ export function setupAdminRoutes(app: Express) {
       return res.status(401).json({ message: 'Admin access required' });
     }
 
-    // Check if user is admin (ID 999, username 'admin', or has isAdmin flag)
-    if ((user as { id: number; username?: string; isAdmin?: boolean }).id !== 999 && (user as { username?: string }).username !== 'admin' && !(user as { isAdmin?: boolean }).isAdmin) {
+    // Check if user is admin (ID 999, username 'admin', or has isAdmin flag)  
+    const typedUser = user as { id: number; username?: string | null; isAdmin?: boolean | null };
+    if (typedUser.id !== 999 && typedUser.username !== 'admin' && !typedUser.isAdmin) {
       return res.status(403).json({ message: 'Admin access required' });
     }
 
@@ -82,7 +83,7 @@ export function setupAdminRoutes(app: Express) {
       await storage.updateUserPassword(userId, hashedTempPassword);
       await storage.updateUser(userId, { mustChangePassword: true, passwordResetAt: new Date() });
       
-      const adminUser = req.user as any;
+      const adminUser = req.user as { id: number; username?: string | null; isAdmin?: boolean | null };
       console.log(`Admin ${adminUser?.username || adminUser?.id} reset password for user ${user.username} (ID: ${userId})`);
       
       res.json({
