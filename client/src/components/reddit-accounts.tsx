@@ -200,7 +200,7 @@ export function RedditAccounts() {
             Connect to Reddit
           </Button>
           <p className="text-xs text-gray-500 mt-2">
-            You'll be redirected to Reddit to authorize the connection. We only request the minimum permissions needed.
+            You&apos;ll be redirected to Reddit to authorize the connection. We only request the minimum permissions needed.
           </p>
         </CardContent>
       </Card>

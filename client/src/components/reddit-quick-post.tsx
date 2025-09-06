@@ -282,7 +282,7 @@ export function RedditQuickPost() {
               Connect Reddit Account
             </Button>
             <p className="text-xs text-gray-500 mt-3">
-              You'll be redirected to Reddit to authorize ThottoPilot
+              You&apos;ll be redirected to Reddit to authorize ThottoPilot
             </p>
           </div>
         )}
