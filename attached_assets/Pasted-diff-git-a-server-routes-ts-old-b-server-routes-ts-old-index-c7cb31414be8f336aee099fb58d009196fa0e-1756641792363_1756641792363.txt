@@ -10,7 +10,7 @@ index c7cb31414be8f336aee099fb58d009196fa0eaf8..18278fa57b157b7e16a40d797f380b43
    // Generate content endpoint
  
    // JWT auth middleware for generation endpoint
-   const authMiddleware = (req: any, res: any, next: any) => {
+   const authMiddleware = (req: unknown, res: unknown, next: unknown) => {
      const authHeader = req.headers['authorization'];
      const token = authHeader && authHeader.split(' ')[1];
  

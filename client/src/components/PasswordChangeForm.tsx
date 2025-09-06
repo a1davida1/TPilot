@@ -76,7 +76,7 @@ export function PasswordChangeForm({ userId, onSuccess }: PasswordChangeFormProp
       });
 
       onSuccess?.();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Password Change Failed',
         description: error.message || 'An error occurred while changing your password',

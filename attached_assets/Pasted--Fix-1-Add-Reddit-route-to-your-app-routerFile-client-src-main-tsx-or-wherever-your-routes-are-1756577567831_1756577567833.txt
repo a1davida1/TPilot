@@ -12,7 +12,7 @@
   } else {
     setActiveSection(item.id);
   }
-}}🔧 Fix #3: Complete the Backend Reddit OAuthUpdate your server/auth.ts Reddit callback to store Reddit tokens properly:typescriptapp.get('/api/auth/reddit/callback', async (req: any, res) => {
+}}🔧 Fix #3: Complete the Backend Reddit OAuthUpdate your server/auth.ts Reddit callback to store Reddit tokens properly:typescriptapp.get('/api/auth/reddit/callback', async (req: unknown, res) => {
   try {
     const { code, error, state } = req.query;
     
@@ -106,7 +106,7 @@ import { storage } from '../storage.js';
 const router = Router();
 
 // Get Reddit accounts
-router.get('/accounts', authenticateToken, async (req: any, res) => {
+router.get('/accounts', authenticateToken, async (req: unknown, res) => {
   try {
     const user = await storage.getUser(req.user.id);
     
@@ -128,7 +128,7 @@ router.get('/accounts', authenticateToken, async (req: any, res) => {
 });
 
 // Test Reddit connection
-router.post('/test', authenticateToken, async (req: any, res) => {
+router.post('/test', authenticateToken, async (req: unknown, res) => {
   try {
     const user = await storage.getUser(req.user.id);
     
@@ -162,7 +162,7 @@ router.post('/test', authenticateToken, async (req: any, res) => {
 });
 
 // Submit post to Reddit
-router.post('/submit', authenticateToken, async (req: any, res) => {
+router.post('/submit', authenticateToken, async (req: unknown, res) => {
   try {
     const user = await storage.getUser(req.user.id);
     

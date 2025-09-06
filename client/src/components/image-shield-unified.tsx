@@ -72,7 +72,7 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
   const showGallery = isProUser; // Only Pro/Premium users see gallery
 
   // Authenticated API request helper
-  const authenticatedRequest = async (url: string, method: string = 'GET', data?: any) => {
+  const authenticatedRequest = async (url: string, method: string = 'GET', data?: unknown) => {
     let body: FormData | string | undefined;
     const headers: { [key: string]: string } = {
       'Authorization': `Bearer ${token}`
@@ -124,7 +124,7 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
         description: "Your image has been saved and is ready for protection."
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         title: "Upload failed",
         description: error.message || "Failed to upload image to gallery.",

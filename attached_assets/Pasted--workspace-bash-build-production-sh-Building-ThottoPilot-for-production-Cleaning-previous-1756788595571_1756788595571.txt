@@ -17,7 +17,7 @@ server/lib/workers/batch-posting-worker.ts(123,62): error TS2345: Argument of ty
   Type 'undefined' is not assignable to type 'string'.
 server/lib/workers/batch-posting-worker.ts(125,26): error TS2345: Argument of type '{ subreddit: string; success: boolean; postId: string | undefined; url: string | undefined; }' is not assignable to parameter of type 'never'.
 server/lib/workers/batch-posting-worker.ts(146,26): error TS2345: Argument of type '{ subreddit: string; success: boolean; error: string | undefined; }' is not assignable to parameter of type 'never'.
-server/lib/workers/batch-posting-worker.ts(163,24): error TS2345: Argument of type '{ subreddit: string; success: boolean; error: any; }' is not assignable to parameter of type 'never'.
+server/lib/workers/batch-posting-worker.ts(163,24): error TS2345: Argument of type '{ subreddit: string; success: boolean; error: unknown; }' is not assignable to parameter of type 'never'.
 server/middleware/tiered-rate-limit.ts(141,34): error TS2339: Property 'message' does not exist on type '{ windowMs: number; max: number; }'.
 server/middleware/tiered-rate-limit.ts(160,27): error TS2339: Property 'message' does not exist on type '{ windowMs: number; max: number; }'.
 server/routes.ts(248,13): error TS2353: Object literal may only specify known properties, and 'product_data' does not exist in type 'PriceData'.

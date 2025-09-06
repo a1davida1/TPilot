@@ -156,7 +156,7 @@ Create these files with exact contents:
     return safeJSON<any>(res.response.text());
   }
 
-  export async function generateVariants(params: {platform: "instagram"|"x"|"reddit"|"tiktok", voice: string, facts: any, hint?: string}) {
+  export async function generateVariants(params: {platform: "instagram"|"x"|"reddit"|"tiktok", voice: string, facts: unknown, hint?: string}) {
     const sys = await loadPrompt("system.txt");
     const guard = await loadPrompt("guard.txt");
     const prompt = await loadPrompt("variants.txt");
@@ -171,7 +171,7 @@ Create these files with exact contents:
     return CaptionArray.parse(json);
   }
 
-  export async function rankAndSelect(variants: any) {
+  export async function rankAndSelect(variants: unknown) {
     const sys = await loadPrompt("system.txt");
     const guard = await loadPrompt("guard.txt");
     const prompt = await loadPrompt("rank.txt");
@@ -228,7 +228,7 @@ Create POST /api/caption/generate (adjust to your framework: Next.js API route, 
   --------------------------------------------------
   import React from "react";
 
-  export function CaptionPreview({ data }: { data: any }) {
+  export function CaptionPreview({ data }: { data: unknown }) {
     if (!data) return null;
     const { final, ranked } = data;
     const charCount = final.caption.length;

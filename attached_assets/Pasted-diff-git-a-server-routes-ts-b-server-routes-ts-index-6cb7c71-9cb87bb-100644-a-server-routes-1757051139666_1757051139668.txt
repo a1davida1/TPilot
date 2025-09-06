@@ -6,7 +6,7 @@ index 6cb7c71..9cb87bb 100644
  import { visitorAnalytics } from "./visitor-analytics.js";
 +import { makePaxum, makeCoinbase, makeStripe } from "./payments/payment-providers.js";
 @@
--  app.post('/api/billing/payment-link', authenticateToken, async (req: any, res) => {
+-  app.post('/api/billing/payment-link', authenticateToken, async (req: unknown, res) => {
 -    try {
 -      const { plan } = req.body;
 -
@@ -55,7 +55,7 @@ index 6cb7c71..9cb87bb 100644
 -      res.status(500).json({ message: 'Failed to generate payment link' });
 -    }
 -  });
-+  app.post('/api/billing/payment-link', authenticateToken, async (req: any, res) => {
++  app.post('/api/billing/payment-link', authenticateToken, async (req: unknown, res) => {
 +    try {
 +      const { plan, provider = 'stripe' } = req.body;
 +      const engines = {

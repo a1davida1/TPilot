@@ -14,7 +14,7 @@ interface ContentGeneration {
   theme: string;
   titles: string[];
   content: string;
-  photoInstructions: any;
+  photoInstructions: unknown;
   prompt: string;
   createdAt: string;
   allowsPromotion: boolean;

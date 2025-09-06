@@ -92,7 +92,7 @@ export function GeminiCaptionGenerator() {
         title: "Caption generated!",
         description: "Your AI-powered caption is ready to use",
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Generation error:', err);
       setError(err.message || 'Failed to generate caption');
       toast({

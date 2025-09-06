@@ -37,7 +37,7 @@ export function ImageGallery() {
   const { token } = useAuth();
   
   // Authenticated API request - use session-based auth like the rest of the app
-  const authenticatedRequest = async (url: string, method: string = 'GET', data?: any) => {
+  const authenticatedRequest = async (url: string, method: string = 'GET', data?: unknown) => {
     let body: FormData | string | undefined;
     const authToken = localStorage.getItem('authToken');
     const headers: { [key: string]: string } = {};
@@ -94,7 +94,7 @@ export function ImageGallery() {
         description: "Your image has been saved to your gallery."
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         title: "Upload failed",
         description: error.message || "Failed to upload image.",

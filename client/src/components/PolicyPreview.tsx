@@ -54,7 +54,7 @@ export function PolicyPreview({ subreddit, title, body, hasLink = false, onPrevi
       if (!response.ok) throw new Error('Preview failed');
       return response.json();
     },
-    onSuccess: (result: any) => {
+    onSuccess: (result: unknown) => {
       const policyResult: PolicyResult = {
         state: result.policyState,
         warnings: result.warnings

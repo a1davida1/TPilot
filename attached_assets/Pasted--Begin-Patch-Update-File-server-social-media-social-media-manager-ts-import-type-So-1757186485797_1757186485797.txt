@@ -7,7 +7,7 @@
 -  private apis: Map<Platform, any> = new Map();
 +  private apis: Map<Platform, InstagramAPI | TwitterAPI | TikTokAPI | YouTubeAPI> = new Map();
 @@
--  registerAPI(platform: Platform, api: any) {
+-  registerAPI(platform: Platform, api: unknown) {
 +  registerAPI(
 +    platform: Platform,
 +    api: InstagramAPI | TwitterAPI | TikTokAPI | YouTubeAPI
@@ -15,7 +15,7 @@
      this.apis.set(platform, api);
    }
  
--  getAPI(platform: Platform): any {
+-  getAPI(platform: Platform): unknown {
 -    return this.apis.get(platform);
 +  getAPI(
 +    platform: Platform
@@ -40,10 +40,10 @@
 +        }
 +        case 'tiktok':
 @@
--            likes: metrics.find((m: any) => m.name === 'likes')?.values[0]?.value || 0,
--            comments: metrics.find((m: any) => m.name === 'comments')?.values[0]?.value || 0,
--            shares: metrics.find((m: any) => m.name === 'shares')?.values[0]?.value || 0,
--            views: metrics.find((m: any) => m.name === 'impressions')?.values[0]?.value || 0,
+-            likes: metrics.find((m: unknown) => m.name === 'likes')?.values[0]?.value || 0,
+-            comments: metrics.find((m: unknown) => m.name === 'comments')?.values[0]?.value || 0,
+-            shares: metrics.find((m: unknown) => m.name === 'shares')?.values[0]?.value || 0,
+-            views: metrics.find((m: unknown) => m.name === 'impressions')?.values[0]?.value || 0,
 +            likes: metrics.find((m: { name: string; values: { value: number }[] }) => m.name === 'likes')?.values[0]?.value || 0,
 +            comments: metrics.find((m: { name: string; values: { value: number }[] }) => m.name === 'comments')?.values[0]?.value || 0,
 +            shares: metrics.find((m: { name: string; values: { value: number }[] }) => m.name === 'shares')?.values[0]?.value || 0,
@@ -108,7 +108,7 @@
 -  name: string;
 -  status: 'PASSED' | 'FAILED' | 'WARNING';
 -  duration?: number;
--  error?: any;
+-  error?: unknown;
 -}
 +interface DeploymentTestResult {
 +  name: string;
@@ -149,10 +149,10 @@
 *** End Patch
 *** Update File: server/types/passport-reddit.d.ts
 @@
--    _json: any;
+-    _json: unknown;
 +    _json: Record<string, unknown>;
 @@
--  export type VerifyCallback = (error: any, user?: any, info?: any) => void;
+-  export type VerifyCallback = (error: unknown, user?: unknown, info?: unknown) => void;
 -  export type VerifyFunction = (accessToken: string, refreshToken: string, profile: Profile, done: VerifyCallback) => void;
 +  export type VerifyCallback = (error: Error | null, user?: unknown, info?: unknown) => void;
 +  export type VerifyFunction = (
@@ -170,10 +170,10 @@
 -  private sessions: Map<string, any> = new Map();
 +  private sessions: Map<string, { views: number; lastSeen: number }> = new Map();
 @@
--  private generateSessionId(req: any): string {
+-  private generateSessionId(req: unknown): string {
 +  private generateSessionId(req: Request): string {
 @@
--  trackPageView(req: any, path: string) {
+-  trackPageView(req: unknown, path: string) {
 -    const sessionId = this.generateSessionId(req);
 -    const currentDate = new Date().toISOString().split('T')[0];
 -    const session = (this.sessions.get(sessionId) || { views: 0, lastSeen: Date.now() }) as { views: number; lastSeen: number };
@@ -190,7 +190,7 @@
 *** End Patch
 *** Update File: server/vite-stub.ts
 @@
--export function setupVite(app: any, server: any) {
+-export function setupVite(app: unknown, server: unknown) {
 -  return Promise.resolve();
 -}
 +export function setupVite(_app: unknown, _server: unknown) {
@@ -207,23 +207,23 @@
 +/* eslint-env node, jest */
  import request from 'supertest';
 @@
--const users: any[] = [];
--const tokens: any[] = [];
+-const users: unknown[] = [];
+-const tokens: unknown[] = [];
 +const users: Array<Record<string, unknown>> = [];
 +const tokens: Array<Record<string, unknown>> = [];
 @@
--      createUser: vi.fn().mockImplementation(async (data: any) => {
+-      createUser: vi.fn().mockImplementation(async (data: unknown) => {
 +      createUser: vi.fn().mockImplementation(async (data: Record<string, unknown>) => {
 @@
--      createVerificationToken: vi.fn().mockImplementation(async (data: any) => {
+-      createVerificationToken: vi.fn().mockImplementation(async (data: unknown) => {
 +      createVerificationToken: vi.fn().mockImplementation(async (data: Record<string, unknown>) => {
 *** End Patch
 *** Update File: tests/integration/auth-flow.test.ts
 @@
--  const requestBody: any = { username, password: pw };
+-  const requestBody: unknown = { username, password: pw };
 +  const requestBody: { username: string; password: string } = { username, password: pw };
 @@
--  const response: any = await app.inject({ method: 'POST', url: '/auth/login', payload: requestBody });
+-  const response: unknown = await app.inject({ method: 'POST', url: '/auth/login', payload: requestBody });
 +  const response = await app.inject({ method: 'POST', url: '/auth/login', payload: requestBody });
 @@
 -  let _pw = pw;
@@ -235,7 +235,7 @@
 +    // ...
    }
 @@
--  const result: any = await app.inject({ method: 'POST', url: '/auth/reset', payload: requestBody });
+-  const result: unknown = await app.inject({ method: 'POST', url: '/auth/reset', payload: requestBody });
 +  const result = await app.inject({ method: 'POST', url: '/auth/reset', payload: requestBody });
 *** End Patch
 *** End Patch

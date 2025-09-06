@@ -12,7 +12,7 @@ import { SocialLoginButtons } from "./social-login-buttons";
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (user: any) => void;
+  onSuccess: (user: unknown) => void;
 }
 
 export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {

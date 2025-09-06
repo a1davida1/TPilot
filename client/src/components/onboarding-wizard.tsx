@@ -184,7 +184,7 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
 }
 
 // Step 1: Welcome & Content Type
-function WelcomeStep({ preferences, setPreferences }: any) {
+function WelcomeStep({ preferences, setPreferences }: unknown) {
   return (
     <div className="space-y-6">
       <div className="text-center mb-6">
@@ -248,7 +248,7 @@ function WelcomeStep({ preferences, setPreferences }: any) {
 }
 
 // Step 2: Platform Selection
-function PlatformStep({ preferences, setPreferences }: any) {
+function PlatformStep({ preferences, setPreferences }: unknown) {
   const platforms = [
     { id: 'reddit', name: 'Reddit', icon: '🔥', description: 'Communities & discussions' },
     { id: 'twitter', name: 'Twitter/X', icon: '🐦', description: 'Quick updates & threads' },
@@ -302,7 +302,7 @@ function PlatformStep({ preferences, setPreferences }: any) {
 }
 
 // Step 3: AI Setup
-function AISetupStep({ preferences, setPreferences }: any) {
+function AISetupStep({ preferences, setPreferences }: unknown) {
   const styles = [
     { id: 'playful', name: 'Playful & Fun', example: 'Hey babes! 💕 Check out this cutie moment!' },
     { id: 'professional', name: 'Professional', example: 'Excited to share this exclusive content with you.' },

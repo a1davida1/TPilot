@@ -49,7 +49,7 @@ diff --git a/client/src/pages/tax-tracker.tsx b/client/src/pages/tax-tracker.tsx
 +                  <SelectValue placeholder="Select expense" />
 +                </SelectTrigger>
                  <SelectContent>
-                   {recentExpenses.map((exp: any) => (
+                   {recentExpenses.map((exp: unknown) => (
                      <SelectItem key={exp.id} value={String(exp.id)}>
                        {exp.description}
                      </SelectItem>

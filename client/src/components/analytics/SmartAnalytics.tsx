@@ -54,7 +54,7 @@ interface AnalyticsData {
 const COLORS = ['#8B5CF6', '#EC4899', '#06B6D4', '#10B981', '#F59E0B'];
 
 // Safe number formatting with fallbacks
-const safeNumber = (value: any, fallback: number = 0): number => {
+const safeNumber = (value: unknown, fallback: number = 0): number => {
   const num = Number(value);
   return isNaN(num) ? fallback : num;
 };
@@ -122,7 +122,7 @@ export default function SmartAnalytics() {
           engagementRate: averageEngagementRate,
           engagementChange: safeNumber(analytics.growthMetrics?.engagementGrowth, 0),
           topPerformingContent: Array.isArray(analytics.topPerformingPosts) 
-            ? analytics.topPerformingPosts.map((post: any, index: number) => ({
+            ? analytics.topPerformingPosts.map((post: unknown, index: number) => ({
                 id: String(index + 1),
                 title: String(post?.title || `Post ${index + 1}`),
                 platform: String(post?.platform || 'Unknown'),
@@ -143,7 +143,7 @@ export default function SmartAnalytics() {
               })
             : [],
           performanceTimeline: Array.isArray(analytics.activityTimeline)
-            ? analytics.activityTimeline.map((item: any) => ({
+            ? analytics.activityTimeline.map((item: unknown) => ({
                 date: String(item?.date || new Date().toISOString().split('T')[0]),
                 views: safeNumber(item?.estimatedViews, 0),
                 engagement: safeNumber(item?.estimatedEngagement, 0),
@@ -152,7 +152,7 @@ export default function SmartAnalytics() {
             : [],
           aiInsights: {
             bestPostingTimes: Array.isArray(analytics.bestPostingTimes) 
-              ? analytics.bestPostingTimes.map((t: any) => String(t?.time || '12:00')).filter(Boolean)
+              ? analytics.bestPostingTimes.map((t: unknown) => String(t?.time || '12:00')).filter(Boolean)
               : ['09:00', '19:00', '12:00'],
             topPerformingTags: ['#content', '#creator', '#engagement', '#growth'], // Safe fallback
             contentRecommendations: [

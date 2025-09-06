@@ -113,7 +113,7 @@ export function AIGenerator({ onContentGenerated }: AIGeneratorProps) {
   };
 
   const generateMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: unknown) => {
       try {
         const formData = new FormData();
         Object.keys(data).forEach(key => {
@@ -161,7 +161,7 @@ export function AIGenerator({ onContentGenerated }: AIGeneratorProps) {
         description: "Your personalized content is ready."
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         title: "Generation failed",
         description: error.message || "Failed to generate content. Please try again.",

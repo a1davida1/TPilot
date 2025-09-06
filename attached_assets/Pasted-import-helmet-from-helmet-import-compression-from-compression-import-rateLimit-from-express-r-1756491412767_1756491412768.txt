@@ -85,7 +85,7 @@ export const securityMiddleware = [
   compression(),
   
   // General rate limiting for API routes
-  (req: any, res: any, next: any) => {
+  (req: unknown, res: unknown, next: unknown) => {
     if (req.path.startsWith('/api/')) {
       return generalLimiter(req, res, next);
     }
@@ -96,7 +96,7 @@ export const securityMiddleware = [
 // ==========================================
 // IP LOGGING MIDDLEWARE
 // ==========================================
-export const ipLoggingMiddleware = (req: any, res: any, next: any) => {
+export const ipLoggingMiddleware = (req: unknown, res: unknown, next: unknown) => {
   const userIP = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 
                  req.headers['x-real-ip'] || 
                  req.connection?.remoteAddress || 
@@ -123,7 +123,7 @@ export const ipLoggingMiddleware = (req: any, res: any, next: any) => {
 // ==========================================
 // ERROR HANDLER MIDDLEWARE
 // ==========================================
-export const errorHandler = (err: any, req: any, res: any, next: any) => {
+export const errorHandler = (err: unknown, req: unknown, res: unknown, next: unknown) => {
   logger.error('Error:', {
     message: err.message,
     stack: err.stack,

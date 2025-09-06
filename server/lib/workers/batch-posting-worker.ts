@@ -42,7 +42,7 @@ export class BatchPostingWorker {
         throw new Error('No active Reddit account found for user');
       }
 
-      const results: any[] = [];
+      const results: unknown[] = [];
       let successCount = 0;
       let failureCount = 0;
 
@@ -83,7 +83,7 @@ export class BatchPostingWorker {
           }).returning();
 
           // Submit post
-          const postOptions: any = {
+          const postOptions: unknown = {
             subreddit,
             title: customizedContent.title,
             body: customizedContent.body,
@@ -159,7 +159,7 @@ export class BatchPostingWorker {
             await this.sleep(delayBetweenPosts);
           }
 
-        } catch (error: any) {
+        } catch (error: unknown) {
           logger.error(`Failed to post to r/${subreddit}:`, { error: error.message });
           
           results.push({
@@ -194,7 +194,7 @@ export class BatchPostingWorker {
         }
       };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error(`Batch posting campaign ${campaignId} failed:`, { error });
 
       // Log failure event
@@ -237,7 +237,7 @@ export class BatchPostingWorker {
 
   private getSubredditCustomizations(subreddit: string) {
     // In full implementation, this would query subreddit rules/preferences from database
-    const customizations: any = {
+    const customizations: unknown = {
       preferredHashtags: '',
       toneAdjustment: 'standard',
       contentLength: 'medium',
@@ -293,7 +293,7 @@ export class BatchPostingWorker {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
-  private async logEvent(userId: number, type: string, meta: any) {
+  private async logEvent(userId: number, type: string, meta: unknown) {
     try {
       await db.insert(eventLogs).values({
         userId,

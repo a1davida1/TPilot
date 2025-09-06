@@ -101,7 +101,7 @@ export function registerApiRoutes(app: Express) {
       });
 
       res.json(result);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Enhanced AI generation failed:', error);
       res.status(500).json({ error: error.message });
     }
@@ -129,7 +129,7 @@ export function registerApiRoutes(app: Express) {
       });
 
       res.json(result);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Media upload failed:', error);
       res.status(500).json({ error: error.message });
     }
@@ -149,7 +149,7 @@ export function registerApiRoutes(app: Express) {
 
       const assets = await MediaManager.getUserAssets(userId, limit);
       res.json(assets);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to get media:', error);
       res.status(500).json({ error: error.message });
     }
@@ -174,7 +174,7 @@ export function registerApiRoutes(app: Express) {
       } else {
         res.status(404).json({ error: 'Media not found' });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to delete media:', error);
       res.status(500).json({ error: error.message });
     }
@@ -195,7 +195,7 @@ export function registerApiRoutes(app: Express) {
       const result = await linter.lintPost(data.title, data.body, data.hasImage);
 
       res.json(result);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Content linting failed:', error);
       res.status(500).json({ error: error.message });
     }
@@ -253,7 +253,7 @@ export function registerApiRoutes(app: Express) {
         postJobId: postJob.id,
         scheduledAt: scheduledAt.toISOString(),
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to schedule post:', error);
       res.status(500).json({ error: error.message });
     }
@@ -278,7 +278,7 @@ export function registerApiRoutes(app: Express) {
         .limit(50);
 
       res.json(jobs);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to get scheduled posts:', error);
       res.status(500).json({ error: error.message });
     }
@@ -307,7 +307,7 @@ export function registerApiRoutes(app: Express) {
           period: formData.formPeriod,
         }
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to generate payment link:', error);
       res.status(500).json({ error: error.message });
     }
@@ -323,7 +323,7 @@ export function registerApiRoutes(app: Express) {
       } else {
         res.status(400).json({ error: result.message });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Webhook processing failed:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
@@ -357,7 +357,7 @@ export function registerApiRoutes(app: Express) {
         isPro,
         tier: isPro ? 'pro' : 'free',
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to get subscription:', error);
       res.status(500).json({ error: error.message });
     }
@@ -386,7 +386,7 @@ export function registerApiRoutes(app: Express) {
         status: acc.status,
         createdAt: acc.createdAt,
       })));
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to get Reddit accounts:', error);
       res.status(500).json({ error: error.message });
     }
@@ -422,7 +422,7 @@ export function registerApiRoutes(app: Express) {
       const info = await reddit.getProfile();
 
       res.json(info);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to get account info:', error);
       res.status(500).json({ error: error.message });
     }
@@ -441,7 +441,7 @@ export function registerApiRoutes(app: Express) {
       
       const usage = await MediaManager.getUserStorageUsage(userId);
       res.json(usage);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to get storage usage:', error);
       res.status(500).json({ error: error.message });
     }
@@ -484,7 +484,7 @@ export function registerApiRoutes(app: Express) {
 
       const history = await AiService.getUserHistory(userId, limit);
       res.json(history);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to get AI history:', error);
       res.status(500).json({ error: error.message });
     }

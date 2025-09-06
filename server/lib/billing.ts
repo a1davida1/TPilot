@@ -171,7 +171,7 @@ export class CCBillProcessor {
       throw new Error(`Subscription not found: ${processorSubId}`);
     }
     
-    const updateData: any = {
+    const updateData: unknown = {
       updatedAt: new Date(),
     };
     

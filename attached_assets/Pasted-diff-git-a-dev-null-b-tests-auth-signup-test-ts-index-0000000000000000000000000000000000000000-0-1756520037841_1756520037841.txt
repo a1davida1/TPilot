@@ -8,14 +8,14 @@ index 0000000000000000000000000000000000000000..0be86db6bbbade94fa4c0a4d2b2367ef
 +import { describe, it, expect, beforeEach, vi } from 'vitest';
 +
 +// In-memory stores for mocking
-+const users: any[] = [];
-+const tokens: any[] = [];
++const users: unknown[] = [];
++const tokens: unknown[] = [];
 +
 +vi.mock('../../server/storage', () => ({
 +  storage: {
 +    getUserByUsername: vi.fn(async (username: string) => users.find(u => u.username === username)),
 +    getUserByEmail: vi.fn(async (email: string) => users.find(u => u.email === email)),
-+    createUser: vi.fn(async (data: any) => {
++    createUser: vi.fn(async (data: unknown) => {
 +      const user = { id: users.length + 1, emailVerified: false, ...data };
 +      users.push(user);
 +      return user;
@@ -24,7 +24,7 @@ index 0000000000000000000000000000000000000000..0be86db6bbbade94fa4c0a4d2b2367ef
 +      const user = users.find(u => u.id === userId);
 +      if (user) user.emailVerified = verified;
 +    }),
-+    createVerificationToken: vi.fn(async (data: any) => {
++    createVerificationToken: vi.fn(async (data: unknown) => {
 +      const token = { id: tokens.length + 1, ...data };
 +      tokens.push(token);
 +      return token;

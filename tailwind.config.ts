@@ -177,7 +177,7 @@ export default {
     require("tailwindcss-animate"), 
     require("@tailwindcss/typography"),
     // Custom plugin for accessibility utilities
-    function({ addUtilities }: any) {
+    function({ addUtilities }: unknown) {
       addUtilities({
         '.text-readable': {
           color: 'hsl(var(--foreground))',

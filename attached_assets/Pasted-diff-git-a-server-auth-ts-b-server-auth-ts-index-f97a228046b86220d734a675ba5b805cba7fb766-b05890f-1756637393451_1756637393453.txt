@@ -41,7 +41,7 @@ index f97a228046b86220d734a675ba5b805cba7fb766..b05890fbbca91231d4851f2cd3c71a60
 -    res.redirect(authUrl);
 -  });
 -
--  app.get('/api/auth/reddit/callback', async (req: any, res) => {
+-  app.get('/api/auth/reddit/callback', async (req: unknown, res) => {
 -    try {
 -      const { code, error, state } = req.query;
 -      
@@ -144,7 +144,7 @@ index f97a228046b86220d734a675ba5b805cba7fb766..b05890fbbca91231d4851f2cd3c71a60
 -      };
 -      
 -      // Save session before redirecting
--      req.session.save((err: any) => {
+-      req.session.save((err: unknown) => {
 -        if (err) {
 -          console.error('Session save error:', err);
 -        }

@@ -65,7 +65,7 @@ typescriptapp.post('/api/auth/login', authLimiter, async (req, res) => {
 
 🔧 FIX #2: Update /api/auth/user Endpoint
 In server/auth.ts, update the user endpoint:
-typescriptapp.get('/api/auth/user', async (req: any, res) => {
+typescriptapp.get('/api/auth/user', async (req: unknown, res) => {
   try {
     let token = null;
     

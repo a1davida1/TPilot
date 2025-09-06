@@ -19,7 +19,7 @@ interface PostJob {
   mediaKey?: string;
   scheduledAt: string;
   status: 'pending' | 'sent' | 'failed';
-  resultJson?: any;
+  resultJson?: unknown;
   createdAt: string;
   updatedAt: string;
 }
@@ -63,7 +63,7 @@ export default function PostScheduler() {
         description: `Your post will be sent to r/${formData.subreddit} at the optimal time`,
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         title: "Failed to schedule post",
         description: error.message || "Please check your input and try again",

@@ -59,9 +59,9 @@ File: tests/auth/signup.test.ts
 Changes: Enhanced test mock typing and ESLint environment setup
 
 Before: 
-- const users: any[] = [];
-- const tokens: any[] = [];
-- createUser: vi.fn().mockImplementation(async (data: any) => {
+- const users: unknown[] = [];
+- const tokens: unknown[] = [];
+- createUser: vi.fn().mockImplementation(async (data: unknown) => {
 
 After:
 - /* eslint-env node, jest */

@@ -399,7 +399,7 @@ export function registerRedditRoutes(app: Express) {
             return res.status(400).json({ error: 'Images array required for gallery post' });
           }
           
-          const images = req.body.images.map((img: any) => ({
+          const images = req.body.images.map((img: unknown) => ({
             url: img.url,
             caption: img.caption || ''
           }));
@@ -461,7 +461,7 @@ export function registerRedditRoutes(app: Express) {
         });
       }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Reddit submit error:', error);
       res.status(500).json({ 
         error: error.message || 'Failed to submit post to Reddit' 

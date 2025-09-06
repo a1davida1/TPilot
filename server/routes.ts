@@ -109,7 +109,7 @@ const upload = multer({
 
 // Auth request interface
 interface AuthRequest extends express.Request {
-  user?: any;
+  user?: unknown;
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -168,11 +168,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(passport.session());
 
   // Configure Passport serialization for admin
-  passport.serializeUser((user: any, done) => {
+  passport.serializeUser((user: unknown, done) => {
     done(null, user.id || user);
   });
 
-  passport.deserializeUser(async (id: any, done) => {
+  passport.deserializeUser(async (id: unknown, done) => {
     try {
       if (typeof id === 'object') return done(null, id);
       const user = await storage.getUser(id);
@@ -192,7 +192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // CSRF error handling middleware
-  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  app.use((err: unknown, req: express.Request, res: express.Response, next: express.NextFunction) => {
     if (err.code === 'EBADCSRFTOKEN') {
       logger.warn('CSRF token validation failed', {
         ip: req.ip,
@@ -357,7 +357,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         subscriptionId: subscription.id,
         clientSecret: paymentIntent.client_secret,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Subscription creation error:", error);
       res.status(500).json({ 
         message: "Error creating subscription: " + (error.message || 'Unknown error') 
@@ -718,7 +718,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const generations = await storage.getGenerationsByUserId(req.user.id);
       res.json(generations);
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Failed to get content generations:", error);
       res.status(500).json({ message: "Failed to retrieve content history" });
     }
@@ -740,7 +740,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // and then delete it from the database
       // For now, just return success as the storage interface doesn't have delete method
       res.json({ success: true });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Failed to delete content generation:", error);
       res.status(500).json({ message: "Failed to delete content generation" });
     }

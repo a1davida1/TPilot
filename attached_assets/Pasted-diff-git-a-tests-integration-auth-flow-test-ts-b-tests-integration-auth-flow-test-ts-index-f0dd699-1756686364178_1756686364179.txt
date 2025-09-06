@@ -20,7 +20,7 @@ index f0dd6993f99e7f84d8751eacb1190cf6a8cb2f44..c148737217171f9fd01e22de048327bf
 +
 +const SECRET = 'test-secret';
 +let app: express.Express;
-+let server: any;
++let server: unknown;
 +let users: TestUser[] = [];
 +let sentEmails: string[] = [];
 +
@@ -102,11 +102,11 @@ index f0dd6993f99e7f84d8751eacb1190cf6a8cb2f44..c148737217171f9fd01e22de048327bf
 +    });
 +
 +    // Protected user route
-+    app.get('/api/auth/user', (req: any, res) => {
++    app.get('/api/auth/user', (req: unknown, res) => {
 +      const auth = req.headers.authorization;
 +      if (auth && auth.startsWith('Bearer ')) {
 +        try {
-+          const decoded: any = jwt.verify(auth.substring(7), SECRET);
++          const decoded: unknown = jwt.verify(auth.substring(7), SECRET);
 +          const user = users.find((u) => u.id === decoded.id);
 +          if (user) {
 +            const { password: _pw, ...safe } = user;
@@ -127,7 +127,7 @@ index f0dd6993f99e7f84d8751eacb1190cf6a8cb2f44..c148737217171f9fd01e22de048327bf
 +    });
 +
 +    // Logout
-+    app.post('/api/auth/logout', (req: any, res) => {
++    app.post('/api/auth/logout', (req: unknown, res) => {
 +      req.session.destroy(() => res.json({ message: 'logged out' }));
 +    });
 +

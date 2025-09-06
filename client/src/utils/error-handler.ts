@@ -50,8 +50,8 @@ export interface RetryOptions {
   initialDelay?: number;
   maxDelay?: number;
   backoffFactor?: number;
-  shouldRetry?: (error: any) => boolean;
-  onRetry?: (attempt: number, error: any) => void;
+  shouldRetry?: (error: unknown) => boolean;
+  onRetry?: (attempt: number, error: unknown) => void;
 }
 
 /**
@@ -70,7 +70,7 @@ export async function retryWithBackoff<T>(
     onRetry = () => {}
   } = options;
 
-  let lastError: any;
+  let lastError: unknown;
   
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
@@ -102,7 +102,7 @@ export async function retryWithBackoff<T>(
 /**
  * Get user-friendly error message
  */
-export function getUserFriendlyError(error: any): string {
+export function getUserFriendlyError(error: unknown): string {
   // Check for known error codes
   if (error?.code && errorMessages[error.code]) {
     return errorMessages[error.code];
@@ -140,7 +140,7 @@ export function getUserFriendlyError(error: any): string {
 /**
  * Determine if an error is retryable
  */
-export function isRetryableError(error: any): boolean {
+export function isRetryableError(error: unknown): boolean {
   const errorString = error?.message || error?.toString() || '';
   const code = error?.code || '';
   
@@ -199,7 +199,7 @@ export async function fetchWithRetry(
 /**
  * Error recovery suggestions
  */
-export function getErrorRecoverySuggestion(error: any): string | null {
+export function getErrorRecoverySuggestion(error: unknown): string | null {
   const errorString = error?.message || error?.code || '';
   
   if (errorString.includes('quota') || errorString.includes('limit')) {
@@ -224,7 +224,7 @@ export function getErrorRecoverySuggestion(error: any): string | null {
 /**
  * Create a toast-friendly error object
  */
-export function createErrorToast(error: any) {
+export function createErrorToast(error: unknown) {
   const message = getUserFriendlyError(error);
   const suggestion = getErrorRecoverySuggestion(error);
   

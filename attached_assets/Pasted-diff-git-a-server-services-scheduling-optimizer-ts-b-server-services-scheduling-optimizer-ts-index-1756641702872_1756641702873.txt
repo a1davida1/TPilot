@@ -143,11 +143,11 @@ index 10a54075275c17eb35b89a6e3f6b44b6769ba27d..269171ca1d1aa349088524b7847df1b6
      return ['fitness', 'creative', 'lifestyle', 'exclusive'];
    }
  
-   private matchesNiche(trend: any, userNiche: string[]): boolean {
+   private matchesNiche(trend: unknown, userNiche: string[]): boolean {
      return userNiche.includes(trend.category) || trend.score > 80;
    }
  
-   private getSuggestedStyle(trend: any): string {
+   private getSuggestedStyle(trend: unknown): string {
      const styleMap: Record<string, string> = {
        'fitness': 'motivational',
        'exclusive': 'teasing',
@@ -159,7 +159,7 @@ index 10a54075275c17eb35b89a6e3f6b44b6769ba27d..269171ca1d1aa349088524b7847df1b6
      return styleMap[trend.category] || 'casual';
    }
  
--  async optimizePostingSchedule(userId: number, posts: any[]): Promise<any[]> {
+-  async optimizePostingSchedule(userId: number, posts: unknown[]): Promise<any[]> {
 +  async optimizePostingSchedule<T extends { platform: string }>(
 +    userId: number,
 +    posts: T[]

@@ -19,7 +19,7 @@ vi.mock('../../server/lib/image-protection', () => ({
 }));
 
 describe('Upload and ImageShield Integration Tests', () => {
-  let testUser: any;
+  let testUser: unknown;
   let authToken: string;
   let app: express.Application;
   let testImagePath: string;

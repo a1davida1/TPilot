@@ -13,7 +13,7 @@ function rankOf(tier: string | null | undefined): number {
 }
 
 export function requireTier(minTier: Tier): RequestHandler {
-  return async (req: express.Request & { user?: any }, res: express.Response, next: express.NextFunction) => {
+  return async (req: express.Request & { user?: unknown }, res: express.Response, next: express.NextFunction) => {
     try {
       const uid = req.user?.id as number | undefined;
       if (!uid) return res.status(401).json({ error: "unauthorized" });

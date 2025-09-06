@@ -119,7 +119,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
 
       return responseData;
     },
-    onSuccess: async (data: any) => {
+    onSuccess: async (data: unknown) => {
       // Check for temporary password status (202 response) - handled in mutationFn
       if (data.mustChangePassword) {
         toast({
@@ -158,7 +158,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
         setFormData({ username: '', email: '', password: '' });
       }
     },
-    onError: async (error: any) => {
+    onError: async (error: unknown) => {
       // Handle email not verified error specially
       if (error.code === 'EMAIL_NOT_VERIFIED') {
         setShowResendVerification(true);
@@ -211,7 +211,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
       setMode('login');
       setResetEmail('');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         title: 'Error',
         description: error.message || 'Failed to send reset email. Please try again.',
@@ -270,7 +270,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
         description: 'Please check your inbox and spam folder.'
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         title: 'Error',
         description: error.message || 'Failed to resend verification email. Please try again.',

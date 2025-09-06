@@ -91,7 +91,7 @@ export default function MediaLibrary() {
         description: "Your media has been uploaded and protected",
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         title: "Upload failed",
         description: error.message || "Failed to upload media",
@@ -238,7 +238,7 @@ export default function MediaLibrary() {
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {(assets as any[])?.map((asset: any) => (
+              {(assets as any[])?.map((asset: unknown) => (
                 <div key={asset.id} className="relative group">
                   <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
                     {asset.type.startsWith('image/') ? (

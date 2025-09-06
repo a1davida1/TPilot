@@ -58,7 +58,7 @@ index c7cb31414be8f336aee099fb58d009196fa0eaf8..5b28d2cf201fe61fd9cb20c0f99c8f65
  
  // Auth middleware
  interface AuthRequest extends express.Request {
-   user?: any;
+   user?: unknown;
  }
  
  export const authenticateToken = async (req: AuthRequest, res: express.Response, next: express.NextFunction) => {

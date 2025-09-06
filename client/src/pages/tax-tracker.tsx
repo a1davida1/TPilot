@@ -111,7 +111,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
 
   // Create expense mutation
   const createExpenseMutation = useMutation({
-    mutationFn: async (expenseData: any) => {
+    mutationFn: async (expenseData: unknown) => {
       const response = await apiRequest('POST', '/api/expenses', expenseData);
       return response.json();
     },
@@ -131,7 +131,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
       return res.json();
     },
     onSuccess: (updatedExpense) => {
-      queryClient.setQueryData(['/api/expenses'], (old: any[] = []) =>
+      queryClient.setQueryData(['/api/expenses'], (old: unknown[] = []) =>
         old.map(exp => (exp.id === updatedExpense.id ? updatedExpense : exp))
       );
       queryClient.invalidateQueries({ queryKey: ['/api/expenses/range'] });
@@ -165,11 +165,11 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
     });
     
     return daysInMonth.map(day => {
-      const dayExpenses = calendarExpenses.filter((expense: any) => 
+      const dayExpenses = calendarExpenses.filter((expense: unknown) => 
         isSameDay(parseISO(expense.expenseDate), day)
       );
-      const totalAmount = dayExpenses.reduce((sum: number, expense: any) => sum + expense.amount, 0);
-      const hasReceipt = dayExpenses.some((expense: any) => expense.receiptUrl);
+      const totalAmount = dayExpenses.reduce((sum: number, expense: unknown) => sum + expense.amount, 0);
+      const hasReceipt = dayExpenses.some((expense: unknown) => expense.receiptUrl);
 
       return {
         date: day,
@@ -323,7 +323,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                       </Button>
                     </div>
                   ) : (
-                    recentExpenses.slice(0, 3).map((expense: any, index: number) => (
+                    recentExpenses.slice(0, 3).map((expense: unknown, index: number) => (
                       <div 
                         key={expense.id}
                         className="flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
@@ -676,7 +676,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                   <SelectValue placeholder="Select expense" />
                 </SelectTrigger>
                 <SelectContent>
-                  {recentExpenses.map((exp: any) => (
+                  {recentExpenses.map((exp: unknown) => (
                     <SelectItem key={exp.id} value={String(exp.id)}>
                       {exp.description}
                     </SelectItem>

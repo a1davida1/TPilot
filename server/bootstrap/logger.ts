@@ -263,7 +263,7 @@ export function validateSentryConfig(): { isValid: boolean; warnings: string[]; 
 
 // Initialize Sentry with comprehensive validation
 export async function initializeSentry() {
-  let Sentry: any = undefined;
+  let Sentry: unknown = undefined;
   
   // Validate Sentry configuration
   const configValidation = validateSentryConfig();
@@ -293,14 +293,14 @@ export async function initializeSentry() {
       Sentry = SentryModule;
       
       // Enhanced Sentry configuration
-      const sentryConfig: any = {
+      const sentryConfig: unknown = {
         dsn,
         environment: process.env.NODE_ENV,
         tracesSampleRate: parseFloat(process.env.SENTRY_SAMPLE_RATE || '0.1'),
         profilesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
         
         // Enhanced error filtering
-        beforeSend(event: any, hint: any) {
+        beforeSend(event: unknown, hint: unknown) {
           // Filter out non-critical errors in development
           if (process.env.NODE_ENV === 'development') {
             // Don't send client-side errors in development
@@ -342,7 +342,7 @@ export async function initializeSentry() {
     } else {
       logger.warn("Sentry module not available, continuing without error tracking");
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     logger.error("Sentry initialization failed", { 
       error: err?.message || 'Unknown error',
       stack: err?.stack 
@@ -355,20 +355,20 @@ export async function initializeSentry() {
 // Export a function to add request ID to logger context
 export function createRequestLogger(requestId: string) {
   return {
-    info: (message: string, meta?: any) => logger.info(message, { requestId, ...meta }),
-    warn: (message: string, meta?: any) => logger.warn(message, { requestId, ...meta }),
-    error: (message: string, meta?: any) => logger.error(message, { requestId, ...meta }),
-    debug: (message: string, meta?: any) => logger.debug(message, { requestId, ...meta })
+    info: (message: string, meta?: unknown) => logger.info(message, { requestId, ...meta }),
+    warn: (message: string, meta?: unknown) => logger.warn(message, { requestId, ...meta }),
+    error: (message: string, meta?: unknown) => logger.error(message, { requestId, ...meta }),
+    debug: (message: string, meta?: unknown) => logger.debug(message, { requestId, ...meta })
   };
 }
 
 // Security logging utility
-export function logSecurityEvent(event: string, details?: any) {
+export function logSecurityEvent(event: string, details?: unknown) {
   logger.warn(event, { security: true, ...details });
 }
 
 // Performance logging utility
-export function logPerformanceMetric(metric: string, value: number, details?: any) {
+export function logPerformanceMetric(metric: string, value: number, details?: unknown) {
   logger.info(`Performance: ${metric}`, { 
     metrics: true, 
     performance: true, 

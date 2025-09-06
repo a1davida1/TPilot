@@ -150,7 +150,7 @@ class AnalyticsService {
   trackPostCreated(userId: string, platform: string, success: boolean) {}
   trackSubscription(userId: string, plan: string, revenue: number) {}
   trackFeatureUsage(userId: string, feature: string) {}
-  trackError(userId: string, error: string, context: any) {}
+  trackError(userId: string, error: string, context: unknown) {}
   
   // Generate reports:
   getDailyActiveUsers(): number {}
@@ -234,7 +234,7 @@ app.use(helmet({
 }));
 B. Add Request Signing
 typescript// For sensitive operations, add request signing:
-function signRequest(payload: any, secret: string): string {
+function signRequest(payload: unknown, secret: string): string {
   return crypto
     .createHmac('sha256', secret)
     .update(JSON.stringify(payload))
@@ -242,7 +242,7 @@ function signRequest(payload: any, secret: string): string {
 }
 
 // Verify on server:
-function verifySignature(payload: any, signature: string, secret: string): boolean {
+function verifySignature(payload: unknown, signature: string, secret: string): boolean {
   const expected = signRequest(payload, secret);
   return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
 }

@@ -19,7 +19,7 @@ new file: tests/integration/upload.test.ts
 edit: server/index.ts
 @@
 -import type { Express } from 'express';
--let Sentry: any | undefined;
+-let Sentry: unknown | undefined;
 +import type { Express } from 'express';
 +import type * as SentryNode from '@sentry/node';
 +let Sentry: typeof SentryNode | undefined;

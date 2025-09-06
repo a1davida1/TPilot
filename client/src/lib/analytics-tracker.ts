@@ -217,7 +217,7 @@ class AnalyticsTracker {
     });
   }
 
-  private async sendEvent(eventType: string, data: any) {
+  private async sendEvent(eventType: string, data: unknown) {
     if (!this.isTracking) return;
 
     const eventData = {
@@ -293,7 +293,7 @@ class AnalyticsTracker {
   private throttle(func: Function, delay: number) {
     let timeoutId: number;
     let lastExecTime = 0;
-    return function (this: any, ...args: any[]) {
+    return function (this: unknown, ...args: unknown[]) {
       const currentTime = Date.now();
       
       if (currentTime - lastExecTime > delay) {

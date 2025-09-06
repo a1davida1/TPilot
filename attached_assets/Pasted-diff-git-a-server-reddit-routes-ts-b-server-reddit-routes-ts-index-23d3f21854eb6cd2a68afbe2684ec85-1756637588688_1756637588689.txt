@@ -16,7 +16,7 @@ index 23d3f21854eb6cd2a68afbe2684ec855b34cff65..17cbab11daea59380f50564b6a1e21f5
  export function registerRedditRoutes(app: Express) {
    
    // Start Reddit OAuth flow - SECURE VERSION
-   app.get('/api/reddit/connect', rateLimit, authenticateToken, async (req: any, res) => {
+   app.get('/api/reddit/connect', rateLimit, authenticateToken, async (req: unknown, res) => {
      try {
        if (!process.env.REDDIT_CLIENT_ID) {
          return res.status(503).json({ 
@@ -107,7 +107,7 @@ index 23d3f21854eb6cd2a68afbe2684ec855b34cff65..17cbab11daea59380f50564b6a1e21f5
 +  });
 +
    // Get user's Reddit connections
-   app.get('/api/reddit/accounts', authenticateToken, async (req: any, res) => {
+   app.get('/api/reddit/accounts', authenticateToken, async (req: unknown, res) => {
      try {
        const userId = req.user?.id;
        if (!userId) {

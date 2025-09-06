@@ -11,7 +11,7 @@ export function mountStripeWebhook(app: Express) {
     let event;
     try {
       event = stripe.webhooks.constructEvent(req.body as Buffer, sig, process.env.STRIPE_WEBHOOK_SECRET!);
-    } catch (err: any) {
+    } catch (err: unknown) {
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 

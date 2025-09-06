@@ -48,14 +48,14 @@ export default function AIContentStudio() {
       const response = await apiRequest('POST', '/api/ai/generate', data);
       return response.json();
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data: unknown) => {
       setGeneratedContent(data);
       toast({
         title: "Content generated",
         description: `Generated ${data.content.length} platform variations${data.cached ? ' (from cache)' : ''}`,
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         title: "Generation failed",
         description: error.message || "Failed to generate content",

@@ -79,7 +79,7 @@ export function AdminPortal() {
   const { token } = useAuth();
   
   // Authenticated API request with JWT token
-  const authenticatedRequest = async (url: string, method: string = 'GET', data?: any) => {
+  const authenticatedRequest = async (url: string, method: string = 'GET', data?: unknown) => {
     const response = await fetch(url, {
       method,
       headers: {
@@ -130,7 +130,7 @@ export function AdminPortal() {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/stats'] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         title: "Failed to Create Trial",
         description: error.message || "An error occurred",
@@ -603,9 +603,9 @@ export function AdminPortal() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {(Array.isArray(users) ? users.filter((u: any) => u.trialEndsAt && new Date(u.trialEndsAt) > new Date())
+                {(Array.isArray(users) ? users.filter((u: unknown) => u.trialEndsAt && new Date(u.trialEndsAt) > new Date())
                   .slice(0, 5) : [])
-                  .map((user: any) => (
+                  .map((user: unknown) => (
                     <div key={user.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
@@ -649,7 +649,7 @@ export function AdminPortal() {
                     <p className="text-muted-foreground mt-2">Loading users...</p>
                   </div>
                 ) : (
-                  Array.isArray(users) ? users.slice(0, 10).map((user: any) => (
+                  Array.isArray(users) ? users.slice(0, 10).map((user: unknown) => (
                     <div key={user.id} className="flex items-center justify-between p-4 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                       <div className="flex items-center gap-3">
                         <div className="h-12 w-12 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-lg">
@@ -728,7 +728,7 @@ export function AdminPortal() {
 // ============================================================================
 
 // FEATURE 5: Live Dashboard Component
-function LiveDashboardTab({ authenticatedRequest }: { authenticatedRequest: any }) {
+function LiveDashboardTab({ authenticatedRequest }: { authenticatedRequest: unknown }) {
   const { data: liveData, refetch } = useQuery({
     queryKey: ['/api/admin/live-dashboard'],
     queryFn: () => authenticatedRequest('/api/admin/live-dashboard'),
@@ -821,7 +821,7 @@ function LiveDashboardTab({ authenticatedRequest }: { authenticatedRequest: any 
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {liveData?.alerts?.map((alert: any) => (
+              {liveData?.alerts?.map((alert: unknown) => (
                 <div key={alert.id} className={`p-3 rounded-lg border ${
                   alert.type === 'warning' ? 'bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20' : 'bg-blue-50 border-blue-200 dark:bg-blue-900/20'
                 }`}>
@@ -852,7 +852,7 @@ function LiveDashboardTab({ authenticatedRequest }: { authenticatedRequest: any 
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {liveData?.recentActivity?.map((activity: any, index: number) => (
+              {liveData?.recentActivity?.map((activity: unknown, index: number) => (
                 <div key={index} className="flex items-center justify-between py-2 border-b last:border-b-0">
                   <div>
                     <p className="text-sm font-medium">{activity.user}</p>
@@ -872,7 +872,7 @@ function LiveDashboardTab({ authenticatedRequest }: { authenticatedRequest: any 
 }
 
 // FEATURE 1: IP Tracking Component
-function IPTrackingTab({ authenticatedRequest }: { authenticatedRequest: any }) {
+function IPTrackingTab({ authenticatedRequest }: { authenticatedRequest: unknown }) {
   const { data: ipData } = useQuery({
     queryKey: ['/api/admin/ip-tracking'],
     queryFn: () => authenticatedRequest('/api/admin/ip-tracking'),
@@ -909,7 +909,7 @@ function IPTrackingTab({ authenticatedRequest }: { authenticatedRequest: any }) 
                 </tr>
               </thead>
               <tbody>
-                {ipData?.map((ip: any) => (
+                {ipData?.map((ip: unknown) => (
                   <tr key={ip.ip} className="border-b hover:bg-gray-50 dark:hover:bg-gray-800">
                     <td className="p-2 font-mono text-sm">{ip.ip}</td>
                     <td className="p-2">{ip.users}</td>
@@ -947,7 +947,7 @@ function IPTrackingTab({ authenticatedRequest }: { authenticatedRequest: any }) 
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {userActivity?.map((session: any) => (
+              {userActivity?.map((session: unknown) => (
                 <div key={session.id} className="p-3 border rounded-lg">
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
@@ -980,7 +980,7 @@ function IPTrackingTab({ authenticatedRequest }: { authenticatedRequest: any }) 
 }
 
 // FEATURE 2: System Monitoring Component
-function SystemMonitorTab({ authenticatedRequest }: { authenticatedRequest: any }) {
+function SystemMonitorTab({ authenticatedRequest }: { authenticatedRequest: unknown }) {
   const { data: metrics, refetch: refetchMetrics } = useQuery({
     queryKey: ['/api/admin/system-metrics'],
     queryFn: () => authenticatedRequest('/api/admin/system-metrics'),
@@ -1087,7 +1087,7 @@ function SystemMonitorTab({ authenticatedRequest }: { authenticatedRequest: any 
         </CardHeader>
         <CardContent>
           <div className="space-y-2 max-h-64 overflow-y-auto">
-            {logs?.map((log: any) => (
+            {logs?.map((log: unknown) => (
               <div key={log.id} className={`p-2 rounded text-sm border-l-4 ${
                 log.level === 'error' ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : 
                 log.level === 'warn' ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20' : 
@@ -1146,7 +1146,7 @@ function SystemMonitorTab({ authenticatedRequest }: { authenticatedRequest: any 
 }
 
 // FEATURE 3: User Management Component
-function UserManagementTab({ authenticatedRequest, users }: { authenticatedRequest: any, users: any[] }) {
+function UserManagementTab({ authenticatedRequest, users }: { authenticatedRequest: unknown, users: unknown[] }) {
   const { toast } = useToast();
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [actionType, setActionType] = useState<'ban' | 'suspend' | 'unban' | 'reset-password' | null>(null);
@@ -1155,7 +1155,7 @@ function UserManagementTab({ authenticatedRequest, users }: { authenticatedReque
   const [tempPassword, setTempPassword] = useState('');
 
   const actionMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: unknown) => {
       switch (data.action) {
         case 'ban':
           return authenticatedRequest('/api/admin/ban-user', 'POST', data);
@@ -1183,7 +1183,7 @@ function UserManagementTab({ authenticatedRequest, users }: { authenticatedReque
         setReason('');
       }
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         title: "Action Failed",
         description: error.message,
@@ -1196,7 +1196,7 @@ function UserManagementTab({ authenticatedRequest, users }: { authenticatedReque
     if (!selectedUser || !actionType) return;
     if (actionType !== 'reset-password' && !reason) return;
     
-    const actionData: any = {
+    const actionData: unknown = {
       userId: selectedUser.id,
       action: actionType,
       reason: actionType === 'reset-password' ? 'Admin password reset' : reason
@@ -1232,7 +1232,7 @@ function UserManagementTab({ authenticatedRequest, users }: { authenticatedReque
                 </tr>
               </thead>
               <tbody>
-                {Array.isArray(users) ? users.slice(0, 10).map((user: any) => (
+                {Array.isArray(users) ? users.slice(0, 10).map((user: unknown) => (
                   <tr key={user.id} className="border-b hover:bg-gray-50 dark:hover:bg-gray-800">
                     <td className="p-2">
                       <div>
@@ -1394,7 +1394,7 @@ function UserManagementTab({ authenticatedRequest, users }: { authenticatedReque
 }
 
 // FEATURE 4: Content Moderation Component
-function ContentModerationTab({ authenticatedRequest }: { authenticatedRequest: any }) {
+function ContentModerationTab({ authenticatedRequest }: { authenticatedRequest: unknown }) {
   const { toast } = useToast();
   const [statusFilter, setStatusFilter] = useState('pending');
 
@@ -1404,7 +1404,7 @@ function ContentModerationTab({ authenticatedRequest }: { authenticatedRequest: 
   });
 
   const moderateMutation = useMutation({
-    mutationFn: (data: any) => authenticatedRequest('/api/admin/moderate-content', 'POST', data),
+    mutationFn: (data: unknown) => authenticatedRequest('/api/admin/moderate-content', 'POST', data),
     onSuccess: (_, variables) => {
       toast({ title: `Content ${variables.action}d successfully` });
       refetch();
@@ -1438,7 +1438,7 @@ function ContentModerationTab({ authenticatedRequest }: { authenticatedRequest: 
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {flaggedContent?.map((flag: any) => (
+            {flaggedContent?.map((flag: unknown) => (
               <div key={flag.id} className="border rounded-lg p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 space-y-2">

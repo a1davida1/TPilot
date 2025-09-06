@@ -474,7 +474,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                   onClick={async () => {
                     try {
                       const token = localStorage.getItem('auth_token');
-                      const headers: any = {
+                      const headers: unknown = {
                         'Content-Type': 'application/json'
                       };
                       

@@ -41,7 +41,7 @@ export async function enforcePreviewGate(userId: number): Promise<PostGateResult
  * Middleware-style gate enforcement for Express routes
  */
 export function requirePreviewGate() {
-  return async (req: any, res: any, next: any) => {
+  return async (req: unknown, res: unknown, next: unknown) => {
     try {
       const userId = req.session?.userId || req.user?.userId || 1; // Get user ID from auth
       

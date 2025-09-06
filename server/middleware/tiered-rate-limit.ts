@@ -115,7 +115,7 @@ async function getUserTier(userId: string | number): Promise<string> {
 export function createTieredRateLimiter(feature?: keyof typeof featureLimits) {
   const limiters = new Map<string, any>();
   
-  return async (req: Request & { user?: any }, res: Response, next: NextFunction) => {
+  return async (req: Request & { user?: unknown }, res: Response, next: NextFunction) => {
     // Get user ID from request
     const userId = req.user?.id || req.headers['x-user-id'] || 'anonymous';
     
@@ -180,7 +180,7 @@ export const generalTieredLimiter = createTieredRateLimiter();
 
 // Middleware to track API usage for billing
 export function trackApiUsage() {
-  return async (req: Request & { user?: any }, res: Response, next: NextFunction) => {
+  return async (req: Request & { user?: unknown }, res: Response, next: NextFunction) => {
     // Only track for authenticated users
     if (!req.user?.id) {
       return next();

@@ -124,7 +124,7 @@ export default function RedditPostingPage() {
       const response = await apiRequest('POST', '/api/reddit/test');
       return response.json();
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data: unknown) => {
       toast({
         title: "✅ Connection Test",
         description: data.connected ? 
@@ -148,7 +148,7 @@ export default function RedditPostingPage() {
       const response = await apiRequest('GET', '/api/reddit/connect');
       return response.json();
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data: unknown) => {
       if (data.authUrl) {
         window.open(data.authUrl, '_blank');
         toast({
@@ -172,7 +172,7 @@ export default function RedditPostingPage() {
       const response = await apiRequest('POST', '/api/preview', data);
       return response.json();
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data: unknown) => {
       toast({
         title: "🔍 Content Validated",
         description: `Policy check: ${data.policyState}`,
@@ -183,11 +183,11 @@ export default function RedditPostingPage() {
 
   // Submit post
   const { mutate: submitPost, isPending: submitting } = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: unknown) => {
       const response = await apiRequest('POST', '/api/reddit/submit', data);
       return response.json();
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data: unknown) => {
       if (data.success) {
         toast({
           title: "🎉 Post Published!",
@@ -223,7 +223,7 @@ export default function RedditPostingPage() {
       const response = await apiRequest('POST', '/api/posts/schedule', data);
       return response.json();
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data: unknown) => {
       toast({
         title: "📅 Post Scheduled!",
         description: `Post will be published at ${new Date(data.scheduledAt).toLocaleString()}`,
@@ -267,7 +267,7 @@ export default function RedditPostingPage() {
       return;
     }
 
-    const postData: any = {
+    const postData: unknown = {
       subreddit,
       title,
       nsfw,

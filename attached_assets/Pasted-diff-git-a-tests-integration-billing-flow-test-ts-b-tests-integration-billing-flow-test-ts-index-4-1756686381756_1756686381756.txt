@@ -16,7 +16,7 @@ index 4145271741310c8171e3d807622690c2452d47ad..a1bec9668d9d0223eda18a6fd9f7e8ec
 +}
 +
 +let app: express.Express;
-+let server: any;
++let server: unknown;
 +let providerKeys: Record<string, string | undefined> = {};
 +let subscriptions: Record<number, Subscription> = {};
 +let processedWebhooks = new Set<string>();
@@ -120,7 +120,7 @@ index 4145271741310c8171e3d807622690c2452d47ad..a1bec9668d9d0223eda18a6fd9f7e8ec
 -      // TODO: Verify provider capabilities
 +      const res = await request(app).get('/api/billing/providers');
 +      expect(res.status).toBe(200);
-+      const names = res.body.map((p: any) => p.name);
++      const names = res.body.map((p: unknown) => p.name);
 +      expect(names).toContain('stripe');
 +      expect(names).toContain('paxum');
 +      expect(names).not.toContain('coinbase');

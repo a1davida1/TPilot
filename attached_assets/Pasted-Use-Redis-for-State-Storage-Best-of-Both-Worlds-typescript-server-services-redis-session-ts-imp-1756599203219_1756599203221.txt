@@ -10,7 +10,7 @@ const redis = process.env.REDIS_URL ?
 const memoryStore = new Map<string, any>();
 
 export const stateStore = {
-  async set(key: string, value: any, expiresIn = 3600) {
+  async set(key: string, value: unknown, expiresIn = 3600) {
     const data = JSON.stringify(value);
     if (redis) {
       await redis.set(key, data, 'EX', expiresIn);
@@ -46,7 +46,7 @@ Updated Secure Reddit OAuth:
 typescriptimport { stateStore } from './services/redis-session';
 
 // START OAUTH - SECURE VERSION
-router.get('/api/auth/reddit', async (req: any, res) => {
+router.get('/api/auth/reddit', async (req: unknown, res) => {
   try {
     // Generate cryptographically secure state
     const state = crypto.randomBytes(32).toString('hex');
@@ -81,7 +81,7 @@ router.get('/api/auth/reddit', async (req: any, res) => {
 });
 
 // CALLBACK - SECURE VERSION
-router.get('/api/auth/reddit/callback', async (req: any, res) => {
+router.get('/api/auth/reddit/callback', async (req: unknown, res) => {
   try {
     const { code, error, state } = req.query;
     
@@ -156,7 +156,7 @@ export function decrypt(text: string): string {
 2. Add Rate Limiting:
 typescriptconst rateLimiter = new Map<string, number[]>();
 
-function rateLimit(req: any, res: any, next: any) {
+function rateLimit(req: unknown, res: unknown, next: unknown) {
   const key = `${req.ip}:reddit_oauth`;
   const now = Date.now();
   const attempts = rateLimiter.get(key) || [];

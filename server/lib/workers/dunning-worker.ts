@@ -94,7 +94,7 @@ export class DunningWorker {
         return { success: true, suspended: true };
       }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error(`Dunning job for subscription ${subscriptionId} failed:`, { error });
 
       // Log failure event
@@ -121,7 +121,7 @@ export class DunningWorker {
     };
   }
 
-  private async retryPayment(subscription: any) {
+  private async retryPayment(subscription: unknown) {
     try {
       logger.info(`Attempting payment retry for subscription ${subscription.id}`);
       
@@ -134,13 +134,13 @@ export class DunningWorker {
         logger.warn('No payment provider configured for retry');
         return { success: false, error: 'No payment method available for retry' };
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Payment retry error:', { error });
       return { success: false, error: error.message };
     }
   }
 
-  private async retryStripePayment(subscription: any) {
+  private async retryStripePayment(subscription: unknown) {
     try {
       const { default: Stripe } = await import('stripe');
       const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -168,13 +168,13 @@ export class DunningWorker {
           provider: 'stripe'
         };
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage = error.decline_code || error.message || 'Payment failed';
       return { success: false, error: errorMessage, provider: 'stripe' };
     }
   }
 
-  private async retryCCBillPayment(subscription: any) {
+  private async retryCCBillPayment(subscription: unknown) {
     try {
       // CCBill retry would use their API to process a new transaction
       logger.info(`Retrying CCBill payment for subscription ${subscription.ccbillSubscriptionId}`);
@@ -185,7 +185,7 @@ export class DunningWorker {
         error: 'CCBill retry not yet implemented',
         provider: 'ccbill'
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return { success: false, error: error.message, provider: 'ccbill' };
     }
   }
@@ -230,7 +230,7 @@ export class DunningWorker {
     }
   }
 
-  private async sendRecoveryNotification(user: any, subscription: any) {
+  private async sendRecoveryNotification(user: unknown, subscription: unknown) {
     // In full implementation, this would send an email
     logger.info(`Sending recovery notification to ${user.email} for subscription ${subscription.id}`);
     
@@ -242,7 +242,7 @@ export class DunningWorker {
     // });
   }
 
-  private async sendSuspensionNotification(user: any, subscription: any) {
+  private async sendSuspensionNotification(user: unknown, subscription: unknown) {
     // In full implementation, this would send an email
     logger.info(`Sending suspension notification to ${user.email} for subscription ${subscription.id}`);
     
@@ -254,7 +254,7 @@ export class DunningWorker {
     // });
   }
 
-  private async logEvent(userId: number, type: string, meta: any) {
+  private async logEvent(userId: number, type: string, meta: unknown) {
     try {
       await db.insert(eventLogs).values({
         userId,

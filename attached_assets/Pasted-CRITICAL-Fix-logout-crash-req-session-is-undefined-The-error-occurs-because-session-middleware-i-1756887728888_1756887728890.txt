@@ -8,7 +8,7 @@ FIX IN server/auth.ts or wherever logout is defined:
 
 REPLACE the current logout implementation:
 ```typescript
-app.post('/api/auth/logout', (req: any, res) => {
+app.post('/api/auth/logout', (req: unknown, res) => {
   if (req.logout) {
     req.logout((err) => {
       if (err) {
@@ -21,7 +21,7 @@ app.post('/api/auth/logout', (req: any, res) => {
   }
 });
 WITH this safer implementation:
-typescriptapp.post('/api/auth/logout', (req: any, res) => {
+typescriptapp.post('/api/auth/logout', (req: unknown, res) => {
   try {
     // Check if session exists first
     if (!req.session) {
@@ -34,7 +34,7 @@ typescriptapp.post('/api/auth/logout', (req: any, res) => {
 
     // If using Passport and session exists
     if (req.logout && typeof req.logout === 'function') {
-      req.logout((err: any) => {
+      req.logout((err: unknown) => {
         if (err) {
           console.error('Passport logout error:', err);
           // Continue with logout anyway
@@ -42,7 +42,7 @@ typescriptapp.post('/api/auth/logout', (req: any, res) => {
         
         // Destroy session if it exists
         if (req.session && req.session.destroy) {
-          req.session.destroy((destroyErr: any) => {
+          req.session.destroy((destroyErr: unknown) => {
             if (destroyErr) {
               console.error('Session destroy error:', destroyErr);
             }
@@ -63,7 +63,7 @@ typescriptapp.post('/api/auth/logout', (req: any, res) => {
     } else {
       // No passport logout, destroy session directly
       if (req.session && req.session.destroy) {
-        req.session.destroy((err: any) => {
+        req.session.destroy((err: unknown) => {
           if (err) {
             console.error('Session destroy error:', err);
           }

@@ -67,7 +67,7 @@ index b4fdc7688201e6eca8c7162cfd50546d60f90011..c463faac7c1621746fe097ddae530311
          url: `https://www.reddit.com${submission.permalink}`,
        };
  
-     } catch (error: any) {
+     } catch (error: unknown) {
 -      console.error('Reddit submission failed:', error);
 -      
 +      console.error('Reddit submission failed:', {

@@ -64,7 +64,7 @@ export function decrypt(text: string): string {
 // Rate limiting
 const rateLimiter = new Map<string, number[]>();
 
-export function rateLimit(req: any, res: any, next: any) {
+export function rateLimit(req: unknown, res: unknown, next: unknown) {
   const key = `${req.ip}:reddit_oauth`;
   const now = Date.now();
   const attempts = rateLimiter.get(key) || [];

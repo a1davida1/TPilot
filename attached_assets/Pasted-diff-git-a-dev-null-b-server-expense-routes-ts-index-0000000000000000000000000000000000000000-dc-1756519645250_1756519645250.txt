@@ -12,7 +12,7 @@ index 0000000000000000000000000000000000000000..dcafe70e0614cc74261205e4c5245f4a
 +import { MediaManager } from './lib/media.js';
 +
 +interface AuthRequest extends express.Request {
-+  user?: any;
++  user?: unknown;
 +}
 +
 +const upload = multer({

@@ -23,7 +23,7 @@ index 9186b584cd7f7c803cd78f4f287958ba06306513..83099f5ea91566c7c4b315db9141288e
  import type { Request, Response, NextFunction } from 'express';
  
  interface AuthRequest extends Request {
-   user?: any;
+   user?: unknown;
  }
  
  const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
@@ -57,7 +57,7 @@ index 9186b584cd7f7c803cd78f4f287958ba06306513..83099f5ea91566c7c4b315db9141288e
        });
  
        res.json(result);
-     } catch (error: any) {
+     } catch (error: unknown) {
        console.error('AI generation failed:', error);
        res.status(500).json({ error: error.message });
      }
@@ -96,7 +96,7 @@ index 9186b584cd7f7c803cd78f4f287958ba06306513..83099f5ea91566c7c4b315db9141288e
 +      });
 +
 +      res.json(result);
-+    } catch (error: any) {
++    } catch (error: unknown) {
 +      console.error('Enhanced AI generation failed:', error);
 +      res.status(500).json({ error: error.message });
 +    }
@@ -124,6 +124,6 @@ index 9186b584cd7f7c803cd78f4f287958ba06306513..83099f5ea91566c7c4b315db9141288e
        });
  
        res.json(result);
-     } catch (error: any) {
+     } catch (error: unknown) {
        console.error('Media upload failed:', error);
        res.status(500).json({ error: error.message });

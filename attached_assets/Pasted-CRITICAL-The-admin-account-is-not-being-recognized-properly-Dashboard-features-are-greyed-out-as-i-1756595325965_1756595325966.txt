@@ -37,7 +37,7 @@ if (loginIdentifier === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
 
 Fix /api/auth/user endpoint to properly return admin status:
 
-typescriptapp.get('/api/auth/user', authenticateToken, async (req: any, res) => {
+typescriptapp.get('/api/auth/user', authenticateToken, async (req: unknown, res) => {
   // Check if it's admin first
   if (req.user?.id === 999 || req.user?.isAdmin || req.session?.isAdmin) {
     return res.json({
@@ -105,7 +105,7 @@ const isFeatureLocked = !user?.isAdmin && (!user || user.tier === 'free' || user
 
 Add debug endpoint to check current user status:
 
-typescriptapp.get('/api/debug/user-status', (req: any, res) => {
+typescriptapp.get('/api/debug/user-status', (req: unknown, res) => {
   res.json({
     sessionUser: req.session?.user,
     sessionId: req.session?.userId,

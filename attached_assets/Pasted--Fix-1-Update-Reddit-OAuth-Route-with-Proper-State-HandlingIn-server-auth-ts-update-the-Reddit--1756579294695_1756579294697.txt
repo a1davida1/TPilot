@@ -25,7 +25,7 @@ app.get('/api/auth/reddit', (req, res) => {
 });
 
 // Update the Reddit callback (around line 208)
-app.get('/api/auth/reddit/callback', async (req: any, res) => {
+app.get('/api/auth/reddit/callback', async (req: unknown, res) => {
   try {
     const { code, error, state } = req.query;
     

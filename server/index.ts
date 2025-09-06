@@ -133,7 +133,7 @@ app.use((req, res, next) => {
       });
     }
 
-    app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
+    app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
       const status = err.status || err.statusCode || 500;
       const message = err.message || "Internal Server Error";
 
@@ -170,7 +170,7 @@ app.use((req, res, next) => {
         }
       });
     
-      server.on('error', (err: any) => {
+      server.on('error', (err: unknown) => {
         if (err.code === 'EADDRINUSE') {
           logger.warn(`Port ${attemptPort} is in use`, { error: err.message });
         

@@ -97,7 +97,7 @@ export function RedditQuickPost() {
       const response = await apiRequest('POST', '/api/reddit/submit', data);
       return response.json();
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data: unknown) => {
       if (data.success) {
         toast({
           title: "🎉 Posted Successfully!",

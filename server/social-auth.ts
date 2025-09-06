@@ -105,7 +105,7 @@ export function setupSocialAuth(app: Express) {
       clientSecret: process.env.REDDIT_CLIENT_SECRET,
       callbackURL: "/api/auth/reddit/callback",
       scope: ['identity']
-    }, async (accessToken: string, refreshToken: string, profile: any, done: any) => {
+    }, async (accessToken: string, refreshToken: string, profile: unknown, done: unknown) => {
       try {
         // Reddit doesn't provide email, use username
         let user = await storage.getUserByUsername(profile.name || profile.id);
@@ -172,7 +172,7 @@ function setupAuthRoutes(app: Express) {
   );
 
   // Logout with comprehensive error handling
-  app.post('/api/auth/logout', (req: any, res) => {
+  app.post('/api/auth/logout', (req: unknown, res) => {
     try {
       // Check if session exists first
       if (!req.session) {
@@ -197,7 +197,7 @@ function setupAuthRoutes(app: Express) {
 
       // If using Passport and session exists
       if (req.logout && typeof req.logout === 'function') {
-        req.logout((err: any) => {
+        req.logout((err: unknown) => {
           if (err) {
             console.error('Passport logout error:', err);
             // Continue with logout anyway
@@ -205,7 +205,7 @@ function setupAuthRoutes(app: Express) {
           
           // Destroy session if it exists
           if (req.session && req.session.destroy) {
-            req.session.destroy((destroyErr: any) => {
+            req.session.destroy((destroyErr: unknown) => {
               if (destroyErr) {
                 console.error('Session destroy error:', destroyErr);
               }
@@ -250,7 +250,7 @@ function setupAuthRoutes(app: Express) {
       } else {
         // No passport logout, destroy session directly
         if (req.session && req.session.destroy) {
-          req.session.destroy((err: any) => {
+          req.session.destroy((err: unknown) => {
             if (err) {
               console.error('Session destroy error:', err);
             }

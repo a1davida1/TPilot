@@ -22,7 +22,7 @@ declare module 'express-session' {
 
 describe('Session Storage Integration', () => {
   let app: express.Application;
-  let sessionStore: any;
+  let sessionStore: unknown;
 
   beforeEach(() => {
     app = express();
@@ -177,13 +177,13 @@ describe('Session Storage Integration', () => {
     
     // Mock session store that fails
     const failingStore = {
-      get: (sid: string, callback: (err: any, session?: any) => void) => {
+      get: (sid: string, callback: (err: unknown, session?: unknown) => void) => {
         callback(new Error('Store connection failed'));
       },
-      set: (sid: string, session: any, callback: (err?: any) => void) => {
+      set: (sid: string, session: unknown, callback: (err?: unknown) => void) => {
         callback(new Error('Store write failed'));
       },
-      destroy: (sid: string, callback: (err?: any) => void) => {
+      destroy: (sid: string, callback: (err?: unknown) => void) => {
         callback(new Error('Store destroy failed'));
       }
     };

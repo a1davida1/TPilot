@@ -85,7 +85,7 @@ export function ProviderStatus() {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {safeArray(providers, []).map((provider: any, index: number) => {
+          {safeArray(providers, []).map((provider: unknown, index: number) => {
             // Safe provider data extraction
             const providerName = safeString(provider?.name, `Provider ${index + 1}`);
             const providerDescription = safeString(provider?.description, 'AI content generation provider');

@@ -16,7 +16,7 @@ REPLACE the following sections in server/routes.ts:
   // ==========================================
   
   // Media management endpoints - REAL
-  app.get('/api/media', authenticateToken, async (req: any, res) => {
+  app.get('/api/media', authenticateToken, async (req: unknown, res) => {
     try {
       const userId = req.user?.id;
       if (!userId) {
@@ -31,7 +31,7 @@ REPLACE the following sections in server/routes.ts:
     }
   });
 
-  app.post('/api/media/upload', authenticateToken, upload.single('file'), async (req: any, res) => {
+  app.post('/api/media/upload', authenticateToken, upload.single('file'), async (req: unknown, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
@@ -57,7 +57,7 @@ REPLACE the following sections in server/routes.ts:
     }
   });
 
-  app.delete('/api/media/:id', authenticateToken, async (req: any, res) => {
+  app.delete('/api/media/:id', authenticateToken, async (req: unknown, res) => {
     try {
       const imageId = parseInt(req.params.id);
       const userId = req.user.id;
@@ -80,7 +80,7 @@ REPLACE the following sections in server/routes.ts:
   });
 
   // Storage usage endpoint - REAL
-  app.get('/api/storage/usage', authenticateToken, async (req: any, res) => {
+  app.get('/api/storage/usage', authenticateToken, async (req: unknown, res) => {
     try {
       const userId = req.user.id;
       const images = await storage.getUserImages(userId);
@@ -115,7 +115,7 @@ REPLACE the following sections in server/routes.ts:
   });
 
   // AI generation endpoint - REAL
-  app.post('/api/ai/generate', authenticateToken, async (req: any, res) => {
+  app.post('/api/ai/generate', authenticateToken, async (req: unknown, res) => {
     try {
       const { prompt, platforms, styleHints, variants } = req.body;
       
@@ -171,7 +171,7 @@ REPLACE the following sections in server/routes.ts:
   });
 
   // Billing payment link endpoint - REAL
-  app.post('/api/billing/payment-link', authenticateToken, async (req: any, res) => {
+  app.post('/api/billing/payment-link', authenticateToken, async (req: unknown, res) => {
     try {
       const { plan } = req.body;
       
@@ -222,7 +222,7 @@ REPLACE the following sections in server/routes.ts:
   });
 
   // User settings endpoints - REAL
-  app.get('/api/user/settings', authenticateToken, async (req: any, res) => {
+  app.get('/api/user/settings', authenticateToken, async (req: unknown, res) => {
     try {
       const preferences = await storage.getUserPreferences(req.user.id);
       
@@ -241,7 +241,7 @@ REPLACE the following sections in server/routes.ts:
     }
   });
 
-  app.patch('/api/user/settings', authenticateToken, async (req: any, res) => {
+  app.patch('/api/user/settings', authenticateToken, async (req: unknown, res) => {
     try {
       const updated = await storage.updateUserPreferences(req.user.id, req.body);
       res.json({ success: true, settings: updated });
@@ -252,7 +252,7 @@ REPLACE the following sections in server/routes.ts:
   });
 
   // Reddit communities endpoint - REAL (uses actual data)
-  app.get('/api/reddit/communities', authenticateToken, async (req: any, res) => {
+  app.get('/api/reddit/communities', authenticateToken, async (req: unknown, res) => {
     try {
       // This will use the real communities data file
       const communities = [
@@ -269,7 +269,7 @@ REPLACE the following sections in server/routes.ts:
   });
 
   // Subscription status endpoint - REAL
-  app.get('/api/subscription', authenticateToken, async (req: any, res) => {
+  app.get('/api/subscription', authenticateToken, async (req: unknown, res) => {
     try {
       const user = await storage.getUser(req.user.id);
       
@@ -315,7 +315,7 @@ REPLACE the following sections in server/routes.ts:
   });
 
   // Social media quick post endpoint - REAL
-  app.post('/api/social-media/quick-post', authenticateToken, async (req: any, res) => {
+  app.post('/api/social-media/quick-post', authenticateToken, async (req: unknown, res) => {
     try {
       const { platform, content, title, subreddit } = req.body;
       
@@ -340,7 +340,7 @@ REPLACE the following sections in server/routes.ts:
   });
 
   // Social media posts history - REAL
-  app.get('/api/social-media/posts', authenticateToken, async (req: any, res) => {
+  app.get('/api/social-media/posts', authenticateToken, async (req: unknown, res) => {
     try {
       const posts = await storage.getUserSocialMediaPosts(req.user.id, {
         limit: parseInt(req.query.limit as string) || 50,
@@ -357,7 +357,7 @@ REPLACE the following sections in server/routes.ts:
   });
 
   // Image protection endpoint - REAL
-  app.post('/api/protect-image/:imageId', authenticateToken, async (req: any, res) => {
+  app.post('/api/protect-image/:imageId', authenticateToken, async (req: unknown, res) => {
     try {
       const imageId = parseInt(req.params.imageId);
       const { protectionLevel } = req.body;

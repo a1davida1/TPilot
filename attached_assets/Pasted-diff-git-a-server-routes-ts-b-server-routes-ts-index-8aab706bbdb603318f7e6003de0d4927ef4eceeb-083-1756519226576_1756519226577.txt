@@ -72,7 +72,7 @@ index 8aab706bbdb603318f7e6003de0d4927ef4eceeb..0832886101d7db9d21e2fc87b14778bc
  
  // Auth request interface
  interface AuthRequest extends express.Request {
-   user?: any;
+   user?: unknown;
  }
  
  export async function registerRoutes(app: Express): Promise<Server> {

@@ -7,7 +7,7 @@ index 3f8c8b022d78ce9ee9b305ab5b70138a378e82f1..f45165fcf08c4f7040d72ad0cab0c459
          setView('login');
        }
      },
-     onError: (error: any) => {
+     onError: (error: unknown) => {
        toast({
          title: view === 'login' ? "Login failed" : "Signup failed",
          description: error.message || "Please check your credentials and try again.",

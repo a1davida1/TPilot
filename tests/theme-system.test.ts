@@ -7,7 +7,7 @@ import { validateThemeColors, getContrastRatio, hslToRgb, meetsWCAGAA } from '..
  */
 
 describe('Theme System', () => {
-  let mockDocumentElement: any;
+  let mockDocumentElement: unknown;
 
   beforeEach(() => {
     // Mock document element for testing

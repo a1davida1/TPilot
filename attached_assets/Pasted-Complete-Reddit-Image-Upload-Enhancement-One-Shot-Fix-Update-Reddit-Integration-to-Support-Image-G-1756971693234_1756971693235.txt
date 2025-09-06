@@ -45,7 +45,7 @@ async submitImagePost(options: {
           postId: submission.name || submission.id,
           url: `https://www.reddit.com${submission.permalink}`,
         };
-      } catch (imgError: any) {
+      } catch (imgError: unknown) {
         console.error('Direct image upload failed, falling back to link post:', imgError.message);
         // Fallback to link post if image upload fails
         if (options.imageUrl) {
@@ -67,7 +67,7 @@ async submitImagePost(options: {
       error: 'No image provided for upload'
     };
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Image submission failed:', error);
     return {
       success: false,
@@ -125,7 +125,7 @@ async submitGalleryPost(options: {
       url: `https://www.reddit.com${submission.permalink}`
     };
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Not all subreddits support galleries
     if (error.message?.includes('INVALID_OPTION') || error.message?.includes('gallery')) {
       console.log('Gallery not supported, falling back to single image');
@@ -177,7 +177,7 @@ async checkSubredditCapabilities(subredditName: string): Promise<{
 2. UPDATE server/reddit-routes.ts - Replace the submit endpoint
 Find the /api/reddit/submit endpoint and REPLACE it entirely with this enhanced version:
 typescript// Enhanced submit endpoint with image support
-app.post('/api/reddit/submit', authenticateToken, async (req: any, res) => {
+app.post('/api/reddit/submit', authenticateToken, async (req: unknown, res) => {
   try {
     const userId = req.user?.id;
     if (!userId) {
@@ -231,7 +231,7 @@ app.post('/api/reddit/submit', authenticateToken, async (req: any, res) => {
           return res.status(400).json({ error: 'Images array required for gallery post' });
         }
         
-        const images = req.body.images.map((img: any) => ({
+        const images = req.body.images.map((img: unknown) => ({
           url: img.url,
           caption: img.caption || ''
         }));
@@ -293,7 +293,7 @@ app.post('/api/reddit/submit', authenticateToken, async (req: any, res) => {
       });
     }
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Reddit submit error:', error);
     res.status(500).json({ 
       error: error.message || 'Failed to submit post to Reddit' 
@@ -302,7 +302,7 @@ app.post('/api/reddit/submit', authenticateToken, async (req: any, res) => {
 });
 
 // Add new endpoint to check subreddit capabilities
-app.get('/api/reddit/subreddit/:name/capabilities', authenticateToken, async (req: any, res) => {
+app.get('/api/reddit/subreddit/:name/capabilities', authenticateToken, async (req: unknown, res) => {
   try {
     const userId = req.user?.id;
     if (!userId) {
@@ -360,7 +360,7 @@ const handleSubmitPost = async () => {
     return;
   }
 
-  let postData: any = {
+  let postData: unknown = {
     subreddit,
     title,
     nsfw,

@@ -15,7 +15,7 @@ const JWT_SECRET_VALIDATED: string = JWT_SECRET;
 
 export function setupAdminRoutes(app: Express) {
   // Admin middleware to check if user is admin
-  const requireAdmin = (req: express.Request & { user?: any; isAuthenticated?: () => boolean }, res: express.Response, next: express.NextFunction) => {
+  const requireAdmin = (req: express.Request & { user?: unknown; isAuthenticated?: () => boolean }, res: express.Response, next: express.NextFunction) => {
     // Check if user is authenticated via session OR JWT
     let user = null;
     let token = null;

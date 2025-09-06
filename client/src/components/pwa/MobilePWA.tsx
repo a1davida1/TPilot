@@ -31,14 +31,14 @@ export default function MobilePWA() {
     // Check if app is already installed
     const checkInstalled = () => {
       if ('getInstalledRelatedApps' in navigator) {
-        (navigator as any).getInstalledRelatedApps().then((apps: any[]) => {
+        (navigator as any).getInstalledRelatedApps().then((apps: unknown[]) => {
           setIsInstalled(apps.length > 0);
         });
       }
     };
 
     // Listen for install prompt
-    const handleBeforeInstallPrompt = (e: any) => {
+    const handleBeforeInstallPrompt = (e: unknown) => {
       e.preventDefault();
       setInstallPrompt(e);
     };

@@ -442,7 +442,7 @@
  // ==========================================
  // ERROR HANDLING MIDDLEWARE (MUST BE LAST)
  // ==========================================
- app.use((err: any, req: any, res: any, next: any) => {
+ app.use((err: unknown, req: unknown, res: unknown, next: unknown) => {
    logger.error('Unhandled error:', {
      error: err.message,
      stack: err.stack,

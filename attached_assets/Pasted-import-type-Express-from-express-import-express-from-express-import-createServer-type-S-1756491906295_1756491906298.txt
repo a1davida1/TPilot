@@ -87,7 +87,7 @@ const generationLimiter = rateLimit({
 });
 
 // IP logging middleware (enhanced version of your existing one)
-const logUserIP = (req: any, res: any, next: any) => {
+const logUserIP = (req: unknown, res: unknown, next: unknown) => {
   const userIP = req.headers['x-forwarded-for'] || 
                  req.headers['x-real-ip'] || 
                  req.connection.remoteAddress || 
@@ -147,7 +147,7 @@ const upload = multer({
 
 // Auth middleware
 interface AuthRequest extends express.Request {
-  user?: any;
+  user?: unknown;
 }
 
 export const authenticateToken = async (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
@@ -340,7 +340,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/auth/user", async (req: any, res) => {
+  app.get("/api/auth/user", async (req: unknown, res) => {
     try {
       // Try session-based authentication first (Passport.js)
       if (req.isAuthenticated && req.isAuthenticated()) {
@@ -422,7 +422,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User statistics endpoints
-  app.get('/api/user/generation-stats', authenticateToken, async (req: any, res) => {
+  app.get('/api/user/generation-stats', authenticateToken, async (req: unknown, res) => {
     try {
       const userId = req.user.userId || req.user.id;
       const stats = await storage.getContentGenerationStats(userId);
@@ -433,7 +433,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/user/daily-generation-count', authenticateToken, async (req: any, res) => {
+  app.get('/api/user/daily-generation-count', authenticateToken, async (req: unknown, res) => {
     try {
       const userId = req.user.userId || req.user.id;
       const count = await storage.getDailyGenerationCount(userId);
@@ -553,7 +553,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json({ success: result });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Queue action error:", error);
       res.status(500).json({ message: error.message });
     }
@@ -577,7 +577,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const result = await workerScaler.manualScale(queueName, targetConcurrency);
       res.json({ success: result });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Manual scaling error:", error);
       res.status(500).json({ message: error.message });
     }
@@ -642,14 +642,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get all content generations in the time range
       const allGenerations = await storage.getAllContentGenerations?.() || [];
-      const periodGenerations = allGenerations.filter((gen: any) => {
+      const periodGenerations = allGenerations.filter((gen: unknown) => {
         const generatedAt = new Date(gen.createdAt);
         return generatedAt >= startDate;
       });
 
       // Extract and count hashtags from generated content
       const tagCounts: Record<string, { count: number, subreddits: Set<string> }> = {};
-      periodGenerations.forEach((gen: any) => {
+      periodGenerations.forEach((gen: unknown) => {
         if (gen.content) {
           // Extract hashtags from content
           const hashtags = gen.content.match(/#\\w+/g) || [];
@@ -945,7 +945,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // JWT auth middleware for generation endpoint
-  const authMiddleware = (req: any, res: any, next: any) => {
+  const authMiddleware = (req: unknown, res: unknown, next: unknown) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
@@ -1315,7 +1315,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Determine user tier (in production, get from authenticated user)
       const userTier = 'free'; // 'free', 'basic', 'pro', 'premium'
       
-      let contentGeneration: any;
+      let contentGeneration: unknown;
       
       // Advanced Content Generation System
       if (userTier === 'free' || userTier === 'basic') {

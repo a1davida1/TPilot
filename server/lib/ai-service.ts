@@ -75,7 +75,7 @@ export class AiService {
         const response = await this.generateWithOpenAI(inputData);
         await this.cacheResult(userId, 'openai', inputHash, inputData, response);
         return { ...response, cached: false };
-      } catch (fallbackError: any) {
+      } catch (fallbackError: unknown) {
         console.error('OpenAI fallback failed:', fallbackError);
         
         // Check if it's a quota error
@@ -91,7 +91,7 @@ export class AiService {
     }
   }
   
-  private static async generateWithGemini(input: any): Promise<Omit<AiResponse, 'cached'>> {
+  private static async generateWithGemini(input: unknown): Promise<Omit<AiResponse, 'cached'>> {
     const model = gemini.getGenerativeModel({ model: "gemini-1.5-flash" });
     
     const systemPrompt = this.buildSystemPrompt(input.platforms, input.styleHints);
@@ -112,7 +112,7 @@ export class AiService {
     };
   }
   
-  private static async generateWithOpenAI(input: any): Promise<Omit<AiResponse, 'cached'>> {
+  private static async generateWithOpenAI(input: unknown): Promise<Omit<AiResponse, 'cached'>> {
     const systemPrompt = this.buildSystemPrompt(input.platforms, input.styleHints);
     const userPrompt = input.prompt || "Generate engaging content for adult content creator";
     
@@ -298,7 +298,7 @@ Return ONLY the JSON object above with actual content. No other text.`;
     userId: number,
     provider: string,
     inputHash: string,
-    inputData: any,
+    inputData: unknown,
     result: Omit<AiResponse, 'cached'>
   ) {
     try {
@@ -327,7 +327,7 @@ Return ONLY the JSON object above with actual content. No other text.`;
         inputJson: inputData,
         outputJson: result,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.warn('Failed to cache AI result (non-fatal):', error.message);
       // Check for foreign key constraint violation
       if (error?.code === '23503' && error?.constraint?.includes('user_id')) {

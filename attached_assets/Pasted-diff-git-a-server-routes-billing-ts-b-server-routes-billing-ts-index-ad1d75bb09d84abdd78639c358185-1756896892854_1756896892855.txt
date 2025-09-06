@@ -17,7 +17,7 @@ index ad1d75bb09d84abdd78639c358185dd098dbf57f..a08c32fa67cf7c3af5945ee76a5352ce
  
  export function mountBillingRoutes(app: Express) {
    // returns which Pro price this user sees (A/B bucket)
-   app.get("/api/billing/prices", async (req: any, res: Response) => {
+   app.get("/api/billing/prices", async (req: unknown, res: Response) => {
      const uid = req.user?.id?.toString() || req.ip;
      const bucket = bucketForUser(uid);
      const proPriceId = proPriceIdForBucket(bucket);
@@ -28,7 +28,7 @@ index ad1d75bb09d84abdd78639c358185dd098dbf57f..a08c32fa67cf7c3af5945ee76a5352ce
    });
  
    // creates a Stripe Checkout Session and returns url
-   app.post("/api/billing/checkout", async (req: any, res: Response) => {
+   app.post("/api/billing/checkout", async (req: unknown, res: Response) => {
 -    const user = req.user;
 -    if (!user) return res.status(401).json({ error: "unauthorized" });
 -    const uid = user.id.toString();

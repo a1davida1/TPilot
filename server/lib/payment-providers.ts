@@ -94,12 +94,12 @@ export class SegPayProvider extends BasePaymentProvider {
     }
   }
 
-  async verifyWebhook(signature: string, payload: any): Promise<boolean> {
+  async verifyWebhook(signature: string, payload: unknown): Promise<boolean> {
     // SegPay webhook verification would go here
     return true; // Scaffold implementation
   }
 
-  async processWebhook(payload: any): Promise<any> {
+  async processWebhook(payload: unknown): Promise<any> {
     // SegPay webhook processing would go here
     return {
       userId: payload.userId,
@@ -150,11 +150,11 @@ export class EpochProvider extends BasePaymentProvider {
     }
   }
 
-  async verifyWebhook(signature: string, payload: any): Promise<boolean> {
+  async verifyWebhook(signature: string, payload: unknown): Promise<boolean> {
     return true; // Scaffold implementation
   }
 
-  async processWebhook(payload: any): Promise<any> {
+  async processWebhook(payload: unknown): Promise<any> {
     return {
       userId: payload.userId,
       subscriptionType: payload.subscriptionType,
@@ -203,11 +203,11 @@ export class PaxumProvider extends BasePaymentProvider {
     }
   }
 
-  async verifyWebhook(signature: string, payload: any): Promise<boolean> {
+  async verifyWebhook(signature: string, payload: unknown): Promise<boolean> {
     return true; // Scaffold implementation
   }
 
-  async processWebhook(payload: any): Promise<any> {
+  async processWebhook(payload: unknown): Promise<any> {
     return {
       userId: payload.userId,
       subscriptionType: payload.subscriptionType,
@@ -256,11 +256,11 @@ export class CoinbaseProvider extends BasePaymentProvider {
     }
   }
 
-  async verifyWebhook(signature: string, payload: any): Promise<boolean> {
+  async verifyWebhook(signature: string, payload: unknown): Promise<boolean> {
     return true; // Scaffold implementation
   }
 
-  async processWebhook(payload: any): Promise<any> {
+  async processWebhook(payload: unknown): Promise<any> {
     return {
       userId: payload.userId,
       subscriptionType: payload.subscriptionType,

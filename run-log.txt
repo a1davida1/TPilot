@@ -1,0 +1,2040 @@
+=== Pass 1: ESLint auto-fix ===
+
+/home/runner/workspace/browser-extension/content.js
+  15:59  error  Unnecessary escape character: \/  no-useless-escape
+
+/home/runner/workspace/browser-extension/popup.js
+  21:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  46:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/client/dist/assets/index-idzX7xbh.js
+    9:1482   warning  'a' is never reassigned. Use 'const' instead                                  prefer-const
+    9:1596   error    Do not access Object.prototype method 'hasOwnProperty' from target object     no-prototype-builtins
+    9:1691   error    Unexpected var, use let or const instead                                      no-var
+    9:2749   error    Unexpected var, use let or const instead                                      no-var
+    9:2780   error    Unexpected var, use let or const instead                                      no-var
+    9:3232   warning  's' is never reassigned. Use 'const' instead                                  prefer-const
+    9:4460   warning  's' is never reassigned. Use 'const' instead                                  prefer-const
+    9:4615   error    Unexpected var, use let or const instead                                      no-var
+    9:4670   error    Do not access Object.prototype method 'hasOwnProperty' from target object     no-prototype-builtins
+    9:4732   error    Unexpected var, use let or const instead                                      no-var
+   17:254    warning  'a' is never reassigned. Use 'const' instead                                  prefer-const
+   17:378    error    Do not access Object.prototype method 'hasOwnProperty' from target object     no-prototype-builtins
+   25:781    warning  'c' is never reassigned. Use 'const' instead                                  prefer-const
+   25:786    warning  'd' is never reassigned. Use 'const' instead                                  prefer-const
+   25:821    warning  'g' is never reassigned. Use 'const' instead                                  prefer-const
+   25:869    warning  'h' is never reassigned. Use 'const' instead                                  prefer-const
+   25:921    warning  'v' is never reassigned. Use 'const' instead                                  prefer-const
+   25:1714   error    Unexpected var, use let or const instead                                      no-var
+   25:1815   error    Unexpected var, use let or const instead                                      no-var
+   25:2953   error    Unexpected var, use let or const instead                                      no-var
+   25:3408   error    Unexpected var, use let or const instead                                      no-var
+   33:39     error    Unexpected var, use let or const instead                                      no-var
+   33:915    error    Unexpected combined character in character class                              no-misleading-character-class
+   33:3035   error    Unnecessary escape character: \-                                              no-useless-escape
+   33:4930   error    Do not access Object.prototype method 'hasOwnProperty' from target object     no-prototype-builtins
+   33:5987   warning  'ze' is never reassigned. Use 'const' instead                                 prefer-const
+   34:320    error    Unexpected var, use let or const instead                                      no-var
+   34:494    error    Unexpected var, use let or const instead                                      no-var
+   37:202    error    Expected a conditional expression and instead saw an assignment               no-cond-assign
+   37:978    error    Unexpected var, use let or const instead                                      no-var
+   37:1216   error    Empty block statement                                                         no-empty
+   37:2290   warning  't' is never reassigned. Use 'const' instead                                  prefer-const
+   37:2316   warning  'n' is never reassigned. Use 'const' instead                                  prefer-const
+   37:2393   error    Do not access Object.prototype method 'hasOwnProperty' from target object     no-prototype-builtins
+   37:2929   warning  'n' is never reassigned. Use 'const' instead                                  prefer-const
+   37:3388   warning  's' is never reassigned. Use 'const' instead                                  prefer-const
+   37:3881   error    Do not access Object.prototype method 'hasOwnProperty' from target object     no-prototype-builtins
+   37:3922   error    Do not access Object.prototype method 'hasOwnProperty' from target object     no-prototype-builtins
+   37:4089   error    Do not access Object.prototype method 'hasOwnProperty' from target object     no-prototype-builtins
+   37:4116   error    Do not access Object.prototype method 'hasOwnProperty' from target object     no-prototype-builtins
+   37:4646   error    Unexpected var, use let or const instead                                      no-var
+   37:4711   error    Do not access Object.prototype method 'hasOwnProperty' from target object     no-prototype-builtins
+   37:5415   warning  's' is never reassigned. Use 'const' instead                                  prefer-const
+   37:6010   warning  'Zg' is never reassigned. Use 'const' instead                                 prefer-const
+   37:7482   error    Do not access Object.prototype method 'hasOwnProperty' from target object     no-prototype-builtins
+   37:7575   error    Do not access Object.prototype method 'hasOwnProperty' from target object     no-prototype-builtins
+   37:8662   error    Expected a conditional expression and instead saw an assignment               no-cond-assign
+   37:8847   warning  't' is never reassigned. Use 'const' instead                                  prefer-const
+   37:9685   error    Expected to return a value in method 'get'                                    getter-return
+   37:9818   warning  's' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+   37:9820   warning  'a' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+   37:9822   warning  'i' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+   37:9824   warning  'o' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+   37:9826   warning  'l' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+   37:9828   warning  'c' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+   37:9954   warning  'm2' is never reassigned. Use 'const' instead                                 prefer-const
+   37:10003  warning  'e' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+   37:10005  warning  't' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+   37:10007  warning  'n' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+   37:10009  warning  's' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+   37:10011  warning  'a' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+   37:10013  warning  'i' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+   37:10015  warning  'o' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+   37:10017  warning  'l' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+   37:10019  warning  'c' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+   37:10071  warning  'e' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+   37:10073  warning  't' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+   37:10075  warning  'n' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+   37:10077  warning  's' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+   37:10079  warning  'a' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+   37:10081  warning  'i' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+   37:10083  warning  'o' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+   37:10085  warning  'l' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+   37:10087  warning  'c' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+   37:10129  error    Unexpected var, use let or const instead                                      no-var
+   37:10654  error    Unexpected var, use let or const instead                                      no-var
+   37:10938  error    Unexpected var, use let or const instead                                      no-var
+   37:11446  warning  'd0' is never reassigned. Use 'const' instead                                 prefer-const
+   37:11478  warning  'sp' is never reassigned. Use 'const' instead                                 prefer-const
+   37:11508  warning  'g2' is never reassigned. Use 'const' instead                                 prefer-const
+   37:11535  warning  'v2' is never reassigned. Use 'const' instead                                 prefer-const
+   37:11563  warning  'We' is never reassigned. Use 'const' instead                                 prefer-const
+   37:11582  warning  'y2' is never reassigned. Use 'const' instead                                 prefer-const
+   37:11621  warning  'um' is never reassigned. Use 'const' instead                                 prefer-const
+   37:11654  warning  'u0' is never reassigned. Use 'const' instead                                 prefer-const
+   37:11690  warning  'Vl' is never reassigned. Use 'const' instead                                 prefer-const
+   37:11720  warning  'w2' is never reassigned. Use 'const' instead                                 prefer-const
+   37:11747  warning  'f0' is never reassigned. Use 'const' instead                                 prefer-const
+   37:11924  error    Empty block statement                                                         no-empty
+   37:13847  error    Unexpected var, use let or const instead                                      no-var
+   37:14486  warning  'p0' is never reassigned. Use 'const' instead                                 prefer-const
+   37:14489  warning  'mm' is never reassigned. Use 'const' instead                                 prefer-const
+   37:14492  warning  'x0' is never reassigned. Use 'const' instead                                 prefer-const
+   37:14495  warning  'g0' is never reassigned. Use 'const' instead                                 prefer-const
+   37:14498  warning  'v0' is never reassigned. Use 'const' instead                                 prefer-const
+   37:14507  warning  'qo' is never reassigned. Use 'const' instead                                 prefer-const
+   37:14537  warning  'qi' is never reassigned. Use 'const' instead                                 prefer-const
+   37:14548  warning  'Ki' is never reassigned. Use 'const' instead                                 prefer-const
+   37:14559  warning  'br' is never reassigned. Use 'const' instead                                 prefer-const
+   37:14565  warning  'E2' is never reassigned. Use 'const' instead                                 prefer-const
+   37:15588  error    Unexpected var, use let or const instead                                      no-var
+   37:16767  error    Unexpected var, use let or const instead                                      no-var
+   37:16792  error    Unexpected var, use let or const instead                                      no-var
+   37:17086  warning  'fa' is never reassigned. Use 'const' instead                                 prefer-const
+   37:17675  error    Unexpected var, use let or const instead                                      no-var
+   37:19322  warning  't' is never reassigned. Use 'const' instead                                  prefer-const
+   37:19327  warning  'n' is never reassigned. Use 'const' instead                                  prefer-const
+   37:19340  warning  'a' is never reassigned. Use 'const' instead                                  prefer-const
+   37:19379  warning  'i' is never reassigned. Use 'const' instead                                  prefer-const
+   37:19839  error    Do not access Object.prototype method 'hasOwnProperty' from target object     no-prototype-builtins
+   37:20184  error    Invalid typeof comparison value                                               valid-typeof
+   37:20360  error    Invalid typeof comparison value                                               valid-typeof
+   37:20467  warning  'Qa' is never reassigned. Use 'const' instead                                 prefer-const
+   37:20593  warning  'xm' is never reassigned. Use 'const' instead                                 prefer-const
+   37:20603  warning  'Co' is never reassigned. Use 'const' instead                                 prefer-const
+   37:20634  warning  'I2' is never reassigned. Use 'const' instead                                 prefer-const
+   37:20653  warning  'Ic' is never reassigned. Use 'const' instead                                 prefer-const
+   37:21153  warning  'lp' is never reassigned. Use 'const' instead                                 prefer-const
+   37:21163  warning  'O2' is never reassigned. Use 'const' instead                                 prefer-const
+   37:21193  warning  '_2' is never reassigned. Use 'const' instead                                 prefer-const
+   37:21203  warning  'D2' is never reassigned. Use 'const' instead                                 prefer-const
+   37:21234  warning  'Od' is never reassigned. Use 'const' instead                                 prefer-const
+   37:21244  warning  'F2' is never reassigned. Use 'const' instead                                 prefer-const
+   37:21305  warning  'L2' is never reassigned. Use 'const' instead                                 prefer-const
+   37:21315  warning  'U2' is never reassigned. Use 'const' instead                                 prefer-const
+   37:21420  warning  'z2' is never reassigned. Use 'const' instead                                 prefer-const
+   37:21430  warning  '$2' is never reassigned. Use 'const' instead                                 prefer-const
+   37:21452  warning  'cp' is never reassigned. Use 'const' instead                                 prefer-const
+   37:21462  warning  'V2' is never reassigned. Use 'const' instead                                 prefer-const
+   37:21670  warning  'B2' is never reassigned. Use 'const' instead                                 prefer-const
+   37:22077  warning  'W2' is never reassigned. Use 'const' instead                                 prefer-const
+   37:22234  error    Expected a conditional expression and instead saw an assignment               no-cond-assign
+   37:22281  warning  'G2' is never reassigned. Use 'const' instead                                 prefer-const
+   37:22855  warning  'q2' is never reassigned. Use 'const' instead                                 prefer-const
+   37:22865  warning  'K2' is never reassigned. Use 'const' instead                                 prefer-const
+   37:22991  warning  'dp' is never reassigned. Use 'const' instead                                 prefer-const
+   37:23001  warning  'Q2' is never reassigned. Use 'const' instead                                 prefer-const
+   37:23119  warning  'Y2' is never reassigned. Use 'const' instead                                 prefer-const
+   37:23129  warning  'X2' is never reassigned. Use 'const' instead                                 prefer-const
+   37:23189  warning  'J2' is never reassigned. Use 'const' instead                                 prefer-const
+   37:23199  warning  'Z2' is never reassigned. Use 'const' instead                                 prefer-const
+   37:23432  warning  'eS' is never reassigned. Use 'const' instead                                 prefer-const
+   37:23442  warning  'tS' is never reassigned. Use 'const' instead                                 prefer-const
+   37:23458  warning  'vm' is never reassigned. Use 'const' instead                                 prefer-const
+   37:23563  warning  'nS' is never reassigned. Use 'const' instead                                 prefer-const
+   37:23596  warning  'b0' is never reassigned. Use 'const' instead                                 prefer-const
+   37:23627  warning  'up' is never reassigned. Use 'const' instead                                 prefer-const
+   37:25941  warning  'n' is never reassigned. Use 'const' instead                                  prefer-const
+   37:26193  error    Unexpected var, use let or const instead                                      no-var
+   37:26589  error    Unexpected var, use let or const instead                                      no-var
+   37:26648  error    Unexpected var, use let or const instead                                      no-var
+   37:27799  error    Expected a conditional expression and instead saw an assignment               no-cond-assign
+   37:28012  warning  'hS' is never reassigned. Use 'const' instead                                 prefer-const
+   37:28725  warning  'ta' is never reassigned. Use 'const' instead                                 prefer-const
+   37:28925  warning  'Fd' is never reassigned. Use 'const' instead                                 prefer-const
+   37:29241  warning  't' is never reassigned. Use 'const' instead                                  prefer-const
+   37:29267  error    Do not access Object.prototype method 'hasOwnProperty' from target object     no-prototype-builtins
+   37:31650  warning  'a' is never reassigned. Use 'const' instead                                  prefer-const
+   37:31699  error    Unexpected var, use let or const instead                                      no-var
+   37:31726  error    Unexpected var, use let or const instead                                      no-var
+   37:32493  error    Unexpected var, use let or const instead                                      no-var
+   37:33023  error    Unexpected var, use let or const instead                                      no-var
+   37:33284  warning  'f' is never reassigned. Use 'const' instead                                  prefer-const
+   37:33292  error    Unexpected var, use let or const instead                                      no-var
+   37:33323  error    Unexpected var, use let or const instead                                      no-var
+   37:33382  error    Expected a 'break' statement before 'case'                                    no-fallthrough
+   37:33569  error    Expected a 'break' statement before 'case'                                    no-fallthrough
+   37:34213  error    Unexpected var, use let or const instead                                      no-var
+   37:34289  error    Unexpected var, use let or const instead                                      no-var
+   37:34314  error    Unexpected var, use let or const instead                                      no-var
+   37:34686  error    Expected a conditional expression and instead saw an assignment               no-cond-assign
+   37:35571  error    Unexpected var, use let or const instead                                      no-var
+   37:35615  error    Unexpected var, use let or const instead                                      no-var
+   37:36131  error    Expected a 'break' statement before 'case'                                    no-fallthrough
+   37:36215  error    Unexpected var, use let or const instead                                      no-var
+   37:36976  error    Unexpected var, use let or const instead                                      no-var
+   37:37271  error    Unexpected var, use let or const instead                                      no-var
+   37:37335  warning  'd' is never reassigned. Use 'const' instead                                  prefer-const
+   37:37563  error    Unexpected control character(s) in regular expression: \x00                   no-control-regex
+   38:1255   error    Unexpected var, use let or const instead                                      no-var
+   38:1512   error    Expected a conditional expression and instead saw an assignment               no-cond-assign
+   38:1612   error    Expected a conditional expression and instead saw an assignment               no-cond-assign
+   38:1884   warning  'Qu' is never reassigned. Use 'const' instead                                 prefer-const
+   38:2041   warning  'Yr' is never reassigned. Use 'const' instead                                 prefer-const
+   38:2047   warning  'xt' is never reassigned. Use 'const' instead                                 prefer-const
+   38:2057   warning  'Rt' is never reassigned. Use 'const' instead                                 prefer-const
+   38:2265   warning  'a' is never reassigned. Use 'const' instead                                  prefer-const
+   38:3229   warning  't' is never reassigned. Use 'const' instead                                  prefer-const
+   38:3419   warning  'sa' is never reassigned. Use 'const' instead                                 prefer-const
+   38:3443   warning  'qt' is never reassigned. Use 'const' instead                                 prefer-const
+   38:4206   error    Unexpected var, use let or const instead                                      no-var
+   38:5977   error    Unexpected var, use let or const instead                                      no-var
+   38:8040   error    Unexpected var, use let or const instead                                      no-var
+   38:8840   error    Unexpected var, use let or const instead                                      no-var
+   38:8986   error    Unexpected var, use let or const instead                                      no-var
+   38:9717   error    Unexpected var, use let or const instead                                      no-var
+   38:10523  error    Unexpected var, use let or const instead                                      no-var
+   38:11609  warning  '_a' is never reassigned. Use 'const' instead                                 prefer-const
+   38:11619  warning  'W0' is never reassigned. Use 'const' instead                                 prefer-const
+   38:11629  warning  'Jl' is never reassigned. Use 'const' instead                                 prefer-const
+   38:13199  error    Unexpected var, use let or const instead                                      no-var
+   38:14188  error    Unexpected var, use let or const instead                                      no-var
+   38:14243  error    Unexpected var, use let or const instead                                      no-var
+   38:14579  warning  'p' is never reassigned. Use 'const' instead                                  prefer-const
+   38:14719  error    Expected a 'break' statement before 'case'                                    no-fallthrough
+   38:15176  error    Unexpected constant condition                                                 no-constant-condition
+   38:15486  warning  'a' is never reassigned. Use 'const' instead                                  prefer-const
+   38:15772  error    Expected a conditional expression and instead saw an assignment               no-cond-assign
+   38:16661  warning  'jl' is never reassigned. Use 'const' instead                                 prefer-const
+   38:16690  warning  'Hd' is never reassigned. Use 'const' instead                                 prefer-const
+   38:17505  error    Unexpected var, use let or const instead                                      no-var
+   38:18046  error    Unexpected var, use let or const instead                                      no-var
+   38:18910  warning  's' is never reassigned. Use 'const' instead                                  prefer-const
+   38:19192  warning  'n' is never reassigned. Use 'const' instead                                  prefer-const
+   38:19204  warning  'a' is never reassigned. Use 'const' instead                                  prefer-const
+   38:19210  warning  'i' is never reassigned. Use 'const' instead                                  prefer-const
+   38:22022  warning  's' is never reassigned. Use 'const' instead                                  prefer-const
+   38:22398  error    Empty block statement                                                         no-empty
+   38:22407  error    Empty block statement                                                         no-empty
+   38:22720  error    Unexpected var, use let or const instead                                      no-var
+   38:23919  warning  't' is never reassigned. Use 'const' instead                                  prefer-const
+   38:24348  warning  'e' is never reassigned. Use 'const' instead                                  prefer-const
+   38:24384  error    Unexpected var, use let or const instead                                      no-var
+   38:25809  error    Expected a conditional expression and instead saw an assignment               no-cond-assign
+   38:26678  error    Expected a conditional expression and instead saw an assignment               no-cond-assign
+   38:28057  error    Unexpected var, use let or const instead                                      no-var
+   40:914    error    Unexpected var, use let or const instead                                      no-var
+   40:1063   error    Unexpected var, use let or const instead                                      no-var
+   40:1415   error    Unexpected var, use let or const instead                                      no-var
+   40:1771   error    Unexpected var, use let or const instead                                      no-var
+   40:2423   warning  'a' is never reassigned. Use 'const' instead                                  prefer-const
+   40:2436   warning  'i' is never reassigned. Use 'const' instead                                  prefer-const
+   40:3342   error    Unexpected var, use let or const instead                                      no-var
+   40:3450   error    Unexpected var, use let or const instead                                      no-var
+   40:3496   error    Unexpected var, use let or const instead                                      no-var
+   40:3599   error    Unexpected var, use let or const instead                                      no-var
+   40:3841   error    Unexpected var, use let or const instead                                      no-var
+   40:3988   error    Expected a conditional expression and instead saw an assignment               no-cond-assign
+   40:5112   error    Expected a conditional expression and instead saw an assignment               no-cond-assign
+   40:8878   error    Unexpected var, use let or const instead                                      no-var
+   40:10117  warning  'i' is never reassigned. Use 'const' instead                                  prefer-const
+   40:11618  error    Unexpected var, use let or const instead                                      no-var
+   40:12207  warning  'bv' is never reassigned. Use 'const' instead                                 prefer-const
+   40:12505  warning  'of' is never reassigned. Use 'const' instead                                 prefer-const
+   40:12521  warning  'Nv' is never reassigned. Use 'const' instead                                 prefer-const
+   40:12910  error    Do not access Object.prototype method 'hasOwnProperty' from target object     no-prototype-builtins
+   40:12931  error    Do not access Object.prototype method 'hasOwnProperty' from target object     no-prototype-builtins
+   40:12977  error    Unexpected var, use let or const instead                                      no-var
+   40:13001  error    Do not access Object.prototype method 'hasOwnProperty' from target object     no-prototype-builtins
+   40:13183  error    Do not access Object.prototype method 'hasOwnProperty' from target object     no-prototype-builtins
+   40:13285  error    Do not access Object.prototype method 'hasOwnProperty' from target object     no-prototype-builtins
+   40:13365  error    Do not access Object.prototype method 'hasOwnProperty' from target object     no-prototype-builtins
+   40:13389  error    Do not access Object.prototype method 'hasOwnProperty' from target object     no-prototype-builtins
+   40:13441  error    Do not access Object.prototype method 'hasOwnProperty' from target object     no-prototype-builtins
+   40:13796  error    Do not access Object.prototype method 'hasOwnProperty' from target object     no-prototype-builtins
+   40:13923  error    Unexpected var, use let or const instead                                      no-var
+   40:13965  warning  'Sv' is never reassigned. Use 'const' instead                                 prefer-const
+   40:14076  error    Unexpected var, use let or const instead                                      no-var
+   40:14206  error    Unexpected var, use let or const instead                                      no-var
+   40:14358  warning  't' is never reassigned. Use 'const' instead                                  prefer-const
+   40:14425  error    Unexpected var, use let or const instead                                      no-var
+   40:15185  error    Unexpected var, use let or const instead                                      no-var
+   40:15429  error    Unexpected var, use let or const instead                                      no-var
+   40:15977  error    Unexpected var, use let or const instead                                      no-var
+   40:15993  error    Do not access Object.prototype method 'hasOwnProperty' from target object     no-prototype-builtins
+   40:16012  error    Unexpected var, use let or const instead                                      no-var
+   40:16272  error    Do not access Object.prototype method 'hasOwnProperty' from target object     no-prototype-builtins
+   40:16719  error    Unnecessary escape character: \/                                              no-useless-escape
+   40:17601  error    Do not access Object.prototype method 'hasOwnProperty' from target object     no-prototype-builtins
+   40:17910  error    Do not access Object.prototype method 'hasOwnProperty' from target object     no-prototype-builtins
+   40:22246  warning  'zS' is never reassigned. Use 'const' instead                                 prefer-const
+   40:22535  error    Unexpected var, use let or const instead                                      no-var
+   40:22867  error    Unexpected var, use let or const instead                                      no-var
+   40:23394  error    Unexpected var, use let or const instead                                      no-var
+   40:23669  error    Unexpected var, use let or const instead                                      no-var
+   40:25960  error    Empty block statement                                                         no-empty
+   40:25995  error    Expected a 'break' statement before 'case'                                    no-fallthrough
+   40:26002  error    Unexpected var, use let or const instead                                      no-var
+   40:26503  warning  'o' is never reassigned. Use 'const' instead                                  prefer-const
+   40:27217  warning  'i' is never reassigned. Use 'const' instead                                  prefer-const
+   40:27221  warning  'o' is never reassigned. Use 'const' instead                                  prefer-const
+   40:27961  error    Unexpected var, use let or const instead                                      no-var
+   40:28052  error    Unexpected var, use let or const instead                                      no-var
+   40:28224  error    Unexpected var, use let or const instead                                      no-var
+   40:28263  error    Unexpected var, use let or const instead                                      no-var
+   40:28454  error    Unexpected var, use let or const instead                                      no-var
+   40:28529  error    Unexpected var, use let or const instead                                      no-var
+   40:29549  error    Unexpected var, use let or const instead                                      no-var
+   40:30088  error    Do not access Object.prototype method 'hasOwnProperty' from target object     no-prototype-builtins
+   40:30744  error    Unexpected var, use let or const instead                                      no-var
+   40:30812  error    Unexpected var, use let or const instead                                      no-var
+   40:30866  error    Unexpected var, use let or const instead                                      no-var
+   40:30908  error    Unexpected var, use let or const instead                                      no-var
+   40:31070  warning  't' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+   40:31072  warning  'n' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+   40:31100  warning  't' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+   40:31102  warning  'n' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+   40:31146  warning  'a' is never reassigned. Use 'const' instead                                  prefer-const
+   40:31599  error    Unexpected var, use let or const instead                                      no-var
+   40:31699  error    Unexpected var, use let or const instead                                      no-var
+   40:31926  error    Unexpected var, use let or const instead                                      no-var
+   40:31979  error    Unexpected var, use let or const instead                                      no-var
+   40:32140  error    Unexpected var, use let or const instead                                      no-var
+   40:32982  error    Unexpected var, use let or const instead                                      no-var
+   40:33041  error    Unexpected var, use let or const instead                                      no-var
+   40:33165  error    Unexpected var, use let or const instead                                      no-var
+   40:33222  error    Unexpected var, use let or const instead                                      no-var
+   40:33391  error    Unexpected var, use let or const instead                                      no-var
+   40:34738  error    Unexpected var, use let or const instead                                      no-var
+   40:34753  error    Unexpected var, use let or const instead                                      no-var
+   40:34853  error    Unexpected constant condition                                                 no-constant-condition
+   40:36151  error    Unexpected var, use let or const instead                                      no-var
+   40:36245  warning  'i' is never reassigned. Use 'const' instead                                  prefer-const
+   40:37461  error    Unexpected var, use let or const instead                                      no-var
+   40:38259  warning  'o' is never reassigned. Use 'const' instead                                  prefer-const
+   40:39032  error    Unexpected var, use let or const instead                                      no-var
+   40:39075  error    Unexpected var, use let or const instead                                      no-var
+   40:39413  error    Unexpected constant condition                                                 no-constant-condition
+   40:39711  error    Unexpected constant condition                                                 no-constant-condition
+   40:41449  warning  't' is never reassigned. Use 'const' instead                                  prefer-const
+   40:41465  warning  'n' is never reassigned. Use 'const' instead                                  prefer-const
+   40:41519  error    Unexpected var, use let or const instead                                      no-var
+   40:41625  error    Unexpected var, use let or const instead                                      no-var
+   40:41660  error    Unexpected var, use let or const instead                                      no-var
+   40:42775  error    Empty block statement                                                         no-empty
+   40:43612  warning  't' is never reassigned. Use 'const' instead                                  prefer-const
+   40:43715  error    Unexpected var, use let or const instead                                      no-var
+   40:43873  warning  'Dv' is never reassigned. Use 'const' instead                                 prefer-const
+   40:44123  error    Unexpected var, use let or const instead                                      no-var
+   40:44161  error    Unexpected var, use let or const instead                                      no-var
+   40:44213  error    Unexpected var, use let or const instead                                      no-var
+   40:45184  error    Unexpected var, use let or const instead                                      no-var
+   40:51076  error    Unexpected var, use let or const instead                                      no-var
+   40:52683  error    Unexpected var, use let or const instead                                      no-var
+   40:53098  error    Unexpected var, use let or const instead                                      no-var
+   40:53226  error    Expected a conditional expression and instead saw an assignment               no-cond-assign
+   40:53331  error    Unexpected var, use let or const instead                                      no-var
+   40:53540  error    Unexpected var, use let or const instead                                      no-var
+   40:53703  error    Unexpected var, use let or const instead                                      no-var
+   40:54662  error    's0' is a function                                                            no-func-assign
+   40:54668  error    'a0' is a function                                                            no-func-assign
+   40:55689  error    Empty block statement                                                         no-empty
+   40:56674  warning  's' is never reassigned. Use 'const' instead                                  prefer-const
+   40:57916  warning  'ex' is never reassigned. Use 'const' instead                                 prefer-const
+   40:58032  warning  'o' is never reassigned. Use 'const' instead                                  prefer-const
+   40:58042  warning  'c' is never reassigned. Use 'const' instead                                  prefer-const
+   40:58077  error    Expected a conditional expression and instead saw an assignment               no-cond-assign
+   48:2793   warning  'l' is never reassigned. Use 'const' instead                                  prefer-const
+   48:2808   warning  'c' is never reassigned. Use 'const' instead                                  prefer-const
+   48:3628   warning  'f' is assigned a value but never used                                        @typescript-eslint/no-unused-vars
+   48:3636   warning  'x' is assigned a value but never used                                        @typescript-eslint/no-unused-vars
+   48:6630   error    Do not access Object.prototype method 'hasOwnProperty' from target object     no-prototype-builtins
+   48:7391   warning  'Uk' is never reassigned. Use 'const' instead                                 prefer-const
+   48:8268   warning  'Zm' is never reassigned. Use 'const' instead                                 prefer-const
+   48:8290   warning  'zk' is never reassigned. Use 'const' instead                                 prefer-const
+   48:9056   warning  'dc' is never reassigned. Use 'const' instead                                 prefer-const
+   48:11063  warning  'tt' is never reassigned. Use 'const' instead                                 prefer-const
+   48:11077  warning  'ly' is never reassigned. Use 'const' instead                                 prefer-const
+   48:11462  warning  'Wk' is never reassigned. Use 'const' instead                                 prefer-const
+   48:16820  error    Unexpected lexical declaration in case block                                  no-case-declarations
+   48:17099  error    Unexpected lexical declaration in case block                                  no-case-declarations
+   48:18137  warning  'Gk' is never reassigned. Use 'const' instead                                 prefer-const
+   48:19228  warning  'qk' is never reassigned. Use 'const' instead                                 prefer-const
+   48:22968  warning  'Kk' is never reassigned. Use 'const' instead                                 prefer-const
+   48:26212  warning  'Yk' is never reassigned. Use 'const' instead                                 prefer-const
+   48:30906  warning  'Xk' is never reassigned. Use 'const' instead                                 prefer-const
+   48:38849  warning  'eC' is never reassigned. Use 'const' instead                                 prefer-const
+   48:40890  warning  'fy' is never reassigned. Use 'const' instead                                 prefer-const
+   48:40917  warning  'sn' is never reassigned. Use 'const' instead                                 prefer-const
+   48:40920  warning  'e' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+   48:41039  warning  'tC' is never reassigned. Use 'const' instead                                 prefer-const
+   48:41160  warning  'my' is never reassigned. Use 'const' instead                                 prefer-const
+   48:41183  warning  'nC' is never reassigned. Use 'const' instead                                 prefer-const
+   48:42040  warning  'n' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+   48:43130  warning  't' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+   48:43163  warning  't' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+   48:44008  warning  'e' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+   48:51748  warning  'AC' is never reassigned. Use 'const' instead                                 prefer-const
+   48:51770  warning  'Tf' is never reassigned. Use 'const' instead                                 prefer-const
+   48:51799  warning  'IC' is never reassigned. Use 'const' instead                                 prefer-const
+   48:51840  warning  'OC' is never reassigned. Use 'const' instead                                 prefer-const
+   48:51878  warning  'gy' is never reassigned. Use 'const' instead                                 prefer-const
+   48:51979  warning  'Za' is never reassigned. Use 'const' instead                                 prefer-const
+   48:58919  warning  'vO' is assigned a value but never used                                       @typescript-eslint/no-unused-vars
+   48:62152  error    Unexpected var, use let or const instead                                      no-var
+   48:63944  error    Unexpected var, use let or const instead                                      no-var
+   48:67221  warning  'n' is assigned a value but never used                                        @typescript-eslint/no-unused-vars
+   48:67356  warning  'n' is assigned a value but never used                                        @typescript-eslint/no-unused-vars
+   48:67695  error    Unexpected var, use let or const instead                                      no-var
+   48:67913  error    Unexpected var, use let or const instead                                      no-var
+   48:67960  warning  'n' is assigned a value but never used                                        @typescript-eslint/no-unused-vars
+   48:68625  error    Unexpected var, use let or const instead                                      no-var
+   48:69727  error    Unexpected var, use let or const instead                                      no-var
+  458:23215  warning  'p4' is never reassigned. Use 'const' instead                                 prefer-const
+  458:30297  warning  'x' is never reassigned. Use 'const' instead                                  prefer-const
+  458:30325  warning  'y' is never reassigned. Use 'const' instead                                  prefer-const
+  458:50254  error    Unexpected var, use let or const instead                                      no-var
+  458:50917  warning  'yO' is assigned a value but never used                                       @typescript-eslint/no-unused-vars
+  458:51651  warning  'wO' is assigned a value but never used                                       @typescript-eslint/no-unused-vars
+  458:52568  error    Unexpected var, use let or const instead                                      no-var
+  458:52592  warning  'jO' is assigned a value but never used                                       @typescript-eslint/no-unused-vars
+  458:62972  warning  'o' is assigned a value but never used                                        @typescript-eslint/no-unused-vars
+  458:65879  warning  'n' is never reassigned. Use 'const' instead                                  prefer-const
+  458:66265  error    'wc' is a function                                                            no-func-assign
+  458:66753  error    Unexpected var, use let or const instead                                      no-var
+  458:67724  warning  's' is never reassigned. Use 'const' instead                                  prefer-const
+  458:67731  warning  'a' is never reassigned. Use 'const' instead                                  prefer-const
+  458:67739  warning  'i' is never reassigned. Use 'const' instead                                  prefer-const
+  458:67744  warning  'o' is never reassigned. Use 'const' instead                                  prefer-const
+  458:67755  warning  'l' is never reassigned. Use 'const' instead                                  prefer-const
+  458:73094  warning  'A' is assigned a value but never used                                        @typescript-eslint/no-unused-vars
+  458:86154  error    Unexpected var, use let or const instead                                      no-var
+  458:86783  error    Unexpected var, use let or const instead                                      no-var
+  458:89798  warning  'Zw' is never reassigned. Use 'const' instead                                 prefer-const
+  458:89804  warning  'ej' is never reassigned. Use 'const' instead                                 prefer-const
+  458:89810  warning  'FT' is never reassigned. Use 'const' instead                                 prefer-const
+  458:89962  warning  'tj' is never reassigned. Use 'const' instead                                 prefer-const
+  458:90015  warning  'LT' is never reassigned. Use 'const' instead                                 prefer-const
+  458:90241  warning  'UT' is never reassigned. Use 'const' instead                                 prefer-const
+  458:91074  warning  'Ch' is never reassigned. Use 'const' instead                                 prefer-const
+  458:91364  error    Unexpected var, use let or const instead                                      no-var
+  458:91557  error    Unexpected var, use let or const instead                                      no-var
+  458:91703  error    Unexpected var, use let or const instead                                      no-var
+  458:91711  error    's' is already defined                                                        no-redeclare
+  458:91908  error    Unexpected var, use let or const instead                                      no-var
+  458:92273  error    Unexpected var, use let or const instead                                      no-var
+  458:92554  warning  't' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+  458:92903  warning  'a' is never reassigned. Use 'const' instead                                  prefer-const
+  458:95393  warning  'e5' is never reassigned. Use 'const' instead                                 prefer-const
+  458:95565  warning  't5' is never reassigned. Use 'const' instead                                 prefer-const
+  458:95686  warning  'aj' is never reassigned. Use 'const' instead                                 prefer-const
+  458:95786  warning  'n5' is never reassigned. Use 'const' instead                                 prefer-const
+  458:95818  warning  'hu' is never reassigned. Use 'const' instead                                 prefer-const
+  458:95863  warning  'r5' is never reassigned. Use 'const' instead                                 prefer-const
+  458:96090  warning  's5' is never reassigned. Use 'const' instead                                 prefer-const
+  458:96303  warning  'a5' is never reassigned. Use 'const' instead                                 prefer-const
+  458:96311  warning  'ga' is never reassigned. Use 'const' instead                                 prefer-const
+  458:96335  warning  'i5' is never reassigned. Use 'const' instead                                 prefer-const
+  495:5      warning  'Kx' is never reassigned. Use 'const' instead                                 prefer-const
+  495:100    warning  'o5' is never reassigned. Use 'const' instead                                 prefer-const
+  495:311    warning  'l5' is never reassigned. Use 'const' instead                                 prefer-const
+  495:719    error    Unexpected var, use let or const instead                                      no-var
+  495:1062   warning  'n' is never reassigned. Use 'const' instead                                  prefer-const
+  495:1586   warning  'a' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+  495:1593   warning  'i' is never reassigned. Use 'const' instead                                  prefer-const
+  495:1638   warning  'o' is never reassigned. Use 'const' instead                                  prefer-const
+  495:1655   warning  'c' is never reassigned. Use 'const' instead                                  prefer-const
+  495:1676   warning  'm' is never reassigned. Use 'const' instead                                  prefer-const
+  498:780    warning  'h' is never reassigned. Use 'const' instead                                  prefer-const
+  498:788    warning  'v' is never reassigned. Use 'const' instead                                  prefer-const
+  498:800    warning  'j' is never reassigned. Use 'const' instead                                  prefer-const
+  498:834    warning  'N' is never reassigned. Use 'const' instead                                  prefer-const
+  498:870    warning  'S' is never reassigned. Use 'const' instead                                  prefer-const
+  498:881    warning  'P' is never reassigned. Use 'const' instead                                  prefer-const
+  498:2737   error    Unexpected var, use let or const instead                                      no-var
+  498:4505   error    Unexpected var, use let or const instead                                      no-var
+  498:8466   warning  'n' is assigned a value but never used                                        @typescript-eslint/no-unused-vars
+  498:8606   warning  'n' is assigned a value but never used                                        @typescript-eslint/no-unused-vars
+  498:9458   error    Unexpected var, use let or const instead                                      no-var
+  498:11220  error    Unexpected var, use let or const instead                                      no-var
+  498:11562  warning  'n' is assigned a value but never used                                        @typescript-eslint/no-unused-vars
+  498:11831  warning  'bO' is assigned a value but never used                                       @typescript-eslint/no-unused-vars
+  498:15674  warning  'NO' is assigned a value but never used                                       @typescript-eslint/no-unused-vars
+  498:32756  warning  'n' is assigned a value but never used                                        @typescript-eslint/no-unused-vars
+  498:51163  warning  'SO' is assigned a value but never used                                       @typescript-eslint/no-unused-vars
+  498:53828  warning  's' is assigned a value but never used                                        @typescript-eslint/no-unused-vars
+  498:53836  warning  'a' is assigned a value but never used                                        @typescript-eslint/no-unused-vars
+  498:54186  warning  'n' is assigned a value but never used                                        @typescript-eslint/no-unused-vars
+  498:54738  error    Unexpected var, use let or const instead                                      no-var
+  498:58539  error    Unexpected var, use let or const instead                                      no-var
+  498:60925  error    Unexpected var, use let or const instead                                      no-var
+  498:61554  error    Unexpected var, use let or const instead                                      no-var
+  498:64829  warning  's' is assigned a value but never used                                        @typescript-eslint/no-unused-vars
+  498:64837  warning  'a' is assigned a value but never used                                        @typescript-eslint/no-unused-vars
+  498:66755  error    Unexpected var, use let or const instead                                      no-var
+  498:67584  warning  'n' is assigned a value but never used                                        @typescript-eslint/no-unused-vars
+  498:67862  error    Unexpected var, use let or const instead                                      no-var
+  498:67921  warning  'e' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+  498:77337  warning  't' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+  498:92930  warning  'e' is assigned a value but never used                                        @typescript-eslint/no-unused-vars
+  498:94382  warning  'kO' is assigned a value but never used                                       @typescript-eslint/no-unused-vars
+  503:6491   error    Empty block statement                                                         no-empty
+  503:20967  warning  'e' is assigned a value but never used                                        @typescript-eslint/no-unused-vars
+  503:29335  warning  'CO' is assigned a value but never used                                       @typescript-eslint/no-unused-vars
+  503:30339  error    Unexpected var, use let or const instead                                      no-var
+  503:30398  warning  'e' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+  503:31856  warning  'f' is assigned a value but never used                                        @typescript-eslint/no-unused-vars
+  503:31918  warning  'y' is assigned a value but never used                                        @typescript-eslint/no-unused-vars
+  503:43468  error    Unexpected var, use let or const instead                                      no-var
+  503:43878  error    'Dl' is a function                                                            no-func-assign
+  503:43910  error    'Dl' is a function                                                            no-func-assign
+  503:44194  warning  'n' is never reassigned. Use 'const' instead                                  prefer-const
+  503:44199  warning  's' is never reassigned. Use 'const' instead                                  prefer-const
+  503:44332  warning  'n' is never reassigned. Use 'const' instead                                  prefer-const
+  503:44736  warning  's' is never reassigned. Use 'const' instead                                  prefer-const
+  503:44917  error    Unsafe usage of ThrowStatement                                                no-unsafe-finally
+  503:45289  error    Unexpected var, use let or const instead                                      no-var
+  504:1064   error    Unexpected var, use let or const instead                                      no-var
+  504:2851   warning  'w' is never reassigned. Use 'const' instead                                  prefer-const
+  504:6510   error    Empty block statement                                                         no-empty
+  504:7935   warning  'g3' is never reassigned. Use 'const' instead                                 prefer-const
+  504:7981   warning  'v3' is never reassigned. Use 'const' instead                                 prefer-const
+  504:8132   warning  'cg' is never reassigned. Use 'const' instead                                 prefer-const
+  504:8144   warning  't' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+  504:8388   warning  'y3' is never reassigned. Use 'const' instead                                 prefer-const
+  504:8522   warning  'w3' is never reassigned. Use 'const' instead                                 prefer-const
+  504:8609   warning  'j3' is never reassigned. Use 'const' instead                                 prefer-const
+  504:8717   warning  'b3' is never reassigned. Use 'const' instead                                 prefer-const
+  504:9255   warning  'N3' is never reassigned. Use 'const' instead                                 prefer-const
+  504:9672   warning  'uN' is never reassigned. Use 'const' instead                                 prefer-const
+  504:9880   error    Unexpected var, use let or const instead                                      no-var
+  504:14249  warning  'PO' is assigned a value but never used                                       @typescript-eslint/no-unused-vars
+  504:17366  warning  'EO' is assigned a value but never used                                       @typescript-eslint/no-unused-vars
+  504:18651  error    Unexpected var, use let or const instead                                      no-var
+  504:19177  error    Unexpected var, use let or const instead                                      no-var
+  504:21540  error    Unexpected var, use let or const instead                                      no-var
+  504:21569  warning  'TO' is assigned a value but never used                                       @typescript-eslint/no-unused-vars
+  508:9489   warning  'w' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+  508:33637  warning  's' is assigned a value but never used                                        @typescript-eslint/no-unused-vars
+  508:33704  warning  'c' is assigned a value but never used                                        @typescript-eslint/no-unused-vars
+  508:33725  warning  'm' is assigned a value but never used                                        @typescript-eslint/no-unused-vars
+  508:33727  warning  'f' is assigned a value but never used                                        @typescript-eslint/no-unused-vars
+  509:5814   warning  'RO' is assigned a value but never used                                       @typescript-eslint/no-unused-vars
+  509:8010   error    Unexpected var, use let or const instead                                      no-var
+  509:25415  warning  'k' is assigned a value but never used                                        @typescript-eslint/no-unused-vars
+  509:25417  warning  'M' is assigned a value but never used                                        @typescript-eslint/no-unused-vars
+  509:25436  warning  'A' is assigned a value but never used                                        @typescript-eslint/no-unused-vars
+  509:25438  warning  'D' is assigned a value but never used                                        @typescript-eslint/no-unused-vars
+  509:44469  warning  'MO' is assigned a value but never used                                       @typescript-eslint/no-unused-vars
+  509:46018  error    Unexpected var, use let or const instead                                      no-var
+  509:49122  error    Unexpected var, use let or const instead                                      no-var
+  509:50407  error    Unexpected var, use let or const instead                                      no-var
+  509:50465  warning  'e' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+  509:52305  warning  'e' is assigned a value but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  509:53443  warning  'O' is assigned a value but never used                                        @typescript-eslint/no-unused-vars
+  509:61340  warning  't' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+  509:63528  warning  't' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+  509:63530  warning  'n' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+  509:63532  warning  's' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+  509:65532  warning  't' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+  509:76803  warning  'n' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+  509:76983  warning  'n' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+  509:77144  warning  'n' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+  509:77294  warning  'n' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+  509:77444  warning  'n' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+  509:77521  warning  'n' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+  509:79255  warning  'n' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+  509:80313  warning  't' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+  509:83064  warning  'e' is assigned a value but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  509:90443  warning  'O' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+  509:91311  warning  'O' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+  513:7234   warning  'w' is assigned a value but never used                                        @typescript-eslint/no-unused-vars
+  513:19770  warning  'n' is assigned a value but never used                                        @typescript-eslint/no-unused-vars
+  513:19772  warning  's' is assigned a value but never used                                        @typescript-eslint/no-unused-vars
+  513:27193  warning  't' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+  513:27195  warning  'n' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/client/src/App.tsx
+   25:8   warning  'Phase4Dashboard' is defined but never used          @typescript-eslint/no-unused-vars
+   92:9   warning  'userTier' is assigned a value but never used        @typescript-eslint/no-unused-vars
+  153:59  warning  'showOnboarding' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/client/src/components/CaptionPreview.tsx
+  8:50  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/client/src/components/GeminiCaptionGenerator.tsx
+   6:60  warning  'SelectValue' is defined but never used   @typescript-eslint/no-unused-vars
+   9:59  warning  'ImageIcon' is defined but never used     @typescript-eslint/no-unused-vars
+  33:50  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  95:19  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/client/src/components/GeminiCaptionGeneratorTabs.tsx
+    6:60  warning  'SelectValue' is defined but never used   @typescript-eslint/no-unused-vars
+   62:50  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  127:19  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  162:19  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  204:19  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/client/src/components/PasswordChangeForm.tsx
+   8:10  warning  'apiRequest' is defined but never used    @typescript-eslint/no-unused-vars
+  79:21  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/client/src/components/PolicyPreview.tsx
+    9:10  warning  'apiRequest' is defined but never used                           @typescript-eslint/no-unused-vars
+   57:25  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  236:16  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  236:19  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+/home/runner/workspace/client/src/components/admin-access-guide.tsx
+  65:20  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+/home/runner/workspace/client/src/components/admin-portal.tsx
+     1:20  warning  'useEffect' is defined but never used                            @typescript-eslint/no-unused-vars
+    12:23  warning  'apiRequest' is defined but never used                           @typescript-eslint/no-unused-vars
+    19:3   warning  'Mail' is defined but never used                                 @typescript-eslint/no-unused-vars
+    23:3   warning  'UserPlus' is defined but never used                             @typescript-eslint/no-unused-vars
+    26:3   warning  'AlertCircle' is defined but never used                          @typescript-eslint/no-unused-vars
+    31:3   warning  'ChevronRight' is defined but never used                         @typescript-eslint/no-unused-vars
+    52:11  warning  'UserStats' is defined but never used                            @typescript-eslint/no-unused-vars
+    77:10  warning  'selectedUser' is assigned a value but never used                @typescript-eslint/no-unused-vars
+    77:24  warning  'setSelectedUser' is assigned a value but never used             @typescript-eslint/no-unused-vars
+    77:52  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+    82:83  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   108:35  warning  'statsLoading' is assigned a value but never used                @typescript-eslint/no-unused-vars
+   115:56  warning  'usersError' is assigned a value but never used                  @typescript-eslint/no-unused-vars
+   115:80  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   133:22  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   209:62  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   211:31  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   225:31  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   225:65  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   228:30  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   241:63  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   257:62  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   606:59  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   608:31  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   652:72  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   701:61  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   708:68  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   731:77  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   824:46  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   855:57  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   875:74  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   881:26  warning  'setSelectedUserId' is assigned a value but never used           @typescript-eslint/no-unused-vars
+   912:35  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   950:44  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   983:77  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   984:35  warning  'refetchMetrics' is assigned a value but never used              @typescript-eslint/no-unused-vars
+  1090:30  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  1149:85  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  1149:97  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  1151:52  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  1158:30  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  1186:22  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  1199:23  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  1235:71  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  1358:55  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  1397:81  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  1407:24  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  1441:41  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/client/src/components/aesthetic-landing.tsx
+  10:3   warning  'ImageIcon' is defined but never used      @typescript-eslint/no-unused-vars
+  12:3   warning  'Zap' is defined but never used            @typescript-eslint/no-unused-vars
+  14:3   warning  'ArrowRight' is defined but never used     @typescript-eslint/no-unused-vars
+  16:3   warning  'Globe' is defined but never used          @typescript-eslint/no-unused-vars
+  18:3   warning  'Palette' is defined but never used        @typescript-eslint/no-unused-vars
+  20:3   warning  'Heart' is defined but never used          @typescript-eslint/no-unused-vars
+  22:3   warning  'MessageCircle' is defined but never used  @typescript-eslint/no-unused-vars
+  25:3   warning  'Rocket' is defined but never used         @typescript-eslint/no-unused-vars
+  36:42  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/client/src/components/ai-generator.tsx
+  385:80  error  Parsing error: '}' expected
+
+/home/runner/workspace/client/src/components/analytics/SmartAnalytics.tsx
+    9:3   warning  'BarChart' is defined but never used                             @typescript-eslint/no-unused-vars
+    9:13  warning  'Bar' is defined but never used                                  @typescript-eslint/no-unused-vars
+    9:56  warning  'Legend' is defined but never used                               @typescript-eslint/no-unused-vars
+   10:3   warning  'LineChart' is defined but never used                            @typescript-eslint/no-unused-vars
+   10:14  warning  'Line' is defined but never used                                 @typescript-eslint/no-unused-vars
+   13:15  warning  'TrendingDown' is defined but never used                         @typescript-eslint/no-unused-vars
+   13:41  warning  'MessageCircle' is defined but never used                        @typescript-eslint/no-unused-vars
+   13:56  warning  'Share2' is defined but never used                               @typescript-eslint/no-unused-vars
+   14:3   warning  'Target' is defined but never used                               @typescript-eslint/no-unused-vars
+   14:18  warning  'Zap' is defined but never used                                  @typescript-eslint/no-unused-vars
+   14:23  warning  'Star' is defined but never used                                 @typescript-eslint/no-unused-vars
+   14:29  warning  'Users' is defined but never used                                @typescript-eslint/no-unused-vars
+   14:36  warning  'Calendar' is defined but never used                             @typescript-eslint/no-unused-vars
+   14:46  warning  'Award' is defined but never used                                @typescript-eslint/no-unused-vars
+   57:28  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  125:55  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  135:91  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  146:53  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  155:52  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  192:46  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+/home/runner/workspace/client/src/components/apple-inspired-app.tsx
+   10:3   warning  'Star' is defined but never used          @typescript-eslint/no-unused-vars
+   11:3   warning  'ArrowRight' is defined but never used    @typescript-eslint/no-unused-vars
+   12:3   warning  'Check' is defined but never used         @typescript-eslint/no-unused-vars
+   14:3   warning  'X' is defined but never used             @typescript-eslint/no-unused-vars
+   19:3   warning  'ChevronRight' is defined but never used  @typescript-eslint/no-unused-vars
+   21:3   warning  'Plus' is defined but never used          @typescript-eslint/no-unused-vars
+   27:3   warning  'Eye' is defined but never used           @typescript-eslint/no-unused-vars
+   28:3   warning  'EyeOff' is defined but never used        @typescript-eslint/no-unused-vars
+   30:3   warning  'Lock' is defined but never used          @typescript-eslint/no-unused-vars
+   31:3   warning  'Unlock' is defined but never used        @typescript-eslint/no-unused-vars
+   32:3   warning  'FileText' is defined but never used      @typescript-eslint/no-unused-vars
+   36:3   warning  'Bell' is defined but never used          @typescript-eslint/no-unused-vars
+  102:30  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  253:14  warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+  737:80  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/client/src/components/audience-insights.tsx
+  37:16  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/client/src/components/auth-modal.tsx
+    8:10  warning  'Badge' is defined but never used                                @typescript-eslint/no-unused-vars
+   11:10  warning  'queryClient' is defined but never used                          @typescript-eslint/no-unused-vars
+   11:23  warning  'apiRequest' is defined but never used                           @typescript-eslint/no-unused-vars
+  110:19  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  111:19  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  122:29  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  161:28  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  214:22  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  233:13  warning  'data' is assigned a value but never used                        @typescript-eslint/no-unused-vars
+  239:14  warning  'error' is defined but never used                                @typescript-eslint/no-unused-vars
+  250:9   warning  'resendVerificationMutation' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  273:22  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  432:40  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  433:38  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/client/src/components/automation/SocialAutomation.tsx
+   7:10  warning  'Select' is defined but never used         @typescript-eslint/no-unused-vars
+   7:18  warning  'SelectContent' is defined but never used  @typescript-eslint/no-unused-vars
+   7:33  warning  'SelectItem' is defined but never used     @typescript-eslint/no-unused-vars
+   7:45  warning  'SelectTrigger' is defined but never used  @typescript-eslint/no-unused-vars
+   7:60  warning  'SelectValue' is defined but never used    @typescript-eslint/no-unused-vars
+  18:38  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/client/src/components/community/CommunityManager.tsx
+  15:3   warning  'Clock' is defined but never used                           @typescript-eslint/no-unused-vars
+  18:3   warning  'AlertTriangle' is defined but never used                   @typescript-eslint/no-unused-vars
+  20:3   warning  'Settings' is defined but never used                        @typescript-eslint/no-unused-vars
+  25:3   warning  'Calendar' is defined but never used                        @typescript-eslint/no-unused-vars
+  26:3   warning  'BarChart3' is defined but never used                       @typescript-eslint/no-unused-vars
+  31:10  warning  'engagementTracking' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  31:30  warning  'setEngagementTracking' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/client/src/components/conversion-optimization.tsx
+   74:16  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+   96:13  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+   96:42  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  118:25  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  152:20  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+/home/runner/workspace/client/src/components/demo-fallback.tsx
+  13:8  error  Parsing error: Expression expected
+
+/home/runner/workspace/client/src/components/dual-workflow-generator.tsx
+   5:10  warning  'Badge' is defined but never used               @typescript-eslint/no-unused-vars
+   7:60  warning  'SelectValue' is defined but never used         @typescript-eslint/no-unused-vars
+  13:3   warning  'ArrowRight' is defined but never used          @typescript-eslint/no-unused-vars
+  15:3   warning  'Download' is defined but never used            @typescript-eslint/no-unused-vars
+  38:10  warning  'imageFile' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/client/src/components/enhanced-ai-generator.tsx
+    9:27  warning  'Zap' is defined but never used           @typescript-eslint/no-unused-vars
+    9:32  warning  'DollarSign' is defined but never used    @typescript-eslint/no-unused-vars
+    9:44  warning  'Clock' is defined but never used         @typescript-eslint/no-unused-vars
+    9:51  warning  'TrendingUp' is defined but never used    @typescript-eslint/no-unused-vars
+    9:90  warning  'Check' is defined but never used         @typescript-eslint/no-unused-vars
+    9:97  warning  'Hash' is defined but never used          @typescript-eslint/no-unused-vars
+   34:60  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  132:30  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  245:14  warning  'err' is defined but never used           @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/client/src/components/enterprise/AIContentStudio.tsx
+   51:23  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   58:22  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   98:14  warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+  324:60  error    Forbidden non-null assertion              @typescript-eslint/no-non-null-assertion
+  342:60  error    Forbidden non-null assertion              @typescript-eslint/no-non-null-assertion
+
+/home/runner/workspace/client/src/components/enterprise/BillingDashboard.tsx
+    7:29  warning  'Calendar' is defined but never used                             @typescript-eslint/no-unused-vars
+   19:11  warning  'SubscriptionData' is defined but never used                     @typescript-eslint/no-unused-vars
+   26:9   warning  'queryClient' is assigned a value but never used                 @typescript-eslint/no-unused-vars
+   40:23  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   47:22  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   87:45  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   88:9   warning  'isPro' is assigned a value but never used                       @typescript-eslint/no-unused-vars
+   88:38  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   89:37  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  239:52  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+/home/runner/workspace/client/src/components/enterprise/MediaLibrary.tsx
+    5:10  warning  'Input' is defined but never used         @typescript-eslint/no-unused-vars
+    8:10  warning  'Tabs' is defined but never used          @typescript-eslint/no-unused-vars
+    8:16  warning  'TabsContent' is defined but never used   @typescript-eslint/no-unused-vars
+    8:29  warning  'TabsList' is defined but never used      @typescript-eslint/no-unused-vars
+    8:39  warning  'TabsTrigger' is defined but never used   @typescript-eslint/no-unused-vars
+   26:11  warning  'StorageUsage' is defined but never used  @typescript-eslint/no-unused-vars
+   94:22  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  164:27  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  174:47  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  174:98  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  175:32  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  177:40  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  178:25  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  181:88  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  234:26  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  241:27  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  241:47  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/client/src/components/enterprise/PostScheduler.tsx
+    8:60  warning  'SelectValue' is defined but never used                                 @typescript-eslint/no-unused-vars
+   11:27  warning  'Send' is defined but never used                                        @typescript-eslint/no-unused-vars
+   22:16  error    Unexpected any. Specify a different type                                @typescript-eslint/no-explicit-any
+   57:17  warning  'data' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+   66:22  error    Unexpected any. Specify a different type                                @typescript-eslint/no-explicit-any
+  206:61  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`         react/no-unescaped-entities
+  230:34  error    Unexpected any. Specify a different type                                @typescript-eslint/no-explicit-any
+  237:35  error    Unexpected any. Specify a different type                                @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/client/src/components/fine-tuning-settings.tsx
+   9:23  warning  'apiRequest' is defined but never used  @typescript-eslint/no-unused-vars
+  11:3   warning  'Settings' is defined but never used    @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/client/src/components/generation-counter.tsx
+   1:10  warning  'useState' is defined but never used        @typescript-eslint/no-unused-vars
+   1:20  warning  'useEffect' is defined but never used       @typescript-eslint/no-unused-vars
+  15:17  warning  'stats' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/client/src/components/generation-history.tsx
+   6:10  warning  'Separator' is defined but never used     @typescript-eslint/no-unused-vars
+   8:10  warning  'apiRequest' is defined but never used    @typescript-eslint/no-unused-vars
+  17:22  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  44:14  warning  'err' is defined but never used           @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/client/src/components/generation-panel.tsx
+  37:23  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  91:14  warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/client/src/components/getting-started.tsx
+    9:3   warning  'PlayCircle' is defined but never used                                                 @typescript-eslint/no-unused-vars
+   10:3   warning  'BookOpen' is defined but never used                                                   @typescript-eslint/no-unused-vars
+   20:3   warning  'Camera' is defined but never used                                                     @typescript-eslint/no-unused-vars
+   21:3   warning  'ChevronDown' is defined but never used                                                @typescript-eslint/no-unused-vars
+   35:70  warning  'isAtBottom' is assigned a value but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+   37:10  warning  'activeStep' is assigned a value but never used                                        @typescript-eslint/no-unused-vars
+   37:22  warning  'setActiveStep' is assigned a value but never used                                     @typescript-eslint/no-unused-vars
+  157:35  error    Unexpected any. Specify a different type                                               @typescript-eslint/no-explicit-any
+  237:89  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                        react/no-unescaped-entities
+  294:31  warning  'index' is defined but never used. Allowed unused args must match /^_/u                @typescript-eslint/no-unused-vars
+  336:35  error    Unexpected any. Specify a different type                                               @typescript-eslint/no-explicit-any
+  337:86  error    Unexpected any. Specify a different type                                               @typescript-eslint/no-explicit-any
+  377:39  warning  'index' is defined but never used. Allowed unused args must match /^_/u                @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/client/src/components/header.tsx
+  12:3   warning  'Sparkles' is defined but never used           @typescript-eslint/no-unused-vars
+  16:10  warning  'GenerationCounter' is defined but never used  @typescript-eslint/no-unused-vars
+  17:10  warning  'ThottoPilotLogo' is defined but never used    @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/client/src/components/image-gallery.tsx
+    9:10  warning  'apiRequest' is defined but never used                 @typescript-eslint/no-unused-vars
+   11:10  warning  'protectImage' is defined but never used               @typescript-eslint/no-unused-vars
+   12:44  warning  'Eye' is defined but never used                        @typescript-eslint/no-unused-vars
+   12:54  warning  'Plus' is defined but never used                       @typescript-eslint/no-unused-vars
+   34:10  warning  'selectedImage' is assigned a value but never used     @typescript-eslint/no-unused-vars
+   34:25  warning  'setSelectedImage' is assigned a value but never used  @typescript-eslint/no-unused-vars
+   37:11  warning  'token' is assigned a value but never used             @typescript-eslint/no-unused-vars
+   40:83  error    Unexpected any. Specify a different type               @typescript-eslint/no-explicit-any
+   97:22  error    Unexpected any. Specify a different type               @typescript-eslint/no-explicit-any
+  194:14  warning  'error' is defined but never used                      @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/client/src/components/image-protector.tsx
+   15:12  warning  'ImageIcon' is defined but never used                            @typescript-eslint/no-unused-vars
+   20:3   warning  'EyeOff' is defined but never used                               @typescript-eslint/no-unused-vars
+   40:10  warning  'showComparison' is assigned a value but never used              @typescript-eslint/no-unused-vars
+  152:14  warning  'error' is defined but never used                                @typescript-eslint/no-unused-vars
+  529:28  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  529:42  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+/home/runner/workspace/client/src/components/image-shield-unified.tsx
+   11:10  warning  'Input' is defined but never used                                @typescript-eslint/no-unused-vars
+   22:3   warning  'EyeOff' is defined but never used                               @typescript-eslint/no-unused-vars
+   27:3   warning  'Tag' is defined but never used                                  @typescript-eslint/no-unused-vars
+   30:3   warning  'Plus' is defined but never used                                 @typescript-eslint/no-unused-vars
+   61:10  warning  'showComparison' is assigned a value but never used              @typescript-eslint/no-unused-vars
+   63:10  warning  'selectedTags' is assigned a value but never used                @typescript-eslint/no-unused-vars
+   63:24  warning  'setSelectedTags' is assigned a value but never used             @typescript-eslint/no-unused-vars
+   64:10  warning  'selectedImage' is assigned a value but never used               @typescript-eslint/no-unused-vars
+   64:25  warning  'setSelectedImage' is assigned a value but never used            @typescript-eslint/no-unused-vars
+   75:83  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  127:22  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  274:14  warning  'error' is defined but never used                                @typescript-eslint/no-unused-vars
+  673:32  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  673:46  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+/home/runner/workspace/client/src/components/image-shield.tsx
+    6:60  warning  'SelectValue' is defined but never used                                                 @typescript-eslint/no-unused-vars
+   18:3   warning  'AlertTriangle' is defined but never used                                               @typescript-eslint/no-unused-vars
+   27:31  warning  'isGuestMode' is assigned a value but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+   94:15  warning  'settings' is assigned a value but never used                                           @typescript-eslint/no-unused-vars
+  139:14  warning  'error' is defined but never used                                                       @typescript-eslint/no-unused-vars
+  165:9   warning  'canUseAdvanced' is assigned a value but never used                                     @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/client/src/components/integrated-fine-tuning.tsx
+  30:11  error  Parsing error: Expression expected
+
+/home/runner/workspace/client/src/components/intelligence/TrendIntelligence.tsx
+  14:3  warning  'Share2' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/client/src/components/landing-page.tsx
+    3:29  warning  'CardDescription' is defined but never used                      @typescript-eslint/no-unused-vars
+    5:10  warning  'useToast' is defined but never used                             @typescript-eslint/no-unused-vars
+    9:3   warning  'Sparkles' is defined but never used                             @typescript-eslint/no-unused-vars
+   18:3   warning  'Calendar' is defined but never used                             @typescript-eslint/no-unused-vars
+   19:12  warning  'ImageIcon' is defined but never used                            @typescript-eslint/no-unused-vars
+   33:10  warning  'scrollY' is assigned a value but never used                     @typescript-eslint/no-unused-vars
+  317:43  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  448:43  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  448:86  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+/home/runner/workspace/client/src/components/login-modal.tsx
+  15:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/client/src/components/mobile-optimization.tsx
+  2:29  warning  'CardDescription' is defined but never used  @typescript-eslint/no-unused-vars
+  2:46  warning  'CardHeader' is defined but never used       @typescript-eslint/no-unused-vars
+  2:58  warning  'CardTitle' is defined but never used        @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/client/src/components/modern-dashboard.tsx
+    8:3   warning  'Sparkles' is defined but never used                             @typescript-eslint/no-unused-vars
+   13:3   warning  'Zap' is defined but never used                                  @typescript-eslint/no-unused-vars
+   14:3   warning  'Star' is defined but never used                                 @typescript-eslint/no-unused-vars
+   15:3   warning  'ArrowRight' is defined but never used                           @typescript-eslint/no-unused-vars
+   20:3   warning  'Gift' is defined but never used                                 @typescript-eslint/no-unused-vars
+   24:3   warning  'Wand2' is defined but never used                                @typescript-eslint/no-unused-vars
+   25:3   warning  'Copy' is defined but never used                                 @typescript-eslint/no-unused-vars
+   26:3   warning  'Download' is defined but never used                             @typescript-eslint/no-unused-vars
+   27:3   warning  'RefreshCw' is defined but never used                            @typescript-eslint/no-unused-vars
+   28:3   warning  'Eye' is defined but never used                                  @typescript-eslint/no-unused-vars
+   84:17  warning  'authUser' is assigned a value but never used                    @typescript-eslint/no-unused-vars
+  275:18  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  276:18  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  277:18  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  455:80  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  477:38  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  512:30  warning  'error' is defined but never used                                @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/client/src/components/onboarding-walkthrough.tsx
+   18:3   warning  'Lightbulb' is defined but never used      @typescript-eslint/no-unused-vars
+  110:11  warning  'user' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/client/src/components/onboarding-wizard.tsx
+    1:20  warning  'useEffect' is defined but never used                            @typescript-eslint/no-unused-vars
+   19:10  warning  'Label' is defined but never used                                @typescript-eslint/no-unused-vars
+   22:10  warning  'Badge' is defined but never used                                @typescript-eslint/no-unused-vars
+   56:10  warning  'completedSteps' is assigned a value but never used              @typescript-eslint/no-unused-vars
+  187:55  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  251:56  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  305:55  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  342:73  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  342:89  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  394:52  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  395:50  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+/home/runner/workspace/client/src/components/onboarding/UserOnboarding.tsx
+   61:16  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+   61:59  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  144:83  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  303:9   warning  'resetOnboarding' is assigned a value but never used             @typescript-eslint/no-unused-vars
+  331:63  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  392:42  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  614:9   warning  'handleComplete' is assigned a value but never used              @typescript-eslint/no-unused-vars
+  620:9   warning  'handleSkip' is assigned a value but never used                  @typescript-eslint/no-unused-vars
+  626:9   warning  'startContentTutorial' is assigned a value but never used        @typescript-eslint/no-unused-vars
+  656:68  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+/home/runner/workspace/client/src/components/optimization/ContentOptimizer.tsx
+  16:3  warning  'Eye' is defined but never used            @typescript-eslint/no-unused-vars
+  17:3  warning  'MessageCircle' is defined but never used  @typescript-eslint/no-unused-vars
+  18:3  warning  'Heart' is defined but never used          @typescript-eslint/no-unused-vars
+  19:3  warning  'Share2' is defined but never used         @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/client/src/components/optimization/PerformanceOptimizer.tsx
+   10:20  warning  'Target' is defined but never used                                                  @typescript-eslint/no-unused-vars
+   10:28  warning  'Clock' is defined but never used                                                   @typescript-eslint/no-unused-vars
+   10:41  warning  'Brain' is defined but never used                                                   @typescript-eslint/no-unused-vars
+   11:3   warning  'AlertTriangle' is defined but never used                                           @typescript-eslint/no-unused-vars
+   11:18  warning  'Info' is defined but never used                                                    @typescript-eslint/no-unused-vars
+   11:24  warning  'Settings' is defined but never used                                                @typescript-eslint/no-unused-vars
+   11:40  warning  'Pause' is defined but never used                                                   @typescript-eslint/no-unused-vars
+   11:47  warning  'RotateCcw' is defined but never used                                               @typescript-eslint/no-unused-vars
+  141:24  warning  'recommendationId' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  146:20  warning  'recommendationId' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  237:66  error    Forbidden non-null assertion                                                        @typescript-eslint/no-non-null-assertion
+  243:69  error    Forbidden non-null assertion                                                        @typescript-eslint/no-non-null-assertion
+  252:31  error    Forbidden non-null assertion                                                        @typescript-eslint/no-non-null-assertion
+
+/home/runner/workspace/client/src/components/performance-optimization.tsx
+   44:16   warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+   53:38   error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   54:39   error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   54:84   error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   63:38   error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   63:71   error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   63:107  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  103:18   warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+  277:38   error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/client/src/components/polished-ui-components.tsx
+   1:10  warning  'useState' is defined but never used  @typescript-eslint/no-unused-vars
+  12:3   warning  'Zap' is defined but never used       @typescript-eslint/no-unused-vars
+  17:3   warning  'Rocket' is defined but never used    @typescript-eslint/no-unused-vars
+  18:3   warning  'Target' is defined but never used    @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/client/src/components/premium-landing.tsx
+   17:3   warning  'Heart' is defined but never used                                @typescript-eslint/no-unused-vars
+   20:3   warning  'Clock' is defined but never used                                @typescript-eslint/no-unused-vars
+  280:21  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  280:64  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+/home/runner/workspace/client/src/components/pro-perks.tsx
+  119:11  error  Parsing error: ';' expected
+
+/home/runner/workspace/client/src/components/provider-status.tsx
+   1:10  warning  'useState' is defined but never used      @typescript-eslint/no-unused-vars
+   1:20  warning  'useEffect' is defined but never used     @typescript-eslint/no-unused-vars
+   9:11  warning  'ProviderInfo' is defined but never used  @typescript-eslint/no-unused-vars
+  88:52  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/client/src/components/pwa/MobilePWA.tsx
+    9:25   warning  'Moon' is defined but never used                                 @typescript-eslint/no-unused-vars
+    9:31   warning  'Sun' is defined but never used                                  @typescript-eslint/no-unused-vars
+   23:54   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   34:23   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   34:66   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   41:43   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   54:47   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   56:18   warning  'error' is defined but never used                                @typescript-eslint/no-unused-vars
+   65:42   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  166:16   warning  'error' is defined but never used                                @typescript-eslint/no-unused-vars
+  168:23   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  175:21   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  305:113  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+/home/runner/workspace/client/src/components/reddit-accounts.tsx
+    1:17  warning  'useState' is defined but never used                                     @typescript-eslint/no-unused-vars
+    1:27  warning  'useEffect' is defined but never used                                    @typescript-eslint/no-unused-vars
+   46:15  warning  'error' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+   65:15  warning  'error' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+   87:14  warning  'error' is defined but never used                                        @typescript-eslint/no-unused-vars
+  203:16  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`          react/no-unescaped-entities
+
+/home/runner/workspace/client/src/components/reddit-communities.tsx
+   11:3   warning  'SelectValue' is defined but never used         @typescript-eslint/no-unused-vars
+   26:3   warning  'Clock' is defined but never used               @typescript-eslint/no-unused-vars
+   28:3   warning  'Filter' is defined but never used              @typescript-eslint/no-unused-vars
+   31:3   warning  'Info' is defined but never used                @typescript-eslint/no-unused-vars
+   34:3   warning  'AlertCircle' is defined but never used         @typescript-eslint/no-unused-vars
+   39:11  warning  'RedditCommunity' is defined but never used     @typescript-eslint/no-unused-vars
+   80:35  warning  'isLoading' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  256:71  error    Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/client/src/components/reddit-quick-post.tsx
+    8:60  warning  'SelectValue' is defined but never used                          @typescript-eslint/no-unused-vars
+   18:3   warning  'AlertCircle' is defined but never used                          @typescript-eslint/no-unused-vars
+  100:23  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  285:18  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+/home/runner/workspace/client/src/components/sample-upload.tsx
+  26:12  error  Parsing error: Expression expected
+
+/home/runner/workspace/client/src/components/simple-content-generator.tsx
+   5:60  warning  'SelectValue' is defined but never used                                                 @typescript-eslint/no-unused-vars
+  31:31  error    Unexpected any. Specify a different type                                                @typescript-eslint/no-explicit-any
+  34:42  warning  'isGuestMode' is assigned a value but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  44:30  error    Unexpected any. Specify a different type                                                @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/client/src/components/social-auth.tsx
+   7:3   warning  'Chrome' is defined but never used        @typescript-eslint/no-unused-vars
+   8:3   warning  'Facebook' is defined but never used      @typescript-eslint/no-unused-vars
+   9:3   warning  'Github' is defined but never used        @typescript-eslint/no-unused-vars
+  76:24  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  77:28  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/client/src/components/social-login-buttons.tsx
+   2:10  warning  'Card' is defined but never used                                           @typescript-eslint/no-unused-vars
+  10:38  warning  'onClose' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/client/src/components/theme-provider.tsx
+  1:32  warning  'useContext' is defined but never used  @typescript-eslint/no-unused-vars
+  1:44  warning  'useEffect' is defined but never used   @typescript-eslint/no-unused-vars
+  1:55  warning  'useState' is defined but never used    @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/client/src/components/trending-tags-expanded.tsx
+    7:10  warning  'Tabs' is defined but never used          @typescript-eslint/no-unused-vars
+    7:16  warning  'TabsContent' is defined but never used   @typescript-eslint/no-unused-vars
+    7:29  warning  'TabsList' is defined but never used      @typescript-eslint/no-unused-vars
+    7:39  warning  'TabsTrigger' is defined but never used   @typescript-eslint/no-unused-vars
+   15:3   warning  'Filter' is defined but never used        @typescript-eslint/no-unused-vars
+  175:14  warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+  281:75  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/client/src/components/trending-tags.tsx
+   1:20  warning  'useEffect' is defined but never used                @typescript-eslint/no-unused-vars
+   4:10  warning  'Button' is defined but never used                   @typescript-eslint/no-unused-vars
+   7:59  warning  'Clock' is defined but never used                    @typescript-eslint/no-unused-vars
+   7:66  warning  'Filter' is defined but never used                   @typescript-eslint/no-unused-vars
+  29:31  warning  'isLoading' is assigned a value but never used       @typescript-eslint/no-unused-vars
+  43:9   warning  'lastUpdateTime' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  80:14  warning  'error' is defined but never used                    @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/client/src/components/ultra-aesthetic-app.tsx
+  493:13  error  Parsing error: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+
+/home/runner/workspace/client/src/components/unified-content-creator.tsx
+  877:96  error  Parsing error: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+
+/home/runner/workspace/client/src/components/unified-landing.tsx
+  265:0  error  Parsing error: Declaration or statement expected
+
+/home/runner/workspace/client/src/hooks/use-toast.ts
+  18:7  warning  'actionTypes' is assigned a value but only used as a type  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/client/src/hooks/useAuth.ts
+    3:10  warning  'apiRequest' is defined but never used      @typescript-eslint/no-unused-vars
+   38:34  warning  'error' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  184:14  warning  'error' is defined but never used           @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/client/src/hooks/useOnboarding.ts
+  14:11  warning  'user' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/client/src/lib/analytics-tracker.ts
+  157:36   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  182:61   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  204:95   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  212:87   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  220:52   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  296:28   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  296:42   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  330:68   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  332:102  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  333:94   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/client/src/lib/image-protection.ts
+  59:29  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+/home/runner/workspace/client/src/lib/theme-utils.ts
+  143:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/client/src/main.tsx
+  10:12  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+/home/runner/workspace/client/src/pages/admin-leads.tsx
+    1:20  warning  'useEffect' is defined but never used     @typescript-eslint/no-unused-vars
+    6:16  warning  'TabsContent' is defined but never used   @typescript-eslint/no-unused-vars
+   16:3   warning  'Tag' is defined but never used           @typescript-eslint/no-unused-vars
+  220:93  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/client/src/pages/admin.tsx
+     1:20   warning  'useEffect' is defined but never used                            @typescript-eslint/no-unused-vars
+     8:60   warning  'DialogTrigger' is defined but never used                        @typescript-eslint/no-unused-vars
+     9:33   warning  'useQueryClient' is defined but never used                       @typescript-eslint/no-unused-vars
+    20:3    warning  'CreditCard' is defined but never used                           @typescript-eslint/no-unused-vars
+    23:3    warning  'Ban' is defined but never used                                  @typescript-eslint/no-unused-vars
+    24:3    warning  'Clock3' is defined but never used                               @typescript-eslint/no-unused-vars
+    45:26   warning  'setSelectedPeriod' is assigned a value but never used           @typescript-eslint/no-unused-vars
+    48:10   warning  'reason' is assigned a value but never used                      @typescript-eslint/no-unused-vars
+    49:10   warning  'duration' is assigned a value but never used                    @typescript-eslint/no-unused-vars
+    49:20   warning  'setDuration' is assigned a value but never used                 @typescript-eslint/no-unused-vars
+   110:30   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   143:22   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   167:24   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   168:41   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   168:87   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   168:122  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   174:28   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   175:41   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   175:84   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   181:24   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   182:41   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   182:88   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   188:24   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   189:41   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   189:93   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   265:82   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   269:84   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   275:66   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   279:67   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   283:68   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   300:73   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   303:47   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   304:34   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   309:73   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   312:47   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   313:34   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   318:80   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   348:32   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   348:61   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   417:32   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   417:53   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   457:63   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   470:38   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   474:65   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   478:66   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   483:69   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   483:108  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   495:75   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   504:64   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   528:39   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   536:53   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   536:135  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   537:39   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   538:39   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   546:53   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   546:135  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   547:39   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   548:39   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   556:53   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   556:132  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   557:39   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   558:39   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   568:82   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   572:83   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   576:84   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   592:70   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   604:70   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   616:70   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   634:34   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   634:73   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   656:34   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   656:81   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   853:92   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   859:56   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   872:56   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   885:56   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  1043:57   warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+/home/runner/workspace/client/src/pages/change-password.tsx
+   7:10  warning  'location' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  16:27  error    Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/client/src/pages/checkout.tsx
+  130:16  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/client/src/pages/dashboard.tsx
+   8:10  warning  'isGuestMode' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  16:11  warning  'reddit' is assigned a value but never used       @typescript-eslint/no-unused-vars
+  75:40  error    Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  75:76  error    Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/client/src/pages/email-verification.tsx
+  70:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/client/src/pages/enterprise.tsx
+  5:56  warning  'BarChart3' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/client/src/pages/forgot-password.tsx
+   45:14  warning  'error' is defined but never used                                @typescript-eslint/no-unused-vars
+   73:19  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  103:36  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+/home/runner/workspace/client/src/pages/history.tsx
+  10:27  warning  'Filter' is defined but never used    @typescript-eslint/no-unused-vars
+  10:45  warning  'Download' is defined but never used  @typescript-eslint/no-unused-vars
+  10:55  warning  'Share2' is defined but never used    @typescript-eslint/no-unused-vars
+  10:71  warning  'Star' is defined but never used      @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/client/src/pages/phase4.tsx
+   15:3   warning  'BarChart3' is defined but never used     @typescript-eslint/no-unused-vars
+  162:44  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/client/src/pages/reddit-posting.tsx
+    1:27  warning  'useEffect' is defined but never used                            @typescript-eslint/no-unused-vars
+    9:10  warning  'Tabs' is defined but never used                                 @typescript-eslint/no-unused-vars
+    9:16  warning  'TabsContent' is defined but never used                          @typescript-eslint/no-unused-vars
+    9:29  warning  'TabsList' is defined but never used                             @typescript-eslint/no-unused-vars
+    9:39  warning  'TabsTrigger' is defined but never used                          @typescript-eslint/no-unused-vars
+   10:10  warning  'Select' is defined but never used                               @typescript-eslint/no-unused-vars
+   10:18  warning  'SelectContent' is defined but never used                        @typescript-eslint/no-unused-vars
+   10:33  warning  'SelectItem' is defined but never used                           @typescript-eslint/no-unused-vars
+   10:45  warning  'SelectTrigger' is defined but never used                        @typescript-eslint/no-unused-vars
+   10:60  warning  'SelectValue' is defined but never used                          @typescript-eslint/no-unused-vars
+   25:3   warning  'Settings' is defined but never used                             @typescript-eslint/no-unused-vars
+   34:3   warning  'ExternalLink' is defined but never used                         @typescript-eslint/no-unused-vars
+   88:10  warning  'selectedAccount' is assigned a value but never used             @typescript-eslint/no-unused-vars
+   88:27  warning  'setSelectedAccount' is assigned a value but never used          @typescript-eslint/no-unused-vars
+   89:10  warning  'isPreviewMode' is assigned a value but never used               @typescript-eslint/no-unused-vars
+   89:25  warning  'setIsPreviewMode' is assigned a value but never used            @typescript-eslint/no-unused-vars
+  127:23  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  151:23  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  175:23  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  186:30  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  190:23  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  226:23  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  270:21  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  333:45  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  380:36  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  382:37  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  646:36  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  647:36  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  651:39  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  653:42  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  659:40  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  660:40  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  663:56  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  666:37  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  666:70  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  668:40  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  669:40  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  672:41  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  707:82  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  854:86  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+/home/runner/workspace/client/src/pages/reset-password.tsx
+   59:22  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  185:32  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+/home/runner/workspace/client/src/pages/settings.tsx
+    1:20  warning  'useEffect' is defined but never used                            @typescript-eslint/no-unused-vars
+    4:10  warning  'Input' is defined but never used                                @typescript-eslint/no-unused-vars
+    8:10  warning  'Textarea' is defined but never used                             @typescript-eslint/no-unused-vars
+   38:20  warning  'setApiUsage' is assigned a value but never used                 @typescript-eslint/no-unused-vars
+   42:17  warning  'userSettings' is assigned a value but never used                @typescript-eslint/no-unused-vars
+  405:66  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+/home/runner/workspace/client/src/pages/tax-tracker.tsx
+   28:22  warning  'CalendarComponent' is defined but never used                                        @typescript-eslint/no-unused-vars
+   31:51  error    Unexpected any. Specify a different type                                             @typescript-eslint/no-explicit-any
+   44:50  warning  'userTier' is assigned a value but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+   45:60  error    Unexpected any. Specify a different type                                             @typescript-eslint/no-explicit-any
+   76:9   warning  'SelectedIcon' is assigned a value but never used                                    @typescript-eslint/no-unused-vars
+  114:37  error    Unexpected any. Specify a different type                                             @typescript-eslint/no-explicit-any
+  134:57  error    Unexpected any. Specify a different type                                             @typescript-eslint/no-explicit-any
+  168:61  error    Unexpected any. Specify a different type                                             @typescript-eslint/no-explicit-any
+  171:69  error    Unexpected any. Specify a different type                                             @typescript-eslint/no-explicit-any
+  172:53  error    Unexpected any. Specify a different type                                             @typescript-eslint/no-explicit-any
+  326:62  error    Unexpected any. Specify a different type                                             @typescript-eslint/no-explicit-any
+  326:67  warning  'index' is defined but never used. Allowed unused args must match /^_/u              @typescript-eslint/no-unused-vars
+  356:50  warning  'index' is defined but never used. Allowed unused args must match /^_/u              @typescript-eslint/no-unused-vars
+  440:78  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                      react/no-unescaped-entities
+  527:63  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                      react/no-unescaped-entities
+  679:45  error    Unexpected any. Specify a different type                                             @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/client/src/utils/error-handler.ts
+   53:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   54:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   73:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  105:45  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  143:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  202:51  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  227:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/client/src/utils/safeDataAccess.ts
+   4:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  21:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  37:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  43:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  48:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  53:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  59:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/scripts/_quarantine/db-guarded-fixes.cjs
+   71:7   error  'OPTIONAL_RETIRE_SAVED' is assigned a value but never used  no-unused-vars
+  102:49  error  'process' is not defined                                    no-undef
+  105:3   error  'console' is not defined                                    no-undef
+  108:3   error  'console' is not defined                                    no-undef
+  112:3   error  'console' is not defined                                    no-undef
+  119:3   error  'console' is not defined                                    no-undef
+  121:3   error  'console' is not defined                                    no-undef
+  123:3   error  'console' is not defined                                    no-undef
+  125:3   error  'console' is not defined                                    no-undef
+  128:3   error  'console' is not defined                                    no-undef
+  131:23  error  'console' is not defined                                    no-undef
+  131:41  error  'process' is not defined                                    no-undef
+
+/home/runner/workspace/scripts/_quarantine/db-simple-fix.cjs
+   4:49  error  'process' is not defined  no-undef
+   7:3   error  'console' is not defined  no-undef
+  11:5   error  'console' is not defined  no-undef
+  26:7   error  'console' is not defined  no-undef
+  28:7   error  'console' is not defined  no-undef
+  30:7   error  'console' is not defined  no-undef
+  34:5   error  'console' is not defined  no-undef
+  44:7   error  'console' is not defined  no-undef
+  46:7   error  'console' is not defined  no-undef
+  50:5   error  'console' is not defined  no-undef
+  59:7   error  'console' is not defined  no-undef
+  61:7   error  'console' is not defined  no-undef
+  65:5   error  'console' is not defined  no-undef
+  77:7   error  'console' is not defined  no-undef
+  79:7   error  'console' is not defined  no-undef
+  82:5   error  'console' is not defined  no-undef
+  83:5   error  'console' is not defined  no-undef
+  86:5   error  'console' is not defined  no-undef
+  94:3   error  'console' is not defined  no-undef
+  95:3   error  'process' is not defined  no-undef
+
+/home/runner/workspace/scripts/_quarantine/db-verify.cjs
+   8:44  error  'process' is not defined  no-undef
+  11:3   error  'console' is not defined  no-undef
+  13:19  error  'console' is not defined  no-undef
+  13:37  error  'process' is not defined  no-undef
+
+/home/runner/workspace/scripts/perf/benchmark.js
+  113:16  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/admin-routes.ts
+   18:57  error    Unexpected any. Specify a different type               @typescript-eslint/no-explicit-any
+   41:16  warning  'error' is defined but never used                      @typescript-eslint/no-unused-vars
+   85:37  error    Unexpected any. Specify a different type               @typescript-eslint/no-explicit-any
+  300:13  warning  'period' is assigned a value but never used            @typescript-eslint/no-unused-vars
+  417:24  warning  'subject' is assigned a value but never used           @typescript-eslint/no-unused-vars
+  417:33  warning  'content' is assigned a value but never used           @typescript-eslint/no-unused-vars
+  585:13  warning  'level' is assigned a value but never used             @typescript-eslint/no-unused-vars
+  586:13  warning  'limit' is assigned a value but never used             @typescript-eslint/no-unused-vars
+  602:36  error    Unexpected any. Specify a different type               @typescript-eslint/no-explicit-any
+  635:13  warning  'adminId' is assigned a value but never used           @typescript-eslint/no-unused-vars
+  635:36  error    Unexpected any. Specify a different type               @typescript-eslint/no-explicit-any
+  653:13  warning  'adminId' is assigned a value but never used           @typescript-eslint/no-unused-vars
+  653:36  error    Unexpected any. Specify a different type               @typescript-eslint/no-explicit-any
+  674:15  warning  'userId' is assigned a value but never used            @typescript-eslint/no-unused-vars
+  687:13  warning  'status' is assigned a value but never used            @typescript-eslint/no-unused-vars
+  702:36  error    Unexpected any. Specify a different type               @typescript-eslint/no-explicit-any
+  724:13  warning  'totalGenerations' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  759:38  error    Unexpected any. Specify a different type               @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/advanced-content-generator.ts
+   208:54  error    Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+   209:42  error    Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+  1196:65  error    Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+  1196:81  error    Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+  1219:70  error    Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+  1219:86  error    Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+  1223:9   warning  'mood' is assigned a value but never used    @typescript-eslint/no-unused-vars
+  1226:9   warning  'emojis' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  1293:76  error    Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+  1293:82  error    Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+  1316:63  error    Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/analytics-routes.ts
+   12:3   warning  'socialMetrics' is defined but never used                                    @typescript-eslint/no-unused-vars
+   13:3   warning  'analyticsMetrics' is defined but never used                                 @typescript-eslint/no-unused-vars
+   15:3   warning  'users' is defined but never used                                            @typescript-eslint/no-unused-vars
+  173:45  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  199:38  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  199:74  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  199:93  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  236:37  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  252:45  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  265:41  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  278:40  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  417:24  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  451:46  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  478:34  warning  'ipAddress' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  478:62  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/api-routes.ts
+   14:20  warning  'subscriptions' is defined but never used  @typescript-eslint/no-unused-vars
+   14:35  warning  'mediaAssets' is defined but never used    @typescript-eslint/no-unused-vars
+   17:24  warning  'Response' is defined but never used       @typescript-eslint/no-unused-vars
+   17:34  warning  'NextFunction' is defined but never used   @typescript-eslint/no-unused-vars
+  104:21  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  132:21  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  152:21  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  177:21  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  198:21  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  240:33  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  256:21  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  281:21  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  310:21  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  326:21  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  360:21  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  389:21  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  425:21  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  444:21  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  487:21  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/api/leads.ts
+    6:10  warning  'parseUTMFromCookie' is defined but never used  @typescript-eslint/no-unused-vars
+   44:20  error    Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+   77:12  warning  'lead' is assigned a value but never used       @typescript-eslint/no-unused-vars
+  175:30  error    Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
+
+/home/runner/workspace/server/auth.ts
+    1:19  warning  'Request' is defined but never used                @typescript-eslint/no-unused-vars
+    1:28  warning  'Response' is defined but never used               @typescript-eslint/no-unused-vars
+    4:8   warning  'session' is defined but never used                @typescript-eslint/no-unused-vars
+    9:10  warning  'authLimiter' is defined but never used            @typescript-eslint/no-unused-vars
+   15:20  warning  'ValidationSource' is defined but never used       @typescript-eslint/no-unused-vars
+   18:7   warning  'signupSchema' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  133:15  warning  'token' is assigned a value but never used         @typescript-eslint/no-unused-vars
+  440:29  warning  '_' is assigned a value but never used             @typescript-eslint/no-unused-vars
+  715:16  warning  'jwtError' is defined but never used               @typescript-eslint/no-unused-vars
+  819:48  error    Forbidden non-null assertion                       @typescript-eslint/no-non-null-assertion
+
+/home/runner/workspace/server/bootstrap/logger.ts
+  266:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  291:57  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  296:27  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  303:27  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  303:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  345:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  358:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  359:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  360:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  361:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  366:59  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  371:79  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/caption/geminiPipeline.ts
+  119:141  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  132:24   error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  168:46   error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  219:12   warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+  222:45   error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/caption/openaiFallback.ts
+  33:13  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/caption/rewritePipeline.ts
+   23:165  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   36:24   error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   72:46   error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  128:12   warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+  131:45   error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/caption/textOnlyPipeline.ts
+  17:24  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  58:46  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/content-templates.ts
+  1279:43  error  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  1279:88  error  Do not access Object.prototype method 'hasOwnProperty' from target object  no-prototype-builtins
+  1283:43  error  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  1290:31  error  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/expense-routes.ts
+    6:8   warning  'crypto' is defined but never used        @typescript-eslint/no-unused-vars
+   12:10  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  145:66  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/index.ts
+   46:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  136:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  173:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/lib/ai-service.ts
+   78:31  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   94:50  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  115:50  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  130:7   error  Forbidden non-null assertion              @typescript-eslint/no-non-null-assertion
+  207:76  error  Unnecessary escape character: \-          no-useless-escape
+  215:19  error  Forbidden non-null assertion              @typescript-eslint/no-non-null-assertion
+  301:16  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  330:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  369:27  error  Forbidden non-null assertion              @typescript-eslint/no-non-null-assertion
+
+/home/runner/workspace/server/lib/billing.ts
+  148:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  149:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  174:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/lib/config.ts
+   97:10  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  165:10  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/lib/gemini.ts
+  3:45  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+/home/runner/workspace/server/lib/logger-utils.ts
+  29:43  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  29:49  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  44:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  66:83  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  79:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/lib/media.ts
+   19:18  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+   20:22  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+   84:17  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  165:19  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  246:15  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+/home/runner/workspace/server/lib/payment-providers.ts
+   97:23  warning  'signature' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+   97:42  warning  'payload' is defined but never used. Allowed unused args must match /^_/u    @typescript-eslint/no-unused-vars
+   97:51  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  102:33  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  102:47  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  153:23  warning  'signature' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  153:42  warning  'payload' is defined but never used. Allowed unused args must match /^_/u    @typescript-eslint/no-unused-vars
+  153:51  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  157:33  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  157:47  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  206:23  warning  'signature' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  206:42  warning  'payload' is defined but never used. Allowed unused args must match /^_/u    @typescript-eslint/no-unused-vars
+  206:51  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  210:33  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  210:47  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  259:23  warning  'signature' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  259:42  warning  'payload' is defined but never used. Allowed unused args must match /^_/u    @typescript-eslint/no-unused-vars
+  259:51  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  263:33  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  263:47  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/lib/policy-linter.ts
+   91:18  warning  'e' is defined but never used      @typescript-eslint/no-unused-vars
+  107:18  warning  'e' is defined but never used      @typescript-eslint/no-unused-vars
+  191:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  191:19  error    Unreachable code                   no-unreachable
+
+/home/runner/workspace/server/lib/post-gate-enforcement.ts
+  44:22  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  44:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  44:43  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/lib/pricing.ts
+  15:8  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  16:8  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  17:8  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+/home/runner/workspace/server/lib/queue-factory.ts
+  45:35  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  54:41  warning  'T' is defined but never used             @typescript-eslint/no-unused-vars
+  54:45  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/lib/queue-monitor.ts
+  79:11  warning  'now' is assigned a value but never used       @typescript-eslint/no-unused-vars
+  81:17  warning  'queueKey' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/lib/queue-pg.ts
+  7:26  warning  'InsertQueueJob' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/lib/queue-redis.ts
+  121:11  warning  'queueEvents' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  163:12  error    Forbidden non-null assertion                      @typescript-eslint/no-non-null-assertion
+  173:12  error    Forbidden non-null assertion                      @typescript-eslint/no-non-null-assertion
+
+/home/runner/workspace/server/lib/queue/index.ts
+    6:36  warning  'registerProcessor' is defined but never used  @typescript-eslint/no-unused-vars
+  101:32  error    Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/lib/reddit.ts
+    3:10  warning  'users' is defined but never used                                            @typescript-eslint/no-unused-vars
+   37:17  error    Forbidden non-null assertion                                                 @typescript-eslint/no-non-null-assertion
+   38:21  error    Forbidden non-null assertion                                                 @typescript-eslint/no-non-null-assertion
+  100:44  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  111:44  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  137:21  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  206:28  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  228:21  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  286:21  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  339:39  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  347:35  warning  'userId' is defined but never used. Allowed unused args must match /^_/u     @typescript-eslint/no-unused-vars
+  347:51  warning  'subreddit' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  350:13  warning  'oneDayAgo' is assigned a value but never used                               @typescript-eslint/no-unused-vars
+  390:31  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  392:42  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  412:29  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  426:29  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/lib/safety-systems.ts
+  7:42  warning  'users' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/lib/scheduling.ts
+   49:5   warning  'timezone' is assigned a value but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  146:49  error    Unexpected any. Specify a different type                                             @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/lib/worker-scaler.ts
+  139:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  147:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/lib/workers/ai-promo-worker.ts
+  25:46  warning  'jobId' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/lib/workers/batch-posting-worker.ts
+   25:46  warning  'jobId' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+   45:22  error    Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+   86:30  error    Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  162:25  error    Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  197:21  error    Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  240:27  error    Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  296:62  error    Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/lib/workers/dunning-worker.ts
+   24:46  warning  'jobId' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+   97:21  error    Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  124:44  error    Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  137:21  error    Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  143:50  error    Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  146:33  error    Forbidden non-null assertion                                             @typescript-eslint/no-non-null-assertion
+  171:21  error    Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  177:50  error    Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  188:21  error    Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  233:48  error    Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  233:67  error    Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  245:50  error    Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  245:69  error    Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  257:62  error    Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/lib/workers/metrics-worker.ts
+   25:46  warning  'jobId' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+   74:21  error    Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+   97:42  error    Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  115:63  error    Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  173:62  error    Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/lib/workers/post-worker.ts
+   45:70  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+   84:36  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  106:34  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+/home/runner/workspace/server/middleware/auth.ts
+  17:20  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+/home/runner/workspace/server/middleware/performance.ts
+   22:13  warning  'startMemory' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  180:21  error    Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/middleware/require-tier.ts
+  16:49  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/middleware/security.ts
+    8:8   warning  'crypto' is defined but never used                                      @typescript-eslint/no-unused-vars
+  423:87  warning  'next' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/middleware/streaming-upload.ts
+   66:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  291:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/middleware/tiered-rate-limit.ts
+  116:36  error    Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  118:41  error    Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  138:24  warning  'req' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  157:24  warning  'req' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  183:41  error    Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  190:11  warning  'usage' is assigned a value but never used                             @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/middleware/validation.ts
+    2:24  warning  'ZodError' is defined but never used      @typescript-eslint/no-unused-vars
+  220:38  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  220:44  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  234:22  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/policy-routes.ts
+   22:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   22:67  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   81:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   81:67  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  105:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  105:67  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/reddit-communities.ts
+   2:34  warning  'RedditCommunity' is defined but never used  @typescript-eslint/no-unused-vars
+  22:45  error    Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+  28:57  error    Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+  50:27  error    Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+  50:94  error    Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/reddit-routes.ts
+  229:37  error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  230:40  error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  379:11  error    Unexpected lexical declaration in case block  no-case-declarations
+  402:11  error    Unexpected lexical declaration in case block  no-case-declarations
+  402:52  error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  464:21  error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  500:14  warning  'e' is defined but never used                 @typescript-eslint/no-unused-vars
+  510:14  warning  'e' is defined but never used                 @typescript-eslint/no-unused-vars
+  520:14  warning  'e' is defined but never used                 @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/routes.ts
+     1:24   warning  'Response' is defined but never used                       @typescript-eslint/no-unused-vars
+     1:34   warning  'NextFunction' is defined but never used                   @typescript-eslint/no-unused-vars
+    27:10   warning  'visitorAnalytics' is defined but never used               @typescript-eslint/no-unused-vars
+    30:11   warning  'AnalyticsRequest' is defined but never used               @typescript-eslint/no-unused-vars
+    54:10   warning  'generateAIContent' is defined but never used              @typescript-eslint/no-unused-vars
+    54:29   warning  'analyzeImageForContent' is defined but never used         @typescript-eslint/no-unused-vars
+    55:10   warning  'generateWithMultiProvider' is defined but never used      @typescript-eslint/no-unused-vars
+    55:37   warning  'getProviderStatus' is defined but never used              @typescript-eslint/no-unused-vars
+    56:36   warning  'analyzeImage' is defined but never used                   @typescript-eslint/no-unused-vars
+    57:10   warning  'generateImageCaption' is defined but never used           @typescript-eslint/no-unused-vars
+    58:10   warning  'ObjectStorageService' is defined but never used           @typescript-eslint/no-unused-vars
+    58:32   warning  'ObjectNotFoundError' is defined but never used            @typescript-eslint/no-unused-vars
+    59:10   warning  'getRandomTemplates' is defined but never used             @typescript-eslint/no-unused-vars
+    59:30   warning  'addWatermark' is defined but never used                   @typescript-eslint/no-unused-vars
+    59:44   warning  'getTemplateByMood' is defined but never used              @typescript-eslint/no-unused-vars
+    60:10   warning  'generateAdvancedContent' is defined but never used        @typescript-eslint/no-unused-vars
+    60:40   warning  'ContentParameters' is defined but never used              @typescript-eslint/no-unused-vars
+    62:10   warning  'getAvailablePerks' is defined but never used              @typescript-eslint/no-unused-vars
+    62:29   warning  'getPerksByCategory' is defined but never used             @typescript-eslint/no-unused-vars
+    62:49   warning  'generateReferralCode' is defined but never used           @typescript-eslint/no-unused-vars
+    62:71   warning  'getSignupInstructions' is defined but never used          @typescript-eslint/no-unused-vars
+    75:10   warning  'insertContentGenerationSchema' is defined but never used  @typescript-eslint/no-unused-vars
+    75:41   warning  'insertUserImageSchema' is defined but never used          @typescript-eslint/no-unused-vars
+    80:8    warning  'crypto' is defined but never used                         @typescript-eslint/no-unused-vars
+    81:8    warning  'jwt' is defined but never used                            @typescript-eslint/no-unused-vars
+    82:8    warning  'bcrypt' is defined but never used                         @typescript-eslint/no-unused-vars
+    86:24   error    Forbidden non-null assertion                               @typescript-eslint/no-non-null-assertion
+    94:37   error    Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   112:10   error    Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   138:43   error    Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   171:33   error    Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   175:39   error    Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   195:17   error    Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   342:16   error    Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   354:41   error    Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   360:21   error    Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   400:46   error    Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   471:42   error    Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   478:44   error    Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   481:42   error    Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   505:106  error    Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   721:21   error    Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   743:21   error    Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   758:36   error    Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   881:46   warning  'variants' is assigned a value but never used              @typescript-eslint/no-unused-vars
+  1034:44   error    Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  1056:34   warning  'title' is assigned a value but never used                 @typescript-eslint/no-unused-vars
+  1056:41   warning  'subreddit' is assigned a value but never used             @typescript-eslint/no-unused-vars
+  1098:15   warning  'protectionLevel' is assigned a value but never used       @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/routes/billing.ts
+  15:65  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  26:68  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/routes/caption.ts
+    1:18  warning  'Request' is defined but never used                        @typescript-eslint/no-unused-vars
+    7:10  warning  'insertContentGenerationSchema' is defined but never used  @typescript-eslint/no-unused-vars
+   57:15  error    Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  109:15  error    Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  161:15  error    Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/routes/upload.ts
+   11:36   warning  'ProtectionLevel' is defined but never used  @typescript-eslint/no-unused-vars
+  172:14   warning  'sharpError' is defined but never used       @typescript-eslint/no-unused-vars
+  201:137  error    Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+  330:116  error    Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+  450:53   warning  'e' is defined but never used                @typescript-eslint/no-unused-vars
+  453:58   warning  'e' is defined but never used                @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/routes/webhooks.stripe.ts
+  13:71  error  Forbidden non-null assertion              @typescript-eslint/no-non-null-assertion
+  14:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  22:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  54:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/seed-policy-data.ts
+  11:5  error  Parsing error: 'catch' or 'finally' expected
+
+/home/runner/workspace/server/seeds/expense-categories.ts
+   80:16  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  165:16  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/services/analytics-service.ts
+    3:34  warning  'desc' is defined but never used                   @typescript-eslint/no-unused-vars
+    8:30  error    Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+   49:36  error    Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+  101:71  error    Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+  109:60  error    Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+  221:86  error    Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+  282:11  warning  'eventsToSend' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  296:11  warning  'lastActive' is assigned a value but never used    @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/services/basic-metrics.ts
+  66:25  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  66:56  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+/home/runner/workspace/server/services/content-generator.ts
+  185:71  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  186:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/services/content-performance-predictor.ts
+  290:62  warning  'score' is defined but never used. Allowed unused args must match /^_/u              @typescript-eslint/no-unused-vars
+  394:21  warning  'actualPerformance' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/server/services/email-service.ts
+  105:21   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  192:21   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  268:21   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  345:113  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  391:21   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/services/enhanced-ai-service.ts
+  200:7   warning  'mode' is assigned a value but never used                                  @typescript-eslint/no-unused-vars
+  293:86  error    Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  325:19  error    Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  327:15  error    Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  368:11  error    Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  477:35  warning  'request' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  510:22  error    Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  522:28  error    Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  604:25  error    Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  618:23  error    Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  632:28  error    Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  646:24  error    Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  660:28  error    Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  671:22  error    Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  685:26  error    Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  699:22  error    Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  710:21  error    Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  724:21  error    Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/services/multi-ai-provider.ts
+  102:39  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  123:14  warning  'parseError' is defined but never used    @typescript-eslint/no-unused-vars
+  195:44  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/services/scheduling-optimizer.ts
+    2:28  warning  'platformEngagement' is defined but never used                            @typescript-eslint/no-unused-vars
+    3:19  warning  'gte' is defined but never used                                           @typescript-eslint/no-unused-vars
+    3:24  warning  'lte' is defined but never used                                           @typescript-eslint/no-unused-vars
+    3:29  warning  'sql' is defined but never used                                           @typescript-eslint/no-unused-vars
+  224:46  error    Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+  236:30  warning  'userId' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  242:31  error    Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+  246:36  error    Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/services/state-store.ts
+  67:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  67:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  67:53  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/social-auth-config.ts
+   86:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   94:45  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  104:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  138:8   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/social-auth.ts
+  108:67  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  108:78  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  164:10  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  175:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  200:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  208:46  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  253:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/social-media-routes.ts
+   5:10  warning  'z' is defined but never used             @typescript-eslint/no-unused-vars
+   8:10  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   9:9   error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  10:11  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  11:10  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/test-endpoints.cjs
+    5:18  error  'process' is not defined     no-undef
+  217:3   error  'console' is not defined     no-undef
+  218:3   error  'console' is not defined     no-undef
+  219:3   error  'console' is not defined     no-undef
+  220:3   error  'console' is not defined     no-undef
+  223:5   error  'process' is not defined     no-undef
+  231:7   error  'console' is not defined     no-undef
+  235:7   error  'console' is not defined     no-undef
+  245:9   error  'console' is not defined     no-undef
+  250:34  error  'setTimeout' is not defined  no-undef
+  254:3   error  'console' is not defined     no-undef
+  255:3   error  'console' is not defined     no-undef
+  256:3   error  'console' is not defined     no-undef
+  258:3   error  'console' is not defined     no-undef
+  259:3   error  'console' is not defined     no-undef
+  262:5   error  'console' is not defined     no-undef
+  264:7   error  'console' is not defined     no-undef
+  266:9   error  'console' is not defined     no-undef
+  272:3   error  'console' is not defined     no-undef
+  273:3   error  'console' is not defined     no-undef
+  274:3   error  'console' is not defined     no-undef
+  278:3   error  'console' is not defined     no-undef
+  285:3   error  'process' is not defined     no-undef
+  287:3   error  'console' is not defined     no-undef
+  288:3   error  'process' is not defined     no-undef
+
+/home/runner/workspace/tests/integration/auth-flow.test.ts
+   74:25  warning  '_pw' is assigned a value but never used  @typescript-eslint/no-unused-vars
+   93:25  warning  '_pw' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  105:31  warning  '_pw' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  108:18  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+  115:29  warning  '_pw' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  131:47  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/tests/integration/billing-flow.test.ts
+   87:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  103:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/tests/integration/content-generation.test.ts
+    8:10  warning  'registerRoutes' is defined but never used  @typescript-eslint/no-unused-vars
+   66:16  warning  'error' is defined but never used           @typescript-eslint/no-unused-vars
+  248:59  error    Forbidden non-null assertion                @typescript-eslint/no-non-null-assertion
+  485:18  error    Unexpected any. Specify a different type    @typescript-eslint/no-explicit-any
+  501:18  error    Unexpected any. Specify a different type    @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/tests/integration/session.test.ts
+   25:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  180:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  180:57  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  183:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  183:57  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  186:47  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  192:30  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/tests/integration/upload.test.ts
+   22:17  error    Unexpected any. Specify a different type                             @typescript-eslint/no-explicit-any
+   44:15  warning  'watermarkedImage' is assigned a value but never used                @typescript-eslint/no-unused-vars
+   83:16  warning  'error' is defined but never used                                    @typescript-eslint/no-unused-vars
+  102:16  warning  'error' is defined but never used                                    @typescript-eslint/no-unused-vars
+  144:14  warning  'error' is defined but never used                                    @typescript-eslint/no-unused-vars
+  418:60  warning  'i' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  470:18  error    Unexpected any. Specify a different type                             @typescript-eslint/no-explicit-any
+  485:18  error    Unexpected any. Specify a different type                             @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/tests/lib/storage.test.ts
+  1:48  warning  'beforeAll' is defined but never used  @typescript-eslint/no-unused-vars
+  1:59  warning  'afterAll' is defined but never used   @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/tests/routes/admin.test.ts
+  62:12  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/tests/routes/billing.test.ts
+  75:13  warning  'mockFreeUser' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  81:13  warning  'mockProUser' is assigned a value but never used   @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/tests/routes/caption-generation.test.ts
+  2:10  warning  'storage' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/tests/theme-system.test.ts
+   10:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  225:12  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  229:51  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  241:51  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/tests/unit/payment-providers-fixed.test.ts
+   40:12  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   46:12  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  125:12  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/tests/unit/payment-providers.test.ts
+  162:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  343:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  349:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  389:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  400:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 1687 problems (874 errors, 813 warnings)
+
+=== Pass 2: replace ': unknown' with ': unknown' ===

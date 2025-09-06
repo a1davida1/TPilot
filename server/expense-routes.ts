@@ -9,7 +9,7 @@ import { storage } from './storage.js';
 import { MediaManager } from './lib/media.js';
 
 interface AuthRequest extends express.Request {
-  user?: any;
+  user?: unknown;
 }
 
 const upload = multer({

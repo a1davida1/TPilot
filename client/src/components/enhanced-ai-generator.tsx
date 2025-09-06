@@ -129,7 +129,7 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
   ];
 
   const generateContentMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: unknown) => {
       const response = await apiRequest("POST", "/api/generate-unified", {
         mode: 'text',
         platform: data.platform || 'reddit',

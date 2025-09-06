@@ -102,7 +102,7 @@ export const emailService = {
       console.log('📧 SendGrid response status:', result[0]?.statusCode);
       console.log('📧 Email sent to:', to);
       safeLog('info', 'Verification email sent successfully', { to, username });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ EMAIL WORKFLOW: Verification email send failed');
       console.error('📧 Failed for email:', to);
       console.error('📧 SendGrid error:', error.message);
@@ -189,7 +189,7 @@ export const emailService = {
       console.log(`✅ Password reset email sent successfully to: ${to}`);
       console.log(`SendGrid response:`, result[0].statusCode);
       safeLog('info', 'Password reset email sent successfully', { to });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(`❌ Failed to send password reset email to: ${to}`);
       console.error(`SendGrid error:`, error.message);
       if (error.response?.body) {
@@ -265,7 +265,7 @@ export const emailService = {
       console.log('✅ EMAIL WORKFLOW: Welcome email sent successfully!');
       console.log('📧 SendGrid response status:', result[0]?.statusCode);
       safeLog('info', 'Welcome email sent successfully', { to, username });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ EMAIL WORKFLOW: Welcome email send failed');
       console.error('📧 Failed for email:', to);
       console.error('📧 SendGrid error:', error.message);
@@ -342,7 +342,7 @@ export const emailService = {
     }
   },
 
-  async sendAdminWaitlistNotification(email: string, platformTags: string[], painPoint: string | null, utmData: any) {
+  async sendAdminWaitlistNotification(email: string, platformTags: string[], painPoint: string | null, utmData: unknown) {
     if (!SENDGRID_API_KEY) {
       return false; // Email service not configured
     }
@@ -388,7 +388,7 @@ export const emailService = {
       await sgMail.send(msg);
       safeLog('info', 'Admin waitlist notification sent successfully', { email });
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog('error', 'Admin waitlist notification send failed', { error: error.message });
       return false;
     }

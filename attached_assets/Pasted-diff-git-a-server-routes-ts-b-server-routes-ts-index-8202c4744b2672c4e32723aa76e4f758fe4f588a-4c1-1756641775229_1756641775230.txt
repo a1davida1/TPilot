@@ -43,7 +43,7 @@ index 8202c4744b2672c4e32723aa76e4f758fe4f588a..4c108e2544fabd31c8603032bcaec84f
 +
  // Auth request interface
  interface AuthRequest extends express.Request {
-   user?: any;
+   user?: unknown;
  }
  
  export async function registerRoutes(app: Express): Promise<Server> {
@@ -190,7 +190,7 @@ index 8202c4744b2672c4e32723aa76e4f758fe4f588a..4c108e2544fabd31c8603032bcaec84f
 +
    // Get user stats
    // Debug endpoint for Reddit OAuth troubleshooting (temporary)
-   app.get('/api/debug/session', (req: any, res) => {
+   app.get('/api/debug/session', (req: unknown, res) => {
      res.json({
        sessionId: req.sessionID,
        hasSession: !!req.session,

@@ -143,7 +143,7 @@ export class PostScheduler {
     };
   }
   
-  private static analyzeEngagementByHour(posts: any[]): Record<number, number> {
+  private static analyzeEngagementByHour(posts: unknown[]): Record<number, number> {
     const hourlyEngagement: Record<number, number> = {};
     
     for (let hour = 0; hour < 24; hour++) {

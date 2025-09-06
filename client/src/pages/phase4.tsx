@@ -159,7 +159,7 @@ export default function Phase4Dashboard() {
     }
   ];
 
-  const getIconComponent = (IconComponent: any) => IconComponent;
+  const getIconComponent = (IconComponent: unknown) => IconComponent;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900 p-6">

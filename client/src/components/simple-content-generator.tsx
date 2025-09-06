@@ -28,7 +28,7 @@ interface GeneratedContent {
 
 interface SimpleContentGeneratorProps {
   isGuestMode?: boolean;
-  onContentGenerated?: (data: any) => void;
+  onContentGenerated?: (data: unknown) => void;
 }
 
 export function SimpleContentGenerator({ isGuestMode = false, onContentGenerated }: SimpleContentGeneratorProps) {
@@ -41,7 +41,7 @@ export function SimpleContentGenerator({ isGuestMode = false, onContentGenerated
   const queryClient = useQueryClient();
 
   const generateContentMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: unknown) => {
       const response = await apiRequest("POST", "/api/generate-ai", {
         ...data,
         generationType: "prompt",

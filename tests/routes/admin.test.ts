@@ -59,7 +59,7 @@ vi.mock('../../server/admin-routes.js', () => ({
 import { setupAdminRoutes } from '../../server/admin-routes.js';
 
 describe('Admin Routes', () => {
-  let app: any;
+  let app: unknown;
 
   beforeEach(() => {
     app = express();

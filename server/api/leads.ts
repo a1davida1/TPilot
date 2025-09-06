@@ -41,7 +41,7 @@ export async function createLead(req: Request, res: Response) {
     }
 
     // Parse UTM parameters from cookie and current URL - handle missing cookies
-    let cookieUTM: any = {};
+    let cookieUTM: unknown = {};
     try {
       if (req.cookies && req.cookies.utm_params) {
         cookieUTM = JSON.parse(decodeURIComponent(req.cookies.utm_params));

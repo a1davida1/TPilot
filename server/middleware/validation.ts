@@ -217,7 +217,7 @@ export const uploadProtectionSchema = z.object({
 // ==========================================
 
 // Sanitize input data by removing potentially dangerous characters
-export function sanitizeInput(input: any): any {
+export function sanitizeInput(input: unknown): unknown {
   if (typeof input === 'string') {
     return input
       .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove script tags
@@ -231,7 +231,7 @@ export function sanitizeInput(input: any): any {
   }
   
   if (input && typeof input === 'object') {
-    const sanitized: any = {};
+    const sanitized: unknown = {};
     for (const [key, value] of Object.entries(input)) {
       sanitized[key] = sanitizeInput(value);
     }

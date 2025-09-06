@@ -141,7 +141,7 @@ router.post("/complete-reset", async (req, res) => {
 });
 
 // Change password route (for logged-in users)
-router.post("/change-password", async (req: any, res) => {
+router.post("/change-password", async (req: unknown, res) => {
   try {
     // Check if user is authenticated
     if (!req.user && !req.userId) {
@@ -181,7 +181,7 @@ router.post("/change-password", async (req: any, res) => {
 });
 
 // Delete account route
-router.delete("/delete-account", async (req: any, res) => {
+router.delete("/delete-account", async (req: unknown, res) => {
   try {
     if (!req.user && !req.userId) {
       return res.status(401).json({ message: 'Authentication required' });

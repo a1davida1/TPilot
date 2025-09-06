@@ -190,7 +190,7 @@ index 1234567..89abcde 100644
 +      return res.json();
 +    },
 +    onSuccess: (updatedExpense) => {
-+      queryClient.setQueryData(['/api/expenses'], (old: any[] = []) =>
++      queryClient.setQueryData(['/api/expenses'], (old: unknown[] = []) =>
 +        old.map(exp => (exp.id === updatedExpense.id ? updatedExpense : exp))
 +      );
 +      queryClient.invalidateQueries({ queryKey: ['/api/expenses/range'] });
@@ -213,15 +213,15 @@ index 1234567..89abcde 100644
 +      notes: expenseForm.notes
 +    });
 @@
--      const dayExpenses = calendarExpenses.filter((expense: any) =>
+-      const dayExpenses = calendarExpenses.filter((expense: unknown) =>
 -        isSameDay(parseISO(expense.date), day)
 -      );
--      const totalAmount = dayExpenses.reduce((sum: number, expense: any) => sum + expense.amount, 0);
-+      const dayExpenses = calendarExpenses.filter((expense: any) =>
+-      const totalAmount = dayExpenses.reduce((sum: number, expense: unknown) => sum + expense.amount, 0);
++      const dayExpenses = calendarExpenses.filter((expense: unknown) =>
 +        isSameDay(parseISO(expense.expenseDate), day)
 +      );
-+      const totalAmount = dayExpenses.reduce((sum: number, expense: any) => sum + expense.amount, 0);
-+      const hasReceipt = dayExpenses.some((expense: any) => expense.receiptUrl);
++      const totalAmount = dayExpenses.reduce((sum: number, expense: unknown) => sum + expense.amount, 0);
++      const hasReceipt = dayExpenses.some((expense: unknown) => expense.receiptUrl);
  
        return {
          date: day,
@@ -297,7 +297,7 @@ index 1234567..89abcde 100644
 +              {categoriesLoading ? (
 +                <div>Loading...</div>
 +              ) : (
-+                expenseCategories.map((category: any, index: number) => {
++                expenseCategories.map((category: unknown, index: number) => {
 +                  const IconComponent = iconMap[category.icon] || Sparkles;
 +                  return (
 +                    <div key={category.id}>
@@ -331,7 +331,7 @@ index 1234567..89abcde 100644
 +                            <div className=\"pt-2 border-t border-gray-100\">
 +                              <p className=\"text-xs text-gray-500 mb-2\">Examples:</p>
 +                              <div className=\"flex flex-wrap gap-1\">
-+                                {category.examples?.slice(0, 3).map((example: any, idx: number) => (
++                                {category.examples?.slice(0, 3).map((example: unknown, idx: number) => (
 +                                  <Badge key={idx} variant=\"outline\" className=\"text-xs\">
 +                                    {example}
 +                                  </Badge>
@@ -399,7 +399,7 @@ index 1234567..89abcde 100644
                          <div className=\"grid grid-cols-1 md:grid-cols-2 gap-2\">
 -                          {selectedCategory.examples.map((example, idx) => (
 -                            <div key={idx} className=\"flex items-center space-x-2 p-2 bg-gray-50 rounded-lg\">
-+                          {selectedCategory.examples?.map((example: any, idx: number) => (
++                          {selectedCategory.examples?.map((example: unknown, idx: number) => (
 +                            <div key={idx} className=\"flex items-center space-x-2 p-2 bg-gray-50 rounded-lg\">
                                <div className=\"w-2 h-2 rounded-full bg-green-500\"></div>
                                <span className=\"text-sm text-gray-700\">{example}</span>
@@ -417,7 +417,7 @@ index 1234567..89abcde 100644
 -                        {category.name}
 -                      </SelectItem>
 -                    ))}
-+                    {expenseCategories.map((category: any) => (
++                    {expenseCategories.map((category: unknown) => (
 +                      <SelectItem key={category.id} value={String(category.id)}>
 +                        {category.name}
 +                      </SelectItem>
@@ -465,7 +465,7 @@ index 1234567..89abcde 100644
 +                        ${isSameDay(dayData.date, new Date()) ? 'bg-purple-50 border-purple-200' : 'bg-white'}
 +                      `}
 +                      onClick={() => {
-+                        const receiptExp = dayData.expenses.find((e: any) => e.receiptUrl);
++                        const receiptExp = dayData.expenses.find((e: unknown) => e.receiptUrl);
 +                        if (receiptExp) window.open(receiptExp.receiptUrl, '_blank');
 +                      }}
 +                    >

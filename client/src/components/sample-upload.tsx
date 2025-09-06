@@ -86,7 +86,7 @@ import {
     };
   };
 
-  const handleUploadComplete = async (result: any) => {
+  const handleUploadComplete = async (result: unknown) => {
     if (result.successful && result.successful.length > 0) {
       const uploadedUrl = result.successful[0].uploadURL;
       setFormData({ ...formData, imageUrl: response.objectPath });

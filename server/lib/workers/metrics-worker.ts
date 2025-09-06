@@ -71,7 +71,7 @@ export class MetricsWorker {
         return { success: false, reason: 'Failed to fetch metrics' };
       }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error(`Metrics job for post ${redditPostId} failed:`, { error: error.message });
 
       // Log failure event
@@ -94,7 +94,7 @@ export class MetricsWorker {
     }
   }
 
-  private async fetchPostMetrics(reddit: any, redditPostId: string) {
+  private async fetchPostMetrics(reddit: unknown, redditPostId: string) {
     try {
       // Use Reddit API to get post details
       const post = await reddit.getSubmission(redditPostId);
@@ -112,7 +112,7 @@ export class MetricsWorker {
     }
   }
 
-  private async updatePostMetrics(postJobId: number, metrics: any) {
+  private async updatePostMetrics(postJobId: number, metrics: unknown) {
     try {
       // Update the post job with latest metrics
       const currentMetrics = {
@@ -170,7 +170,7 @@ export class MetricsWorker {
     }
   }
 
-  private async logEvent(userId: number, type: string, meta: any) {
+  private async logEvent(userId: number, type: string, meta: unknown) {
     try {
       await db.insert(eventLogs).values({
         userId,

@@ -54,7 +54,7 @@ index e1a01674c936b2e24414cb0ad6bc88b1250289e8..e2af094d1fb7a2c5eadefaf6f922481c
        }
  
        // Prepare post options
-       const postOptions: any = {
+       const postOptions: unknown = {
          subreddit,
          title: titleFinal,
          body: bodyFinal,
@@ -98,7 +98,7 @@ index e1a01674c936b2e24414cb0ad6bc88b1250289e8..e2af094d1fb7a2c5eadefaf6f922481c
          throw new Error(result.error || 'Reddit posting failed');
        }
  
-     } catch (error: any) {
+     } catch (error: unknown) {
        console.error(`Post job ${postJobId} failed:`, error);
  
        // Update job status to failed
@@ -170,7 +170,7 @@ index e1a01674c936b2e24414cb0ad6bc88b1250289e8..e2af094d1fb7a2c5eadefaf6f922481c
 +    }
 +  }
 +
-   private async updateJobStatus(postJobId: number, status: string, resultData: any) {
+   private async updateJobStatus(postJobId: number, status: string, resultData: unknown) {
      try {
        await db
          .update(postJobs)

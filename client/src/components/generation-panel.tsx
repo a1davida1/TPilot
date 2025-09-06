@@ -34,7 +34,7 @@ export function GenerationPanel({ onContentGenerated }: GenerationPanelProps) {
       });
       return response.json();
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data: unknown) => {
       // Transform AI service response to ContentGeneration format
       const transformedData = {
         id: Date.now(),

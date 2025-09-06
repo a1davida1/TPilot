@@ -134,7 +134,7 @@ export class RedditManager {
         url: `https://www.reddit.com${submission.permalink}`,
       };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Reddit submission failed:', {
         message: error?.message,
         stack: error?.stack,
@@ -203,7 +203,7 @@ export class RedditManager {
             postId: submission.name || submission.id,
             url: `https://www.reddit.com${submission.permalink}`,
           };
-        } catch (imgError: any) {
+        } catch (imgError: unknown) {
           console.error('Direct image upload failed, falling back to link post:', imgError.message);
           // Fallback to link post if image upload fails
           if (options.imageUrl) {
@@ -225,7 +225,7 @@ export class RedditManager {
         error: 'No image provided for upload'
       };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Image submission failed:', error);
       return {
         success: false,
@@ -283,7 +283,7 @@ export class RedditManager {
         url: `https://www.reddit.com${submission.permalink}`
       };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Not all subreddits support galleries
       if (error.message?.includes('INVALID_OPTION') || error.message?.includes('gallery')) {
         console.log('Gallery not supported, falling back to single image');

@@ -154,7 +154,7 @@ export function GettingStarted({ userTier = 'free', onSectionSelect, isAtBottom 
     setCompletedSteps(newCompleted);
   };
 
-  const handleStepAction = (step: any) => {
+  const handleStepAction = (step: unknown) => {
     if (onSectionSelect && step.section) {
       onSectionSelect(step.section);
     }

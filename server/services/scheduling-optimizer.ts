@@ -239,11 +239,11 @@ class SchedulingOptimizer {
     return ['fitness', 'creative', 'lifestyle', 'exclusive'];
   }
 
-  private matchesNiche(trend: any, userNiche: string[]): boolean {
+  private matchesNiche(trend: unknown, userNiche: string[]): boolean {
     return userNiche.includes(trend.category) || trend.score > 80;
   }
 
-  private getSuggestedStyle(trend: any): string {
+  private getSuggestedStyle(trend: unknown): string {
     const styleMap: Record<string, string> = {
       'fitness': 'motivational',
       'exclusive': 'teasing',

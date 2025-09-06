@@ -197,7 +197,7 @@ export function UnifiedContentCreator({
   };
 
   const generateContentMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: unknown) => {
       // Use FormData for unified endpoint that handles both text and images
       const formData = new FormData();
 

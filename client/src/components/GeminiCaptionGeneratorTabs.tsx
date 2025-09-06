@@ -124,7 +124,7 @@ export function GeminiCaptionGeneratorTabs() {
         title: "Content generated!",
         description: "Your AI-powered content is ready to use",
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Generation error:', err);
       setError(err.message || 'Failed to generate caption');
       toast({
@@ -159,7 +159,7 @@ export function GeminiCaptionGeneratorTabs() {
         title: "Content generated!",
         description: "Your AI-powered content is ready to use",
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Generation error:', err);
       setError(err.message || 'Failed to generate caption');
       toast({
@@ -201,7 +201,7 @@ export function GeminiCaptionGeneratorTabs() {
         title: "Content rewritten!",
         description: "Your improved content is ready to use",
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Rewrite error:', err);
       setError(err.message || 'Failed to rewrite caption');
       toast({

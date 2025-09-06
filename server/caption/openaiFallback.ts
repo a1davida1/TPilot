@@ -30,7 +30,7 @@ export async function openAICaptionFallback(params: FallbackParams) {
     temperature: 0.8
   });
 
-  let json: any;
+  let json: unknown;
   try {
     json = JSON.parse(response.choices[0].message.content || '{}');
   } catch {

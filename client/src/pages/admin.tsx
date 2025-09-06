@@ -107,7 +107,7 @@ export function AdminDashboard() {
 
   // User action mutation for admin operations
   const actionMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: unknown) => {
       let endpoint = '/api/admin/user-action';
       if (data.action === 'reset-password') endpoint = '/api/admin/reset-password';
       else if (data.action === 'tier-management') endpoint = '/api/admin/upgrade-user';
@@ -140,7 +140,7 @@ export function AdminDashboard() {
         setActionType(null);
       }
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({ title: "Action Failed", description: error.message, variant: "destructive" });
     }
   });
@@ -345,7 +345,7 @@ export function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {(users as any)?.slice(0, 5).map((user: any) => (
+                    {(users as any)?.slice(0, 5).map((user: unknown) => (
                       <tr key={user.id} className="border-b border-white/5">
                         <td className="p-4">
                           <div>
@@ -414,7 +414,7 @@ export function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {(providers as any)?.map((provider: any) => (
+                {(providers as any)?.map((provider: unknown) => (
                   <div key={provider.name} className="p-4 bg-white/5 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-3">
@@ -631,7 +631,7 @@ export function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {(analytics as any)?.topPages?.slice(0, 5).map((page: any, index: number) => (
+                  {(analytics as any)?.topPages?.slice(0, 5).map((page: unknown, index: number) => (
                     <div key={index} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
                       <span className="text-sm">{page.path}</span>
                       <Badge variant="secondary">{page.views} views</Badge>
@@ -653,7 +653,7 @@ export function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {(analytics as any)?.trafficSources?.slice(0, 5).map((source: any, index: number) => (
+                  {(analytics as any)?.trafficSources?.slice(0, 5).map((source: unknown, index: number) => (
                     <div key={index} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
                       <span className="text-sm">{source.source}</span>
                       <Badge variant="secondary">{source.visitors} visitors</Badge>

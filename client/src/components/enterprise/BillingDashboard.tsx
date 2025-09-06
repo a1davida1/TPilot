@@ -37,14 +37,14 @@ export default function BillingDashboard() {
       const response = await apiRequest('POST', '/api/billing/payment-link', { plan });
       return response.json();
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data: unknown) => {
       window.open(data.paymentUrl, '_blank');
       toast({
         title: "Redirecting to payment",
         description: "Complete your subscription upgrade in the new window",
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         title: "Payment link failed",
         description: error.message || "Unable to generate payment link",

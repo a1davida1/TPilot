@@ -322,9 +322,9 @@ Create content that feels authentic, drives engagement, and perfectly matches th
   }
 
   private enhanceResponse(
-    baseResponse: any, 
+    baseResponse: unknown, 
     request: EnhancedAIRequest,
-    metadata: any
+    metadata: unknown
   ): EnhancedAIResponse {
     const platform = this.platformOptimizations[request.platform];
     
@@ -365,7 +365,7 @@ Create content that feels authentic, drives engagement, and perfectly matches th
   }
 
   private createDetailedPhotoInstructions(
-    base: any,
+    base: unknown,
     request: EnhancedAIRequest
   ): EnhancedPhotoInstructions {
     const style = this.styleGuides[request.style];

@@ -288,7 +288,7 @@ export function createStreamingUpload(options: StreamingUploadOptions = {}) {
       // Start processing the request
       req.pipe(busboy);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Streaming upload middleware error', {
         error: error?.message || 'Unknown error',
         stack: error?.stack

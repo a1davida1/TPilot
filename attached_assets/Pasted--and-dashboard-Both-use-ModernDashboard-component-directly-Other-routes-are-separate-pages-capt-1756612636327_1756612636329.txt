@@ -36,7 +36,7 @@ FIX ModernDashboard to use the props:
 In client/src/components/modern-dashboard.tsx, make sure it accepts and uses props:
 
 typescriptinterface ModernDashboardProps {
-  user?: any;
+  user?: unknown;
   userTier?: string;
   isAdmin?: boolean;
 }

@@ -170,7 +170,7 @@ export function registerAnalyticsRoutes(app: Express) {
 
 // Helper Functions
 
-async function processAnalyticsEvent(event: any, ipAddress: string) {
+async function processAnalyticsEvent(event: unknown, ipAddress: string) {
   const deviceInfo = parseUserAgent(event.userAgent);
   const locationInfo = await getLocationFromIP(ipAddress);
 
@@ -196,7 +196,7 @@ async function processAnalyticsEvent(event: any, ipAddress: string) {
   }
 }
 
-async function handlePageView(event: any, ipAddress: string, deviceInfo: any, locationInfo: any) {
+async function handlePageView(event: unknown, ipAddress: string, deviceInfo: unknown, locationInfo: unknown) {
   // Create or update session
   await db.insert(userSessions).values({
     sessionId: event.sessionId,
@@ -233,7 +233,7 @@ async function handlePageView(event: any, ipAddress: string, deviceInfo: any, lo
   });
 }
 
-async function handlePageEnd(event: any) {
+async function handlePageEnd(event: unknown) {
   if (!event.timeOnPage) return;
 
   // Update the latest page view with time spent
@@ -249,7 +249,7 @@ async function handlePageEnd(event: any) {
     ));
 }
 
-async function handleEngagementEvent(event: any) {
+async function handleEngagementEvent(event: unknown) {
   await db.insert(engagementEvents).values({
     sessionId: event.sessionId,
     userId: event.userId ? parseInt(event.userId) : null,
@@ -262,7 +262,7 @@ async function handleEngagementEvent(event: any) {
   });
 }
 
-async function handleContentView(event: any, ipAddress: string) {
+async function handleContentView(event: unknown, ipAddress: string) {
   await db.insert(contentViews).values({
     contentId: event.contentId,
     sessionId: event.sessionId,
@@ -275,7 +275,7 @@ async function handleContentView(event: any, ipAddress: string) {
   });
 }
 
-async function handleSessionEnd(event: any) {
+async function handleSessionEnd(event: unknown) {
   await db.update(userSessions)
     .set({
       endedAt: new Date(event.timestamp),
@@ -448,7 +448,7 @@ function extractUTMParam(url: string, param: string): string | null {
   }
 }
 
-function parseUserAgent(userAgent?: string): any {
+function parseUserAgent(userAgent?: string): unknown {
   // Simple user agent parsing - can be enhanced with a library like 'ua-parser-js'
   if (!userAgent) return { deviceType: 'unknown', browser: 'unknown', os: 'unknown' };
   

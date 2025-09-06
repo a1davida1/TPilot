@@ -98,7 +98,7 @@ class AnalyticsService {
     });
   }
 
-  async trackFeatureUsage(userId: string, feature: string, metadata?: any) {
+  async trackFeatureUsage(userId: string, feature: string, metadata?: unknown) {
     await this.trackEvent(userId, 'feature_used', {
       feature,
       ...metadata,
@@ -106,7 +106,7 @@ class AnalyticsService {
     });
   }
 
-  async trackError(userId: string, error: string, context: any) {
+  async trackError(userId: string, error: string, context: unknown) {
     await this.trackEvent(userId, 'error_occurred', {
       error,
       context,

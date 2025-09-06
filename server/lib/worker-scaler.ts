@@ -136,7 +136,7 @@ export class WorkerScaler {
     }
   }
 
-  private shouldScaleUp(metrics: any, config: ScalingConfig, state: WorkerScalingState): boolean {
+  private shouldScaleUp(metrics: unknown, config: ScalingConfig, state: WorkerScalingState): boolean {
     return (
       state.currentConcurrency < config.maxConcurrency &&
       metrics.pending >= config.scaleUpThreshold &&
@@ -144,7 +144,7 @@ export class WorkerScaler {
     );
   }
 
-  private shouldScaleDown(metrics: any, config: ScalingConfig, state: WorkerScalingState): boolean {
+  private shouldScaleDown(metrics: unknown, config: ScalingConfig, state: WorkerScalingState): boolean {
     return (
       state.currentConcurrency > config.minConcurrency &&
       metrics.pending < config.scaleUpThreshold / 2 && // Less than half the scale-up threshold

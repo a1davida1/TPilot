@@ -192,7 +192,7 @@ async function generateWithOpenAI(prompt: string) {
   return validateAndFormatResponse(result);
 }
 
-function validateAndFormatResponse(result: any) {
+function validateAndFormatResponse(result: unknown) {
   let content = result.content;
   if (!content || content === 'Generated content' || content.length < 20) {
     // Create engaging fallback content based on titles

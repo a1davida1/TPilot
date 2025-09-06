@@ -177,7 +177,7 @@ class PerformanceMonitor {
   }
 
   // Reporting
-  generateReport(): any {
+  generateReport(): unknown {
     return {
       summary: {
         totalRequests: this.metrics.length,

@@ -61,7 +61,7 @@ export default function Dashboard() {
 🧪 Quick Debug Test
 Add this temporary debug endpoint to server/auth.ts:
 typescript// Debug endpoint - remove after testing
-app.get('/api/debug/session', (req: any, res) => {
+app.get('/api/debug/session', (req: unknown, res) => {
   res.json({
     sessionId: req.sessionID,
     redditState: req.session.redditOAuthState,

@@ -40,7 +40,7 @@ diff --git a/server/reddit-routes.ts b/server/reddit-routes.ts
    });
 +
 +  // Admin CRUD endpoints
-+  app.post('/api/reddit/communities', authenticateToken, async (req: any, res) => {
++  app.post('/api/reddit/communities', authenticateToken, async (req: unknown, res) => {
 +    if (!req.user?.isAdmin) return res.status(403).json({ error: 'Forbidden' });
 +    try {
 +      const community = await createCommunity(req.body);
@@ -50,7 +50,7 @@ diff --git a/server/reddit-routes.ts b/server/reddit-routes.ts
 +    }
 +  });
 +
-+  app.put('/api/reddit/communities/:id', authenticateToken, async (req: any, res) => {
++  app.put('/api/reddit/communities/:id', authenticateToken, async (req: unknown, res) => {
 +    if (!req.user?.isAdmin) return res.status(403).json({ error: 'Forbidden' });
 +    try {
 +      const community = await updateCommunity(req.params.id, req.body);
@@ -60,7 +60,7 @@ diff --git a/server/reddit-routes.ts b/server/reddit-routes.ts
 +    }
 +  });
 +
-+  app.delete('/api/reddit/communities/:id', authenticateToken, async (req: any, res) => {
++  app.delete('/api/reddit/communities/:id', authenticateToken, async (req: unknown, res) => {
 +    if (!req.user?.isAdmin) return res.status(403).json({ error: 'Forbidden' });
 +    try {
 +      await deleteCommunity(req.params.id);

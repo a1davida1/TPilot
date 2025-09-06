@@ -71,7 +71,7 @@ index 8ea9f9459b82c106302a4a24ef0ba3816e0a7074..af7a3882cf8e90261d8c620011bb9600
  
    // Create expense mutation
    const createExpenseMutation = useMutation({
-     mutationFn: async (expenseData: any) => {
+     mutationFn: async (expenseData: unknown) => {
        const response = await fetch('/api/expenses', {
          method: 'POST',
          headers: { 'Content-Type': 'application/json' },
@@ -138,10 +138,10 @@ index 8ea9f9459b82c106302a4a24ef0ba3816e0a7074..af7a3882cf8e90261d8c620011bb9600
      });
      
      return daysInMonth.map(day => {
-       const dayExpenses = calendarExpenses.filter((expense: any) => 
+       const dayExpenses = calendarExpenses.filter((expense: unknown) => 
          isSameDay(parseISO(expense.date), day)
        );
-       const totalAmount = dayExpenses.reduce((sum: number, expense: any) => sum + expense.amount, 0);
+       const totalAmount = dayExpenses.reduce((sum: number, expense: unknown) => sum + expense.amount, 0);
        
        return {
          date: day,
@@ -189,7 +189,7 @@ index 8ea9f9459b82c106302a4a24ef0ba3816e0a7074..af7a3882cf8e90261d8c620011bb9600
 +                  <SelectValue placeholder="Select expense" />
 +                </SelectTrigger>
 +                <SelectContent>
-+                  {recentExpenses.map((exp: any) => (
++                  {recentExpenses.map((exp: unknown) => (
 +                    <SelectItem key={exp.id} value={String(exp.id)}>
 +                      {exp.description}
 +                    </SelectItem>

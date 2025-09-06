@@ -122,7 +122,7 @@ index 01efd511451f7c2aa972f031920365ace03989f1..b837c5bfa4764449582a758bc17aa73d
      userEmail: string, 
      platformTags: string[], 
      painPoint: string | null, 
-     utmData: any
+     utmData: unknown
    ): Promise<boolean> {
 diff --git a/server/services/email-service.ts b/server/services/email-service.ts
 index 01efd511451f7c2aa972f031920365ace03989f1..b837c5bfa4764449582a758bc17aa73d14d6b46d 100644

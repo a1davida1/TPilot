@@ -61,7 +61,7 @@ export function IntegratedFineTuning() {
 
   // Save integrated settings
   const saveMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: unknown) => {
       return await apiRequest("/api/integrated-personalization", "PUT", data);
     },
     onSuccess: () => {

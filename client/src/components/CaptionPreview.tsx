@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Copy, Check, AlertCircle } from "lucide-react";
 import { useState } from "react";
 
-export function CaptionPreview({ data }: { data: any }) {
+export function CaptionPreview({ data }: { data: unknown }) {
   const [copiedCaption, setCopiedCaption] = useState(false);
   const [copiedJSON, setCopiedJSON] = useState(false);
 

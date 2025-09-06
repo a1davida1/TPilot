@@ -205,7 +205,7 @@ export function generateAdvancedContent(params: ContentParameters): GeneratedCon
 }
 
 // Helper function to get random preset variation
-function getRandomPresetVariation(presetId: string): any {
+function getRandomPresetVariation(presetId: string): unknown {
   const presetVariations: Record<string, any[]> = {
     'nude-photos': [
       {
@@ -1193,7 +1193,7 @@ function getRandomPresetVariation(presetId: string): any {
   return variations[randomIndex];
 }
 
-function generateTitles(params: ContentParameters, photoConfig: any, toneStyle: any): string[] {
+function generateTitles(params: ContentParameters, photoConfig: unknown, toneStyle: unknown): string[] {
   const titles: string[] = [];
   const themes = photoConfig?.themes || ['casual', 'fun', 'spontaneous', 'authentic'];
   const starters = toneStyle?.starters || ['Hey', 'Just', 'So', 'Well'];
@@ -1216,7 +1216,7 @@ function generateTitles(params: ContentParameters, photoConfig: any, toneStyle: 
   return titles.slice(0, Math.random() > 0.5 ? 3 : 4);
 }
 
-function generateMainContent(params: ContentParameters, photoConfig: any, toneStyle: any): string {
+function generateMainContent(params: ContentParameters, photoConfig: unknown, toneStyle: unknown): string {
   let content = "";
   const themes = photoConfig?.themes || ['casual', 'fun', 'spontaneous'];
   const settings = photoConfig?.settings || ['bedroom', 'living room', 'cozy space'];
@@ -1290,7 +1290,7 @@ function generateMainContent(params: ContentParameters, photoConfig: any, toneSt
   return content;
 }
 
-function generatePhotoInstructions(params: ContentParameters, photoConfig: any): any {
+function generatePhotoInstructions(params: ContentParameters, photoConfig: unknown): unknown {
   const config = photoConfig;
   
   return {
@@ -1313,7 +1313,7 @@ function generatePhotoInstructions(params: ContentParameters, photoConfig: any):
   };
 }
 
-function generateTags(params: ContentParameters, photoConfig: any): string[] {
+function generateTags(params: ContentParameters, photoConfig: unknown): string[] {
   const baseTags = [params.photoType, params.textTone, params.platform];
   const photoTags = photoConfig.themes.slice(0, 2);
   const moodTags = [photoConfig.mood];

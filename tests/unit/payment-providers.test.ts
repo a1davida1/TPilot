@@ -159,7 +159,7 @@ describe('Payment Providers', () => {
       process.env.COINBASE_COMMERCE_KEY = 'test_key';
       process.env.APP_BASE_URL = 'https://test.com';
 
-      let capturedBody: any;
+      let capturedBody: unknown;
       const originalFetch = global.fetch;
       global.fetch = async (url, options) => {
         capturedBody = JSON.parse(options?.body as string);
@@ -386,7 +386,7 @@ describe('Payment Providers', () => {
       const { providers } = require('../../server/payments/payment-providers');
       
       expect(providers).toHaveLength(0);
-      expect(providers.every((p: any) => p.enabled)).toBe(true);
+      expect(providers.every((p: unknown) => p.enabled)).toBe(true);
     });
 
     test('includes enabled providers', () => {
@@ -397,7 +397,7 @@ describe('Payment Providers', () => {
       const { providers } = require('../../server/payments/payment-providers');
       
       expect(providers.length).toBeGreaterThan(0);
-      expect(providers.every((p: any) => p.enabled)).toBe(true);
+      expect(providers.every((p: unknown) => p.enabled)).toBe(true);
     });
   });
 

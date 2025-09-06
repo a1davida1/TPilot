@@ -40,7 +40,7 @@ index 93ec284a8805ffee82990b91eef2900bf97363c4..8db7550cef4a7c4ec48fe4a99ec1cdbd
  
  const app = express();
 +
-+let Sentry: any;
++let Sentry: unknown;
 +if (process.env.SENTRY_DSN) {
 +  try {
 +    // @ts-ignore -- optional dependency
@@ -122,8 +122,8 @@ index 93ec284a8805ffee82990b91eef2900bf97363c4..8db7550cef4a7c4ec48fe4a99ec1cdbd
    
    const server = await registerRoutes(app);
  
--  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-+  app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
+-  app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
++  app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
      const status = err.status || err.statusCode || 500;
      const message = err.message || "Internal Server Error";
  

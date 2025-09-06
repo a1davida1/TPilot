@@ -56,7 +56,7 @@ export default function ResetPasswordPage() {
         setLocation('/login');
       }, 3000);
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         title: "Reset failed",
         description: error.message || "Could not reset password. The link may be expired.",

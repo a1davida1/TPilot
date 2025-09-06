@@ -26,7 +26,7 @@ const EMAIL_REGEX = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g;
 /**
  * Redacts sensitive data from objects and strings
  */
-export function redactSensitiveData(data: any): any {
+export function redactSensitiveData(data: unknown): unknown {
   if (data === null || data === undefined) {
     return data;
   }
@@ -41,7 +41,7 @@ export function redactSensitiveData(data: any): any {
       return data.map(redactSensitiveData);
     }
 
-    const redacted: any = {};
+    const redacted: unknown = {};
     for (const [key, value] of Object.entries(data)) {
       const lowercaseKey = key.toLowerCase();
       const isSensitive = SENSITIVE_PATTERNS.some(pattern => 
@@ -63,7 +63,7 @@ export function redactSensitiveData(data: any): any {
 /**
  * Safe logging function that redacts sensitive data
  */
-export function safeLog(level: 'info' | 'warn' | 'error', message: string, data?: any) {
+export function safeLog(level: 'info' | 'warn' | 'error', message: string, data?: unknown) {
   
   if (data) {
     const redactedData = redactSensitiveData(data);
@@ -76,7 +76,7 @@ export function safeLog(level: 'info' | 'warn' | 'error', message: string, data?
 /**
  * Specific user data redaction for safe logging
  */
-export function redactUserData(user: any) {
+export function redactUserData(user: unknown) {
   if (!user) return user;
   
   return {

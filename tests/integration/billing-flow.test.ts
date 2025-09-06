@@ -100,7 +100,7 @@ describe('Billing Integration Tests', () => {
     test('should return available payment providers', async () => {
       const res = await request(app).get('/api/billing/providers');
       expect(res.status).toBe(200);
-      const names = res.body.map((p: any) => p.name);
+      const names = res.body.map((p: unknown) => p.name);
       expect(names).toContain('stripe');
       expect(names).toContain('paxum');
       expect(names).not.toContain('coinbase');

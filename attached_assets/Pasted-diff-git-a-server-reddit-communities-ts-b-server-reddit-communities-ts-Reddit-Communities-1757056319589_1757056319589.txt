@@ -26,13 +26,13 @@ diff --git a/server/reddit-communities.ts b/server/reddit-communities.ts
 +    );
 +}
 +
-+export async function createCommunity(data: any) {
++export async function createCommunity(data: unknown) {
 +  const value = insertRedditCommunitySchema.parse(data);
 +  const [row] = await db.insert(redditCommunities).values(value).returning();
 +  return row;
 +}
 +
-+export async function updateCommunity(id: string, data: any) {
++export async function updateCommunity(id: string, data: unknown) {
 +  const value = insertRedditCommunitySchema.partial().parse(data);
 +  const [row] = await db.update(redditCommunities).set(value).where(eq(redditCommunities.id, id)).returning();
 +  return row;

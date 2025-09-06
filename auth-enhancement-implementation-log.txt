@@ -40,7 +40,7 @@ EXPORTED LIMITERS:
 CODE STRUCTURE:
 ```typescript
 export function simpleRateLimiter(windowMs = 900000, maxAttempts = 3) {
-  return (req: any, res: any, next: any) => {
+  return (req: unknown, res: unknown, next: unknown) => {
     const key = req.body?.email || req.ip;
     // Rate limiting logic...
   };
@@ -140,7 +140,7 @@ C. METRICS TRACKING ADDED:
 
 D. ADMIN METRICS ENDPOINT ADDED (Lines 775-812):
 ```typescript
-app.get('/api/admin/auth-metrics', async (req: any, res) => {
+app.get('/api/admin/auth-metrics', async (req: unknown, res) => {
   // Authentication check
   // Admin role verification  
   // Return metrics summary and recent events
