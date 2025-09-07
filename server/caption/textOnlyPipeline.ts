@@ -14,7 +14,7 @@ export async function generateVariantsTextOnly(params:{platform:"instagram"|"x"|
   const json=stripToJSON(res.response.text());
   // Fix common safety_level values and missing fields
   if(Array.isArray(json)){
-    json.forEach((item:any)=>{
+    json.forEach((item: unknown)=>{
       // Accept any safety_level from AI
       if(!item.safety_level) item.safety_level="suggestive";
       // Fix other fields
@@ -55,7 +55,7 @@ export async function generateVariantsTextOnly(params:{platform:"instagram"|"x"|
   return CaptionArray.parse(json);
 }
 
-export async function rankAndSelect(variants:any, params?: { platform?: string, nsfw?: boolean }){
+export async function rankAndSelect(variants: unknown, params?: { platform?: string, nsfw?: boolean }){
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rank.txt");
   const res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+JSON.stringify(variants) }]);
   let json=stripToJSON(res.response.text());

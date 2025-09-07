@@ -336,7 +336,7 @@ export class RedditManager {
   /**
    * Initialize Reddit instance (helper for new methods)
    */
-  private async initReddit(): Promise<any> {
+  private async initReddit(): Promise<unknown> {
     await this.refreshTokenIfNeeded();
     return this.reddit;
   }
@@ -387,7 +387,7 @@ export class RedditManager {
   /**
    * Get user's Reddit profile info
    */
-  async getProfile(): Promise<any> {
+  async getProfile(): Promise<unknown> {
     try {
       const user = await (this.reddit as any).getMe();
       return {

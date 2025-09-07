@@ -290,7 +290,7 @@ Create content that feels authentic, drives engagement, and perfectly matches th
 `;
   }
 
-  private async tryAIGeneration(prompt: string, request: EnhancedAIRequest): Promise<any> {
+  private async tryAIGeneration(prompt: string, request: EnhancedAIRequest): Promise<unknown> {
     try {
       const result = await generateWithMultiProvider({
         user: {

@@ -33,7 +33,7 @@ export async function variantsRewrite(params:{platform:"instagram"|"x"|"reddit"|
   const json=stripToJSON(res.response.text());
   // Fix common safety_level values and missing fields
   if(Array.isArray(json)){
-    json.forEach((item:any)=>{
+    json.forEach((item: unknown)=>{
       // Accept any safety_level from AI but normalize "suggestive"
       if(!item.safety_level) item.safety_level="suggestive";
       else if(item.safety_level === 'suggestive') item.safety_level = 'spicy_safe';
@@ -69,7 +69,7 @@ export async function variantsRewrite(params:{platform:"instagram"|"x"|"reddit"|
   return CaptionArray.parse(json);
 }
 
-export async function rankAndSelect(variants:any){
+export async function rankAndSelect(variants: unknown){
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rank.txt");
   let res;
   try {

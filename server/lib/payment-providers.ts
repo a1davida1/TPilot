@@ -99,7 +99,7 @@ export class SegPayProvider extends BasePaymentProvider {
     return true; // Scaffold implementation
   }
 
-  async processWebhook(payload: unknown): Promise<any> {
+  async processWebhook(payload: unknown): Promise<unknown> {
     // SegPay webhook processing would go here
     return {
       userId: payload.userId,
@@ -154,7 +154,7 @@ export class EpochProvider extends BasePaymentProvider {
     return true; // Scaffold implementation
   }
 
-  async processWebhook(payload: unknown): Promise<any> {
+  async processWebhook(payload: unknown): Promise<unknown> {
     return {
       userId: payload.userId,
       subscriptionType: payload.subscriptionType,
@@ -207,7 +207,7 @@ export class PaxumProvider extends BasePaymentProvider {
     return true; // Scaffold implementation
   }
 
-  async processWebhook(payload: unknown): Promise<any> {
+  async processWebhook(payload: unknown): Promise<unknown> {
     return {
       userId: payload.userId,
       subscriptionType: payload.subscriptionType,
@@ -260,7 +260,7 @@ export class CoinbaseProvider extends BasePaymentProvider {
     return true; // Scaffold implementation
   }
 
-  async processWebhook(payload: unknown): Promise<any> {
+  async processWebhook(payload: unknown): Promise<unknown> {
     return {
       userId: payload.userId,
       subscriptionType: payload.subscriptionType,
