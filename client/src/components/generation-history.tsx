@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Clock, Copy, Check, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -41,7 +41,7 @@ export function GenerationHistory({ onSelectGeneration }: GenerationHistoryProps
         description: `${itemName} copied to clipboard`,
       });
       setTimeout(() => setCopiedItem(null), 2000);
-    } catch (err) {
+    } catch (_err) {
       toast({
         title: "Failed to copy",
         description: "Please try selecting and copying manually",

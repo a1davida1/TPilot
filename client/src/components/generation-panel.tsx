@@ -36,15 +36,16 @@ export function GenerationPanel({ onContentGenerated }: GenerationPanelProps) {
     },
     onSuccess: (data: unknown) => {
       // Transform AI service response to ContentGeneration format
+      const apiData = data as { content?: Array<{ titles?: string[]; body?: string; photoInstructions?: string }> };
       const transformedData = {
         id: Date.now(),
         platform: platform,
         style: style,
         theme: theme,
-        titles: data.content?.[0]?.titles || ["Generated content ready!"],
-        content: data.content?.[0]?.body || "Content generated successfully. Try the generation again for full content.",
+        titles: apiData.content?.[0]?.titles || ["Generated content ready!"],
+        content: apiData.content?.[0]?.body || "Content generated successfully. Try the generation again for full content.",
         photoInstructions: {
-          lighting: data.content?.[0]?.photoInstructions || "Natural lighting recommended",
+          lighting: apiData.content?.[0]?.photoInstructions || "Natural lighting recommended",
           cameraAngle: "Eye level",
           composition: "Centered composition",
           styling: "Your signature style",
