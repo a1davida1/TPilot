@@ -1,0 +1,92 @@
+// scripts/fix-lint.js
+import fs from 'fs/promises';
+import path from 'path';
+import { glob } from 'glob';
+
+const FIXES = {
+  // Phase 1: Critical parsing errors
+  parsing: [
+    {
+      file: 'client/src/components/integrated-fine-tuning.tsx',
+      line: 131,
+      issue: 'Missing closing tag for TabsList',
+      fix: async (content) => {
+        const lines = content.split('\n');
+        // Find the TabsList opening tag around line 131
+        const lineIndex = 130; // 0-indexed
+        if (lines[lineIndex] && lines[lineIndex].includes('<TabsList')) {
+          // Insert closing tag
+          lines[lineIndex] = lines[lineIndex].replace('<TabsList', '<TabsList>') + '</TabsList>';
+        }
+        return lines.join('\n');
+      }
+    },
+    {
+      file: 'client/src/components/sample-upload.tsx',
+      line: 49,
+      issue: 'Declaration or statement expected',
+      fix: async (content) => {
+        const lines = content.split('\n');
+        // Remove any stray characters or fix syntax
+        if (lines[48]) { // 0-indexed
+          lines[48] = lines[48].replace(/[^\x20-\x7E\n\r\t]/g, ''); // Remove non-printable
+        }
+        return lines.join('\n');
+      }
+    },
+    {
+      file: 'client/src/components/unified-content-creator.tsx',
+      line: 883,
+      issue: 'Unexpected token - missing brace',
+      fix: async (content) => {
+        // Count opening and closing braces
+        const openBraces = (content.match(/{/g) || []).length;
+        const closeBraces = (content.match(/}/g) || []).length;
+        if (openBraces > closeBraces) {
+          content += '\n}'.repeat(openBraces - closeBraces);
+        }
+        return content;
+      }
+    },
+    {
+      file: 'client/src/components/unified-landing.tsx',
+      line: 265,
+      issue: 'Declaration or statement expected',
+      fix: async (content) => {
+        const lines = content.split('\n');
+        if (lines[264] && !lines[264].trim()) {
+          lines.splice(264, 1); // Remove empty line
+        }
+        return lines.join('\n');
+      }
+    },
+    {
+      file: 'server/seed-policy-data.ts',
+      line: 11,
+      issue: 'Missing catch or finally',
+      fix: async (content) => {
+        // Find try block without catch
+        content = content.replace(/try\s*{([^}]*)}\s*$/gm, 'try {$1} catch (error) { console.error(error); }');
+        return content;
+      }
+    }
+  ]
+};
+
+async function fixParsingErrors() {
+  console.log('🔧 Fixing parsing errors...');
+  for (const fix of FIXES.parsing) {
+    try {
+      const filePath = path.resolve(fix.file);
+      const content = await fs.readFile(filePath, 'utf-8');
+      const fixed = await fix.fix(content);
+      await fs.writeFile(filePath, fixed);
+      console.log(`✅ Fixed ${fix.file}:${fix.line} - ${fix.issue}`);
+    } catch (error) {
+      console.error(`❌ Failed to fix ${fix.file}: ${error.message}`);
+    }
+  }
+}
+
+// Run the fixes
+await fixParsingErrors();

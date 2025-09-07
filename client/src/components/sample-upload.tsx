@@ -45,14 +45,20 @@ export default function SampleUpload() {
     tags: [] as string[]
   });
 
+  const { data: samples = [] } = useQuery<SamplePost[]>({
+    queryKey: ['/api/sample-posts'],
     retry: false
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
+      return await apiRequest('DELETE', `/api/sample-posts/${id}`);
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/sample-posts'] });
       toast({
+        title: "Sample deleted",
+        description: "Sample post has been removed."
       });
     },
     onError: () => {
@@ -65,9 +71,13 @@ export default function SampleUpload() {
 
   const addMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
+      return await apiRequest('POST', '/api/sample-posts', data);
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/sample-posts'] });
       toast({
+        title: "Sample added",
+        description: "Your sample post has been saved."
       });
       setShowAddForm(false);
       resetForm();
@@ -91,7 +101,7 @@ export default function SampleUpload() {
   const handleUploadComplete = async (result: unknown) => {
     if (result.successful && result.successful.length > 0) {
       const uploadedUrl = result.successful[0].uploadURL;
-      setFormData({ ...formData, imageUrl: response.objectPath });
+      setFormData({ ...formData, imageUrl: uploadedUrl });
       toast({
         title: "Image uploaded",
         description: "Your image has been uploaded successfully."
