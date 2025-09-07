@@ -95,9 +95,10 @@ export function ImageGallery() {
       });
     },
     onError: (error: unknown) => {
+      const errorMessage = error instanceof Error ? error.message : "Failed to upload image.";
       toast({
         title: "Upload failed",
-        description: error.message || "Failed to upload image.",
+        description: errorMessage,
         variant: "destructive"
       });
     }
