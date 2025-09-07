@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Crown, CreditCard, Calendar, CheckCircle2, XCircle, ExternalLink } from 'lucide-react';
+import { Crown, CreditCard, CheckCircle2, XCircle, ExternalLink } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 
 interface Subscription {
@@ -16,14 +16,7 @@ interface Subscription {
   createdAt: string;
 }
 
-interface SubscriptionData {
-  subscription: Subscription | null;
-  isPro: boolean;
-  tier: 'free' | 'pro' | 'premium';
-}
-
 export default function BillingDashboard() {
-  const queryClient = useQueryClient();
   const { toast } = useToast();
 
   // Fetch subscription status
@@ -38,16 +31,18 @@ export default function BillingDashboard() {
       return response.json();
     },
     onSuccess: (data: unknown) => {
-      window.open(data.paymentUrl, '_blank');
+      const paymentData = data as { paymentUrl: string };
+      window.open(paymentData.paymentUrl, '_blank');
       toast({
         title: "Redirecting to payment",
         description: "Complete your subscription upgrade in the new window",
       });
     },
     onError: (error: unknown) => {
+      const errorMessage = error instanceof Error ? error.message : "Unable to generate payment link";
       toast({
         title: "Payment link failed",
-        description: error.message || "Unable to generate payment link",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -84,9 +79,8 @@ export default function BillingDashboard() {
     );
   }
 
-  const subscription = (subscriptionData as any)?.subscription || null;
-  const isPro = (subscriptionData as any)?.isPro || false;
-  const tier = (subscriptionData as any)?.tier || 'free';
+  const subscription = (subscriptionData as { subscription?: Subscription; tier?: string })?.subscription || null;
+  const tier = (subscriptionData as { tier?: string })?.tier || 'free';
 
   return (
     <div className="p-6 space-y-6">
@@ -236,7 +230,7 @@ export default function BillingDashboard() {
             {(tier === 'pro' || tier === 'premium') && (
               <div className="text-center py-6">
                 <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                <p className="font-medium mb-2">You're on the {tier} plan!</p>
+                <p className="font-medium mb-2">You&apos;re on the {tier} plan!</p>
                 <p className="text-sm text-gray-500">
                   Enjoying all the premium features. Thank you for your support!
                 </p>

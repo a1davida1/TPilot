@@ -49,16 +49,18 @@ export default function AIContentStudio() {
       return response.json();
     },
     onSuccess: (data: unknown) => {
-      setGeneratedContent(data);
+      const aiResponse = data as AiResponse;
+      setGeneratedContent(aiResponse);
       toast({
         title: "Content generated",
-        description: `Generated ${data.content.length} platform variations${data.cached ? ' (from cache)' : ''}`,
+        description: `Generated ${aiResponse.content.length} platform variations${aiResponse.cached ? ' (from cache)' : ''}`,
       });
     },
     onError: (error: unknown) => {
+      const errorMessage = error instanceof Error ? error.message : "Failed to generate content";
       toast({
         title: "Generation failed",
-        description: error.message || "Failed to generate content",
+        description: errorMessage,
         variant: "destructive",
       });
     },
