@@ -1,0 +1,178 @@
+apply_patch <<'PATCH'
+*** Begin Patch
+*** Update File: server/social-media/social-media-manager.ts
+@@
+-import type { SocialMediaAccount, SocialMediaPost, InsertSocialMediaPost } from '@shared/schema.js';
++// Removed unused schema types; local inference suffices
+ 
+@@
+-  private apis: Map<Platform, any> = new Map();
++  private apis: Map<Platform, InstagramAPI | TwitterAPI | TikTokAPI | YouTubeAPI> = new Map();
+@@
+-  connectAccount(platform: Platform, credentials: any) {
++  connectAccount(platform: Platform, credentials: Record<string, string>) {
+@@
+-        case 'twitter':
+-          // Upload media first if provided
+-          let mediaIds: string[] = [];
++        case 'twitter': {
++          // Upload media first if provided
++          const mediaIds: string[] = [];
+           if (content.mediaUrls?.length) {
+             for (const mediaUrl of content.mediaUrls) {
+               const mediaType = mediaUrl.includes('.mp4') ? 'video' : 'image';
+               const uploadResult = await api.uploadMedia(mediaUrl, mediaType);
+               if (uploadResult.success && uploadResult.mediaId) {
+                 mediaIds.push(uploadResult.mediaId);
+               }
+             }
+           }
+-
+-          return await api.createTweet({
++          return await api.createTweet({
+             text: content.hashtags
+               ? `${content.text}\n\n${content.hashtags.map(tag => `#${tag}`).join(' ')}`
+               : content.text,
+             mediaIds: mediaIds.length > 0 ? mediaIds : undefined,
+           });
++        }
+@@
+-            likes: metrics.find((m: any) => m.name === 'likes')?.values[0]?.value || 0,
+-            comments: metrics.find((m: any) => m.name === 'comments')?.values[0]?.value || 0,
+-            shares: metrics.find((m: any) => m.name === 'shares')?.values[0]?.value || 0,
+-            views: metrics.find((m: any) => m.name === 'impressions')?.values[0]?.value || 0,
++            likes: metrics.find((m: { name: string; values: { value: number }[] }) => m.name === 'likes')?.values[0]?.value || 0,
++            comments: metrics.find((m: { name: string; values: { value: number }[] }) => m.name === 'comments')?.values[0]?.value || 0,
++            shares: metrics.find((m: { name: string; values: { value: number }[] }) => m.name === 'shares')?.values[0]?.value || 0,
++            views: metrics.find((m: { name: string; values: { value: number }[] }) => m.name === 'impressions')?.values[0]?.value || 0,
+*** End Patch
+*** Update File: server/social-media/twitter-api.ts
+@@
+-  private generateAuthHeader(method: string, url: string, params: Record<string, string> = {}) {
++  private generateAuthHeader(method: string, url: string, _params: Record<string, string> = {}) {
+*** End Patch
+*** Update File: server/start-production.js
+@@
+-import('tsx').then(tsx => {
++import('tsx').then(() => {
+   require('./index.ts');
+ }).catch(err => {
+   console.error('Failed to start production server:', err);
+   process.exit(1);
+ });
+*** End Patch
+*** Update File: server/storage.ts
+@@
+-import { safeLog, redactUserData } from './lib/logger-utils.js';
++import { safeLog } from './lib/logger-utils.js';
+@@
+-      const user = result[0];
+-      if (user) {
+-      } else {
+-      }
+-      return user;
++      const user = result[0];
++      return user ?? undefined;
+@@
+-        const today = new Date().toISOString().split('T')[0];
+-        let streak = 0;
+-        let currentDate = new Date();
++        let streak = 0;
++        let currentDate = new Date();
+@@
+-        return results.map(r => ({
+-          ...r.expense,
+-          category: r.category
+-        })) as any;
++        return results.map(r => ({
++          ...r.expense,
++          category: r.category
++        })) as (Expense & { category: ExpenseCategory | null })[];
+*** End Patch
+*** Update File: server/test-deployment.ts
+@@
++interface DeploymentTestResult {
++  name: string;
++  status: 'PASSED' | 'FAILED' | 'WARNING';
++  duration?: number;
++  error?: unknown;
++}
++
+ export async function runDeploymentTests() {
+@@
+-  const results = {
+-    passed: 0,
+-    failed: 0,
+-    warnings: 0,
+-    tests: [] as any[]
+-  };
++  const results: { passed: number; failed: number; warnings: number; tests: DeploymentTestResult[] } = {
++    passed: 0,
++    failed: 0,
++    warnings: 0,
++    tests: []
++  };
+@@
+-      const errorContent = await generateEnhancedContent({
+-        mode: 'text',
+-        platform: 'invalid_platform' as any,
+-        style: 'invalid_style' as any
+-      });
++      const errorContent = await generateEnhancedContent({
++        mode: 'text',
++        platform: 'invalid_platform' as unknown as never,
++        style: 'invalid_style' as unknown as never
++      });
+*** End Patch
+*** Update File: server/test-endpoints.cjs
+@@
+-// Test Suite for ThottoPilot Critical Endpoints
++/* eslint-env node */
++// Test Suite for ThottoPilot Critical Endpoints
+*** End Patch
+*** Update File: server/types/passport-reddit.d.ts
+@@
+-    _json: any;
++    _json: Record<string, unknown>;
+@@
+-  export type VerifyCallback = (error: any, user?: any, info?: any) => void;
+-  export type VerifyFunction = (accessToken: string, refreshToken: string, profile: Profile, done: VerifyCallback) => void;
++  export type VerifyCallback = (error: Error | null, user?: unknown, info?: unknown) => void;
++  export type VerifyFunction = (accessToken: string, refreshToken: string, profile: Profile, done: VerifyCallback) => void;
+*** End Patch
+*** Update File: server/visitor-analytics.ts
+@@
+-import type { Request } from 'express';
++import type { Request } from 'express';
+@@
+-  private generateSessionId(req: any): string {
++  private generateSessionId(req: Request): string {
+@@
+-  trackPageView(req: any, path: string) {
++  trackPageView(req: Request, path: string) {
+*** End Patch
+*** Update File: server/vite-stub.ts
+@@
+-export function setupVite(app: any, server: any) {
++export function setupVite(_app: unknown, _server: unknown) {
+*** End Patch
+*** Update File: shared/schema.ts
+@@
+-import { pgTable, serial, varchar, text, integer, timestamp, jsonb, boolean, uuid, unique } from "drizzle-orm/pg-core";
++import { pgTable, serial, varchar, text, integer, timestamp, jsonb, boolean, unique } from "drizzle-orm/pg-core";
+*** End Patch
+*** Update File: tests/auth/signup.test.ts
+@@
+-const users: any[] = [];
+-const tokens: any[] = [];
++const users: Array<Record<string, unknown>> = [];
++const tokens: Array<Record<string, unknown>> = [];
+@@
+-      createUser: vi.fn().mockImplementation(async (data: any) => {
++      createUser: vi.fn().mockImplementation(async (data: Record<string, unknown>) => {
+@@
+-      createVerificationToken: vi.fn().mockImplementation(async (data: any) => {
++      createVerificationToken: vi.fn().mockImplementation(async (data: Record<string, unknown>) => {
+*** End Patch
+*** End Patch
+PATCH
