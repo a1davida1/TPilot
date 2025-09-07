@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -12,7 +12,7 @@ interface GenerationCounterProps {
 export function GenerationCounter({ className }: GenerationCounterProps) {
   const { user } = useAuth();
   
-  const { data: stats } = useQuery({
+  const { data: _stats } = useQuery({
     queryKey: ['/api/user/generation-stats'],
     enabled: !!user,
     refetchInterval: 30000, // Refresh every 30 seconds
