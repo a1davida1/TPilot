@@ -279,17 +279,21 @@ export default function SampleUpload() {
         </Card>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {samples.map((sample) => (
             <Card
+              key={sample.id}
               className="bg-gray-900/50 border-gray-800/50 backdrop-blur-sm p-6 hover:border-purple-700/50 transition-all cursor-pointer"
             >
               <div className="flex justify-between items-start mb-4">
                 <h3 className="text-lg font-semibold text-white line-clamp-1">
+                  {sample.title}
                 </h3>
                 <Button
                   size="sm"
                   variant="ghost"
                   onClick={(e) => {
                     e.stopPropagation();
+                    deleteMutation.mutate(sample.id);
                   }}
                   className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
                 >
@@ -298,22 +302,30 @@ export default function SampleUpload() {
               </div>
 
               <p className="text-gray-400 text-sm line-clamp-3 mb-4">
+                {sample.content}
               </p>
 
               <div className="flex items-center gap-4 text-sm text-gray-500">
                 <span className="flex items-center gap-1">
                   <Calendar className="h-3 w-3" />
+                  {new Date(sample.createdAt).toLocaleDateString()}
                 </span>
+                {sample.upvotes && sample.upvotes > 0 && (
                   <span className="flex items-center gap-1 text-green-400">
                     <Star className="h-3 w-3" />
+                    {sample.upvotes}
                   </span>
                 )}
                 <Badge variant="secondary" className="bg-purple-900/30 text-purple-300">
+                  {sample.platform}
                 </Badge>
               </div>
 
+              {sample.imageUrl && (
                 <div className="mt-4">
                   <img
+                    src={sample.imageUrl}
+                    alt={sample.title}
                     className="w-full h-32 object-cover rounded-lg"
                   />
                 </div>
