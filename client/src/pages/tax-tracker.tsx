@@ -41,7 +41,7 @@ interface TaxTrackerProps {
 }
 
 const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
-  const [selectedCategory, setSelectedCategory] = useState<any>(null);
+  const [selectedCategory, setSelectedCategory] = useState<unknown>(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [showReceiptModal, setShowReceiptModal] = useState(false);

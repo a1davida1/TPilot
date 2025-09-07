@@ -35,6 +35,7 @@ interface SamplePost {
 export default function SampleUpload() {
   const { toast } = useToast();
   const [showAddForm, setShowAddForm] = useState(false);
+  const [selectedSample, setSelectedSample] = useState<SamplePost | null>(null);
   const [formData, setFormData] = useState({
     title: "",
     content: "",
@@ -99,8 +100,9 @@ export default function SampleUpload() {
   };
 
   const handleUploadComplete = async (result: unknown) => {
-    if (result.successful && result.successful.length > 0) {
-      const uploadedUrl = result.successful[0].uploadURL;
+    const typedResult = result as { successful?: Array<{ uploadURL: string }> };
+    if (typedResult.successful && typedResult.successful.length > 0) {
+      const uploadedUrl = typedResult.successful[0].uploadURL;
       setFormData({ ...formData, imageUrl: uploadedUrl });
       toast({
         title: "Image uploaded",
@@ -283,6 +285,7 @@ export default function SampleUpload() {
             <Card
               key={sample.id}
               className="bg-gray-900/50 border-gray-800/50 backdrop-blur-sm p-6 hover:border-purple-700/50 transition-all cursor-pointer"
+              onClick={() => setSelectedSample(sample)}
             >
               <div className="flex justify-between items-start mb-4">
                 <h3 className="text-lg font-semibold text-white line-clamp-1">
@@ -335,8 +338,10 @@ export default function SampleUpload() {
         </div>
       )}
 
+      {selectedSample && (
         <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => setSelectedSample(null)}
         >
           <Card
             className="bg-gray-900 border-gray-800 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
@@ -345,36 +350,45 @@ export default function SampleUpload() {
             <div className="p-6">
               <div className="flex justify-between items-start mb-4">
                 <h3 className="text-2xl font-bold text-white">
+                  {selectedSample.title}
                 </h3>
                 <Button
                   size="sm"
                   variant="ghost"
+                  onClick={() => setSelectedSample(null)}
                   className="text-gray-400 hover:text-white"
                 >
                   ×
                 </Button>
               </div>
 
+              {selectedSample?.imageUrl && (
                 <img
+                  src={selectedSample.imageUrl}
+                  alt={selectedSample.title}
                   className="w-full max-h-96 object-contain rounded-lg mb-6"
                 />
               )}
 
               <div className="prose prose-invert max-w-none">
                 <p className="whitespace-pre-wrap text-gray-300">
+                  {selectedSample.content}
                 </p>
               </div>
 
               <div className="mt-6 flex items-center gap-4 text-sm text-gray-500">
                 <Badge variant="secondary" className="bg-purple-900/30 text-purple-300">
+                  {selectedSample?.platform}
                 </Badge>
-                )}
+                {selectedSample?.upvotes && selectedSample.upvotes > 0 && (
                   <span className="flex items-center gap-1 text-green-400">
                     <Star className="h-3 w-3" />
+                    {selectedSample.upvotes}
                   </span>
                 )}
                 <span className="flex items-center gap-1">
                   <Calendar className="h-3 w-3" />
+                  {new Date(selectedSample.createdAt).toLocaleDateString()}
                 </span>
               </div>
 

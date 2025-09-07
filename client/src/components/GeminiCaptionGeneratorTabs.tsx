@@ -59,7 +59,7 @@ export function GeminiCaptionGeneratorTabs() {
   const [mood, setMood] = useState<string>("seductive");
   const [nsfw, setNsfw] = useState<boolean>(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [captionData, setCaptionData] = useState<any>(null);
+  const [captionData, setCaptionData] = useState<unknown>(null);
   const [error, setError] = useState<string | null>(null);
   
   // Image tab states

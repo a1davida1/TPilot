@@ -31,7 +31,7 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
   const [includePromotion, setIncludePromotion] = useState(true);
   const [includeHashtags, setIncludeHashtags] = useState(true);
   const [selectedHashtags, setSelectedHashtags] = useState<string[]>([]);
-  const [generatedContent, setGeneratedContent] = useState<any>(null);
+  const [generatedContent, setGeneratedContent] = useState<unknown>(null);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();

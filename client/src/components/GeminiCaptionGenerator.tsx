@@ -30,7 +30,7 @@ export function GeminiCaptionGenerator() {
   const [platform, setPlatform] = useState<string>("instagram");
   const [voice, setVoice] = useState<string>("flirty_playful");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [captionData, setCaptionData] = useState<any>(null);
+  const [captionData, setCaptionData] = useState<unknown>(null);
   const [error, setError] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);

@@ -74,7 +74,7 @@ export function AdminPortal() {
     duration: 30,
     tier: 'starter'
   });
-  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [selectedUser, setSelectedUser] = useState<unknown>(null);
   const { toast } = useToast();
   const { token } = useAuth();
   
@@ -1148,7 +1148,7 @@ function SystemMonitorTab({ authenticatedRequest }: { authenticatedRequest: unkn
 // FEATURE 3: User Management Component
 function UserManagementTab({ authenticatedRequest, users }: { authenticatedRequest: unknown, users: unknown[] }) {
   const { toast } = useToast();
-  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [selectedUser, setSelectedUser] = useState<unknown>(null);
   const [actionType, setActionType] = useState<'ban' | 'suspend' | 'unban' | 'reset-password' | null>(null);
   const [reason, setReason] = useState('');
   const [duration, setDuration] = useState('24');

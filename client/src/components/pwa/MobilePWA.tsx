@@ -20,7 +20,7 @@ interface PWAFeature {
 
 export default function MobilePWA() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [installPrompt, setInstallPrompt] = useState<any>(null);
+  const [installPrompt, setInstallPrompt] = useState<unknown>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [batteryLevel, setBatteryLevel] = useState<number | null>(null);
   const [networkType, setNetworkType] = useState<string>('unknown');

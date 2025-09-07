@@ -33,7 +33,7 @@ export function AestheticLanding() {
   const [activeTab, setActiveTab] = useState("generate");
   const [isVisible, setIsVisible] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [metrics, setMetrics] = useState<any>(null);
+  const [metrics, setMetrics] = useState<unknown>(null);
 
   useEffect(() => {
     setIsVisible(true);
