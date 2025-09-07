@@ -5,10 +5,10 @@ import { authenticateToken } from "./middleware/auth.js";
 import { z } from "zod";
 
 interface AuthRequest extends Express.Request {
-  user?: any;
-  body: any;
-  params: any;
-  query: any;
+  user?: unknown;
+  body: unknown;
+  params: unknown;
+  query: unknown;
 }
 
 // PHASE 2: Social Media API Routes

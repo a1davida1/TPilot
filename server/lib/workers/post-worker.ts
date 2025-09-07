@@ -106,7 +106,7 @@ export class PostWorker {
         throw new Error(result.error || 'Reddit posting failed');
       }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error(`Post job ${postJobId} failed:`, { error });
 
       // Update job status to failed

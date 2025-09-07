@@ -80,7 +80,7 @@ export class AiPromoWorker {
 
       return { success: true, results };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error(`AI promo job for generation ${generationId} failed:`, { error: error.message, stack: error.stack });
 
       // Update generation status to failed
@@ -111,7 +111,7 @@ export class AiPromoWorker {
     }
   }
 
-  private async updateGenerationResults(generationId: number, results: any[]) {
+  private async updateGenerationResults(generationId: number, results: unknown[]) {
     try {
       // Use the first result to update the generation record
       const firstResult = results[0];

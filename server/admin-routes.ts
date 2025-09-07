@@ -17,7 +17,7 @@ export function setupAdminRoutes(app: Express) {
   // Admin middleware to check if user is admin
   const requireAdmin = (req: express.Request & { user?: { id: number; username?: string | null; isAdmin?: boolean | null }; isAuthenticated?: () => boolean }, res: express.Response, next: express.NextFunction) => {
     // Check if user is authenticated via session OR JWT
-    let user: any = null;
+    let user: unknown = null;
     let token: string | null = null;
     
     // Try cookie-based authentication first (preferred)

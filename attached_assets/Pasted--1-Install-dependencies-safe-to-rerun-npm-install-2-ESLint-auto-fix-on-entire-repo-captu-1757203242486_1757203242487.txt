@@ -15,7 +15,7 @@ apply_patch <<'PATCH'
 -  private apis: Map<Platform, any> = new Map();
 +  private apis: Map<Platform, InstagramAPI | TwitterAPI | TikTokAPI | YouTubeAPI> = new Map();
 @@
--  connectAccount(platform: Platform, credentials: any) {
+-  connectAccount(platform: Platform, credentials: unknown) {
 +  connectAccount(platform: Platform, credentials: Record<string, string>) {
 @@
 -        case 'twitter':
@@ -103,10 +103,10 @@ apply_patch <<'PATCH'
 *** End Patch
 *** Update File: server/types/passport-reddit.d.ts
 @@
--    _json: any;
+-    _json: unknown;
 +    _json: Record<string, unknown>;
 @@
--  export type VerifyCallback = (error: any, user?: any, info?: any) => void;
+-  export type VerifyCallback = (error: unknown, user?: unknown, info?: unknown) => void;
 -  export type VerifyFunction = (accessToken: string, refreshToken: string, profile: Profile, done: VerifyCallback) => void;
 +  export type VerifyCallback = (error: Error | null, user?: unknown, info?: unknown) => void;
 +  export type VerifyFunction = (accessToken: string, refreshToken: string, profile: Profile, done: VerifyCallback) => void;
@@ -116,15 +116,15 @@ apply_patch <<'PATCH'
 -import type { Request } from 'express';
 +import type { Request } from 'express';
 @@
--  private generateSessionId(req: any): string {
+-  private generateSessionId(req: unknown): string {
 +  private generateSessionId(req: Request): string {
 @@
--  trackPageView(req: any, path: string) {
+-  trackPageView(req: unknown, path: string) {
 +  trackPageView(req: Request, path: string) {
 *** End Patch
 *** Update File: server/vite-stub.ts
 @@
--export function setupVite(app: any, server: any) {
+-export function setupVite(app: unknown, server: unknown) {
 -  return Promise.resolve();
 -}
 +export function setupVite(_app: unknown, _server: unknown) {
@@ -140,15 +140,15 @@ apply_patch <<'PATCH'
 @@
 +/* eslint-env node, jest */
 @@
--const users: any[] = [];
--const tokens: any[] = [];
+-const users: unknown[] = [];
+-const tokens: unknown[] = [];
 +const users: Array<Record<string, unknown>> = [];
 +const tokens: Array<Record<string, unknown>> = [];
 @@
--      createUser: vi.fn().mockImplementation(async (data: any) => {
+-      createUser: vi.fn().mockImplementation(async (data: unknown) => {
 +      createUser: vi.fn().mockImplementation(async (data: Record<string, unknown>) => {
 @@
--      createVerificationToken: vi.fn().mockImplementation(async (data: any) => {
+-      createVerificationToken: vi.fn().mockImplementation(async (data: unknown) => {
 +      createVerificationToken: vi.fn().mockImplementation(async (data: Record<string, unknown>) => {
 *** End Patch
 *** End Patch
