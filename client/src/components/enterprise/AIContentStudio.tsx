@@ -95,7 +95,7 @@ export default function AIContentStudio() {
         title: "Copied!",
         description: `${type} copied to clipboard`,
       });
-    } catch (error) {
+    } catch {
       toast({
         title: "Copy failed",
         description: "Unable to copy to clipboard",
@@ -321,7 +321,7 @@ export default function AIContentStudio() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => copyToClipboard(content.photoInstructions!, 'Instructions')}
+                            onClick={() => copyToClipboard(content.photoInstructions || '', 'Instructions')}
                             data-testid="button-copy-instructions"
                           >
                             <Copy className="h-4 w-4" />
@@ -339,7 +339,7 @@ export default function AIContentStudio() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => copyToClipboard(content.hashtags!.join(' '), 'Hashtags')}
+                            onClick={() => copyToClipboard(content.hashtags?.join(' ') || '', 'Hashtags')}
                             data-testid="button-copy-hashtags"
                           >
                             <Copy className="h-4 w-4" />
