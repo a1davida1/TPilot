@@ -5,10 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar, Clock, Send, AlertCircle, CheckCircle2, XCircle, Calendar as CalendarIcon } from 'lucide-react';
+import { Calendar, Clock, AlertCircle, CheckCircle2, XCircle, Calendar as CalendarIcon } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 
 interface PostJob {
@@ -54,7 +54,7 @@ export default function PostScheduler() {
       const response = await apiRequest('POST', '/api/posts/schedule', data);
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (_data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/posts/scheduled'] });
       setIsScheduleOpen(false);
       setFormData({ subreddit: '', title: '', body: '' });
@@ -64,9 +64,10 @@ export default function PostScheduler() {
       });
     },
     onError: (error: unknown) => {
+      const errorMessage = error instanceof Error ? error.message : "Please check your input and try again";
       toast({
         title: "Failed to schedule post",
-        description: error.message || "Please check your input and try again",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -203,7 +204,7 @@ export default function PostScheduler() {
               <p className="font-medium">Smart Scheduling Active</p>
               <p className="text-sm text-gray-600">
                 Posts are automatically scheduled for optimal engagement times based on subreddit activity patterns.
-                Rate limiting ensures compliance with Reddit's posting guidelines.
+                Rate limiting ensures compliance with Reddit&apos;s posting guidelines.
               </p>
             </div>
           </div>
@@ -227,14 +228,14 @@ export default function PostScheduler() {
                 </div>
               ))}
             </div>
-          ) : (scheduledPosts as any[])?.length === 0 ? (
+          ) : (scheduledPosts as PostJob[])?.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <CalendarIcon className="mx-auto h-12 w-12 mb-4 opacity-50" />
               <p>No scheduled posts yet. Schedule your first post to get started!</p>
             </div>
           ) : (
             <div className="space-y-4">
-              {(scheduledPosts as any[])?.map((post: PostJob) => {
+              {(scheduledPosts as PostJob[])?.map((post: PostJob) => {
                 const { date, time } = formatDateTime(post.scheduledAt);
                 return (
                   <div key={post.id} className="border rounded-lg p-4 space-y-3">

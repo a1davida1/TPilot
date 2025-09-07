@@ -80,9 +80,10 @@ export default function MediaLibrary() {
       });
     },
     onError: (error: unknown) => {
+      const errorMessage = error instanceof Error ? error.message : "Failed to upload media";
       toast({
         title: "Upload failed",
-        description: error.message || "Failed to upload media",
+        description: errorMessage,
         variant: "destructive",
       });
     },
