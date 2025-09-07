@@ -2,10 +2,8 @@ import React, { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Upload, Trash2, Download, Image, Film, Eye, Shield } from 'lucide-react';
@@ -23,16 +21,6 @@ interface MediaAsset {
   createdAt: string;
 }
 
-interface StorageUsage {
-  usedBytes: number;
-  quotaBytes: number;
-  usedPercentage: number;
-  assetsCount: number;
-  proUpgrade?: {
-    quotaBytes: number;
-    features: string[];
-  };
-}
 
 export default function MediaLibrary() {
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -161,7 +149,7 @@ export default function MediaLibrary() {
   return (
     <div className="p-6 space-y-6">
       {/* Storage Usage */}
-      {usage && (usage as any) && (
+      {usage && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -171,14 +159,14 @@ export default function MediaLibrary() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between text-sm">
-              <span>{formatFileSize((usage as any).usedBytes || 0)} of {formatFileSize((usage as any).quotaBytes || 0)} used</span>
-              <span>{(usage as any).assetsCount || 0} files</span>
+              <span>{formatFileSize((usage as { usedBytes?: number; quotaBytes?: number }).usedBytes || 0)} of {formatFileSize((usage as { quotaBytes?: number }).quotaBytes || 0)} used</span>
+              <span>{(usage as { assetsCount?: number }).assetsCount || 0} files</span>
             </div>
-            <Progress value={(usage as any).usedPercentage || 0} className="h-2" />
-            {((usage as any).usedPercentage || 0) > 80 && (
+            <Progress value={(usage as { usedPercentage?: number }).usedPercentage || 0} className="h-2" />
+            {((usage as { usedPercentage?: number }).usedPercentage || 0) > 80 && (
               <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
                 <p className="text-sm text-orange-700 dark:text-orange-300">
-                  Storage is almost full. Upgrade to Pro for {formatFileSize((usage as any).proUpgrade?.quotaBytes || 0)} storage.
+                  Storage is almost full. Upgrade to Pro for {formatFileSize((usage as { proUpgrade?: { quotaBytes?: number } }).proUpgrade?.quotaBytes || 0)} storage.
                 </p>
               </div>
             )}
@@ -231,14 +219,14 @@ export default function MediaLibrary() {
                 <div key={i} className="aspect-square bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
               ))}
             </div>
-          ) : (assets as any[])?.length === 0 ? (
+          ) : (assets as MediaAsset[])?.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <Image className="mx-auto h-12 w-12 mb-4 opacity-50" />
               <p>No media files yet. Upload some to get started!</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {(assets as any[])?.map((asset: unknown) => (
+              {(assets as MediaAsset[])?.map((asset: MediaAsset) => (
                 <div key={asset.id} className="relative group">
                   <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
                     {asset.type.startsWith('image/') ? (
