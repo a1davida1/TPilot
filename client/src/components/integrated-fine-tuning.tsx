@@ -127,7 +127,9 @@ export function IntegratedFineTuning() {
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid grid-cols-4 w-full bg-gray-800/50">
+            <TabsTrigger value="training" className="data-[state=active]:bg-purple-600">
               <FileText className="h-4 w-4 mr-2" />
+              Training
             </TabsTrigger>
             <TabsTrigger value="writing" className="data-[state=active]:bg-purple-600">
               <Type className="h-4 w-4 mr-2" />
@@ -143,43 +145,26 @@ export function IntegratedFineTuning() {
             </TabsTrigger>
           </TabsList>
 
+          <TabsContent value="training" className="space-y-6">
             <div className="bg-gradient-to-r from-purple-900/20 to-pink-900/20 rounded-lg p-4 border border-purple-500/20">
               <h3 className="font-semibold mb-2 text-white">Upload Your Best Content</h3>
               <p className="text-sm text-gray-400 mb-4">
+                Share examples of your most successful posts to help personalize content generation.
               </p>
               <Textarea
+                placeholder="Paste your best-performing content here..."
                 className="min-h-[100px] bg-gray-800/50 border-white/10 text-white"
+                onKeyDown={handleAddTrainingData}
               />
             </div>
 
             <div className="space-y-2">
               <div className="grid gap-2 max-h-[300px] overflow-y-auto">
-                  <div
-                    className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                        ? 'bg-purple-900/30 border-purple-500'
-                        : 'bg-gray-800/30 border-white/10 hover:border-white/20'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex gap-2 mt-2">
-                            <Badge variant="outline" className="text-xs">
-                            </Badge>
-                          )}
-                            <Badge variant="outline" className="text-xs text-green-400">
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                      <div className="ml-2">
-                          <Check className="h-5 w-5 text-purple-400" />
-                        ) : (
-                          <div className="h-5 w-5 border border-white/30 rounded" />
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                {/* Training data will be rendered here when available */}
+                <div className="text-center py-8 text-gray-500">
+                  <FileText className="mx-auto h-12 w-12 mb-4 opacity-50" />
+                  <p>No training content yet. Add some examples above to get started!</p>
+                </div>
               </div>
             </div>
 
