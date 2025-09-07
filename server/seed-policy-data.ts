@@ -6,6 +6,7 @@ export async function seedPolicyData() {
   console.log("🌱 Seeding policy data...");
 
   try {
+    const policyData: Array<{
       subreddit: string;
       rules: RuleSpec;
     }> = [
@@ -57,6 +58,7 @@ export async function seedPolicyData() {
     ];
 
     // Insert subreddit rules
+    for (const { subreddit, rules } of policyData) {
       await db
         .insert(subredditRules)
         .values({

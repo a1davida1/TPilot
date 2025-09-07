@@ -45,7 +45,7 @@ export default function SampleUpload() {
     tags: [] as string[]
   });
 
-  const { data: samples = [] } = useQuery<SamplePost[]>({
+  const { data: samples = [], isLoading } = useQuery<SamplePost[]>({
     queryKey: ['/api/sample-posts'],
     retry: false
   });
@@ -242,6 +242,7 @@ export default function SampleUpload() {
                 disabled={addMutation.isPending}
                 className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
               >
+                {addMutation.isPending ? "Adding..." : "Add Sample"}
               </Button>
               <Button
                 type="button"
@@ -263,6 +264,7 @@ export default function SampleUpload() {
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
         </div>
+      ) : samples.length === 0 ? (
         <Card className="bg-gray-900/50 border-gray-800/50 backdrop-blur-sm p-12 text-center">
           <FileText className="h-16 w-16 text-gray-600 mx-auto mb-4" />
           <p className="text-gray-500 mb-6">

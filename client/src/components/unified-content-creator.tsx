@@ -877,6 +877,7 @@ export function UnifiedContentCreator({
                     {generatedContent.contentSource === 'template' ? 'Template' : 'AI Generated'}
                   </Badge>
                 )}
+                {generatedContent.quotaExceeded && (
                   <Badge variant="outline" className="text-xs text-orange-600 border-orange-600">
                     OpenAI Quota Exceeded
                   </Badge>
