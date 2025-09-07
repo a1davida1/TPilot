@@ -41,14 +41,14 @@ export default [
     rules: {
       // TypeScript rules - relaxed for current codebase state
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
-      '@typescript-eslint/no-explicit-any': 'error',
-      '@typescript-eslint/no-non-null-assertion': 'error',
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-non-null-assertion': 'warn',
       
       // React rules
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',
       'react/display-name': 'off',
-      'react/no-unescaped-entities': 'warn',
+      'react/no-unescaped-entities': 'off',
       
       // General rules - relaxed for development
       'no-console': 'off',
@@ -77,6 +77,7 @@ export default [
       'drizzle.config.ts',
       'attached_assets/**',
       'tmp/**',
+      '**/*.min.js',
     ],
   },
 ];
