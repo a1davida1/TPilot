@@ -473,4 +473,4 @@ router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken, u
   }
 });
 
-export { router as uploadRoutes };
+export { router as uploadRoutes, applyImageShieldProtection, protectionPresets };
