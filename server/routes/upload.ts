@@ -274,13 +274,29 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, 
     const outputFilename = `protected-${crypto.randomBytes(16).toString('hex')}.jpg`;
     processedFilePath = path.join(process.cwd(), 'uploads', outputFilename);
     
-    // Apply ImageShield protection with configured settings
-    await applyImageShieldProtection(
-      tempFilePath, 
-      processedFilePath, 
+    // Apply ImageShield protection with retry and timeout
+    const protect = () => applyImageShieldProtection(
+      tempFilePath,
+      processedFilePath,
       validatedRequest.protectionLevel,
       validatedRequest.watermark
     );
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        await Promise.race([
+          protect(),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('ImageShield timeout')), 30_000)
+          )
+        ]);
+        break;
+      } catch (err) {
+        lastError = err;
+        if (attempt === 2) throw err;
+        await new Promise(res => setTimeout(res, 1_000 * Math.pow(2, attempt)));
+      }
+    }
     
     // Clean up original uploaded file
     await fs.unlink(tempFilePath);
