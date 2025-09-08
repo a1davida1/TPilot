@@ -80,6 +80,7 @@ export interface IStorage {
   createUserImage(image: InsertUserImage): Promise<UserImage>;
   getUserImages(userId: number): Promise<UserImage[]>;
   getUserImage(imageId: number, userId: number): Promise<UserImage | undefined>;
+  updateUserImage(imageId: number, userId: number, updates: Partial<UserImage>): Promise<UserImage>;
   deleteUserImage(imageId: number, userId: number): Promise<void>;
   
   // Streak operations
@@ -509,6 +510,19 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       safeLog('error', 'Storage operation failed - getting user image:', { error: error.message });
       return undefined;
+    }
+  }
+
+  async updateUserImage(imageId: number, userId: number, updates: Partial<UserImage>): Promise<UserImage> {
+    try {
+      const [image] = await db.update(userImages)
+        .set({ ...updates, updatedAt: new Date() })
+        .where(and(eq(userImages.id, imageId), eq(userImages.userId, userId)))
+        .returning();
+      return image;
+    } catch (error) {
+      safeLog('error', 'Storage operation failed - updating user image:', { error: (error as Error).message });
+      throw error;
     }
   }
 
