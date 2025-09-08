@@ -63,8 +63,11 @@ export default [
       sourceType: 'commonjs',
       globals: {
         ...globals.node,
-        console: 'readonly',
+        require: 'readonly',
+        module: 'readonly',
+        exports: 'readonly',
         process: 'readonly',
+        console: 'readonly',
         Buffer: 'readonly',
         __dirname: 'readonly',
         __filename: 'readonly',
@@ -72,10 +75,12 @@ export default [
         setInterval: 'readonly',
         clearTimeout: 'readonly',
         clearInterval: 'readonly',
-        require: 'readonly',
-        module: 'readonly',
-        exports: 'readonly',
+        global: 'readonly',
       },
+    },
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+      'no-undef': 'off',
     },
   },
   {
