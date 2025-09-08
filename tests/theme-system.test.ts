@@ -40,10 +40,17 @@ describe('Theme System', () => {
       },
       writable: true,
     });
+
+    Object.defineProperty(global, 'window', {
+      value: {},
+      writable: true,
+    });
   });
 
   afterEach(() => {
     vi.clearAllMocks();
+    delete (global as any).window;
+    delete (global as any).document;
   });
 
   describe('Color Contrast Validation', () => {

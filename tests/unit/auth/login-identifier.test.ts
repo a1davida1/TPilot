@@ -1,8 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll } from 'vitest';
 import request from 'supertest';
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import { setupAuth } from '../../../server/auth.js';
+import bcrypt from 'bcrypt';
+import { db } from '../../../server/db';
+import { users } from '@shared/schema';
+import { eq } from 'drizzle-orm';
 
 const app = express();
 app.use(cookieParser());
@@ -12,12 +16,21 @@ app.use(express.json());
 setupAuth(app);
 
 describe('Login Identifier and Cookie Auth', () => {
-  beforeEach(() => {
-    // Reset any state before each test
+  let testUserId: number;
+
+  beforeAll(async () => {
+    const hashed = await bcrypt.hash('TestPassword123', 10);
+    const [user] = await db.insert(users).values({
+      username: 'testuser',
+      email: 'test@example.com',
+      password: hashed,
+      tier: 'free'
+    }).returning();
+    testUserId = user.id;
   });
 
-  afterEach(() => {
-    // Clean up after each test  
+  afterAll(async () => {
+    await db.delete(users).where(eq(users.id, testUserId));
   });
 
   describe('Email Login with Cookies', () => {

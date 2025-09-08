@@ -63,8 +63,10 @@ describe('Upload and ImageShield Integration Tests', () => {
           watermarkApplied: true,
           protectionLevel
         });
-      } catch (_error) {
-        res.status(500).json({ message: 'Upload failed', error: _error.message });
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : 'Unknown error';
+        res.status(500).json({ message: 'Upload failed', error: errorMessage });
       }
     });
 
@@ -80,7 +82,7 @@ describe('Upload and ImageShield Integration Tests', () => {
         };
 
         res.json(scanResult);
-      } catch (_error) {
+      } catch (error) {
         res.status(500).json({ message: 'Scan failed' });
       }
     });
@@ -99,7 +101,7 @@ describe('Upload and ImageShield Integration Tests', () => {
           isProtected: image[0].isProtected,
           protectionLevel: image[0].protectionLevel
         });
-      } catch (_error) {
+      } catch (error) {
         res.status(500).json({ message: 'Failed to retrieve image' });
       }
     });

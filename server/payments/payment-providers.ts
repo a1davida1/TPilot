@@ -22,6 +22,7 @@ export function makePaxum(): PaymentProvider {
   const baseUrl = FRONTEND_URL;
   
   if (!key) return disabled("paxum");
+  if (!baseUrl) throw new Error('APP_BASE_URL environment variable is required');
   
   return {
     name: "paxum",
@@ -117,10 +118,7 @@ export function makeCoinbase(): PaymentProvider {
       } catch (error) {
         console.error('Coinbase Commerce checkout creation failed:', error);
         
-        // Re-throw specific validation errors
-        if (error.message === 'Invalid response from Coinbase Commerce API') {
-          throw error;
-        }
+        if (error instanceof Error) throw error;
         
         throw new Error('Failed to create Coinbase Commerce checkout session');
       }

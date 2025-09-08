@@ -383,7 +383,7 @@ describe('Payment Providers', () => {
       delete process.env.COINBASE_COMMERCE_KEY;
 
       // Re-import to get fresh providers array
-      const { providers } = require('../../server/payments/payment-providers');
+      const { providers } = await import('../../server/payments/payment-providers.ts');
       
       expect(providers).toHaveLength(0);
       expect(providers.every((p: { enabled: boolean }) => p.enabled)).toBe(true);
@@ -394,7 +394,7 @@ describe('Payment Providers', () => {
       process.env.COINBASE_COMMERCE_KEY = 'test_coinbase';
 
       // Re-import to get fresh providers array
-      const { providers } = require('../../server/payments/payment-providers');
+      const { providers } = await import('../../server/payments/payment-providers.ts');
       
       expect(providers.length).toBeGreaterThan(0);
       expect(providers.every((p: { enabled: boolean }) => p.enabled)).toBe(true);

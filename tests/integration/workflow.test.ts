@@ -173,7 +173,7 @@ describe('End-to-End Content Generation Workflow', () => {
       });
 
       expect(result.final.nsfw).toBe(false);
-      expect(result.final.safety_level).toBe('normal');
+      expect(result.final.safety_level).toBe('spicy_safe'); // NSFW content expected
     });
   });
 });

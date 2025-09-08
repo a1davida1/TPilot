@@ -34,8 +34,8 @@ describe('Email Service - SendGrid Integration', () => {
       process.env.FROM_EMAIL = 'test@thottopilot.com';
       
       // Re-import to trigger configuration
-      delete require.cache[require.resolve('../../server/services/email-service')];
-      const { emailService } = require('../../server/services/email-service');
+      vi.resetModules();
+      const { emailService } = await import('../../server/services/email-service.ts');
       
       expect(emailService.isEmailServiceConfigured).toBe(true);
       expect(mockSetApiKey).toHaveBeenCalledWith('SG.test_key_123');
@@ -45,8 +45,8 @@ describe('Email Service - SendGrid Integration', () => {
       delete process.env.SENDGRID_API_KEY;
       
       // Re-import to trigger configuration
-      delete require.cache[require.resolve('../../server/services/email-service')];
-      const { emailService } = require('../../server/services/email-service');
+      vi.resetModules();
+      const { emailService } = await import('../../server/services/email-service.ts');
       
       expect(emailService.isEmailServiceConfigured).toBe(false);
       expect(mockSetApiKey).not.toHaveBeenCalled();
@@ -64,8 +64,8 @@ describe('Email Service - SendGrid Integration', () => {
       mockSend.mockResolvedValue({ statusCode: 202 });
       
       // Re-import after setting env vars
-      delete require.cache[require.resolve('../../server/services/email-service')];
-      const { emailService } = require('../../server/services/email-service');
+      vi.resetModules();
+      const { emailService } = await import('../../server/services/email-service.ts');
       
       await emailService.sendVerificationEmail('user@test.com', 'testuser', 'token123');
       
@@ -84,8 +84,8 @@ describe('Email Service - SendGrid Integration', () => {
       process.env.JWT_SECRET = 'test_jwt_secret';
       mockSend.mockResolvedValue({ statusCode: 202 });
       
-      delete require.cache[require.resolve('../../server/services/email-service')];
-      const { emailService } = require('../../server/services/email-service');
+      vi.resetModules();
+      const { emailService } = await import('../../server/services/email-service.ts');
       
       await emailService.sendPasswordResetEmail('user@test.com', 'testuser');
       
@@ -103,8 +103,8 @@ describe('Email Service - SendGrid Integration', () => {
     test('should send welcome email successfully', async () => {
       mockSend.mockResolvedValue({ statusCode: 202 });
       
-      delete require.cache[require.resolve('../../server/services/email-service')];
-      const { emailService } = require('../../server/services/email-service');
+      vi.resetModules();
+      const { emailService } = await import('../../server/services/email-service.ts');
       
       await emailService.sendWelcomeEmail('user@test.com', 'testuser');
       
@@ -130,8 +130,8 @@ describe('Email Service - SendGrid Integration', () => {
       const sendGridError = new Error('SendGrid API rate limit exceeded');
       mockSend.mockRejectedValue(sendGridError);
       
-      delete require.cache[require.resolve('../../server/services/email-service')];
-      const { emailService } = require('../../server/services/email-service');
+      vi.resetModules();
+      const { emailService } = await import('../../server/services/email-service.ts');
       
       await expect(
         emailService.sendVerificationEmail('user@test.com', 'testuser', 'token123')
@@ -148,8 +148,8 @@ describe('Email Service - SendGrid Integration', () => {
     test('should skip emails when SendGrid not configured', async () => {
       delete process.env.SENDGRID_API_KEY;
       
-      delete require.cache[require.resolve('../../server/services/email-service')];
-      const { emailService } = require('../../server/services/email-service');
+      vi.resetModules();
+      const { emailService } = await import('../../server/services/email-service.ts');
       
       // Should return without throwing
       await emailService.sendVerificationEmail('user@test.com', 'testuser', 'token123');
@@ -162,8 +162,8 @@ describe('Email Service - SendGrid Integration', () => {
     test('should handle missing JWT_SECRET for password reset', async () => {
       delete process.env.JWT_SECRET;
       
-      delete require.cache[require.resolve('../../server/services/email-service')];
-      const { emailService } = require('../../server/services/email-service');
+      vi.resetModules();
+      const { emailService } = await import('../../server/services/email-service.ts');
       
       await expect(
         emailService.sendPasswordResetEmail('user@test.com', 'testuser')
@@ -174,8 +174,8 @@ describe('Email Service - SendGrid Integration', () => {
       const sendGridError = new Error('SendGrid service unavailable');
       mockSend.mockRejectedValue(sendGridError);
       
-      delete require.cache[require.resolve('../../server/services/email-service')];
-      const { emailService } = require('../../server/services/email-service');
+      vi.resetModules();
+      const { emailService } = await import('../../server/services/email-service.ts');
       
       // Welcome email should not throw (non-critical)
       await expect(

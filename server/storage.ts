@@ -137,7 +137,7 @@ export interface IStorage {
   deletePostSchedule(scheduleId: number): Promise<void>;
 }
 
-class PostgreSQLStorage implements IStorage {
+export class DatabaseStorage implements IStorage {
   // User operations
   async getUser(id: number): Promise<User | undefined> {
     try {
@@ -1054,4 +1054,4 @@ class PostgreSQLStorage implements IStorage {
 }
 
 // Create and export the storage instance
-export const storage = new PostgreSQLStorage();
+export const storage = new DatabaseStorage();
