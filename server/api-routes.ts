@@ -5,6 +5,7 @@ import { storage } from "./storage.js";
 import { insertUserPreferenceSchema } from "@shared/schema.js";
 import { AiService } from "./lib/ai-service.js";
 import { generateEnhancedContent } from "./services/enhanced-ai-service.js";
+import { AppError, CircuitBreaker } from "./lib/errors.js";
 import { MediaManager } from "./lib/media.js";
 import { CCBillProcessor } from "./lib/billing.js";
 import { PolicyLinter } from "./lib/policyLinter.js";
@@ -40,8 +41,11 @@ const upload = multer({
 
 export function registerApiRoutes(app: Express) {
   
+  const aiServiceBreaker = new CircuitBreaker(AiService.generateContent);
+  const enhancedContentBreaker = new CircuitBreaker(generateEnhancedContent);
+  
   // AI Content Generation
-  app.post('/api/ai/generate', authenticateToken, async (req: Request, res) => {
+  app.post('/api/ai/generate', authenticateToken, async (req: Request, res, next: NextFunction) => {
     try {
       const schema = z.object({
         prompt: z.string().optional(),
@@ -49,27 +53,22 @@ export function registerApiRoutes(app: Express) {
         styleHints: z.array(z.string()).optional(),
         variants: z.number().min(1).max(5).default(1),
       });
-
       const data = schema.parse(req.body);
-      
       if (!req.user?.id) {
         return res.status(401).json({ error: 'Authentication required' });
       }
-
-      const result = await AiService.generateContent({
+      const result = await aiServiceBreaker.call({
         userId: req.user.id,
         ...data,
       });
-
       res.json(result);
     } catch (error: unknown) {
-      console.error('AI generation failed:', error);
-      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+      next(error instanceof AppError ? error : new AppError('AI generation failed', 500));
     }
   });
 
   // Enhanced AI Content Generation
-  app.post('/api/ai/enhanced', authenticateToken, async (req: Request, res) => {
+  app.post('/api/ai/enhanced', authenticateToken, async (req: Request, res, next: NextFunction) => {
     try {
       const schema = z.object({
         mode: z.enum(['text', 'image', 'hybrid']).default('text'),
@@ -88,22 +87,17 @@ export function registerApiRoutes(app: Express) {
         niche: z.string().optional(),
         personalBrand: z.string().optional(),
       });
-
       const data = schema.parse(req.body);
-
       if (!req.user?.id) {
         return res.status(401).json({ error: 'Authentication required' });
       }
-
-      const result = await generateEnhancedContent({
+      const result = await enhancedContentBreaker.call({
         ...data,
         userId: String(req.user.id),
       });
-
       res.json(result);
     } catch (error: unknown) {
-      console.error('Enhanced AI generation failed:', error);
-      res.status(500).json({ error: error.message });
+      next(error instanceof AppError ? error : new AppError('Enhanced AI generation failed', 500));
     }
   });
 

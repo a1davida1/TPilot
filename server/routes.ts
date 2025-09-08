@@ -12,6 +12,7 @@ import passport from 'passport';
 
 // Security and middleware
 import { validateEnvironment, securityMiddleware, ipLoggingMiddleware, errorHandler, logger, generationLimiter } from "./middleware/security.js";
+import { AppError, CircuitBreaker } from "./lib/errors.js";
 import { authenticateToken } from "./middleware/auth.js";
 
 // Route modules
@@ -444,43 +445,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // CONTENT GENERATION ENDPOINTS
   // ==========================================
   
+  const generateContentBreaker = new CircuitBreaker(generateContent);
+  const unifiedBreaker = new CircuitBreaker(generateUnifiedAIContent);
+  
   // Generate content with rate limiting
-  app.post("/api/generate-content", generationLimiter, authenticateToken, async (req: AuthRequest, res) => {
+  app.post("/api/generate-content", generationLimiter, authenticateToken, async (req: AuthRequest, res, next) => {
+    if (!req.user?.id) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    const { platform, style, theme, timing, allowsPromotion } = req.body;
     try {
-      if (!req.user?.id) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-
-      const { platform, style, theme, timing, allowsPromotion } = req.body;
-      const result = await generateContent(
+      const result = await generateContentBreaker.call(
         platform || 'reddit',
         style || 'playful',
         theme || 'lingerie',
         timing,
         allowsPromotion
       );
-      
-      // Save to database
-      // Transform photoInstructions to match database schema
       const photoInstructions = {
-        lighting: Array.isArray(result.photoInstructions.lighting) 
-          ? result.photoInstructions.lighting[0] 
+        lighting: Array.isArray(result.photoInstructions.lighting)
+          ? result.photoInstructions.lighting[0]
           : result.photoInstructions.lighting || 'Natural lighting',
-        cameraAngle: Array.isArray(result.photoInstructions.angles) 
-          ? result.photoInstructions.angles[0] 
+        cameraAngle: Array.isArray(result.photoInstructions.angles)
+          ? result.photoInstructions.angles[0]
           : (result.photoInstructions as any).cameraAngle || 'Eye level',
-        composition: Array.isArray(result.photoInstructions.composition) 
-          ? result.photoInstructions.composition[0] 
+        composition: Array.isArray(result.photoInstructions.composition)
+          ? result.photoInstructions.composition[0]
           : result.photoInstructions.composition || 'Center composition',
-        styling: Array.isArray(result.photoInstructions.styling) 
-          ? result.photoInstructions.styling[0] 
+        styling: Array.isArray(result.photoInstructions.styling)
+          ? result.photoInstructions.styling[0]
           : result.photoInstructions.styling || 'Casual styling',
         mood: (result.photoInstructions as any).mood || 'Confident and natural',
-        technicalSettings: Array.isArray(result.photoInstructions.technical) 
-          ? result.photoInstructions.technical[0] 
+        technicalSettings: Array.isArray(result.photoInstructions.technical)
+          ? result.photoInstructions.technical[0]
           : (result.photoInstructions as any).technicalSettings || 'Auto settings'
       };
-
       await storage.createContentGeneration({
         userId: req.user.id,
         titles: result.titles || [],
@@ -491,36 +490,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         theme: theme || 'lingerie',
         createdAt: new Date()
       });
-
       res.json(result);
-    } catch (error) {
-      logger.error("Content generation error:", error);
-      res.status(500).json({ message: "Failed to generate content" });
+    } catch (error: unknown) {
+      next(error instanceof AppError ? error : new AppError('Failed to generate content', 500));
     }
   });
 
   // Unified AI generation endpoint - handles both text and image workflows
-  app.post('/api/generate-unified', generationLimiter, authenticateToken, upload.single('image'), async (req: AuthRequest, res) => {
+  app.post('/api/generate-unified', generationLimiter, authenticateToken, upload.single('image'), async (req: AuthRequest, res, next) => {
     try {
       const { mode, prompt, platform, style, theme, includePromotion, customInstructions } = req.body as any;
 
-      // Check daily generation limit for authenticated users
       if (req.user?.id) {
         const user = await storage.getUser(req.user.id);
         if (!user) {
           return res.status(401).json({ error: 'User not found' });
         }
-
         const userTier = user.tier || 'free';
         const dailyCount = await storage.getDailyGenerationCount(req.user.id);
-
         let dailyLimit = 5;
-        if (userTier === 'pro') {
-          dailyLimit = 50;
-        } else if (userTier === 'starter') {
-          dailyLimit = 25;
-        }
-
+        if (userTier === 'pro') dailyLimit = 50;
+        else if (userTier === 'starter') dailyLimit = 25;
         if (dailyLimit !== -1 && dailyCount >= dailyLimit) {
           return res.status(429).json({
             error: 'Daily generation limit reached',
@@ -533,19 +523,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       let imageBase64: string | undefined;
-
-      // Handle image upload if present
       if (mode === 'image' && req.file) {
         if (!validateImageFormat(req.file.originalname)) {
           return res.status(400).json({ error: 'Invalid image format. Please use JPG, PNG, or WebP.' });
         }
         imageBase64 = imageToBase64(req.file.path);
-
-        // Clean up uploaded file after converting to base64
         await fs.unlink(req.file.path).catch(console.error);
       }
 
-      const result = await generateUnifiedAIContent({
+      const result = await unifiedBreaker.call({
         mode: (mode as 'text' | 'image') || 'text',
         prompt,
         imageBase64,
@@ -556,8 +542,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         customInstructions
       });
 
-
-      // Save to database if user is authenticated
       if (req.user?.id) {
         await storage.createContentGeneration({
           userId: req.user.id,
@@ -572,17 +556,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const response = {
-        ...result,
-      };
-
-      res.json(response);
-    } catch (error) {
-      console.error('Unified AI generation error:', error);
-      res.status(500).json({
-        error: 'Failed to generate content',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      });
+      res.json({ ...result });
+    } catch (error: unknown) {
+      next(error instanceof AppError ? error : new AppError('Failed to generate content', 500));
     }
   });
 
