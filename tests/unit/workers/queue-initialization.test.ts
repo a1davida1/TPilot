@@ -3,7 +3,7 @@ import { initializeQueue } from '../../../server/lib/queue-factory.js';
 import { initializeWorkers } from '../../../server/lib/workers/index.js';
 
 // Mock console methods for logging tests
-const mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
+const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 const mockConsoleInfo = vi.spyOn(console, 'info').mockImplementation(() => {});
 
 describe('Worker Queue Initialization', () => {
@@ -21,7 +21,7 @@ describe('Worker Queue Initialization', () => {
       await initializeQueue();
 
       // Should log PostgreSQL queue usage
-      expect(mockConsoleLog).toHaveBeenCalledWith(
+      expect(logSpy).toHaveBeenCalledWith(
         expect.stringContaining('PostgreSQL queue backend')
       );
 
@@ -35,10 +35,7 @@ describe('Worker Queue Initialization', () => {
       await initializeQueue();
 
       // Should log which queue backend is being used
-      const logCalls = mockConsoleLog.mock.calls.flat();
-      const hasQueueLog = logCalls.some(call => 
-        typeof call === 'string' && call.includes('queue backend')
-      );
+      const hasQueueLog = logSpy.mock.calls.some(([msg]) => msg.includes('queue backend'));
       expect(hasQueueLog).toBe(true);
     });
   });

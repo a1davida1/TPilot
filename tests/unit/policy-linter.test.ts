@@ -7,17 +7,12 @@ describe('Policy Linter', () => {
   beforeAll(async () => {
     // Setup test data
     await db.insert(subredditRules).values({
-      subreddit: 'test_sub',
-      rulesJson: {
-        bannedWords: ['banned', 'forbidden'],
-        titleRegexes: ['^SPAM', '!!!+'],
-        bodyRegexes: ['bit\\.ly'],
-        linkPolicy: 'one-link',
-        maxTitleLength: 100,
-        maxBodyLength: 500,
-        requiredTags: ['[F]'],
-        flairRequired: false
-      }
+      subreddit: 'testsub',
+      bannedWords: ['banned terms'],
+      titleRegex: ['pattern rules'],
+      prohibitedLinks: ['formatting rules'],
+      maxLength: 100,
+      minLength: 5
     }).onConflictDoNothing();
   });
 

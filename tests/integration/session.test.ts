@@ -185,7 +185,8 @@ describe('Session Storage Integration', () => {
       },
       destroy: (sid: string, callback: (err?: unknown) => void) => {
         callback(new Error('Store destroy failed'));
-      }
+      },
+      on: () => {}
     };
 
     errorApp.use(session({
