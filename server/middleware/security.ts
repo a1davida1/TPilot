@@ -7,7 +7,9 @@ import winston from "winston";
 import dotenv from "dotenv";
 import crypto from "crypto";
 import express from "express";
+import * as Sentry from "@sentry/node";
 import { logger as appLogger, validateSentryDSN } from "../bootstrap/logger.js";
+import { AppError } from "../lib/errors.js";
 
 // Only load dotenv if NOT in production
 // In production deployments, secrets are already available as env vars
@@ -420,25 +422,44 @@ export const ipLoggingMiddleware = (req: express.Request, res: express.Response,
 // ==========================================
 // ERROR HANDLER MIDDLEWARE
 // ==========================================
-export const errorHandler = (err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  logger.error('Error:', {
+export const errorHandler = async (
+  err: Error,
+  req: express.Request,
+  res: express.Response,
+  _next: express.NextFunction
+) => {
+  const appError =
+    err instanceof AppError
+      ? err
+      : new AppError(err.message || "Internal Server Error", (err as any).status ?? 500, false);
+
+  logger.error("Error:", {
     message: err.message,
     stack: err.stack,
     path: req.path,
     method: req.method,
-    ip: req.userIP
+    ip: (req as any).userIP
   });
 
-  // Don't leak error details in production
-  if (process.env.NODE_ENV === 'production') {
-    return res.status(err.status || 500).json({
-      error: 'An error occurred processing your request'
+  if (!appError.isOperational) {
+    Sentry.captureException(err, {
+      user: (req as any).user?.id,
+      tags: { endpoint: req.path }
     });
   }
 
-  // Development - send full error
-  return res.status(err.status || 500).json({
-    error: err.message,
+  if (req.pendingOperations) {
+    await Promise.all(req.pendingOperations.map(op => op.cleanup().catch(() => undefined)));
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    return res.status(appError.statusCode).json({
+      error: appError.isOperational ? appError.message : "An unexpected error occurred"
+    });
+  }
+
+  return res.status(appError.statusCode).json({
+    error: appError.message,
     stack: err.stack
   });
 };

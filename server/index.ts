@@ -133,17 +133,7 @@ app.use((req, res, next) => {
       });
     }
 
-    app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
-      const status = err.status || err.statusCode || 500;
-      const message = err.message || "Internal Server Error";
-
-      res.status(status).json({ message });
-      logger.error(message, { requestId: req.id, stack: err.stack });
-      if (Sentry) {
-        Sentry.captureException(err);
-      }
-      // Don't throw - let Express handle the error response
-    });
+    // Global error handler is applied within registerRoutes
 
     // ALWAYS serve the app on the port specified in the environment variable PORT
     // Other ports are firewalled. Default to 5000 if not specified.
