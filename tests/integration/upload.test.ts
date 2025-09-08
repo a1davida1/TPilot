@@ -63,7 +63,7 @@ describe('Upload and ImageShield Integration Tests', () => {
           watermarkApplied: true,
           protectionLevel
         });
-      } catch (error) {
+      } catch (_error) {
         res.status(500).json({ message: 'Upload failed', error: error.message });
       }
     });

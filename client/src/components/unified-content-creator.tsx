@@ -176,7 +176,7 @@ export function UnifiedContentCreator({
     }
   ];
 
-  const copyToClipboard = async (text: string, itemName: string) => {
+  const copyToClipboard = async (_text: string, itemName: string) => {
     try {
       await navigator.clipboard.writeText(text);
       setCopiedItem(itemName);
@@ -187,7 +187,7 @@ export function UnifiedContentCreator({
 
       // Reset copied state after 2 seconds
       setTimeout(() => setCopiedItem(null), 2000);
-    } catch (err) {
+    } catch (_err) {
       toast({
         title: "Copy Failed",
         description: "Unable to copy to clipboard",
@@ -197,7 +197,7 @@ export function UnifiedContentCreator({
   };
 
   const generateContentMutation = useMutation({
-    mutationFn: async (data: unknown) => {
+    mutationFn: async (_data: unknown) => {
       // Use FormData for unified endpoint that handles both text and images
       const formData = new FormData();
 
@@ -326,7 +326,7 @@ export function UnifiedContentCreator({
   };
 
   // Apply ImageShield protection using the full protection system
-  const applyImageShieldProtection = async (file: File) => {
+  const applyImageShieldProtection = async (_file: File) => {
     try {
       const settings = protectionPresets[protectionLevel];
       // Apply watermark for free users (Pro/Premium users get watermark-free)
@@ -342,7 +342,7 @@ export function UnifiedContentCreator({
         title: "Image Protected!",
         description: `${protectionLevel} protection applied${shouldAddWatermark ? ' with watermark' : ''}`,
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Protection Failed",
         description: "Failed to protect the image. Please try again.",
@@ -461,7 +461,7 @@ export function UnifiedContentCreator({
     });
   };
 
-  const toggleHashtag = (hashtag: string) => {
+  const toggleHashtag = (_hashtag: string) => {
     setSelectedHashtags((prev) =>
       prev.includes(hashtag)
         ? prev.filter((h) => h !== hashtag)

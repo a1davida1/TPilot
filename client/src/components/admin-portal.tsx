@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect as _useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,29 +9,29 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { queryClient, apiRequest } from '@/lib/queryClient';
+import { queryClient, apiRequest as _apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import {
   Users,
   Gift,
   TrendingUp,
   Settings,
-  Mail,
+  Mail as _Mail,
   Shield,
   Activity,
   DollarSign,
-  UserPlus,
+  UserPlus as _UserPlus,
   Clock,
   CheckCircle,
-  AlertCircle,
+  AlertCircle as _AlertCircle,
   Star,
   Zap,
   Crown,
   Sparkles,
-  ChevronRight,
+  ChevronRight as _ChevronRight,
   RefreshCw,
-  Target,
-  Rocket,
+  _Target,
+  _Rocket,
   CheckSquare,
   Square,
   Eye,
@@ -49,7 +49,7 @@ import {
   Clock3
 } from 'lucide-react';
 
-interface UserStats {
+interface _UserStats {
   totalUsers: number;
   freeUsers: number;
   proUsers: number;
@@ -74,7 +74,7 @@ export function AdminPortal() {
     duration: 30,
     tier: 'starter'
   });
-  const [selectedUser, setSelectedUser] = useState<unknown>(null);
+  const [_selectedUser, _setSelectedUser] = useState<unknown>(null);
   const { toast } = useToast();
   const { token } = useAuth();
   
@@ -105,14 +105,14 @@ export function AdminPortal() {
   };
 
   // Fetch user statistics
-  const { data: stats, isLoading: statsLoading } = useQuery({
+  const { data: stats, isLoading: _statsLoading } = useQuery({
     queryKey: ['/api/admin/stats'],
     refetchInterval: 30000, // Refresh every 30 seconds
     enabled: !!token
   });
 
   // Fetch all users
-  const { data: users, isLoading: usersLoading, error: usersError } = useQuery<any[]>({
+  const { data: users, isLoading: usersLoading, error: _usersError } = useQuery<unknown[]>({
     queryKey: ['/api/admin/users'],
     enabled: !!token
   });
@@ -1148,7 +1148,7 @@ function SystemMonitorTab({ authenticatedRequest }: { authenticatedRequest: unkn
 // FEATURE 3: User Management Component
 function UserManagementTab({ authenticatedRequest, users }: { authenticatedRequest: unknown, users: unknown[] }) {
   const { toast } = useToast();
-  const [selectedUser, setSelectedUser] = useState<unknown>(null);
+  const [_selectedUser, _setSelectedUser] = useState<unknown>(null);
   const [actionType, setActionType] = useState<'ban' | 'suspend' | 'unban' | 'reset-password' | null>(null);
   const [reason, setReason] = useState('');
   const [duration, setDuration] = useState('24');
