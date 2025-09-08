@@ -178,7 +178,7 @@ export function UnifiedContentCreator({
 
   const copyToClipboard = async (_text: string, itemName: string) => {
     try {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(_text);
       setCopiedItem(itemName);
       toast({
         title: "Copied!",
@@ -311,17 +311,14 @@ export function UnifiedContentCreator({
         const uploadedImageUrl = e.target?.result as string;
         setUploadedImage(uploadedImageUrl);
         
-        // Auto-apply image protection if enabled
         if (autoProtect) {
           applyImageShieldProtection(file);
+          toast({ title: "Image Uploaded", description: "Image uploaded and protection applied automatically!" });
+        } else {
+          toast({ title: "Image Uploaded", description: "Image ready for protection." });
         }
       };
       reader.readAsDataURL(file);
-
-      toast({
-        title: "Image Uploaded",
-        description: "Image uploaded and protection applied automatically!"
-      });
     }
   };
 
@@ -331,7 +328,7 @@ export function UnifiedContentCreator({
       const settings = protectionPresets[protectionLevel];
       // Apply watermark for free users (Pro/Premium users get watermark-free)
       const shouldAddWatermark = userTier === 'free' || isGuestMode;
-      const protectedBlob = await protectImage(file, settings, shouldAddWatermark);
+      const protectedBlob = await protectImage(_file, settings, shouldAddWatermark);
       
       // Create preview URL for protected image
       const protectedUrl = URL.createObjectURL(protectedBlob);
@@ -348,7 +345,7 @@ export function UnifiedContentCreator({
         description: "Failed to protect the image. Please try again.",
         variant: "destructive"
       });
-      console.error('ImageShield protection failed:', error);
+      console.error('ImageShield protection failed:', _error);
     }
   };
 

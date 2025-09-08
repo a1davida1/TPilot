@@ -1,0 +1,54 @@
+--- a/server/routes.ts
++++ b/server/routes.ts
+@@
+-import { uploadRoutes } from "./routes/upload.js";
++import { uploadRoutes, applyImageShieldProtection, protectionPresets } from "./routes/upload.js";
+@@
+-  // Image protection endpoint - REAL
+-  app.post('/api/protect-image/:imageId', authenticateToken, async (req: AuthenticatedRequest, res) => {
+-    try {
+-      const imageId = parseInt(req.params.imageId);
+-      const { protectionLevel } = req.body;
+-
+-      const image = await storage.getUserImage(imageId, req.user.id);
+-      if (!image) {
+-        return res.status(404).json({ message: 'Image not found' });
+-      }
+-
+-      // Apply protection logic here
+-      const protectedUrl = `/uploads/protected_${Date.now()}_${image.filename}`;
+-
+-      res.json({
+-        success: true,
+-        protectedUrl: protectedUrl,
+-        message: 'Image protected successfully'
+-      });
+-    } catch (error) {
+-      logger.error('Failed to protect image:', error);
+-      res.status(500).json({ message: 'Failed to protect image' });
+-    }
+-  });
++  // Image protection endpoint
++  app.post('/api/protect-image/:imageId', authenticateToken, async (req: AuthenticatedRequest, res) => {
++    try {
++      const imageId = Number.parseInt(req.params.imageId, 10);
++      if (Number.isNaN(imageId)) return res.status(400).json({ message: 'Invalid image id' });
++      const userId = req.user?.id;
++      if (!userId) return res.status(401).json({ message: 'Authentication required' });
++      const { protectionLevel } = req.body as { protectionLevel?: keyof typeof protectionPresets };
++      const image = await storage.getUserImage(imageId, userId);
++      if (!image) return res.status(404).json({ message: 'Image not found' });
++
++      const level = protectionLevel && protectionPresets[protectionLevel] ? protectionLevel : 'standard';
++      const inputPath = path.join(process.cwd(), image.url.startsWith('/') ? image.url.slice(1) : image.url);
++      const protectedName = `protected_${Date.now()}_${image.filename}`;
++      const outputPath = path.join(process.cwd(), 'uploads', protectedName);
++      await applyImageShieldProtection(inputPath, outputPath, level, false);
++      await storage.updateUserImage(imageId, userId, { url: `/uploads/${protectedName}`, isProtected: true, protectionLevel: level });
++
++      res.json({ success: true, protectedUrl: `/uploads/${protectedName}`, message: 'Image protected successfully' });
++    } catch (error: unknown) {
++      logger.error('Failed to protect image:', error);
++      res.status(500).json({ message: 'Failed to protect image' });
++    }
++  });
