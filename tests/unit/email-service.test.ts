@@ -29,7 +29,7 @@ describe('Email Service - SendGrid Integration', () => {
   });
 
   describe('Configuration', () => {
-    test('should configure SendGrid when API key provided', () => {
+    test('should configure SendGrid when API key provided', async () => {
       process.env.SENDGRID_API_KEY = 'SG.test_key_123';
       process.env.FROM_EMAIL = 'test@thottopilot.com';
       
@@ -41,7 +41,7 @@ describe('Email Service - SendGrid Integration', () => {
       expect(mockSetApiKey).toHaveBeenCalledWith('SG.test_key_123');
     });
 
-    test('should handle missing API key gracefully', () => {
+    test('should handle missing API key gracefully', async () => {
       delete process.env.SENDGRID_API_KEY;
       
       // Re-import to trigger configuration
