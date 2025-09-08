@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useId } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +18,9 @@ interface LoginModalProps {
 export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("login");
+  const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const errorId = useId();
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -131,7 +133,17 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
           </TabsList>
 
           <TabsContent value="login" className="space-y-4 mt-4">
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                setErrors({});
+                setIsLoading(true);
+                void handleLogin(e).catch(() =>
+                  setErrors({ form: 'Login failed. Check credentials.' })
+                ).finally(() => setIsLoading(false));
+              }}
+              className="space-y-4"
+            >
               <div className="space-y-2">
                 <Label htmlFor="username" className="text-gray-300">Username</Label>
                 <Input
@@ -139,8 +151,21 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                   name="username"
                   type="text"
                   required
+                  aria-required="true"
+                  aria-invalid={Boolean(errors.username)}
+                  aria-describedby={errors.username ? `${errorId}-username` : undefined}
                   className="bg-gray-800 border-purple-500/20 text-white"
                 />
+                {errors.username && (
+                  <span
+                    id={`${errorId}-username`}
+                    role="alert"
+                    aria-live="polite"
+                    className="text-sm text-red-500"
+                  >
+                    {errors.username}
+                  </span>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-gray-300">Password</Label>
@@ -159,6 +184,9 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
               >
                 {isLoading ? "Logging in..." : "Login"}
               </Button>
+              <div aria-live="polite" className="sr-only">
+                {isLoading && 'Logging in, please wait'}
+              </div>
             </form>
 
             {/* Quick test login */}
