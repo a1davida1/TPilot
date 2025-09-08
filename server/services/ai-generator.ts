@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { buildMessages, type PromptConfig } from './prompt-builder';
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -28,54 +29,36 @@ export interface AIContentResponse {
   provider?: string;
 }
 
-export async function generateAIContent(request: AIGenerationRequest): Promise<AIContentResponse> {
-  const { customPrompt, platform, allowsPromotion, style, theme, imageBase64 } = request;
+export async function generateAIContent(
+  request: AIGenerationRequest,
+): Promise<AIContentResponse> {
+  const { customPrompt, platform, allowsPromotion, style, theme, imageBase64 } =
+    request;
   
   try {
     if (!process.env.OPENAI_API_KEY) {
       throw new Error('AI service not configured. Please contact support.');
     }
 
-    // Build the prompt for AI generation
-    const promotionText = allowsPromotion === 'yes' || allowsPromotion === 'high' ? 
-      'Include subtle promotional elements.' : 
-      'Focus on authentic engagement without promotion.';
+    // Build prompt using centralized builder (supports RAG + images)
+    const promptCfg: PromptConfig = {
+      platform,
+      voice: style || 'casual',
+      style: style || 'casual',
+      theme: theme || 'lifestyle',
+      allowsPromotion: allowsPromotion === 'yes' || allowsPromotion === 'high',
+      userPrompt: customPrompt,
+      imageBase64,
+      // contextDocs: await retrieveDocs(platform, theme), // optional RAG hook
+    };
 
-    const basePrompt = `Generate social media content for ${platform}.
-Style: ${style || 'casual'}
-Theme: ${theme || 'lifestyle'}
-${promotionText}
-${customPrompt || ''}
-
-Please provide:
-1. Three different title options
-2. Engaging post content
-3. Photo instructions (lighting, camera angle, composition, styling, mood, technical settings)
-4. Relevant hashtags
-
-Make the content authentic and engaging.`;
-
-    const messages: Array<OpenAI.Chat.Completions.ChatCompletionMessageParam> = [
-      { role: 'system', content: 'You are a professional social media content creator. Generate authentic, engaging content.' },
-      { role: 'user', content: basePrompt }
-    ];
-
-    // Add image analysis if provided
-    if (imageBase64) {
-      messages.push({
-        role: 'user',
-        content: [
-          { type: 'text', text: 'Analyze this image and incorporate it into the content:' },
-          { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${imageBase64}` } }
-        ]
-      });
-    }
+    const messages = buildMessages(promptCfg);
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages,
       temperature: 0.8,
-      max_tokens: 1000
+      max_tokens: 1000,
     });
 
     const content = completion.choices[0]?.message?.content;

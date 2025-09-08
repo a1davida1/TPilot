@@ -1,0 +1,155 @@
+diff --git a/server/services/prompt-builder.ts b/server/services/prompt-builder.ts
+new file mode 100644
+--- /dev/null
++++ b/server/services/prompt-builder.ts
++import { readFileSync } from 'fs';
++import { resolve } from 'path';
++import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
++
++/**
++ * Configuration for constructing a chat prompt.
++ */
++export interface PromptConfig {
++  platform: string;
++  voice: string;
++  style: string;
++  theme: string;
++  allowsPromotion: boolean;
++  userPrompt?: string;
++  imageBase64?: string;
++  contextDocs?: string[]; // RAG results or brand guidelines
++}
++
++const systemTemplate = readFileSync(
++  resolve(__dirname, '../../prompts/system.txt'),
++  'utf8',
++);
++
++/**
++ * Build an array of ChatCompletion messages using the config above.
++ */
++export function buildMessages(cfg: PromptConfig): ChatCompletionMessageParam[] {
++  const promotionLine = cfg.allowsPromotion
++    ? 'Include subtle promotional elements.'
++    : 'Focus on authentic engagement without promotion.';
++
++  const userBlock = [
++    `Generate social media content for ${cfg.platform}.`,
++    `Style: ${cfg.style}`,
++    `Theme: ${cfg.theme}`,
++    promotionLine,
++    cfg.userPrompt ?? '',
++    '',
++    'Please provide:',
++    '1. Three different title options',
++    '2. Engaging post content',
++    '3. Photo instructions (lighting, camera angle, composition, styling, mood, technical settings)',
++    '4. Relevant hashtags',
++    '',
++    'Make the content authentic and engaging.',
++  ].join('\n');
++
++  const messages: ChatCompletionMessageParam[] = [
++    {
++      role: 'system',
++      content: systemTemplate
++        .replace('VOICE', cfg.voice)
++        .replace('PLATFORM', cfg.platform),
++    },
++    { role: 'user', content: userBlock },
++  ];
++
++  if (cfg.contextDocs?.length) {
++    messages.push({
++      role: 'system',
++      content:
++        'Relevant context:\n' + cfg.contextDocs.map((d) => `- ${d}`).join('\n'),
++    });
++  }
++
++  if (cfg.imageBase64) {
++    messages.push({
++      role: 'user',
++      content: [
++        { type: 'text', text: 'Analyze this image and incorporate it:' },
++        { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${cfg.imageBase64}` } },
++      ],
++    } as any);
++  }
++
++  return messages;
++}
+diff --git a/server/services/ai-generator.ts b/server/services/ai-generator.ts
+@@
+-import OpenAI from 'openai';
++import OpenAI from 'openai';
++import { buildMessages, type PromptConfig } from './prompt-builder';
+@@
+-export async function generateAIContent(request: AIGenerationRequest): Promise<AIContentResponse> {
+-  const { customPrompt, platform, allowsPromotion, style, theme, imageBase64 } = request;
++export async function generateAIContent(
++  request: AIGenerationRequest,
++): Promise<AIContentResponse> {
++  const { customPrompt, platform, allowsPromotion, style, theme, imageBase64 } =
++    request;
+@@
+-    // Build the prompt for AI generation
+-    const promotionText = allowsPromotion === 'yes' || allowsPromotion === 'high' ?
+-      'Include subtle promotional elements.' :
+-      'Focus on authentic engagement without promotion.';
+-
+-    const basePrompt = `Generate social media content for ${platform}.
+-Style: ${style || 'casual'}
+-Theme: ${theme || 'lifestyle'}
+-${promotionText}
+-${customPrompt || ''}
+-
+-Please provide:
+-1. Three different title options
+-2. Engaging post content
+-3. Photo instructions (lighting, camera angle, composition, styling, mood, technical settings)
+-4. Relevant hashtags
+-
+-Make the content authentic and engaging.`;
+-
+-    const messages: Array<OpenAI.Chat.Completions.ChatCompletionMessageParam> = [
+-      { role: 'system', content: 'You are a professional social media content creator. Generate authentic, engaging content.' },
+-      { role: 'user', content: basePrompt }
+-    ];
+-
+-    // Add image analysis if provided
+-    if (imageBase64) {
+-      messages.push({
+-        role: 'user',
+-        content: [
+-          { type: 'text', text: 'Analyze this image and incorporate it into the content:' },
+-          { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${imageBase64}` } }
+-        ]
+-      });
+-    }
++    // Build prompt using centralized builder (supports RAG + images)
++    const promptCfg: PromptConfig = {
++      platform,
++      voice: style || 'casual',
++      style: style || 'casual',
++      theme: theme || 'lifestyle',
++      allowsPromotion: allowsPromotion === 'yes' || allowsPromotion === 'high',
++      userPrompt: customPrompt,
++      imageBase64,
++      // contextDocs: await retrieveDocs(platform, theme), // optional RAG hook
++    };
++
++    const messages = buildMessages(promptCfg);
+@@
+-    const completion = await openai.chat.completions.create({
+-      model: 'gpt-4o',
+-      messages,
+-      temperature: 0.8,
+-      max_tokens: 1000
+-    });
++    const completion = await openai.chat.completions.create({
++      model: 'gpt-4o',
++      messages,
++      temperature: 0.8,
++      max_tokens: 1000,
++    });
