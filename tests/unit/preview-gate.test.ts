@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm";
 import { getPreviewStats, canQueuePosts, checkPreviewGate } from '../../server/lib/preview-gate';
 import { db } from '../../server/db';
 import { postPreviews, users } from '@shared/schema';

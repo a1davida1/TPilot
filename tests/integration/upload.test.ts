@@ -64,7 +64,7 @@ describe('Upload and ImageShield Integration Tests', () => {
           protectionLevel
         });
       } catch (_error) {
-        res.status(500).json({ message: 'Upload failed', error: error.message });
+        res.status(500).json({ message: 'Upload failed', error: _error.message });
       }
     });
 

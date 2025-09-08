@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm";
 import { lintCaption } from '../../server/lib/policy-linter';
 import { db } from '../../server/db';
 import { subredditRules } from '@shared/schema';

@@ -58,7 +58,7 @@ describe('Signup and email verification', () => {
 
     const signupRes = await request(app)
       .post('/api/auth/signup')
-      .send({ username: 'alice', password: 'password123', email: 'alice@example.com' });
+      .send({ username: 'alice', password: 'Password123!', email: 'alice@example.com' });
 
     expect(signupRes.status).toBe(200);
     expect(signupRes.body.message).toMatch(/verification email sent/i);
@@ -70,7 +70,7 @@ describe('Signup and email verification', () => {
 
     const loginBefore = await request(app)
       .post('/api/auth/login')
-      .send({ username: 'alice', password: 'password123' });
+      .send({ username: 'alice', password: 'Password123!' });
     expect(loginBefore.status).toBe(403);
 
     const verifyRes = await request(app).get(`/api/auth/verify-email?token=${token}`);
@@ -78,7 +78,7 @@ describe('Signup and email verification', () => {
 
     const loginAfter = await request(app)
       .post('/api/auth/login')
-      .send({ username: 'alice', password: 'password123' });
+      .send({ username: 'alice', password: 'Password123!' });
     expect(loginAfter.status).toBe(200);
     expect(loginAfter.body.token).toBeDefined();
   });

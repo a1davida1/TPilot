@@ -1,3 +1,4 @@
+import { storage } from "../../server/storage";
 /* eslint-env node, jest */
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { InsertExpense } from '@shared/schema';
@@ -28,7 +29,7 @@ describe('Expense Operations Unit Tests', () => {
   const categoryId = 1;
 
   beforeEach(() => {
-    storage = new DatabaseStorage();
+    storage = storage;
     vi.clearAllMocks();
   });
 
