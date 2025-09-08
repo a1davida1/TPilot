@@ -60,7 +60,7 @@ describe('Signup and email verification', () => {
       .post('/api/auth/signup')
       .send({ username: 'alice', password: 'Password123!', email: 'alice@example.com' });
 
-    expect(signupRes.status).toBe(200);
+    expect(signupRes.status).toBe(201);
     expect(signupRes.body.message).toMatch(/verification email sent/i);
     
     const { emailService } = await import('../../server/services/email-service');
