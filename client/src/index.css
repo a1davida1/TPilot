@@ -20,9 +20,10 @@
     --popover: 0 0 100;
     --popover-foreground: 320 60 15;
     
-    /* Primary brand colors - Dark Purple/Pink scale */
-    --primary: 320 70 25;
+    /* WCAG‑AA compliant primary */
+    --primary: 221 70 40;
     --primary-foreground: 0 0 100;
+    --focus-ring: 0 0 0 2px rgba(66,153,225,0.5);
     --primary-50: 320 40 95;
     --primary-100: 320 45 90;
     --primary-200: 320 50 80;
@@ -369,8 +370,8 @@ td {
 
 /* Apple-style focus states */
 *:focus-visible {
-  @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background;
-  border-radius: inherit;
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 /* Premium shadows */
@@ -691,6 +692,11 @@ td {
   
   /* High contrast mode support */
   @media (prefers-contrast: high) {
+    :root {
+      --primary: 221 100 30;
+      --background: 0 0 100;
+      --foreground: 0 0 0;
+    }
     .text-readable,
     .text-readable-muted,
     .text-readable-emphasis {
