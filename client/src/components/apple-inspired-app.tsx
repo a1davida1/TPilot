@@ -411,7 +411,7 @@ export function AppleInspiredApp() {
         </header>
 
         {/* Main Content */}
-        <main className="pt-20">
+        <main id="main-content" className="pt-20">
           <AnimatePresence mode="wait">
             {activeSection === "generate" && (
               <div className="max-w-6xl mx-auto px-6 py-12">
