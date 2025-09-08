@@ -21,8 +21,8 @@ describe('Login Identifier and Cookie Auth', () => {
   beforeAll(async () => {
     const hashed = await bcrypt.hash('TestPassword123', 10);
     const [user] = await db.insert(users).values({
-      username: 'testuser',
-      email: 'test@example.com',
+      username: 'testuser_' + Date.now(),
+      email: 'test+' + Date.now() + '@example.com',
       password: hashed,
       tier: 'free'
     }).returning();
@@ -55,7 +55,7 @@ describe('Login Identifier and Cookie Auth', () => {
       const response = await request(app)
         .post('/api/auth/login')
         .send({
-          username: 'testuser',
+          username: 'testuser_' + Date.now(),
           password: 'TestPassword123'
         });
 
