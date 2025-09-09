@@ -16,8 +16,8 @@
     --card-foreground: 320 60 15;
     --card-border: 320 30 85;
     
-    /* Popover colors */
-    --popover: 0 0 100;
+    /* Popover colors - Fixed for dropdown visibility */
+    --popover: 320 10 98;
     --popover-foreground: 320 60 15;
     
     /* WCAG‑AA compliant primary */
@@ -99,8 +99,8 @@
     --card-foreground: 330 15 95;
     --card-border: 335 15 22;
     
-    /* Popover colors */
-    --popover: 335 20 12;
+    /* Popover colors - Fixed for dropdown visibility */
+    --popover: 335 20 14;
     --popover-foreground: 330 15 95;
     
     /* Primary brand colors - Pink/Rose scale for dark mode */
@@ -207,17 +207,17 @@
   h5 { @apply text-lg md:text-xl lg:text-2xl; }
   h6 { @apply text-base md:text-lg lg:text-xl; }
   
-  p, span, div, label, a {
+  p, span, label, a {
     @apply text-foreground;
-    color: hsl(var(--foreground)) !important;
+    color: hsl(var(--foreground));
     font-weight: 500;
     letter-spacing: -0.01em;
   }
   
-  /* Force readable text everywhere */
+  /* Ensure readable muted text */
   .text-muted-foreground {
-    color: hsl(var(--muted-foreground)) !important;
-    font-weight: 600 !important;
+    color: hsl(var(--muted-foreground));
+    font-weight: 600;
   }
   
   /* Ensure card text is always readable */
