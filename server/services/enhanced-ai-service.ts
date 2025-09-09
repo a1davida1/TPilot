@@ -294,13 +294,8 @@ Create content that feels authentic, drives engagement, and perfectly matches th
     try {
       const result = await generateWithMultiProvider({
         user: {
-          personalityProfile: {
-            toneOfVoice: request.style,
-            contentStyle: request.style,
-            personalBrand: request.personalBrand || 'authentic creator',
-            contentLength: 'detailed',
-            includeEmojis: request.platform !== 'onlyfans'
-          }
+          id: parseInt(request.userId || '0'),
+          tier: 'pro'
         },
         platform: request.platform,
         imageDescription: request.imageBase64 ? 'User uploaded image' : undefined,
@@ -327,28 +322,30 @@ Create content that feels authentic, drives engagement, and perfectly matches th
     metadata: unknown
   ): EnhancedAIResponse {
     const platform = this.platformOptimizations[request.platform];
+    const response = baseResponse as any;
+    const meta = metadata as any;
     
     // Ensure content length is optimized
-    let content = baseResponse.content;
+    let content = response?.content || '';
     if (content.length > platform.contentLength.max) {
       content = content.substring(0, platform.contentLength.max - 3) + '...';
     }
     
     // Generate platform-specific hashtags
-    const hashtags = this.generateOptimizedHashtags(request, baseResponse.hashtags);
+    const hashtags = this.generateOptimizedHashtags(request, response?.hashtags);
     
     // Create enhanced photo instructions
     const photoInstructions = this.createDetailedPhotoInstructions(
-      baseResponse.photoInstructions || {},
+      response?.photoInstructions || {},
       request
     );
     
     return {
-      titles: baseResponse.titles || this.generateTitles(request),
+      titles: response?.titles || this.generateTitles(request),
       content,
       photoInstructions,
       hashtags,
-      caption: baseResponse.caption || content.split('\n')[0],
+      caption: response?.caption || content.split('\n')[0],
       callToAction: this.generateCallToAction(request),
       engagementHooks: this.generateEngagementHooks(request),
       contentWarnings: this.assessContentWarnings(content),
@@ -356,9 +353,9 @@ Create content that feels authentic, drives engagement, and perfectly matches th
       crossPromotionSuggestions: this.suggestCrossPromotion(request.platform),
       metadata: {
         generatedAt: new Date(),
-        provider: metadata.provider,
-        model: metadata.model,
-        confidence: metadata.confidence,
+        provider: meta?.provider || 'unknown',
+        model: meta?.model || 'unknown',
+        confidence: meta?.confidence || 0,
         estimatedEngagement: this.estimateEngagement(request, content)
       }
     };
@@ -369,34 +366,35 @@ Create content that feels authentic, drives engagement, and perfectly matches th
     request: EnhancedAIRequest
   ): EnhancedPhotoInstructions {
     const style = this.styleGuides[request.style];
+    const baseInstructions = base as any;
     
     return {
       lighting: {
-        type: base.lighting || this.getLightingForStyle(request.style),
+        type: baseInstructions?.lighting || this.getLightingForStyle(request.style),
         direction: "45-degree angle from front-left",
         intensity: request.style === 'mysterious' ? "Low to medium" : "Medium to bright",
         colorTemperature: request.style === 'elegant' ? "Warm (3200K)" : "Neutral (5500K)"
       },
       camera: {
-        angle: base.cameraAngle || this.getCameraAngleForStyle(request.style),
+        angle: baseInstructions?.cameraAngle || this.getCameraAngleForStyle(request.style),
         distance: "Medium shot (waist up)",
         height: "Slightly above eye level for flattering angle",
         lens: "50-85mm for natural perspective"
       },
       composition: {
-        framing: base.composition || "Rule of thirds with subject off-center",
+        framing: baseInstructions?.composition || "Rule of thirds with subject off-center",
         rule: "Golden ratio for visual balance",
         background: this.getBackgroundForStyle(request.style),
         foreground: "Clear, uncluttered"
       },
       styling: {
-        outfit: base.styling || this.getOutfitForStyle(request.style),
+        outfit: baseInstructions?.styling || this.getOutfitForStyle(request.style),
         accessories: "Minimal, tasteful jewelry",
         hair: "Natural, well-groomed style",
         makeup: request.style === 'elegant' ? "Sophisticated, evening look" : "Natural, enhanced features"
       },
       mood: {
-        expression: base.mood || this.getExpressionForStyle(request.style),
+        expression: baseInstructions?.mood || this.getExpressionForStyle(request.style),
         bodyLanguage: "Open, confident posture",
         energy: style.tone,
         atmosphere: style.photoStyle
