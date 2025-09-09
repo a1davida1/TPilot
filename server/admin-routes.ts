@@ -209,6 +209,12 @@ export function setupAdminRoutes(app: Express) {
     try {
       const { userId, tier } = req.body;
       
+      // Validate tier value
+      const validTiers = ['free', 'starter', 'pro', 'admin'];
+      if (!validTiers.includes(tier)) {
+        return res.status(400).json({ message: `Invalid tier. Must be one of: ${validTiers.join(', ')}` });
+      }
+      
       await storage.updateUserTier(userId, tier);
       
       // Get user for email notification
