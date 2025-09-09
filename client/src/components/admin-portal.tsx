@@ -182,7 +182,6 @@ export function AdminPortal() {
       case 'admin': return 'bg-gradient-to-r from-red-600 to-orange-600 text-white';
       case 'pro': return 'bg-gradient-to-r from-purple-600 to-pink-600 text-white';
       case 'starter': return 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white';
-      case 'trial': return 'bg-gradient-to-r from-orange-500 to-yellow-500 text-white';
       case 'free': return 'bg-gray-100 text-gray-800 border border-gray-300';
       default: return 'bg-gray-100 text-gray-800 border border-gray-300';
     }

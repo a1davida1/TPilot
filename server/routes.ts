@@ -831,8 +831,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const quotaBytes = {
         free: 100 * 1024 * 1024,
         starter: 500 * 1024 * 1024,
-        pro: 5 * 1024 * 1024 * 1024,
-        premium: 50 * 1024 * 1024 * 1024
+        pro: 5 * 1024 * 1024 * 1024
       }[userTier] || 100 * 1024 * 1024;
       
       res.json({
@@ -993,7 +992,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             nextBillDate: new Date((sub as any).current_period_end * 1000).toISOString(),
             createdAt: new Date(sub.created * 1000).toISOString()
           },
-          isPro: ['pro', 'premium', 'starter'].includes(user.tier || ''),
+          isPro: ['pro', 'starter'].includes(user.tier || ''),
           tier: user.tier || 'free'
         });
       }

@@ -30,9 +30,9 @@ export function GenerationCounter({ className }: GenerationCounterProps) {
   // Set generation limits based on tier
   const limits = {
     free: 5,
-    basic: 5,
-    pro: 50,
-    premium: null // unlimited
+    starter: 25,
+    pro: 100,
+    admin: null // unlimited
   };
   
   const limit = limits[userTier as keyof typeof limits];

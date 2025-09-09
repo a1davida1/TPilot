@@ -146,7 +146,7 @@ export class CCBillProcessor {
     await db.insert(subscriptions).values({
       userId,
       status: details.status as 'active' | 'canceled' | 'past_due',
-      plan: details.plan as 'free' | 'starter' | 'pro' | 'premium',
+      plan: details.plan as 'free' | 'starter' | 'pro',
       priceCents: details.priceCents,
       processor: 'ccbill',
       processorSubId,

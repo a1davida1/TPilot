@@ -5,10 +5,12 @@ export default function ImageShieldPage() {
   const { user } = useAuth();
   const baseTier = user?.tier || 'free';
   // Map tiers for ImageShield component compatibility
-  const getUserTier = (): "free" | "basic" | "pro" | "premium" => {
-    if (baseTier === 'admin') return 'premium';
-    if (baseTier === 'guest') return 'basic';
-    return baseTier as "free" | "basic" | "pro" | "premium";
+  const getUserTier = (): "free" | "starter" | "pro" => {
+    if (baseTier === 'admin') return 'pro';
+    if (baseTier === 'guest') return 'free';
+    if (baseTier === 'basic') return 'starter'; // Map old 'basic' to 'starter'
+    if (baseTier === 'premium') return 'pro'; // Map old 'premium' to 'pro'
+    return baseTier as "free" | "starter" | "pro";
   };
   const userTier = getUserTier();
   const isGuestMode = !user;

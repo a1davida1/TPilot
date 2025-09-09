@@ -9,7 +9,7 @@ const rateLimitConfigs = {
   free: {
     windowMs: 60000, // 1 minute
     max: 10,
-    message: "You've reached your free tier limit. Upgrade to Pro for more requests!"
+    message: "You've reached your free tier limit. Upgrade to Starter or Pro for more requests!"
   },
   starter: {
     windowMs: 60000,
@@ -18,12 +18,7 @@ const rateLimitConfigs = {
   },
   pro: {
     windowMs: 60000,
-    max: 200,
-    message: "Rate limit reached. Please wait a moment before trying again."
-  },
-  premium: {
-    windowMs: 60000,
-    max: 1000,
+    max: 500,
     message: "Rate limit reached. Please wait a moment before trying again."
   },
   admin: {
@@ -36,31 +31,27 @@ const rateLimitConfigs = {
 // Feature-specific rate limits
 const featureLimits = {
   contentGeneration: {
-    free: { windowMs: 3600000, max: 5, message: "You've reached your free content generation limit. Upgrade to Pro for more!" }, // 5 per hour
+    free: { windowMs: 3600000, max: 5, message: "You've reached your free content generation limit. Upgrade to Starter or Pro for more!" }, // 5 per hour
     starter: { windowMs: 3600000, max: 25, message: "Content generation limit reached. Please wait before trying again." }, // 25 per hour
-    pro: { windowMs: 3600000, max: 100, message: "Content generation limit reached. Please wait before trying again." }, // 100 per hour
-    premium: { windowMs: 3600000, max: 500, message: "Content generation limit reached. Please wait before trying again." }, // 500 per hour
+    pro: { windowMs: 3600000, max: 200, message: "Content generation limit reached. Please wait before trying again." }, // 200 per hour
     admin: { windowMs: 3600000, max: 10000, message: "Admin content generation limit reached." }
   },
   imageProtection: {
-    free: { windowMs: 3600000, max: 3, message: "You've reached your free image protection limit. Upgrade to Pro for more!" }, // 3 per hour
+    free: { windowMs: 3600000, max: 3, message: "You've reached your free image protection limit. Upgrade to Starter or Pro for more!" }, // 3 per hour
     starter: { windowMs: 3600000, max: 15, message: "Image protection limit reached. Please wait before trying again." }, // 15 per hour
-    pro: { windowMs: 3600000, max: 50, message: "Image protection limit reached. Please wait before trying again." }, // 50 per hour
-    premium: { windowMs: 3600000, max: 200, message: "Image protection limit reached. Please wait before trying again." }, // 200 per hour
+    pro: { windowMs: 3600000, max: 100, message: "Image protection limit reached. Please wait before trying again." }, // 100 per hour
     admin: { windowMs: 3600000, max: 10000, message: "Admin image protection limit reached." }
   },
   postScheduling: {
-    free: { windowMs: 86400000, max: 5, message: "You've reached your free post scheduling limit. Upgrade to Pro for more!" }, // 5 per day
+    free: { windowMs: 86400000, max: 5, message: "You've reached your free post scheduling limit. Upgrade to Starter or Pro for more!" }, // 5 per day
     starter: { windowMs: 86400000, max: 25, message: "Post scheduling limit reached. Please wait before trying again." }, // 25 per day
-    pro: { windowMs: 86400000, max: 100, message: "Post scheduling limit reached. Please wait before trying again." }, // 100 per day
-    premium: { windowMs: 86400000, max: 500, message: "Post scheduling limit reached. Please wait before trying again." }, // 500 per day
+    pro: { windowMs: 86400000, max: 200, message: "Post scheduling limit reached. Please wait before trying again." }, // 200 per day
     admin: { windowMs: 86400000, max: 10000, message: "Admin post scheduling limit reached." }
   },
   apiAccess: {
-    free: { windowMs: 3600000, max: 100, message: "You've reached your free API access limit. Upgrade to Pro for more!" }, // 100 per hour
+    free: { windowMs: 3600000, max: 100, message: "You've reached your free API access limit. Upgrade to Starter or Pro for more!" }, // 100 per hour
     starter: { windowMs: 3600000, max: 500, message: "API access limit reached. Please wait before trying again." }, // 500 per hour
-    pro: { windowMs: 3600000, max: 2000, message: "API access limit reached. Please wait before trying again." }, // 2000 per hour
-    premium: { windowMs: 3600000, max: 10000, message: "API access limit reached. Please wait before trying again." }, // 10000 per hour
+    pro: { windowMs: 3600000, max: 5000, message: "API access limit reached. Please wait before trying again." }, // 5000 per hour
     admin: { windowMs: 3600000, max: 100000, message: "Admin API access limit reached." }
   }
 };
@@ -87,15 +78,12 @@ async function getUserTier(userId: string | number): Promise<string> {
     
     if (!user) return 'free';
     
-    // Determine tier based on user data
-    let tier = 'free';
+    // Use the tier from the database, fallback to free if not set
+    let tier = user.tier || 'free';
+    
+    // Admin users always get admin tier regardless of database tier
     if (user.isAdmin) {
       tier = 'admin';
-    } else if (user.stripeSubscriptionId) {
-      // In production, check subscription status
-      tier = 'pro'; // Default to pro for subscribed users
-    } else if (user.emailVerified) {
-      tier = 'starter';
     }
     
     // Cache for 5 minutes
