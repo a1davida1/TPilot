@@ -1,10 +1,11 @@
-import { validateContent } from './validateContent.js';
-import * as utils from './moderation-utils.js';
+import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { validateContent } from './validateContent';
+import * as utils from './moderation-utils';
 
-jest.mock('./moderation-utils.js');
+vi.mock('./moderation-utils');
 
 beforeEach(() => {
-  jest.resetAllMocks();
+  vi.resetAllMocks();
 });
 
 test('blocks banned domains from subreddit rules', async () => {
