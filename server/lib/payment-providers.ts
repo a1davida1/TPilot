@@ -4,6 +4,7 @@
  */
 
 import { env } from './config';
+import crypto from 'crypto';
 
 export interface PaymentProvider {
   name: string;
@@ -185,13 +186,29 @@ export class PaxumProvider extends BasePaymentProvider {
     }
 
     try {
-      // Paxum API integration would go here
-      const paymentUrl = `https://paxum.com/payment?api_key=${env.PAXUM_API_KEY || ''}&amount=${options.amount}&user=${options.userId}`;
-      
+      const response = await fetch('https://www.paxum.com/payment/api/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${env.PAXUM_API_KEY}`,
+        },
+        body: JSON.stringify({
+          amount: options.amount,
+          currency: options.currency,
+          description: options.description,
+          custom: options.userId,
+          return_url: options.returnUrl,
+          cancel_url: options.cancelUrl,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(`Paxum responded with ${response.status}`);
+      }
+      const data = await response.json();
       return {
         success: true,
-        paymentUrl,
-        transactionId: `paxum_${Date.now()}_${options.userId}`,
+        paymentUrl: data.url,
+        transactionId: data.transactionId,
         provider: this.name,
       };
     } catch (error) {
@@ -203,16 +220,18 @@ export class PaxumProvider extends BasePaymentProvider {
     }
   }
 
-  async verifyWebhook(signature: string, payload: unknown): Promise<boolean> {
-    return true; // Scaffold implementation
+  async verifyWebhook(signature: string, payload: Record<string, unknown>): Promise<boolean> {
+    const hmac = crypto.createHmac('sha256', env.PAXUM_API_KEY || '');
+    hmac.update(JSON.stringify(payload));
+    return hmac.digest('hex') === signature;
   }
 
-  async processWebhook(payload: unknown): Promise<unknown> {
+  async processWebhook(payload: Record<string, unknown>): Promise<{ userId: number; subscriptionType: string; status: 'active' | 'cancelled' | 'failed'; transactionId: string; }> {
     return {
-      userId: payload.userId,
-      subscriptionType: payload.subscriptionType,
-      status: payload.status,
-      transactionId: payload.transactionId,
+      userId: Number((payload as Record<string, unknown>).custom),
+      subscriptionType: String((payload as Record<string, unknown>).plan || ''),
+      status: (payload as Record<string, unknown>).status as 'active' | 'cancelled' | 'failed',
+      transactionId: String((payload as Record<string, unknown>).transactionId || ''),
     };
   }
 }
@@ -238,13 +257,31 @@ export class CoinbaseProvider extends BasePaymentProvider {
     }
 
     try {
-      // Coinbase Commerce API integration would go here
-      const paymentUrl = `https://commerce.coinbase.com/checkout?key=${env.COINBASE_COMMERCE_KEY || ''}&amount=${options.amount}&user=${options.userId}`;
-      
+      const response = await fetch('https://api.commerce.coinbase.com/charges', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CC-Api-Key': env.COINBASE_COMMERCE_KEY || '',
+          'X-CC-Version': '2018-03-22',
+        },
+        body: JSON.stringify({
+          name: 'Subscription',
+          description: options.description,
+          pricing_type: 'fixed_price',
+          local_price: { amount: options.amount, currency: options.currency },
+          metadata: { userId: options.userId, subscriptionType: options.subscriptionType },
+          redirect_url: options.returnUrl,
+          cancel_url: options.cancelUrl,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(`Coinbase responded with ${response.status}`);
+      }
+      const data = await response.json();
       return {
         success: true,
-        paymentUrl,
-        transactionId: `coinbase_${Date.now()}_${options.userId}`,
+        paymentUrl: data.data.hosted_url,
+        transactionId: data.data.id,
         provider: this.name,
       };
     } catch (error) {
@@ -256,16 +293,22 @@ export class CoinbaseProvider extends BasePaymentProvider {
     }
   }
 
-  async verifyWebhook(signature: string, payload: unknown): Promise<boolean> {
-    return true; // Scaffold implementation
+  async verifyWebhook(signature: string, payload: Record<string, unknown>): Promise<boolean> {
+    const hmac = crypto.createHmac('sha256', env.COINBASE_COMMERCE_KEY || '');
+    hmac.update(JSON.stringify(payload));
+    return hmac.digest('hex') === signature;
   }
 
-  async processWebhook(payload: unknown): Promise<unknown> {
+  async processWebhook(payload: Record<string, unknown>): Promise<{ userId: number; subscriptionType: string; status: 'active' | 'cancelled' | 'failed'; transactionId: string; }> {
+    const event = (payload as { event?: { data?: Record<string, unknown>; } }).event;
+    const data = event?.data ?? {};
+    const timeline = (data as { timeline?: Array<{ status: string }> }).timeline || [];
+    const status = timeline.length ? timeline[timeline.length - 1].status : 'failed';
     return {
-      userId: payload.userId,
-      subscriptionType: payload.subscriptionType,
-      status: payload.status,
-      transactionId: payload.transactionId,
+      userId: Number((data as { metadata?: Record<string, unknown> }).metadata?.userId),
+      subscriptionType: String((data as { metadata?: Record<string, unknown> }).metadata?.subscriptionType || ''),
+      status: status as 'active' | 'cancelled' | 'failed',
+      transactionId: String((data as { id?: unknown }).id || ''),
     };
   }
 }
