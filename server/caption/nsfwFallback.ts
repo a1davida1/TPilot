@@ -1,4 +1,4 @@
-import { type Buffer } from 'node:buffer';
+import { Buffer } from 'node:buffer';
 
 export interface NSFWCaption {
   caption: string;
