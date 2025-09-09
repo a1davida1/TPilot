@@ -186,7 +186,7 @@ export function PremiumLanding() {
                         <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 border-2 border-white/20" />
                       ))}
                     </div>
-                    <span>10,000+ creators</span>
+                    <span>{metrics?.creators ? `${metrics.creators.toLocaleString()}+ creators` : 'Creators'}</span>
                   </div>
                   <div className="flex items-center space-x-1">
                     {[1,2,3,4,5].map((i) => (
@@ -264,7 +264,13 @@ export function PremiumLanding() {
         <section className="py-20 bg-black/20">
           <div className="max-w-4xl mx-auto px-4 text-center">
             <h2 className="text-3xl font-bold text-white mb-12">
-              Loved by <span className="text-purple-400">10,000+</span> Creators
+              {metrics?.creators ? (
+                <>
+                  Loved by <span className="text-purple-400">{metrics.creators.toLocaleString()}+</span> Creators
+                </>
+              ) : (
+                'Loved by Creators'
+              )}
             </h2>
             
             <div className="relative">
@@ -309,7 +315,9 @@ export function PremiumLanding() {
                   Ready to 10x Your Content Game?
                 </h2>
                 <p className="text-xl text-gray-300">
-                  Join thousands of successful creators. Setup takes less than 30 seconds.
+                  {metrics?.creators
+                    ? `Join ${metrics.creators.toLocaleString()}+ successful creators. Setup takes less than 30 seconds.`
+                    : 'Join successful creators. Setup takes less than 30 seconds.'}
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
