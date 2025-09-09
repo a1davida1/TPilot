@@ -21,6 +21,13 @@ export default [
       'client/dist/**',
       '**/attached_assets/**',
       '**/tmp/**',
+      'browser-extension/**',
+      '*.accessibility.js',
+      'client/src/lib/eslint-rules/**',
+      'client/src/lib/stylelint-rules/**',
+      'production-server.js',
+      'production-start.js',
+      'scripts/**',
     ],
   },
   js.configs.recommended,
@@ -52,6 +59,12 @@ export default [
         varsIgnorePattern: '^_',
       }],
       '@typescript-eslint/no-non-null-assertion': 'warn',
+      '@typescript-eslint/no-unsafe-function-type': 'warn',
+      '@typescript-eslint/no-empty-object-type': 'warn',
+      '@typescript-eslint/no-namespace': 'warn',
+      'no-case-declarations': 'warn',
+      'no-prototype-builtins': 'warn',
+      'no-useless-escape': 'warn',
       'no-empty': ['error', { allowEmptyCatch: true }],
       'react/react-in-jsx-scope': 'off',
       'react/no-unescaped-entities': 'off',
@@ -85,6 +98,37 @@ export default [
   },
   {
     files: ['server/**/*.{js,ts}', 'scripts/**/*.{js,ts}'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
+  {
+    files: ['tests/**/*.{js,ts}'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+      'no-undef': 'off',
+    },
+  },
+  {
+    files: ['*.config.{js,ts}', 'server/start-production.js'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
+  {
+    files: ['vite.config.js'],
     languageOptions: {
       globals: {
         ...globals.node,
