@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +19,23 @@ interface RedditAccount {
 export function RedditAccounts() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== window.origin) return;
+      if (event.data?.type === 'redditConnected') {
+        queryClient.invalidateQueries({ queryKey: ['/api/reddit/accounts'] });
+        toast({
+          title: 'Reddit Account Connected',
+          description: event.data.username
+            ? `Connected as u/${event.data.username}`
+            : 'Reddit account linked successfully',
+        });
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [queryClient, toast]);
 
   // Fetch connected Reddit accounts
   const { data: accounts, isLoading } = useQuery({

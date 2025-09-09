@@ -32,8 +32,28 @@ export default function Dashboard() {
       window.history.replaceState({}, '', '/dashboard');
     }
     
-    // No longer handling Reddit OAuth connections
-    
+    // Handle Reddit OAuth connections
+    if (reddit === 'connected') {
+      const username = urlParams.get('username') || undefined;
+      if (window.opener) {
+        window.opener.postMessage(
+          { type: 'redditConnected', username },
+          window.origin
+        );
+        window.close();
+        return;
+      } else {
+        toast({
+          title: 'Reddit Connected',
+          description: username
+            ? `Connected as u/${username}`
+            : 'Reddit account linked successfully.',
+        });
+        refetch();
+      }
+      window.history.replaceState({}, '', '/dashboard');
+    }
+
     // Handle OAuth errors
     if (error) {
       let errorMessage = "Authentication failed. Please try again.";
