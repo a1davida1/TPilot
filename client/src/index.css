@@ -222,7 +222,7 @@
   
   /* Ensure card text is always readable */
   .card *, .card-content *, .card-header * {
-    color: hsl(var(--card-foreground)) !important;
+    color: hsl(var(--card-foreground));
     font-weight: 600 !important;
   }
   
@@ -1449,4 +1449,63 @@ button, .btn, nav {
   100% {
     background-position: 200% 0;
   }
+}
+
+/* Fix for dropdown and select visibility issues */
+[data-radix-popper-content-wrapper] {
+  z-index: 9999 !important;
+}
+
+/* Ensure select and dropdown items are always visible */
+[role="option"],
+[role="menuitem"],
+[data-radix-collection-item] {
+  color: hsl(var(--popover-foreground)) !important;
+  background: transparent;
+}
+
+[role="option"]:hover,
+[role="menuitem"]:hover,
+[data-radix-collection-item]:hover,
+[role="option"]:focus,
+[role="menuitem"]:focus,
+[data-radix-collection-item]:focus {
+  background: hsl(var(--accent)) !important;
+  color: hsl(var(--accent-foreground)) !important;
+}
+
+/* Ensure select trigger text is visible */
+button[role="combobox"] {
+  color: hsl(var(--foreground)) !important;
+  background: hsl(var(--background)) !important;
+}
+
+/* Fix select content background */
+[data-radix-select-content],
+[data-radix-dropdown-menu-content] {
+  background: hsl(var(--popover)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+}
+
+/* Ensure all text in dropdowns is visible */
+[data-radix-select-viewport] *,
+[data-radix-dropdown-menu-content] * {
+  color: hsl(var(--popover-foreground));
+}
+
+/* Fix for select item text */
+[data-radix-select-item] {
+  color: hsl(var(--popover-foreground)) !important;
+}
+
+[data-radix-select-item][data-highlighted] {
+  background: hsl(var(--accent)) !important;
+  color: hsl(var(--accent-foreground)) !important;
+}
+
+/* Ensure dropdown labels are visible */
+[data-radix-select-label],
+[data-radix-dropdown-menu-label] {
+  color: hsl(var(--popover-foreground)) !important;
+  opacity: 0.7;
 }
