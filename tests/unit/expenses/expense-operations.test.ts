@@ -20,16 +20,13 @@ vi.mock('../../../server/db.js', () => ({
   }
 }));
 
-import { DatabaseStorage } from '../../../server/storage';
 import { db } from '../../../server/db.js';
 
 describe('Expense Operations Unit Tests', () => {
-  let storage: DatabaseStorage;
   const userId = 123;
   const categoryId = 1;
 
   beforeEach(() => {
-    storage = storage;
     vi.clearAllMocks();
   });
 

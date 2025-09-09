@@ -843,6 +843,8 @@ export function UnifiedContentCreator({
         <Button 
           onClick={handleGenerate} 
           disabled={generateContentMutation.isPending}
+          aria-label="Generate content with current settings"
+          aria-busy={generateContentMutation.isPending}
           className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-3"
         >
           {generateContentMutation.isPending ? (

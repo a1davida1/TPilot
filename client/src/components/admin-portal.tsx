@@ -1259,14 +1259,16 @@ function UserManagementTab({ authenticatedRequest, users }: { authenticatedReque
                       <div className="flex gap-2">
                         {user.tier !== 'banned' ? (
                           <>
-                            <Button size="sm" variant="destructive" 
+                            <Button size="sm" variant="destructive"
                               onClick={() => { setSelectedUser(user); setActionType('ban'); }}
+                              aria-label={`Ban user ${user.username || user.email}`}
                               data-testid={`button-ban-user-${user.id}`}>
                               <Ban className="h-3 w-3 mr-1" />
                               Ban
                             </Button>
                             <Button size="sm" variant="outline"
                               onClick={() => { setSelectedUser(user); setActionType('suspend'); }}
+                              aria-label={`Suspend user ${user.username || user.email}`}
                               data-testid={`button-suspend-user-${user.id}`}>
                               <Clock3 className="h-3 w-3 mr-1" />
                               Suspend
@@ -1275,17 +1277,20 @@ function UserManagementTab({ authenticatedRequest, users }: { authenticatedReque
                         ) : (
                           <Button size="sm" variant="outline"
                             onClick={() => { setSelectedUser(user); setActionType('unban'); }}
+                            aria-label={`Unban user ${user.username || user.email}`}
                             data-testid={`button-unban-user-${user.id}`}>
                             Unban
                           </Button>
                         )}
                         <Button size="sm" variant="outline"
                           onClick={() => actionMutation.mutate({ userId: user.id, action: 'force-logout' })}
+                          aria-label={`Force logout for user ${user.username || user.email}`}
                           data-testid={`button-logout-user-${user.id}`}>
                           Force Logout
                         </Button>
                         <Button size="sm" variant="outline"
                           onClick={() => { setSelectedUser(user); setActionType('reset-password'); }}
+                          aria-label={`Reset password for user ${user.username || user.email}`}
                           data-testid={`button-reset-password-${user.id}`}
                           className="text-orange-600 hover:text-orange-700">
                           🔑 Reset Password
