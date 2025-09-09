@@ -137,7 +137,7 @@ describe('Email Service - SendGrid Integration', () => {
         emailService.sendVerificationEmail('user@test.com', 'testuser', 'token123')
       ).rejects.toThrow('SendGrid API rate limit exceeded');
       
-      const { safeLog } = require('../../server/lib/logger-utils');
+      const { safeLog } = await import('../../server/lib/logger-utils.ts');
       expect(safeLog).toHaveBeenCalledWith(
         'error',
         'Verification email send failed',
@@ -182,7 +182,7 @@ describe('Email Service - SendGrid Integration', () => {
         emailService.sendWelcomeEmail('user@test.com', 'testuser')
       ).resolves.toBeUndefined();
       
-      const { safeLog } = require('../../server/lib/logger-utils');
+      const { safeLog } = await import('../../server/lib/logger-utils.ts');
       expect(safeLog).toHaveBeenCalledWith(
         'error',
         'Welcome email send failed',
