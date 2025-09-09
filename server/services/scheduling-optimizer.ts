@@ -25,6 +25,13 @@ interface PlatformStats {
   topHashtags: string[];
 }
 
+interface TrendingTopic {
+  topic: string;
+  platform: string;
+  score: number;
+  category: string;
+}
+
 
 class SchedulingOptimizer {
   // Best posting times by platform (based on industry research)
@@ -221,7 +228,7 @@ class SchedulingOptimizer {
     }
   }
 
-  private async getTrendingTopics(): Promise<any[]> {
+  private async getTrendingTopics(): Promise<TrendingTopic[]> {
     // In production, this would fetch from Reddit API, Twitter API, etc.
     // For now, return mock trending topics
     return [
@@ -239,11 +246,11 @@ class SchedulingOptimizer {
     return ['fitness', 'creative', 'lifestyle', 'exclusive'];
   }
 
-  private matchesNiche(trend: unknown, userNiche: string[]): boolean {
+  private matchesNiche(trend: TrendingTopic, userNiche: string[]): boolean {
     return userNiche.includes(trend.category) || trend.score > 80;
   }
 
-  private getSuggestedStyle(trend: unknown): string {
+  private getSuggestedStyle(trend: TrendingTopic): string {
     const styleMap: Record<string, string> = {
       'fitness': 'motivational',
       'exclusive': 'teasing',
