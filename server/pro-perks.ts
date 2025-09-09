@@ -515,7 +515,7 @@ export interface PerkUsageStats {
 }
 
 export function getAvailablePerks(userTier: 'free' | 'starter' | 'pro'): ProPerk[] {
-  if (userTier === 'free' || userTier === 'basic') {
+  if (userTier === 'free' || userTier === 'starter') {
     return [];
   }
   

@@ -226,7 +226,6 @@ export function UnifiedContentCreator({
 
       // Send to unified endpoint  
       const token = localStorage.getItem('authToken');
-      console.log('Sending request with token:', token ? 'Token present' : 'No token');
       
       const response = await fetch('/api/generate-unified', {
         method: 'POST',
@@ -755,14 +754,23 @@ export function UnifiedContentCreator({
                     ? new Date(generation.createdAt) 
                     : generation.createdAt || new Date(),
                   titles: generation.titles || [],
-                  photoInstructions: generation.photoInstructions || {
-                    lighting: '',
-                    cameraAngle: '',
-                    composition: '',
-                    styling: '',
-                    mood: '',
-                    technicalSettings: ''
-                  }
+                  photoInstructions: (generation.photoInstructions && typeof generation.photoInstructions === 'object' && 'lighting' in generation.photoInstructions) 
+                    ? generation.photoInstructions as {
+                        lighting: string;
+                        cameraAngle: string;
+                        composition: string;
+                        styling: string;
+                        mood: string;
+                        technicalSettings: string;
+                      }
+                    : {
+                        lighting: '',
+                        cameraAngle: '',
+                        composition: '',
+                        styling: '',
+                        mood: '',
+                        technicalSettings: ''
+                      }
                 };
                 setGeneratedContent(displayData);
                 toast({
