@@ -4,8 +4,8 @@
 export interface ProPerk {
   id: string;
   name: string;
-  category: 'affiliate' | 'integration' | 'tools' | 'community' | 'premium';
-  tier: 'pro' | 'premium';
+  category: 'affiliate' | 'integration' | 'tools' | 'community' | 'pro';
+  tier: 'starter' | 'pro';
   description: string;
   commissionRate?: string;
   requirements?: string[];
@@ -62,7 +62,7 @@ export const realProPerks: ProPerk[] = [
     id: 'crakrevenue-adult',
     name: 'CrakRevenue Adult Network',
     category: 'affiliate',
-    tier: 'premium',
+    tier: 'pro',
     description: 'Premium adult affiliate network with 40% RevShare on cam sites',
     commissionRate: 'Up to 40% RevShare + CPA options',
     requirements: ['Traffic quality standards', 'Account approval'],
@@ -123,7 +123,7 @@ export const realProPerks: ProPerk[] = [
     id: 'discord-partner',
     name: 'Discord Partner Program',
     category: 'community',
-    tier: 'premium',
+    tier: 'pro',
     description: 'Official Discord Partner status with exclusive benefits',
     requirements: [
       'Active engaged community',
@@ -172,7 +172,7 @@ export const realProPerks: ProPerk[] = [
     id: 'upgrade-chat-bot',
     name: 'Upgrade.chat Payment Bot',
     category: 'tools',
-    tier: 'premium',
+    tier: 'pro',
     description: 'PayPal and Stripe verified Discord payment bot for monetizing servers',
     requirements: ['Discord server', 'Payment processor account'],
     signupProcess: 'Set up through Upgrade.chat dashboard',
@@ -192,7 +192,7 @@ export const realProPerks: ProPerk[] = [
     id: 'tapfiliate-system',
     name: 'Advanced Affiliate Tracking',
     category: 'tools',
-    tier: 'premium',
+    tier: 'pro',
     description: 'Professional affiliate tracking system with Discord integration',
     commissionRate: 'Configure your own rates',
     requirements: ['Business setup', 'Technical integration'],
@@ -215,7 +215,7 @@ export const realProPerks: ProPerk[] = [
     id: 'reddit-promoted-posts',
     name: 'Reddit Promoted User Status',
     category: 'integration',
-    tier: 'premium',
+    tier: 'pro',
     description: 'Access to Reddit creator programs and promoted post opportunities',
     requirements: ['High-quality content history', 'Community guidelines compliance'],
     signupProcess: 'Build reputation → Apply for creator programs',
@@ -293,7 +293,7 @@ export const realProPerks: ProPerk[] = [
     id: 'chaturbate-affiliate',
     name: 'Chaturbate Broadcasting',
     category: 'affiliate',
-    tier: 'premium',
+    tier: 'pro',
     description: 'Top cam platform for both broadcasting and affiliates',
     commissionRate: '20% lifetime from referred broadcasters',
     requirements: ['Age verification', 'Model account for referrals'],
@@ -333,7 +333,7 @@ export const realProPerks: ProPerk[] = [
     id: 'modelcentro-affiliate',
     name: 'ModelCentro Website Builder',
     category: 'tools',
-    tier: 'premium',
+    tier: 'pro',
     description: 'Professional adult website builder with affiliate program',
     commissionRate: '25% recurring on referred websites',
     requirements: ['Active website', 'Content creator status'],
@@ -353,7 +353,7 @@ export const realProPerks: ProPerk[] = [
     id: 'ccbill-affiliate',
     name: 'CCBill Payment Processing',
     category: 'tools',
-    tier: 'premium',
+    tier: 'pro',
     description: 'Adult industry payment processor with affiliate program',
     commissionRate: '$100-500 per merchant signup',
     requirements: ['Business verification', 'Industry experience'],
@@ -450,8 +450,8 @@ export const realProPerks: ProPerk[] = [
   {
     id: 'onlyfans-agency',
     name: 'OF Agency Partnership',
-    category: 'premium',
-    tier: 'premium',
+    category: 'pro',
+    tier: 'pro',
     description: 'Connect with established OnlyFans management agencies',
     commissionRate: 'Varies - typically 10-30% management fee',
     requirements: ['Existing OF account', 'Regular content', 'Growth potential'],
@@ -488,7 +488,7 @@ export const realProPerks: ProPerk[] = [
     id: 'bitcoin-payment-setup',
     name: 'Cryptocurrency Payment Integration',
     category: 'tools',
-    tier: 'premium',
+    tier: 'pro',
     description: 'Accept Bitcoin and crypto payments for premium content',
     requirements: ['Crypto wallet setup', 'Basic technical knowledge'],
     signupProcess: 'Wallet setup → Payment processor → Integration guide',
@@ -514,7 +514,7 @@ export interface PerkUsageStats {
   successRate: number;
 }
 
-export function getAvailablePerks(userTier: 'free' | 'basic' | 'pro' | 'premium'): ProPerk[] {
+export function getAvailablePerks(userTier: 'free' | 'starter' | 'pro'): ProPerk[] {
   if (userTier === 'free' || userTier === 'basic') {
     return [];
   }
