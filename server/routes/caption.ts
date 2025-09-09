@@ -56,7 +56,8 @@ router.post('/generate', authenticateToken, async (req: AuthRequest, res: Respon
     
   } catch (e: unknown) {
     console.error('Caption generation error:', e);
-    return res.status(500).json({ error: e.message || "generation failed" });
+    const errorMessage = e instanceof Error ? e.message : "generation failed";
+    return res.status(500).json({ error: errorMessage });
   }
 });
 
@@ -108,7 +109,8 @@ router.post('/generate-text', authenticateToken, async (req: AuthRequest, res: R
     
   } catch (e: unknown) {
     console.error('Text caption generation error:', e);
-    return res.status(500).json({ error: e.message || "generation failed" });
+    const errorMessage = e instanceof Error ? e.message : "generation failed";
+    return res.status(500).json({ error: errorMessage });
   }
 });
 
@@ -160,7 +162,8 @@ router.post('/rewrite', authenticateToken, async (req: AuthRequest, res: Respons
     
   } catch (e: unknown) {
     console.error('Caption rewrite error:', e);
-    return res.status(500).json({ error: e.message || "rewrite failed" });
+    const errorMessage = e instanceof Error ? e.message : "rewrite failed";
+    return res.status(500).json({ error: errorMessage });
   }
 });
 

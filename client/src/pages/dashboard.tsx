@@ -96,7 +96,7 @@ export default function Dashboard() {
   
   return (
     <ModernDashboard 
-      user={user} 
+      user={user ? { ...user, username: user.username || user.email || 'User' } : undefined} 
       userTier={userTier} 
       isAdmin={isAdmin}
       isRedditConnected={isRedditConnected}

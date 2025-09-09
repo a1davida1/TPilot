@@ -110,7 +110,7 @@ const upload = multer({
 
 // Auth request interface
 interface AuthRequest extends express.Request {
-  user?: unknown;
+  user?: typeof users.$inferSelect;
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -169,14 +169,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(passport.session());
 
   // Configure Passport serialization for admin
-  passport.serializeUser((user: unknown, done) => {
-    done(null, user.id || user);
+  passport.serializeUser((user: any, done) => {
+    done(null, user?.id || user);
   });
 
   passport.deserializeUser(async (id: unknown, done) => {
     try {
       if (typeof id === 'object') return done(null, id);
-      const user = await storage.getUser(id);
+      const user = await storage.getUser(id as number);
       done(null, user);
     } catch (error) {
       done(error, null);
@@ -193,8 +193,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // CSRF error handling middleware
-  app.use((err: unknown, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    if (err.code === 'EBADCSRFTOKEN') {
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (err?.code === 'EBADCSRFTOKEN') {
       logger.warn('CSRF token validation failed', {
         ip: req.ip,
         userAgent: req.get('User-Agent'),
