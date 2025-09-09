@@ -130,7 +130,7 @@ describe('Payment Providers', () => {
       const provider = makeCoinbase();
       await expect(provider.createCheckout({
         userId: 'user456',
-        planId: 'premium'
+        planId: 'pro'
       })).rejects.toThrow('Failed to create Coinbase Commerce checkout session');
 
       // Restore original fetch
@@ -151,7 +151,7 @@ describe('Payment Providers', () => {
       const provider = makeCoinbase();
       await expect(provider.createCheckout({
         userId: 'user456',
-        planId: 'premium'
+        planId: 'pro'
       })).rejects.toThrow('Payment provider "coinbase" is disabled (missing secrets).');
     });
 
@@ -256,7 +256,7 @@ describe('Payment Providers', () => {
         const provider = makeCoinbase();
         await expect(provider.createCheckout({
           userId: 'user456',
-          planId: 'premium'
+          planId: 'pro'
         })).rejects.toThrow('Network timeout');
 
         global.fetch = originalFetch;
@@ -277,7 +277,7 @@ describe('Payment Providers', () => {
         const provider = makeCoinbase();
         await expect(provider.createCheckout({
           userId: 'user456',
-          planId: 'premium'
+          planId: 'pro'
         })).rejects.toThrow('Unexpected end of JSON input');
 
         global.fetch = originalFetch;
@@ -302,7 +302,7 @@ describe('Payment Providers', () => {
         const provider = makeCoinbase();
         await expect(provider.createCheckout({
           userId: 'user456',
-          planId: 'premium'
+          planId: 'pro'
         })).rejects.toThrow('Invalid response from Coinbase Commerce API');
 
         global.fetch = originalFetch;
@@ -322,7 +322,7 @@ describe('Payment Providers', () => {
         const provider = makeCoinbase();
         await expect(provider.createCheckout({
           userId: 'user456',
-          planId: 'premium'
+          planId: 'pro'
         })).rejects.toThrow('Failed to create Coinbase Commerce checkout session');
 
         global.fetch = originalFetch;
