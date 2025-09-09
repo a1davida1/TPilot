@@ -11,7 +11,8 @@ import {
   BarChart3,
   Sparkles,
   Menu,
-  X
+  X,
+  Crown
 } from 'lucide-react';
 import { GenerationCounter } from '@/components/generation-counter';
 import { ThottoPilotLogo } from '@/components/thottopilot-logo';
@@ -22,6 +23,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
 
 export function Header() {
   const { isAuthenticated, isLoading, user, logout } = useAuth();
@@ -121,6 +123,21 @@ export function Header() {
               {isLoading ? (
                 <div className="animate-spin rounded-full h-8 w-8 border-2 border-pink-500 border-t-transparent" />
               ) : isAuthenticated ? (
+                <>
+                  {/* Upgrade Button for Free/Starter Users */}
+                  {user?.tier && user.tier !== 'pro' && (
+                    <Link href="/settings">
+                      <Button 
+                        size="sm"
+                        className="bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white font-semibold shadow-lg animate-pulse"
+                        data-testid="button-upgrade-to-pro"
+                      >
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Upgrade to Pro
+                      </Button>
+                    </Link>
+                  )}
+                  
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button 
@@ -131,9 +148,24 @@ export function Header() {
                       <div className="w-8 h-8 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center">
                         <User className="h-4 w-4 text-white" />
                       </div>
-                      <span className="text-sm font-medium text-gray-700">
-                        {user?.username || 'Account'}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-gray-700">
+                          {user?.username || 'Account'}
+                        </span>
+                        {/* Tier Badge Indicator */}
+                        {user?.tier && (
+                          <Badge 
+                            variant={user.tier === 'pro' ? 'default' : 'outline'}
+                            className={user.tier === 'pro' 
+                              ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-xs px-2 py-0.5' 
+                              : 'text-xs px-2 py-0.5'
+                            }
+                          >
+                            {user.tier === 'pro' && <Crown className="h-3 w-3 mr-1" />}
+                            {user.tier.toUpperCase()}
+                          </Badge>
+                        )}
+                      </div>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
@@ -165,6 +197,7 @@ export function Header() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+                </>
               ) : (
                 <div className="flex items-center gap-2">
                   <Button
@@ -231,9 +264,39 @@ export function Header() {
                 <div className="pt-4 border-t border-pink-100">
                   {isAuthenticated ? (
                     <div className="space-y-1">
-                      <div className="px-3 py-2 text-sm font-medium text-gray-900">
-                        {user?.username || 'Account'}
+                      <div className="px-3 py-2 flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-900">
+                          {user?.username || 'Account'}
+                        </span>
+                        {/* Mobile Tier Badge */}
+                        {user?.tier && (
+                          <Badge 
+                            variant={user.tier === 'pro' ? 'default' : 'outline'}
+                            className={user.tier === 'pro' 
+                              ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-xs px-2 py-0.5' 
+                              : 'text-xs px-2 py-0.5'
+                            }
+                          >
+                            {user.tier === 'pro' && <Crown className="h-3 w-3 mr-1 inline" />}
+                            {user.tier.toUpperCase()}
+                          </Badge>
+                        )}
                       </div>
+                      
+                      {/* Mobile Upgrade Button for Free/Starter Users */}
+                      {user?.tier && user.tier !== 'pro' && (
+                        <Link href="/settings" onClick={() => setMobileMenuOpen(false)}>
+                          <Button 
+                            size="sm"
+                            className="w-full bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white font-semibold shadow-lg animate-pulse"
+                            data-testid="button-mobile-upgrade-to-pro"
+                          >
+                            <Sparkles className="h-4 w-4 mr-2" />
+                            Upgrade to Pro
+                          </Button>
+                        </Link>
+                      )}
+                      
                       <button
                         onClick={handleLogout}
                         className="w-full text-left px-3 py-2 text-base font-medium text-red-600 hover:bg-red-50 rounded-lg"
