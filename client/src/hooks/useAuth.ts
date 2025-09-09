@@ -76,7 +76,9 @@ export function useAuth() {
       return null;
     },
     retry: false,
-    enabled: !isPublicPage(), // Disable auth query on public pages
+    // Skip request unless we have a token or auth cookie
+    enabled:
+      !isPublicPage() && (!!token || document.cookie.includes('authToken')),
     refetchOnWindowFocus: false,
     refetchInterval: false,
   });
