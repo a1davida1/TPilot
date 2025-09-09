@@ -7,9 +7,15 @@ import crypto from 'crypto';
 import { authenticateToken } from './middleware/auth.js';
 import { storage } from './storage.js';
 import { MediaManager } from './lib/media.js';
+import { logger } from './bootstrap/logger.js';
+
+interface AuthUser {
+  id: number;
+  tier?: 'free' | 'starter' | 'pro' | 'premium';
+}
 
 interface AuthRequest extends express.Request {
-  user?: unknown;
+  user?: AuthUser;
 }
 
 const upload = multer({
@@ -237,7 +243,9 @@ export function registerExpenseRoutes(app: Express) {
       const addWatermark = ['free', 'starter'].includes(userTier);
       
       // Apply ImageShield protection to receipt
-      console.log(`Applying ImageShield protection (${protectionLevel}) to receipt for user ${req.user.id}, tier: ${userTier}`);
+      logger.info(
+        `Applying ImageShield protection (${protectionLevel}) to receipt for user ${req.user.id}, tier: ${userTier}`
+      );
       const protectedBuffer = await applyReceiptImageShieldProtection(
         req.file.buffer,
         protectionLevel as 'light' | 'standard' | 'heavy',
@@ -268,7 +276,7 @@ export function registerExpenseRoutes(app: Express) {
         receiptFileName,
       });
 
-      console.log(`Protected receipt uploaded: ${receiptFileName} for expense ${expenseId}`);
+      logger.info(`Protected receipt uploaded: ${receiptFileName} for expense ${expenseId}`);
       res.json(expense);
     } catch (error) {
       console.error('Error uploading receipt:', error);
