@@ -1,0 +1,42 @@
+[
+  {
+    "id": "photography",
+    "name": "photography",
+    "displayName": "Photography",
+    "members": 5000000,
+    "engagementRate": 5,
+    "category": "art",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {"daily": 1},
+    "rules": ["Be nice", "No spam"],
+    "bestPostingTimes": ["morning", "evening"],
+    "averageUpvotes": 100,
+    "successProbability": 60,
+    "growthTrend": "rising",
+    "modActivity": "high",
+    "description": "A place to share photos.",
+    "tags": ["photography", "art"],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "fitness",
+    "name": "fitness",
+    "displayName": "Fitness",
+    "members": 10000000,
+    "engagementRate": 7,
+    "category": "health",
+    "verificationRequired": true,
+    "promotionAllowed": "strict",
+    "postingLimits": {"daily": 2},
+    "rules": ["No self-promotion", "Stay on topic"],
+    "bestPostingTimes": ["afternoon"],
+    "averageUpvotes": 250,
+    "successProbability": 70,
+    "growthTrend": "steady",
+    "modActivity": "medium",
+    "description": "Workout tips and discussion.",
+    "tags": ["fitness", "health"],
+    "competitionLevel": "high"
+  }
+]
