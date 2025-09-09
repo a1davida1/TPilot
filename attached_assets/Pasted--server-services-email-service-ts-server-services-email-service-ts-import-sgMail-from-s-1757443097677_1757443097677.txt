@@ -1,0 +1,74 @@
+--- server/services/email-service.ts
++++ server/services/email-service.ts
+@@
+-import sgMail from '@sendgrid/mail';
+-
+-const apiKey = process.env.SENDGRID_API_KEY;
+-if (apiKey) sgMail.setApiKey(apiKey);
+-
+-export const emailService = {
+-  async sendMail(msg: sgMail.MailDataRequired) {
+-    if (!apiKey) return { skipped: true };
+-    return sgMail.send(msg);
+-  },
+-};
++import sgMail from '@sendgrid/mail';
++import jwt from 'jsonwebtoken';
++
++const apiKey = process.env.SENDGRID_API_KEY;
++if (apiKey) sgMail.setApiKey(apiKey);
++
++const FROM_EMAIL = process.env.FROM_EMAIL ?? 'noreply@thottopilot.com';
++const FRONTEND_URL = process.env.FRONTEND_URL ?? 'https://thottopilot.com';
++
++class EmailService {
++  public readonly isEmailServiceConfigured: boolean;
++
++  constructor() {
++    this.isEmailServiceConfigured = Boolean(apiKey);
++  }
++
++  async sendVerificationEmail(to: string, username: string, token: string): Promise<void> {
++    if (!this.isEmailServiceConfigured) return;
++    const verifyLink = `${FRONTEND_URL}/verify-email?token=${token}`;
++    await sgMail.send({
++      to,
++      from: FROM_EMAIL,
++      subject: 'Verify Your ThottoPilot Account',
++      text: `Hi ${username},\n\nPlease verify your email: ${verifyLink}`,
++      html: `<p>Hi ${username},</p><p>Please verify your email by clicking <a href="${verifyLink}">here</a>.</p>`
++    });
++  }
++
++  async sendPasswordResetEmail(to: string, username: string, token?: string): Promise<void> {
++    if (!this.isEmailServiceConfigured) return;
++    const jwtSecret = process.env.JWT_SECRET;
++    if (!jwtSecret) {
++      throw new Error('JWT_SECRET environment variable is required for password reset tokens');
++    }
++    const resetToken =
++      token ??
++      jwt.sign({ email: to, type: 'password-reset' }, jwtSecret, { expiresIn: '1h' });
++    const resetLink = `${FRONTEND_URL}/reset-password?token=${resetToken}`;
++    await sgMail.send({
++      to,
++      from: FROM_EMAIL,
++      subject: 'Reset Your ThottoPilot Password',
++      text: `Hi ${username},\n\nReset your password: ${resetLink}`,
++      html: `<p>Hi ${username},</p><p>Reset your password by clicking <a href="${resetLink}">here</a>.</p>`
++    });
++  }
++
++  async sendWelcomeEmail(to: string, username: string): Promise<void> {
++    if (!this.isEmailServiceConfigured) return;
++    await sgMail.send({
++      to,
++      from: FROM_EMAIL,
++      subject: 'Welcome to ThottoPilot! 🚀',
++      text: `Hi ${username}, welcome to ThottoPilot!`,
++      html: `<p>Hi ${username}!</p><p>Welcome to ThottoPilot!</p>`
++    });
++  }
++}
++
++export const emailService = new EmailService();

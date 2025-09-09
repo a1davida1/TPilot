@@ -4,7 +4,6 @@ import { describe, test, beforeAll, afterAll, beforeEach, afterEach, expect, vi 
 import express from 'express';
 import { db } from '../../server/db';
 import { users, contentGenerations } from '../../shared/schema';
-import { eq } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 
 // Mock AI providers

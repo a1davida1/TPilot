@@ -362,7 +362,7 @@ export function setupAuth(app: Express) {
           token,
           expiresAt: new Date(Date.now() + 60 * 60 * 1000)
         });
-        await emailService.sendPasswordResetEmail(user.email, user.username, token);
+        await emailService.sendPasswordResetEmail(user.email, user.username);
         
         logger.info('Password reset email sent successfully - check email service logs for delivery status');
       }

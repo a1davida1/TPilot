@@ -32,7 +32,17 @@ describe('Theme System', () => {
         };
         return mockValues[property] || '';
       },
-    }));
+      // Add required CSSStyleDeclaration properties
+      length: 0,
+      cssText: '',
+      parentRule: null,
+      cssFloat: '',
+      getPropertyPriority: () => '',
+      removeProperty: () => '',
+      setProperty: () => {},
+      item: () => '',
+      [Symbol.iterator]: function* () {}
+    })) as unknown as typeof window.getComputedStyle;
     
     Object.defineProperty(global, 'document', {
       value: {
@@ -105,7 +115,17 @@ describe('Theme System', () => {
     it('should handle missing CSS variables gracefully', () => {
       global.getComputedStyle = vi.fn(() => ({
         getPropertyValue: () => '', // Return empty for missing variables
-      }));
+        // Add required CSSStyleDeclaration properties
+        length: 0,
+        cssText: '',
+        parentRule: null,
+        cssFloat: '',
+        getPropertyPriority: () => '',
+        removeProperty: () => '',
+        setProperty: () => {},
+        item: () => '',
+        [Symbol.iterator]: function* () {}
+      })) as unknown as typeof window.getComputedStyle;
 
       const results = validateThemeColors();
       
@@ -236,11 +256,13 @@ describe('Theme System', () => {
         setItem: vi.fn(),
         removeItem: vi.fn(),
         clear: vi.fn(),
+        length: 0,
+        key: () => null
       } as Storage;
     });
 
     it('should save theme preference to localStorage', () => {
-      const mockSetItem = localStorage.setItem as unknown as jest.MockedFunction<typeof localStorage.setItem>;
+      const mockSetItem = localStorage.setItem as unknown as ReturnType<typeof vi.fn>;
       
       // Simulate theme change
       const storageKey = 'thottopilot-ui-theme';
@@ -252,7 +274,7 @@ describe('Theme System', () => {
     });
 
     it('should load theme preference from localStorage', () => {
-      const mockGetItem = localStorage.getItem as unknown as jest.MockedFunction<typeof localStorage.getItem>;
+      const mockGetItem = localStorage.getItem as unknown as ReturnType<typeof vi.fn>;
       mockGetItem.mockReturnValue('dark');
       
       const theme = localStorage.getItem('thottopilot-ui-theme');
