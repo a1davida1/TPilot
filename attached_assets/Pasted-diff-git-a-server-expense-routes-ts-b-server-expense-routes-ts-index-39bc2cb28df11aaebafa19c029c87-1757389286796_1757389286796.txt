@@ -1,0 +1,123 @@
+diff --git a/server/expense-routes.ts b/server/expense-routes.ts
+index 39bc2cb28df11aaebafa19c029c8781555f53f92..0d67be3370ee86fd51202abb97858863002f1987 100644
+--- a/server/expense-routes.ts
++++ b/server/expense-routes.ts
+@@ -1,37 +1,44 @@
+ import express, { type Express } from 'express';
+ import multer from 'multer';
+ import path from 'path';
+ import fs from 'fs/promises';
+ import sharp from 'sharp';
+ import crypto from 'crypto';
+ import { authenticateToken } from './middleware/auth.js';
+ import { storage } from './storage.js';
+ import { MediaManager } from './lib/media.js';
++import { logger } from './bootstrap/logger.js';
++import { type InsertExpense } from '@shared/schema.js';
++
++interface AuthUser {
++  id: number;
++  tier?: 'free' | 'starter' | 'pro' | 'premium';
++}
+ 
+ interface AuthRequest extends express.Request {
+-  user?: unknown;
++  user?: AuthUser;
+ }
+ 
+ const upload = multer({
+   storage: multer.memoryStorage(),
+   limits: { fileSize: 50 * 1024 * 1024 },
+   fileFilter: (req, file, cb) => {
+     if (file.mimetype.startsWith('image/')) {
+       cb(null, true);
+     } else {
+       cb(new Error('Only image files are allowed!'));
+     }
+   }
+ });
+ 
+ // ImageShield protection for receipt uploads
+ interface ProtectionSettings {
+   level: string;
+   blur: number;
+   noise: number;
+   resize: number;
+   quality: number;
+ }
+ 
+ const protectionPresets: Record<string, ProtectionSettings> = {
+   light: { level: 'light', blur: 0.3, noise: 3, resize: 98, quality: 95 },
+diff --git a/server/expense-routes.ts b/server/expense-routes.ts
+index 39bc2cb28df11aaebafa19c029c8781555f53f92..0d67be3370ee86fd51202abb97858863002f1987 100644
+--- a/server/expense-routes.ts
++++ b/server/expense-routes.ts
+@@ -215,64 +222,66 @@ export function registerExpenseRoutes(app: Express) {
+       const expenses = await storage.getExpensesByDateRange(req.user.id, startDate, endDate);
+       res.json(expenses);
+     } catch (error) {
+       console.error('Error fetching expenses by date range:', error);
+       res.status(500).json({ message: 'Failed to fetch expenses by date range' });
+     }
+   });
+ 
+   // Upload receipt for an expense with ImageShield protection
+   app.post('/api/expenses/:id/receipt', authenticateToken, upload.single('receipt'), async (req: AuthRequest, res) => {
+     try {
+       if (!req.user?.id) {
+         return res.status(401).json({ message: 'Authentication required' });
+       }
+       const expenseId = parseInt(req.params.id);
+       if (!req.file) {
+         return res.status(400).json({ message: 'No file uploaded' });
+       }
+ 
+       // Determine protection level based on user tier (conservative for receipts)
+       const userTier = req.user.tier || 'free';
+       const protectionLevel = req.body.protectionLevel || 'light';
+       const addWatermark = ['free', 'starter'].includes(userTier);
+       
+       // Apply ImageShield protection to receipt
+-      console.log(`Applying ImageShield protection (${protectionLevel}) to receipt for user ${req.user.id}, tier: ${userTier}`);
++      logger.info(
++        `Applying ImageShield protection (${protectionLevel}) to receipt for user ${req.user.id}, tier: ${userTier}`
++      );
+       const protectedBuffer = await applyReceiptImageShieldProtection(
+         req.file.buffer,
+         protectionLevel as 'light' | 'standard' | 'heavy',
+         addWatermark
+       );
+ 
+       let receiptUrl: string;
+       let receiptFileName = `protected_${req.file.originalname}`;
+ 
+       if (process.env.S3_BUCKET_MEDIA) {
+         const asset = await MediaManager.uploadFile(protectedBuffer, {
+           userId: req.user.id,
+           filename: receiptFileName,
+         });
+         receiptUrl = asset.downloadUrl || asset.signedUrl || asset.key;
+         receiptFileName = asset.filename;
+       } else {
+         const uploadDir = path.join(process.cwd(), 'uploads', 'receipts');
+         await fs.mkdir(uploadDir, { recursive: true });
+         const fileName = `protected_${Date.now()}-${req.file.originalname}`;
+         await fs.writeFile(path.join(uploadDir, fileName), protectedBuffer);
+         receiptUrl = `/uploads/receipts/${fileName}`;
+         receiptFileName = fileName;
+       }
+ 
+       const expense = await storage.updateExpense(expenseId, req.user.id, {
+         receiptUrl,
+         receiptFileName,
+       });
+ 
+-      console.log(`Protected receipt uploaded: ${receiptFileName} for expense ${expenseId}`);
++      logger.info(`Protected receipt uploaded: ${receiptFileName} for expense ${expenseId}`);
+       res.json(expense);
+     } catch (error) {
+       console.error('Error uploading receipt:', error);
+       res.status(500).json({ message: 'Failed to upload receipt' });
+     }
+   });
+ }
