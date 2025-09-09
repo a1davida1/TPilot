@@ -175,7 +175,7 @@ describe('Caption Generation', () => {
       };
 
       const { textModel } = await import('../../server/lib/gemini.js');
-      textModel.generateContent.mockResolvedValue(mockResponse);
+      const genSpy = vi.spyOn(textModel, 'generateContent').mockResolvedValue(mockResponse);
 
       const result = await pipelineRewrite({
         platform: 'instagram',
@@ -185,6 +185,8 @@ describe('Caption Generation', () => {
 
       expect(result.final.caption).not.toBe(existingCaption);
       expect(result.final.caption).toContain('Enhanced');
+
+      genSpy.mockRestore();
     });
   });
 });

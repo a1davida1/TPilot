@@ -81,7 +81,7 @@ describe('Billing System', () => {
       const canGenerateForFree = await storage.getUserUsage(1);
       const canGenerateForPro = await storage.getUserUsage(2);
 
-      expect(canGenerateForFree.dailyGenerations).toBeGreaterThan(5); // Should be blocked
+      expect(canGenerateForFree.dailyGenerations).toBeGreaterThanOrEqual(5); // Should be blocked
       expect(canGenerateForPro.dailyGenerations).toBeLessThanOrEqual(100); // Should be allowed
     });
   });

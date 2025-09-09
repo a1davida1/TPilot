@@ -17,15 +17,23 @@ setupAuth(app);
 
 describe('Login Identifier and Cookie Auth', () => {
   let testUserId: number;
+  let testEmail: string;
+  let testUsername: string;
 
   beforeAll(async () => {
     const hashed = await bcrypt.hash('TestPassword123', 10);
-    const [user] = await db.insert(users).values({
-      username: 'testuser_' + Date.now(),
-      email: 'test+' + Date.now() + '@example.com',
-      password: hashed,
-      tier: 'free'
-    }).returning();
+    const unique = Date.now();
+    testUsername = `testuser_${unique}`;
+    testEmail = `test+${unique}@example.com`;
+    const [user] = await db
+      .insert(users)
+      .values({
+        username: testUsername,
+        email: testEmail,
+        password: hashed,
+        tier: 'free',
+      })
+      .returning();
     testUserId = user.id;
   });
 
@@ -38,13 +46,12 @@ describe('Login Identifier and Cookie Auth', () => {
       const response = await request(app)
         .post('/api/auth/login')
         .send({
-          email: 'test@example.com',
-          password: 'TestPassword123'
+          email: testEmail,
+          password: 'TestPassword123',
         });
 
-      // Should set HttpOnly cookie on successful login
-      expect(response.headers['set-cookie']).toBeDefined();
-      const cookies = response.headers['set-cookie'];
+      const cookies = response.headers['set-cookie'] ?? [];
+      expect(cookies.length).toBeGreaterThan(0);
       const authCookie = cookies.find((cookie: string) => cookie.startsWith('authToken='));
       expect(authCookie).toBeDefined();
       expect(authCookie).toContain('HttpOnly');
@@ -55,13 +62,12 @@ describe('Login Identifier and Cookie Auth', () => {
       const response = await request(app)
         .post('/api/auth/login')
         .send({
-          username: 'testuser_' + Date.now(),
-          password: 'TestPassword123'
+          username: testUsername,
+          password: 'TestPassword123',
         });
 
-      // Should set HttpOnly cookie on successful login
-      expect(response.headers['set-cookie']).toBeDefined();
-      const cookies = response.headers['set-cookie'];
+      const cookies = response.headers['set-cookie'] ?? [];
+      expect(cookies.length).toBeGreaterThan(0);
       const authCookie = cookies.find((cookie: string) => cookie.startsWith('authToken='));
       expect(authCookie).toBeDefined();
       expect(authCookie).toContain('HttpOnly');
@@ -74,13 +80,14 @@ describe('Login Identifier and Cookie Auth', () => {
       const loginResponse = await request(app)
         .post('/api/auth/login')
         .send({
-          email: 'test@example.com', 
-          password: 'TestPassword123'
+          email: testEmail,
+          password: 'TestPassword123',
         });
 
-      const cookies = loginResponse.headers['set-cookie'];
+      const cookies = loginResponse.headers['set-cookie'] ?? [];
       const authCookie = cookies.find((cookie: string) => cookie.startsWith('authToken='));
-      
+      expect(authCookie).toBeDefined();
+
       if (authCookie) {
         // Use cookie for authenticated request
         const userResponse = await request(app)

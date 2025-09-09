@@ -144,7 +144,7 @@ export function setupAuth(app: Express) {
         );
 
           res.status(201).json({
-            message: 'User created successfully. Please check your email to verify your account.',
+            message: 'User created successfully. Verification email sent.',
             user: {
             id: user.id,
             username: user.username,

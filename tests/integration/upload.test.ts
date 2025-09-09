@@ -467,9 +467,11 @@ describe('Upload and ImageShield Integration Tests', () => {
 
   describe('Error Recovery and Resilience', () => {
     test('should handle database connection failures during upload', async () => {
-      // Mock database failure
-      const originalDB = db;
-      (global as { db?: unknown }).db = undefined;
+      const insertSpy = vi
+        .spyOn(db as { insert: typeof db.insert }, 'insert')
+        .mockImplementation(() => {
+          throw new Error('DB connection failed');
+        });
 
       const imageBuffer = await fs.promises.readFile(testImagePath);
       const imageData = imageBuffer.toString('base64');
@@ -478,13 +480,12 @@ describe('Upload and ImageShield Integration Tests', () => {
         .post('/api/upload/image')
         .send({
           imageData,
-          protectionLevel: 'standard'
+          protectionLevel: 'standard',
         });
 
       expect(response.status).toBe(500);
 
-      // Restore database
-      (global as { db?: unknown }).db = originalDB;
+      insertSpy.mockRestore();
     });
 
     test('should clean up partial uploads on failure', async () => {

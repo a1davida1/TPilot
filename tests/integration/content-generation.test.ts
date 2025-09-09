@@ -73,22 +73,26 @@ describe('Content Generation Integration Tests', () => {
       res.json({ generations });
     });
     
-    // Create test user with various tier levels
-    const [user] = await db.insert(users).values({
-      username: 'testuser',
-      email: 'test@example.com',
-      password: 'hashedpassword',
-      tier: 'pro'
-    }).returning();
-    
+    const unique = Date.now();
+    const [user] = await db
+      .insert(users)
+      .values({
+        username: `testuser_${unique}`,
+        email: `test_${unique}@example.com`,
+        password: 'hashedpassword',
+        tier: 'pro',
+      })
+      .returning();
+
     testUser = user;
     authToken = jwt.sign({ userId: user.id }, process.env.JWT_SECRET || 'test-secret');
   });
 
   afterAll(async () => {
-    // Cleanup test database
-    await db.delete(contentGenerations).where(eq(contentGenerations.userId, testUser.id));
-    await db.delete(users).where(eq(users.id, testUser.id));
+    if (testUser) {
+      await db.delete(contentGenerations).where(eq(contentGenerations.userId, testUser.id));
+      await db.delete(users).where(eq(users.id, testUser.id));
+    }
   });
 
   beforeEach(async () => {

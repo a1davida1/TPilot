@@ -1,15 +1,16 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { initializeQueue } from '../../../server/lib/queue-factory.js';
+import { initializeQueue, closeQueue } from '../../../server/lib/queue-factory.js';
 import { initializeWorkers } from '../../../server/lib/workers/index.js';
+import { logger } from '../../../server/lib/logger.js';
 
-// Mock console methods for logging tests
+// Mock logging methods
 const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-const mockConsoleInfo = vi.spyOn(console, 'info').mockImplementation(() => {});
+const infoSpy = vi.spyOn(logger, 'info').mockImplementation(() => {});
 
 describe('Worker Queue Initialization', () => {
-  beforeEach(() => {
-    // Clear all mocks before each test
+  beforeEach(async () => {
     vi.clearAllMocks();
+    await closeQueue();
   });
 
   describe('Queue Factory Initialization', () => {
@@ -45,7 +46,7 @@ describe('Worker Queue Initialization', () => {
       await initializeWorkers();
 
       // Should log initialization progress
-      const infoCalls = mockConsoleInfo.mock.calls.flat();
+      const infoCalls = infoSpy.mock.calls.flat();
       const hasWorkerLog = infoCalls.some(call =>
         typeof call === 'string' && call.includes('worker initialized')
       );
@@ -64,7 +65,7 @@ describe('Worker Queue Initialization', () => {
         'Batch posting worker'
       ];
 
-      const infoCalls = mockConsoleInfo.mock.calls.flat();
+      const infoCalls = infoSpy.mock.calls.flat();
       const loggedText = infoCalls.join(' ');
 
       expectedWorkers.forEach(workerName => {
@@ -77,7 +78,7 @@ describe('Worker Queue Initialization', () => {
       await initializeWorkers();
 
       // Should include queue monitoring messages
-      const logCalls = [...mockConsoleLog.mock.calls, ...mockConsoleInfo.mock.calls].flat();
+      const logCalls = [...logSpy.mock.calls, ...infoSpy.mock.calls].flat();
       const hasMonitoringLog = logCalls.some(call =>
         typeof call === 'string' && 
         (call.includes('queue monitoring') || call.includes('Queue monitoring'))
