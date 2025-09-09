@@ -68,8 +68,8 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
   const queryClient = useQueryClient();
   const { token } = useAuth();
 
-  const isProUser = userTier === 'pro' || userTier === 'premium';
-  const showGallery = isProUser; // Only Pro/Premium users see gallery
+  const isProUser = userTier === 'pro';
+  const showGallery = isProUser; // Only Pro users see gallery
 
   // Authenticated API request helper
   const authenticatedRequest = async (url: string, method: string = 'GET', data?: unknown) => {
