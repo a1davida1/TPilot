@@ -81,7 +81,7 @@ export function registerApiRoutes(app: Express) {
         contentType: z.enum(['teasing', 'promotional', 'engagement', 'lifestyle', 'announcement', 'educational']).optional(),
         includePromotion: z.boolean().optional(),
         promotionLevel: z.enum(['none', 'subtle', 'moderate', 'direct']).optional(),
-        targetAudience: z.enum(['general', 'fans', 'potential-subscribers', 'premium-tier']).optional(),
+        targetAudience: z.enum(['general', 'fans', 'potential-subscribers', 'pro-tier']).optional(),
         customInstructions: z.string().optional(),
         subreddit: z.string().optional(),
         niche: z.string().optional(),
