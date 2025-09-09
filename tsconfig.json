@@ -1,5 +1,5 @@
 {
-  "include": ["server", "shared", "client"],
+  "include": ["server", "shared", "client", "moderation"],
   "exclude": ["node_modules", "build", "dist", "**/*.test.ts"],
   "compilerOptions": {
     "incremental": true,
