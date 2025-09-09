@@ -8,6 +8,7 @@ import { authenticateToken } from './middleware/auth.js';
 import { storage } from './storage.js';
 import { MediaManager } from './lib/media.js';
 import { logger } from './bootstrap/logger.js';
+import { type InsertExpense } from '@shared/schema.js';
 
 interface AuthUser {
   id: number;
