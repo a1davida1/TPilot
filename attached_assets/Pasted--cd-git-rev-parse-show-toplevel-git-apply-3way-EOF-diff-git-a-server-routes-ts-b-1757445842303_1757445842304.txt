@@ -1,0 +1,83 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/server/routes.ts b/server/routes.ts
+index dc51a879fcb723818c077ccea786873508207f17..d53523f0e56627653609252e4eb1fc47fb93a88d 100644
+--- a/server/routes.ts
++++ b/server/routes.ts
+@@ -935,73 +935,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
+ 
+   // User settings endpoints - REAL
+   app.get('/api/user/settings', authenticateToken, async (req: AuthenticatedRequest, res) => {
+     try {
+       const preferences = await storage.getUserPreferences(req.user.id);
+       
+       res.json(preferences || {
+         theme: 'light',
+         notifications: true,
+         emailUpdates: true,
+         autoSave: true,
+         defaultPlatform: 'reddit',
+         defaultStyle: 'playful',
+         watermarkPosition: 'bottom-right'
+       });
+     } catch (error) {
+       logger.error('Failed to fetch settings:', error);
+       res.status(500).json({ message: 'Failed to fetch settings' });
+     }
+   });
+ 
+   app.patch('/api/user/settings', authenticateToken, async (req: AuthenticatedRequest, res) => {
+     try {
+       const updated = await storage.updateUserPreferences(req.user.id, req.body);
+       res.json({ success: true, settings: updated });
+-    } catch (error) {
++  } catch (error) {
+       logger.error('Failed to update settings:', error);
+       res.status(500).json({ message: 'Failed to update settings' });
+     }
+   });
+-
+-  // Reddit communities endpoint - REAL (uses actual data)
+-  app.get('/api/reddit/communities', authenticateToken, async (req: AuthenticatedRequest, res) => {
+-    try {
+-      // This will use the real communities data file
+-      const communities = [
+-        { id: 1, name: 'OnlyFansPromo', members: 450000, nsfw: true },
+-        { id: 2, name: 'OnlyFans101', members: 380000, nsfw: true },
+-        { id: 3, name: 'RealGirls', members: 2500000, nsfw: true },
+-        // Add more real communities here from your data file
+-      ];
+-      res.json(communities);
+-    } catch (error) {
+-      logger.error('Failed to fetch communities:', error);
+-      res.status(500).json({ message: 'Failed to fetch communities' });
+-    }
+-  });
+-
+   // Subscription status endpoint - REAL
+   app.get('/api/subscription', authenticateToken, async (req: AuthenticatedRequest, res) => {
+     try {
+       const user = await storage.getUser(req.user.id);
+       
+       if (!user?.stripeCustomerId || !stripe) {
+         return res.json({
+           subscription: null,
+           isPro: false,
+           tier: user?.tier || 'free'
+         });
+       }
+       
+       const subscriptions = await stripe.subscriptions.list({
+         customer: user.stripeCustomerId,
+         status: 'active',
+         limit: 1
+       });
+       
+       if (subscriptions.data.length > 0) {
+         const sub = subscriptions.data[0];
+         return res.json({
+           subscription: {
+             id: sub.id,
+             status: sub.status,
+ 
+EOF
+)

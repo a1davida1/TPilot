@@ -957,26 +957,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const updated = await storage.updateUserPreferences(req.user.id, req.body);
       res.json({ success: true, settings: updated });
-    } catch (error) {
+  } catch (error) {
       logger.error('Failed to update settings:', error);
       res.status(500).json({ message: 'Failed to update settings' });
-    }
-  });
-
-  // Reddit communities endpoint - REAL (uses actual data)
-  app.get('/api/reddit/communities', authenticateToken, async (req: AuthenticatedRequest, res) => {
-    try {
-      // This will use the real communities data file
-      const communities = [
-        { id: 1, name: 'OnlyFansPromo', members: 450000, nsfw: true },
-        { id: 2, name: 'OnlyFans101', members: 380000, nsfw: true },
-        { id: 3, name: 'RealGirls', members: 2500000, nsfw: true },
-        // Add more real communities here from your data file
-      ];
-      res.json(communities);
-    } catch (error) {
-      logger.error('Failed to fetch communities:', error);
-      res.status(500).json({ message: 'Failed to fetch communities' });
     }
   });
 
