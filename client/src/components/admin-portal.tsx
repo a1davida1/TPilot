@@ -60,7 +60,7 @@ interface _UserStats {
   revenue: number;
 }
 
-interface AdminStats {
+export interface AdminStats {
   totalUsers?: number;
   newUsersToday?: number;
   proUsers?: number;
