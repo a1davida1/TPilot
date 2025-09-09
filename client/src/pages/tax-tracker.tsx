@@ -203,6 +203,13 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
     });
   };
 
+  if (categoriesLoading || totalsLoading || recentLoading || calendarLoading) {
+    return <div>Loading...</div>;
+  }
+  if (categoriesError || totalsError || recentError || calendarError) {
+    return <div>Error loading tax data.</div>;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-purple-50">
       <div className="max-w-7xl mx-auto p-6 space-y-8">
