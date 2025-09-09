@@ -12,8 +12,8 @@ import { PolicyLinter } from "./lib/policyLinter.js";
 import { PostScheduler } from "./lib/scheduling.js";
 import { addJob } from "./lib/queue/index.js";
 import { RedditManager } from "./lib/reddit.js";
-import { postJobs, subscriptions, mediaAssets, creatorAccounts, users } from "@shared/schema.js";
-import { eq, desc } from "drizzle-orm";
+import { postJobs, subscriptions, mediaAssets, creatorAccounts, users, userSamples } from "@shared/schema.js";
+import { eq, desc, sql } from "drizzle-orm";
 import multer from "multer";
 import type { Request, Response, NextFunction } from 'express';
 import { authenticateToken } from './middleware/auth.js';
@@ -481,6 +481,26 @@ export function registerApiRoutes(app: Express) {
     } catch (error: unknown) {
       console.error('Failed to get AI history:', error);
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Public metrics for landing pages
+  app.get('/api/metrics', async (_req, res) => {
+    try {
+      const [userCount, postCount, engagement] = await Promise.all([
+        db.select({ count: sql<number>`count(*)` }).from(users),
+        db.select({ count: sql<number>`count(*)` }).from(postJobs),
+        db.select({ avg: sql<number>`COALESCE(AVG(${userSamples.performanceScore}), 0)` }).from(userSamples)
+      ]);
+
+      res.json({
+        creators: userCount[0]?.count || 0,
+        posts: postCount[0]?.count || 0,
+        engagement: Math.round(engagement[0]?.avg || 0)
+      });
+    } catch (error: unknown) {
+      console.error('Failed to fetch metrics:', error);
+      res.status(500).json({ error: 'Internal server error' });
     }
   });
 }

@@ -15,6 +15,7 @@ import {
   Users
 } from "lucide-react";
 import { FaReddit, FaGoogle, FaFacebook } from "react-icons/fa";
+import { useMetrics } from "@/hooks/use-metrics";
 
 interface SocialAuthProps {
   onSuccess?: (provider: string) => void;
@@ -23,6 +24,15 @@ interface SocialAuthProps {
 
 export function SocialAuth({ onSuccess, isLoading = false }: SocialAuthProps) {
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
+  const { data: metrics, isLoading: metricsLoading, isError: metricsError } = useMetrics();
+  const creatorText = metricsLoading
+    ? "Loading creator count..."
+    : metricsError || !metrics
+      ? "Trusted by creators worldwide"
+      : `Trusted by ${metrics.creators.toLocaleString()} content creators`;
+  const userMetric = metricsLoading || metricsError || !metrics
+    ? "—"
+    : `${metrics.creators.toLocaleString()} Users`;
 
   interface SocialProvider {
     id: string;
@@ -33,6 +43,7 @@ export function SocialAuth({ onSuccess, isLoading = false }: SocialAuthProps) {
     url?: string;
     handler?: () => Promise<void>;
     recommended?: boolean;
+    popular?: boolean;
   }
 
   const socialProviders: SocialProvider[] = [
@@ -202,7 +213,7 @@ export function SocialAuth({ onSuccess, isLoading = false }: SocialAuthProps) {
           {/* Trust Indicators */}
           <div className="text-center pt-4">
             <p className="text-sm text-gray-500 mb-2">
-              Trusted by thousands of content creators
+              {creatorText}
             </p>
             <div className="flex justify-center items-center space-x-4 text-xs text-gray-400">
               <div className="flex items-center">
@@ -211,7 +222,7 @@ export function SocialAuth({ onSuccess, isLoading = false }: SocialAuthProps) {
               </div>
               <div className="flex items-center">
                 <Users className="h-3 w-3 mr-1" />
-                10,000+ Users
+                {userMetric}
               </div>
               <div className="flex items-center">
                 <CheckCircle className="h-3 w-3 mr-1" />

@@ -88,7 +88,7 @@ export function SEOOptimization({
 export const seoConfigs = {
   landing: {
     title: "ThottoPilot - AI Content Creation Platform for Creators",
-    description: "Generate viral Reddit posts with AI, protect your images from reverse searches, and optimize content strategy. Join 10,000+ successful creators. Start free trial today.",
+    description: "Generate viral Reddit posts with AI, protect your images from reverse searches, and optimize content strategy. Join successful creators and start your free trial today.",
     keywords: ["AI content generator", "Reddit post creator", "social media automation", "content creation tools", "creator platform", "viral content"]
   },
   dashboard: {

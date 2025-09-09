@@ -1,0 +1,302 @@
+diff --git a/client/src/components/demo-fallback.tsx b/client/src/components/demo-fallback.tsx
+index 3801d89..b29c73c 100644
+--- a/client/src/components/demo-fallback.tsx
++++ b/client/src/components/demo-fallback.tsx
+@@ -1,6 +1,7 @@
+ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+ import { Button } from "@/components/ui/button";
+ import { Alert, AlertDescription } from "@/components/ui/alert";
++import { useMetrics } from "@/hooks/use-metrics";
+ import {
+   Sparkles,
+   AlertCircle,
+@@ -17,6 +18,12 @@ interface DemoFallbackProps {
+ }
+ 
+ export function DemoFallback({ error, onRetry, onSignUp }: DemoFallbackProps) {
++  const { data: metrics, isLoading, isError } = useMetrics();
++  const creatorText = isLoading
++    ? "Loading creator count..."
++    : isError || !metrics
++      ? "Trusted by creators worldwide"
++      : `Trusted by ${metrics.creators.toLocaleString()} content creators`;
+   return (
+     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
+       <Card className="max-w-2xl w-full shadow-premium">
+@@ -107,7 +114,7 @@ export function DemoFallback({ error, onRetry, onSignUp }: DemoFallbackProps) {
+           {/* Trust Indicators */}
+           <div className="text-center pt-4 border-t border-gray-200">
+             <p className="text-sm text-gray-500 mb-2">
+-              Trusted by 10,000+ content creators
++              {creatorText}
+             </p>
+             <div className="flex justify-center items-center space-x-4 text-xs text-gray-400">
+               <div className="flex items-center">
+diff --git a/client/src/components/landing-page.tsx b/client/src/components/landing-page.tsx
+index b4324f0..bf3dcbb 100644
+--- a/client/src/components/landing-page.tsx
++++ b/client/src/components/landing-page.tsx
+@@ -5,13 +5,13 @@ import { Badge } from "@/components/ui/badge";
+ import { useToast } from "@/hooks/use-toast";
+ import { Link, useLocation } from "wouter";
+ import { AuthModal } from "@/components/auth-modal";
+-import {
+-  Sparkles,
+-  Shield,
+-  Brain,
+-  Zap,
+-  Users,
+-  TrendingUp,
++import {
++  Sparkles,
++  Shield,
++  Brain,
++  Zap,
++  Users,
++  TrendingUp,
+   CheckCircle,
+   ArrowRight,
+   Star,
+@@ -23,6 +23,7 @@ import {
+   BarChart3
+ } from "lucide-react";
+ import { ThemeToggle } from "@/components/theme-toggle";
++import { useMetrics } from "@/hooks/use-metrics";
+ 
+ interface LandingPageProps {
+   showLoginModal?: boolean;
+@@ -34,6 +35,7 @@ export function LandingPage({ showLoginModal = false, loginModalMode = 'login' }
+   const [showAuthModal, setShowAuthModal] = useState(showLoginModal);
+   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>(loginModalMode);
+   const [, setLocation] = useLocation();
++  const { data: metrics, isLoading, isError } = useMetrics();
+ 
+   useEffect(() => {
+     const handleScroll = () => setScrollY(window.scrollY);
+@@ -150,7 +152,9 @@ export function LandingPage({ showLoginModal = false, loginModalMode = 'login' }
+                 <Users className="w-5 h-5 text-yellow-200" />
+               </div>
+               <div>
+-                <div className="text-white font-bold text-lg">10K+</div>
++                <div className="text-white font-bold text-lg">
++                  {isLoading ? "..." : isError || !metrics ? "—" : metrics.creators.toLocaleString()}
++                </div>
+                 <div className="text-yellow-200 text-sm font-medium">Creators</div>
+               </div>
+             </div>
+@@ -159,7 +163,9 @@ export function LandingPage({ showLoginModal = false, loginModalMode = 'login' }
+                 <TrendingUp className="w-5 h-5 text-pink-200" />
+               </div>
+               <div>
+-                <div className="text-white font-bold text-lg">5M+</div>
++                <div className="text-white font-bold text-lg">
++                  {isLoading ? "..." : isError || !metrics ? "—" : metrics.posts.toLocaleString()}
++                </div>
+                 <div className="text-pink-200 text-sm font-medium">Posts Generated</div>
+               </div>
+             </div>
+diff --git a/client/src/components/premium-landing.tsx b/client/src/components/premium-landing.tsx
+index 6383859..e842edd 100644
+--- a/client/src/components/premium-landing.tsx
++++ b/client/src/components/premium-landing.tsx
+@@ -19,19 +19,16 @@ import {
+   DollarSign,
+   Clock
+ } from "lucide-react";
++import { useMetrics } from "@/hooks/use-metrics";
+ 
+ export function PremiumLanding() {
+   const [isVisible, setIsVisible] = useState(false);
+   const [currentTestimonial, setCurrentTestimonial] = useState(0);
+-  const [metrics, setMetrics] = useState<{ creators: number; posts: number; engagement: number } | null>(null);
++  const { data: metrics, isLoading: metricsLoading } = useMetrics();
+ 
+   useEffect(() => {
+     setIsVisible(true);
+-    fetch('/api/metrics')
+-      .then(res => (res.ok ? res.json() : null))
+-      .then(setMetrics)
+-      .catch(() => {});
+-
++
+     // Rotate testimonials
+     const interval = setInterval(() => {
+       setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
+@@ -71,7 +68,9 @@ export function PremiumLanding() {
+     {
+       name: "Sarah M.",
+       role: "Content Creator",
+-      content: "ThottoPilot increased my engagement by 340% in just 2 weeks. The AI understands exactly what my audience wants!",
++      content: metrics
++        ? `ThottoPilot increased my engagement by ${metrics.engagement}% in just 2 weeks. The AI understands exactly what my audience wants!`
++        : "ThottoPilot increased my engagement in just 2 weeks. The AI understands exactly what my audience wants!",
+       rating: 5,
+       verified: true
+     },
+@@ -91,14 +90,24 @@ export function PremiumLanding() {
+     }
+   ];
+ 
+-  const stats = metrics
+-    ? [
+-        { number: metrics.creators.toLocaleString(), label: "Active Creators", icon: <Users className="h-5 w-5" /> },
+-        { number: metrics.posts.toLocaleString(), label: "Posts Generated", icon: <Sparkles className="h-5 w-5" /> },
+-        { number: `${metrics.engagement}%`, label: "Avg. Engagement Boost", icon: <TrendingUp className="h-5 w-5" /> },
+-        { number: "98%", label: "Cost Reduction vs Competitors", icon: <DollarSign className="h-5 w-5" /> }
+-      ]
+-    : [];
++  const stats = [
++    {
++      number: metrics?.creators.toLocaleString() ?? (metricsLoading ? "..." : "—"),
++      label: "Active Creators",
++      icon: <Users className="h-5 w-5" />
++    },
++    {
++      number: metrics?.posts.toLocaleString() ?? (metricsLoading ? "..." : "—"),
++      label: "Posts Generated",
++      icon: <Sparkles className="h-5 w-5" />
++    },
++    {
++      number: metrics ? `${metrics.engagement}%` : metricsLoading ? "..." : "—",
++      label: "Avg. Engagement Boost",
++      icon: <TrendingUp className="h-5 w-5" />
++    },
++    { number: "98%", label: "Cost Reduction vs Competitors", icon: <DollarSign className="h-5 w-5" /> }
++  ];
+ 
+   return (
+     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
+@@
+ export const seoConfigs = {
+   landing: {
+     title: "ThottoPilot - AI Content Creation Platform for Creators",
+-    description: "Generate viral Reddit posts with AI, protect your images from reverse searches, and optimize content strategy. Join 10,000+ successful creators. Start free trial today.",
++    description: "Generate viral Reddit posts with AI, protect your images from reverse searches, and optimize content strategy. Join successful creators and start your free trial today.",
+     keywords: ["AI content generator", "Reddit post creator", "social media automation", "content creation tools", "creator platform", "viral content"]
+   },
+   dashboard: {
+diff --git a/client/src/components/seo-optimization.tsx b/client/src/components/seo-optimization.tsx
+index d17c8bc..58b18df 100644
+--- a/client/src/components/seo-optimization.tsx
++++ b/client/src/components/seo-optimization.tsx
+@@ -88,7 +88,7 @@ export function SEOOptimization({
+ export const seoConfigs = {
+   landing: {
+     title: "ThottoPilot - AI Content Creation Platform for Creators",
+-    description: "Generate viral Reddit posts with AI, protect your images from reverse searches, and optimize content strategy. Join 10,000+ successful creators. Start free trial today.",
++    description: "Generate viral Reddit posts with AI, protect your images from reverse searches, and optimize content strategy. Join successful creators and start your free trial today.",
+     keywords: ["AI content generator", "Reddit post creator", "social media automation", "content creation tools", "creator platform", "viral content"]
+   },
+   dashboard: {
+diff --git a/client/src/components/social-auth.tsx b/client/src/components/social-auth.tsx
+index beec3d3..3fda200 100644
+--- a/client/src/components/social-auth.tsx
++++ b/client/src/components/social-auth.tsx
+@@ -15,6 +15,7 @@ import {
+   Users
+ } from "lucide-react";
+ import { FaReddit, FaGoogle, FaFacebook } from "react-icons/fa";
++import { useMetrics } from "@/hooks/use-metrics";
+ 
+ interface SocialAuthProps {
+   onSuccess?: (provider: string) => void;
+@@
+ export function SocialAuth({ onSuccess, isLoading = false }: SocialAuthProps) {
+   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
++  const { data: metrics, isLoading: metricsLoading, isError: metricsError } = useMetrics();
++  const creatorText = metricsLoading
++    ? "Loading creator count..."
++    : metricsError || !metrics
++      ? "Trusted by creators worldwide"
++      : `Trusted by ${metrics.creators.toLocaleString()} content creators`;
++  const userMetric = metricsLoading || metricsError || !metrics
++    ? "—"
++    : `${metrics.creators.toLocaleString()} Users`;
+ 
+   interface SocialProvider {
+     id: string;
+@@ -202,7 +212,7 @@ export function SocialAuth({ onSuccess, isLoading = false }: SocialAuthProps) {
+           {/* Trust Indicators */}
+           <div className="text-center pt-4">
+             <p className="text-sm text-gray-500 mb-2">
+-              Trusted by thousands of content creators
++              {creatorText}
+             </p>
+             <div className="flex justify-center items-center space-x-4 text-xs text-gray-400">
+               <div className="flex items-center">
+@@ -211,7 +221,7 @@ export function SocialAuth({ onSuccess, isLoading = false }: SocialAuthProps) {
+               </div>
+               <div className="flex items-center">
+                 <Users className="h-3 w-3 mr-1" />
+-                10,000+ Users
++                {userMetric}
+               </div>
+               <div className="flex items-center">
+                 <CheckCircle className="h-3 w-3 mr-1" />
+diff --git a/client/src/hooks/use-metrics.ts b/client/src/hooks/use-metrics.ts
+new file mode 100644
+index 0000000..fdef030
+--- /dev/null
++++ b/client/src/hooks/use-metrics.ts
+@@ -0,0 +1,20 @@
++import { useQuery } from '@tanstack/react-query';
++
++export interface Metrics {
++  creators: number;
++  posts: number;
++  engagement: number;
++}
++
++export function useMetrics() {
++  return useQuery<Metrics, Error>({
++    queryKey: ['metrics'],
++    queryFn: async () => {
++      const res = await fetch('/api/metrics');
++      if (!res.ok) {
++        throw new Error('Failed to fetch metrics');
++      }
++      return res.json() as Promise<Metrics>;
++    },
++  });
++}
+diff --git a/server/api-routes.ts b/server/api-routes.ts
+index 11f7c31..0ed016f 100644
+--- a/server/api-routes.ts
++++ b/server/api-routes.ts
+@@ -12,8 +12,8 @@ import { PolicyLinter } from "./lib/policyLinter.js";
+ import { PostScheduler } from "./lib/scheduling.js";
+ import { addJob } from "./lib/queue/index.js";
+ import { RedditManager } from "./lib/reddit.js";
+-import { postJobs, subscriptions, mediaAssets, creatorAccounts, users } from "@shared/schema.js";
+-import { eq, desc } from "drizzle-orm";
++import { postJobs, subscriptions, mediaAssets, creatorAccounts, users, userSamples } from "@shared/schema.js";
++import { eq, desc, sql } from "drizzle-orm";
+ import multer from "multer";
+ import type { Request, Response, NextFunction } from 'express';
+ import { authenticateToken } from './middleware/auth.js';
+@@ -441,6 +441,25 @@ export function registerApiRoutes(app: Express) {
+     }
+   });
+ 
++  // Public metrics for landing pages
++  app.get('/api/metrics', async (_req, res) => {
++    try {
++      const [userCount, postCount, engagement] = await Promise.all([
++        db.select({ count: sql<number>`count(*)` }).from(users),
++        db.select({ count: sql<number>`count(*)` }).from(postJobs),
++        db.select({ avg: sql<number>`COALESCE(AVG(${userSamples.performanceScore}), 0)` }).from(userSamples)
++      ]);
++
++      res.json({
++        creators: userCount[0]?.count ?? 0,
++        posts: postCount[0]?.count ?? 0,
++        engagement: Math.round(engagement[0]?.avg ?? 0)
++      });
++    } catch (_error) {
++      res.status(500).json({ error: 'Failed to fetch metrics' });
++    }
++  });
++
+   // User profile preferences
+   app.get('/api/user/profile', authenticateToken, async (req: Request, res) => {
+     if (!req.user?.id) return res.status(401).json({ error: 'Authentication required' });

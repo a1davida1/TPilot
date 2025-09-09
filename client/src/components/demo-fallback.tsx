@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useMetrics } from "@/hooks/use-metrics";
 import { 
   Sparkles, 
   AlertCircle, 
@@ -17,6 +18,12 @@ interface DemoFallbackProps {
 }
 
 export function DemoFallback({ error, onRetry, onSignUp }: DemoFallbackProps) {
+  const { data: metrics, isLoading, isError } = useMetrics();
+  const creatorText = isLoading
+    ? "Loading creator count..."
+    : isError || !metrics
+      ? "Trusted by creators worldwide"
+      : `Trusted by ${metrics.creators.toLocaleString()} content creators`;
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
       <Card className="max-w-2xl w-full shadow-premium">
@@ -107,7 +114,7 @@ export function DemoFallback({ error, onRetry, onSignUp }: DemoFallbackProps) {
           {/* Trust Indicators */}
           <div className="text-center pt-4 border-t border-gray-200">
             <p className="text-sm text-gray-500 mb-2">
-              Trusted by 10,000+ content creators
+              {creatorText}
             </p>
             <div className="flex justify-center items-center space-x-4 text-xs text-gray-400">
               <div className="flex items-center">

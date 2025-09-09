@@ -23,6 +23,7 @@ import {
   BarChart3
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useMetrics } from "@/hooks/use-metrics";
 
 interface LandingPageProps {
   showLoginModal?: boolean;
@@ -34,6 +35,7 @@ export function LandingPage({ showLoginModal = false, loginModalMode = 'login' }
   const [showAuthModal, setShowAuthModal] = useState(showLoginModal);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>(loginModalMode);
   const [, setLocation] = useLocation();
+  const { data: metrics, isLoading, isError } = useMetrics();
   
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -150,7 +152,9 @@ export function LandingPage({ showLoginModal = false, loginModalMode = 'login' }
                 <Users className="w-5 h-5 text-yellow-200" />
               </div>
               <div>
-                <div className="text-white font-bold text-lg">10K+</div>
+                <div className="text-white font-bold text-lg">
+                  {isLoading ? "..." : isError || !metrics ? "—" : metrics.creators.toLocaleString()}
+                </div>
                 <div className="text-yellow-200 text-sm font-medium">Creators</div>
               </div>
             </div>
@@ -159,7 +163,9 @@ export function LandingPage({ showLoginModal = false, loginModalMode = 'login' }
                 <TrendingUp className="w-5 h-5 text-pink-200" />
               </div>
               <div>
-                <div className="text-white font-bold text-lg">5M+</div>
+                <div className="text-white font-bold text-lg">
+                  {isLoading ? "..." : isError || !metrics ? "—" : metrics.posts.toLocaleString()}
+                </div>
                 <div className="text-pink-200 text-sm font-medium">Posts Generated</div>
               </div>
             </div>
