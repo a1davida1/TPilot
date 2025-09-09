@@ -1,0 +1,59 @@
+diff --git a/client/src/hooks/useAuth.ts b/client/src/hooks/useAuth.ts
+index cc35acb20b4e673773bd64fcd0afa8ddf5387f2c..d1d39bec37f275e905328abdffc6e43543af0bc0 100644
+--- a/client/src/hooks/useAuth.ts
++++ b/client/src/hooks/useAuth.ts
+@@ -54,51 +54,53 @@ export function useAuth() {
+         }
+         
+         if (tokenResponse.status === 401 || tokenResponse.status === 403) {
+           localStorage.removeItem('authToken');
+           localStorage.removeItem('user');
+           setToken(null);
+           // Return null instead of throwing to prevent endless retry loop
+           return null;
+         }
+       }
+       
+       // Try session-based auth as fallback
+       const response = await fetch('/api/auth/user', {
+         credentials: 'include' // Include cookies for session-based auth
+       });
+       
+       if (response.ok) {
+         const userData = await response.json();
+         return userData;
+       }
+       
+       // Return null instead of throwing error to allow guest mode
+       return null;
+     },
+     retry: false,
+-    enabled: !isPublicPage(), // Disable auth query on public pages
++    // Skip request unless we have a token or auth cookie
++    enabled:
++      !isPublicPage() && (!!token || document.cookie.includes('authToken')),
+     refetchOnWindowFocus: false,
+     refetchInterval: false,
+   });
+ 
+   const login = (newToken: string, userData: User) => {
+     localStorage.setItem('authToken', newToken);
+     localStorage.setItem('user', JSON.stringify(userData));
+     setToken(newToken);
+     setTimeout(() => refetch(), 100); // Small delay to ensure token is set
+   };
+ 
+   const logout = async () => {
+     // Invalidate user cache immediately
+     queryClient.removeQueries({ queryKey: ['/api/auth/user'] });
+     
+     // Clear local storage
+     localStorage.removeItem('authToken');
+     localStorage.removeItem('user');
+     setToken(null);
+     
+     // Logout from session
+     try {
+       const response = await fetch('/api/auth/logout', {
+         method: 'POST',
+         headers: {
