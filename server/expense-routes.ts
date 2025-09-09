@@ -12,7 +12,7 @@ import { type InsertExpense } from '@shared/schema.js';
 
 interface AuthUser {
   id: number;
-  tier?: 'free' | 'starter' | 'pro' | 'premium';
+  tier?: 'free' | 'starter' | 'pro';
 }
 
 interface AuthRequest extends express.Request {
