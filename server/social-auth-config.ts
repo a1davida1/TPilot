@@ -1,8 +1,11 @@
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as FacebookStrategy } from 'passport-facebook';
-import * as redditStrategyPkg from 'passport-reddit';       // CJS module
-const RedditStrategy = (redditStrategyPkg as unknown as { Strategy: typeof import('passport-reddit').Strategy }).Strategy;
+// Explicitly import compiled entry to avoid Node's extensionless main deprecation
+import * as redditStrategyPkg from 'passport-reddit/lib/passport-reddit/index.js';
+const RedditStrategy = (
+  redditStrategyPkg as unknown as { Strategy: typeof import('passport-reddit').Strategy }
+).Strategy;
 import { storage } from './storage';
 import type { User } from '@shared/schema';
 
