@@ -201,7 +201,7 @@ export function setupAuth(app: Express) {
             username: 'admin',
             isAdmin: true,
             role: 'admin',
-            tier: 'premium'
+            tier: 'pro'
           },
           JWT_SECRET_VALIDATED,
           { expiresIn: '24h' }
@@ -219,7 +219,7 @@ export function setupAuth(app: Express) {
               id: 999,
               username: 'admin',
               email: ADMIN_EMAIL,
-              tier: 'premium',
+              tier: 'pro',
               isAdmin: true,
               role: 'admin'
             }
@@ -427,7 +427,7 @@ export function setupAuth(app: Express) {
             id: 999,
             username: 'admin',
             email: process.env.ADMIN_EMAIL,
-            tier: 'premium',
+            tier: 'pro',
             isAdmin: true,
             role: 'admin',
             emailVerified: true
