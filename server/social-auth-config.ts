@@ -105,7 +105,7 @@ export function configureSocialAuth() {
 
   // Serialize and deserialize user
   passport.serializeUser((user: unknown, done) => {
-    done(null, user.id);
+    done(null, (user as User).id);
   });
 
   passport.deserializeUser(async (id: number, done) => {
