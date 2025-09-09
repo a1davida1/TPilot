@@ -37,7 +37,7 @@ export async function apiRequest(
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
-export const getQueryFn: <T>(options: {
+export const getQueryFn: <T = unknown>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
@@ -45,13 +45,13 @@ export const getQueryFn: <T>(options: {
     const headers: Record<string, string> = {};
     
     // Add Authorization header if token exists
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem("authToken");
     if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+      headers["Authorization"] = `Bearer ${token}`;
     }
 
-    const [url] = queryKey as [string, ...unknown[]];
-    const res = await fetch(url as string, {
+    const url = queryKey[0] as string;
+    const res = await fetch(url, {
       credentials: "include",
       headers,
     });
