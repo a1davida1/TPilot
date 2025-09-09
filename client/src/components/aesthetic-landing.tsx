@@ -33,7 +33,7 @@ export function AestheticLanding() {
   const [activeTab, setActiveTab] = useState("generate");
   const [isVisible, setIsVisible] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [metrics, setMetrics] = useState<unknown>(null);
+  const [metrics, setMetrics] = useState<{ creators: number; templates: number; support?: string } | null>(null);
 
   useEffect(() => {
     setIsVisible(true);
@@ -140,7 +140,7 @@ export function AestheticLanding() {
             <div className={`text-center mb-12 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
               <Badge className="mb-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-300 border-purple-500/50 animate-pulse">
                 <Sparkles className="mr-2 h-4 w-4" />
-                10,000+ Creators Already Using ThottoPilot
+                {metrics?.creators ? `${metrics.creators.toLocaleString()}+ Creators Already Using ThottoPilot` : 'Creators Already Using ThottoPilot'}
               </Badge>
               
               <h1 className="text-5xl md:text-7xl font-bold mb-6">
@@ -287,7 +287,11 @@ export function AestheticLanding() {
             <div className="mt-16 max-w-md mx-auto">
               <div className="text-center mb-8">
                 <h2 className="text-3xl font-bold mb-4">Ready to Start Creating?</h2>
-                <p className="text-gray-400">Join 10,000+ creators who are already growing faster</p>
+                <p className="text-gray-400">
+                  {metrics?.creators
+                    ? `Join ${metrics.creators.toLocaleString()}+ creators who are already growing faster`
+                    : 'Join creators who are already growing faster'}
+                </p>
               </div>
               <SocialAuth />
             </div>
