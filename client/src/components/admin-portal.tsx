@@ -60,6 +60,18 @@ interface _UserStats {
   revenue: number;
 }
 
+interface AdminStats {
+  totalUsers?: number;
+  newUsersToday?: number;
+  proUsers?: number;
+  premiumUsers?: number;
+  trialUsers?: number;
+  revenue?: number;
+  activeToday?: number;
+  emailConfigured?: boolean;
+  jwtConfigured?: boolean;
+}
+
 interface TrialRequest {
   email: string;
   username: string;
@@ -105,7 +117,7 @@ export function AdminPortal() {
   };
 
   // Fetch user statistics
-  const { data: stats, isLoading: _statsLoading } = useQuery({
+  const { data: stats, isLoading: _statsLoading } = useQuery<AdminStats>({
     queryKey: ['/api/admin/stats'],
     refetchInterval: 30000, // Refresh every 30 seconds
     enabled: !!token
@@ -206,9 +218,9 @@ export function AdminPortal() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Users</p>
-                <p className="text-3xl font-bold">{(stats as any)?.totalUsers || 0}</p>
+                <p className="text-3xl font-bold">{stats?.totalUsers ?? 0}</p>
                 <p className="text-xs text-green-600 mt-1">
-                  +{(stats as any)?.newUsersToday || 0} today
+                  +{stats?.newUsersToday ?? 0} today
                 </p>
               </div>
               <Users className="h-8 w-8 text-blue-500" />
@@ -222,10 +234,10 @@ export function AdminPortal() {
               <div>
                 <p className="text-sm text-muted-foreground">Pro/Premium</p>
                 <p className="text-3xl font-bold">
-                  {((stats as any)?.proUsers || 0) + ((stats as any)?.premiumUsers || 0)}
+                  {(stats?.proUsers ?? 0) + (stats?.premiumUsers ?? 0)}
                 </p>
                 <p className="text-xs text-purple-600 mt-1">
-                  {(stats as any)?.trialUsers || 0} trials active
+                  {stats?.trialUsers ?? 0} trials active
                 </p>
               </div>
               <Crown className="h-8 w-8 text-purple-500" />
@@ -238,7 +250,7 @@ export function AdminPortal() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Monthly Revenue</p>
-                <p className="text-3xl font-bold">${(stats as any)?.revenue || 0}</p>
+                <p className="text-3xl font-bold">${stats?.revenue ?? 0}</p>
                 <p className="text-xs text-green-600 mt-1">
                   <TrendingUp className="h-3 w-3 inline mr-1" />
                   12% increase
@@ -254,7 +266,7 @@ export function AdminPortal() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Active Today</p>
-                <p className="text-3xl font-bold">{(stats as any)?.activeToday || 0}</p>
+                <p className="text-3xl font-bold">{stats?.activeToday ?? 0}</p>
                 <p className="text-xs text-orange-600 mt-1">
                   Real-time activity
                 </p>
@@ -698,14 +710,14 @@ export function AdminPortal() {
               <Alert className="border-purple-500/30 bg-purple-500/5">
                 <Zap className="h-4 w-4 text-purple-600" />
                 <AlertDescription>
-                  <strong>Email System:</strong> {(stats as any)?.emailConfigured ? 'Configured ✓' : 'Not configured - Add SendGrid API key'}
+                  <strong>Email System:</strong> {stats?.emailConfigured ? 'Configured ✓' : 'Not configured - Add SendGrid API key'}
                 </AlertDescription>
               </Alert>
               
               <Alert className="border-blue-500/30 bg-blue-500/5">
                 <Shield className="h-4 w-4 text-blue-600" />
                 <AlertDescription>
-                  <strong>Security:</strong> JWT Secret {(stats as any)?.jwtConfigured ? 'Configured ✓' : 'Using default (not secure)'}
+                  <strong>Security:</strong> JWT Secret {stats?.jwtConfigured ? 'Configured ✓' : 'Using default (not secure)'}
                 </AlertDescription>
               </Alert>
 
