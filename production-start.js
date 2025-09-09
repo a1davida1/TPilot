@@ -8,7 +8,7 @@ const startServer = async () => {
   process.env.NODE_ENV = 'production';
   
   // Register tsx for TypeScript support
-  require('tsx/cjs');
+  await import('tsx/cjs');
   
   // Dynamically import and run the server
   await import('./server/index.ts');

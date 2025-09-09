@@ -21,7 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface ImageShieldProps {
   isGuestMode?: boolean;
-  userTier?: "free" | "basic" | "pro" | "premium";
+  userTier?: "free" | "starter" | "pro";
 }
 
 export function ImageShield({ isGuestMode = false, userTier = "free" }: ImageShieldProps) {

@@ -2,7 +2,7 @@
 
 /**
  * Production server entry point
- * This file provides a CommonJS wrapper to run the TypeScript server in production
+ * This file provides an ESM wrapper to run the TypeScript server in production
  */
 
 // Load environment variables
@@ -10,8 +10,16 @@ if (process.env.NODE_ENV === 'production') {
   process.env.NODE_OPTIONS = '--max-old-space-size=4096';
 }
 
-// Register tsx to handle TypeScript files
-require('tsx/cjs');
+// Run the server
+const startServer = async () => {
+  // Register tsx to handle TypeScript files
+  await import('tsx/cjs');
+  
+  // Load and run the main server
+  await import('./server/index.ts');
+};
 
-// Load and run the main server
-require('./server/index.ts');
+startServer().catch(err => {
+  console.error('Failed to start production server:', err);
+  process.exit(1);
+});

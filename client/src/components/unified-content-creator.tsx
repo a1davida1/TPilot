@@ -53,6 +53,8 @@ interface GeneratedContentDisplay extends Omit<ContentGeneration, 'photoInstruct
   userTier?: string;
   variationCount?: number;
   apiStatus?: string;
+  contentSource?: string;
+  quotaExceeded?: boolean;
   titles: string[]; // Ensure titles is always an array
   photoInstructions: {
     lighting: string;
@@ -67,7 +69,7 @@ interface GeneratedContentDisplay extends Omit<ContentGeneration, 'photoInstruct
 interface UnifiedContentCreatorProps {
   onContentGenerated: (generation: ContentGeneration) => void;
   isGuestMode?: boolean;
-  userTier?: "free" | "basic" | "pro" | "premium";
+  userTier?: "free" | "starter" | "pro";
 }
 
 export function UnifiedContentCreator({ 
@@ -198,6 +200,7 @@ export function UnifiedContentCreator({
 
   const generateContentMutation = useMutation({
     mutationFn: async (_data: unknown) => {
+      const data = _data as any; // Type assertion for mutation data
       // Use FormData for unified endpoint that handles both text and images
       const formData = new FormData();
 
@@ -460,9 +463,9 @@ export function UnifiedContentCreator({
 
   const toggleHashtag = (_hashtag: string) => {
     setSelectedHashtags((prev) =>
-      prev.includes(hashtag)
-        ? prev.filter((h) => h !== hashtag)
-        : [...prev.slice(0, 9), hashtag].slice(0, 10) // Limit to 10 hashtags
+      prev.includes(_hashtag)
+        ? prev.filter((h) => h !== _hashtag)
+        : [...prev.slice(0, 9), _hashtag].slice(0, 10) // Limit to 10 hashtags
     );
   };
 
