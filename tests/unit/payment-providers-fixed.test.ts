@@ -65,7 +65,7 @@ describe('Payment Providers - Fixed', () => {
       // Updated expectation to match actual error handling
       await expect(provider.createCheckout({
         userId: 'user456',
-        planId: 'premium'
+        planId: 'pro'
       })).rejects.toThrow('Unexpected end of JSON input');
 
       global.fetch = originalFetch;
@@ -90,7 +90,7 @@ describe('Payment Providers - Fixed', () => {
       const provider = makeCoinbase();
       await expect(provider.createCheckout({
         userId: 'user456',
-        planId: 'premium'
+        planId: 'pro'
       })).rejects.toThrow('Invalid response from Coinbase Commerce API');
 
       global.fetch = originalFetch;

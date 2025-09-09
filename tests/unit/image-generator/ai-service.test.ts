@@ -350,13 +350,13 @@ describe('AI Service Unit Tests', () => {
         choices: [{
           message: {
             content: JSON.stringify({
-              titles: ['OpenAI premium generation'],
+              titles: ['OpenAI pro generation'],
               content: 'High-quality but expensive content',
               photoInstructions: {
                 lighting: 'professional studio',
                 cameraAngle: 'cinematic',
                 composition: 'advanced',
-                styling: 'premium',
+                styling: 'pro',
                 mood: 'luxurious',
                 technicalSettings: 'expert'
               }

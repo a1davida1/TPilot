@@ -105,7 +105,7 @@ describe('Payment Providers', () => {
 
       const result = await provider.createCheckout({
         userId: 'user456',
-        planId: 'premium',
+        planId: 'pro',
         amountCents: 4999,
         returnUrl: 'https://test.com/success'
       });

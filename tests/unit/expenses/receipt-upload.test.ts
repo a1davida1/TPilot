@@ -97,9 +97,9 @@ describe('Receipt Upload with ImageShield Protection', () => {
       expect(mockStorage.updateExpense).toHaveBeenCalled();
     });
 
-    test('should not apply watermark for premium users', async () => {
+    test('should not apply watermark for pro users', async () => {
       mockAuthenticateToken.mockImplementation((req: express.Request & { user?: { id: number; tier: string } }, res: express.Response, next: express.NextFunction) => {
-        req.user = { id: 3, tier: 'premium' };
+        req.user = { id: 3, tier: 'pro' };
         next();
       });
 

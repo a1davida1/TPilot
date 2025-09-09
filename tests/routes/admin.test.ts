@@ -13,7 +13,7 @@ vi.mock('../../server/storage.js', () => ({
       totalUsers: 7,
       freeUsers: 6,
       proUsers: 1,
-      premiumUsers: 0,
+
       newUsersToday: 2,
       activeUsers: 5,
       contentGenerated: "18",
@@ -45,7 +45,7 @@ vi.mock('../../server/admin-routes.js', () => ({
         totalUsers: 7,
         freeUsers: 6,
         proUsers: 1,
-        premiumUsers: 0,
+  
         newUsersToday: 2
       });
     });
