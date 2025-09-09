@@ -18,7 +18,7 @@ export interface EnhancedAIRequest {
   contentType?: 'teasing' | 'promotional' | 'engagement' | 'lifestyle' | 'announcement' | 'educational';
   includePromotion?: boolean;
   promotionLevel?: 'none' | 'subtle' | 'moderate' | 'direct';
-  targetAudience?: 'general' | 'fans' | 'potential-subscribers' | 'premium-tier';
+  targetAudience?: 'general' | 'fans' | 'potential-subscribers' | 'pro-tier';
   customInstructions?: string;
   userId?: string;
   subreddit?: string;
