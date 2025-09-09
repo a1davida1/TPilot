@@ -1,0 +1,62 @@
+diff --git a/tests/unit/expenses/expense-operations.test.ts b/tests/unit/expenses/expense-operations.test.ts
+index 24b3de3ef10760391e4388a857deb99f6c8d7eff..f5bea1ab5dd16dd2c36ffc2ef1b52c731f625a0e 100644
+--- a/tests/unit/expenses/expense-operations.test.ts
++++ b/tests/unit/expenses/expense-operations.test.ts
+@@ -1,57 +1,54 @@
+ import { storage } from "../../server/storage";
+ /* eslint-env node, jest */
+ import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
+ import { InsertExpense } from '@shared/schema';
+ 
+ // Mock database with proper hoisting
+ vi.mock('../../../server/db.js', () => ({
+   db: {
+     insert: vi.fn().mockReturnThis(),
+     select: vi.fn().mockReturnThis(),
+     update: vi.fn().mockReturnThis(),
+     delete: vi.fn().mockReturnThis(),
+     values: vi.fn().mockReturnThis(),
+     returning: vi.fn(),
+     from: vi.fn().mockReturnThis(),
+     where: vi.fn().mockReturnThis(),
+     leftJoin: vi.fn().mockReturnThis(),
+     orderBy: vi.fn().mockReturnThis(),
+     set: vi.fn().mockReturnThis()
+   }
+ }));
+ 
+-import { DatabaseStorage } from '../../../server/storage';
+ import { db } from '../../../server/db.js';
+ 
+ describe('Expense Operations Unit Tests', () => {
+-  let storage: DatabaseStorage;
+   const userId = 123;
+   const categoryId = 1;
+ 
+   beforeEach(() => {
+-    storage = storage;
+     vi.clearAllMocks();
+   });
+ 
+   afterEach(() => {
+     vi.resetAllMocks();
+   });
+ 
+   describe('createExpense', () => {
+     test('should create expense with valid data', async () => {
+       const expenseData: InsertExpense = {
+         userId,
+         categoryId,
+         description: 'Professional camera equipment',
+         amount: 150000, // $1500.00 in cents
+         expenseDate: new Date('2024-01-15'),
+         taxYear: 2024,
+         deductionPercentage: 100,
+         notes: 'Used for content creation'
+       };
+ 
+       const expectedExpense = {
+         id: 1,
+         ...expenseData,
+         receiptUrl: null,
+         receiptFileName: null,

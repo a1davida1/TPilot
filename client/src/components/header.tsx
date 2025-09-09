@@ -81,9 +81,10 @@ export function Header() {
             {/* Logo - Smart routing based on auth status */}
             <Link href={isAuthenticated ? "/dashboard" : "/login"}>
               <div className="flex items-center gap-3 cursor-pointer h-16">
-                <img 
-                  src="/logo.png" 
-                  alt="ThottoPilot" 
+                <img
+                  src="/logo.png"
+                  alt="ThottoPilot"
+                  loading="lazy"
                   className="h-10 w-10 object-contain hover:scale-105 transition-transform duration-200 filter drop-shadow-md"
                 />
                 <span className="text-xl font-bold bg-gradient-to-r from-pink-600 via-rose-500 to-purple-600 bg-clip-text text-transparent drop-shadow-sm">
