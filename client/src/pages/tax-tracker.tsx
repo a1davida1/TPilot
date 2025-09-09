@@ -40,8 +40,32 @@ interface TaxTrackerProps {
   userTier?: 'guest' | 'free' | 'pro' | 'premium';
 }
 
+interface ExpenseCategory {
+  id: number;
+  name: string;
+  deductionPercentage: number;
+  icon: string;
+  color?: string;
+  description?: string;
+  examples: string[];
+  legalExplanation?: string;
+}
+
+interface Expense {
+  id: number;
+  description: string;
+  amount: number;
+  categoryId: number;
+  expenseDate: string;
+  receiptUrl?: string;
+  receiptFileName?: string;
+  notes?: string;
+  category?: string;
+  date?: string;
+}
+
 const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
-  const [selectedCategory, setSelectedCategory] = useState<unknown>(null);
+  const [selectedCategory, setSelectedCategory] = useState<ExpenseCategory | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
@@ -58,7 +82,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
   
   const queryClient = useQueryClient();
 
-  const { data: expenseCategories = [], isLoading: categoriesLoading } = useQuery({
+  const { data: expenseCategories = [], isLoading: categoriesLoading, error: categoriesError } = useQuery<ExpenseCategory[]>({
     queryKey: ['/api/expense-categories'],
     queryFn: async () => {
       const res = await apiRequest('GET', '/api/expense-categories');
@@ -74,7 +98,8 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
 
 
   // Fetch expense totals
-  const { data: expenseTotals = { total: 0, deductible: 0, byCategory: {} } } = useQuery({
+  const { data: expenseTotals = { total: 0, deductible: 0, byCategory: {} }, isLoading: totalsLoading, error: totalsError } =
+    useQuery({
     queryKey: ['/api/expenses/totals'],
     queryFn: async () => {
       const res = await apiRequest('GET', '/api/expenses/totals');
@@ -85,7 +110,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
   const estimatedSavings = Math.round((expenseTotals?.deductible || 0) * 0.22);
 
   // Fetch recent expenses
-  const { data: recentExpenses = [] } = useQuery({
+  const { data: recentExpenses = [], isLoading: recentLoading, error: recentError } = useQuery<Expense[]>({
     queryKey: ['/api/expenses'],
     queryFn: async () => {
       const res = await apiRequest('GET', '/api/expenses');
@@ -94,7 +119,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
   });
 
   // Fetch calendar expenses
-  const { data: calendarExpenses = [] } = useQuery({
+  const { data: calendarExpenses = [], isLoading: calendarLoading, error: calendarError } = useQuery<Expense[]>({
     queryKey: ['/api/expenses/range', format(startOfMonth(calendarDate), 'yyyy-MM-dd'), format(endOfMonth(calendarDate), 'yyyy-MM-dd')],
     enabled: activeTab === 'calendar',
     queryFn: async () => {
@@ -109,7 +134,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
 
   // Create expense mutation
   const createExpenseMutation = useMutation({
-    mutationFn: async (expenseData: unknown) => {
+    mutationFn: async (expenseData: Omit<Expense, 'id'>) => {
       const response = await apiRequest('POST', '/api/expenses', expenseData);
       return response.json();
     },
@@ -129,7 +154,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
       return res.json();
     },
     onSuccess: (updatedExpense) => {
-      queryClient.setQueryData(['/api/expenses'], (old: unknown[] = []) =>
+      queryClient.setQueryData<Expense[]>(['/api/expenses'], (old = []) =>
         old.map(exp => (exp.id === updatedExpense.id ? updatedExpense : exp))
       );
       queryClient.invalidateQueries({ queryKey: ['/api/expenses/range'] });
@@ -163,11 +188,11 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
     });
     
     return daysInMonth.map(day => {
-      const dayExpenses = calendarExpenses.filter((expense: unknown) => 
+      const dayExpenses = calendarExpenses.filter(expense =>
         isSameDay(parseISO(expense.expenseDate), day)
       );
-      const totalAmount = dayExpenses.reduce((sum: number, expense: unknown) => sum + expense.amount, 0);
-      const hasReceipt = dayExpenses.some((expense: unknown) => expense.receiptUrl);
+      const totalAmount = dayExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+      const hasReceipt = dayExpenses.some(expense => expense.receiptUrl);
 
       return {
         date: day,
@@ -321,7 +346,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                       </Button>
                     </div>
                   ) : (
-                    recentExpenses.slice(0, 3).map((expense: unknown, index: number) => (
+                    recentExpenses.slice(0, 3).map((expense, index) => (
                       <div 
                         key={expense.id}
                         className="flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
