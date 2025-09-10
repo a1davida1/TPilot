@@ -93,10 +93,12 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
     }
   }, [isOpen, toast]);
 
-  // Reset mode when modal opens
-  if (isOpen && mode !== initialMode && mode !== 'forgot-password') {
-    setMode(initialMode);
-  }
+  // Reset mode when modal opens - moved to useEffect to prevent render loop
+  useEffect(() => {
+    if (isOpen && mode !== initialMode && mode !== 'forgot-password') {
+      setMode(initialMode);
+    }
+  }, [isOpen, initialMode, mode]);
 
   const authMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -309,9 +311,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
       handler: async () => {
         try {
           const response = await fetch('/api/reddit/connect', {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
+            credentials: 'include'
           });
           const data = await response.json();
           if (data.authUrl) {
@@ -396,9 +396,9 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
   };
 
   const handleSocialAuth = (url: string) => {
-    // Store auth intent for callback handling
-    localStorage.setItem('authIntent', 'social');
-    localStorage.setItem('authReturnUrl', window.location.pathname);
+    // Store auth intent in sessionStorage for callback handling
+    sessionStorage.setItem('authIntent', 'social');
+    sessionStorage.setItem('authReturnUrl', window.location.pathname);
     window.location.href = url;
   };
 

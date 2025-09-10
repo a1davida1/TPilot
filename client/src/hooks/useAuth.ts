@@ -16,12 +16,6 @@ interface User {
 
 export function useAuth() {
   const queryClient = useQueryClient();
-  const [token, setToken] = useState<string | null>(
-    () => {
-      const storedToken = localStorage.getItem('authToken');
-      return storedToken;
-    }
-  );
 
   // Check if we're on a public page that doesn't need auth
   const isPublicPage = () => {
@@ -36,33 +30,9 @@ export function useAuth() {
   };
 
   const { data: user, isLoading, error, refetch } = useQuery<User>({
-    queryKey: ['/api/auth/user', token],
+    queryKey: ['/api/auth/user'],
     queryFn: async () => {
-      // If we have a token, try token-based auth first
-      if (token) {
-        const tokenResponse = await fetch('/api/auth/user', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          },
-          credentials: 'include'
-        });
-        
-        
-        if (tokenResponse.ok) {
-          const userData = await tokenResponse.json();
-          return userData;
-        }
-        
-        if (tokenResponse.status === 401 || tokenResponse.status === 403) {
-          localStorage.removeItem('authToken');
-          localStorage.removeItem('user');
-          setToken(null);
-          // Return null instead of throwing to prevent endless retry loop
-          return null;
-        }
-      }
-      
-      // Try session-based auth as fallback
+      // Use cookie-based authentication only
       const response = await fetch('/api/auth/user', {
         credentials: 'include' // Include cookies for session-based auth
       });
@@ -76,30 +46,22 @@ export function useAuth() {
       return null;
     },
     retry: false,
-    // Skip request unless we have a token or auth cookie
-    enabled:
-      !isPublicPage() && (!!token || document.cookie.includes('authToken')),
+    // Skip request on public pages, use cookie detection for auth status
+    enabled: !isPublicPage() && document.cookie.includes('authToken'),
     refetchOnWindowFocus: false,
     refetchInterval: false,
   });
 
-  const login = (newToken: string, userData: User) => {
-    localStorage.setItem('authToken', newToken);
-    localStorage.setItem('user', JSON.stringify(userData));
-    setToken(newToken);
-    setTimeout(() => refetch(), 100); // Small delay to ensure token is set
+  const login = () => {
+    // Cookie-based auth - just refetch user data
+    setTimeout(() => refetch(), 100); // Small delay to ensure cookie is set
   };
 
   const logout = async () => {
     // Invalidate user cache immediately
     queryClient.removeQueries({ queryKey: ['/api/auth/user'] });
     
-    // Clear local storage
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('user');
-    setToken(null);
-    
-    // Logout from session
+    // Logout from session (clears HTTP-only cookie)
     try {
       const response = await fetch('/api/auth/logout', {
         method: 'POST',
@@ -155,8 +117,8 @@ export function useAuth() {
       }
     };
     
-    // Only check cookie auth if no token in localStorage
-    if (!token && (reddit || error)) {
+    // Check cookie auth if we have OAuth redirect params
+    if (reddit || error) {
       checkCookieAuth();
     }
   }, [refetch]);
@@ -181,7 +143,7 @@ export function useAuth() {
       
       if (response.ok) {
         const data = await response.json();
-        login(data.token, data.user);
+        login();
       }
     } catch (error) {
       // Silent fail in production
@@ -194,7 +156,6 @@ export function useAuth() {
     isAuthenticated: !!user,
     login,
     logout,
-    token,
     refetch,
     ...(import.meta.env.MODE === 'development' && { quickAdminLogin })
   };

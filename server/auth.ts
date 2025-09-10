@@ -14,30 +14,7 @@ import { authMetrics } from './services/basic-metrics.js';
 import { logger } from './bootstrap/logger.js';
 import { validate, ValidationSource, loginValidationSchema, signupValidationSchema, passwordChangeValidationSchema } from './middleware/validation.js';
 
-// Auth validation schemas
-const signupSchema = z.object({
-  username: z.string()
-    .min(3, 'Username must be at least 3 characters')
-    .max(50, 'Username must be less than 50 characters')
-    .regex(/^[a-zA-Z0-9_-]+$/, 'Username can only contain letters, numbers, underscores and hyphens'),
-  password: z.string()
-    .min(8, 'Password must be at least 8 characters')
-    .max(128, 'Password must be less than 128 characters')
-    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Password must contain at least one lowercase letter, one uppercase letter, and one number'),
-  email: z.string()
-    .email('Please enter a valid email address')
-    .max(255, 'Email must be less than 255 characters')
-});
-
-const loginSchema = z.object({
-  username: z.string().optional(),
-  email: z.string().email().optional(),
-  password: z.string()
-    .min(1, 'Password is required')
-    .max(128, 'Password must be less than 128 characters')
-}).refine(data => data.username || data.email, {
-  message: 'Either username or email is required'
-});
+// Auth validation schemas removed - handled by middleware
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET || /changeme|placeholder/i.test(JWT_SECRET)) {
@@ -174,16 +151,8 @@ export function setupAuth(app: Express) {
   app.post('/api/auth/login', loginLimiter, validate(loginValidationSchema), async (req, res) => {
     const startTime = Date.now();
     try {
-      // Validate input
-      const validationResult = loginSchema.safeParse(req.body);
-      if (!validationResult.success) {
-        return res.status(400).json({ 
-          message: 'Validation failed', 
-          errors: validationResult.error.flatten().fieldErrors 
-        });
-      }
-      
-      const { username, password, email } = validationResult.data;
+      // Input already validated by middleware
+      const { username, password, email } = req.body;
       const loginIdentifier = email || username;
 
       const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
