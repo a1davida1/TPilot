@@ -30,28 +30,6 @@ export type ProtectionLevel = z.infer<typeof protectionLevelEnum>;
 export type ImageProcessingOptions = z.infer<typeof imageProcessingOptionsSchema>;
 export type UploadRequest = z.infer<typeof uploadRequestSchema>;
 
-// Reddit Communities table
-export const redditCommunities = pgTable("reddit_communities", {
-  id: varchar("id", { length: 100 }).primaryKey(),
-  name: varchar("name", { length: 255 }).notNull(),
-  displayName: varchar("display_name", { length: 255 }).notNull(),
-  members: integer("members").notNull(),
-  engagementRate: integer("engagement_rate").notNull(),
-  category: varchar("category", { length: 50 }).notNull(),
-  verificationRequired: boolean("verification_required").default(false).notNull(),
-  promotionAllowed: varchar("promotion_allowed", { length: 20 }).default('no').notNull(),
-  postingLimits: jsonb("posting_limits"),
-  rules: jsonb("rules"),
-  bestPostingTimes: jsonb("best_posting_times"),
-  averageUpvotes: integer("average_upvotes"),
-  successProbability: integer("success_probability"),
-  growthTrend: varchar("growth_trend", { length: 20 }),
-  modActivity: varchar("mod_activity", { length: 20 }),
-  description: text("description"),
-  tags: jsonb("tags"),
-  competitionLevel: varchar("competition_level", { length: 20 })
-});
-
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: varchar("username", { length: 255 }).unique().notNull(),
@@ -866,17 +844,12 @@ export const insertContentFlagSchema = createInsertSchema(contentFlags);
 export const insertUserActionSchema = createInsertSchema(userActions);
 export const insertAdminAuditLogSchema = createInsertSchema(adminAuditLog);
 
-// Insert schema for Reddit communities
-export const insertRedditCommunitySchema = createInsertSchema(redditCommunities);
-
 export type InsertSystemLog = z.infer<typeof insertSystemLogSchema>;
 export type InsertContentFlag = z.infer<typeof insertContentFlagSchema>;
 export type InsertUserAction = z.infer<typeof insertUserActionSchema>;
 export type InsertAdminAuditLog = z.infer<typeof insertAdminAuditLogSchema>;
-export type InsertRedditCommunity = z.infer<typeof insertRedditCommunitySchema>;
 
 export type SystemLog = typeof systemLogs.$inferSelect;
 export type ContentFlag = typeof contentFlags.$inferSelect;
 export type UserAction = typeof userActions.$inferSelect;
 export type AdminAuditLog = typeof adminAuditLog.$inferSelect;
-export type RedditCommunity = typeof redditCommunities.$inferSelect;
