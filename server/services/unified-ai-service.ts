@@ -118,13 +118,10 @@ Create content that's perfect for ${platform}.`;
 
     // Use the multi-provider system with your preferences and user data
     const result = await generateWithMultiProvider({
-      user: { personalityProfile: {
-        toneOfVoice: style,
-        contentStyle: style,
-        personalBrand: theme || 'authentic creator',
-        contentLength: 'medium',
-        includeEmojis: true
-      }},
+      user: {
+        id: 0,
+        tier: 'free'
+      },
       platform,
       imageDescription: imageBase64 ? 'User uploaded image for analysis' : undefined,
       customPrompt: finalPrompt,
@@ -158,13 +155,10 @@ Create content that's perfect for ${platform}.`;
 export async function analyzeImage(imageBase64: string): Promise<string> {
   try {
     const result = await generateWithMultiProvider({
-      user: { personalityProfile: {
-        toneOfVoice: 'professional',
-        contentStyle: 'descriptive',
-        personalBrand: 'image analyst',
-        contentLength: 'medium',
-        includeEmojis: false
-      }},
+      user: {
+        id: 0,
+        tier: 'free'
+      },
       platform: 'analysis',
       imageDescription: 'Image to be analyzed',
       customPrompt: 'Describe this image in detail, focusing on the subject, setting, mood, colors, and any notable elements. Be descriptive and specific.',

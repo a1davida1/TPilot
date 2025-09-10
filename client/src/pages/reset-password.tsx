@@ -59,7 +59,7 @@ export default function ResetPasswordPage() {
     onError: (error: unknown) => {
       toast({
         title: "Reset failed",
-        description: error.message || "Could not reset password. The link may be expired.",
+        description: error instanceof Error ? error.message : "Could not reset password. The link may be expired.",
         variant: "destructive"
       });
     }

@@ -68,7 +68,7 @@ export function PasswordChangeForm({ userId, onSuccess }: PasswordChangeFormProp
       
       // User is now logged in with new password
       // The backend has already set the auth cookie
-      login('cookie-auth', data.user);
+      login();
 
       toast({
         title: 'Password Changed',
@@ -79,7 +79,7 @@ export function PasswordChangeForm({ userId, onSuccess }: PasswordChangeFormProp
     } catch (error: unknown) {
       toast({
         title: 'Password Change Failed',
-        description: error.message || 'An error occurred while changing your password',
+        description: error instanceof Error ? error.message : 'An error occurred while changing your password',
         variant: 'destructive'
       });
     } finally {

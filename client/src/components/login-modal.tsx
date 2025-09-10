@@ -120,7 +120,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'login' | 'signup')} className="w-full">
           <TabsList className="grid w-full grid-cols-2 bg-gray-800">
             <TabsTrigger value="login" className="data-[state=active]:bg-purple-600">
               <LogIn className="h-4 w-4 mr-2" />
