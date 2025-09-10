@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
   Brain, 
   Camera, 
@@ -20,13 +21,17 @@ import {
   RefreshCw,
   Copy,
   Check,
-  Wand2
+  Wand2,
+  UserCheck,
+  LogIn
 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import type { ContentGeneration } from "@shared/schema";
 import { GenerationHistory } from "./generation-history";
+import { AuthModal } from "./auth-modal";
 import { protectImage, protectionPresets, downloadProtectedImage } from "@/lib/image-protection";
 
 // Assuming ThemeToggle and other necessary components/hooks are imported correctly.
@@ -84,6 +89,7 @@ export function UnifiedContentCreator({
   const [allowsPromotion, setAllowsPromotion] = useState("moderate");
   const [useAdvancedSettings, setUseAdvancedSettings] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState("auto");
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // State for photo types and text tones
   const [selectedPhotoType, setSelectedPhotoType] = useState(photoTypes[0].id);
@@ -107,6 +113,7 @@ export function UnifiedContentCreator({
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { isAuthenticated, user } = useAuth();
 
   const canUseImageWorkflow = true; // Image workflow available for all users
 
@@ -387,6 +394,8 @@ export function UnifiedContentCreator({
   };
 
   const handleGenerate = () => {
+    if (!requireAuth("generate content")) return;
+    
     // Clear existing content before new generation
     setGeneratedContent(null);
     
@@ -434,7 +443,32 @@ export function UnifiedContentCreator({
     }
   };
 
+  // Authentication check helper
+  const requireAuth = (action: string) => {
+    if (!isAuthenticated) {
+      toast({
+        title: "🔐 Authentication Required",
+        description: `Please log in to ${action}. Creating an account takes just 30 seconds!`,
+        action: (
+          <Button
+            size="sm"
+            onClick={() => setShowAuthModal(true)}
+            className="bg-purple-600 hover:bg-purple-700 text-white"
+          >
+            <LogIn className="h-4 w-4 mr-1" />
+            Log In
+          </Button>
+        ),
+        duration: 6000,
+      });
+      return false;
+    }
+    return true;
+  };
+
   const handlePresetGenerate = (preset: typeof contentPresets[0]) => {
+    if (!requireAuth("generate content")) return;
+    
     // Clear existing content before new generation
     setGeneratedContent(null);
     
@@ -1002,7 +1036,44 @@ export function UnifiedContentCreator({
             )}
           </div>
         )}
+
+        {/* Authentication Prompt for Unauthenticated Users */}
+        {!isAuthenticated && !generatedContent && (
+          <Alert className="mt-6 border-purple-200 bg-purple-50 dark:bg-purple-900/20">
+            <UserCheck className="h-4 w-4 text-purple-600" />
+            <AlertDescription className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-purple-800 dark:text-purple-200">Ready to create amazing content?</p>
+                <p className="text-sm text-purple-600 dark:text-purple-300 mt-1">
+                  Sign up for free to start generating captions, titles, and photo instructions with AI
+                </p>
+              </div>
+              <Button 
+                onClick={() => setShowAuthModal(true)}
+                className="ml-4 bg-purple-600 hover:bg-purple-700 text-white"
+                data-testid="button-auth-prompt"
+              >
+                <LogIn className="h-4 w-4 mr-1" />
+                Get Started
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
       </CardContent>
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={() => {
+          setShowAuthModal(false);
+          toast({
+            title: "🎉 Welcome to ThottoPilot!",
+            description: "You can now generate content and connect your social accounts.",
+          });
+        }}
+        initialMode="signup"
+      />
     </Card>
   );
 }

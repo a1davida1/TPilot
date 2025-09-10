@@ -11,7 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { apiRequest } from '@/lib/queryClient';
+import { AuthModal } from '@/components/auth-modal';
 import { 
   Send, 
   Calendar,
@@ -33,7 +35,9 @@ import {
   TestTube,
   ExternalLink,
   ImageIcon,
-  Images
+  Images,
+  LogIn,
+  UserCheck
 } from 'lucide-react';
 
 interface RedditAccount {
@@ -70,6 +74,7 @@ interface SubredditCommunity {
 export default function RedditPostingPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { isAuthenticated, user } = useAuth();
   
   // Form state
   const [subreddit, setSubreddit] = useState('');
@@ -87,6 +92,7 @@ export default function RedditPostingPage() {
   // UI state
   const [selectedAccount, setSelectedAccount] = useState<string>('');
   const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Add image handling functions
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -859,7 +865,46 @@ export default function RedditPostingPage() {
           </div>
 
         </div>
+
+        {/* Authentication Prompt for Unauthenticated Users */}
+        {!isAuthenticated && (
+          <div className="max-w-4xl mx-auto mt-8">
+            <Alert className="border-purple-200 bg-purple-50 dark:bg-purple-900/20">
+              <UserCheck className="h-4 w-4 text-purple-600" />
+              <AlertDescription className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-purple-800 dark:text-purple-200">Ready to start posting to Reddit?</p>
+                  <p className="text-sm text-purple-600 dark:text-purple-300 mt-1">
+                    Sign up for free to connect your Reddit account and start automated posting
+                  </p>
+                </div>
+                <Button 
+                  onClick={() => setShowAuthModal(true)}
+                  className="ml-4 bg-purple-600 hover:bg-purple-700 text-white"
+                  data-testid="button-reddit-posting-auth-prompt"
+                >
+                  <LogIn className="h-4 w-4 mr-1" />
+                  Get Started
+                </Button>
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
       </div>
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={() => {
+          setShowAuthModal(false);
+          toast({
+            title: "🎉 Welcome to ThottoPilot!",
+            description: "You can now connect your Reddit account and start posting.",
+          });
+        }}
+        initialMode="signup"
+      />
     </div>
   );
 }

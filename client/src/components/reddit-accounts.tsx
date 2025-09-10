@@ -1,11 +1,14 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
-import { ExternalLink, CheckCircle, AlertCircle, Trash2, RefreshCw } from 'lucide-react';
+import { AuthModal } from '@/components/auth-modal';
+import { ExternalLink, CheckCircle, AlertCircle, Trash2, RefreshCw, LogIn, UserCheck } from 'lucide-react';
 
 interface RedditAccount {
   id: number;
@@ -19,6 +22,8 @@ interface RedditAccount {
 export function RedditAccounts() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { isAuthenticated, user } = useAuth();
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -88,8 +93,33 @@ export function RedditAccounts() {
     }
   });
 
+  // Authentication check helper
+  const requireAuth = (action: string) => {
+    if (!isAuthenticated) {
+      toast({
+        title: "🔐 Authentication Required",
+        description: `Please log in to ${action}. Creating an account takes just 30 seconds!`,
+        action: (
+          <Button
+            size="sm"
+            onClick={() => setShowAuthModal(true)}
+            className="bg-purple-600 hover:bg-purple-700 text-white"
+          >
+            <LogIn className="h-4 w-4 mr-1" />
+            Log In
+          </Button>
+        ),
+        duration: 6000,
+      });
+      return false;
+    }
+    return true;
+  };
+
   // Connect to Reddit
   const connectToReddit = async () => {
+    if (!requireAuth("connect your Reddit account")) return;
+    
     try {
       const response = await apiRequest('GET', '/api/reddit/connect').then(res => res.json());
       if (response.authUrl) {
@@ -248,6 +278,43 @@ export function RedditAccounts() {
           </ul>
         </CardContent>
       </Card>
+
+      {/* Authentication Prompt for Unauthenticated Users */}
+      {!isAuthenticated && (
+        <Alert className="border-purple-200 bg-purple-50 dark:bg-purple-900/20">
+          <UserCheck className="h-4 w-4 text-purple-600" />
+          <AlertDescription className="flex items-center justify-between">
+            <div>
+              <p className="font-medium text-purple-800 dark:text-purple-200">Ready to connect your Reddit account?</p>
+              <p className="text-sm text-purple-600 dark:text-purple-300 mt-1">
+                Sign up for free to start automated posting and access community insights
+              </p>
+            </div>
+            <Button 
+              onClick={() => setShowAuthModal(true)}
+              className="ml-4 bg-purple-600 hover:bg-purple-700 text-white"
+              data-testid="button-reddit-auth-prompt"
+            >
+              <LogIn className="h-4 w-4 mr-1" />
+              Get Started
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={() => {
+          setShowAuthModal(false);
+          toast({
+            title: "🎉 Welcome to ThottoPilot!",
+            description: "You can now connect your Reddit account and start posting.",
+          });
+        }}
+        initialMode="signup"
+      />
     </div>
   );
 }

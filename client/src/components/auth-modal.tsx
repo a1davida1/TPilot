@@ -572,8 +572,23 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   className="pl-10 bg-background border-input text-foreground focus:border-purple-500"
                   required
+                  data-testid="input-password"
                 />
               </div>
+              {mode === 'signup' && (
+                <div className="text-xs text-muted-foreground mt-2 space-y-1">
+                  <p className="flex items-center gap-2">
+                    <AlertCircle className="h-3 w-3" />
+                    Password must contain:
+                  </p>
+                  <ul className="ml-5 space-y-0.5">
+                    <li>• At least one uppercase letter (A-Z)</li>
+                    <li>• At least one lowercase letter (a-z)</li>
+                    <li>• At least one number (0-9)</li>
+                    <li>• Minimum 8 characters</li>
+                  </ul>
+                </div>
+              )}
             </div>
 
             {/* Resend Verification Alert for Login */}

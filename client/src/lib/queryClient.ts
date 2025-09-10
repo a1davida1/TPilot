@@ -1,10 +1,51 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+// Enhanced error interface for better error handling
+export interface ApiError extends Error {
+  status: number;
+  statusText: string;
+  isAuthError?: boolean;
+  userMessage?: string;
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
     console.error(`❌ API Error: ${res.status} ${res.statusText} - ${text}`);
-    throw new Error(`${res.status}: ${text}`);
+    
+    // Create enhanced error object
+    const error = new Error(`${res.status}: ${text}`) as ApiError;
+    error.status = res.status;
+    error.statusText = res.statusText;
+    
+    // Enhanced error messages for common auth scenarios
+    if (res.status === 401) {
+      error.isAuthError = true;
+      if (text.includes("Access token required")) {
+        error.userMessage = "Please log in to continue. Creating an account takes just 30 seconds!";
+      } else if (text.includes("Invalid credentials")) {
+        error.userMessage = "Invalid login credentials. Please check your username/email and password.";
+      } else if (text.includes("Email not verified")) {
+        error.userMessage = "Please verify your email before logging in. Check your inbox for the verification link.";
+      } else {
+        error.userMessage = "Authentication required. Please log in to access this feature.";
+      }
+    } else if (res.status === 403) {
+      error.isAuthError = true;
+      if (text.includes("Insufficient permissions")) {
+        error.userMessage = "You don't have permission to perform this action. Please contact support if you think this is an error.";
+      } else {
+        error.userMessage = "Access denied. Please ensure you're logged in with the correct account.";
+      }
+    } else if (res.status === 404) {
+      error.userMessage = "The requested resource was not found. Please check the URL or try again.";
+    } else if (res.status >= 500) {
+      error.userMessage = "Server error occurred. Please try again in a few moments.";
+    } else {
+      error.userMessage = `Request failed: ${text}`;
+    }
+    
+    throw error;
   }
 }
 
