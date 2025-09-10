@@ -71,6 +71,47 @@ interface SubredditCommunity {
   };
 }
 
+// API response interfaces
+interface ConnectionTestResponse {
+  connected: boolean;
+  profile?: {
+    username: string;
+    karma: number;
+  };
+}
+
+interface ConnectRedditResponse {
+  authUrl: string;
+}
+
+interface ContentValidationResponse {
+  policyState: 'allow' | 'warn' | 'block';
+}
+
+interface PostSubmissionResponse {
+  success: boolean;
+  error?: string;
+}
+
+interface SchedulePostResponse {
+  scheduledAt: string;
+}
+
+interface PostData {
+  subreddit: string;
+  title: string;
+  nsfw: boolean;
+  spoiler: boolean;
+  postType: 'text' | 'link' | 'image' | 'gallery';
+  body?: string;
+  url?: string;
+  imageData?: string;
+  images?: Array<{
+    data: string | ArrayBuffer | null;
+    caption: string;
+  }>;
+}
+
 export default function RedditPostingPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -113,13 +154,13 @@ export default function RedditPostingPage() {
   };
 
   // Fetch Reddit accounts
-  const { data: accounts = [], isLoading: accountsLoading } = useQuery({
+  const { data: accounts = [], isLoading: accountsLoading } = useQuery<RedditAccount[]>({
     queryKey: ['/api/reddit/accounts'],
     retry: false,
   });
 
   // Fetch subreddit communities data
-  const { data: communities = [] } = useQuery({
+  const { data: communities = [] } = useQuery<SubredditCommunity[]>({
     queryKey: ['/api/reddit/communities'],
     retry: false,
   });
@@ -130,7 +171,7 @@ export default function RedditPostingPage() {
       const response = await apiRequest('POST', '/api/reddit/test');
       return response.json();
     },
-    onSuccess: (data: unknown) => {
+    onSuccess: (data: ConnectionTestResponse) => {
       toast({
         title: "✅ Connection Test",
         description: data.connected ? 
@@ -154,7 +195,7 @@ export default function RedditPostingPage() {
       const response = await apiRequest('GET', '/api/reddit/connect');
       return response.json();
     },
-    onSuccess: (data: unknown) => {
+    onSuccess: (data: ConnectRedditResponse) => {
       if (data.authUrl) {
         window.open(data.authUrl, '_blank');
         toast({
@@ -178,7 +219,7 @@ export default function RedditPostingPage() {
       const response = await apiRequest('POST', '/api/preview', data);
       return response.json();
     },
-    onSuccess: (data: unknown) => {
+    onSuccess: (data: ContentValidationResponse) => {
       toast({
         title: "🔍 Content Validated",
         description: `Policy check: ${data.policyState}`,
@@ -189,11 +230,11 @@ export default function RedditPostingPage() {
 
   // Submit post
   const { mutate: submitPost, isPending: submitting } = useMutation({
-    mutationFn: async (data: unknown) => {
+    mutationFn: async (data: PostData) => {
       const response = await apiRequest('POST', '/api/reddit/submit', data);
       return response.json();
     },
-    onSuccess: (data: unknown) => {
+    onSuccess: (data: PostSubmissionResponse) => {
       if (data.success) {
         toast({
           title: "🎉 Post Published!",
@@ -209,7 +250,7 @@ export default function RedditPostingPage() {
       } else {
         toast({
           title: "❌ Posting Failed",
-          description: data.error,
+          description: data.error || 'Unknown error occurred',
           variant: "destructive"
         });
       }
@@ -229,7 +270,7 @@ export default function RedditPostingPage() {
       const response = await apiRequest('POST', '/api/posts/schedule', data);
       return response.json();
     },
-    onSuccess: (data: unknown) => {
+    onSuccess: (data: SchedulePostResponse) => {
       toast({
         title: "📅 Post Scheduled!",
         description: `Post will be published at ${new Date(data.scheduledAt).toLocaleString()}`,
@@ -273,7 +314,7 @@ export default function RedditPostingPage() {
       return;
     }
 
-    const postData: unknown = {
+    const postData: PostData = {
       subreddit,
       title,
       nsfw,
@@ -336,7 +377,7 @@ export default function RedditPostingPage() {
   };
 
   // Find community data for selected subreddit
-  const selectedCommunity = (communities as any[]).find((c: SubredditCommunity) => 
+  const selectedCommunity = communities.find((c) => 
     c.name.toLowerCase() === `r/${subreddit.toLowerCase()}` || c.id === subreddit.toLowerCase()
   );
 
@@ -383,9 +424,9 @@ export default function RedditPostingPage() {
                       <div className="animate-spin rounded-full h-4 w-4 border-2 border-orange-500 border-t-transparent" />
                       <span className="text-sm text-gray-600">Loading accounts...</span>
                     </div>
-                  ) : (accounts as any[])?.length > 0 ? (
+                  ) : accounts?.length > 0 ? (
                     <div className="space-y-3">
-                      {(accounts as any[]).map((account: RedditAccount) => (
+                      {accounts.map((account) => (
                         <div key={account.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
                           <div className="flex items-center gap-3">
                             <div className="w-3 h-3 bg-green-500 rounded-full" />

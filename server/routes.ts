@@ -92,7 +92,7 @@ const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 
 // Initialize Stripe if configured
 const stripe = STRIPE_SECRET_KEY ? new Stripe(STRIPE_SECRET_KEY, {
-  apiVersion: '2025-08-27.basil' as any,
+  apiVersion: '2024-11-20.acacia',
 }) : null;
 
 // Configure multer for optional image uploads
@@ -169,17 +169,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(passport.session());
 
   // Configure Passport serialization for admin
-  passport.serializeUser((user: any, done) => {
-    done(null, user?.id || user);
+  passport.serializeUser((user: typeof users.$inferSelect | { id: number }, done) => {
+    const userId = typeof user === 'object' && 'id' in user ? user.id : user;
+    done(null, userId);
   });
 
   passport.deserializeUser(async (id: unknown, done) => {
     try {
-      if (typeof id === 'object') return done(null, id);
-      const user = await storage.getUser(id as number);
+      if (typeof id !== 'number') {
+        return done(new Error('Invalid user ID'), null);
+      }
+      const user = await storage.getUser(id);
       done(null, user);
     } catch (error) {
-      done(error, null);
+      done(error instanceof Error ? error : new Error(String(error)), null);
     }
   });
 

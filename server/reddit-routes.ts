@@ -53,7 +53,8 @@ export function registerRedditRoutes(app: Express) {
       res.json({ authUrl });
       
     } catch (error) {
-      logger.error('Reddit connect error', { error: error.message, stack: error.stack });
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Reddit connect error', { error: err.message, stack: err.stack });
       res.status(500).json({ error: 'Failed to initiate Reddit connection' });
     }
   });
@@ -77,7 +78,8 @@ export function registerRedditRoutes(app: Express) {
       const stateData = await stateStore.get(`reddit_state:${state}`);
       
       if (!stateData) {
-        logger.error('Invalid or expired state', { statePreview: state?.toString().substring(0, 8) + '...' });
+        const stateStr = Array.isArray(state) ? state[0] : String(state);
+        logger.error('Invalid or expired state', { statePreview: stateStr.substring(0, 8) + '...' });
         return res.redirect('/dashboard?error=invalid_state');
       }
       
@@ -99,9 +101,11 @@ export function registerRedditRoutes(app: Express) {
       // Exchange code for tokens
       let tokenData;
       try {
-        tokenData = await exchangeRedditCode(code.toString());
+        const codeStr = Array.isArray(code) ? code[0] : String(code);
+        tokenData = await exchangeRedditCode(codeStr);
       } catch (err) {
-        logger.error('Reddit token exchange error', { error: err.message, stack: err.stack });
+        const error = err instanceof Error ? err : new Error(String(err));
+        logger.error('Reddit token exchange error', { error: error.message, stack: error.stack });
         return res.redirect('/dashboard?error=reddit_token_exchange_failed');
       }
 
@@ -169,7 +173,8 @@ export function registerRedditRoutes(app: Express) {
       res.redirect('/dashboard?reddit=connected&username=' + encodeURIComponent(profile.username));
       
     } catch (error) {
-      console.error('Reddit callback error:', error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      console.error('Reddit callback error:', err.message);
       res.redirect('/dashboard?error=reddit_connection_failed');
     }
   });
@@ -186,7 +191,8 @@ export function registerRedditRoutes(app: Express) {
       }
       res.json(communities);
     } catch (error) {
-      console.error('Error fetching Reddit communities:', error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      console.error('Error fetching Reddit communities:', err.message);
       res.status(500).json({ error: 'Failed to fetch Reddit communities' });
     }
   });
@@ -198,7 +204,8 @@ export function registerRedditRoutes(app: Express) {
       const insights = await getCommunityInsights(communityId);
       res.json(insights);
     } catch (error) {
-      console.error('Error fetching community insights:', error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      console.error('Error fetching community insights:', err.message);
       res.status(500).json({ error: 'Failed to fetch community insights' });
     }
   });
