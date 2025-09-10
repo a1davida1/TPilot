@@ -25,7 +25,7 @@ class PerformanceMonitor {
       const originalEnd = res.end;
       
       // Override end function to capture metrics
-      res.end = (...args: Parameters<typeof originalEnd>) => {
+      (res as any).end = (...args: any[]) => {
         // Restore original end function
         res.end = originalEnd;
         
