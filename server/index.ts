@@ -92,6 +92,26 @@ app.use((req, res, next) => {
         const { setupVite } = await import("./vite");
         await setupVite(app, server);
         
+        // Since Vite setup is a stub, serve the built client files in development too
+        const path = await import("path");
+        const { fileURLToPath } = await import("url");
+        const __dirname = path.dirname(fileURLToPath(import.meta.url));
+        const clientPath = path.join(__dirname, "..", "client", "dist");
+        
+        // Check if build directory exists
+        const fs = await import("fs");
+        if (fs.existsSync(clientPath)) {
+          app.use(express.static(clientPath));
+          app.get("*", (req, res, next) => {
+            // Only serve index.html for non-API routes
+            if (!req.path.startsWith('/api/') && !req.path.startsWith('/auth/') && !req.path.startsWith('/webhook/')) {
+              res.sendFile(path.join(clientPath, "index.html"));
+            } else {
+              next();
+            }
+          });
+        }
+        
         // Add 404 handler only for API routes in development (after Vite setup)
         app.use((req, res, next) => {
           // Only apply 404 handler to API routes, let Vite handle frontend routes
