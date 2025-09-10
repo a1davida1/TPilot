@@ -42,7 +42,7 @@ export const users = pgTable("users", {
   lastName: varchar("last_name", { length: 255 }),
   tier: varchar("tier", { length: 50 }).default("free").notNull(), // free, starter, pro
   mustChangePassword: boolean("must_change_password").default(false).notNull(),
-  subscriptionStatus: varchar("subscription_status", { length: 50 }).default("inactive").notNull(), // active, inactive, cancelled, past_due
+  subscriptionStatus: varchar("subscription_status", { length: 50 }).default("inactive").notNull(), // active, inactive, cancelled, past_due, expired
   trialEndsAt: timestamp("trial_ends_at"),
   provider: varchar("provider", { length: 50 }), // google, facebook, reddit
   providerId: varchar("provider_id", { length: 255 }),

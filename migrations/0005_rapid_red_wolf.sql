@@ -1,0 +1,3 @@
+-- Placeholder migration to fix missing file
+-- This migration was referenced but missing, creating to fix migration chain
+-- No actual changes needed
