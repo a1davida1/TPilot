@@ -233,11 +233,11 @@ function sanitizeObject(obj: Record<string, unknown>): void {
         .replace(/expression\s*\(/gi, '');
       
       // Limit string length to prevent DoS
-      if (obj[key].length > 10000) {
-        obj[key] = obj[key].substring(0, 10000);
+      if ((obj[key] as string).length > 10000) {
+        obj[key] = (obj[key] as string).substring(0, 10000);
       }
     } else if (typeof obj[key] === 'object' && obj[key] !== null) {
-      sanitizeObject(obj[key]);
+      sanitizeObject(obj[key] as Record<string, unknown>);
     }
   }
 }
@@ -266,8 +266,8 @@ export const validateApiKey = (req: express.Request, res: express.Response, next
   }
   
   // Validate API key format if provided
-  if (apiKey && !isValidApiKeyFormat(apiKey)) {
-    const originIP = req.userIP || req.ip;
+  if (apiKey && !isValidApiKeyFormat(apiKey as string)) {
+    const originIP = (req as any).userIP || req.ip;
     logger.warn(`Invalid API key format from ${originIP}`);
     return res.status(401).json({ error: 'Invalid API key format' });
   }

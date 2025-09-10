@@ -70,5 +70,5 @@ export const createToken = (user: UserType): string => {
 };
 
 export const verifyToken = (token: string): { userId: number; email: string; iat: number; exp: number } => {
-  return jwt.verify(token, JWT_SECRET);
+  return jwt.verify(token, JWT_SECRET) as { userId: number; email: string; iat: number; exp: number };
 };
