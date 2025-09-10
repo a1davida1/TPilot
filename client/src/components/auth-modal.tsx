@@ -21,6 +21,19 @@ import {
   AlertCircle
 } from "lucide-react";
 
+// TypeScript interfaces for authentication responses
+interface AuthResponse {
+  mustChangePassword?: boolean;
+  userId?: string;
+  message?: string;
+}
+
+interface AuthError {
+  code?: string;
+  email?: string;
+  message?: string;
+}
+
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -119,7 +132,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
 
       return responseData;
     },
-    onSuccess: async (data: unknown) => {
+    onSuccess: async (data: AuthResponse) => {
       // Check for temporary password status (202 response) - handled in mutationFn
       if (data.mustChangePassword) {
         toast({
@@ -158,7 +171,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
         setFormData({ username: '', email: '', password: '' });
       }
     },
-    onError: async (error: unknown) => {
+    onError: async (error: AuthError) => {
       // Handle email not verified error specially
       if (error.code === 'EMAIL_NOT_VERIFIED') {
         setShowResendVerification(true);
@@ -211,7 +224,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
       setMode('login');
       setResetEmail('');
     },
-    onError: (error: unknown) => {
+    onError: (error: AuthError) => {
       toast({
         title: 'Error',
         description: error.message || 'Failed to send reset email. Please try again.',
@@ -270,7 +283,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
         description: 'Please check your inbox and spam folder.'
       });
     },
-    onError: (error: unknown) => {
+    onError: (error: AuthError) => {
       toast({
         title: 'Error',
         description: error.message || 'Failed to resend verification email. Please try again.',
