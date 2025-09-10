@@ -7,18 +7,18 @@
 
 @layer base {
   :root {
-    /* Light Mode - Clean White Background with Dark Purple/Pink Text */
+    /* Light Mode - Clean White Background with Dark Text */
     --background: 0 0 100;
-    --foreground: 320 60 15;
+    --foreground: 0 0 8;
     
     /* Card colors with high contrast */
     --card: 0 0 100;
-    --card-foreground: 320 60 15;
+    --card-foreground: 0 0 8;
     --card-border: 320 30 85;
     
     /* Popover colors - Fixed for dropdown visibility */
-    --popover: 320 10 98;
-    --popover-foreground: 320 60 15;
+    --popover: 0 0 98;
+    --popover-foreground: 0 0 8;
     
     /* WCAG‑AA compliant primary */
     --primary: 221 70 40;
@@ -38,11 +38,11 @@
     
     /* Secondary colors */
     --secondary: 320 20 95;
-    --secondary-foreground: 320 60 20;
+    --secondary-foreground: 0 0 20;
     
     /* Muted colors with high contrast */
     --muted: 320 15 95;
-    --muted-foreground: 320 50 30;
+    --muted-foreground: 0 0 45;
     
     /* Accent colors - Dark Purple/Pink palette */
     --accent: 280 60 30;
@@ -78,7 +78,7 @@
     
     /* Sidebar colors */
     --sidebar-background: 0 0 100;
-    --sidebar-foreground: 320 60 15;
+    --sidebar-foreground: 0 0 8;
     --sidebar-primary: 320 70 25;
     --sidebar-primary-foreground: 0 0 100;
     --sidebar-accent: 280 60 30;
