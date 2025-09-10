@@ -72,7 +72,7 @@ export class MetricsWorker {
       }
 
     } catch (error: unknown) {
-      logger.error(`Metrics job for post ${redditPostId} failed:`, { error: error.message });
+      logger.error(`Metrics job for post ${redditPostId} failed:`, { error: (error as any).message });
 
       // Log failure event
       if (postJobId) {
@@ -85,7 +85,7 @@ export class MetricsWorker {
           await this.logEvent(postJob.userId, 'metrics.failed', {
             postJobId,
             redditPostId,
-            error: error.message,
+            error: (error as any).message,
           });
         }
       }
@@ -116,11 +116,11 @@ export class MetricsWorker {
     try {
       // Update the post job with latest metrics
       const currentMetrics = {
-        score: metrics.score,
-        upvoteRatio: metrics.upvoteRatio,
-        comments: metrics.numComments,
-        views: metrics.views,
-        lastCollected: metrics.collectedAt.toISOString(),
+        score: (metrics as any).score,
+        upvoteRatio: (metrics as any).upvoteRatio,
+        comments: (metrics as any).numComments,
+        views: (metrics as any).views,
+        lastCollected: (metrics as any).collectedAt.toISOString(),
       };
 
       await db

@@ -79,7 +79,7 @@ export class PostWorker {
             postOptions.url = mediaAsset.downloadUrl || mediaAsset.signedUrl;
           }
         } catch (error) {
-          logger.warn('Failed to attach media, posting as text:', { error: error.message });
+          logger.warn('Failed to attach media, posting as text:', { error: (error as any).message });
         }
       }
 
@@ -111,7 +111,7 @@ export class PostWorker {
 
       // Update job status to failed
       await this.updateJobStatus(postJobId!, 'failed', {
-        error: error.message,
+        error: (error as any).message,
         failedAt: new Date().toISOString(),
       });
 
@@ -119,7 +119,7 @@ export class PostWorker {
       await this.logEvent(userId, 'job.failed', {
         postJobId,
         subreddit,
-        error: error.message,
+        error: (error as any).message,
       });
 
       throw error; // Re-throw to mark job as failed
