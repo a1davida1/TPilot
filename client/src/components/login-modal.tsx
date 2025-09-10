@@ -229,7 +229,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                   name="password"
                   type="password"
                   required
-                  minLength={6}
+                  minLength={8}
                   className="bg-gray-800 border-purple-500/20 text-white"
                 />
               </div>

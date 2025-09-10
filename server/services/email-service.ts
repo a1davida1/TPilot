@@ -45,14 +45,11 @@ async function sendVerificationEmail(to: string, username: string, token: string
   }
 }
 
-async function sendPasswordResetEmail(to: string, username: string) {
+async function sendPasswordResetEmail(to: string, username: string, token: string) {
   if (!isEmailServiceConfigured) return;
-  const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    throw new Error('JWT_SECRET environment variable is required for password reset tokens');
-  }
-  const token = jwt.sign({ email: to }, secret, { expiresIn: '1h' });
-  const resetUrl = `${FRONTEND_URL}/reset-password?token=${token}`;
+  
+  // Use the JWT token passed from the forgot-password endpoint
+  const resetUrl = `${FRONTEND_URL}/reset-password?token=${encodeURIComponent(token)}`;
   const msg: sgMail.MailDataRequired = {
     to,
     from: FROM_EMAIL,

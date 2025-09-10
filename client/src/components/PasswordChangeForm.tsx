@@ -34,10 +34,10 @@ export function PasswordChangeForm({ userId, onSuccess }: PasswordChangeFormProp
       return;
     }
 
-    if (formData.newPassword.length < 6) {
+    if (formData.newPassword.length < 8) {
       toast({
         title: 'Password Too Short',
-        description: 'New password must be at least 6 characters long',
+        description: 'New password must be at least 8 characters long',
         variant: 'destructive'
       });
       return;
@@ -117,7 +117,7 @@ export function PasswordChangeForm({ userId, onSuccess }: PasswordChangeFormProp
               value={formData.newPassword}
               onChange={(e) => setFormData(prev => ({ ...prev, newPassword: e.target.value }))}
               required
-              minLength={6}
+              minLength={8}
               data-testid="input-new-password"
             />
           </div>
@@ -130,7 +130,7 @@ export function PasswordChangeForm({ userId, onSuccess }: PasswordChangeFormProp
               value={formData.confirmPassword}
               onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
               required
-              minLength={6}
+              minLength={8}
               data-testid="input-confirm-password"
             />
           </div>

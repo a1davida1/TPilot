@@ -77,10 +77,10 @@ export default function ResetPasswordPage() {
       return;
     }
     
-    if (newPassword.length < 6) {
+    if (newPassword.length < 8) {
       toast({
         title: "Password too short",
-        description: "Password must be at least 6 characters long.",
+        description: "Password must be at least 8 characters long.",
         variant: "destructive"
       });
       return;
@@ -146,7 +146,7 @@ export default function ResetPasswordPage() {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
-                  minLength={6}
+                  minLength={8}
                   data-testid="input-new-password"
                 />
                 <Button
@@ -174,7 +174,7 @@ export default function ResetPasswordPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                minLength={6}
+                minLength={8}
                 data-testid="input-confirm-password"
               />
             </div>
