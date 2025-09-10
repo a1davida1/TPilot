@@ -15,9 +15,9 @@ echo "🔧 Preparing TypeScript compilation..."
 mv server/vite.ts server/vite.ts.bak 2>/dev/null || true
 mv server/vite-stub.ts server/vite.ts 2>/dev/null || true
 
-# Compile TypeScript (ignore vite.ts error)
+# Compile TypeScript (server only for deployment)
 echo "⚙️ Compiling TypeScript..."
-tsc -p tsconfig.json 2>&1 | grep -v "TS5097" | grep -v "vite.ts" | grep -v "Found 1 error" || true
+npx tsc -p tsconfig.server.json --skipLibCheck || true
 
 echo "📝 Creating production server entry point..."
 # Create package.json to ensure CommonJS mode in dist folder
