@@ -115,7 +115,7 @@ export function setupSocialAuth(app: Express) {
       accessToken: string,
       refreshToken: string,
       profile: RedditProfile,
-      done: (error: unknown, user?: User | false) => void
+      done: (error: Error | null, user?: User | false) => void
     ) => {
       try {
         // Reddit doesn't provide email, use username
