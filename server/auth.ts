@@ -609,9 +609,10 @@ export function setupAuth(app: Express) {
       // Hash the new password
       const hashedPassword = await bcrypt.hash(newPassword, 10);
       
-      // Update password and mark email as verified
+      // Update password, mark email as verified, and clear temporary password flag
       await storage.updateUserPassword(user.id, hashedPassword);
       await storage.updateUserEmailVerified(user.id, true);
+      await storage.updateUser(user.id, { mustChangePassword: false });
       
       logger.info('Password reset successful', {
         userId: user.id,
