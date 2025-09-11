@@ -177,7 +177,7 @@ export function Header() {
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem 
-                      onClick={handleLogout}
+                      onSelect={handleLogout}
                       className="flex items-center gap-2 text-red-600 focus:text-red-600"
                     >
                       <LogOut className="h-4 w-4" />
