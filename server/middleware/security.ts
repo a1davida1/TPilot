@@ -441,8 +441,8 @@ export const ipLoggingMiddleware = (req: express.Request, res: express.Response,
   }
 
   // Attach to request
-  req.userIP = userIP;
-  req.userAgent = userAgent;
+  req.userIP = typeof userIP === 'string' ? userIP : 'unknown';
+  req.userAgent = typeof userAgent === 'string' ? userAgent : 'Unknown';
 
   next();
 };

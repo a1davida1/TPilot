@@ -202,8 +202,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(passport.session());
 
   // Configure Passport serialization for admin
-  passport.serializeUser<number>((user: AuthUser, done) => {
-    done(null, user.id);
+  passport.serializeUser((user: Express.User, done) => {
+    done(null, (user as AuthUser).id);
   });
 
   passport.deserializeUser(async (id: unknown, done) => {

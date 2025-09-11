@@ -7,8 +7,8 @@ import { type User } from "@shared/schema";
 
 // DashboardUser interface extending User with additional properties
 interface DashboardUser extends User {
-  reddit_username?: string;
-  provider?: string;
+  reddit_username?: string | null;
+  provider?: string | null;
 }
 
 export default function Dashboard() {
