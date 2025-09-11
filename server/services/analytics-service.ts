@@ -2,10 +2,10 @@ import { db } from '../db';
 import { users } from '@shared/schema';
 import { and, eq, gte, lte, sql, desc } from 'drizzle-orm';
 
-export interface AnalyticsEvent {
+export interface AnalyticsEvent<T extends Record<string, unknown> = Record<string, unknown>> {
   userId: string;
   event: string;
-  properties: Record<string, any>;
+  properties: T;
   timestamp: Date;
   sessionId: string;
   deviceInfo: {
@@ -101,7 +101,7 @@ class AnalyticsService {
   async trackFeatureUsage(userId: string, feature: string, metadata?: unknown) {
     await this.trackEvent(userId, 'feature_used', {
       feature,
-      ...metadata,
+      ...(metadata || {}),
       timestamp: new Date().toISOString()
     });
   }

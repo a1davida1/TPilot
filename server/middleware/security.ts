@@ -220,6 +220,14 @@ export const inputSanitizer = (req: express.Request, res: express.Response, next
   });
 };
 
+// Extend Express Request interface to add custom properties
+declare module 'express' {
+  interface Request {
+    userIP?: string;
+    userAgent?: string;
+  }
+}
+
 // Custom sanitization for specific threats
 function sanitizeObject(obj: Record<string, unknown>): void {
   for (const key in obj) {
@@ -317,7 +325,6 @@ export const securityMiddleware = [
         defaultSrc: ["'self'"],
         scriptSrc: [
           "'self'",
-          "'unsafe-inline'", // Required for React
           process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : "",
           "https://js.stripe.com",
           "https://checkout.stripe.com",
@@ -325,7 +332,6 @@ export const securityMiddleware = [
         ].filter(Boolean),
         styleSrc: [
           "'self'",
-          "'unsafe-inline'",
           "https://fonts.googleapis.com",
           "https://checkout.stripe.com"
         ],

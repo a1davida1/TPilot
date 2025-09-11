@@ -97,7 +97,7 @@ const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 
 // Initialize Stripe if configured
 const stripe = STRIPE_SECRET_KEY ? new Stripe(STRIPE_SECRET_KEY, {
-  apiVersion: '2025-08-27.basil',
+  apiVersion: "2025-08-27.basil",
 }) : null;
 
 // Configure multer for optional image uploads

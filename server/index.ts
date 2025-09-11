@@ -22,10 +22,46 @@ declare global {
 const app = express();
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",").map(o => o.trim()) ?? [];
+
 app.use(cors({
   origin(origin, cb) {
-    if (!origin || allowedOrigins.includes(origin)) cb(null, true);
-    else cb(new Error("Origin not allowed"));
+    // Allow requests with no origin (like Postman, server-side requests, or same-origin)
+    if (!origin) {
+      return cb(null, true);
+    }
+    
+    // Check if origin is explicitly allowed
+    if (allowedOrigins.length > 0 && allowedOrigins.includes(origin)) {
+      return cb(null, true);
+    }
+    
+    // In development, allow common local origins and Replit domains
+    if (process.env.NODE_ENV === 'development') {
+      const devAllowedOrigins = [
+        'http://localhost:5000',
+        'http://localhost:3000',
+        'http://127.0.0.1:5000',
+        'http://127.0.0.1:3000'
+      ];
+      
+      if (devAllowedOrigins.includes(origin)) {
+        return cb(null, true);
+      }
+      
+      // Allow any Replit domain
+      if (origin.includes('.replit.dev') || origin.includes('.repl.co') || origin.includes('.replit.app')) {
+        return cb(null, true);
+      }
+    }
+    
+    // In production, be more restrictive but still allow configured origins
+    if (process.env.NODE_ENV === 'production' && allowedOrigins.length === 0) {
+      // If no origins configured in production, allow same-origin only
+      return cb(null, false);
+    }
+    
+    // Reject if not allowed
+    cb(null, false);
   },
   credentials: true
 }));

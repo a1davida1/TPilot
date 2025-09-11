@@ -45,13 +45,71 @@ interface AdminStats {
   activeUsers: number;
   contentGenerated: number;
   newUsersToday: number;
+  trialUsers: number;
+  freeUsers: number;
+  proUsers: number;
+  premiumUsers: number;
+  jwtConfigured: boolean;
+  emailConfigured: boolean;
+}
+
+interface User {
+  id: number;
+  username: string;
+  email: string;
+  tier: string;
+  isActive: boolean;
+  isVerified: boolean;
+  createdAt?: string;
+  lastLoginAt?: string;
+  contentCount?: number;
+}
+
+interface UserActionData {
+  action: string;
+  userId?: number;
+  tier?: string;
+  newTier?: string;
+  reason?: string;
+  duration?: string;
+}
+
+interface Provider {
+  name: string;
+  status: string;
+  cost?: number;
+}
+
+interface SystemHealth {
+  status: string;
+  services: {
+    [key: string]: {
+      status: string;
+      message?: string;
+    };
+  };
+}
+
+interface Analytics {
+  visitors: number;
+  pageViews: number;
+  sessions: number;
+  conversionRate: number;
+}
+
+interface Completeness {
+  percentage: number;
+  items: {
+    name: string;
+    status: boolean;
+  }[];
 }
 
 export function AdminDashboard() {
   const { toast } = useToast();
   const { token } = useAuth();
   const [selectedPeriod, setSelectedPeriod] = useState('7d');
-  const [selectedUser, setSelectedUser] = useState<{ id: number; username: string; email: string; tier: string; isActive: boolean; isVerified: boolean } | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [actionType, setActionType] = useState<'ban' | 'suspend' | 'unban' | 'reset-password' | 'tier-management' | 'user-details' | null>(null);
   const [reason, setReason] = useState('');
   const [duration, setDuration] = useState('24');
@@ -79,43 +137,43 @@ export function AdminDashboard() {
   });
 
   // Fetch user data
-  const { data: users } = useQuery({
+  const { data: users } = useQuery<User[]>({
     queryKey: ['/api/admin/users'],
     queryFn: () => authenticatedFetch('/api/admin/users'),
     enabled: !!token
   });
 
   // Fetch provider costs
-  const { data: providers } = useQuery({
+  const { data: providers } = useQuery<Provider[]>({
     queryKey: ['/api/providers'],
     queryFn: () => authenticatedFetch('/api/providers'),
     enabled: !!token
   });
 
   // Fetch system health
-  const { data: systemHealth } = useQuery({
+  const { data: systemHealth } = useQuery<SystemHealth>({
     queryKey: ['/api/admin/system-health'],
     queryFn: () => authenticatedFetch('/api/admin/system-health'),
     enabled: !!token
   });
 
   // Fetch visitor analytics
-  const { data: analytics } = useQuery({
+  const { data: analytics } = useQuery<Analytics>({
     queryKey: ['/api/admin/analytics', selectedPeriod],
     queryFn: () => authenticatedFetch('/api/admin/analytics'),
     enabled: !!token
   });
 
   // Fetch system completeness
-  const { data: completeness } = useQuery({
+  const { data: completeness } = useQuery<Completeness>({
     queryKey: ['/api/admin/completeness'],
     queryFn: () => authenticatedFetch('/api/admin/completeness'),
     enabled: !!token
   });
 
   // User action mutation for admin operations
-  const actionMutation = useMutation({
-    mutationFn: async (data: unknown) => {
+  const actionMutation = useMutation<any, Error, UserActionData>({
+    mutationFn: async (data: UserActionData) => {
       let endpoint = '/api/admin/user-action';
       if (data.action === 'reset-password') endpoint = '/api/admin/reset-password';
       else if (data.action === 'tier-management') endpoint = '/api/admin/upgrade-user';
@@ -148,7 +206,7 @@ export function AdminDashboard() {
         setActionType(null);
       }
     },
-    onError: (error: unknown) => {
+    onError: (error: Error) => {
       toast({ title: "Action Failed", description: error.message, variant: "destructive" });
     }
   });

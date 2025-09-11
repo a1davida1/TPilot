@@ -13,6 +13,7 @@ import { verificationLimiter, passwordResetLimiter, loginLimiter, signupLimiter,
 import { authMetrics } from './services/basic-metrics.js';
 import { logger } from './bootstrap/logger.js';
 import { validate, ValidationSource, loginValidationSchema, signupValidationSchema, passwordChangeValidationSchema, passwordResetValidationSchema } from './middleware/validation.js';
+import { extractAuthToken } from './middleware/extract-token.js';
 
 // Auth validation schemas removed - handled by middleware
 
@@ -376,14 +377,8 @@ export function setupAuth(app: Express) {
     try {
       let token: string | null = null;
 
-      // Try cookie-based authentication first (preferred)
-      if (req.cookies && req.cookies.authToken) {
-        token = req.cookies.authToken;
-      }
-      // Fallback to Bearer token authentication  
-      else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
-        token = req.headers.authorization.substring(7);
-      }
+      // Extract token using the utility function
+      token = extractAuthToken(req);
 
       if (!token) {
         return res.status(401).json({ message: 'Access token required' });
@@ -506,71 +501,79 @@ export function setupAuth(app: Express) {
     try {
       const { token } = req.query;
       
-      console.log('📧 EMAIL VERIFICATION WORKFLOW STARTED');
-      console.log('  ├─ 🔑 Token received:', token ? `${String(token).substring(0, 8)}...` : 'No token');
-      console.log('  ├─ 🌐 Request origin:', req.headers.origin || 'Unknown');
-      console.log('  └─ 📅 Timestamp:', new Date().toISOString());
+      logger.info('📧 EMAIL VERIFICATION WORKFLOW STARTED', {
+        token: token ? `${String(token).substring(0, 8)}...` : 'No token',
+        origin: req.headers.origin || 'Unknown',
+        timestamp: new Date().toISOString()
+      });
       
       if (!token) {
-        console.log('❌ EMAIL VERIFICATION FAILED: No token provided');
+        logger.warn('❌ EMAIL VERIFICATION FAILED: No token provided');
         return res.status(400).json({ message: 'Verification token required' });
       }
 
       // Get the verification token from database
-      console.log('  🔍 Looking up token in database...');
+      logger.debug('🔍 Looking up token in database...');
       const verificationToken = await storage.getVerificationToken(token as string);
       
       if (!verificationToken) {
-        console.log('❌ EMAIL VERIFICATION FAILED: Token not found in database');
-        console.log('  └─ Token:', String(token).substring(0, 8), '...');
+        logger.warn('❌ EMAIL VERIFICATION FAILED: Token not found in database', {
+          token: `${String(token).substring(0, 8)}...`
+        });
         return res.status(400).json({ message: 'Invalid or expired verification token' });
       }
       
-      console.log('  ✅ Token found');
-      console.log('  ├─ User ID:', verificationToken.userId);
-      console.log('  ├─ Created:', 'N/A'); // createdAt not tracked in verification tokens
-      console.log('  └─ Expires:', new Date(verificationToken.expiresAt).toISOString());
+      logger.debug('✅ Token found', {
+        userId: verificationToken.userId,
+        created: 'N/A',
+        expires: new Date(verificationToken.expiresAt).toISOString()
+      });
       
       // Check if token is expired
       if (new Date(verificationToken.expiresAt) < new Date()) {
-        console.log('❌ EMAIL VERIFICATION FAILED: Token expired');
-        console.log('  ├─ Expired at:', new Date(verificationToken.expiresAt).toISOString());
-        console.log('  └─ Current time:', new Date().toISOString());
+        logger.warn('❌ EMAIL VERIFICATION FAILED: Token expired', {
+          expiredAt: new Date(verificationToken.expiresAt).toISOString(),
+          currentTime: new Date().toISOString()
+        });
         await storage.deleteVerificationToken(token as string);
         return res.status(400).json({ message: 'Verification token has expired' });
       }
 
       // Update user's email verification status
-      console.log('  📝 Updating user email verification status...');
+      logger.debug('📝 Updating user email verification status...');
       await storage.updateUserEmailVerified(verificationToken.userId, true);
-      console.log('  ✅ User email marked as verified');
+      logger.debug('✅ User email marked as verified');
       
       // Get user data for email
-      console.log('  🔍 Fetching user data...');
+      logger.debug('🔍 Fetching user data...');
       const user = await storage.getUser(verificationToken.userId);
-      console.log('  ✅ User data retrieved');
-      console.log('  ├─ Username:', user?.username || 'Unknown');
-      console.log('  └─ Email:', user?.email ? user.email.replace(/(.{2})(.*)(@.*)/, '$1***$3') : 'No email');
+      logger.debug('✅ User data retrieved', {
+        username: user?.username || 'Unknown',
+        email: user?.email ? user.email.replace(/(.{2})(.*)(@.*)/, '$1***$3') : 'No email'
+      });
       
       // Delete the used token
-      console.log('  🗑️ Deleting used verification token...');
+      logger.debug('🗑️ Deleting used verification token...');
       await storage.deleteVerificationToken(token as string);
-      console.log('  ✅ Token deleted successfully');
+      logger.debug('✅ Token deleted successfully');
       
       // Redirect to email verification page with success message
       const redirectUrl = `${FRONTEND_URL}/email-verification?verified=true&email=${encodeURIComponent(user?.email || '')}`;
       
-      console.log('✅ EMAIL VERIFICATION SUCCESSFUL');
-      console.log('  ├─ User:', user?.username || 'Unknown');
-      console.log('  ├─ Email:', user?.email ? user.email.replace(/(.{2})(.*)(@.*)/, '$1***$3') : 'No email');
-      console.log('  └─ Redirecting to:', redirectUrl.replace(/email=[^&]*/, 'email=***'));
+      logger.info('✅ EMAIL VERIFICATION SUCCESSFUL', {
+        user: user?.username || 'Unknown',
+        email: user?.email ? user.email.replace(/(.{2})(.*)(@.*)/, '$1***$3') : 'No email',
+        redirectUrl: redirectUrl.replace(/email=[^&]*/, 'email=***')
+      });
       
       res.redirect(redirectUrl);
       
     } catch (error) {
-      console.log('❌ EMAIL VERIFICATION ERROR:', error.message);
-      console.log('  ├─ Stack:', error.stack?.split('\n')[1]?.trim() || 'No stack trace');
-      console.log('  └─ Time:', new Date().toISOString());
+      logger.error('❌ EMAIL VERIFICATION ERROR', {
+        error: error.message,
+        stack: error.stack?.split('\n')[1]?.trim() || 'No stack trace',
+        time: new Date().toISOString()
+      });
       
       safeLog('error', 'Email verification error:', { error: error.message });
       res.redirect(`${FRONTEND_URL}/email-verification?error=verification_failed`);
@@ -683,7 +686,7 @@ export function setupAuth(app: Express) {
   app.delete('/api/auth/delete-account', async (req: Request, res: Response) => {
     try {
       // Check authentication from JWT cookie or token
-      const token = req.cookies.authToken || req.headers.authorization?.replace('Bearer ', '');
+      const token = extractAuthToken(req);
       
       if (!token) {
         return res.status(401).json({ message: 'Authentication required' });
@@ -735,12 +738,7 @@ export function setupAuth(app: Express) {
   app.get('/api/admin/auth-metrics', async (req: Request, res: Response) => {
     try {
       // Check if user is authenticated
-      let token: string | null = null;
-      if (req.cookies && req.cookies.authToken) {
-        token = req.cookies.authToken;
-      } else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
-        token = req.headers.authorization.substring(7);
-      }
+      const token = extractAuthToken(req);
       
       if (!token) {
         return res.status(401).json({ error: 'Authentication required' });
