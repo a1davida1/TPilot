@@ -61,6 +61,9 @@ export function useAuth() {
     // Invalidate user cache immediately
     queryClient.removeQueries({ queryKey: ['/api/auth/user'] });
     
+    // Ensure UI updates instantly
+    queryClient.setQueryData(['/api/auth/user'], null);
+    
     // Logout from session (clears HTTP-only cookie)
     try {
       const response = await fetch('/api/auth/logout', {
