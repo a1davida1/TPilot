@@ -52,12 +52,16 @@ async function throwIfResNotOk(res: Response) {
 export async function apiRequest(
   method: string,
   url: string,
-  data?: unknown | undefined,
+  data?: unknown,
 ): Promise<Response> {
   const headers: Record<string, string> = {};
-  
-  if (data) {
+  let body: BodyInit | undefined;
+
+  if (data instanceof FormData) {
+    body = data;
+  } else if (data !== undefined) {
     headers["Content-Type"] = "application/json";
+    body = JSON.stringify(data);
   }
   
   // Add Authorization header if token exists
@@ -69,7 +73,7 @@ export async function apiRequest(
   const res = await fetch(url, {
     method,
     headers,
-    body: data ? JSON.stringify(data) : undefined,
+    body,
     credentials: "include",
   });
 

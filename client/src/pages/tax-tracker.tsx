@@ -22,7 +22,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, type ApiError } from '@/lib/queryClient';
 // Temporarily disabled framer-motion to fix runtime errors
 // import { motion, AnimatePresence } from 'framer-motion';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
@@ -79,6 +79,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
   });
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [receiptExpenseId, setReceiptExpenseId] = useState('');
+  const [expenseError, setExpenseError] = useState<string | null>(null);
   
   const queryClient = useQueryClient();
 
@@ -143,6 +144,11 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
       queryClient.invalidateQueries({ queryKey: ['/api/expenses/totals'] });
       setShowExpenseModal(false);
       setExpenseForm({ description: '', amount: '', category: '', date: format(new Date(), 'yyyy-MM-dd'), notes: '' });
+      setExpenseError(null);
+    },
+    onError: (error: unknown) => {
+      const apiError = error as ApiError;
+      setExpenseError(apiError.userMessage ?? apiError.message);
     }
   });
 
@@ -167,10 +173,11 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
   const handleCreateExpense = () => {
     if (!expenseForm.description || !expenseForm.amount || !expenseForm.category) return;
 
+    setExpenseError(null);
     createExpenseMutation.mutate({
       description: expenseForm.description,
-      amount: Math.round(parseFloat(expenseForm.amount) * 100),
-      categoryId: parseInt(expenseForm.category),
+      amount: parseFloat(expenseForm.amount),
+      categoryId: parseInt(expenseForm.category, 10),
       expenseDate: expenseForm.date,
       notes: expenseForm.notes
     });
@@ -601,7 +608,13 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
         </Tabs>
 
         {/* Add Expense Modal */}
-        <Dialog open={showExpenseModal} onOpenChange={setShowExpenseModal}>
+        <Dialog
+          open={showExpenseModal}
+          onOpenChange={(open) => {
+            setShowExpenseModal(open);
+            if (!open) setExpenseError(null);
+          }}
+        >
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center space-x-2">
@@ -610,6 +623,11 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
+              {expenseError && (
+                <p className="text-sm text-red-600" data-testid="expense-error-message">
+                  {expenseError}
+                </p>
+              )}
               <div>
                 <Label htmlFor="description">Description</Label>
                 <Input

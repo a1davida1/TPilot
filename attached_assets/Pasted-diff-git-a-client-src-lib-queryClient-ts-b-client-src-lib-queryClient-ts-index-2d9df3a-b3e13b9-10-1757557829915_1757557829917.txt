@@ -1,0 +1,121 @@
+diff --git a/client/src/lib/queryClient.ts b/client/src/lib/queryClient.ts
+index 2d9df3a..b3e13b9 100644
+--- a/client/src/lib/queryClient.ts
++++ b/client/src/lib/queryClient.ts
+@@
+ export async function apiRequest(
+   method: string,
+   url: string,
+-  data?: unknown | undefined,
++  data?: unknown,
+ ): Promise<Response> {
+-  const headers: Record<string, string> = {};
+-
+-  if (data) {
+-    headers["Content-Type"] = "application/json";
+-  }
++  const headers: Record<string, string> = {};
++  let body: BodyInit | undefined;
++
++  if (data instanceof FormData) {
++    body = data;
++  } else if (data !== undefined) {
++    headers["Content-Type"] = "application/json";
++    body = JSON.stringify(data);
++  }
+ 
+   // Add Authorization header if token exists
+   const token = localStorage.getItem('authToken');
+   if (token) {
+     headers['Authorization'] = `Bearer ${token}`;
+   }
+ 
+   const res = await fetch(url, {
+     method,
+     headers,
+-    body: data ? JSON.stringify(data) : undefined,
++    body,
+     credentials: "include",
+   });
+ 
+   await throwIfResNotOk(res);
+   return res;
+ }
+diff --git a/client/src/pages/tax-tracker.tsx b/client/src/pages/tax-tracker.tsx
+index e12a1de..9b8b868 100644
+--- a/client/src/pages/tax-tracker.tsx
++++ b/client/src/pages/tax-tracker.tsx
+@@
+ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+-import { apiRequest } from '@/lib/queryClient';
++import { apiRequest, type ApiError } from '@/lib/queryClient';
+@@
+   const [receiptFile, setReceiptFile] = useState<File | null>(null);
+   const [receiptExpenseId, setReceiptExpenseId] = useState('');
++  const [expenseError, setExpenseError] = useState<string | null>(null);
+@@
+   const createExpenseMutation = useMutation({
+     mutationFn: async (expenseData: Omit<Expense, 'id'>) => {
+       const response = await apiRequest('POST', '/api/expenses', expenseData);
+       return response.json();
+     },
+     onSuccess: () => {
+       queryClient.invalidateQueries({ queryKey: ['/api/expenses'] });
+       queryClient.invalidateQueries({ queryKey: ['/api/expenses/totals'] });
+       setShowExpenseModal(false);
+       setExpenseForm({ description: '', amount: '', category: '', date: format(new Date(), 'yyyy-MM-dd'), notes: '' });
++      setExpenseError(null);
++    },
++    onError: (error: unknown) => {
++      const apiError = error as ApiError;
++      setExpenseError(apiError.userMessage ?? apiError.message);
+     }
+   });
+@@
+   const handleCreateExpense = () => {
+     if (!expenseForm.description || !expenseForm.amount || !expenseForm.category) return;
+ 
+-    createExpenseMutation.mutate({
+-      description: expenseForm.description,
+-      amount: Math.round(parseFloat(expenseForm.amount) * 100),
+-      categoryId: parseInt(expenseForm.category),
+-      expenseDate: expenseForm.date,
+-      notes: expenseForm.notes
+-    });
++    setExpenseError(null);
++    createExpenseMutation.mutate({
++      description: expenseForm.description,
++      amount: parseFloat(expenseForm.amount),
++      categoryId: parseInt(expenseForm.category, 10),
++      expenseDate: expenseForm.date,
++      notes: expenseForm.notes
++    });
+   };
+@@
+-        <Dialog open={showExpenseModal} onOpenChange={setShowExpenseModal}>
++        <Dialog
++          open={showExpenseModal}
++          onOpenChange={(open) => {
++            setShowExpenseModal(open);
++            if (!open) setExpenseError(null);
++          }}
++        >
+           <DialogContent className="max-w-md">
+             <DialogHeader>
+               <DialogTitle className="flex items-center space-x-2">
+                 <Plus className="h-5 w-5 text-purple-600" />
+                 <span>Add New Expense</span>
+               </DialogTitle>
+             </DialogHeader>
+-            <div className="space-y-4">
++            <div className="space-y-4">
++              {expenseError && (
++                <p className="text-sm text-red-600" data-testid="expense-error-message">
++                  {expenseError}
++                </p>
++              )}
+               <div>
+                 <Label htmlFor="description">Description</Label>
+                 <Input
+                   id="description"
+                   value={expenseForm.description}
