@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { FaGoogle, FaFacebook, FaReddit } from "react-icons/fa";
 import { 
@@ -44,6 +45,7 @@ interface AuthModalProps {
 export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }: AuthModalProps) {
   const { toast } = useToast();
   const [mode, setMode] = useState<'login' | 'signup' | 'forgot-password'>(initialMode);
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -68,6 +70,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
         title: "✅ Email Verified!",
         description: `Your email ${verifiedEmail || ''} has been verified. You can now login.`,
         duration: 5000,
+        variant: "default",
       });
       // Clear URL params
       window.history.replaceState({}, '', window.location.pathname);
@@ -115,7 +118,8 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(requestData)
+        body: JSON.stringify(requestData),
+        credentials: 'include',
       });
 
       const responseData = await response.json();
@@ -151,21 +155,18 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
       if (mode === 'login') {
         toast({
           title: 'Welcome back!',
-          description: 'You have successfully logged in.'
+          description: 'You have successfully logged in.',
+          variant: 'default'
         });
-        
-        // Reset form and close modal
+
         setFormData({ username: '', email: '', password: '' });
+        login();
         onSuccess();
-        
-        // Refresh the page to update auth state with HttpOnly cookies
-        setTimeout(() => {
-          window.location.reload();
-        }, 100);
       } else {
         toast({
           title: 'Account created!',
-          description: 'Please check your email to verify your account before logging in.'
+          description: 'Please check your email to verify your account before logging in.',
+          variant: 'default'
         });
         
         // Switch to login mode for verification
@@ -221,7 +222,8 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
     onSuccess: () => {
       toast({
         title: 'Reset Email Sent',
-        description: 'Please check your email for password reset instructions.'
+        description: 'Please check your email for password reset instructions.',
+        variant: 'default'
       });
       setMode('login');
       setResetEmail('');
@@ -248,7 +250,8 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
       const data = await res.json();
       toast({
         title: "Verification email sent",
-        description: "Please check your inbox and spam folder"
+        description: "Please check your inbox and spam folder",
+        variant: "default",
       });
       setShowResendVerification(false);
     } catch (error) {
@@ -282,7 +285,8 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
     onSuccess: () => {
       toast({
         title: 'Verification Email Sent',
-        description: 'Please check your inbox and spam folder.'
+        description: 'Please check your inbox and spam folder.',
+        variant: 'default'
       });
     },
     onError: (error: AuthError) => {

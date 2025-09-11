@@ -46,8 +46,8 @@ export function useAuth() {
       return null;
     },
     retry: false,
-    // Skip request on public pages, use cookie detection for auth status
-    enabled: !isPublicPage() && document.cookie.includes('authToken'),
+    // Skip request on public pages
+    enabled: !isPublicPage(),
     refetchOnWindowFocus: false,
     refetchInterval: false,
   });
