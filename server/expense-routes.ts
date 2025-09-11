@@ -8,15 +8,10 @@ import { authenticateToken } from './middleware/auth.js';
 import { storage } from './storage.js';
 import { MediaManager } from './lib/media.js';
 import { logger } from './bootstrap/logger.js';
-import { type InsertExpense } from '@shared/schema.js';
-
-interface AuthUser {
-  id: number;
-  tier?: 'free' | 'starter' | 'pro';
-}
+import { type InsertExpense, type User } from '@shared/schema.js';
 
 interface AuthRequest extends express.Request {
-  user?: AuthUser;
+  user?: User;
 }
 
 const upload = multer({
