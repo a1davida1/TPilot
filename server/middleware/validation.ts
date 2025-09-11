@@ -176,13 +176,11 @@ export const ipAddressSchema = z.string().refine(
 
 // Auth-related validation schemas
 export const loginValidationSchema = z.object({
-  username: usernameSchema.optional(),
-  email: emailSchema.optional(),
+  username: z.string().min(1, 'Username or email is required'),
+  email: z.string().optional(), // Optional email field for compatibility
   // Login should only validate that password is provided, not its format
   // This allows users with legacy passwords to login successfully
   password: z.string().min(1, 'Password is required')
-}).refine(data => data.username || data.email, {
-  message: 'Either username or email is required'
 });
 
 export const signupValidationSchema = z.object({
@@ -198,6 +196,11 @@ export const passwordChangeValidationSchema = z.object({
 }).refine(data => data.newPassword === data.confirmPassword, {
   message: 'New password and confirmation must match',
   path: ['confirmPassword']
+});
+
+export const passwordResetValidationSchema = z.object({
+  token: z.string().min(1, 'Token required'),
+  newPassword: passwordSchema
 });
 
 // Content generation validation
@@ -233,7 +236,7 @@ export function sanitizeInput(input: unknown): unknown {
   }
   
   if (input && typeof input === 'object') {
-    const sanitized: unknown = {};
+    const sanitized: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(input)) {
       sanitized[key] = sanitizeInput(value);
     }
