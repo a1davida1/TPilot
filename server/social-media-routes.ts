@@ -1,14 +1,16 @@
-import type { Express } from "express";
+import type { Express, Request } from "express";
 import { socialMediaManager, type Platform, type PostContent } from "./social-media/social-media-manager.js";
 import { storage } from "./storage.js";
 import { authenticateToken } from "./middleware/auth.js";
+import type { User } from "@shared/schema";
 import { z } from "zod";
 
-interface AuthRequest extends Express.Request {
-  user?: unknown;
-  body: unknown;
-  params: unknown;
-  query: unknown;
+interface AuthRequest<
+  B = Record<string, unknown>,
+  P = Record<string, string>,
+  Q = Record<string, string>
+> extends Request<P, unknown, B, Q> {
+  user?: User;
 }
 
 // PHASE 2: Social Media API Routes
@@ -17,13 +19,27 @@ interface AuthRequest extends Express.Request {
 export function registerSocialMediaRoutes(app: Express) {
   
   // Connect a social media account
-  app.post("/api/social-media/connect", authenticateToken, async (req: AuthRequest, res) => {
+  app.post(
+    "/api/social-media/connect",
+    authenticateToken,
+    async (
+      req: AuthRequest<{
+        platform: Platform;
+        credentials: Record<string, string>;
+        accountInfo: Record<string, unknown>;
+      }>,
+      res
+    ) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ message: "Authentication required" });
       }
 
-      const { platform, credentials, accountInfo } = req.body;
+      const { platform, credentials, accountInfo } = req.body as {
+        platform: Platform;
+        credentials: Record<string, string>;
+        accountInfo: Record<string, unknown>;
+      };
       
       if (!platform || !credentials) {
         return res.status(400).json({ message: "Platform and credentials are required" });
@@ -36,10 +52,10 @@ export function registerSocialMediaRoutes(app: Express) {
       const accountData = {
         userId: req.user.id,
         platform,
-        accountId: accountInfo.accountId || credentials.accountId,
-        username: accountInfo.username,
-        displayName: accountInfo.displayName,
-        profilePicture: accountInfo.profilePicture,
+        accountId: (accountInfo.accountId as string) || (credentials.accountId as string),
+        username: (accountInfo.username as string) || 'unknown',
+        displayName: (accountInfo.displayName as string) || null,
+        profilePicture: (accountInfo.profilePicture as string) || null,
         accessToken: credentials.accessToken,
         refreshToken: credentials.refreshToken,
         tokenExpiresAt: credentials.expiresAt ? new Date(credentials.expiresAt) : undefined,
@@ -123,7 +139,18 @@ export function registerSocialMediaRoutes(app: Express) {
   });
 
   // Post to social media
-  app.post("/api/social-media/post", authenticateToken, async (req: AuthRequest, res) => {
+  app.post(
+    "/api/social-media/post",
+    authenticateToken,
+    async (
+      req: AuthRequest<{
+        platforms: Platform[];
+        content: PostContent;
+        contentGenerationId?: number;
+        scheduledAt?: string;
+      }>,
+      res
+    ) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ message: "Authentication required" });
