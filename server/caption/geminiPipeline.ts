@@ -3,6 +3,15 @@ import path from "node:path";
 import { visionModel, textModel } from "../lib/gemini";
 import { CaptionArray, RankResult, platformChecks } from "./schema";
 
+// CaptionResult interface for type safety
+interface CaptionResult {
+  provider: string;
+  final: any;
+  facts?: any;
+  variants?: any;
+  ranked?: any;
+}
+
 async function load(p:string){ return fs.readFile(path.join(process.cwd(),"prompts",p),"utf8"); }
 async function b64(url: string) {
   try {
@@ -219,6 +228,6 @@ export async function pipeline({ imageUrl, platform, voice="flirty_playful", sty
   } catch (error) {
     const { openAICaptionFallback } = await import('./openaiFallback');
     const final = await openAICaptionFallback({ platform, voice, imageUrl });
-    return { provider: 'openai', final } as any;
+    return { provider: 'openai', final } as CaptionResult;
   }
 }

@@ -5,6 +5,26 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Zap, Clock, Cpu, Wifi, Database, RefreshCw } from "lucide-react";
 
+// Type extensions for browser APIs
+interface ExtendedPerformance extends Performance {
+  memory?: {
+    usedJSHeapSize: number;
+    totalJSHeapSize: number;
+    jsHeapSizeLimit: number;
+  };
+}
+
+interface ExtendedNavigator extends Navigator {
+  connection?: {
+    effectiveType: string;
+    downlink: number;
+    rtt: number;
+    saveData: boolean;
+  };
+  mozConnection?: ExtendedNavigator['connection'];
+  webkitConnection?: ExtendedNavigator['connection'];
+}
+
 interface PerformanceMetrics {
   loadTime: number;
   apiResponseTime: number;
@@ -50,8 +70,8 @@ export const PerformanceOptimization = memo(() => {
         ...prev,
         loadTime: Math.round(loadTime),
         apiResponseTime: Math.round(apiResponseTime),
-        memoryUsage: (performance as any).memory ? 
-          Math.round(((performance as any).memory.usedJSHeapSize / (performance as any).memory.totalJSHeapSize) * 100) : 
+        memoryUsage: (performance as ExtendedPerformance).memory ? 
+          Math.round(((performance as ExtendedPerformance).memory!.usedJSHeapSize / (performance as ExtendedPerformance).memory!.totalJSHeapSize) * 100) : 
           0, // Default to 0 when browser doesn't support memory API
         cacheHitRate: prev.cacheHitRate // Keep existing cache hit rate
       }));
@@ -60,7 +80,8 @@ export const PerformanceOptimization = memo(() => {
 
   // Network status detection
   const detectNetworkStatus = useCallback(() => {
-    const connection = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
+    const extNavigator = navigator as ExtendedNavigator;
+    const connection = extNavigator.connection || extNavigator.mozConnection || extNavigator.webkitConnection;
     
     if (connection) {
       const { effectiveType, downlink } = connection;
@@ -101,7 +122,7 @@ export const PerformanceOptimization = memo(() => {
         try {
           await navigator.serviceWorker.register('/sw.js');
         } catch (error) {
-          console.log('Service worker registration failed');
+          console.error('Service worker registration failed');
         }
       }
       

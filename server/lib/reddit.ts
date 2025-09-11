@@ -97,7 +97,7 @@ export class RedditManager {
 
       if (options.url) {
         // Link post
-        submission = await (this.reddit as any)
+        submission = await this.reddit
           .getSubreddit(options.subreddit)
           .submitLink({
             subredditName: options.subreddit,
@@ -108,7 +108,7 @@ export class RedditManager {
           });
       } else {
         // Text post
-        submission = await (this.reddit as any)
+        submission = await this.reddit
           .getSubreddit(options.subreddit)
           .submitSelfpost({
             subredditName: options.subreddit,
@@ -389,7 +389,7 @@ export class RedditManager {
    */
   async getProfile(): Promise<unknown> {
     try {
-      const user = await (this.reddit as any).getMe();
+      const user = await this.reddit.getMe();
       return {
         username: user.name,
         karma: user.link_karma + user.comment_karma,
@@ -409,7 +409,7 @@ export class RedditManager {
    */
   async testConnection(): Promise<boolean> {
     try {
-      await (this.reddit as any).getMe();
+      await this.reddit.getMe();
       return true;
     } catch (error) {
       console.error('Reddit connection test failed:', error);
@@ -423,7 +423,7 @@ export class RedditManager {
   async refreshTokenIfNeeded(): Promise<void> {
     try {
       // snoowrap handles token refresh automatically
-      await (this.reddit as any).getMe();
+      await this.reddit.getMe();
     } catch (error) {
       console.error('Token refresh failed:', error);
       throw error;

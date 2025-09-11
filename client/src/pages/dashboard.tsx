@@ -3,6 +3,13 @@ import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { ModernDashboard } from "@/components/modern-dashboard";
 import { useToast } from "@/hooks/use-toast";
+import { type User } from "@shared/schema";
+
+// DashboardUser interface extending User with additional properties
+interface DashboardUser extends User {
+  reddit_username?: string;
+  provider?: string;
+}
 
 export default function Dashboard() {
   const [isGuestMode, setIsGuestMode] = useState(false);
@@ -92,7 +99,8 @@ export default function Dashboard() {
   const userTier = isAdmin ? 'admin' : (user?.tier || 'free');
   
   // Check Reddit connection status
-  const isRedditConnected = !!(user as any)?.reddit_username || !!(user as any)?.provider;
+  const typedUser = user as DashboardUser;
+  const isRedditConnected = !!typedUser?.reddit_username || !!typedUser?.provider;
   
   return (
     <ModernDashboard 

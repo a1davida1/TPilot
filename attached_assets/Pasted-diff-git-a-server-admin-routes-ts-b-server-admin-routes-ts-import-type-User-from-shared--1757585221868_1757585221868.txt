@@ -1,0 +1,193 @@
+diff --git a/server/admin-routes.ts b/server/admin-routes.ts
+@@
+-import { type User } from '@shared/schema';
++import { type User } from '@shared/schema';
+@@
+-interface AdminRequest extends express.Request {
+-  user?: any; // Use any to avoid interface conflicts for admin routes
+-}
++interface AdminRequest extends express.Request {
++  user?: User;
++}
+@@
+-  const requireAdmin = (req: express.Request & { user?: { id: number; username?: string | null; isAdmin?: boolean | null }; isAuthenticated?: () => boolean }, res: express.Response, next: express.NextFunction) => {
++  const requireAdmin = (req: AdminRequest & { isAuthenticated?: () => boolean }, res: express.Response, next: express.NextFunction) => {
+@@
+-    const typedUser = user as { id: number; username?: string | null; isAdmin?: boolean | null };
++    const typedUser = user as User;
+@@
+-    req.user = user as any;
++    req.user = typedUser;
+diff --git a/server/middleware/security.ts b/server/middleware/security.ts
+@@
+-import type { Request, Response, NextFunction } from 'express';
++import type { Request, Response, NextFunction } from 'express';
++
++declare global {
++  namespace Express {
++    interface Request {
++      userIP?: string;
++      userAgent?: string;
++    }
++  }
++}
++
++interface HttpError extends Error {
++  status?: number;
++}
+@@
+-    const originIP = (req as any).userIP || req.ip;
++    const originIP = req.userIP || req.ip;
+@@
+-    err instanceof AppError
+-      ? err
+-      : new AppError(err.message || "Internal Server Error", (err as any).status ?? 500, false);
++    err instanceof AppError
++      ? err
++      : new AppError(err.message || "Internal Server Error", (err as HttpError).status ?? 500, false);
+@@
+-    ip: (req as any).userIP
++    ip: req.userIP
+diff --git a/server/caption/geminiPipeline.ts b/server/caption/geminiPipeline.ts
+@@
++interface CaptionResult {
++  provider: string;
++  final: string;
++  facts?: string[];
++  variants?: string[];
++  ranked?: unknown;
++}
+@@
+-    return { provider: 'gemini', facts, variants, ranked, final: out };
++    return { provider: 'gemini', facts, variants, ranked, final: out } as CaptionResult;
+@@
+-    return { provider: 'openai', final } as any;
++    return { provider: 'openai', final } as CaptionResult;
+diff --git a/server/caption/rewritePipeline.ts b/server/caption/rewritePipeline.ts
+@@
++interface CaptionResult {
++  provider: string;
++  final: string;
++  facts?: string[];
++  variants?: string[];
++  ranked?: unknown;
++}
+@@
+-    return { provider: 'gemini', facts, variants, ranked, final: out };
++    return { provider: 'gemini', facts, variants, ranked, final: out } as CaptionResult;
+@@
+-    return { provider: 'openai', final } as any;
++    return { provider: 'openai', final } as CaptionResult;
+diff --git a/server/lib/reddit.ts b/server/lib/reddit.ts
+@@
+-      let submission;
+-
+-      if (options.url) {
+-        // Link post
+-        submission = await (this.reddit as any)
+-          .getSubreddit(options.subreddit)
+-          .submitLink({
++      let submission;
++
++      if (options.url) {
++        submission = await this.reddit
++          .getSubreddit(options.subreddit)
++          .submitLink({
+@@
+-      } else {
+-        // Text post
+-        submission = await (this.reddit as any)
+-          .getSubreddit(options.subreddit)
+-          .submitSelfpost({
++      } else {
++        submission = await this.reddit
++          .getSubreddit(options.subreddit)
++          .submitSelfpost({
+diff --git a/server/routes.ts b/server/routes.ts
+@@
+-import * as connectRedis from 'connect-redis';
++import connectRedis from 'connect-redis';
+@@
+-      const RedisStore = (connectRedis as any)(session);
++      const RedisStore = connectRedis(session);
+diff --git a/server/routes.ts b/server/routes.ts
+@@
+-  passport.serializeUser<number>((user: any, done) => {
+-    done(null, user.id);
+-  });
+-
+-  passport.deserializeUser(async (id: unknown, done) => {
+-    try {
+-      const user = await storage.getUser(Number(id));
+-      done(null, user);
+-    } catch (err) {
+-      done(err, null);
+-    }
+-  });
++  interface AuthUser { id: number }
++
++  passport.serializeUser<AuthUser['id']>((user: AuthUser, done) => {
++    done(null, user.id);
++  });
++
++  passport.deserializeUser<AuthUser['id']>(async (id: AuthUser['id'], done) => {
++    try {
++      const user = await storage.getUser(id);
++      done(null, user as AuthUser);
++    } catch (err) {
++      done(err as Error, null);
++    }
++  });
+diff --git a/client/src/pages/dashboard.tsx b/client/src/pages/dashboard.tsx
+@@
+-  const isRedditConnected = !!(user as any)?.reddit_username || !!(user as any)?.provider;
++interface DashboardUser extends User {
++  reddit_username?: string;
++  provider?: string;
++}
++const typedUser = user as DashboardUser | null;
++const isRedditConnected = !!typedUser?.reddit_username || !!typedUser?.provider;
+diff --git a/client/src/components/performance-optimization.tsx b/client/src/components/performance-optimization.tsx
+@@
+-      setMetrics(prev => ({
+-        ...prev,
+-        loadTime: Math.round(loadTime),
+-        apiResponseTime: Math.round(apiResponseTime),
+-        memoryUsage: (performance as any).memory ?
+-          Math.round(((performance as any).memory.usedJSHeapSize / (performance as any).memory.totalJSHeapSize) * 100) :
+-          0,
+-        cacheHitRate: prev.cacheHitRate
+-      }));
++      const perf = performance as Performance & {
++        memory?: { usedJSHeapSize: number; totalJSHeapSize: number };
++      };
++      setMetrics(prev => ({
++        ...prev,
++        loadTime: Math.round(loadTime),
++        apiResponseTime: Math.round(apiResponseTime),
++        memoryUsage: perf.memory
++          ? Math.round((perf.memory.usedJSHeapSize / perf.memory.totalJSHeapSize) * 100)
++          : 0,
++        cacheHitRate: prev.cacheHitRate
++      }));
+@@
+-    const connection = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
+-
+-    if (connection) {
+-      const { effectiveType, downlink } = connection;
++    const nav = navigator as Navigator & { connection?: NetworkInformation };
++    const connection = nav.connection;
++    if (connection) {
++      const { effectiveType, downlink } = connection;
+@@
+-        try {
+-          await navigator.serviceWorker.register('/sw.js');
+-        } catch (error) {
+-          console.log('Service worker registration failed');
+-        }
++        try {
++          await navigator.serviceWorker.register('/sw.js');
++        } catch (error) {
++          console.error('Service worker registration failed', error);
++        }
+       }

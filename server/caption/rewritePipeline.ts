@@ -3,6 +3,15 @@ import path from "node:path";
 import { textModel, visionModel } from "../lib/gemini";
 import { CaptionArray, RankResult, platformChecks } from "./schema";
 
+// CaptionResult interface for type safety
+interface CaptionResult {
+  provider: string;
+  final: any;
+  facts?: any;
+  variants?: any;
+  ranked?: any;
+}
+
 async function load(p:string){ return fs.readFile(path.join(process.cwd(),"prompts",p),"utf8"); }
 async function b64(url:string){ const r=await fetch(url); if(!r.ok) throw new Error("fetch failed"); const b=Buffer.from(await r.arrayBuffer()); return b.toString("base64"); }
 function stripToJSON(txt:string){ const i=Math.min(...[txt.indexOf("{"),txt.indexOf("[")].filter(x=>x>=0));
@@ -128,6 +137,6 @@ export async function pipelineRewrite({ platform, voice="flirty_playful", style,
   } catch (error) {
     const { openAICaptionFallback } = await import('./openaiFallback');
     const final = await openAICaptionFallback({ platform, voice, existingCaption, imageUrl });
-    return { provider: 'openai', final } as any;
+    return { provider: 'openai', final } as CaptionResult;
   }
 }

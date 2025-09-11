@@ -11,6 +11,21 @@ import * as Sentry from "@sentry/node";
 import { logger as appLogger, validateSentryDSN } from "../bootstrap/logger.js";
 import { AppError } from "../lib/errors.js";
 
+// Global Express namespace declaration
+declare global {
+  namespace Express {
+    interface Request {
+      userIP?: string;
+      userAgent?: string;
+    }
+  }
+}
+
+// HttpError interface for error typing
+interface HttpError extends Error {
+  status?: number;
+}
+
 // Only load dotenv if NOT in production
 // In production deployments, secrets are already available as env vars
 if (process.env.NODE_ENV !== 'production') {
@@ -275,7 +290,7 @@ export const validateApiKey = (req: express.Request, res: express.Response, next
   
   // Validate API key format if provided
   if (apiKey && !isValidApiKeyFormat(apiKey as string)) {
-    const originIP = (req as any).userIP || req.ip;
+    const originIP = req.userIP || req.ip;
     logger.warn(`Invalid API key format from ${originIP}`);
     return res.status(401).json({ error: 'Invalid API key format' });
   }
@@ -444,14 +459,14 @@ export const errorHandler = async (
   const appError =
     err instanceof AppError
       ? err
-      : new AppError(err.message || "Internal Server Error", (err as any).status ?? 500, false);
+      : new AppError(err.message || "Internal Server Error", (err as HttpError).status ?? 500, false);
 
   logger.error("Error:", {
     message: err.message,
     stack: err.stack,
     path: req.path,
     method: req.method,
-    ip: (req as any).userIP
+    ip: req.userIP
   });
 
   if (!appError.isOperational) {

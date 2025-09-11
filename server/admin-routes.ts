@@ -15,12 +15,12 @@ if (!JWT_SECRET) {
 const JWT_SECRET_VALIDATED: string = JWT_SECRET;
 
 interface AdminRequest extends express.Request {
-  user?: any; // Use any to avoid interface conflicts for admin routes
+  user?: User;
 }
 
 export function setupAdminRoutes(app: Express) {
   // Admin middleware to check if user is admin
-  const requireAdmin = (req: express.Request & { user?: { id: number; username?: string | null; isAdmin?: boolean | null }; isAuthenticated?: () => boolean }, res: express.Response, next: express.NextFunction) => {
+  const requireAdmin = (req: AdminRequest & { isAuthenticated?: () => boolean }, res: express.Response, next: express.NextFunction) => {
     // Check if user is authenticated via session OR JWT
     let user: unknown = null;
     let token: string | null = null;
@@ -59,7 +59,7 @@ export function setupAdminRoutes(app: Express) {
     }
 
     // Set user on request for later use
-    req.user = user as any;
+    req.user = user as User;
     next();
   };
 
@@ -88,7 +88,7 @@ export function setupAdminRoutes(app: Express) {
       await storage.updateUserPassword(userId, hashedTempPassword);
       await storage.updateUser(userId, { mustChangePassword: true, passwordResetAt: new Date() });
       
-      const adminUser = req.user as { id: number; username?: string | null; isAdmin?: boolean | null };
+      const adminUser = (req as AdminRequest).user as User;
       console.log(`Admin ${adminUser?.username || adminUser?.id} reset password for user ${user.username} (ID: ${userId})`);
       
       res.json({
@@ -611,7 +611,7 @@ export function setupAdminRoutes(app: Express) {
   app.post('/api/admin/ban-user', requireAdmin, async (req, res) => {
     try {
       const { userId, reason, duration, banIp = false } = req.body;
-      const adminId = (req as AdminRequest).user.id;
+      const adminId = (req as AdminRequest).user!.id;
 
       // Update user status and log action
       await storage.updateUser(userId, { 
@@ -644,7 +644,7 @@ export function setupAdminRoutes(app: Express) {
   app.post('/api/admin/unban-user', requireAdmin, async (req, res) => {
     try {
       const { userId } = req.body;
-      const adminId = (req as AdminRequest).user.id;
+      const adminId = (req as AdminRequest).user!.id;
 
       await storage.updateUser(userId, { 
         tier: 'free',
@@ -662,7 +662,7 @@ export function setupAdminRoutes(app: Express) {
   app.post('/api/admin/suspend-user', requireAdmin, async (req, res) => {
     try {
       const { userId, hours, reason } = req.body;
-      const adminId = (req as AdminRequest).user.id;
+      const adminId = (req as AdminRequest).user!.id;
 
       const suspendedUntil = new Date(Date.now() + hours * 60 * 60 * 1000);
       
@@ -711,7 +711,7 @@ export function setupAdminRoutes(app: Express) {
   app.post('/api/admin/moderate-content', requireAdmin, async (req, res) => {
     try {
       const { flagId, action, reason } = req.body; // approve, remove, warn_user
-      const adminId = (req as AdminRequest).user.id;
+      const adminId = (req as AdminRequest).user!.id;
 
       // Would update the content flag status when content_flags table exists
       res.json({ 

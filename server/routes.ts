@@ -36,6 +36,13 @@ interface AnalyticsRequest extends express.Request {
 // Import users table for type inference
 import { users } from "@shared/schema.js";
 
+// AuthUser interface for passport serialization
+interface AuthUser {
+  id: number;
+  username?: string;
+  isAdmin?: boolean;
+}
+
 // Auth request interface that includes user  
 interface AuthenticatedRequest extends express.Request {
   user?: typeof users.$inferSelect;
@@ -195,7 +202,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(passport.session());
 
   // Configure Passport serialization for admin
-  passport.serializeUser<number>((user: any, done) => {
+  passport.serializeUser<number>((user: AuthUser, done) => {
     done(null, user.id);
   });
 
