@@ -143,7 +143,8 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
       if (data.mustChangePassword) {
         toast({
           title: 'Password Change Required',
-          description: 'You must change your temporary password before continuing.'
+          description: 'You must change your temporary password before continuing.',
+          variant: 'default'
         });
         setFormData({ username: '', email: '', password: '' });
         onClose();
@@ -182,6 +183,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
         toast({
           title: 'Email not verified',
           description: 'Please verify your email to continue.',
+          variant: 'default',
           action: (
             <Button 
               size="sm"
