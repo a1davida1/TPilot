@@ -18,6 +18,7 @@ import { authenticateToken } from "./middleware/auth.js";
 // Route modules
 // import { authRoutes } from "./routes/auth.js"; // Removed - using server/auth.ts instead
 import { uploadRoutes, applyImageShieldProtection, protectionPresets } from "./routes/upload.js";
+import { mediaRoutes } from "./routes/media.js";
 import { registerExpenseRoutes } from "./expense-routes.js";
 
 // Core imports
@@ -288,6 +289,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Upload routes
   app.use('/api/upload', uploadRoutes);
+  
+  // Media routes
+  app.use('/api/media', mediaRoutes);
   
   // Social auth routes
   app.get('/api/auth/google', socialAuthRoutes.googleAuth);

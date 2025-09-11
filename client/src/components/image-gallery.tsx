@@ -11,22 +11,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { protectImage, downloadProtectedImage } from '@/lib/image-protection';
 import { Upload, Shield, Download, Trash2, Eye, Tag, Plus } from 'lucide-react';
 
-// Define UserImage interface since it's not in the schema
-interface UserImage {
-  id: string;
-  userId: number;
-  url: string;
-  originalUrl: string;
-  originalFileName: string;
-  protectedUrl?: string;
-  tags: string[];
-  createdAt: Date;
-  protectionLevel?: string;
-  isProtected?: boolean;
-  protectionSettings?: {
-    level: string;
-    appliedAt: Date;
-  };
+// Import MediaAsset type from schema
+import type { MediaAsset } from '@shared/schema';
+
+// Extended interface for gallery display with additional properties
+interface UserImage extends MediaAsset {
+  signedUrl?: string;
+  downloadUrl?: string;
 }
 
 export function ImageGallery() {
@@ -34,18 +25,12 @@ export function ImageGallery() {
   const [selectedImage, setSelectedImage] = useState<UserImage | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { token } = useAuth();
+  const { isAuthenticated } = useAuth();
   
   // Authenticated API request - use session-based auth like the rest of the app
   const authenticatedRequest = async (url: string, method: string = 'GET', data?: unknown) => {
     let body: FormData | string | undefined;
-    const authToken = localStorage.getItem('authToken');
     const headers: { [key: string]: string } = {};
-    
-    // Try token auth first if available
-    if (authToken) {
-      headers['Authorization'] = `Bearer ${authToken}`;
-    }
     
     if (data instanceof FormData) {
       body = data;
@@ -59,7 +44,7 @@ export function ImageGallery() {
       method,
       headers,
       body,
-      credentials: 'include' // Include session cookies
+      credentials: 'include' // Include session cookies for authentication
     });
     
     if (!response.ok) {
@@ -146,33 +131,22 @@ export function ImageGallery() {
       const previewUrl = URL.createObjectURL(file);
       
       // Store locally for now if no auth
-      if (!localStorage.getItem('authToken')) {
-        const localImage = {
-          id: Date.now().toString(),
-          originalUrl: previewUrl,
-          originalFileName: file.name,
-          tags: selectedTags ? selectedTags.split(',').map(t => t.trim()) : [],
-          isProtected: false,
-          uploadedAt: new Date().toISOString()
-        };
-        
-        // Store in localStorage for persistence
-        const storedImages = JSON.parse(localStorage.getItem('localImages') || '[]');
-        storedImages.push(localImage);
-        localStorage.setItem('localImages', JSON.stringify(storedImages));
-        
+      if (!isAuthenticated) {
         toast({
-          title: "Image ready!",
-          description: `${file.name} has been added to your gallery.`
+          title: "Please log in",
+          description: "Sign in to save your images to the gallery permanently.",
+          variant: "destructive"
         });
+        URL.revokeObjectURL(previewUrl); // Clean up preview URL
       } else {
-        // Try server upload if authenticated
+        // Upload to server if authenticated
         const formData = new FormData();
         formData.append('file', file);
         if (selectedTags) {
           formData.append('tags', selectedTags);
         }
         uploadMutation.mutate(formData);
+        URL.revokeObjectURL(previewUrl); // Clean up preview URL
       }
     }
     
@@ -182,29 +156,25 @@ export function ImageGallery() {
   };
 
   const handleProtectImage = async (image: UserImage, level: string) => {
-    protectMutation.mutate({ imageId: image.id, protectionLevel: level });
+    protectMutation.mutate({ imageId: image.id.toString(), protectionLevel: level });
   };
 
   const handleDownloadProtected = async (image: UserImage) => {
-    if (!image.protectedUrl) return;
-    
     try {
-      const response = await fetch(image.protectedUrl);
+      const response = await fetch(image.signedUrl || image.downloadUrl || '');
       const blob = await response.blob();
-      downloadProtectedImage(blob, image.originalFileName);
+      downloadProtectedImage(blob, image.filename);
     } catch (error) {
       toast({
         title: "Download failed",
-        description: "Could not download protected image.",
+        description: "Could not download image.",
         variant: "destructive"
       });
     }
   };
 
   const filteredImages = images.filter(image => 
-    !selectedTags || image.tags?.some((tag: string) => 
-      tag.toLowerCase().includes(selectedTags.toLowerCase())
-    )
+    !selectedTags || image.filename.toLowerCase().includes(selectedTags.toLowerCase())
   );
 
   return (
@@ -275,26 +245,19 @@ export function ImageGallery() {
                     <DialogTrigger asChild>
                       <div className="aspect-square relative overflow-hidden rounded-lg border cursor-pointer hover:shadow-lg transition-shadow">
                         <img
-                          src={image.originalUrl}
-                          alt={image.originalFileName}
+                          src={image.signedUrl || image.downloadUrl || ''}
+                          alt={image.filename}
                           className="w-full h-full object-cover"
                         />
-                        {image.isProtected && (
-                          <Shield className="absolute top-2 right-2 h-4 w-4 text-green-600 bg-white rounded-full p-0.5" />
-                        )}
                         <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all">
                           <div className="absolute bottom-2 left-2 right-2">
                             <div className="flex flex-wrap gap-1">
-                              {image.tags?.slice(0, 2).map((tag: string) => (
-                                <Badge key={tag} variant="secondary" className="text-xs">
-                                  {tag}
-                                </Badge>
-                              ))}
-                              {(image.tags?.length || 0) > 2 && (
-                                <Badge variant="secondary" className="text-xs">
-                                  +{(image.tags?.length || 0) - 2}
-                                </Badge>
-                              )}
+                              <Badge variant="secondary" className="text-xs">
+                                {image.mime.split('/')[1].toUpperCase()}
+                              </Badge>
+                              <Badge variant="secondary" className="text-xs">
+                                {Math.round(image.bytes / 1024)}KB
+                              </Badge>
                             </div>
                           </div>
                         </div>
@@ -305,28 +268,29 @@ export function ImageGallery() {
                       <DialogHeader>
                         <DialogTitle>Image Details</DialogTitle>
                         <DialogDescription>
-                          {image.originalFileName}
+                          {image.filename}
                         </DialogDescription>
                       </DialogHeader>
                       
                       <div className="space-y-4">
                         <img
-                          src={image.originalUrl}
-                          alt={image.originalFileName}
+                          src={image.signedUrl || image.downloadUrl || ''}
+                          alt={image.filename}
                           className="w-full max-h-96 object-contain rounded-lg"
                         />
                         
                         <div className="flex flex-wrap gap-2">
-                          {image.tags?.map((tag: string) => (
-                            <Badge key={tag} variant="outline">
-                              <Tag className="h-3 w-3 mr-1" />
-                              {tag}
-                            </Badge>
-                          ))}
+                          <Badge variant="outline">
+                            <Tag className="h-3 w-3 mr-1" />
+                            {image.mime}
+                          </Badge>
+                          <Badge variant="outline">
+                            {new Date(image.createdAt).toLocaleDateString()}
+                          </Badge>
                         </div>
                         
                         <div className="flex gap-2 flex-wrap">
-                          {!image.isProtected && (
+                          {
                             <>
                               <Button
                                 size="sm"
@@ -355,21 +319,19 @@ export function ImageGallery() {
                             </>
                           )}
                           
-                          {image.protectedUrl && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleDownloadProtected(image)}
-                            >
-                              <Download className="h-4 w-4 mr-1" />
-                              Download Protected
-                            </Button>
-                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDownloadProtected(image)}
+                          >
+                            <Download className="h-4 w-4 mr-1" />
+                            Download
+                          </Button>
                           
                           <Button
                             size="sm"
                             variant="destructive"
-                            onClick={() => deleteMutation.mutate(image.id)}
+                            onClick={() => deleteMutation.mutate(image.id.toString())}
                             disabled={deleteMutation.isPending}
                           >
                             <Trash2 className="h-4 w-4 mr-1" />
@@ -377,16 +339,6 @@ export function ImageGallery() {
                           </Button>
                         </div>
                         
-                        {image.isProtected && (
-                          <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                            <p className="text-sm text-green-800 font-medium">
-                              ✓ This image is protected against reverse searches
-                            </p>
-                            <p className="text-xs text-green-600 mt-1">
-                              Protection level: {image.protectionSettings?.level || 'standard'}
-                            </p>
-                          </div>
-                        )}
                       </div>
                     </DialogContent>
                   </Dialog>

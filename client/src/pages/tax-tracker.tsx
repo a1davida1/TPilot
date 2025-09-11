@@ -153,9 +153,9 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
       const res = await apiRequest('POST', `/api/expenses/${expenseId}/receipt`, formData);
       return res.json();
     },
-    onSuccess: (updatedExpense) => {
+    onSuccess: (updatedExpense: Expense) => {
       queryClient.setQueryData<Expense[]>(['/api/expenses'], (old = []) =>
-        old.map(exp => (exp.id === updatedExpense.id ? updatedExpense : exp))
+        old.map((exp: Expense) => (exp.id === updatedExpense.id ? updatedExpense : exp))
       );
       queryClient.invalidateQueries({ queryKey: ['/api/expenses/range'] });
       setShowReceiptModal(false);
@@ -360,7 +360,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                       >
                         <div>
                           <p className="font-medium text-gray-900">{expense.description}</p>
-                          <p className="text-sm text-gray-500">{expense.category} • {format(parseISO(expense.date), 'MMM d, yyyy')}</p>
+                          <p className="text-sm text-gray-500">{expense.category} • {format(parseISO(expense.date || expense.expenseDate), 'MMM d, yyyy')}</p>
                         </div>
                         <div className="text-right">
                           <p className="font-bold text-gray-900">${expense.amount}</p>
@@ -448,7 +448,10 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                           className="p-2 rounded-lg text-white"
                           style={{ backgroundColor: selectedCategory.color }}
                         >
-                          <selectedCategory.icon className="h-5 w-5" />
+                          {(() => {
+                            const IconComponent = iconMap[selectedCategory.icon] || Sparkles;
+                            return <IconComponent className="h-5 w-5" />;
+                          })()}
                         </div>
                         <span>{selectedCategory.name} - Legal Details</span>
                       </CardTitle>
@@ -706,7 +709,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                   <SelectValue placeholder="Select expense" />
                 </SelectTrigger>
                 <SelectContent>
-                  {recentExpenses.map((exp: unknown) => (
+                  {recentExpenses.map((exp: Expense) => (
                     <SelectItem key={exp.id} value={String(exp.id)}>
                       {exp.description}
                     </SelectItem>
