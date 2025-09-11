@@ -169,8 +169,8 @@ export function registerSocialMediaRoutes(app: Express) {
       // Get user's connected accounts for the specified platforms
       const userAccounts = await storage.getUserSocialMediaAccounts(req.user.id);
       const connectedPlatforms = userAccounts
-        .filter(account => account.isActive && platforms.includes(account.platform))
-        .map(account => account.platform);
+        .filter(account => account.isActive && platforms.includes(account.platform as Platform))
+        .map(account => account.platform as Platform);
 
       if (connectedPlatforms.length === 0) {
         return res.status(400).json({ 
@@ -180,7 +180,7 @@ export function registerSocialMediaRoutes(app: Express) {
 
       // Initialize social media connections
       for (const account of userAccounts) {
-        if (connectedPlatforms.includes(account.platform) && account.accessToken) {
+        if (connectedPlatforms.includes(account.platform as Platform) && account.accessToken) {
           const credentials: Record<string, string> = {
             accessToken: account.accessToken || '',
             ...(account.refreshToken && { refreshToken: account.refreshToken }),
