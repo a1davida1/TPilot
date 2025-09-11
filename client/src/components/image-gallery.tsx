@@ -317,7 +317,7 @@ export function ImageGallery() {
                                 Heavy Protection
                               </Button>
                             </>
-                          )}
+                        }
                           
                           <Button
                             size="sm"
