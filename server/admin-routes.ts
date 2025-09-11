@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { storage } from './storage';
 import { emailService } from './services/email-service';
+import { type User } from '@shared/schema';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
@@ -14,7 +15,7 @@ if (!JWT_SECRET) {
 const JWT_SECRET_VALIDATED: string = JWT_SECRET;
 
 interface AdminRequest extends express.Request {
-  user: { id: number; username?: string | null; isAdmin?: boolean | null };
+  user?: any; // Use any to avoid interface conflicts for admin routes
 }
 
 export function setupAdminRoutes(app: Express) {
@@ -58,7 +59,7 @@ export function setupAdminRoutes(app: Express) {
     }
 
     // Set user on request for later use
-    req.user = user;
+    req.user = user as any;
     next();
   };
 

@@ -11,6 +11,18 @@ export interface ContentParameters {
   platform: string;
 }
 
+export interface PhotoInstructions {
+  lighting: string;
+  cameraAngle?: string;
+  angles?: string;
+  composition: string;
+  styling: string;
+  technical?: string;
+  technicalSettings?: string;
+  sceneSetup?: string;
+  mood?: string;
+}
+
 export interface GeneratedContent {
   titles: string[];
   content: string;
@@ -23,6 +35,28 @@ export interface GeneratedContent {
     sceneSetup: string;
   };
   tags: string[];
+}
+
+export interface PresetVariation {
+  titles: string[];
+  content: string;
+  photoInstructions: PhotoInstructions;
+}
+
+export interface PhotoConfig {
+  themes: string[];
+  settings: string[];
+  clothing: string[];
+  lighting: string;
+  angles: string;
+  mood: string;
+}
+
+export interface ToneStyle {
+  starters: string[];
+  descriptors: string[];
+  endings: string[];
+  emojis: string[];
 }
 
 // Photo Type Specific Content Variations
@@ -170,19 +204,19 @@ export function generateAdvancedContent(params: ContentParameters): GeneratedCon
       content: presetVariation.content,
       photoInstructions: {
         lighting: presetVariation.photoInstructions.lighting,
-        angles: presetVariation.photoInstructions.cameraAngle,
+        angles: presetVariation.photoInstructions.cameraAngle || "natural angles",
         composition: presetVariation.photoInstructions.composition,
         styling: presetVariation.photoInstructions.styling,
-        technical: presetVariation.photoInstructions.technicalSettings,
-        sceneSetup: presetVariation.photoInstructions.mood
+        technical: presetVariation.photoInstructions.technicalSettings || "natural lighting",
+        sceneSetup: presetVariation.photoInstructions.mood || "casual setting"
       },
       tags: ['preset-content', params.style, params.platform]
     };
   }
 
   // Fallback to existing system for non-preset requests
-  const photoConfig = photoTypeVariations[params.photoType] || photoTypeVariations['casual'];
-  const toneStyle = textToneStyles[params.textTone] || textToneStyles['authentic'];
+  const photoConfig = photoTypeVariations[params.photoType as keyof typeof photoTypeVariations] || photoTypeVariations['casual'] as PhotoConfig;
+  const toneStyle = textToneStyles[params.textTone as keyof typeof textToneStyles] || textToneStyles['authentic'] as ToneStyle;
   
   // Generate titles with variation
   const titles = generateTitles(params, photoConfig, toneStyle);
@@ -205,7 +239,7 @@ export function generateAdvancedContent(params: ContentParameters): GeneratedCon
 }
 
 // Helper function to get random preset variation
-function getRandomPresetVariation(presetId: string): unknown {
+function getRandomPresetVariation(presetId: string): PresetVariation | null {
   const presetVariations: Record<string, any[]> = {
     'nude-photos': [
       {
@@ -1193,53 +1227,53 @@ function getRandomPresetVariation(presetId: string): unknown {
   return variations[randomIndex];
 }
 
-function generateTitles(params: ContentParameters, photoConfig: unknown, toneStyle: unknown): string[] {
+function generateTitles(params: ContentParameters, photoConfig: PhotoConfig, toneStyle: ToneStyle): string[] {
   const titles: string[] = [];
-  const themes = photoConfig?.themes || ['casual', 'fun', 'spontaneous', 'authentic'];
-  const starters = toneStyle?.starters || ['Hey', 'Just', 'So', 'Well'];
-  const emojis = toneStyle?.emojis || ['✨', '💕', '🌟', '💫', '🔥'];
+  const themes = photoConfig.themes;
+  const starters = toneStyle.starters;
+  const emojis = toneStyle.emojis;
   
   // Generate 3-5 varied titles
-  titles.push(`${starters[0] || 'Hey'} what happened during my ${themes[0] || 'photo'} session ${emojis[0] || '💫'}`);
-  titles.push(`${starters[1] || 'Just'} ${themes[1] || 'content'} content just dropped ${emojis[1] || '🔥'}`);
-  titles.push(`${themes[2] || 'Creative'} vibes hit different today ${emojis[2] || '✨'}`);
+  titles.push(`${starters[0]} what happened during my ${themes[0]} session ${emojis[0]}`);
+  titles.push(`${starters[1]} ${themes[1]} content just dropped ${emojis[1]}`);
+  titles.push(`${themes[2]} vibes hit different today ${emojis[2]}`);
   
   if (params.photoType === 'all-xs') {
     titles.push(`Warning: ${themes[3] || 'exclusive'} content ahead - not for everyone ${emojis[3] || '🔞'}`);
-    titles.push(`${starters[2] || 'Finally'} the limits have been removed ${emojis[4] || '💎'}`);
+    titles.push(`${starters[2]} the limits have been removed ${emojis[4] || '💎'}`);
   } else if (params.photoType === 'very-spicy') {
-    titles.push(`${starters[3] || 'Here is'} intense ${themes[3] || 'exclusive'} content ${emojis[3] || '🔥'}`);
+    titles.push(`${starters[3] || starters[0]} intense ${themes[3] || 'exclusive'} content ${emojis[3]}`);
   } else if (params.photoType === 'spicy') {
-    titles.push(`${themes[3] || 'Spicy'} mood activated ${emojis[3] || '🔥'}`);
+    titles.push(`${themes[3] || 'Spicy'} mood activated ${emojis[3]}`);
   }
   
   return titles.slice(0, Math.random() > 0.5 ? 3 : 4);
 }
 
-function generateMainContent(params: ContentParameters, photoConfig: unknown, toneStyle: unknown): string {
+function generateMainContent(params: ContentParameters, photoConfig: PhotoConfig, toneStyle: ToneStyle): string {
   let content = "";
-  const themes = photoConfig?.themes || ['casual', 'fun', 'spontaneous'];
-  const settings = photoConfig?.settings || ['bedroom', 'living room', 'cozy space'];
-  const mood = photoConfig?.mood || 'authentic';
-  const descriptors = toneStyle?.descriptors || ['amazing', 'beautiful', 'stunning'];
-  const endings = toneStyle?.endings || ['hope you enjoy!', 'let me know what you think!'];
-  const emojis = toneStyle?.emojis || ['✨', '💕', '🌟'];
+  const themes = photoConfig.themes;
+  const settings = photoConfig.settings;
+  const mood = photoConfig.mood;
+  const descriptors = toneStyle.descriptors;
+  const endings = toneStyle.endings;
+  const emojis = toneStyle.emojis;
   
   // Opening based on tone and photo type
   if (params.textTone === 'confident') {
-    const randomStarter = (toneStyle?.starters || ['Here is'])[Math.floor(Math.random() * (toneStyle?.starters?.length || 1))];
+    const randomStarter = toneStyle.starters[Math.floor(Math.random() * toneStyle.starters.length)];
     content = `${randomStarter} ${descriptors[0]} content I just created. `;
   } else if (params.textTone === 'playful') {
-    const randomStarter = (toneStyle?.starters || ['Hey'])[Math.floor(Math.random() * (toneStyle?.starters?.length || 1))];
+    const randomStarter = toneStyle.starters[Math.floor(Math.random() * toneStyle.starters.length)];
     content = `${randomStarter} I had the most ${descriptors[0]} photoshoot in my ${settings[0]} today! `;
   } else if (params.textTone === 'mysterious') {
-    const randomStarter = (toneStyle?.starters || ['Something happened'])[Math.floor(Math.random() * (toneStyle?.starters?.length || 1))];
+    const randomStarter = toneStyle.starters[Math.floor(Math.random() * toneStyle.starters.length)];
     content = `${randomStarter} in my ${settings[0]}... `;
   } else if (params.textTone === 'sassy') {
-    const randomStarter = (toneStyle?.starters || ['Listen up'])[Math.floor(Math.random() * (toneStyle?.starters?.length || 1))];
+    const randomStarter = toneStyle.starters[Math.floor(Math.random() * toneStyle.starters.length)];
     content = `${randomStarter}, your girl just dropped some ${descriptors[0]} content. `;
   } else {
-    const randomStarter = (toneStyle?.starters || ['Hey there'])[Math.floor(Math.random() * (toneStyle?.starters?.length || 1))];
+    const randomStarter = toneStyle.starters[Math.floor(Math.random() * toneStyle.starters.length)];
     content = `${randomStarter}, this ${themes[0]} session was ${descriptors[0]}. `;
   }
   
@@ -1290,30 +1324,28 @@ function generateMainContent(params: ContentParameters, photoConfig: unknown, to
   return content;
 }
 
-function generatePhotoInstructions(params: ContentParameters, photoConfig: unknown): unknown {
-  const config = photoConfig;
-  
+function generatePhotoInstructions(params: ContentParameters, photoConfig: PhotoConfig): GeneratedContent['photoInstructions'] {
   return {
-    lighting: config.lighting + (params.photoType === 'shower' ? ', emphasis on steam and water reflections' : 
+    lighting: photoConfig.lighting + (params.photoType === 'shower' ? ', emphasis on steam and water reflections' : 
                params.photoType === 'workout' ? ', bright and energetic to show determination' :
                params.photoType === 'very-spicy' || params.photoType === 'all-xs' ? ', dramatic contrasts and artistic shadows' : ''),
-    angles: config.angles + (params.textTone === 'confident' ? ', powerful perspective shots' :
+    angles: photoConfig.angles + (params.textTone === 'confident' ? ', powerful perspective shots' :
             params.textTone === 'playful' ? ', fun candid angles' :
             params.textTone === 'mysterious' ? ', shadowy artistic angles' : ''),
-    composition: `${config.mood} composition with ${params.photoType === 'casual' ? 'natural framing' :
+    composition: `${photoConfig.mood} composition with ${params.photoType === 'casual' ? 'natural framing' :
                  params.photoType === 'workout' ? 'dynamic action elements' :
                  params.photoType === 'shower' ? 'steam and water elements' :
                  params.photoType === 'showing-skin' ? 'artistic tasteful framing' :
                  params.photoType === 'spicy' ? 'seductive elegant framing' :
                  params.photoType === 'very-spicy' ? 'bold intimate framing' :
                  'unlimited creative framing'}`,
-    styling: `${config.clothing.join(' or ')}, ${config.mood} aesthetic`,
+    styling: `${photoConfig.clothing.join(' or ')}, ${photoConfig.mood} aesthetic`,
     technical: `High resolution, sharp focus, professional quality${params.photoType === 'very-spicy' || params.photoType === 'all-xs' ? ', studio-grade equipment recommended' : ''}`,
-    sceneSetup: `${config.settings.join(' or ')}, ${params.photoType} theme environment`
+    sceneSetup: `${photoConfig.settings.join(' or ')}, ${params.photoType} theme environment`
   };
 }
 
-function generateTags(params: ContentParameters, photoConfig: unknown): string[] {
+function generateTags(params: ContentParameters, photoConfig: PhotoConfig): string[] {
   const baseTags = [params.photoType, params.textTone, params.platform];
   const photoTags = photoConfig.themes.slice(0, 2);
   const moodTags = [photoConfig.mood];

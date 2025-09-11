@@ -83,10 +83,24 @@ async function sendWelcomeEmail(to: string, username: string) {
   }
 }
 
+async function sendUpgradeEmail(to: string, username: string, planOrTier: string) {
+  if (!isEmailServiceConfigured) return;
+  const accountUrl = `${FRONTEND_URL}/account/billing`;
+  const msg: sgMail.MailDataRequired = {
+    to,
+    from: FROM_EMAIL,
+    subject: `Your plan has been updated to ${planOrTier}`,
+    text: `Hi ${username}, your plan is now ${planOrTier}. Manage your subscription at ${accountUrl}.`,
+    html: `<p>Hi ${username},</p><p>Your plan is now <strong>${planOrTier}</strong>.</p><p><a href="${accountUrl}">Manage your subscription</a></p>`,
+  };
+  await sendMail(msg);
+}
+
 export const emailService = {
   isEmailServiceConfigured,
   sendMail,
   sendVerificationEmail,
   sendPasswordResetEmail,
   sendWelcomeEmail,
+  sendUpgradeEmail,
 };
