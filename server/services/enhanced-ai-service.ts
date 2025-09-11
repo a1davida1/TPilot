@@ -70,6 +70,14 @@ export interface EnhancedPhotoInstructions {
   timeOfDay?: string;
 }
 
+export interface AIBaseResponse {
+  titles?: string[];
+  content?: string;
+  photoInstructions?: Partial<EnhancedPhotoInstructions>;
+  hashtags?: string[];
+  caption?: string;
+}
+
 export interface EnhancedAIResponse {
   titles: string[];
   content: string;
@@ -317,13 +325,15 @@ Create content that feels authentic, drives engagement, and perfectly matches th
   }
 
   private enhanceResponse(
-    baseResponse: unknown, 
+    baseResponse: unknown,
     request: EnhancedAIRequest,
-    metadata: unknown
+    metadata: Record<string, unknown>
   ): EnhancedAIResponse {
     const platform = this.platformOptimizations[request.platform];
-    const response = baseResponse as any;
-    const meta = metadata as any;
+    const response = baseResponse as AIBaseResponse;
+    const provider = typeof metadata.provider === 'string' ? metadata.provider : 'unknown';
+    const model = typeof metadata.model === 'string' ? metadata.model : 'unknown';
+    const confidence = typeof metadata.confidence === 'number' ? metadata.confidence : 0;
     
     // Ensure content length is optimized
     let content = response?.content || '';
@@ -353,59 +363,78 @@ Create content that feels authentic, drives engagement, and perfectly matches th
       crossPromotionSuggestions: this.suggestCrossPromotion(request.platform),
       metadata: {
         generatedAt: new Date(),
-        provider: meta?.provider || 'unknown',
-        model: meta?.model || 'unknown',
-        confidence: meta?.confidence || 0,
+        provider,
+        model,
+        confidence,
         estimatedEngagement: this.estimateEngagement(request, content)
       }
     };
   }
 
   private createDetailedPhotoInstructions(
-    base: unknown,
+    base: Record<string, unknown>,
     request: EnhancedAIRequest
   ): EnhancedPhotoInstructions {
     const style = this.styleGuides[request.style];
-    const baseInstructions = base as any;
-    
+    const lightingType =
+      typeof base.lighting === 'string'
+        ? base.lighting
+        : this.getLightingForStyle(request.style);
+    const cameraAngle =
+      typeof base.cameraAngle === 'string'
+        ? base.cameraAngle
+        : this.getCameraAngleForStyle(request.style);
+    const composition =
+      typeof base.composition === 'string'
+        ? base.composition
+        : 'Rule of thirds with subject off-center';
+    const styling =
+      typeof base.styling === 'string'
+        ? base.styling
+        : this.getOutfitForStyle(request.style);
+    const mood =
+      typeof base.mood === 'string'
+        ? base.mood
+        : this.getExpressionForStyle(request.style);
+
     return {
       lighting: {
-        type: baseInstructions?.lighting || this.getLightingForStyle(request.style),
-        direction: "45-degree angle from front-left",
-        intensity: request.style === 'mysterious' ? "Low to medium" : "Medium to bright",
-        colorTemperature: request.style === 'elegant' ? "Warm (3200K)" : "Neutral (5500K)"
+        type: lightingType,
+        direction: '45-degree angle from front-left',
+        intensity: request.style === 'mysterious' ? 'Low to medium' : 'Medium to bright',
+        colorTemperature: request.style === 'elegant' ? 'Warm (3200K)' : 'Neutral (5500K)'
       },
       camera: {
-        angle: baseInstructions?.cameraAngle || this.getCameraAngleForStyle(request.style),
-        distance: "Medium shot (waist up)",
-        height: "Slightly above eye level for flattering angle",
-        lens: "50-85mm for natural perspective"
+        angle: cameraAngle,
+        distance: 'Medium shot (waist up)',
+        height: 'Slightly above eye level for flattering angle',
+        lens: '50-85mm for natural perspective'
       },
       composition: {
-        framing: baseInstructions?.composition || "Rule of thirds with subject off-center",
-        rule: "Golden ratio for visual balance",
+        framing: composition,
+        rule: 'Golden ratio for visual balance',
         background: this.getBackgroundForStyle(request.style),
-        foreground: "Clear, uncluttered"
+        foreground: 'Clear, uncluttered'
       },
       styling: {
-        outfit: baseInstructions?.styling || this.getOutfitForStyle(request.style),
-        accessories: "Minimal, tasteful jewelry",
-        hair: "Natural, well-groomed style",
-        makeup: request.style === 'elegant' ? "Sophisticated, evening look" : "Natural, enhanced features"
+        outfit: styling,
+        accessories: 'Minimal, tasteful jewelry',
+        hair: 'Natural, well-groomed style',
+        makeup: request.style === 'elegant' ? 'Sophisticated, evening look' : 'Natural, enhanced features'
       },
       mood: {
-        expression: baseInstructions?.mood || this.getExpressionForStyle(request.style),
-        bodyLanguage: "Open, confident posture",
+        expression: mood,
+        bodyLanguage: 'Open, confident posture',
         energy: style.tone,
         atmosphere: style.photoStyle
       },
       technical: {
-        aperture: "f/2.8 for soft background blur",
-        iso: "100-400 for minimal noise",
-        shutterSpeed: "1/125s or faster to avoid blur",
-        whiteBalance: "Auto or daylight",
-        focusPoint: "Eyes for portrait shots",
-        depth: "Shallow for subject isolation"
+        aperture: 'f/2.8 for soft background blur',
+        iso: '100-400 for minimal noise',
+        shutterSpeed: '1/125s or faster to avoid blur',
+        whiteBalance: 'Auto or daylight',
+        focusPoint: 'Eyes for portrait shots',
+        depth: 'Shallow for subject isolation'
       },
       props: this.suggestProps(request.contentType),
       location: this.suggestLocation(request.style),
@@ -497,27 +526,27 @@ Create content that feels authentic, drives engagement, and perfectly matches th
   }
 
   private suggestOptimalPostingTime(platform: string): string {
-    const times = {
-      reddit: "9-10 AM or 7-9 PM EST",
-      twitter: "9 AM or 7-9 PM EST",
-      instagram: "11 AM-1 PM or 7-9 PM EST",
-      tiktok: "6-9 AM or 7-11 PM EST",
-      onlyfans: "8-10 PM EST"
+    const times: Record<string, string> = {
+      reddit: '9-10 AM or 7-9 PM EST',
+      twitter: '9 AM or 7-9 PM EST',
+      instagram: '11 AM-1 PM or 7-9 PM EST',
+      tiktok: '6-9 AM or 7-11 PM EST',
+      onlyfans: '8-10 PM EST'
     };
-    
-    return (times as any)[platform] || "Evening hours (7-10 PM)";
+
+    return times[platform] || 'Evening hours (7-10 PM)';
   }
 
   private suggestCrossPromotion(currentPlatform: string): string[] {
-    const suggestions = {
+    const suggestions: Record<string, string[]> = {
       reddit: ['Twitter', 'OnlyFans'],
       twitter: ['Instagram', 'OnlyFans'],
       instagram: ['Twitter', 'TikTok'],
       tiktok: ['Instagram', 'Twitter'],
       onlyfans: ['Twitter', 'Reddit']
     };
-    
-    return (suggestions as any)[currentPlatform] || [];
+
+    return suggestions[currentPlatform] || [];
   }
 
   private estimateEngagement(request: EnhancedAIRequest, content: string): 'high' | 'medium' | 'low' {
