@@ -1,0 +1,270 @@
+diff --git a/client/src/components/auth-modal.tsx b/client/src/components/auth-modal.tsx
+index 716907c69f9e0d3eb19fb6ecbb253493d8c40da1..079f9213627029bd91f6e15ec4ff260fcc3010a5 100644
+--- a/client/src/components/auth-modal.tsx
++++ b/client/src/components/auth-modal.tsx
+@@ -45,50 +45,51 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
+   const { toast } = useToast();
+   const [mode, setMode] = useState<'login' | 'signup' | 'forgot-password'>(initialMode);
+   const [formData, setFormData] = useState({
+     username: '',
+     email: '',
+     password: ''
+   });
+   const [resetEmail, setResetEmail] = useState('');
+   const [showResendVerification, setShowResendVerification] = useState(false);
+   const [resendEmail, setResendEmail] = useState('');
+   const [isResending, setIsResending] = useState(false);
+ 
+   // Add URL parameter handling for email verification
+   useEffect(() => {
+     if (!isOpen) return;
+     
+     const urlParams = new URLSearchParams(window.location.search);
+     const verified = urlParams.get('verified');
+     const verificationError = urlParams.get('error');
+     const verifiedEmail = urlParams.get('email');
+     
+     if (verified === 'true') {
+       toast({
+         title: "✅ Email Verified!",
+         description: `Your email ${verifiedEmail || ''} has been verified. You can now login.`,
++        variant: 'default',
+         duration: 5000,
+       });
+       // Clear URL params
+       window.history.replaceState({}, '', window.location.pathname);
+     }
+     
+     if (verificationError) {
+       const errorMessages: Record<string, string> = {
+         'missing_token': 'Verification link is invalid. Please request a new one.',
+         'invalid_token': 'Verification link has expired. Please request a new one.',
+         'invalid_token_type': 'Invalid verification link. Please request a new one.',
+         'user_not_found': 'Account not found. Please sign up first.',
+         'verification_failed': 'Verification failed. Please try again or contact support.'
+       };
+       
+       toast({
+         title: "❌ Verification Failed",
+         description: errorMessages[verificationError] || 'Verification failed. Please try again.',
+         variant: "destructive",
+         duration: 5000,
+       });
+       // Clear URL params
+       window.history.replaceState({}, '', window.location.pathname);
+     }
+   }, [isOpen, toast]);
+diff --git a/client/src/components/auth-modal.tsx b/client/src/components/auth-modal.tsx
+index 716907c69f9e0d3eb19fb6ecbb253493d8c40da1..079f9213627029bd91f6e15ec4ff260fcc3010a5 100644
+--- a/client/src/components/auth-modal.tsx
++++ b/client/src/components/auth-modal.tsx
+@@ -117,194 +118,201 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
+         },
+         body: JSON.stringify(requestData)
+       });
+ 
+       const responseData = await response.json();
+ 
+       if (!response.ok) {
+         const error = new Error(responseData.message || 'Authentication failed');
+         (error as any).code = responseData.code;
+         (error as any).email = responseData.email;
+         throw error;
+       }
+ 
+       // Mark password change requirement in response data
+       if (response.status === 202) {
+         responseData.mustChangePassword = true;
+       }
+ 
+       return responseData;
+     },
+     onSuccess: async (data: AuthResponse) => {
+       // Check for temporary password status (202 response) - handled in mutationFn
+       if (data.mustChangePassword) {
+         toast({
+           title: 'Password Change Required',
+-          description: 'You must change your temporary password before continuing.'
++          description: 'You must change your temporary password before continuing.',
++          variant: 'default'
+         });
+         setFormData({ username: '', email: '', password: '' });
+         onClose();
+         // Redirect to password change page with userId
+         window.location.href = `/change-password?userId=${data.userId}`;
+         return;
+       }
+       
+       if (mode === 'login') {
+         toast({
+           title: 'Welcome back!',
+-          description: 'You have successfully logged in.'
++          description: 'You have successfully logged in.',
++          variant: 'default'
+         });
+         
+         // Reset form and close modal
+         setFormData({ username: '', email: '', password: '' });
+         onSuccess();
+         
+         // Refresh the page to update auth state with HttpOnly cookies
+         setTimeout(() => {
+           window.location.reload();
+         }, 100);
+       } else {
+         toast({
+           title: 'Account created!',
+-          description: 'Please check your email to verify your account before logging in.'
++          description: 'Please check your email to verify your account before logging in.',
++          variant: 'default'
+         });
+         
+         // Switch to login mode for verification
+         setMode('login');
+         setFormData({ username: '', email: '', password: '' });
+       }
+     },
+     onError: async (error: AuthError) => {
+       // Handle email not verified error specially
+       if (error.code === 'EMAIL_NOT_VERIFIED') {
+         setShowResendVerification(true);
+         setResendEmail(error.email || formData.username);
+         toast({
+           title: 'Email not verified',
+           description: 'Please verify your email to continue.',
++          variant: 'default',
+           action: (
+-            <Button 
++            <Button
+               size="sm"
+               variant="outline"
+               onClick={() => resendVerification(error.email || formData.username)}
+             >
+               Resend
+             </Button>
+           )
+         });
+       } else {
+         toast({
+           title: 'Error',
+           description: error.message || 'Authentication failed. Please try again.',
+           variant: 'destructive'
+         });
+       }
+     }
+   });
+ 
+   const forgotPasswordMutation = useMutation({
+     mutationFn: async (email: string) => {
+       const response = await fetch('/api/auth/forgot-password', {
+         method: 'POST',
+         headers: {
+           'Content-Type': 'application/json'
+         },
+         body: JSON.stringify({ email })
+       });
+ 
+       if (!response.ok) {
+         const error = await response.json();
+         throw new Error(error.message || 'Failed to send reset email');
+       }
+ 
+       return response.json();
+     },
+     onSuccess: () => {
+       toast({
+         title: 'Reset Email Sent',
+-        description: 'Please check your email for password reset instructions.'
++        description: 'Please check your email for password reset instructions.',
++        variant: 'default'
+       });
+       setMode('login');
+       setResetEmail('');
+     },
+     onError: (error: AuthError) => {
+       toast({
+         title: 'Error',
+         description: error.message || 'Failed to send reset email. Please try again.',
+         variant: 'destructive'
+       });
+     }
+   });
+ 
+   // Enhanced resend verification function
+   const resendVerification = async (email: string) => {
+     setIsResending(true);
+     try {
+       const res = await fetch('/api/auth/resend-verification', {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ email })
+       });
+-      
++
+       const data = await res.json();
+       toast({
+         title: "Verification email sent",
+-        description: "Please check your inbox and spam folder"
++        description: "Please check your inbox and spam folder",
++        variant: 'default'
+       });
+       setShowResendVerification(false);
+     } catch (error) {
+       toast({
+         title: "Error",
+         description: "Failed to resend verification email",
+         variant: "destructive"
+       });
+     } finally {
+       setIsResending(false);
+     }
+   };
+ 
+   const resendVerificationMutation = useMutation({
+     mutationFn: async (email: string) => {
+       const response = await fetch('/api/auth/resend-verification', {
+         method: 'POST',
+         headers: {
+           'Content-Type': 'application/json'
+         },
+         body: JSON.stringify({ email })
+       });
+ 
+       if (!response.ok) {
+         const error = await response.json();
+         throw new Error(error.message || 'Failed to resend verification email');
+       }
+ 
+       return response.json();
+     },
+     onSuccess: () => {
+       toast({
+         title: 'Verification Email Sent',
+-        description: 'Please check your inbox and spam folder.'
++        description: 'Please check your inbox and spam folder.',
++        variant: 'default'
+       });
+     },
+     onError: (error: AuthError) => {
+       toast({
+         title: 'Error',
+         description: error.message || 'Failed to resend verification email. Please try again.',
+         variant: 'destructive'
+       });
+     }
+   });
+ 
+   const socialProviders = [
+     {
+       id: 'google',
+       name: 'Google',
+       icon: <FaGoogle className="h-5 w-5" />,
+       color: 'bg-red-500 hover:bg-red-600',
+       url: '/api/auth/google'
+     },
+     {
+       id: 'reddit',
+       name: 'Reddit',
+       icon: <FaReddit className="h-5 w-5" />,
+       color: 'bg-orange-500 hover:bg-orange-600',
+       url: '', // Handled in handleSocialAuth

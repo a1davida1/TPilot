@@ -1,0 +1,562 @@
+diff --git a/server/routes.ts b/server/routes.ts
+index 90428e66c89c0a3857d7487a25ca5ce32da2a014..2e3f63e48e8d5082bf4e9d6ba865a4ea944cbeb9 100644
+--- a/server/routes.ts
++++ b/server/routes.ts
+@@ -1,32 +1,32 @@
+ import type { Express, Response, NextFunction } from "express";
+ import express from "express";
+ import { createServer, type Server } from "http";
+ import session from 'express-session';
+ import path from 'path';
+ import connectPgSimple from 'connect-pg-simple';
+-import * as connectRedis from 'connect-redis';
++import connectRedis from 'connect-redis';
+ import { Pool } from 'pg';
+ import Redis from 'ioredis';
+ import Stripe from 'stripe';
+ import passport from 'passport';
+ 
+ // Security and middleware
+ import { validateEnvironment, securityMiddleware, ipLoggingMiddleware, errorHandler, logger, generationLimiter } from "./middleware/security.js";
+ import { AppError, CircuitBreaker } from "./lib/errors.js";
+ import { authenticateToken } from "./middleware/auth.js";
+ 
+ // Route modules
+ // import { authRoutes } from "./routes/auth.js"; // Removed - using server/auth.ts instead
+ import { uploadRoutes, applyImageShieldProtection, protectionPresets } from "./routes/upload.js";
+ import { registerExpenseRoutes } from "./expense-routes.js";
+ 
+ // Core imports
+ import { storage } from "./storage.js";
+ import { setupAuth } from "./auth.js";
+ import { setupAdminRoutes } from "./admin-routes.js";
+ import { configureSocialAuth, socialAuthRoutes } from "./social-auth-config.js";
+ import { visitorAnalytics } from "./visitor-analytics.js";
+ import { makePaxum, makeCoinbase, makeStripe } from "./payments/payment-providers.js";
+ // Analytics request type
+ interface AnalyticsRequest extends express.Request {
+   sessionID: string;
+diff --git a/server/routes.ts b/server/routes.ts
+index 90428e66c89c0a3857d7487a25ca5ce32da2a014..2e3f63e48e8d5082bf4e9d6ba865a4ea944cbeb9 100644
+--- a/server/routes.ts
++++ b/server/routes.ts
+@@ -91,74 +91,95 @@ const REDIS_URL = process.env.REDIS_URL;
+ const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+ 
+ // Initialize Stripe if configured
+ const stripe = STRIPE_SECRET_KEY ? new Stripe(STRIPE_SECRET_KEY, {
+   apiVersion: '2024-11-20.acacia',
+ }) : null;
+ 
+ // Configure multer for optional image uploads
+ const upload = multer({
+   dest: 'uploads/',
+   limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+   fileFilter: (req, file, cb) => {
+     if (file.mimetype.startsWith('image/')) {
+       cb(null, true);
+     } else {
+       cb(new Error('Only image files are allowed!'));
+     }
+   }
+ });
+ 
+ // Auth request interface
+ interface AuthRequest extends express.Request {
+   user?: typeof users.$inferSelect;
+ }
+ 
++interface GenerationRequestBody {
++  mode?: string;
++  prompt?: string;
++  platform?: string;
++  style?: string;
++  theme?: string;
++  includePromotion?: boolean | string;
++  customInstructions?: string;
++}
++
++interface PhotoInstructionsResult {
++  lighting?: string | string[];
++  angles?: string | string[];
++  cameraAngle?: string;
++  composition?: string | string[];
++  styling?: string | string[];
++  mood?: string;
++  technical?: string | string[];
++  technicalSettings?: string;
++}
++
+ export async function registerRoutes(app: Express): Promise<Server> {
+   // ==========================================
+   // VALIDATE ENVIRONMENT & APPLY SECURITY
+   // ==========================================
+   
+   // Set trust proxy securely for rate limiters
+   app.set('trust proxy', (ip: string) => {
+     // Trust localhost and private network ranges
+     return ['127.0.0.1', '::1'].includes(ip) || ip.startsWith('10.') || ip.startsWith('192.168.');
+   });
+   
+   // Validate required environment variables first
+   validateEnvironment();
+   
+   // Log IPs first so downstream middleware can use req.userIP
+   app.use(ipLoggingMiddleware);
+   app.use(securityMiddleware);
+ 
+   // Session configuration (MUST BE BEFORE AUTH ROUTES)
+   let store: session.Store | undefined;
+ 
+   if (IS_PRODUCTION) {
+     if (REDIS_URL) {
+-      const RedisStore = (connectRedis as any)(session);
++      const RedisStore = connectRedis(session);
+       const redisClient = new Redis(REDIS_URL);
+       store = new RedisStore({ client: redisClient });
+     } else if (DATABASE_URL) {
+       const PgStore = connectPgSimple(session);
+       store = new PgStore({
+         pool: new Pool({ connectionString: DATABASE_URL })
+       });
+     } else {
+       logger.warn('No REDIS_URL or DATABASE_URL set in production; using MemoryStore.');
+     }
+   }
+ 
+   app.use(session({
+     store,
+     secret: SESSION_SECRET,
+     resave: false, // Prevent session fixation
+     saveUninitialized: false, // Only create sessions when needed
+     cookie: {
+       secure: IS_PRODUCTION, // HTTPS-only in production
+       httpOnly: true,
+       maxAge: 24 * 60 * 60 * 1000, // 24 hours
+       sameSite: 'lax' // Allows OAuth redirects
+     },
+     name: 'thottopilot.sid', // Custom session name
+     rolling: true // Refresh session on activity
+diff --git a/server/routes.ts b/server/routes.ts
+index 90428e66c89c0a3857d7487a25ca5ce32da2a014..2e3f63e48e8d5082bf4e9d6ba865a4ea944cbeb9 100644
+--- a/server/routes.ts
++++ b/server/routes.ts
+@@ -174,62 +195,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
+     done(null, userId);
+   });
+ 
+   passport.deserializeUser(async (id: unknown, done) => {
+     try {
+       if (typeof id !== 'number') {
+         return done(new Error('Invalid user ID'), null);
+       }
+       const user = await storage.getUser(id);
+       done(null, user);
+     } catch (error) {
+       done(error instanceof Error ? error : new Error(String(error)), null);
+     }
+   });
+ 
+   // CSRF protection for session-based routes
+   const csrfProtection = csrf({ 
+     cookie: {
+       httpOnly: true,
+       secure: IS_PRODUCTION,
+       sameSite: 'strict'
+     }
+   });
+   
+   // CSRF error handling middleware
+-  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+-    if (err?.code === 'EBADCSRFTOKEN') {
++  app.use((err: unknown, req: express.Request, res: express.Response, next: express.NextFunction) => {
++    if (err instanceof Error && (err as { code?: string }).code === 'EBADCSRFTOKEN') {
+       logger.warn('CSRF token validation failed', {
+         ip: req.ip,
+         userAgent: req.get('User-Agent'),
+         path: req.path,
+         method: req.method,
+         hasSession: !!req.session
+       });
+-      return res.status(403).json({ 
++      return res.status(403).json({
+         message: 'Invalid CSRF token',
+-        code: 'CSRF_TOKEN_INVALID' 
++        code: 'CSRF_TOKEN_INVALID'
+       });
+     }
+     next(err);
+   });
+   
+   // Apply CSRF protection to sensitive state-changing routes
+   // Note: JWT-based routes rely on token authentication instead of CSRF
+   
+   // CSRF-protected routes (session-based and sensitive operations)
+   const csrfProtectedRoutes = [
+     '/api/auth/verify-email',
+     '/api/auth/change-password',
+     '/api/auth/forgot-password',
+     '/api/auth/reset-password',
+     '/api/upload/image',
+     '/api/content/generate',
+     '/api/reddit/connect',
+     '/api/reddit/post',
+     '/api/admin/*', // All admin routes
+     '/api/billing/*', // All billing operations
+     '/api/account/delete',
+     '/api/account/update-preferences'
+   ];
+   
+   // Apply CSRF protection to sensitive routes
+diff --git a/server/routes.ts b/server/routes.ts
+index 90428e66c89c0a3857d7487a25ca5ce32da2a014..2e3f63e48e8d5082bf4e9d6ba865a4ea944cbeb9 100644
+--- a/server/routes.ts
++++ b/server/routes.ts
+@@ -313,117 +334,117 @@ export async function registerRoutes(app: Express): Promise<Server> {
+       let customerId = user?.stripeCustomerId;
+ 
+       if (!customerId) {
+         // Create new Stripe customer
+         const customer = await stripe.customers.create({
+           email: user?.email || undefined,
+           metadata: {
+             userId: req.user.id.toString(),
+             plan: plan
+           }
+         });
+         customerId = customer.id;
+         
+         // Save customer ID to database
+         await storage.updateUser(req.user.id, { stripeCustomerId: customerId });
+       }
+ 
+       // Create subscription with trial period
+       const subscription = await stripe.subscriptions.create({
+         customer: customerId,
+         items: [{
+           price_data: {
+             currency: 'usd',
+             product_data: {
+               name: plan === 'pro_plus' ? 'ThottoPilot Pro Plus' : 'ThottoPilot Pro',
+-              description: plan === 'pro_plus' 
+-                ? 'Premium content creation with advanced features' 
++              description: plan === 'pro_plus'
++                ? 'Premium content creation with advanced features'
+                 : 'Professional content creation and protection'
+             },
+             unit_amount: amount,
+             recurring: {
+               interval: 'month',
+             },
+-          } as any,
++          } as Stripe.SubscriptionCreateParams.Item['price_data'],
+         }],
+         payment_behavior: 'default_incomplete',
+         payment_settings: { save_default_payment_method: 'on_subscription' },
+         expand: ['latest_invoice.payment_intent'],
+         metadata: {
+           userId: req.user.id.toString(),
+           plan: plan
+         }
+       });
+ 
+       const invoice = subscription.latest_invoice as Stripe.Invoice;
+-      const paymentIntent = (invoice as any).payment_intent as Stripe.PaymentIntent;
++      const paymentIntent = invoice.payment_intent as Stripe.PaymentIntent;
+ 
+       res.json({
+         subscriptionId: subscription.id,
+         clientSecret: paymentIntent.client_secret,
+       });
+     } catch (error: unknown) {
+       logger.error("Subscription creation error:", error);
+       res.status(500).json({ 
+         message: "Error creating subscription: " + (error.message || 'Unknown error') 
+       });
+     }
+   });
+ 
+   // Get subscription status
+   app.get("/api/subscription-status", authenticateToken, async (req: AuthRequest, res) => {
+     try {
+       if (!stripe) {
+         return res.json({ hasSubscription: false, plan: 'free' });
+       }
+ 
+       if (!req.user?.id) {
+         return res.status(401).json({ message: "Authentication required" });
+       }
+ 
+       const user = await storage.getUser(req.user.id);
+       
+       if (!user?.stripeCustomerId) {
+         return res.json({ hasSubscription: false, plan: 'free' });
+       }
+ 
+       // Get active subscriptions for this customer
+       const subscriptions = await stripe.subscriptions.list({
+         customer: user.stripeCustomerId,
+         status: 'active',
+         limit: 1
+       });
+ 
+       if (subscriptions.data.length > 0) {
+         const subscription = subscriptions.data[0];
+         const plan = subscription.metadata?.plan || 'pro';
+         
+         return res.json({
+           hasSubscription: true,
+           plan,
+           subscriptionId: subscription.id,
+-          currentPeriodEnd: (subscription as any).current_period_end,
++          currentPeriodEnd: subscription.current_period_end,
+         });
+       }
+ 
+       return res.json({ hasSubscription: false, plan: 'free' });
+     } catch (error) {
+       logger.error("Subscription status error:", error);
+       res.status(500).json({ message: "Failed to get subscription status" });
+     }
+   });
+ 
+   // Cancel subscription
+   app.post("/api/cancel-subscription", authenticateToken, async (req: AuthRequest, res) => {
+     try {
+       if (!stripe) {
+         return res.status(503).json({ message: "Payment system not configured" });
+       }
+ 
+       if (!req.user?.id) {
+         return res.status(401).json({ message: "Authentication required" });
+       }
+ 
+       const { subscriptionId } = req.body;
+       
+       if (!subscriptionId) {
+         return res.status(400).json({ message: "Subscription ID required" });
+diff --git a/server/routes.ts b/server/routes.ts
+index 90428e66c89c0a3857d7487a25ca5ce32da2a014..2e3f63e48e8d5082bf4e9d6ba865a4ea944cbeb9 100644
+--- a/server/routes.ts
++++ b/server/routes.ts
+@@ -443,88 +464,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
+       res.status(500).json({ message: "Failed to cancel subscription" });
+     }
+   });
+ 
+   // ==========================================
+   // CONTENT GENERATION ENDPOINTS
+   // ==========================================
+   
+   const generateContentBreaker = new CircuitBreaker(generateContent);
+   const unifiedBreaker = new CircuitBreaker(generateUnifiedAIContent);
+   
+   // Generate content with rate limiting
+   app.post("/api/generate-content", generationLimiter, authenticateToken, async (req: AuthRequest, res, next) => {
+     if (!req.user?.id) {
+       return res.status(401).json({ message: "Authentication required" });
+     }
+     const { platform, style, theme, timing, allowsPromotion } = req.body;
+     try {
+       const result = await generateContentBreaker.call(
+         platform || 'reddit',
+         style || 'playful',
+         theme || 'lingerie',
+         timing,
+         allowsPromotion
+       );
++      const instructions = result.photoInstructions as PhotoInstructionsResult;
+       const photoInstructions = {
+-        lighting: Array.isArray(result.photoInstructions.lighting)
+-          ? result.photoInstructions.lighting[0]
+-          : result.photoInstructions.lighting || 'Natural lighting',
+-        cameraAngle: Array.isArray(result.photoInstructions.angles)
+-          ? result.photoInstructions.angles[0]
+-          : (result.photoInstructions as any).cameraAngle || 'Eye level',
+-        composition: Array.isArray(result.photoInstructions.composition)
+-          ? result.photoInstructions.composition[0]
+-          : result.photoInstructions.composition || 'Center composition',
+-        styling: Array.isArray(result.photoInstructions.styling)
+-          ? result.photoInstructions.styling[0]
+-          : result.photoInstructions.styling || 'Casual styling',
+-        mood: (result.photoInstructions as any).mood || 'Confident and natural',
+-        technicalSettings: Array.isArray(result.photoInstructions.technical)
+-          ? result.photoInstructions.technical[0]
+-          : (result.photoInstructions as any).technicalSettings || 'Auto settings'
++        lighting: Array.isArray(instructions.lighting)
++          ? instructions.lighting[0]
++          : instructions.lighting || 'Natural lighting',
++        cameraAngle: Array.isArray(instructions.angles)
++          ? instructions.angles[0]
++          : instructions.cameraAngle || 'Eye level',
++        composition: Array.isArray(instructions.composition)
++          ? instructions.composition[0]
++          : instructions.composition || 'Center composition',
++        styling: Array.isArray(instructions.styling)
++          ? instructions.styling[0]
++          : instructions.styling || 'Casual styling',
++        mood: instructions.mood || 'Confident and natural',
++        technicalSettings: Array.isArray(instructions.technical)
++          ? instructions.technical[0]
++          : instructions.technicalSettings || 'Auto settings'
+       };
+       await storage.createContentGeneration({
+         userId: req.user.id,
+         titles: result.titles || [],
+         content: result.content || '',
+         photoInstructions,
+         platform: platform || "reddit",
+         style: style || 'playful',
+         theme: theme || 'lingerie',
+         createdAt: new Date()
+       });
+       res.json(result);
+     } catch (error: unknown) {
+       next(error instanceof AppError ? error : new AppError('Failed to generate content', 500));
+     }
+   });
+ 
+   // Unified AI generation endpoint - handles both text and image workflows
+   app.post('/api/generate-unified', generationLimiter, authenticateToken, upload.single('image'), async (req: AuthRequest, res, next) => {
+     try {
+-      const { mode, prompt, platform, style, theme, includePromotion, customInstructions } = req.body as any;
++      const { mode, prompt, platform, style, theme, includePromotion, customInstructions } = req.body as GenerationRequestBody;
+ 
+       if (req.user?.id) {
+         const user = await storage.getUser(req.user.id);
+         if (!user) {
+           return res.status(401).json({ error: 'User not found' });
+         }
+         const userTier = user.tier || 'free';
+         const dailyCount = await storage.getDailyGenerationCount(req.user.id);
+         let dailyLimit = 5;
+         if (userTier === 'pro') dailyLimit = 50;
+         else if (userTier === 'starter') dailyLimit = 25;
+         if (dailyLimit !== -1 && dailyCount >= dailyLimit) {
+           return res.status(429).json({
+             error: 'Daily generation limit reached',
+             limit: dailyLimit,
+             used: dailyCount,
+             tier: userTier,
+             message: `You've reached your daily limit of ${dailyLimit} generations. ${userTier === 'free' ? 'Upgrade to Pro for 50 daily generations!' : 'Your limit resets tomorrow.'}`
+           });
+         }
+       }
+ 
+       let imageBase64: string | undefined;
+       if (mode === 'image' && req.file) {
+         if (!validateImageFormat(req.file.originalname)) {
+diff --git a/server/routes.ts b/server/routes.ts
+index 90428e66c89c0a3857d7487a25ca5ce32da2a014..2e3f63e48e8d5082bf4e9d6ba865a4ea944cbeb9 100644
+--- a/server/routes.ts
++++ b/server/routes.ts
+@@ -712,51 +734,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
+ 
+       const generationId = parseInt(req.params.id);
+       if (isNaN(generationId)) {
+         return res.status(400).json({ message: "Invalid generation ID" });
+       }
+ 
+       // Here you would typically verify the generation belongs to the user
+       // and then delete it from the database
+       // For now, just return success as the storage interface doesn't have delete method
+       res.json({ success: true });
+     } catch (error: unknown) {
+       logger.error("Failed to delete content generation:", error);
+       res.status(500).json({ message: "Failed to delete content generation" });
+     }
+   });
+ 
+   // Lead API routes (waitlist functionality)
+   app.post("/api/leads", createLead);
+   app.get("/api/leads/confirm", confirmLead);
+   app.get("/api/admin/leads", getLeads);
+ 
+   // Debug endpoint for Reddit OAuth session
+   app.get('/api/debug/reddit-session', (req, res) => {
+     res.json({
+       sessionID: req.sessionID,
+-      redditState: (req.session as any).redditOAuthState,
++      redditState: req.session.redditOAuthState,
+       hasSession: !!req.session,
+       cookies: req.headers.cookie,
+       sessionData: req.session
+     });
+   });
+ 
+   // ==========================================
+   // PRODUCTION API ENDPOINTS - REAL IMPLEMENTATIONS
+   // ==========================================
+   
+   // DISABLED - Using MediaManager endpoint from api-routes.ts instead
+   // This endpoint was conflicting with the proper implementation that uses MediaManager
+   /*
+   app.get('/api/media', authenticateToken, async (req: AuthenticatedRequest, res) => {
+     try {
+       const userId = req.user?.id;
+       if (!userId) {
+         return res.status(401).json({ message: 'Authentication required' });
+       }
+       
+       const images = await storage.getUserImages(userId);
+       res.json(images);
+     } catch (error) {
+       logger.error('Failed to fetch media:', error);
+       res.status(500).json({ message: 'Failed to fetch media' });
+diff --git a/server/routes.ts b/server/routes.ts
+index 90428e66c89c0a3857d7487a25ca5ce32da2a014..2e3f63e48e8d5082bf4e9d6ba865a4ea944cbeb9 100644
+--- a/server/routes.ts
++++ b/server/routes.ts
+@@ -970,51 +992,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
+     try {
+       const user = await storage.getUser(req.user.id);
+       
+       if (!user?.stripeCustomerId || !stripe) {
+         return res.json({
+           subscription: null,
+           isPro: false,
+           tier: user?.tier || 'free'
+         });
+       }
+       
+       const subscriptions = await stripe.subscriptions.list({
+         customer: user.stripeCustomerId,
+         status: 'active',
+         limit: 1
+       });
+       
+       if (subscriptions.data.length > 0) {
+         const sub = subscriptions.data[0];
+         return res.json({
+           subscription: {
+             id: sub.id,
+             status: sub.status,
+             plan: sub.metadata?.plan || user.tier,
+             amount: sub.items.data[0].price.unit_amount,
+-            nextBillDate: new Date((sub as any).current_period_end * 1000).toISOString(),
++            nextBillDate: new Date(sub.current_period_end * 1000).toISOString(),
+             createdAt: new Date(sub.created * 1000).toISOString()
+           },
+           isPro: ['pro', 'starter'].includes(user.tier || ''),
+           tier: user.tier || 'free'
+         });
+       }
+       
+       res.json({
+         subscription: null,
+         isPro: false,
+         tier: user.tier || 'free'
+       });
+     } catch (error) {
+       logger.error('Failed to fetch subscription:', error);
+       res.status(500).json({ message: 'Failed to fetch subscription' });
+     }
+   });
+ 
+   // Social media quick post endpoint - REAL
+   app.post('/api/social-media/quick-post', authenticateToken, async (req: AuthenticatedRequest, res) => {
+     try {
+       const { platform, content, title, subreddit } = req.body;
+       
+       const post = await storage.createSocialMediaPost({
+         userId: req.user.id,

@@ -92,7 +92,7 @@ const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 
 // Initialize Stripe if configured
 const stripe = STRIPE_SECRET_KEY ? new Stripe(STRIPE_SECRET_KEY, {
-  apiVersion: '2024-11-20.acacia',
+  apiVersion: '2025-08-27.basil',
 }) : null;
 
 // Configure multer for optional image uploads
@@ -111,6 +111,27 @@ const upload = multer({
 // Auth request interface
 interface AuthRequest extends express.Request {
   user?: typeof users.$inferSelect;
+}
+
+interface GenerationRequestBody {
+  mode?: string;
+  prompt?: string;
+  platform?: string;
+  style?: string;
+  theme?: string;
+  includePromotion?: boolean | string;
+  customInstructions?: string;
+}
+
+interface PhotoInstructionsResult {
+  lighting?: string | string[];
+  angles?: string | string[];
+  cameraAngle?: string;
+  composition?: string | string[];
+  styling?: string | string[];
+  mood?: string;
+  technical?: string | string[];
+  technicalSettings?: string;
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -196,8 +217,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // CSRF error handling middleware
-  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    if (err?.code === 'EBADCSRFTOKEN') {
+  app.use((err: unknown, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (err instanceof Error && (err as { code?: string }).code === 'EBADCSRFTOKEN') {
       logger.warn('CSRF token validation failed', {
         ip: req.ip,
         userAgent: req.get('User-Agent'),
@@ -205,9 +226,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         method: req.method,
         hasSession: !!req.session
       });
-      return res.status(403).json({ 
+      return res.status(403).json({
         message: 'Invalid CSRF token',
-        code: 'CSRF_TOKEN_INVALID' 
+        code: 'CSRF_TOKEN_INVALID'
       });
     }
     next(err);
@@ -343,7 +364,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             recurring: {
               interval: 'month',
             },
-          } as any,
+          } as Stripe.SubscriptionCreateParams.Item['price_data'],
         }],
         payment_behavior: 'default_incomplete',
         payment_settings: { save_default_payment_method: 'on_subscription' },
@@ -355,7 +376,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const invoice = subscription.latest_invoice as Stripe.Invoice;
-      const paymentIntent = (invoice as any).payment_intent as Stripe.PaymentIntent;
+      const paymentIntent = invoice.payment_intent as Stripe.PaymentIntent;
 
       res.json({
         subscriptionId: subscription.id,
@@ -364,7 +385,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       logger.error("Subscription creation error:", error);
       res.status(500).json({ 
-        message: "Error creating subscription: " + (error.message || 'Unknown error') 
+        message: "Error creating subscription: " + (error instanceof Error ? error.message : 'Unknown error') 
       });
     }
   });
@@ -401,7 +422,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           hasSubscription: true,
           plan,
           subscriptionId: subscription.id,
-          currentPeriodEnd: (subscription as any).current_period_end,
+          currentPeriodEnd: subscription.current_period_end,
         });
       }
 
@@ -992,7 +1013,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             status: sub.status,
             plan: sub.metadata?.plan || user.tier,
             amount: sub.items.data[0].price.unit_amount,
-            nextBillDate: new Date((sub as any).current_period_end * 1000).toISOString(),
+            nextBillDate: new Date(sub.current_period_end * 1000).toISOString(),
             createdAt: new Date(sub.created * 1000).toISOString()
           },
           isPro: ['pro', 'starter'].includes(user.tier || ''),

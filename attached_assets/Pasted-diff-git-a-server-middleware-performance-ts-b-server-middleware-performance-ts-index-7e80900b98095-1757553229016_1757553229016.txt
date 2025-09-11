@@ -1,0 +1,99 @@
+diff --git a/server/middleware/performance.ts b/server/middleware/performance.ts
+index 7e80900b98095b98076d79b1cc608db54a56c400..d4c6ebf2e73d23f3446ffd4ec1cf9996e02eb512 100644
+--- a/server/middleware/performance.ts
++++ b/server/middleware/performance.ts
+@@ -1,87 +1,88 @@
+ import { Request, Response, NextFunction } from 'express';
+ 
+ interface PerformanceMetric {
+   path: string;
+   method: string;
+   duration: number;
+   statusCode: number;
+   timestamp: Date;
+   memoryUsage: NodeJS.MemoryUsage;
+   userAgent?: string;
+   userId?: string;
+ }
+ 
+ class PerformanceMonitor {
+   private metrics: PerformanceMetric[] = [];
+   private slowRequestThreshold = 1000; // 1 second
+   private criticalThreshold = 3000; // 3 seconds
+ 
+   middleware() {
+     return (req: Request, res: Response, next: NextFunction) => {
+       const start = process.hrtime.bigint();
+       const startMemory = process.memoryUsage();
+ 
+       // Store original end function
+-      const originalEnd = res.end;
+-      
++      const resWithEnd = res as Response & { end: Response['end'] };
++      const originalEnd: Response['end'] = resWithEnd.end;
++
+       // Override end function to capture metrics
+-      (res as any).end = (...args: any[]) => {
++      resWithEnd.end = (...args: Parameters<Response['end']>) => {
+         // Restore original end function
+-        res.end = originalEnd;
++        resWithEnd.end = originalEnd;
+         
+         // Calculate duration
+         const end = process.hrtime.bigint();
+         const duration = Number(end - start) / 1000000; // Convert to milliseconds
+         
+         // Create metric
+         const metric: PerformanceMetric = {
+           path: req.path,
+           method: req.method,
+           duration,
+-          statusCode: res.statusCode,
++          statusCode: resWithEnd.statusCode,
+           timestamp: new Date(),
+           memoryUsage: process.memoryUsage(),
+           userAgent: req.get('user-agent'),
+           userId: (req as { user?: { id: string } }).user?.id
+         };
+         
+         // Store metric
+         this.recordMetric(metric);
+         
+         // Log slow requests
+         if (duration > this.slowRequestThreshold) {
+           this.handleSlowRequest(metric);
+         }
+         
+         // Alert on critical performance issues
+         if (duration > this.criticalThreshold) {
+           this.handleCriticalPerformance(metric);
+         }
+         
+         // Call original end function
+-        return originalEnd.apply(res, args);
++        return originalEnd.apply(resWithEnd, args);
+       };
+       
+       next();
+     };
+   }
+ 
+   private recordMetric(metric: PerformanceMetric) {
+     // Store metric
+     this.metrics.push(metric);
+     
+     // Keep only last 1000 metrics in memory
+     if (this.metrics.length > 1000) {
+       this.metrics.shift();
+     }
+     
+     // Log to console in development
+     if (process.env.NODE_ENV === 'development' && metric.duration > 500) {
+       console.log(`[PERF] ${metric.method} ${metric.path}: ${metric.duration.toFixed(2)}ms`);
+     }
+   }
+ 
+   private handleSlowRequest(metric: PerformanceMetric) {
+     console.warn('[SLOW REQUEST]', {
+       path: metric.path,
+       method: metric.method,
