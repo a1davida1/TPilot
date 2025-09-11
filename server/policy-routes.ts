@@ -1,9 +1,9 @@
 import type { Express, Request, Response } from "express";
 
-interface AuthenticatedRequest extends Request {
+type AuthenticatedRequest = Request & {
   session?: { userId?: number };
-  user?: { userId?: number };
-}
+  user?: { id?: number };
+};
 import { lintCaption } from "./lib/policy-linter.js";
 import { getPreviewStats, checkPreviewGate } from "./lib/preview-gate.js";
 import { db } from "./db.js";
@@ -24,7 +24,7 @@ export function registerPolicyRoutes(app: Express) {
   app.post("/api/preview", async (req: AuthenticatedRequest, res: Response) => {
     try {
       // Authentication check - get userId from session or auth middleware
-      const userId = req.session?.userId ?? req.user?.userId;
+      const userId = req.session?.userId ?? req.user?.id;
       if (!userId) {
         return res.status(401).json({ message: 'Authentication required' });
       }
@@ -79,7 +79,7 @@ export function registerPolicyRoutes(app: Express) {
   app.get("/api/user/previewStats", async (req: AuthenticatedRequest, res: Response) => {
     try {
       // Authentication check - get userId from session or auth middleware
-      const userId = req.session?.userId ?? req.user?.userId;
+      const userId = req.session?.userId ?? req.user?.id;
       if (!userId) {
         return res.status(401).json({ message: 'Authentication required' });
       }
@@ -99,7 +99,7 @@ export function registerPolicyRoutes(app: Express) {
   app.get("/api/policy/gate/check", async (req: AuthenticatedRequest, res: Response) => {
     try {
       // Authentication check - get userId from session or auth middleware
-      const userId = req.session?.userId ?? req.user?.userId;
+      const userId = req.session?.userId ?? req.user?.id;
       if (!userId) {
         return res.status(401).json({ message: 'Authentication required' });
       }

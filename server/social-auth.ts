@@ -5,6 +5,7 @@ import { Strategy as RedditStrategy } from 'passport-reddit';
 import type { Express } from 'express';
 import { storage } from './storage';
 import type { User } from '@shared/schema';
+import type { Request, Response } from 'express';
 
 export function setupSocialAuth(app: Express) {
   // Initialize Passport
@@ -172,10 +173,14 @@ function setupAuthRoutes(app: Express) {
   );
 
   // Logout with comprehensive error handling
-  app.post('/api/auth/logout', (req: unknown, res) => {
+  app.post('/api/auth/logout', (req: Request, res: Response) => {
+    const r = req as Request & {
+      session?: { destroy?: (cb: (err?: unknown) => void) => void };
+      logout?: (cb: (err?: unknown) => void) => void;
+    };
     try {
       // Check if session exists first
-      if (!req.session) {
+      if (!r.session) {
         // No session, just clear cookies and return success
         res.clearCookie('connect.sid', {
           httpOnly: true,
@@ -196,16 +201,16 @@ function setupAuthRoutes(app: Express) {
       }
 
       // If using Passport and session exists
-      if (req.logout && typeof req.logout === 'function') {
-        req.logout((err: unknown) => {
+      if (r.logout) {
+        r.logout((err) => {
           if (err) {
             console.error('Passport logout error:', err);
             // Continue with logout anyway
           }
           
           // Destroy session if it exists
-          if (req.session && req.session.destroy) {
-            req.session.destroy((destroyErr: unknown) => {
+          if (r.session && r.session.destroy) {
+            r.session.destroy((destroyErr) => {
               if (destroyErr) {
                 console.error('Session destroy error:', destroyErr);
               }
@@ -249,8 +254,8 @@ function setupAuthRoutes(app: Express) {
         });
       } else {
         // No passport logout, destroy session directly
-        if (req.session && req.session.destroy) {
-          req.session.destroy((err: unknown) => {
+        if (r.session && r.session.destroy) {
+          r.session.destroy((err) => {
             if (err) {
               console.error('Session destroy error:', err);
             }
