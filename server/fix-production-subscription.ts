@@ -61,9 +61,13 @@ async function fixProductionSubscriptionStatus() {
         `);
         console.log('✅ Constraint added (not validated yet)');
       }
-    } catch (error: any) {
-      if (error.message.includes('already exists')) {
-        console.log('⚠️  Constraint already exists, continuing...');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        if (error.message.includes('already exists')) {
+          console.log('⚠️  Constraint already exists, continuing...');
+        } else {
+          throw error;
+        }
       } else {
         throw error;
       }
@@ -77,9 +81,13 @@ async function fixProductionSubscriptionStatus() {
         VALIDATE CONSTRAINT valid_subscription_status
       `);
       console.log('✅ Constraint validated successfully');
-    } catch (error: any) {
-      if (error.message.includes('is already validated')) {
-        console.log('✅ Constraint was already validated');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        if (error.message.includes('is already validated')) {
+          console.log('✅ Constraint was already validated');
+        } else {
+          throw error;
+        }
       } else {
         throw error;
       }

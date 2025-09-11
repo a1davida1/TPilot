@@ -190,9 +190,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(passport.session());
 
   // Configure Passport serialization for admin
-  passport.serializeUser((user: typeof users.$inferSelect | { id: number }, done) => {
-    const userId = typeof user === 'object' && 'id' in user ? user.id : user;
-    done(null, userId);
+  passport.serializeUser<number>((user: any, done) => {
+    done(null, user.id);
   });
 
   passport.deserializeUser(async (id: unknown, done) => {
@@ -364,7 +363,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             recurring: {
               interval: 'month',
             },
-          } as Stripe.SubscriptionCreateParams.Item['price_data'],
+          } as any,
         }],
         payment_behavior: 'default_incomplete',
         payment_settings: { save_default_payment_method: 'on_subscription' },
@@ -376,7 +375,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const invoice = subscription.latest_invoice as Stripe.Invoice;
-      const paymentIntent = invoice.payment_intent as Stripe.PaymentIntent;
+      const paymentIntent = (invoice as any).payment_intent as Stripe.PaymentIntent;
 
       res.json({
         subscriptionId: subscription.id,
@@ -422,7 +421,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           hasSubscription: true,
           plan,
           subscriptionId: subscription.id,
-          currentPeriodEnd: subscription.current_period_end,
+          currentPeriodEnd: (subscription as any).current_period_end,
         });
       }
 
@@ -843,6 +842,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Storage usage endpoint - REAL
   app.get('/api/storage/usage', authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       const userId = req.user.id;
       const images = await storage.getUserImages(userId);
       
@@ -943,6 +945,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!engine || !engine.enabled) {
         return res.status(503).json({ message: 'Payment system not configured' });
       }
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       const { url } = await engine.createCheckout({
         userId: req.user.id.toString(),
         planId: plan,
@@ -959,6 +964,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User settings endpoints - REAL
   app.get('/api/user/settings', authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       const preferences = await storage.getUserPreferences(req.user.id);
       
       res.json(preferences || {
@@ -978,6 +986,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch('/api/user/settings', authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       const updated = await storage.updateUserPreferences(req.user.id, req.body);
       res.json({ success: true, settings: updated });
   } catch (error) {
@@ -989,6 +1000,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Subscription status endpoint - REAL
   app.get('/api/subscription', authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       const user = await storage.getUser(req.user.id);
       
       if (!user?.stripeCustomerId || !stripe) {
@@ -1013,7 +1027,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             status: sub.status,
             plan: sub.metadata?.plan || user.tier,
             amount: sub.items.data[0].price.unit_amount,
-            nextBillDate: new Date(sub.current_period_end * 1000).toISOString(),
+            nextBillDate: new Date((sub as any).current_period_end * 1000).toISOString(),
             createdAt: new Date(sub.created * 1000).toISOString()
           },
           isPro: ['pro', 'starter'].includes(user.tier || ''),
@@ -1035,6 +1049,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Social media quick post endpoint - REAL
   app.post('/api/social-media/quick-post', authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       const { platform, content, title, subreddit } = req.body;
       
       const post = await storage.createSocialMediaPost({
@@ -1059,6 +1076,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Social media posts history - REAL
   app.get('/api/social-media/posts', authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       const posts = await storage.getUserSocialMediaPosts(req.user.id, {
         limit: parseInt(req.query.limit as string) || 50,
         offset: parseInt(req.query.offset as string) || 0,
@@ -1088,7 +1108,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const inputPath = path.join(process.cwd(), image.url.startsWith('/') ? image.url.slice(1) : image.url);
       const protectedName = `protected_${Date.now()}_${image.filename}`;
       const outputPath = path.join(process.cwd(), 'uploads', protectedName);
-      await applyImageShieldProtection(inputPath, outputPath, level, false);
+      await applyImageShieldProtection(inputPath, outputPath, level as 'light' | 'standard' | 'heavy', false);
       await storage.updateUserImage(imageId, userId, { url: `/uploads/${protectedName}`, isProtected: true, protectionLevel: level });
 
       res.json({ success: true, protectedUrl: `/uploads/${protectedName}`, message: 'Image protected successfully' });
