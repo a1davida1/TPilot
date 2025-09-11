@@ -2,10 +2,10 @@ import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as FacebookStrategy } from 'passport-facebook';
 import { Strategy as RedditStrategy } from 'passport-reddit';
-import type { Express } from 'express';
-import { storage } from './storage';
+import type { Express, Request, Response } from 'express';
+import type { AuthenticateOptions } from 'passport';
 import type { User } from '@shared/schema';
-import type { Request, Response } from 'express';
+import { storage } from './storage';
 
 export function setupSocialAuth(app: Express) {
   // Initialize Passport
@@ -13,8 +13,8 @@ export function setupSocialAuth(app: Express) {
   app.use(passport.session());
 
   // Serialize user for session
-  passport.serializeUser((user: User, done) => {
-    done(null, user.id);
+  passport.serializeUser((user, done) => {
+    done(null, (user as User).id);
   });
 
   passport.deserializeUser(async (id: number, done) => {
@@ -101,15 +101,25 @@ export function setupSocialAuth(app: Express) {
 
   // Reddit OAuth Strategy
   if (process.env.REDDIT_CLIENT_ID && process.env.REDDIT_CLIENT_SECRET) {
+    interface RedditProfile {
+      id: string;
+      name?: string;
+      icon_img?: string;
+    }
     passport.use(new RedditStrategy({
       clientID: process.env.REDDIT_CLIENT_ID,
       clientSecret: process.env.REDDIT_CLIENT_SECRET,
       callbackURL: "/api/auth/reddit/callback",
       scope: ['identity']
-    }, async (accessToken: string, refreshToken: string, profile: unknown, done: unknown) => {
+    }, async (
+      accessToken: string,
+      refreshToken: string,
+      profile: RedditProfile,
+      done: (error: unknown, user?: User | false) => void
+    ) => {
       try {
         // Reddit doesn't provide email, use username
-        let user = await storage.getUserByUsername(profile.name || profile.id);
+        let user = await storage.getUserByUsername(profile.name ?? profile.id);
         
         if (!user) {
           user = await storage.createUser({
@@ -118,7 +128,7 @@ export function setupSocialAuth(app: Express) {
             password: '',
             provider: 'reddit',
             providerId: profile.id,
-            avatar: profile.icon_img || ''
+            avatar: profile.icon_img ?? ''
           });
         }
         
@@ -162,7 +172,7 @@ function setupAuthRoutes(app: Express) {
   app.get('/api/auth/reddit',
     passport.authenticate('reddit', { 
       state: Math.random().toString(36).substring(7)
-    } as any)
+    } as (AuthenticateOptions & { state: string }))
   );
 
   app.get('/api/auth/reddit/callback',
