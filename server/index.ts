@@ -68,7 +68,7 @@ app.use(cors({
 
 // Initialize Sentry with proper validation
 const Sentry = await initializeSentry();
-if (Sentry) {
+if (Sentry && Sentry.Handlers) {
   app.use(Sentry.Handlers.requestHandler());
 }
 
@@ -226,8 +226,9 @@ app.use((req, res, next) => {
       });
     
       server.on('error', (err: unknown) => {
-        if (err.code === 'EADDRINUSE') {
-          logger.warn(`Port ${attemptPort} is in use`, { error: err.message });
+        const error = err as NodeJS.ErrnoException;
+        if (error.code === 'EADDRINUSE') {
+          logger.warn(`Port ${attemptPort} is in use`, { error: error.message });
         
           if (retryCount < maxRetries) {
             // In Replit, we can only use the PORT environment variable
@@ -242,7 +243,7 @@ app.use((req, res, next) => {
             process.exit(1);
           }
         } else {
-          logger.error('Server error:', err);
+          logger.error('Server error:', error);
           process.exit(1);
         }
       });

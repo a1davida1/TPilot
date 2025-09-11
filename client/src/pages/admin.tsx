@@ -107,7 +107,6 @@ interface Completeness {
 
 export function AdminDashboard() {
   const { toast } = useToast();
-  const { token } = useAuth();
   const [selectedPeriod, setSelectedPeriod] = useState('7d');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [actionType, setActionType] = useState<'ban' | 'suspend' | 'unban' | 'reset-password' | 'tier-management' | 'user-details' | null>(null);
@@ -116,12 +115,10 @@ export function AdminDashboard() {
   const [tempPassword, setTempPassword] = useState('');
   const [newTier, setNewTier] = useState('free');
 
-  // Authenticated API request helper
+  // Authenticated API request helper (using cookies)
   const authenticatedFetch = async (url: string) => {
     const response = await fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+      credentials: 'include' // Use cookie-based authentication
     });
     if (!response.ok) {
       throw new Error(`API request failed: ${response.status}`);
@@ -132,43 +129,37 @@ export function AdminDashboard() {
   // Fetch admin stats
   const { data: stats } = useQuery<AdminStats>({
     queryKey: ['/api/admin/stats', selectedPeriod],
-    queryFn: () => authenticatedFetch('/api/admin/stats'),
-    enabled: !!token
+    queryFn: () => authenticatedFetch('/api/admin/stats')
   });
 
   // Fetch user data
   const { data: users } = useQuery<User[]>({
     queryKey: ['/api/admin/users'],
-    queryFn: () => authenticatedFetch('/api/admin/users'),
-    enabled: !!token
+    queryFn: () => authenticatedFetch('/api/admin/users')
   });
 
   // Fetch provider costs
   const { data: providers } = useQuery<Provider[]>({
     queryKey: ['/api/providers'],
-    queryFn: () => authenticatedFetch('/api/providers'),
-    enabled: !!token
+    queryFn: () => authenticatedFetch('/api/providers')
   });
 
   // Fetch system health
   const { data: systemHealth } = useQuery<SystemHealth>({
     queryKey: ['/api/admin/system-health'],
-    queryFn: () => authenticatedFetch('/api/admin/system-health'),
-    enabled: !!token
+    queryFn: () => authenticatedFetch('/api/admin/system-health')
   });
 
   // Fetch visitor analytics
   const { data: analytics } = useQuery<Analytics>({
     queryKey: ['/api/admin/analytics', selectedPeriod],
-    queryFn: () => authenticatedFetch('/api/admin/analytics'),
-    enabled: !!token
+    queryFn: () => authenticatedFetch('/api/admin/analytics')
   });
 
   // Fetch system completeness
   const { data: completeness } = useQuery<Completeness>({
     queryKey: ['/api/admin/completeness'],
-    queryFn: () => authenticatedFetch('/api/admin/completeness'),
-    enabled: !!token
+    queryFn: () => authenticatedFetch('/api/admin/completeness')
   });
 
   // User action mutation for admin operations
@@ -181,10 +172,10 @@ export function AdminDashboard() {
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(data),
+        credentials: 'include' // Use cookie-based authentication
       });
       if (!response.ok) {
         const errorText = await response.text();
@@ -1052,7 +1043,7 @@ export function AdminDashboard() {
                       <p><strong>Username:</strong> {selectedUser.username}</p>
                       <p><strong>Email:</strong> {selectedUser.email}</p>
                       <p><strong>Tier:</strong> {selectedUser.tier}</p>
-                      <p><strong>Joined:</strong> {new Date(selectedUser.createdAt).toLocaleDateString()}</p>
+                      <p><strong>Joined:</strong> {selectedUser.createdAt ? new Date(selectedUser.createdAt).toLocaleDateString() : 'Unknown'}</p>
                       <p><strong>Last Active:</strong> {selectedUser.lastLoginAt ? new Date(selectedUser.lastLoginAt).toLocaleDateString() : 'Never'}</p>
                       <p><strong>Content Created:</strong> {selectedUser.contentCount || 0}</p>
                     </div>

@@ -402,7 +402,14 @@ export const securityMiddleware = [
 // IP LOGGING MIDDLEWARE
 // ==========================================
 export const ipLoggingMiddleware = (req: express.Request, res: express.Response, next: express.NextFunction) => {
-  const userIP = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 
+  const xForwardedFor = req.headers['x-forwarded-for'];
+  const forwardedIP = typeof xForwardedFor === 'string' 
+    ? xForwardedFor.split(',')[0]?.trim()
+    : Array.isArray(xForwardedFor) 
+      ? xForwardedFor[0]
+      : undefined;
+  
+  const userIP = forwardedIP || 
                  req.headers['x-real-ip'] || 
                  req.connection?.remoteAddress || 
                  req.socket?.remoteAddress ||
