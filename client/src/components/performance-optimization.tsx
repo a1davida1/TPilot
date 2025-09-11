@@ -14,15 +14,18 @@ interface ExtendedPerformance extends Performance {
   };
 }
 
+// NetworkInformation interface for better type safety
+interface NetworkInformation {
+  effectiveType: string;
+  downlink: number;
+  rtt: number;
+  saveData: boolean;
+}
+
 interface ExtendedNavigator extends Navigator {
-  connection?: {
-    effectiveType: string;
-    downlink: number;
-    rtt: number;
-    saveData: boolean;
-  };
-  mozConnection?: ExtendedNavigator['connection'];
-  webkitConnection?: ExtendedNavigator['connection'];
+  connection?: NetworkInformation;
+  mozConnection?: NetworkInformation;
+  webkitConnection?: NetworkInformation;
 }
 
 interface PerformanceMetrics {

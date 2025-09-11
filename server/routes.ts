@@ -169,9 +169,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   if (IS_PRODUCTION) {
     if (REDIS_URL) {
-      const RedisStore = (connectRedis as any)(session);
+      const { RedisStore } = connectRedis as any;
       const redisClient = new Redis(REDIS_URL);
-      store = new RedisStore({ client: redisClient });
+      store = new RedisStore({ client: redisClient, prefix: 'sess:' });
     } else if (DATABASE_URL) {
       const PgStore = connectPgSimple(session);
       store = new PgStore({
