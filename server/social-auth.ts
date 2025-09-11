@@ -8,23 +8,9 @@ import type { User } from '@shared/schema';
 import { storage } from './storage';
 
 export function setupSocialAuth(app: Express) {
-  // Initialize Passport
-  app.use(passport.initialize());
-  app.use(passport.session());
-
-  // Serialize user for session
-  passport.serializeUser((user, done) => {
-    done(null, (user as User).id);
-  });
-
-  passport.deserializeUser(async (id: number, done) => {
-    try {
-      const user = await storage.getUser(id);
-      done(null, user);
-    } catch (error) {
-      done(error, null);
-    }
-  });
+  // Note: passport.initialize() and passport.session() are now called from routes.ts
+  // after session middleware is initialized
+  // Serialization/deserialization is also handled in routes.ts
 
   // Google OAuth Strategy
   if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {

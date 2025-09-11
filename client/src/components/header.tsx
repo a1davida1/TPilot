@@ -32,21 +32,9 @@ export function Header() {
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const handleLogout = async () => {
-    try {
-      console.log('Logout button clicked');
-      // Call the useAuth logout function which handles both frontend and backend logout
-      await logout();
-      console.log('Logout completed, redirecting...');
-      // Force a hard refresh to clear all state
-      window.location.href = '/';
-      // Additional fallback to ensure redirect happens
-      setTimeout(() => {
-        window.location.reload();
-      }, 100);
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
+  const handleLogout = () => {
+    // Redirect to logout page which handles the logout process
+    window.location.href = '/logout';
   };
 
   const isAdmin = user && (user.id === 999 || user.username === 'admin');

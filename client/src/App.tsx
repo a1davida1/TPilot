@@ -18,6 +18,7 @@ import ResetPasswordPage from "@/pages/reset-password";
 import ForgotPasswordPage from "@/pages/forgot-password";
 import EmailVerificationPage from "@/pages/email-verification";
 import ChangePasswordPage from "@/pages/change-password";
+import LogoutPage from "@/pages/logout";
 import History from "@/pages/history";
 import Settings from "@/pages/settings";
 import Checkout from "@/pages/checkout";
@@ -107,6 +108,7 @@ function AuthenticatedRoutes() {
       <Route path="/history" component={History} />
       <Route path="/settings" component={Settings} />
       <Route path="/checkout" component={Checkout} />
+      <Route path="/logout" component={LogoutPage} />
       {/* Admin Routes - Only for authenticated admin users */}
       {isAdmin && (
         <>

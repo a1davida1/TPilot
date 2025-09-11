@@ -3,6 +3,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
 import { setupAuth } from "./auth";
+import { setupSocialAuth } from "./social-auth";
 import { mountStripeWebhook } from "./routes/webhooks.stripe";
 import { mountBillingRoutes } from "./routes/billing";
 import { v4 as uuidv4 } from "uuid";
@@ -77,6 +78,7 @@ app.use((req, res, next) => {
   
     // Setup auth routes BEFORE other routes
     setupAuth(app);
+    setupSocialAuth(app);  // Register social auth routes including logout
   
     // Mount Stripe webhook and billing routes
     mountStripeWebhook(app);
