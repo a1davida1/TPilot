@@ -1,3 +1,9 @@
+interface StyleTemplate {
+  titles: string[];
+  content: string;
+  contentWithPromo?: string;
+}
+
 interface GeneratedContent {
   titles: string[];
   content: string;
@@ -10,7 +16,7 @@ interface GeneratedContent {
   };
 }
 
-const contentTemplates = {
+const contentTemplates: Record<string, Record<string, StyleTemplate>> = {
   reddit: {
     playful: {
       titles: [
@@ -162,12 +168,12 @@ export async function generateContent(
   allowsPromotion?: string
 ): Promise<GeneratedContent> {
   // Get content template based on platform and style
-  const platformTemplates = contentTemplates[platform as keyof typeof contentTemplates];
+  const platformTemplates = contentTemplates[platform];
   if (!platformTemplates) {
     throw new Error(`Unsupported platform: ${platform}`);
   }
 
-  const styleTemplate = platformTemplates[style as keyof typeof platformTemplates];
+  const styleTemplate = platformTemplates[style];
   if (!styleTemplate) {
     throw new Error(`Unsupported style: ${style} for platform: ${platform}`);
   }
@@ -182,8 +188,8 @@ export async function generateContent(
   await new Promise(resolve => setTimeout(resolve, 1000));
 
   // Choose content based on whether promotion is allowed
-  const finalContent = allowsPromotion === "yes" && (styleTemplate as any).contentWithPromo 
-    ? (styleTemplate as any).contentWithPromo 
+  const finalContent = allowsPromotion === "yes" && styleTemplate.contentWithPromo
+    ? styleTemplate.contentWithPromo
     : styleTemplate.content;
 
   return {
