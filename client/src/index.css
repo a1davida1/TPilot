@@ -52,7 +52,7 @@
     --accent-yellow: 45 80 35;
     
     /* State colors with high contrast */
-    --destructive: 0 70 40;
+    --destructive: 0 84 60;
     --destructive-foreground: 0 0 100;
     --success: 120 50 30;
     --success-foreground: 0 0 100;
@@ -93,6 +93,10 @@
     /* Dark Mode - Bubblegum Night Theme with WCAG AA Compliance */
     --background: 335 25 8;
     --foreground: 330 15 95;
+    
+    /* Destructive colors for dark mode */
+    --destructive: 0 62 50;
+    --destructive-foreground: 0 0 100;
     
     /* Card colors with guaranteed contrast */
     --card: 335 20 12;

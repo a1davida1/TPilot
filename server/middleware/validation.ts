@@ -178,9 +178,13 @@ export const ipAddressSchema = z.string().refine(
 export const loginValidationSchema = z.object({
   username: z.string().min(1, 'Username or email is required'),
   email: z.string().optional(), // Optional email field for compatibility
+  loginIdentifier: z.string().optional(), // Support both field names
   // Login should only validate that password is provided, not its format
   // This allows users with legacy passwords to login successfully
   password: z.string().min(1, 'Password is required')
+}).refine(data => data.username || data.loginIdentifier, {
+  message: 'Username or email is required',
+  path: ['username']
 });
 
 export const signupValidationSchema = z.object({
