@@ -63,7 +63,10 @@ export function createStreamingUpload(options: StreamingUploadOptions = {}) {
       await fs.promises.mkdir(config.uploadDir, { recursive: true });
 
       const uploadedFiles: UploadedFile[] = [];
-      const fields: Record<string, any> = {};
+      interface UploadFields {
+        [key: string]: string | string[];
+      }
+      const fields: UploadFields = {};
       let uploadCount = 0;
       let totalUploadSize = 0;
 

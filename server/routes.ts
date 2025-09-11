@@ -85,7 +85,11 @@ import bcrypt from 'bcrypt';
 import csrf from 'csurf';
 
 // Get secure environment variables (no fallbacks)
-const SESSION_SECRET = process.env.SESSION_SECRET!;
+const rawSessionSecret = process.env.SESSION_SECRET;
+if (!rawSessionSecret) {
+  throw new Error('SESSION_SECRET missing');
+}
+const SESSION_SECRET: string = rawSessionSecret;
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 const DATABASE_URL = process.env.DATABASE_URL;
 const REDIS_URL = process.env.REDIS_URL;

@@ -18,6 +18,15 @@ import multer from "multer";
 import type { Request, Response, NextFunction } from 'express';
 import { authenticateToken } from './middleware/auth.js';
 
+interface PostingJobPayload {
+  userId: number;
+  postJobId: number;
+  subreddit: string;
+  titleFinal: string;
+  bodyFinal: string;
+  mediaKey?: string;
+}
+
 // Create a proper User type alias from the schema
 type UserType = typeof users.$inferSelect;
 
@@ -231,7 +240,7 @@ export function registerApiRoutes(app: Express) {
       }).returning();
 
       // Add to queue
-      await addJob('posting' as any, {
+      await addJob<PostingJobPayload>('posting', {
         userId,
         postJobId: postJob.id,
         subreddit: data.subreddit,

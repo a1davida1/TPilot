@@ -288,7 +288,12 @@ export async function initializeSentry() {
   
   try {
     // Dynamic import with proper error handling for optional dependency
-    const SentryModule = await import("@sentry/node" as any).catch(() => null);
+    let SentryModule: (typeof import("@sentry/node")) | null = null;
+    try {
+      SentryModule = await import("@sentry/node");
+    } catch {
+      SentryModule = null;
+    }
     if (SentryModule) {
       Sentry = SentryModule;
       

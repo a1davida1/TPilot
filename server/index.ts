@@ -21,8 +21,14 @@ declare global {
 
 const app = express();
 
-const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",").map(o => o.trim());
-app.use(cors({ origin: allowedOrigins, credentials: true }));
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",").map(o => o.trim()) ?? [];
+app.use(cors({
+  origin(origin, cb) {
+    if (!origin || allowedOrigins.includes(origin)) cb(null, true);
+    else cb(new Error("Origin not allowed"));
+  },
+  credentials: true
+}));
 
 // Initialize Sentry with proper validation
 const Sentry = await initializeSentry();
@@ -57,7 +63,8 @@ app.use((req, res, next) => {
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+        const safe = (({ token, email, ...rest }) => rest)(capturedJsonResponse as Record<string, unknown>);
+        logLine += ` :: ${JSON.stringify(safe)}`;
       }
 
       if (logLine.length > 80) {

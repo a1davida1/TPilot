@@ -64,6 +64,7 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow(),
   lastLogin: timestamp("last_login"),
   passwordResetAt: timestamp("password_reset_at"),
+  deletedAt: timestamp("deleted_at"),
 });
 
 export const contentGenerations = pgTable("content_generations", {

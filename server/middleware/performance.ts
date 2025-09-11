@@ -1,5 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 
+declare module 'express-serve-static-core' {
+  interface Response {
+    monitoredEnd?: Response['end'];
+  }
+}
+
 interface PerformanceMetric {
   path: string;
   method: string;
@@ -22,10 +28,10 @@ class PerformanceMonitor {
       const startMemory = process.memoryUsage();
 
       // Store original end function
-      const originalEnd = res.end;
+      const originalEnd = res.end.bind(res);
       
       // Override end function to capture metrics
-      (res as any).end = (...args: any[]) => {
+      res.end = function monitoredEnd(...args: Parameters<Response['end']>): Response {
         // Restore original end function
         res.end = originalEnd;
         
@@ -59,7 +65,7 @@ class PerformanceMonitor {
         }
         
         // Call original end function
-        return originalEnd.apply(res, args);
+        return originalEnd(...args);
       };
       
       next();
