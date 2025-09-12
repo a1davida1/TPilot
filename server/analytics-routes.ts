@@ -232,8 +232,8 @@ async function handlePageView(event: unknown, ipAddress: string, deviceInfo: unk
     deviceType: deviceInfo.deviceType,
     browser: deviceInfo.browser,
     os: deviceInfo.os,
-    country: locationInfo.country,
-    city: locationInfo.city,
+    country: locationInfo?.country || null,
+    city: locationInfo?.city || null,
     startedAt: new Date(event.timestamp),
     pageCount: 1
   }).onConflictDoUpdate({
