@@ -19,11 +19,9 @@ interface DemoFallbackProps {
 
 export function DemoFallback({ error, onRetry, onSignUp }: DemoFallbackProps) {
   const { data: metrics, isLoading, isError } = useMetrics();
-  const creatorText = isLoading
-    ? "Loading creator count..."
-    : isError || !metrics
-      ? "Trusted by creators worldwide"
-      : `Trusted by ${metrics.creators.toLocaleString()} content creators`;
+  const creatorText = !isError && metrics
+    ? `Trusted by ${metrics.creators.toLocaleString()} content creators`
+    : undefined;
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
       <Card className="max-w-2xl w-full shadow-premium">
@@ -113,9 +111,11 @@ export function DemoFallback({ error, onRetry, onSignUp }: DemoFallbackProps) {
 
           {/* Trust Indicators */}
           <div className="text-center pt-4 border-t border-gray-200">
-            <p className="text-sm text-gray-500 mb-2">
-              {creatorText}
-            </p>
+            {creatorText && (
+              <p className="text-sm text-gray-500 mb-2">
+                {creatorText}
+              </p>
+            )}
             <div className="flex justify-center items-center space-x-4 text-xs text-gray-400">
               <div className="flex items-center">
                 <CheckCircle className="h-3 w-3 mr-1" />
