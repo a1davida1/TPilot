@@ -104,7 +104,8 @@ find dist -name '*.js' -exec sed -i 's/\.js\.js/\.js/g' {} + 2>/dev/null || true
 
 # Build client for production
 echo "🎨 Building client..."
-npx vite build
+npm run build:client && npm run build:server
+find dist/client -name "*.js" -o -name "*.css" | xargs gzip -9 --keep
 
 echo "✅ Production build complete!"
 echo ""
