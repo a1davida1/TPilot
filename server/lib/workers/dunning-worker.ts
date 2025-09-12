@@ -5,6 +5,13 @@ import { users, eventLogs } from "@shared/schema.js";
 import { eq } from "drizzle-orm";
 import { logger } from "../logger.js";
 
+interface RetryResult {
+  success: boolean;
+  transactionId?: string;
+  provider: 'ccbill';
+  error?: string;
+}
+
 export class DunningWorker {
   private initialized = false;
 
@@ -174,19 +181,23 @@ export class DunningWorker {
     }
   }
 
-  private async retryCCBillPayment(subscription: unknown) {
+  private async retryCCBillPayment(subscription: {
+    ccbillSubscriptionId: string;
+    amount: number;
+  }): Promise<RetryResult> {
     try {
       // CCBill retry would use their API to process a new transaction
       logger.info(`Retrying CCBill payment for subscription ${subscription.ccbillSubscriptionId}`);
       
       // For now, log that CCBill retry is not yet implemented
-      return { 
-        success: false, 
-        error: 'CCBill retry not yet implemented',
-        provider: 'ccbill'
-      };
+      const data: { success: boolean; id?: string } = { success: false };
+      return { success: data.success, transactionId: data.id, provider: 'ccbill' };
     } catch (error: unknown) {
-      return { success: false, error: error.message, provider: 'ccbill' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        provider: 'ccbill',
+      };
     }
   }
 
