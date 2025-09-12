@@ -2,7 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
-import { authLimiter, generalLimiter } from "./middleware/security";
+import { authLimiter, generalLimiter, sanitize } from "./middleware/security";
 import { setupAuth } from "./auth";
 import { setupSocialAuth } from "./social-auth";
 import { mountStripeWebhook } from "./routes/webhooks.stripe";
@@ -22,7 +22,9 @@ declare global {
 
 const app = express();
 
+app.set('trust proxy', 1);
 app.use(generalLimiter);
+app.use(sanitize);
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",").map(o => o.trim()) ?? [];
 

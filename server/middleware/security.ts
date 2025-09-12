@@ -145,6 +145,9 @@ export const inputSanitizer = (req: express.Request, res: express.Response, next
   });
 };
 
+// Alias for convenience
+export const sanitize = inputSanitizer;
+
 // Extend Express Request interface to add custom properties
 declare module 'express' {
   interface Request {
