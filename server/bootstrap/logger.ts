@@ -325,7 +325,7 @@ export async function initializeSentry() {
         },
         
         // Enhanced release tracking
-        release: process.env.GIT_COMMIT || process.env.REPL_ID || 'unknown',
+        release: process.env.GIT_COMMIT_SHA,
         
         // Set user context
         initialScope: {
