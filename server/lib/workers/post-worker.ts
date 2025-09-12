@@ -78,8 +78,10 @@ export class PostWorker {
           if (mediaAsset) {
             postOptions.url = mediaAsset.downloadUrl || mediaAsset.signedUrl;
           }
-        } catch (error) {
-          logger.warn('Failed to attach media, posting as text:', { error: (error as any).message });
+        } catch (error: unknown) {
+          logger.warn('Failed to attach media, posting as text:', {
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
         }
       }
 
@@ -88,7 +90,10 @@ export class PostWorker {
 
       // Update job status in database
       if (result.success) {
-        await this.updateJobStatus(postJobId!, 'sent', {
+        if (!postJobId) {
+          throw new Error('postJobId is required');
+        }
+        await this.updateJobStatus(postJobId, 'sent', {
           redditPostId: result.postId,
           url: result.url,
           completedAt: new Date().toISOString(),
@@ -110,16 +115,18 @@ export class PostWorker {
       logger.error(`Post job ${postJobId} failed:`, { error });
 
       // Update job status to failed
-      await this.updateJobStatus(postJobId!, 'failed', {
-        error: (error as any).message,
-        failedAt: new Date().toISOString(),
-      });
+      if (postJobId) {
+        await this.updateJobStatus(postJobId, 'failed', {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          failedAt: new Date().toISOString(),
+        });
+      }
 
       // Log failure event
       await this.logEvent(userId, 'job.failed', {
         postJobId,
         subreddit,
-        error: (error as any).message,
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
 
       throw error; // Re-throw to mark job as failed

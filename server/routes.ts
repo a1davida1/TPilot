@@ -537,7 +537,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Unified AI generation endpoint - handles both text and image workflows
   app.post('/api/generate-unified', generationLimiter, authenticateToken, upload.single('image'), async (req: AuthRequest, res, next) => {
     try {
-      const { mode, prompt, platform, style, theme, includePromotion, customInstructions } = req.body as any;
+      interface GenerationRequestBody {
+        mode: string;
+        prompt: string;
+        platform?: string;
+        style?: string;
+        theme?: string;
+        includePromotion?: boolean;
+        customInstructions?: string;
+      }
+      const body = req.body as Partial<GenerationRequestBody>;
+      if (!body.mode || !body.prompt) {
+        return res.status(400).json({ error: 'mode and prompt are required' });
+      }
+      const {
+        mode,
+        prompt,
+        platform,
+        style,
+        theme,
+        includePromotion,
+        customInstructions
+      } = body;
 
       if (req.user?.id) {
         const user = await storage.getUser(req.user.id);

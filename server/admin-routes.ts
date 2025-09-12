@@ -18,6 +18,15 @@ interface AdminRequest extends express.Request {
   user?: User;
 }
 
+function ensureAdminId(req: AdminRequest, res: express.Response): number | undefined {
+  const adminId = req.user?.id;
+  if (typeof adminId !== 'number') {
+    res.status(401).json({ message: 'Unauthorized' });
+    return undefined;
+  }
+  return adminId;
+}
+
 export function setupAdminRoutes(app: Express) {
   // Admin middleware to check if user is admin
   const requireAdmin = (req: AdminRequest & { isAuthenticated?: () => boolean }, res: express.Response, next: express.NextFunction) => {
@@ -611,7 +620,8 @@ export function setupAdminRoutes(app: Express) {
   app.post('/api/admin/ban-user', requireAdmin, async (req, res) => {
     try {
       const { userId, reason, duration, banIp = false } = req.body;
-      const adminId = (req as AdminRequest).user!.id;
+      const adminId = ensureAdminId(req as AdminRequest, res);
+      if (adminId === undefined) return;
 
       // Update user status and log action
       await storage.updateUser(userId, { 
@@ -644,7 +654,8 @@ export function setupAdminRoutes(app: Express) {
   app.post('/api/admin/unban-user', requireAdmin, async (req, res) => {
     try {
       const { userId } = req.body;
-      const adminId = (req as AdminRequest).user!.id;
+      const adminId = ensureAdminId(req as AdminRequest, res);
+      if (adminId === undefined) return;
 
       await storage.updateUser(userId, { 
         tier: 'free',
@@ -662,7 +673,8 @@ export function setupAdminRoutes(app: Express) {
   app.post('/api/admin/suspend-user', requireAdmin, async (req, res) => {
     try {
       const { userId, hours, reason } = req.body;
-      const adminId = (req as AdminRequest).user!.id;
+      const adminId = ensureAdminId(req as AdminRequest, res);
+      if (adminId === undefined) return;
 
       const suspendedUntil = new Date(Date.now() + hours * 60 * 60 * 1000);
       
@@ -711,7 +723,8 @@ export function setupAdminRoutes(app: Express) {
   app.post('/api/admin/moderate-content', requireAdmin, async (req, res) => {
     try {
       const { flagId, action, reason } = req.body; // approve, remove, warn_user
-      const adminId = (req as AdminRequest).user!.id;
+      const adminId = ensureAdminId(req as AdminRequest, res);
+      if (adminId === undefined) return;
 
       // Would update the content flag status when content_flags table exists
       res.json({ 

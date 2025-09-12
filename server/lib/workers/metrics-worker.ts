@@ -72,7 +72,9 @@ export class MetricsWorker {
       }
 
     } catch (error: unknown) {
-      logger.error(`Metrics job for post ${redditPostId} failed:`, { error: (error as any).message });
+      logger.error(`Metrics job for post ${redditPostId} failed:`, {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
 
       // Log failure event
       if (postJobId) {
@@ -85,7 +87,7 @@ export class MetricsWorker {
           await this.logEvent(postJob.userId, 'metrics.failed', {
             postJobId,
             redditPostId,
-            error: (error as any).message,
+            error: error instanceof Error ? error.message : 'Unknown error',
           });
         }
       }
@@ -97,7 +99,7 @@ export class MetricsWorker {
   private async fetchPostMetrics(reddit: unknown, redditPostId: string) {
     try {
       // Use Reddit API to get post details
-      const post = await reddit.getSubmission(redditPostId);
+      const post = await (reddit as any).getSubmission(redditPostId);
       
       return {
         score: post.score || 0,
@@ -193,4 +195,9 @@ export const metricsWorker = new MetricsWorker();
 // Initialize the metrics worker
 export async function initializeMetricsWorker() {
   await metricsWorker.initialize();
+}
+
+// Get metrics worker instance
+export function getMetricsWorker() {
+  return metricsWorker;
 }

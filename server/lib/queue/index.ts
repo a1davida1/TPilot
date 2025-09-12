@@ -96,9 +96,17 @@ export async function resumeQueue(queueName: string): Promise<void> {
 }
 
 // Queue health check
-export async function getQueueHealth() {
+interface QueueHealthInfo {
+  pending: number;
+  failureRate: number;
+  totalJobs: number;
+  failedJobs: number;
+  error?: string;
+}
+
+export async function getQueueHealth(): Promise<Record<string, QueueHealthInfo>> {
   const queue = getQueueBackend();
-  const health: Record<string, any> = {};
+  const health: Record<string, QueueHealthInfo> = {};
   
   for (const queueName of Object.values(QUEUE_NAMES)) {
     try {
@@ -112,7 +120,13 @@ export async function getQueueHealth() {
         failedJobs: failureStats.failedJobs,
       };
     } catch (error) {
-      health[queueName] = { error: error instanceof Error ? error.message : 'Unknown error' };
+      health[queueName] = {
+        pending: 0,
+        failureRate: 0,
+        totalJobs: 0,
+        failedJobs: 0,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
     }
   }
   

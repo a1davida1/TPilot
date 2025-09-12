@@ -160,7 +160,11 @@ export class RedisBullQueue implements IQueue {
       });
       this.queues.set(queueName, queue);
     }
-    return this.queues.get(queueName)!;
+    const queue = this.queues.get(queueName);
+    if (!queue) {
+      throw new Error(`Queue ${queueName} not initialized`);
+    }
+    return queue;
   }
 
   private getOrCreateQueueEvents(queueName: string): QueueEvents {
@@ -170,6 +174,10 @@ export class RedisBullQueue implements IQueue {
       });
       this.queueEvents.set(queueName, queueEvents);
     }
-    return this.queueEvents.get(queueName)!;
+    const queueEvents = this.queueEvents.get(queueName);
+    if (!queueEvents) {
+      throw new Error(`QueueEvents ${queueName} not initialized`);
+    }
+    return queueEvents;
   }
 }

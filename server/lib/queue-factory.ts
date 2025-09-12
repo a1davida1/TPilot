@@ -42,7 +42,7 @@ export async function closeQueue(): Promise<void> {
 }
 
 // Convenience functions for common queue operations
-export async function enqueue<T = any>(
+export async function enqueue<T = unknown>(
   queueName: string,
   payload: T,
   options?: Parameters<IQueue['enqueue']>[2]
@@ -51,7 +51,7 @@ export async function enqueue<T = any>(
   return queue.enqueue(queueName, payload, options);
 }
 
-export async function registerProcessor<T = any>(
+export async function registerProcessor<T = unknown>(
   queueName: string,
   handler: Parameters<IQueue['process']>[1],
   options?: Parameters<IQueue['process']>[2]

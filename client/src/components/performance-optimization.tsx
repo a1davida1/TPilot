@@ -73,9 +73,10 @@ export const PerformanceOptimization = memo(() => {
         ...prev,
         loadTime: Math.round(loadTime),
         apiResponseTime: Math.round(apiResponseTime),
-        memoryUsage: (performance as ExtendedPerformance).memory ? 
-          Math.round(((performance as ExtendedPerformance).memory!.usedJSHeapSize / (performance as ExtendedPerformance).memory!.totalJSHeapSize) * 100) : 
-          0, // Default to 0 when browser doesn't support memory API
+        memoryUsage: (() => {
+          const mem = (performance as ExtendedPerformance).memory;
+          return mem ? Math.round((mem.usedJSHeapSize / mem.totalJSHeapSize) * 100) : 0;
+        })(), // Memory usage calculation with null check
         cacheHitRate: prev.cacheHitRate // Keep existing cache hit rate
       }));
     }
