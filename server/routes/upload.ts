@@ -11,6 +11,7 @@ import { imageProtectionLimiter as tierProtectionLimiter } from '../middleware/t
 import { uploadRequestSchema, type ProtectionLevel, type UploadRequest } from '@shared/schema.js';
 import { ZodError } from 'zod';
 import { imageStreamingUpload, cleanupUploadedFiles } from '../middleware/streaming-upload.js';
+import { embedSignature } from '../lib/steganography.js';
 
 const router = express.Router();
 
@@ -71,7 +72,8 @@ async function applyImageShieldProtection(
   inputPath: string, 
   outputPath: string, 
   protectionLevel: 'light' | 'standard' | 'heavy' = 'standard',
-  addWatermark: boolean = false
+  addWatermark: boolean = false,
+  userId?: string
 ): Promise<void> {
   const settings = protectionPresets[protectionLevel];
   
@@ -94,11 +96,15 @@ async function applyImageShieldProtection(
   
   // Add watermark for free users
   if (addWatermark) {
+    const userHash = crypto.createHash('sha256')
+      .update(`${userId ?? 'anon'}-${Date.now()}`)
+      .digest('hex')
+      .slice(0, 10);
     const watermarkSvg = `
-      <svg width="200" height="50">
+      <svg width="220" height="50">
         <text x="10" y="30" font-family="Arial" font-size="14" font-weight="bold" 
               fill="white" stroke="black" stroke-width="1" opacity="0.7">
-          Protected by ThottoPilot™
+          ${userHash}
         </text>
       </svg>
     `;
@@ -279,7 +285,8 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, 
       tempFilePath,
       processedFilePath,
       validatedRequest.protectionLevel,
-      validatedRequest.watermark
+      validatedRequest.watermark,
+      req.user?.id
     );
     let lastError: unknown;
     for (let attempt = 0; attempt < 3; attempt++) {
@@ -436,8 +443,16 @@ router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken, u
       tempFilePath,
       protectedFilePath,
       protectionLevel as 'light' | 'standard' | 'heavy',
-      addWatermark
+      addWatermark,
+      req.user.id
     );
+    
+    const signature = crypto.randomUUID();
+    const protectedBuffer = embedSignature(
+      await fs.readFile(protectedFilePath),
+      signature
+    );
+    await fs.writeFile(protectedFilePath, protectedBuffer);
     
     // Clean up original file
     await fs.unlink(tempFilePath);
@@ -456,6 +471,7 @@ router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken, u
       originalSize: req.file.size,
       protectionLevel,
       watermarked: addWatermark,
+      signature,
       settings: validatedRequest.useCustom ? validatedRequest.customSettings : undefined
     });
   } catch (error) {
