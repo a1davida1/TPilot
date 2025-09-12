@@ -96,12 +96,12 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
     }
   }, [isOpen, toast]);
 
-  // Reset mode when modal opens - moved to useEffect to prevent render loop
+  // Reset mode when modal opens without blocking internal toggles
   useEffect(() => {
-    if (isOpen && mode !== initialMode && mode !== 'forgot-password') {
+    if (isOpen) {
       setMode(initialMode);
     }
-  }, [isOpen, initialMode, mode]);
+  }, [isOpen, initialMode]);
 
   const authMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -620,13 +620,14 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
             {/* Forgot Password Link for Login */}
             {mode === 'login' && (
               <div className="text-right mb-4">
-                <a 
-                  href="/forgot-password" 
+                <button
+                  type="button"
+                  onClick={() => setMode('forgot-password')}
                   className="text-sm text-purple-600 hover:text-purple-700"
                   data-testid="link-forgot-password"
                 >
                   Forgot your password?
-                </a>
+                </button>
               </div>
             )}
 
