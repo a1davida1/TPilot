@@ -15,6 +15,14 @@ import {
   users
 } from '@shared/schema';
 import { eq, desc, gte, lte, and, count, sum, avg, sql } from 'drizzle-orm';
+import { Reader } from '@maxmind/geoip2-node';
+
+let geoReader: Reader | null = null;
+export async function initGeoReader() {
+  if (process.env.MAXMIND_DB_PATH) {
+    geoReader = await Reader.open(process.env.MAXMIND_DB_PATH);
+  }
+}
 
 // Validation schemas
 const analyticsEventSchema = z.object({
@@ -476,9 +484,24 @@ function parseUserAgent(userAgent?: string): unknown {
 }
 
 async function getLocationFromIP(ipAddress: string): Promise<{ country?: string; city?: string } | null> {
-  // For now, return default values
-  return {
-    country: 'Unknown',
-    city: 'Unknown'
-  };
+  if (!geoReader) {
+    return {
+      country: 'Unknown',
+      city: 'Unknown'
+    };
+  }
+
+  try {
+    const response = geoReader.city(ipAddress);
+    return {
+      country: response.country?.names?.en || 'Unknown',
+      city: response.city?.names?.en || 'Unknown'
+    };
+  } catch (error) {
+    console.warn('Failed to get location from IP:', error);
+    return {
+      country: 'Unknown',
+      city: 'Unknown'
+    };
+  }
 }
