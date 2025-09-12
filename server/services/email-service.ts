@@ -98,6 +98,11 @@ async function sendUpgradeEmail(to: string, username: string, planOrTier: string
   await sendMail(msg);
 }
 
+export const sendEmail = async (msg: sgMail.MailDataRequired) => {
+  if (!isEmailServiceConfigured) throw new Error("Email service not configured");
+  return sgMail.send({ ...msg, from: FROM_EMAIL });
+};
+
 export const emailService = {
   isEmailServiceConfigured,
   sendMail,
