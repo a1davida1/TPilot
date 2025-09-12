@@ -218,7 +218,7 @@ async function processAnalyticsEvent(event: unknown, ipAddress: string) {
   }
 }
 
-async function handlePageView(event: unknown, ipAddress: string, deviceInfo: unknown, locationInfo: unknown) {
+async function handlePageView(event: any, ipAddress: string, deviceInfo: any, locationInfo: any) {
   // Create or update session
   await db.insert(userSessions).values({
     sessionId: event.sessionId,
@@ -255,7 +255,7 @@ async function handlePageView(event: unknown, ipAddress: string, deviceInfo: unk
   });
 }
 
-async function handlePageEnd(event: unknown) {
+async function handlePageEnd(event: any) {
   if (!event.timeOnPage) return;
 
   // Update the latest page view with time spent
@@ -271,7 +271,7 @@ async function handlePageEnd(event: unknown) {
     ));
 }
 
-async function handleEngagementEvent(event: unknown) {
+async function handleEngagementEvent(event: any) {
   await db.insert(engagementEvents).values({
     sessionId: event.sessionId,
     userId: event.userId ? parseInt(event.userId) : null,
@@ -284,7 +284,7 @@ async function handleEngagementEvent(event: unknown) {
   });
 }
 
-async function handleContentView(event: unknown, ipAddress: string) {
+async function handleContentView(event: any, ipAddress: string) {
   await db.insert(contentViews).values({
     contentId: event.contentId,
     sessionId: event.sessionId,
@@ -297,7 +297,7 @@ async function handleContentView(event: unknown, ipAddress: string) {
   });
 }
 
-async function handleSessionEnd(event: unknown) {
+async function handleSessionEnd(event: any) {
   await db.update(userSessions)
     .set({
       endedAt: new Date(event.timestamp),
