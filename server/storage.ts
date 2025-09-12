@@ -37,7 +37,7 @@ import {
   postSchedule,
   verificationTokens,
   invoices,
-  sessions
+  userSessions
 } from "@shared/schema";
 import { db } from "./db.js";
 import { eq, desc, and, gte, sql, count } from "drizzle-orm";
@@ -280,12 +280,12 @@ export class DatabaseStorage implements IStorage {
       const now = new Date();
       await db
         .update(users)
-        .set({ deletedAt: now, isDeleted: true })
+        .set({ deletedAt: now })
         .where(eq(users.id, userId));
       await db
-        .update(sessions)
+        .update(userSessions)
         .set({ revokedAt: now })
-        .where(eq(sessions.userId, userId));
+        .where(eq(userSessions.userId, userId));
     } catch (error) {
       safeLog('error', 'Storage operation failed - deleting user:', { error: error.message });
       throw error;

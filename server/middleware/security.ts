@@ -8,6 +8,7 @@ import dotenv from "dotenv";
 import crypto from "crypto";
 import express from "express";
 import * as Sentry from "@sentry/node";
+import { z } from "zod";
 import { logger as appLogger, validateSentryDSN } from "../bootstrap/logger.js";
 import { AppError } from "../lib/errors.js";
 
@@ -36,113 +37,22 @@ if (process.env.NODE_ENV !== 'production') {
 // VALIDATE ENVIRONMENT VARIABLES
 // ==========================================
 
-interface EnvValidationRule {
-  key: string;
-  required: boolean;
-  validator?: (value: string) => boolean;
-  description?: string;
-}
-
-const envValidationRules: EnvValidationRule[] = [
-  // Critical security variables
-  { key: 'JWT_SECRET', required: true, validator: (val) => val.length >= 32, description: 'JWT secret must be at least 32 characters' },
-  { key: 'SESSION_SECRET', required: true, validator: (val) => val.length >= 32, description: 'Session secret must be at least 32 characters' },
-  { key: 'DATABASE_URL', required: true, validator: (val) => val.startsWith('postgres://') || val.startsWith('postgresql://'), description: 'Database URL must be a valid PostgreSQL connection string' },
-  
-  // API Keys (optional but validated if present)
-  { key: 'GOOGLE_GENAI_API_KEY', required: false, validator: (val) => val.startsWith('AIza') || val.length > 30, description: 'Google GenAI API key format validation' },
-  { key: 'OPENAI_API_KEY', required: false, validator: (val) => val.startsWith('sk-'), description: 'OpenAI API key must start with sk-' },
-  { 
-    key: 'SENTRY_DSN', 
-    required: false, 
-    validator: (val) => {
-      if (!val) return true; // Optional
-      const { isValid } = validateSentryDSN(val);
-      return isValid;
-    }, 
-    description: 'Sentry DSN must be a valid Sentry DSN URL format' 
-  },
-  { key: 'SENDGRID_API_KEY', required: false, validator: (val) => val.startsWith('SG.'), description: 'SendGrid API key must start with SG.' },
-  
-  // Stripe configuration (optional)
-  { key: 'STRIPE_SECRET_KEY', required: false, validator: (val) => val.startsWith('sk_'), description: 'Stripe secret key must start with sk_' },
-  { key: 'STRIPE_PUBLISHABLE_KEY', required: false, validator: (val) => val.startsWith('pk_'), description: 'Stripe publishable key must start with pk_' },
-  { key: 'STRIPE_WEBHOOK_SECRET', required: false, validator: (val) => val.startsWith('whsec_'), description: 'Stripe webhook secret must start with whsec_' },
-  
-  // Reddit OAuth (optional)
-  { key: 'REDDIT_CLIENT_ID', required: false, validator: (val) => val.length >= 14, description: 'Reddit client ID validation' },
-  { key: 'REDDIT_CLIENT_SECRET', required: false, validator: (val) => val.length >= 20, description: 'Reddit client secret validation' },
-  
-  // Environment configuration
-  { key: 'NODE_ENV', required: true, validator: (val) => ['development', 'production', 'test'].includes(val), description: 'NODE_ENV must be development, production, or test' },
-  { key: 'PORT', required: false, validator: (val) => !isNaN(parseInt(val)) && parseInt(val) > 0, description: 'PORT must be a positive number' },
-  
-  // Optional email configuration
-  { key: 'FROM_EMAIL', required: false, validator: (val) => val.includes('@'), description: 'FROM_EMAIL must be a valid email format' },
-];
+export const envSchema = z.object({
+  JWT_SECRET: z.string().min(32),
+  SESSION_SECRET: z.string().min(32),
+  DATABASE_URL: z.string().url(),
+  REDIS_URL: z.string().url().optional(),
+  SENDGRID_API_KEY: z.string().optional(),
+  SENTRY_DSN: z.string().url().optional(),
+  NODE_ENV: z.enum(["production", "development", "test"]),
+  PORT: z.string().regex(/^\d+$/).default("5000"),
+});
 
 export function validateEnvironment() {
-  const placeholders = ['changeme', 'placeholder', 'your_jwt_secret_here', 'default_secret', 'your_api_key_here'];
-  const errors: string[] = [];
-  const warnings: string[] = [];
-  
-  for (const rule of envValidationRules) {
-    const value = process.env[rule.key];
-    
-    if (rule.required && !value) {
-      errors.push(`${rule.key} is required but not set`);
-      continue;
-    }
-    
-    if (!value) {
-      // Optional variable not set, skip validation
-      continue;
-    }
-    
-    // Check for placeholder values
-    if (placeholders.some(p => value.toLowerCase().includes(p))) {
-      errors.push(`${rule.key} contains placeholder value`);
-      continue;
-    }
-    
-    // Run custom validator if provided
-    if (rule.validator && !rule.validator(value)) {
-      errors.push(`${rule.key} validation failed: ${rule.description || 'Invalid format'}`);
-      continue;
-    }
-    
-    // Log successful validation for important keys
-    if (rule.required) {
-      appLogger.debug(`Environment variable ${rule.key} validated successfully`);
-    }
+  const result = envSchema.safeParse(process.env);
+  if (!result.success) {
+    throw new Error(result.error.issues.map(i => i.message).join("\n"));
   }
-  
-  // Additional security checks
-  if (process.env.NODE_ENV === 'production') {
-    if (!process.env.GOOGLE_GENAI_API_KEY && !process.env.OPENAI_API_KEY) {
-      warnings.push('No AI API keys configured - content generation may not work');
-    }
-    
-    if (!process.env.SENDGRID_API_KEY) {
-      warnings.push('No email service configured - password resets and notifications will fail');
-    }
-  }
-  
-  // Report validation results
-  if (errors.length > 0) {
-    appLogger.error('Environment variable validation failed', { errors });
-    throw new Error(`Invalid environment variables: ${errors.join(', ')}`);
-  }
-  
-  if (warnings.length > 0) {
-    appLogger.warn('Environment variable warnings', { warnings });
-  }
-  
-  appLogger.info('Environment variables validated successfully', {
-    validated: envValidationRules.filter(r => process.env[r.key]).length,
-    total: envValidationRules.length,
-    environment: process.env.NODE_ENV
-  });
 }
 
 // ==========================================
