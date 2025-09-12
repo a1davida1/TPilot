@@ -190,8 +190,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     cookie: {
       secure: IS_PRODUCTION, // HTTPS-only in production
       httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      sameSite: 'lax' // Allows OAuth redirects
+      sameSite: 'lax', // Allows OAuth redirects
+      maxAge: 1000 * 60 * 60 * 24 * 7 // 1 week
     },
     name: 'thottopilot.sid', // Custom session name
     rolling: true // Refresh session on activity
