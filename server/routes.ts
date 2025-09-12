@@ -178,7 +178,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         pool: new Pool({ connectionString: DATABASE_URL })
       });
     } else {
-      logger.warn('No REDIS_URL or DATABASE_URL set in production; using MemoryStore.');
+      throw new Error('No REDIS_URL or DATABASE_URL set in production; persistent session store required.');
     }
   }
 

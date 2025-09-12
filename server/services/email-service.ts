@@ -10,6 +10,8 @@ export const isEmailServiceConfigured = Boolean(apiKey);
 
 if (apiKey) {
   sgMail.setApiKey(apiKey);
+} else if (process.env.NODE_ENV === 'production') {
+  throw new Error('SENDGRID_API_KEY missing in production environment');
 }
 
 async function sendMail(msg: sgMail.MailDataRequired) {
