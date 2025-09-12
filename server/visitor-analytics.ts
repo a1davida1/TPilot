@@ -1,4 +1,5 @@
 import type { Request } from 'express';
+import Stripe from 'stripe';
 
 // Visitor Analytics System
 interface VisitorSession {
@@ -34,6 +35,14 @@ interface AnalyticsStats {
 class VisitorAnalytics {
   private sessions: Map<string, VisitorSession> = new Map();
   private dailyStats: Map<string, AnalyticsStats> = new Map();
+  private stripe: Stripe | null = null;
+
+  constructor() {
+    const key = process.env.STRIPE_SECRET_KEY;
+    if (key) {
+      this.stripe = new Stripe(key, { apiVersion: '2023-10-16' });
+    }
+  }
 
   // Generate session ID from IP + User Agent
   private generateSessionId(req: Request): string {
@@ -200,6 +209,16 @@ class VisitorAnalytics {
       hourlyTraffic,
       conversionRate: 0 // This would be calculated based on signups vs visitors
     };
+  }
+
+  async recordPayment(customerId: string, amount: number): Promise<void> {
+    if (!this.stripe) return;
+    try {
+      await this.stripe.customers.retrieve(customerId);
+      // TODO: persist payment with analytics stats
+    } catch (error) {
+      console.error('Stripe recordPayment error:', error);
+    }
   }
 
   // Get system completeness status

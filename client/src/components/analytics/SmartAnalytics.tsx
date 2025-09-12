@@ -78,7 +78,7 @@ export default function SmartAnalytics() {
     queryFn: async () => {
       try {
         // Get analytics data and stats in parallel
-        const [analyticsRes, statsRes] = await Promise.all([
+        const [analyticsRes, statsRes, revenueRes] = await Promise.all([
           fetch(`/api/analytics/${timeRange}`, {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
@@ -88,18 +88,24 @@ export default function SmartAnalytics() {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
             }
+          }),
+          fetch('/api/revenue', {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
+            }
           })
         ]);
 
-        if (!analyticsRes.ok || !statsRes.ok) {
-          throw new Error(`Analytics API failed: ${analyticsRes.status} ${statsRes.status}`);
+        if (!analyticsRes.ok || !statsRes.ok || !revenueRes.ok) {
+          throw new Error(`Analytics API failed: ${analyticsRes.status} ${statsRes.status} ${revenueRes.status}`);
         }
 
         const analytics = await analyticsRes.json();
         const stats = await statsRes.json();
+        const revenue = await revenueRes.json();
         
         // Validate response structure
-        if (!analytics || !stats) {
+        if (!analytics || !stats || !revenue) {
           throw new Error('Invalid response structure from analytics API');
         }
         
@@ -109,13 +115,12 @@ export default function SmartAnalytics() {
         const averageEngagementRate = safeNumber(analytics.averageEngagementRate, 0);
         const successRate = safeNumber(stats.successRate, 0);
         
-        // Revenue calculation (real revenue tracking not implemented yet)
-        const REVENUE_MULTIPLIER = 0; // No revenue tracking yet
-        const REVENUE_PER_GENERATION = 0; // No revenue tracking yet
+        // Revenue calculation with real Stripe data
+        const totalRevenue = safeNumber(revenue.available, 0) / 100; // Convert from cents to dollars
         
         // Transform the data to match our interface with safe operations
         return {
-          totalRevenue: Math.round(totalViews * REVENUE_MULTIPLIER),
+          totalRevenue: Math.round(totalRevenue),
           revenueChange: safeNumber(analytics.growthMetrics?.viewsGrowth, 0),
           totalViews,
           viewsChange: safeNumber(analytics.growthMetrics?.viewsGrowth, 0),

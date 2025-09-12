@@ -2,6 +2,7 @@
 // Backend endpoints for comprehensive analytics and user behavior tracking
 
 import { Request, Response, Express } from 'express';
+import Stripe from 'stripe';
 import { z } from 'zod';
 import { db } from './db.js';
 import { 
@@ -172,6 +173,19 @@ export function registerAnalyticsRoutes(app: Express) {
     } catch (error) {
       console.error('Sessions analytics error:', error);
       res.status(500).json({ error: 'Failed to fetch session analytics' });
+    }
+  });
+
+  app.get('/api/revenue', async (_req: Request, res: Response) => {
+    try {
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+        apiVersion: '2023-10-16',
+      });
+      const balance = await stripe.balance.retrieve();
+      res.json({ available: balance.available[0]?.amount ?? 0 });
+    } catch (error) {
+      console.error('Revenue endpoint error:', error);
+      res.status(500).json({ error: 'Failed to fetch revenue' });
     }
   });
 }
