@@ -137,11 +137,16 @@ export function registerExpenseRoutes(app: Express) {
       }
 
       const currentYear = new Date().getFullYear();
+      const expenseDate = new Date(req.body.expenseDate);
+      if (Number.isNaN(expenseDate.getTime())) {
+        return res.status(400).json({ message: 'Invalid expense date' });
+      }
       const expenseData = {
         ...req.body,
         userId: req.user.id,
         taxYear: req.body.taxYear || currentYear,
-        amount: Math.round(parseFloat(req.body.amount) * 100)
+        amount: Math.round(parseFloat(req.body.amount) * 100),
+        expenseDate,
       };
 
       const expense = await storage.createExpense(expenseData as InsertExpense);
@@ -162,8 +167,12 @@ export function registerExpenseRoutes(app: Express) {
       const expenseId = parseInt(req.params.id);
       const updates = {
         ...req.body,
-        amount: req.body.amount ? Math.round(parseFloat(req.body.amount) * 100) : undefined
+        amount: req.body.amount ? Math.round(parseFloat(req.body.amount) * 100) : undefined,
+        expenseDate: req.body.expenseDate ? new Date(req.body.expenseDate) : undefined,
       };
+      if (updates.expenseDate && Number.isNaN(updates.expenseDate.getTime())) {
+        return res.status(400).json({ message: 'Invalid expense date' });
+      }
 
       const expense = await storage.updateExpense(expenseId, req.user.id, updates);
       res.json(expense);
