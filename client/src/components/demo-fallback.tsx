@@ -19,7 +19,7 @@ interface DemoFallbackProps {
 
 export function DemoFallback({ error, onRetry, onSignUp }: DemoFallbackProps) {
   const { data: metrics, isLoading, isError } = useMetrics();
-  const creatorText = !isError && metrics
+  const creatorText = metrics?.creators
     ? `Trusted by ${metrics.creators.toLocaleString()} content creators`
     : undefined;
   return (
