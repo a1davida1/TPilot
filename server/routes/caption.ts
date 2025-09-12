@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { pipeline } from '../caption/geminiPipeline';
+import { pipeline, InvalidImageError } from '../caption/geminiPipeline';
 import { pipelineTextOnly } from '../caption/textOnlyPipeline';
 import { pipelineRewrite } from '../caption/rewritePipeline';
 import { storage } from '../storage';
@@ -57,6 +57,9 @@ router.post('/generate', authenticateToken, async (req: AuthRequest, res: Respon
   } catch (e: unknown) {
     console.error('Caption generation error:', e);
     const errorMessage = e instanceof Error ? e.message : "generation failed";
+    if (e instanceof InvalidImageError) {
+      return res.status(422).json({ error: errorMessage });
+    }
     return res.status(500).json({ error: errorMessage });
   }
 });
@@ -110,6 +113,9 @@ router.post('/generate-text', authenticateToken, async (req: AuthRequest, res: R
   } catch (e: unknown) {
     console.error('Text caption generation error:', e);
     const errorMessage = e instanceof Error ? e.message : "generation failed";
+    if (e instanceof InvalidImageError) {
+      return res.status(422).json({ error: errorMessage });
+    }
     return res.status(500).json({ error: errorMessage });
   }
 });
@@ -163,6 +169,9 @@ router.post('/rewrite', authenticateToken, async (req: AuthRequest, res: Respons
   } catch (e: unknown) {
     console.error('Caption rewrite error:', e);
     const errorMessage = e instanceof Error ? e.message : "rewrite failed";
+    if (e instanceof InvalidImageError) {
+      return res.status(422).json({ error: errorMessage });
+    }
     return res.status(500).json({ error: errorMessage });
   }
 });

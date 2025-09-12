@@ -1,0 +1,197 @@
+diff --git a/server/caption/geminiPipeline.ts b/server/caption/geminiPipeline.ts
+@@
+-import { CaptionArray, RankResult, platformChecks } from "./schema";
++import { z } from "zod";
++import { CaptionItem, CaptionArray, RankResult, platformChecks } from "./schema";
+
+-// CaptionResult interface for type safety
+-interface CaptionResult {
+-  provider: string;
+-  final: any;
+-  facts?: any;
+-  variants?: any;
+-  ranked?: any;
+-}
++// Custom error for invalid image data
++export class InvalidImageError extends Error {}
++
++// CaptionResult interface for type safety
++interface CaptionResult {
++  provider: string;
++  final: z.infer<typeof CaptionItem>;
++  facts?: unknown;
++  variants?: z.infer<typeof CaptionArray>;
++  ranked?: z.infer<typeof RankResult>;
++}
+
+-async function load(p:string){ return fs.readFile(path.join(process.cwd(),"prompts",p),"utf8"); }
++async function load(p: string) {
++  return fs.readFile(path.join(process.cwd(), "prompts", p), "utf8");
++}
+ function stripToJSON(txt: string): unknown {
+@@
+-      // Test Base64 validity by attempting to decode it
+-      let decodedBuffer;
+-      try {
+-        decodedBuffer = Buffer.from(imageData, "base64");
+-      } catch (base64Error) {
+-        console.error("Base64 validation failed:", base64Error);
+-        throw new Error(
+-          `Invalid Base64 data format: ${base64Error instanceof Error ? base64Error.message : String(base64Error)}`
+-        );
+-      }
++      // Test Base64 validity by attempting to decode it
++      let decodedBuffer: Buffer;
++      try {
++        decodedBuffer = Buffer.from(imageData, "base64");
++      } catch (base64Error) {
++        console.error("Base64 validation failed:", base64Error);
++        throw new InvalidImageError(
++          `Invalid Base64 data format: ${base64Error instanceof Error ? base64Error.message : String(base64Error)}`
++        );
++      }
++      if (mimeType === "image/png") {
++        const pngSig = "89504e470d0a1a0a";
++        if (decodedBuffer.subarray(0, 8).toString("hex") !== pngSig) {
++          throw new InvalidImageError("Invalid PNG signature");
++        }
++      }
++      if (mimeType === "image/jpeg") {
++        const jpegSig = decodedBuffer.subarray(0, 2).toString("hex");
++        if (jpegSig !== "ffd8") {
++          throw new InvalidImageError("Invalid JPEG signature");
++        }
++      }
+       // Additional validation for WebP format
+@@
+-      console.log(`Processing data URL with mime type: ${mimeType}, data length: ${imageData.length}`);
+-      console.log(`Base64 starts with: ${imageData.substring(0, 50)}...`);
++      console.log(`Processing data URL with mime type: ${mimeType}, data length: ${imageData.length}`);
++      console.log(`Base64 length: ${imageData.length}`);
+     } else {
+@@
+-  } catch (error) {
+-    console.error("Error in extractFacts:", error);
+-    throw new Error(`Failed to extract facts: ${error instanceof Error ? error.message : String(error)}`);
+-  }
++  } catch (error) {
++    console.error("Error in extractFacts:", error);
++    if (error instanceof InvalidImageError) {
++      throw error;
++    }
++    throw new Error(`Failed to extract facts: ${error instanceof Error ? error.message : String(error)}`);
++  }
+ }
+@@
+-export async function generateVariants(params:{platform:"instagram"|"x"|"reddit"|"tiktok", voice:string, style?:string, mood?:string, facts:any, hint?:string, nsfw?:boolean}){
++export async function generateVariants(params: {
++  platform: "instagram" | "x" | "reddit" | "tiktok";
++  voice: string;
++  style?: string;
++  mood?: string;
++  facts: unknown;
++  hint?: string;
++  nsfw?: boolean;
++}): Promise<z.infer<typeof CaptionArray>> {
+@@
+-  if(Array.isArray(json)){
+-    json.forEach((item: unknown)=>{
++  if (Array.isArray(json)) {
++    const arr = json as Array<Record<string, unknown>>;
++    arr.forEach((item) => {
+       // Accept any safety_level from AI but normalize "suggestive"
+-      if(!item.safety_level) item.safety_level="normal";
+-      else if(item.safety_level === 'suggestive') item.safety_level = 'spicy_safe';
++      if (typeof item.safety_level !== "string") item.safety_level = "normal";
++      else if (item.safety_level === "suggestive") item.safety_level = "spicy_safe";
+@@
+-    // Ensure exactly 5 variants by padding with variations if needed
+-    while(json.length < 5) {
+-      const template = json[0] || {
++    while (arr.length < 5) {
++      const template = arr[0] || {
+@@
+-    // Trim to exactly 5 if more than 5
+-    if(json.length > 5) {
+-      json.splice(5);
+-    }
+-  }
+-  return CaptionArray.parse(json);
++    if (arr.length > 5) {
++      arr.splice(5);
++    }
++    return CaptionArray.parse(arr);
++  }
++  return CaptionArray.parse(json as unknown);
+ }
+@@
+-export async function rankAndSelect(variants: unknown){
+-  const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rank.txt");
+-  let res;
++export async function rankAndSelect(variants: unknown): Promise<z.infer<typeof RankResult>> {
++  const sys = await load("system.txt"), guard = await load("guard.txt"), prompt = await load("rank.txt");
++  let res: Awaited<ReturnType<typeof textModel.generateContent>>;
+@@
+-  return RankResult.parse(json);
++  return RankResult.parse(json as unknown);
+ }
+@@
+-export async function pipeline({ imageUrl, platform, voice="flirty_playful", style, mood, nsfw=false }:{
+-  imageUrl:string, platform:"instagram"|"x"|"reddit"|"tiktok", voice?:string, style?:string, mood?:string, nsfw?:boolean }){
++export async function pipeline({
++  imageUrl,
++  platform,
++  voice = "flirty_playful",
++  style,
++  mood,
++  nsfw = false,
++}: {
++  imageUrl: string;
++  platform: "instagram" | "x" | "reddit" | "tiktok";
++  voice?: string;
++  style?: string;
++  mood?: string;
++  nsfw?: boolean;
++}): Promise<CaptionResult> {
+@@
+-  } catch (error) {
+-    const { openAICaptionFallback } = await import("./openaiFallback");
+-    const final = await openAICaptionFallback({ platform, voice, imageUrl });
+-    return { provider: "openai", final } as CaptionResult;
+-  }
++  } catch (error) {
++    if (error instanceof InvalidImageError) {
++      throw error;
++    }
++    const { openAICaptionFallback } = await import("./openaiFallback");
++    const final = await openAICaptionFallback({ platform, voice, imageUrl });
++    return { provider: "openai", final } as CaptionResult;
++  }
+ }
+diff --git a/server/lib/gemini.ts b/server/lib/gemini.ts
+@@
+-import { GoogleGenerativeAI } from "@google/generative-ai";
+-
+-export const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENAI_API_KEY!);
++import { GoogleGenerativeAI } from "@google/generative-ai";
++
++const apiKey = process.env.GOOGLE_GENAI_API_KEY;
++if (!apiKey) throw new Error("GOOGLE_GENAI_API_KEY is not set");
++export const genAI = new GoogleGenerativeAI(apiKey);
+ export const visionModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+-export const textModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // keep consistent
++export const textModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+diff --git a/server/routes/caption.ts b/server/routes/caption.ts
+@@
+-import { pipeline } from '../caption/geminiPipeline';
++import { pipeline, InvalidImageError } from '../caption/geminiPipeline';
+@@
+-    console.error('Caption generation error:', e);
+-    const errorMessage = e instanceof Error ? e.message : "generation failed";
+-    return res.status(500).json({ error: errorMessage });
+-  }
++    console.error('Caption generation error:', e);
++    const errorMessage = e instanceof Error ? e.message : "generation failed";
++    const status = e instanceof InvalidImageError ? 422 : 500;
++    return res.status(status).json({ error: errorMessage });
++  }

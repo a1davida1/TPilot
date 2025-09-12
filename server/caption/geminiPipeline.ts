@@ -1,43 +1,58 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { z } from "zod";
 import { visionModel, textModel } from "../lib/gemini";
-import { CaptionArray, RankResult, platformChecks } from "./schema";
+import { CaptionArray, CaptionItem, RankResult, platformChecks } from "./schema";
+
+// Custom error class for image validation failures
+export class InvalidImageError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'InvalidImageError';
+  }
+}
 
 // CaptionResult interface for type safety
 interface CaptionResult {
   provider: string;
-  final: any;
-  facts?: any;
-  variants?: any;
-  ranked?: any;
+  final: z.infer<typeof CaptionItem>;
+  facts?: Record<string, unknown>;
+  variants?: z.infer<typeof CaptionArray>;
+  ranked?: z.infer<typeof RankResult>;
 }
 
-async function load(p:string){ return fs.readFile(path.join(process.cwd(),"prompts",p),"utf8"); }
-async function b64(url: string) {
+async function load(p: string): Promise<string> {
+  return fs.readFile(path.join(process.cwd(), "prompts", p), "utf8");
+}
+async function b64(url: string): Promise<{ base64: string; mimeType: string }> {
   try {
     const r = await fetch(url);
-    if (!r.ok) throw new Error(`fetch failed: ${r.status} ${r.statusText}`);
+    if (!r.ok) throw new InvalidImageError(`fetch failed: ${r.status} ${r.statusText}`);
 
     const ct = r.headers.get("content-type") || "";
     if (!ct.startsWith("image/"))
-      throw new Error(`unsupported content-type: ${ct}`);
+      throw new InvalidImageError(`unsupported content-type: ${ct}`);
 
     const b = Buffer.from(await r.arrayBuffer());
     const base64 = b.toString("base64");
-    if (base64.length < 100) throw new Error("image data too small");
+    if (base64.length < 100) throw new InvalidImageError("image data too small");
 
     return { base64, mimeType: ct.split(";")[0] };
   } catch (err) {
     console.error("Error fetching image:", err);
-    throw new Error(
+    if (err instanceof InvalidImageError) throw err;
+    throw new InvalidImageError(
       `Failed to fetch image: ${err instanceof Error ? err.message : String(err)}`
     );
   }
 }
-function stripToJSON(txt:string){ const i=Math.min(...[txt.indexOf("{"),txt.indexOf("[")].filter(x=>x>=0));
-  const j=Math.max(txt.lastIndexOf("}"),txt.lastIndexOf("]")); return JSON.parse((i>=0&&j>=0)?txt.slice(i,j+1):txt); }
+function stripToJSON(txt: string): unknown {
+  const i = Math.min(...[txt.indexOf("{"), txt.indexOf("[")].filter(x => x >= 0));
+  const j = Math.max(txt.lastIndexOf("}"), txt.lastIndexOf("]"));
+  return JSON.parse((i >= 0 && j >= 0) ? txt.slice(i, j + 1) : txt);
+}
 
-export async function extractFacts(imageUrl:string){
+export async function extractFacts(imageUrl: string): Promise<Record<string, unknown>> {
   try {
     console.log('Starting fact extraction for image:', imageUrl.substring(0, 100) + '...');
     const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("extract.txt");
@@ -73,12 +88,31 @@ export async function extractFacts(imageUrl:string){
       imageData += '='.repeat((4 - imageData.length % 4) % 4); // ensure padding
       
       // Test Base64 validity by attempting to decode it
-      let decodedBuffer;
+      let decodedBuffer: Buffer;
       try {
         decodedBuffer = Buffer.from(imageData, 'base64');
       } catch (base64Error) {
         console.error('Base64 validation failed:', base64Error);
-        throw new Error(`Invalid Base64 data format: ${base64Error instanceof Error ? base64Error.message : String(base64Error)}`);
+        throw new InvalidImageError(`Invalid Base64 data format: ${base64Error instanceof Error ? base64Error.message : String(base64Error)}`);
+      }
+      
+      // Validate image signatures for common formats
+      if (mimeType === 'image/png') {
+        // PNG signature: 89 50 4E 47 0D 0A 1A 0A
+        const pngSignature = decodedBuffer.subarray(0, 8);
+        const expectedPng = Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
+        if (!pngSignature.equals(expectedPng)) {
+          console.warn('PNG signature validation failed');
+          throw new InvalidImageError('Invalid PNG image signature');
+        }
+      } else if (mimeType === 'image/jpeg' || mimeType === 'image/jpg') {
+        // JPEG signature: FF D8 FF
+        const jpegSignature = decodedBuffer.subarray(0, 3);
+        const expectedJpeg = Buffer.from([0xFF, 0xD8, 0xFF]);
+        if (!jpegSignature.subarray(0, 2).equals(expectedJpeg.subarray(0, 2))) {
+          console.warn('JPEG signature validation failed');
+          throw new InvalidImageError('Invalid JPEG image signature');
+        }
       }
       
       // Additional validation for WebP format
@@ -92,11 +126,11 @@ export async function extractFacts(imageUrl:string){
       
       // Check if Base64 data is reasonable length (not too short or extremely long)
       if (imageData.length < 100) {
-        throw new Error('Base64 data appears to be too short');
+        throw new InvalidImageError('Base64 data appears to be too short');
       }
       
       if (imageData.length > 10000000) { // ~7.5MB base64 encoded
-        throw new Error('Image data too large for processing');
+        throw new InvalidImageError('Image data too large for processing');
       }
       
       console.log(`Processing data URL with mime type: ${mimeType}, data length: ${imageData.length}`);
@@ -111,8 +145,8 @@ export async function extractFacts(imageUrl:string){
     const img = { inlineData: { data: imageData, mimeType } };
     console.log('Sending to Gemini for fact extraction...');
     try {
-      const res=await visionModel.generateContent([{text:sys+"\n"+guard+"\n"+prompt}, img]);
-      const result = stripToJSON(res.response.text());
+      const res = await visionModel.generateContent([{text: sys + "\n" + guard + "\n" + prompt}, img]);
+      const result = stripToJSON(res.response.text()) as Record<string, unknown>;
       console.log('Fact extraction completed successfully');
       return result;
     } catch (error) {
@@ -121,11 +155,20 @@ export async function extractFacts(imageUrl:string){
     }
   } catch (error) {
     console.error('Error in extractFacts:', error);
+    if (error instanceof InvalidImageError) throw error;
     throw new Error(`Failed to extract facts: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
-export async function generateVariants(params:{platform:"instagram"|"x"|"reddit"|"tiktok", voice:string, style?:string, mood?:string, facts:any, hint?:string, nsfw?:boolean}){
+export async function generateVariants(params: {
+  platform: "instagram" | "x" | "reddit" | "tiktok";
+  voice: string;
+  style?: string;
+  mood?: string;
+  facts: Record<string, unknown>;
+  hint?: string;
+  nsfw?: boolean;
+}): Promise<z.infer<typeof CaptionArray>> {
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("variants.txt");
   const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\n${params.style ? `STYLE: ${params.style}\n` : ''}${params.mood ? `MOOD: ${params.mood}\n` : ''}IMAGE_FACTS: ${JSON.stringify(params.facts)}\nNSFW: ${params.nsfw || false}\n${params.hint?`HINT:${params.hint}`:""}`;
   let res;
@@ -135,20 +178,20 @@ export async function generateVariants(params:{platform:"instagram"|"x"|"reddit"
     console.error('Gemini textModel.generateContent failed:', error);
     throw error;
   }
-  const json=stripToJSON(res.response.text());
+  const json = stripToJSON(res.response.text()) as any[];
   // Fix common safety_level values and missing fields
   if(Array.isArray(json)){
-    json.forEach((item: unknown)=>{
+    json.forEach((item: any) => {
       // Accept any safety_level from AI but normalize "suggestive"
-      if(!item.safety_level) item.safety_level="normal";
+      if(!item.safety_level) item.safety_level = "normal";
       else if(item.safety_level === 'suggestive') item.safety_level = 'spicy_safe';
       // Fix other fields
-      if(!item.mood || item.mood.length<2) item.mood="engaging";
-      if(!item.style || item.style.length<2) item.style="authentic";
-      if(!item.cta || item.cta.length<2) item.cta="Check it out";
-      if(!item.alt || item.alt.length<20) item.alt="Engaging social media content";
-      if(!item.hashtags || !Array.isArray(item.hashtags)) item.hashtags=["#content", "#creative", "#amazing"];
-      if(!item.caption || item.caption.length<1) item.caption="Check out this amazing content!";
+      if(!item.mood || item.mood.length < 2) item.mood = "engaging";
+      if(!item.style || item.style.length < 2) item.style = "authentic";
+      if(!item.cta || item.cta.length < 2) item.cta = "Check it out";
+      if(!item.alt || item.alt.length < 20) item.alt = "Engaging social media content";
+      if(!item.hashtags || !Array.isArray(item.hashtags)) item.hashtags = ["#content", "#creative", "#amazing"];
+      if(!item.caption || item.caption.length < 1) item.caption = "Check out this amazing content!";
     });
 
     // Ensure exactly 5 variants by padding with variations if needed
@@ -174,7 +217,7 @@ export async function generateVariants(params:{platform:"instagram"|"x"|"reddit"
   return CaptionArray.parse(json);
 }
 
-export async function rankAndSelect(variants: unknown){
+export async function rankAndSelect(variants: z.infer<typeof CaptionArray>): Promise<z.infer<typeof RankResult>> {
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rank.txt");
   let res;
   try {
@@ -183,7 +226,7 @@ export async function rankAndSelect(variants: unknown){
     console.error('Gemini textModel.generateContent failed:', error);
     throw error;
   }
-  let json=stripToJSON(res.response.text());
+  let json = stripToJSON(res.response.text()) as any;
   
   // Handle case where AI returns array instead of ranking object
   if(Array.isArray(json)) {
@@ -209,8 +252,14 @@ export async function rankAndSelect(variants: unknown){
   return RankResult.parse(json);
 }
 
-export async function pipeline({ imageUrl, platform, voice="flirty_playful", style, mood, nsfw=false }:{
-  imageUrl:string, platform:"instagram"|"x"|"reddit"|"tiktok", voice?:string, style?:string, mood?:string, nsfw?:boolean }){
+export async function pipeline({ imageUrl, platform, voice = "flirty_playful", style, mood, nsfw = false }: {
+  imageUrl: string;
+  platform: "instagram" | "x" | "reddit" | "tiktok";
+  voice?: string;
+  style?: string;
+  mood?: string;
+  nsfw?: boolean;
+}): Promise<CaptionResult> {
   try {
     const facts = await extractFacts(imageUrl);
     let variants = await generateVariants({ platform, voice, style, mood, facts, nsfw });

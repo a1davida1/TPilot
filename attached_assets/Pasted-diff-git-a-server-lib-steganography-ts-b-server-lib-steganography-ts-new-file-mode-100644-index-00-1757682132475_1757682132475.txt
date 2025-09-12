@@ -1,0 +1,91 @@
+diff --git a/server/lib/steganography.ts b/server/lib/steganography.ts
+new file mode 100644
+index 0000000..9d1c2b1
+--- /dev/null
++++ b/server/lib/steganography.ts
+@@
++export function embedSignature(buffer: Buffer, signature: string): Buffer {
++  const bytes = Buffer.from(signature);
++  const data = Buffer.from(buffer);
++
++  bytes.forEach((byte, i) => {
++    for (let bit = 0; bit < 8; bit++) {
++      const idx = i * 8 + bit;
++      if (idx >= data.length) return;
++      data[idx] = (data[idx] & 0xfe) | ((byte >> (7 - bit)) & 1);
++    }
++  });
++
++  return data;
++}
+diff --git a/server/routes/upload.ts b/server/routes/upload.ts
+index 3f1d2aa..b8c47d1 100644
+--- a/server/routes/upload.ts
++++ b/server/routes/upload.ts
+@@
+ import { imageProtectionLimiter as tierProtectionLimiter } from '../middleware/tiered-rate-limit.js';
+ import { uploadRequestSchema, type ProtectionLevel, type UploadRequest } from '@shared/schema.js';
+ import { ZodError } from 'zod';
+ import { imageStreamingUpload, cleanupUploadedFiles } from '../middleware/streaming-upload.js';
++import { embedSignature } from '../lib/steganography.js';
+@@
+ async function applyImageShieldProtection(
+   inputPath: string,
+   outputPath: string,
+   protectionLevel: 'light' | 'standard' | 'heavy' = 'standard',
+-  addWatermark: boolean = false
++  addWatermark: boolean = false,
++  userId?: string
+ ): Promise<void> {
+@@
+-  if (addWatermark) {
+-    const watermarkSvg = `
+-      <svg width="200" height="50">
+-        <text x="10" y="30" font-family="Arial" font-size="14" font-weight="bold"
+-              fill="white" stroke="black" stroke-width="1" opacity="0.7">
+-          Protected by ThottoPilot™
+-        </text>
+-      </svg>
+-    `;
++  if (addWatermark) {
++    const userHash = crypto.createHash('sha256')
++      .update(`${userId ?? 'anon'}-${Date.now()}`)
++      .digest('hex')
++      .slice(0, 10);
++    const watermarkSvg = `
++      <svg width="220" height="50">
++        <text x="10" y="30" font-family="Arial" font-size="14" font-weight="bold"
++              fill="white" stroke="black" stroke-width="1" opacity="0.7">
++          ${userHash}
++        </text>
++      </svg>
++    `;
+@@
+     await applyImageShieldProtection(
+       tempFilePath,
+       protectedFilePath,
+       protectionLevel as 'light' | 'standard' | 'heavy',
+-      addWatermark
++      addWatermark,
++      req.user.id
+     );
+ 
++    const signature = crypto.randomUUID();
++    const protectedBuffer = embedSignature(
++      await fs.readFile(protectedFilePath),
++      signature
++    );
++    await fs.writeFile(protectedFilePath, protectedBuffer);
++
+     // Clean up original file
+     await fs.unlink(tempFilePath);
+     tempFilePath = null;
+@@
+       size: protectedStats.size,
+       originalSize: req.file.size,
+       protectionLevel,
+-      watermarked: addWatermark,
++      watermarked: addWatermark,
++      signature,
+       settings: validatedRequest.useCustom ? validatedRequest.customSettings : undefined
+     });
