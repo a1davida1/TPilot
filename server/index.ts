@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
+import { authLimiter, generalLimiter } from "./middleware/security";
 import { setupAuth } from "./auth";
 import { setupSocialAuth } from "./social-auth";
 import { mountStripeWebhook } from "./routes/webhooks.stripe";
@@ -20,6 +21,8 @@ declare global {
 }
 
 const app = express();
+
+app.use(generalLimiter);
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",").map(o => o.trim()) ?? [];
 
@@ -116,6 +119,7 @@ app.use((req, res, next) => {
 
 (async () => {
   try {
+    app.use('/api/auth', authLimiter);
     // Initialize queue system
     await startQueue();
   

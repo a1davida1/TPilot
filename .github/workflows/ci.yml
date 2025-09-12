@@ -2,44 +2,19 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   pull_request:
-    branches: [main]
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      NODE_ENV: test
-      DATABASE_URL: file:./tmp/test.db
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      - name: Cache npm
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
-      - name: Prepare database
-        run: mkdir -p tmp
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run core tests
-        run: npx vitest run --config vitest.config.ts tests/auth/signup.test.ts
-
-      - name: Typecheck (continue on error)
-        run: npm run typecheck || echo "TypeScript errors found - requires resolution for production"
-
-      - name: Lint (warnings only)
-        run: npx eslint . --ext .ts,.tsx,.js,.jsx --max-warnings 1000 || echo "Linting completed with warnings"
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: bash build-production.sh
