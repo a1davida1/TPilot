@@ -36,7 +36,8 @@ import {
   platformEngagement,
   postSchedule,
   verificationTokens,
-  invoices
+  invoices,
+  sessions
 } from "@shared/schema";
 import { db } from "./db.js";
 import { eq, desc, and, gte, sql, count } from "drizzle-orm";
@@ -276,10 +277,15 @@ export class DatabaseStorage implements IStorage {
 
   async deleteUser(userId: number): Promise<void> {
     try {
+      const now = new Date();
       await db
         .update(users)
-        .set({ deletedAt: new Date(), email: null, username: `deleted_${userId}` })
+        .set({ deletedAt: now, isDeleted: true })
         .where(eq(users.id, userId));
+      await db
+        .update(sessions)
+        .set({ revokedAt: now })
+        .where(eq(sessions.userId, userId));
     } catch (error) {
       safeLog('error', 'Storage operation failed - deleting user:', { error: error.message });
       throw error;
