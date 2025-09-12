@@ -4,9 +4,10 @@
  */
 
 import { db } from '../db';
-import { users } from '@shared/schema';
+import { users, referralRewards } from '@shared/schema';
 import { eq, sql } from 'drizzle-orm';
 import { customAlphabet } from 'nanoid';
+import { notificationService } from '../services/notification-service.js';
 
 // Generate user-friendly referral codes (no confusing characters)
 const generateReferralCode = customAlphabet('ABCDEFGHIJKLMNPQRSTUVWXYZ123456789', 8);
@@ -204,15 +205,19 @@ export class ReferralManager {
       return null; // No referrer
     }
 
-    // In a real implementation, you would:
-    // 1. Credit the referrer's account
-    // 2. Send notification
-    // 3. Update referral tracking metrics
-
-    // For now, return the reward that would be given
+    await db.insert(referralRewards).values({
+      referrerId: user.referredBy,
+      referredId: subscribingUserId,
+      amount: 5,
+    });
+    await notificationService.notifyReferralReward(
+      user.referredBy,
+      subscribingUserId,
+      5
+    );
     return {
       type: 'commission',
-      amount: 5, // $5 commission
+      amount: 5,
       description: 'Referral commission for successful subscription',
     };
   }

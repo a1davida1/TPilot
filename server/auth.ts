@@ -206,7 +206,7 @@ export function setupAuth(app: Express) {
         user = await storage.getUserByUsername(loginIdentifier || '');
       }
 
-      if (!user) {
+      if (!user || user.isDeleted) {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
 

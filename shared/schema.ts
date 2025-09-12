@@ -65,6 +65,7 @@ export const users = pgTable("users", {
   lastLogin: timestamp("last_login"),
   passwordResetAt: timestamp("password_reset_at"),
   deletedAt: timestamp("deleted_at"),
+  isDeleted: boolean("is_deleted").default(false),
 });
 
 export const contentGenerations = pgTable("content_generations", {
@@ -451,6 +452,16 @@ export type ReferralCode = typeof referralCodes.$inferSelect;
 export type InsertReferralCode = z.infer<typeof insertReferralCodeSchema>;
 
 export type Referral = typeof referrals.$inferSelect;
+
+export const referralRewards = pgTable("referral_rewards", {
+  id: serial("id").primaryKey(),
+  referrerId: integer("referrer_id").references(() => users.id).notNull(),
+  referredId: integer("referred_id").references(() => users.id).notNull(),
+  amount: integer("amount").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type ReferralReward = typeof referralRewards.$inferSelect;
 export type InsertReferral = z.infer<typeof insertReferralSchema>;
 
 export type EventLog = typeof eventLogs.$inferSelect;
@@ -634,6 +645,7 @@ export const userSessions = pgTable("user_sessions", {
   endedAt: timestamp("ended_at"),
   duration: integer("duration"), // seconds
   pageCount: integer("page_count").default(0),
+  revokedAt: timestamp("revoked_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

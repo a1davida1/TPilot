@@ -498,24 +498,14 @@ function parseUserAgent(userAgent?: string): unknown {
 }
 
 async function getLocationFromIP(ipAddress: string): Promise<{ country?: string; city?: string } | null> {
-  if (!geoReader) {
-    return {
-      country: 'Unknown',
-      city: 'Unknown'
-    };
-  }
-
+  if (!geoReader) return null;
   try {
-    const response = geoReader.city(ipAddress);
+    const record = geoReader.city(ipAddress);
     return {
-      country: response.country?.names?.en || 'Unknown',
-      city: response.city?.names?.en || 'Unknown'
+      country: record.country.isoCode,
+      city: record.city?.names?.en,
     };
-  } catch (error) {
-    console.warn('Failed to get location from IP:', error);
-    return {
-      country: 'Unknown',
-      city: 'Unknown'
-    };
+  } catch {
+    return null;
   }
 }

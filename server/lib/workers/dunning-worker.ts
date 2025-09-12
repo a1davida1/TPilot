@@ -1,14 +1,15 @@
 import { registerProcessor } from "../queue-factory.js";
 import { QUEUE_NAMES, type DunningJobData } from "../queue/index.js";
 import { db } from "../../db.js";
-import { users, eventLogs } from "@shared/schema.js";
+import { users, eventLogs, subscriptions } from "@shared/schema.js";
 import { eq } from "drizzle-orm";
 import { logger } from "../logger.js";
+import fetch from "node-fetch";
 
 interface RetryResult {
   success: boolean;
+  provider: 'stripe' | 'ccbill';
   transactionId?: string;
-  provider: 'ccbill';
   error?: string;
 }
 
@@ -116,19 +117,15 @@ export class DunningWorker {
   }
 
   private async getSubscriptionDetails(subscriptionId: number) {
-    // In full implementation, this would query a subscriptions table
-    // For now, return mock data
-    return {
-      id: subscriptionId,
-      userId: 1, // Mock user ID
-      plan: 'pro',
-      status: 'past_due',
-      paymentMethodId: 'pm_123',
-      amount: 2999, // $29.99
-    };
+    const [subscription] = await db
+      .select()
+      .from(subscriptions)
+      .where(eq(subscriptions.id, subscriptionId))
+      .limit(1);
+    return subscription ?? null;
   }
 
-  private async retryPayment(subscription: unknown) {
+  private async retryPayment(subscription: any): Promise<RetryResult> {
     try {
       logger.info(`Attempting payment retry for subscription ${subscription.id}`);
       
@@ -139,15 +136,15 @@ export class DunningWorker {
         return await this.retryCCBillPayment(subscription);
       } else {
         logger.warn('No payment provider configured for retry');
-        return { success: false, error: 'No payment method available for retry' };
+        return { success: false, provider: 'stripe', error: 'No payment method available for retry' };
       }
     } catch (error: unknown) {
       logger.error('Payment retry error:', { error });
-      return { success: false, error: error.message };
+      return { success: false, provider: 'stripe', error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 
-  private async retryStripePayment(subscription: unknown) {
+  private async retryStripePayment(subscription: any): Promise<RetryResult> {
     try {
       const { default: Stripe } = await import('stripe');
       const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -175,28 +172,35 @@ export class DunningWorker {
           provider: 'stripe'
         };
       }
-    } catch (error: unknown) {
-      const errorMessage = error.decline_code || error.message || 'Payment failed';
+    } catch (error: any) {
+      const errorMessage = error?.decline_code || error?.message || 'Payment failed';
       return { success: false, error: errorMessage, provider: 'stripe' };
     }
   }
 
-  private async retryCCBillPayment(subscription: {
-    ccbillSubscriptionId: string;
-    amount: number;
-  }): Promise<RetryResult> {
+  private async retryCCBillPayment(subscription: any): Promise<RetryResult> {
     try {
-      // CCBill retry would use their API to process a new transaction
-      logger.info(`Retrying CCBill payment for subscription ${subscription.ccbillSubscriptionId}`);
-      
-      // For now, log that CCBill retry is not yet implemented
-      const data: { success: boolean; id?: string } = { success: false };
-      return { success: data.success, transactionId: data.id, provider: 'ccbill' };
+      const res = await fetch('https://datalink.ccbill.com/', {
+        method: 'POST',
+        body: new URLSearchParams({
+          subscriptionId: subscription.ccbillSubscriptionId,
+          amount: String(subscription.amount),
+        }),
+      });
+      if (!res.ok) {
+        return { success: false, provider: 'ccbill', error: `HTTP ${res.status}` };
+      }
+      const data = await res.json();
+      return {
+        success: Boolean(data.success),
+        transactionId: data.id,
+        provider: 'ccbill',
+      };
     } catch (error: unknown) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
         provider: 'ccbill',
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }

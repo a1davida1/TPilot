@@ -40,7 +40,7 @@ import {
   userSessions
 } from "@shared/schema";
 import { db } from "./db.js";
-import { eq, desc, and, gte, sql, count } from "drizzle-orm";
+import { eq, desc, and, gte, sql, count, isNull } from "drizzle-orm";
 import { safeLog } from './lib/logger-utils.js';
 
 export interface IStorage {
@@ -153,7 +153,7 @@ export class DatabaseStorage implements IStorage {
 
   async getAllUsers(): Promise<User[]> {
     try {
-      const allUsers = await db.select().from(users).orderBy(desc(users.createdAt));
+      const allUsers = await db.select().from(users).where(eq(users.isDeleted, false)).orderBy(desc(users.createdAt));
       return allUsers;
     } catch (error) {
       safeLog('error', 'Storage operation failed - getting all users:', { error: error.message });
@@ -163,7 +163,7 @@ export class DatabaseStorage implements IStorage {
 
   async getUserByUsername(username: string): Promise<User | undefined> {
     try {
-      const result = await db.select().from(users).where(eq(users.username, username)).limit(1);
+      const result = await db.select().from(users).where(and(eq(users.username, username), eq(users.isDeleted, false))).limit(1);
       return result[0];
     } catch (error) {
       safeLog('error', 'Storage operation failed - getting user by username:', { error: error.message });
@@ -173,7 +173,7 @@ export class DatabaseStorage implements IStorage {
 
   async getUserByEmail(email: string): Promise<User | undefined> {
     try {
-      const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+      const result = await db.select().from(users).where(and(eq(users.email, email), eq(users.isDeleted, false))).limit(1);
       return result[0];
     } catch (error) {
       safeLog('error', 'Storage operation failed - getting user by email:', { error: error.message });
