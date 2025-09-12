@@ -2,8 +2,14 @@ import { InstagramAPI } from './instagram-api.js';
 import { TwitterAPI } from './twitter-api.js';
 import { TikTokAPI } from './tiktok-api.js';
 import { YouTubeAPI } from './youtube-api.js';
+import { LinkedInAPI } from './linkedin-api.js';
 
-export type Platform = 'instagram' | 'twitter' | 'tiktok' | 'youtube';
+export type Platform =
+  | 'instagram'
+  | 'twitter'
+  | 'tiktok'
+  | 'youtube'
+  | 'linkedin';
 
 export interface PostContent {
   text: string;
@@ -13,7 +19,7 @@ export interface PostContent {
   description?: string; // For YouTube
 }
 
-export interface PostResponse {
+export interface PostResult {
   success: boolean;
   platform: Platform;
   postId?: string;
@@ -32,7 +38,9 @@ export interface EngagementMetrics {
 
 // Unified Social Media Manager
 export class SocialMediaManager {
-  private apis: Map<Platform, InstagramAPI | TwitterAPI | TikTokAPI | YouTubeAPI> = new Map();
+  private apis: Map<Platform,
+    InstagramAPI | TwitterAPI | TikTokAPI | YouTubeAPI | LinkedInAPI
+  > = new Map();
 
   constructor() {}
 
@@ -59,13 +67,16 @@ export class SocialMediaManager {
       case 'youtube':
         this.apis.set(platform, new YouTubeAPI(credentials.accessToken));
         break;
+      case 'linkedin':
+        this.apis.set(platform, new LinkedInAPI(credentials.accessToken));
+        break;
       default:
         throw new Error(`Unsupported platform: ${platform}`);
     }
   }
 
   // Post content to a specific platform
-  async postToPlatform(platform: Platform, content: PostContent): Promise<PostResponse> {
+  async postToPlatform(platform: Platform, content: PostContent): Promise<PostResult> {
     const api = this.apis.get(platform);
     if (!api) {
       return {
@@ -133,7 +144,12 @@ export class SocialMediaManager {
             description: content.description || content.text,
             tags: content.hashtags,
           });
-
+        case 'linkedin':
+          return await (api as LinkedInAPI).createPost({
+            text: content.text,
+            mediaUrls: content.mediaUrls,
+            hashtags: content.hashtags,
+          });
         default:
           return {
             success: false,
@@ -154,7 +170,7 @@ export class SocialMediaManager {
   async postToMultiplePlatforms(
     platforms: Platform[],
     content: PostContent
-  ): Promise<PostResponse[]> {
+  ): Promise<PostResult[]> {
     const promises = platforms.map(platform => 
       this.postToPlatform(platform, content)
     );
@@ -268,8 +284,10 @@ export class SocialMediaManager {
         return await (api as TikTokAPI).getUserInfo?.();
       case 'youtube':
         return await (api as YouTubeAPI).getChannelMetrics?.();
+      case 'linkedin':
+        return await (api as LinkedInAPI).getAccountMetrics();
       default:
-        throw new Error(`Account metrics not implemented for ${platform}`);
+        return null;
     }
   }
 
