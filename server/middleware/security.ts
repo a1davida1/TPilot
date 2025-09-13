@@ -253,16 +253,14 @@ export const securityMiddleware = [
         defaultSrc: ["'self'"],
         scriptSrc: [
           "'self'",
-          // Hash for the specific inline script in index.html
-          "'sha256-qznLcsROx4GACP2dm0UCKCzCG+HiZ1guq6ZZDob/Tng='",
           // Only allow unsafe-eval in development for Vite HMR
           process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : "",
           // Specific trusted domains
           "https://js.stripe.com",
           "https://checkout.stripe.com",
           "https://apis.google.com",
-          // Specific Replit resources for development
-          process.env.NODE_ENV === 'development' ? "https://replit.com/public/js/" : ""
+          // Replit domain for development
+          process.env.NODE_ENV === 'development' ? "https://replit.com" : ""
         ].filter(Boolean),
         styleSrc: [
           "'self'",
