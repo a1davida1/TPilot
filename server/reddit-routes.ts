@@ -16,6 +16,12 @@ import {
 } from './reddit-communities.js';
 import { logger } from './bootstrap/logger.js';
 
+interface RedditProfile {
+  username: string;
+  karma?: number;
+  verified?: boolean;
+}
+
 export function registerRedditRoutes(app: Express) {
   
   // Start Reddit OAuth flow - SECURE VERSION
@@ -78,8 +84,11 @@ export function registerRedditRoutes(app: Express) {
       const stateData = await stateStore.get(`reddit_state:${state}`);
       
       if (!stateData) {
-        const stateStr = Array.isArray(state) ? state[0] : String(state);
-        logger.error('Invalid or expired state', { statePreview: stateStr.substring(0, 8) + '...' });
+        const stateStr = Array.isArray(state) ? state[0] : state;
+        const stateString = String(stateStr);
+        logger.error('Invalid or expired state', {
+          statePreview: stateString.substring(0, 8) + '...'
+        });
         return res.redirect('/dashboard?error=invalid_state');
       }
       
@@ -101,8 +110,8 @@ export function registerRedditRoutes(app: Express) {
       // Exchange code for tokens
       let tokenData;
       try {
-        const codeStr = Array.isArray(code) ? code[0] : String(code);
-        tokenData = await exchangeRedditCode(codeStr);
+        const codeStr = Array.isArray(code) ? code[0] : code;
+        tokenData = await exchangeRedditCode(String(codeStr));
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
         logger.error('Reddit token exchange error', { error: error.message, stack: error.stack });
@@ -120,7 +129,8 @@ export function registerRedditRoutes(app: Express) {
       
       // Get Reddit user info
       const tempReddit = new RedditManager(tokenData.accessToken, tokenData.refreshToken, userId);
-      const profile = await tempReddit.getProfile();
+      const redditProfile = await tempReddit.getProfile();
+      const profile = redditProfile as RedditProfile;
       
       if (!profile) {
         logger.error('Failed to fetch Reddit profile');
@@ -316,7 +326,8 @@ export function registerRedditRoutes(app: Express) {
       const isConnected = await reddit.testConnection();
       
       if (isConnected) {
-        const profile = await reddit.getProfile();
+        const fetchedProfile = await reddit.getProfile();
+        const profile = fetchedProfile as RedditProfile | null;
         
         // Update metadata with latest info
         if (profile) {
@@ -406,7 +417,9 @@ export function registerRedditRoutes(app: Express) {
             return res.status(400).json({ error: 'Images array required for gallery post' });
           }
           
-          const images = req.body.images.map((img: unknown) => ({
+          const typedImages =
+            req.body.images as Array<{ url: string; caption?: string }>;
+          const images = typedImages.map(img => ({
             url: img.url,
             caption: img.caption || ''
           }));
@@ -470,8 +483,10 @@ export function registerRedditRoutes(app: Express) {
 
     } catch (error: unknown) {
       console.error('Reddit submit error:', error);
-      res.status(500).json({ 
-        error: error.message || 'Failed to submit post to Reddit' 
+      res.status(500).json({
+        error: error instanceof Error
+          ? error.message
+          : 'Failed to submit post to Reddit'
       });
     }
   });
