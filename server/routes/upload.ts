@@ -1,5 +1,4 @@
-import express from 'express';
-import type { Request } from 'express';
+import express, { type Request, type Response } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs/promises';
@@ -9,12 +8,12 @@ import { fileTypeFromBuffer } from 'file-type';
 import { authenticateToken } from '../middleware/auth.js';
 import { uploadLimiter, logger } from '../middleware/security.js';
 import { imageProtectionLimiter as tierProtectionLimiter } from '../middleware/tiered-rate-limit.js';
-import { uploadRequestSchema, type ProtectionLevel, type UploadRequest } from '@shared/schema.js';
+import { uploadRequestSchema, type ProtectionLevel, type UploadRequest as UploadRequestBody } from '@shared/schema.js';
 import { ZodError } from 'zod';
 import { imageStreamingUpload, cleanupUploadedFiles } from '../middleware/streaming-upload.js';
 import { embedSignature } from '../lib/steganography.js';
 
-interface UploadRequest extends Request {
+interface AuthRequest extends Request {
   user: { id: number; tier?: string };
   streamingFiles?: { path: string; filename?: string; length?: number }[];
   uploadProgress?: unknown;
@@ -24,7 +23,7 @@ interface UploadRequest extends Request {
     originalname: string;
     filename: string;
     size: number;
-  } | null;
+  };
 }
 
 const router = express.Router();
@@ -218,8 +217,8 @@ function performBasicMalwareCheck(buffer: Buffer): boolean {
 }
 
 // New streaming upload endpoint with enhanced progress tracking
-router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, cleanupUploadedFiles, imageStreamingUpload, async (req: unknown, res) => {
-  let processedFilePath: string | null = null;
+router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, cleanupUploadedFiles, imageStreamingUpload, async (req: AuthRequest, res: Response) => {
+  let processedFilePath = '';
   
   try {
     // Check if files were uploaded via streaming
@@ -272,7 +271,7 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, 
     });
     
     // Validate request body with Zod schema
-    let validatedRequest: UploadRequest;
+    let validatedRequest: UploadRequestBody;
     try {
       validatedRequest = uploadRequestSchema.parse(req.body);
     } catch (error) {
@@ -297,7 +296,7 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, 
     // Apply ImageShield protection with retry and timeout
     const protect = () => applyImageShieldProtection(
       tempFilePath,
-      processedFilePath,
+      processedFilePath!,
       validatedRequest.protectionLevel,
       validatedRequest.watermark,
       req.user?.id
@@ -343,8 +342,8 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, 
   } catch (error) {
     logger.error('Streaming upload processing error', {
       userId: req.user?.id,
-      error: error.message,
-      stack: error.stack
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
     });
     
     // Clean up files on error
@@ -356,7 +355,7 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, 
         await fs.unlink(processedFilePath).catch(() => {});
       }
     } catch (cleanupError) {
-      logger.warn('File cleanup failed', { error: cleanupError.message });
+      logger.warn('File cleanup failed', { error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError) });
     }
     
     res.status(500).json({ message: 'Upload processing failed' });
@@ -364,9 +363,9 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, 
 });
 
 // Traditional upload endpoint with authentication, rate limiting, and ImageShield protection
-router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken, upload.single('image'), async (req: unknown, res) => {
-  let tempFilePath: string | null = null;
-  let protectedFilePath: string | null = null;
+router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken, upload.single('image'), async (req: AuthRequest, res: Response) => {
+  let tempFilePath = '';
+  let protectedFilePath = '';
   
   try {
     if (!req.file) {
@@ -416,7 +415,7 @@ router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken, u
     });
     
     // Validate request body with Zod schema
-    let validatedRequest: UploadRequest;
+    let validatedRequest: UploadRequestBody;
     try {
       validatedRequest = uploadRequestSchema.parse(req.body);
     } catch (error) {
@@ -470,7 +469,7 @@ router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken, u
     
     // Clean up original file
     await fs.unlink(tempFilePath);
-    tempFilePath = null;
+    tempFilePath = '';
     
     const fileUrl = `/uploads/${protectedFileName}`;
     const protectedStats = await fs.stat(protectedFilePath);
@@ -489,7 +488,7 @@ router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken, u
       settings: validatedRequest.useCustom ? validatedRequest.customSettings : undefined
     });
   } catch (error) {
-    logger.error('Upload error:', error);
+    logger.error('Upload error:', { error: error instanceof Error ? error.message : String(error) });
     
     // Clean up any temp files
     if (tempFilePath) {
