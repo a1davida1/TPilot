@@ -1,0 +1,63 @@
+diff --git a/client/index.html b/client/index.html
+@@
+-    <div id="static-content">
++    <div id="static-content">
+@@
+-    <!-- Hide static content when React app loads -->
+-    <script src="./hide-static-content.js" defer></script>
+-    <script type="module" src="/src/main.tsx"></script>
+-    <!-- This is a replit script which adds a banner on the top of the page when opened in development mode outside the replit environment -->
+-    <script type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js"></script>
++    <!-- Hide static content when React app loads -->
++    <script src="./hide-static-content.js" defer></script>
++    <script type="module" src="/src/main.tsx"></script>
++    <!-- Dev-only Replit banner -->
++    <script type="module" src="./load-replit-banner.js"></script>
+   </body>
+ </html>
+diff --git a/client/hide-static-content.js b/client/hide-static-content.js
+new file mode 100644
+@@
+ document.addEventListener('DOMContentLoaded', () => {
+   setTimeout(() => {
+     const staticContent = document.getElementById('static-content');
+     if (staticContent && document.getElementById('root').children.length > 0) {
+       staticContent.style.display = 'none';
+     }
+   }, 100);
+ });
+diff --git a/client/load-replit-banner.js b/client/load-replit-banner.js
+new file mode 100644
+@@
++if (import.meta.env.MODE === 'development') {
++  const script = document.createElement('script');
++  script.src = 'https://replit.com/public/js/replit-dev-banner.js';
++  document.head.appendChild(script);
++}
+diff --git a/server/middleware/security.ts b/server/middleware/security.ts
+@@
+         scriptSrc: [
+           "'self'",
+           // Only allow unsafe-eval in development for Vite HMR
+           process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : "",
+           // Specific trusted domains
+           "https://js.stripe.com",
+           "https://checkout.stripe.com",
+           "https://apis.google.com",
+           // Replit domain for development
+           process.env.NODE_ENV === 'development'
+             ? "https://replit.com"
+             : ""
+         ].filter(Boolean),
+         styleSrc: [
+           "'self'",
+           // Allow specific style sources
+           "https://fonts.googleapis.com",
+           "https://checkout.stripe.com",
+-          // In development, allow data: URLs for CSS-in-JS libraries
+-          process.env.NODE_ENV === 'development' ? "data:" : "",
+-          // Allow inline styles for dynamic styling (using hash for specific styles if needed)",
+-          "'sha256-47DEi3KNvcV2DKZM2chqKPKTkhCUYA+5okpCdEM0Jj8='"
++          // In development, allow data: URLs for CSS-in-JS libraries
++          process.env.NODE_ENV === 'development' ? "data:" : ""
+         ].filter(Boolean),
