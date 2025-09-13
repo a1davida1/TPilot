@@ -597,7 +597,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         platform: platform || 'reddit',
         style: style || 'playful',
         theme,
-        includePromotion: includePromotion === true || includePromotion === 'true',
+        includePromotion: Boolean(includePromotion),
         customInstructions
       });
 
@@ -611,7 +611,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           content: result.content,
           photoInstructions: result.photoInstructions,
           prompt: prompt || customInstructions,
-          allowsPromotion: includePromotion === true || includePromotion === 'true'
+          allowsPromotion: Boolean(includePromotion)
         });
       }
 

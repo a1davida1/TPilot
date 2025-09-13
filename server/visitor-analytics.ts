@@ -40,7 +40,7 @@ class VisitorAnalytics {
   constructor() {
     const key = process.env.STRIPE_SECRET_KEY;
     if (key) {
-      this.stripe = new Stripe(key, { apiVersion: '2023-10-16' });
+      this.stripe = new Stripe(key, { apiVersion: '2025-08-27.basil' as const });
     }
   }
 

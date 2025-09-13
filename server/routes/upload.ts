@@ -298,7 +298,7 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, 
       tempFilePath,
       processedFilePath!,
       validatedRequest.protectionLevel,
-      validatedRequest.watermark,
+      validatedRequest.addWatermark,
       req.user?.id
     );
     let lastError: unknown;
@@ -325,7 +325,7 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, 
       userId: req.user.id,
       originalName: uploadedFile.originalname,
       protectionLevel: validatedRequest.protectionLevel,
-      watermark: validatedRequest.watermark,
+      watermark: validatedRequest.addWatermark,
       outputFile: outputFilename
     });
     
@@ -334,7 +334,7 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, 
       message: 'Image uploaded and protected successfully',
       filename: outputFilename,
       protectionLevel: validatedRequest.protectionLevel,
-      watermark: validatedRequest.watermark,
+      watermark: validatedRequest.addWatermark,
       originalSize: uploadedFile.size,
       uploadProgress: req.uploadProgress
     });

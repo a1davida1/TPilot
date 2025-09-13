@@ -179,7 +179,7 @@ export function registerAnalyticsRoutes(app: Express) {
   app.get('/api/revenue', async (_req: Request, res: Response) => {
     try {
       const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-        apiVersion: '2023-10-16',
+        apiVersion: '2025-08-27.basil' as const,
       });
       const balance = await stripe.balance.retrieve();
       res.json({ available: balance.available[0]?.amount ?? 0 });
