@@ -81,10 +81,17 @@ export class AiPromoWorker {
       return { success: true, results };
 
     } catch (error: unknown) {
-      logger.error(`AI promo job for generation ${generationId} failed:`, { error: error.message, stack: error.stack });
+      logger.error(`AI promo job for generation ${generationId} failed:`, {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
 
       // Update generation status to failed
-      await this.updateGenerationStatus(generationId, 'failed', error.message);
+      await this.updateGenerationStatus(
+        generationId,
+        'failed',
+        error instanceof Error ? error.message : 'Unknown error'
+      );
 
       // Log failure event
       await this.logEvent(userId, 'ai_promo.failed', {
@@ -111,11 +118,11 @@ export class AiPromoWorker {
     }
   }
 
-  private async updateGenerationResults(generationId: number, results: unknown[]) {
+  private async updateGenerationResults(generationId: number, results: any[]) {
     try {
       // Use the first result to update the generation record
-      const firstResult = results[0];
-      if (firstResult && firstResult.content && firstResult.content.length > 0) {
+      const firstResult: any = results[0];
+      if (firstResult?.content && firstResult.content.length > 0) {
         const content = firstResult.content[0];
         await db
           .update(contentGenerations)
