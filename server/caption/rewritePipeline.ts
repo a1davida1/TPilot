@@ -78,7 +78,7 @@ export async function variantsRewrite(params:{platform:"instagram"|"x"|"reddit"|
   return CaptionArray.parse(json);
 }
 
-export async function rankAndSelect(variants: unknown){
+export async function rankAndSelect(variants: any[]){
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rank.txt");
   let res;
   try {
