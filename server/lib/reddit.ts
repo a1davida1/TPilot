@@ -110,13 +110,13 @@ export class RedditManager {
         // Text post
         const subreddit = await (this.reddit as any)
           .getSubreddit(options.subreddit);
-        submission = await subreddit.submitSelfpost({
+        submission = await (subreddit.submitSelfpost({
             subredditName: options.subreddit,
             title: options.title,
             text: options.body || '',
             nsfw: options.nsfw || false,
             spoiler: options.spoiler || false,
-          });
+          }));
       }
 
       // Update rate limiting
