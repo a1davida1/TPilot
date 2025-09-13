@@ -96,7 +96,7 @@ export class AiPromoWorker {
       // Log failure event
       await this.logEvent(userId, 'ai_promo.failed', {
         generationId,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       });
 
       throw error;
