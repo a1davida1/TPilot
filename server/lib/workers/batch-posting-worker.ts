@@ -3,7 +3,7 @@ import { QUEUE_NAMES, type BatchPostJobData } from "../queue/index.js";
 import { db } from "../../db.js";
 import { postJobs, eventLogs } from "@shared/schema.js";
 import { eq } from "drizzle-orm";
-import { RedditManager } from "../reddit.js";
+import { RedditManager, type RedditPostOptions } from "../reddit.js";
 import { logger } from "../logger.js";
 
 export class BatchPostingWorker {
@@ -83,7 +83,7 @@ export class BatchPostingWorker {
           }).returning();
 
           // Submit post
-          const postOptions: unknown = {
+          const postOptions: RedditPostOptions = {
             subreddit,
             title: customizedContent.title,
             body: customizedContent.body,
@@ -97,8 +97,10 @@ export class BatchPostingWorker {
               if (mediaAsset) {
                 postOptions.url = mediaAsset.downloadUrl || mediaAsset.signedUrl;
               }
-            } catch (error) {
-              logger.warn('Failed to attach media, posting as text:', { error: error.message });
+            } catch (error: unknown) {
+              logger.warn('Failed to attach media, posting as text:', {
+                error: error instanceof Error ? error.message : String(error)
+              });
             }
           }
 
@@ -160,12 +162,14 @@ export class BatchPostingWorker {
           }
 
         } catch (error: unknown) {
-          logger.error(`Failed to post to r/${subreddit}:`, { error: error.message });
+          logger.error(`Failed to post to r/${subreddit}:`, {
+            error: error instanceof Error ? error.message : String(error)
+          });
           
           results.push({
             subreddit,
             success: false,
-            error: error.message,
+            error: error instanceof Error ? error.message : String(error),
           });
           failureCount++;
 
@@ -201,7 +205,7 @@ export class BatchPostingWorker {
       await this.logEvent(userId, 'batch_post.failed', {
         campaignId,
         subreddits,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       });
 
       throw error;
