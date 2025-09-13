@@ -213,11 +213,7 @@ export class ReferralManager {
       referredId: subscribingUserId,
       amount: 5,
     });
-    await notificationService.notifyReferralReward(
-      user.referredBy,
-      subscribingUserId,
-      5
-    );
+    await notificationService.sendReferralNotification();
     return {
       type: 'commission',
       amount: 5,
