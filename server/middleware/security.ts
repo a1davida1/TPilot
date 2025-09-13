@@ -253,16 +253,27 @@ export const securityMiddleware = [
         defaultSrc: ["'self'"],
         scriptSrc: [
           "'self'",
+          // Hash for the specific inline script in index.html
+          "'sha256-qznLcsROx4GACP2dm0UCKCzCG+HiZ1guq6ZZDob/Tng='",
+          // Only allow unsafe-eval in development for Vite HMR
           process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : "",
+          // Specific trusted domains
           "https://js.stripe.com",
           "https://checkout.stripe.com",
-          "https://apis.google.com"
+          "https://apis.google.com",
+          // Specific Replit resources for development
+          process.env.NODE_ENV === 'development' ? "https://replit.com/public/js/" : ""
         ].filter(Boolean),
         styleSrc: [
           "'self'",
+          // Allow specific style sources
           "https://fonts.googleapis.com",
-          "https://checkout.stripe.com"
-        ],
+          "https://checkout.stripe.com",
+          // In development, allow data: URLs for CSS-in-JS libraries  
+          process.env.NODE_ENV === 'development' ? "data:" : "",
+          // Allow inline styles for dynamic styling (using hash for specific styles if needed)
+          "'sha256-47DEi3KNvcV2DKZM2chqKPKTkhCUYA+5okpCdEM0Jj8='"
+        ].filter(Boolean),
         imgSrc: [
           "'self'",
           "data:",
@@ -278,6 +289,7 @@ export const securityMiddleware = [
           "https://api.openai.com",
           "https://generativelanguage.googleapis.com",
           "wss://*.replit.dev",
+          "wss://*.replit.app",
           "ws://localhost:*"
         ],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
