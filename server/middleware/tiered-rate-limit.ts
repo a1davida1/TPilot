@@ -105,10 +105,10 @@ export function createTieredRateLimiter(feature?: keyof typeof featureLimits) {
   
   return async (req: Request & { user?: unknown }, res: Response, next: NextFunction) => {
     // Get user ID from request
-    const userId = req.user?.id || req.headers['x-user-id'] || 'anonymous';
+    const userId = (req.user as any)?.id ?? req.headers['x-user-id'] ?? 'anonymous';
     
     // Get user tier
-    const tier = await getUserTier(userId);
+    const tier = await getUserTier(String(userId));
     
     // Select appropriate limits
     const limits = feature && featureLimits[feature] 
