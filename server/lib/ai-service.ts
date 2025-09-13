@@ -38,6 +38,12 @@ export interface AiResponse {
   cached: boolean;
 }
 
+interface GenerationInput { 
+  platforms: string[]; 
+  styleHints?: string[]; 
+  prompt?: string; 
+}
+
 export class AiService {
   
   static async generateContent(request: ContentGenerationRequest): Promise<AiResponse> {
@@ -66,7 +72,7 @@ export class AiService {
       console.error('Gemini generation failed:', error);
       
       // Check if Gemini has quota issues too
-      if (error?.status === 429 || error?.message?.includes('quota')) {
+      if ((error as any)?.status === 429 || (error as any)?.message?.includes('quota')) {
         console.log('Gemini quota exceeded, trying OpenAI fallback...');
       }
       
@@ -79,7 +85,8 @@ export class AiService {
         console.error('OpenAI fallback failed:', fallbackError);
         
         // Check if it's a quota error
-        if (fallbackError?.code === 'insufficient_quota' || fallbackError?.status === 429) {
+        const fe = fallbackError as any;
+        if (fe?.code === 'insufficient_quota' || fe?.status === 429) {
           console.log('API quota exceeded, using template fallback...');
           const platforms = inputData.platforms || ['reddit'];
           const fallbackContent = this.createFallbackContent(platforms);
@@ -91,11 +98,11 @@ export class AiService {
     }
   }
   
-  private static async generateWithGemini(input: unknown): Promise<Omit<AiResponse, 'cached'>> {
+  private static async generateWithGemini(input: GenerationInput): Promise<Omit<AiResponse, 'cached'>> {
     const model = gemini.getGenerativeModel({ model: "gemini-1.5-flash" });
     
     const systemPrompt = this.buildSystemPrompt(input.platforms, input.styleHints);
-    const userPrompt = input.prompt || "Generate engaging content for adult content creator";
+    const userPrompt = input.prompt ?? "Generate engaging content for adult content creator";
     
     const result = await model.generateContent([
       { text: systemPrompt },
@@ -112,9 +119,9 @@ export class AiService {
     };
   }
   
-  private static async generateWithOpenAI(input: unknown): Promise<Omit<AiResponse, 'cached'>> {
+  private static async generateWithOpenAI(input: GenerationInput): Promise<Omit<AiResponse, 'cached'>> {
     const systemPrompt = this.buildSystemPrompt(input.platforms, input.styleHints);
-    const userPrompt = input.prompt || "Generate engaging content for adult content creator";
+    const userPrompt = input.prompt ?? "Generate engaging content for adult content creator";
     
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -328,9 +335,10 @@ Return ONLY the JSON object above with actual content. No other text.`;
         outputJson: result,
       });
     } catch (error: unknown) {
-      console.warn('Failed to cache AI result (non-fatal):', error.message);
+      console.warn('Failed to cache AI result (non-fatal):', (error as any).message);
       // Check for foreign key constraint violation
-      if (error?.code === '23503' && error?.constraint?.includes('user_id')) {
+      const err = error as any;
+      if (err?.code === '23503' && err?.constraint?.includes('user_id')) {
         console.warn(`User ID ${userId} not found in database, skipping cache`);
       }
       // Non-fatal error, continue without caching
