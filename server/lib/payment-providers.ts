@@ -100,13 +100,13 @@ export class SegPayProvider extends BasePaymentProvider {
     return true; // Scaffold implementation
   }
 
-  async processWebhook(payload: unknown): Promise<unknown> {
+  async processWebhook(payload: Record<string, unknown>) {
     // SegPay webhook processing would go here
     return {
-      userId: payload.userId,
-      subscriptionType: payload.subscriptionType,
-      status: payload.status,
-      transactionId: payload.transactionId,
+      userId: Number(payload.userId),
+      subscriptionType: String(payload.subscriptionType),
+      status: String(payload.status) as 'active' | 'failed' | 'cancelled',
+      transactionId: String(payload.transactionId),
     };
   }
 }
@@ -155,12 +155,12 @@ export class EpochProvider extends BasePaymentProvider {
     return true; // Scaffold implementation
   }
 
-  async processWebhook(payload: unknown): Promise<unknown> {
+  async processWebhook(payload: Record<string, unknown>) {
     return {
-      userId: payload.userId,
-      subscriptionType: payload.subscriptionType,
-      status: payload.status,
-      transactionId: payload.transactionId,
+      userId: Number(payload.userId),
+      subscriptionType: String(payload.subscriptionType),
+      status: String(payload.status) as 'active' | 'failed' | 'cancelled',
+      transactionId: String(payload.transactionId),
     };
   }
 }

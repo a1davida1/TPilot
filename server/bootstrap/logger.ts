@@ -309,13 +309,13 @@ export async function initializeSentry() {
           // Filter out non-critical errors in development
           if (process.env.NODE_ENV === 'development') {
             // Don't send client-side errors in development
-            if (event.request?.url?.includes('/_vite/')) {
+            if ((event as any).request?.url?.includes('/_vite/')) {
               return null;
             }
           }
           
           // Filter out known non-critical errors
-          const error = hint?.originalException;
+          const error = (hint as any)?.originalException;
           if (error?.message?.includes('ECONNRESET') || 
               error?.message?.includes('EPIPE')) {
             return null; // Don't send network errors
@@ -360,16 +360,20 @@ export async function initializeSentry() {
 // Export a function to add request ID to logger context
 export function createRequestLogger(requestId: string) {
   return {
-    info: (message: string, meta?: unknown) => logger.info(message, { requestId, ...meta }),
-    warn: (message: string, meta?: unknown) => logger.warn(message, { requestId, ...meta }),
-    error: (message: string, meta?: unknown) => logger.error(message, { requestId, ...meta }),
-    debug: (message: string, meta?: unknown) => logger.debug(message, { requestId, ...meta })
+    info: (message: string, meta: Record<string, unknown> = {}) =>
+      logger.info(message, { requestId, ...meta }),
+    warn: (message: string, meta: Record<string, unknown> = {}) =>
+      logger.warn(message, { requestId, ...meta }),
+    error: (message: string, meta: Record<string, unknown> = {}) =>
+      logger.error(message, { requestId, ...meta }),
+    debug: (message: string, meta: Record<string, unknown> = {}) =>
+      logger.debug(message, { requestId, ...meta })
   };
 }
 
 // Security logging utility
 export function logSecurityEvent(event: string, details?: unknown) {
-  logger.warn(event, { security: true, ...details });
+  logger.warn(event, { security: true, ...(details as Record<string, unknown>) });
 }
 
 // Performance logging utility

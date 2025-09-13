@@ -83,7 +83,7 @@ export class CCBillProcessor {
         reason_desc,
       } = payload;
       
-      const userId = parseInt(customer_id);
+      const userId = parseInt(String(customer_id));
       if (!userId) {
         return { success: false, message: 'Invalid customer ID' };
       }

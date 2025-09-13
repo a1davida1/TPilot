@@ -42,7 +42,7 @@ export async function variantsRewrite(params:{platform:"instagram"|"x"|"reddit"|
   const json=stripToJSON(res.response.text());
   // Fix common safety_level values and missing fields
   if(Array.isArray(json)){
-    json.forEach((item: unknown)=>{
+    json.forEach((item: any)=>{
       // Accept any safety_level from AI but normalize "suggestive"
       if(!item.safety_level) item.safety_level="suggestive";
       else if(item.safety_level === 'suggestive') item.safety_level = 'spicy_safe';

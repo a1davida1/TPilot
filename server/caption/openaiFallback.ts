@@ -37,12 +37,13 @@ export async function openAICaptionFallback(params: FallbackParams) {
     json = { caption: response.choices[0].message.content || 'Fallback caption' };
   }
 
+  const jsonData: any = json;
   return {
-    caption: json.caption || 'Fallback caption',
-    hashtags: json.hashtags || [],
-    safety_level: json.safety_level || 'normal',
-    mood: json.mood || 'neutral',
-    style: json.style || 'fallback',
-    cta: json.cta || ''
+    caption: jsonData?.caption ?? 'Fallback caption',
+    hashtags: jsonData?.hashtags ?? [],
+    safety_level: jsonData?.safety_level ?? 'normal',
+    mood: jsonData?.mood ?? 'neutral',
+    style: jsonData?.style ?? 'fallback',
+    cta: jsonData?.cta ?? ''
   };
 }

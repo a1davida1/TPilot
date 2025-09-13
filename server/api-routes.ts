@@ -10,7 +10,8 @@ import { MediaManager } from "./lib/media.js";
 import { CCBillProcessor } from "./lib/billing.js";
 import { PolicyLinter } from "./lib/policyLinter.js";
 import { PostScheduler } from "./lib/scheduling.js";
-import { addJob } from "./lib/queue/index.js";
+import { addJob, QueueNames } from "./lib/queue/index.js";
+import { getErrorMessage } from "./utils/error.js";
 import { RedditManager } from "./lib/reddit.js";
 import { postJobs, subscriptions, mediaAssets, creatorAccounts, users, userSamples } from "@shared/schema.js";
 import { eq, desc, sql } from "drizzle-orm";
@@ -155,7 +156,7 @@ export function registerApiRoutes(app: Express) {
       res.json(assets);
     } catch (error: unknown) {
       console.error('Failed to get media:', error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: getErrorMessage(error) });
     }
   });
 
@@ -180,7 +181,7 @@ export function registerApiRoutes(app: Express) {
       }
     } catch (error: unknown) {
       console.error('Failed to delete media:', error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: getErrorMessage(error) });
     }
   });
 
@@ -201,7 +202,7 @@ export function registerApiRoutes(app: Express) {
       res.json(result);
     } catch (error: unknown) {
       console.error('Content linting failed:', error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: getErrorMessage(error) });
     }
   });
 
@@ -241,7 +242,7 @@ export function registerApiRoutes(app: Express) {
       }).returning();
 
       // Add to queue
-      await addJob<PostingJobPayload>('posting', {
+      await addJob<PostingJobPayload>('posting' as QueueNames, {
         userId,
         postJobId: postJob.id,
         subreddit: data.subreddit,
@@ -259,7 +260,7 @@ export function registerApiRoutes(app: Express) {
       });
     } catch (error: unknown) {
       console.error('Failed to schedule post:', error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: getErrorMessage(error) });
     }
   });
 
@@ -284,7 +285,7 @@ export function registerApiRoutes(app: Express) {
       res.json(jobs);
     } catch (error: unknown) {
       console.error('Failed to get scheduled posts:', error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: getErrorMessage(error) });
     }
   });
 
@@ -313,7 +314,7 @@ export function registerApiRoutes(app: Express) {
       });
     } catch (error: unknown) {
       console.error('Failed to generate payment link:', error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: getErrorMessage(error) });
     }
   });
 
@@ -363,7 +364,7 @@ export function registerApiRoutes(app: Express) {
       });
     } catch (error: unknown) {
       console.error('Failed to get subscription:', error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: getErrorMessage(error) });
     }
   });
 
@@ -392,7 +393,7 @@ export function registerApiRoutes(app: Express) {
       })));
     } catch (error: unknown) {
       console.error('Failed to get Reddit accounts:', error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: getErrorMessage(error) });
     }
   });
 
@@ -428,7 +429,7 @@ export function registerApiRoutes(app: Express) {
       res.json(info);
     } catch (error: unknown) {
       console.error('Failed to get account info:', error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: getErrorMessage(error) });
     }
   });
 
@@ -447,7 +448,7 @@ export function registerApiRoutes(app: Express) {
       res.json(usage);
     } catch (error: unknown) {
       console.error('Failed to get storage usage:', error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: getErrorMessage(error) });
     }
   });
 
@@ -490,7 +491,7 @@ export function registerApiRoutes(app: Express) {
       res.json(history);
     } catch (error: unknown) {
       console.error('Failed to get AI history:', error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: getErrorMessage(error) });
     }
   });
 

@@ -58,7 +58,7 @@ export const authenticateToken = async (req: AuthRequest, res: express.Response,
 
   // Fallback to session-based auth
   if (req.session && (req.session as { user?: UserType }).user) {
-    req.user = (req.session as { user: UserType }).user;
+    req.user = (req.session as any).user as UserType;
     return next();
   }
 

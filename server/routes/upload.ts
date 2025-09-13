@@ -1,4 +1,5 @@
 import express from 'express';
+import type { Request } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs/promises';
@@ -12,6 +13,19 @@ import { uploadRequestSchema, type ProtectionLevel, type UploadRequest } from '@
 import { ZodError } from 'zod';
 import { imageStreamingUpload, cleanupUploadedFiles } from '../middleware/streaming-upload.js';
 import { embedSignature } from '../lib/steganography.js';
+
+interface UploadRequest extends Request {
+  user: { id: number; tier?: string };
+  streamingFiles?: { path: string; filename?: string; length?: number }[];
+  uploadProgress?: unknown;
+  file?: {
+    path: string;
+    mimetype: string;
+    originalname: string;
+    filename: string;
+    size: number;
+  } | null;
+}
 
 const router = express.Router();
 
