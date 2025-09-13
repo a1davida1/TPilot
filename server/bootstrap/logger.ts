@@ -262,8 +262,8 @@ export function validateSentryConfig(): { isValid: boolean; warnings: string[]; 
 }
 
 // Initialize Sentry with comprehensive validation
-export async function initializeSentry() {
-  let Sentry: unknown = undefined;
+export async function initializeSentry(): Promise<typeof import('@sentry/node') | null> {
+  let Sentry: typeof import('@sentry/node') | null = null;
   
   // Validate Sentry configuration
   const configValidation = validateSentryConfig();
@@ -278,12 +278,12 @@ export async function initializeSentry() {
     configValidation.errors.forEach(error => {
       logger.error(`Sentry configuration error: ${error}`);
     });
-    return undefined;
+    return null;
   }
   
   const dsn = process.env.SENTRY_DSN;
   if (!dsn) {
-    return undefined; // Not configured, but that's okay
+    return null; // Not configured, but that's okay
   }
   
   try {
@@ -298,7 +298,7 @@ export async function initializeSentry() {
       Sentry = SentryModule;
       
       // Enhanced Sentry configuration
-      const sentryConfig: unknown = {
+      const sentryConfig = {
         dsn,
         environment: process.env.NODE_ENV,
         tracesSampleRate: parseFloat(process.env.SENTRY_SAMPLE_RATE || '0.1'),
@@ -321,7 +321,7 @@ export async function initializeSentry() {
             return null; // Don't send network errors
           }
           
-          return event;
+          return event as any;
         },
         
         // Enhanced release tracking
@@ -348,10 +348,9 @@ export async function initializeSentry() {
       logger.warn("Sentry module not available, continuing without error tracking");
     }
   } catch (err: unknown) {
-    logger.error("Sentry initialization failed", { 
-      error: err?.message || 'Unknown error',
-      stack: err?.stack 
-    });
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    const stack = err instanceof Error ? err.stack : undefined;
+    logger.error('Sentry initialization failed', { error: message, stack });
   }
   
   return Sentry;
@@ -383,7 +382,7 @@ export function logPerformanceMetric(metric: string, value: number, details?: un
     performance: true, 
     metric, 
     value, 
-    ...details 
+    ...(details as Record<string, unknown>) 
   });
 }
 
