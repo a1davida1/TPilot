@@ -5,7 +5,7 @@ import fs from 'fs/promises';
 import crypto from 'crypto';
 import sharp from 'sharp';
 import { fileTypeFromBuffer } from 'file-type';
-import { authenticateToken } from '../middleware/auth.js';
+import { authenticateToken, type AuthRequest } from '../middleware/auth.js';
 import { uploadLimiter, logger } from '../middleware/security.js';
 import { imageProtectionLimiter as tierProtectionLimiter } from '../middleware/tiered-rate-limit.js';
 import { uploadRequestSchema, type ProtectionLevel, type UploadRequest as UploadRequestBody } from '@shared/schema.js';
@@ -13,17 +13,8 @@ import { ZodError } from 'zod';
 import { imageStreamingUpload, cleanupUploadedFiles } from '../middleware/streaming-upload.js';
 import { embedSignature } from '../lib/steganography.js';
 
-interface AuthRequest extends Request {
-  user: { id: number; tier?: string };
-  streamingFiles?: { path: string; filename?: string; length?: number }[];
-  uploadProgress?: unknown;
-  file?: {
-    path: string;
-    mimetype: string;
-    originalname: string;
-    filename: string;
-    size: number;
-  };
+interface UploadAuthRequest extends AuthRequest {
+  file?: Express.Multer.File;
 }
 
 const router = express.Router();
@@ -217,16 +208,17 @@ function performBasicMalwareCheck(buffer: Buffer): boolean {
 }
 
 // New streaming upload endpoint with enhanced progress tracking
-router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, cleanupUploadedFiles, imageStreamingUpload, async (req: AuthRequest, res: Response) => {
+router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, cleanupUploadedFiles, imageStreamingUpload, async (req: Request, res: Response) => {
+  const authReq = req as UploadAuthRequest;
   let processedFilePath = '';
   
   try {
     // Check if files were uploaded via streaming
-    if (!req.streamingFiles || req.streamingFiles.length === 0) {
+    if (!authReq.streamingFiles || authReq.streamingFiles.length === 0) {
       return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    const uploadedFile = req.streamingFiles[0];
+    const uploadedFile = authReq.streamingFiles[0];
     const tempFilePath = uploadedFile.path;
 
     if (!tempFilePath) {
@@ -234,12 +226,12 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, 
     }
     
     // Real MIME type validation using file content analysis
-    const fileValidation = await validateImageFile(tempFilePath, uploadedFile.mimetype);
+    const fileValidation = await validateImageFile(tempFilePath, uploadedFile.mimetype || 'application/octet-stream');
     if (!fileValidation.isValid) {
       await fs.unlink(tempFilePath);
       logger.warn('Streaming file validation failed', {
-        userId: req.user.id,
-        originalName: uploadedFile.originalname,
+        userId: authReq.user?.id,
+        originalName: uploadedFile.originalname || 'unknown',
         declaredMime: uploadedFile.mimetype,
         detectedType: fileValidation.detectedType,
         error: fileValidation.error
@@ -255,16 +247,16 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, 
     if (performBasicMalwareCheck(fileBuffer)) {
       await fs.unlink(tempFilePath);
       logger.warn('Malware detected in streaming upload', {
-        userId: req.user.id,
-        originalName: uploadedFile.originalname,
+        userId: authReq.user?.id,
+        originalName: uploadedFile.originalname || 'unknown',
         detectedType: fileValidation.detectedType
       });
       return res.status(400).json({ message: 'File failed security check' });
     }
     
     logger.info('Streaming file validation successful', {
-      userId: req.user.id,
-      originalName: uploadedFile.originalname,
+      userId: authReq.user?.id,
+      originalName: uploadedFile.originalname || 'unknown',
       declaredMime: uploadedFile.mimetype,
       detectedType: fileValidation.detectedType,
       uploadSize: uploadedFile.size
@@ -273,12 +265,12 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, 
     // Validate request body with Zod schema
     let validatedRequest: UploadRequestBody;
     try {
-      validatedRequest = uploadRequestSchema.parse(req.body);
+      validatedRequest = uploadRequestSchema.parse(authReq.body);
     } catch (error) {
       await fs.unlink(tempFilePath);
       if (error instanceof ZodError) {
         logger.warn('Streaming upload validation failed', {
-          userId: req.user.id,
+          userId: authReq.user?.id,
           errors: error.errors
         });
         return res.status(400).json({ 
@@ -299,7 +291,7 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, 
       processedFilePath!,
       validatedRequest.protectionLevel,
       validatedRequest.addWatermark,
-      req.user?.id
+      String(authReq.user?.id)
     );
     let lastError: unknown;
     for (let attempt = 0; attempt < 3; attempt++) {
@@ -322,8 +314,8 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, 
     await fs.unlink(tempFilePath);
     
     logger.info('ImageShield protection applied successfully (streaming)', {
-      userId: req.user.id,
-      originalName: uploadedFile.originalname,
+      userId: authReq.user?.id,
+      originalName: uploadedFile.originalname || 'unknown',
       protectionLevel: validatedRequest.protectionLevel,
       watermark: validatedRequest.addWatermark,
       outputFile: outputFilename
@@ -335,21 +327,21 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, 
       filename: outputFilename,
       protectionLevel: validatedRequest.protectionLevel,
       watermark: validatedRequest.addWatermark,
-      originalSize: uploadedFile.size,
-      uploadProgress: req.uploadProgress
+      originalSize: uploadedFile.size || 0,
+      uploadProgress: authReq.uploadProgress
     });
     
   } catch (error) {
     logger.error('Streaming upload processing error', {
-      userId: req.user?.id,
+      userId: authReq.user?.id,
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined
     });
     
     // Clean up files on error
     try {
-      if (req.streamingFiles?.[0]?.path) {
-        await fs.unlink(req.streamingFiles[0].path).catch(() => {});
+      if (authReq.streamingFiles?.[0]?.path) {
+        await fs.unlink(authReq.streamingFiles[0].path).catch(() => {});
       }
       if (processedFilePath) {
         await fs.unlink(processedFilePath).catch(() => {});
@@ -363,29 +355,30 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, 
 });
 
 // Traditional upload endpoint with authentication, rate limiting, and ImageShield protection
-router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken, upload.single('image'), async (req: AuthRequest, res: Response) => {
+router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken, upload.single('image'), async (req: Request, res: Response) => {
+  const authReq = req as UploadAuthRequest;
   let tempFilePath = '';
   let protectedFilePath = '';
   
   try {
-    if (!req.file) {
+    if (!authReq.file) {
       return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    tempFilePath = req.file.path;
+    tempFilePath = authReq.file.path;
     
     if (!tempFilePath) {
       return res.status(400).json({ message: 'Invalid file path' });
     }
     
     // Real MIME type validation using file content analysis
-    const fileValidation = await validateImageFile(tempFilePath, req.file.mimetype);
+    const fileValidation = await validateImageFile(tempFilePath, authReq.file.mimetype);
     if (!fileValidation.isValid) {
       await fs.unlink(tempFilePath);
       logger.warn('File validation failed', {
-        userId: req.user.id,
-        originalName: req.file.originalname,
-        declaredMime: req.file.mimetype,
+        userId: authReq.user?.id,
+        originalName: authReq.file.originalname,
+        declaredMime: authReq.file.mimetype,
         detectedType: fileValidation.detectedType,
         error: fileValidation.error
       });
@@ -400,30 +393,30 @@ router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken, u
     if (performBasicMalwareCheck(fileBuffer)) {
       await fs.unlink(tempFilePath);
       logger.warn('Malware detected in upload', {
-        userId: req.user.id,
-        originalName: req.file.originalname,
+        userId: authReq.user?.id,
+        originalName: authReq.file.originalname,
         detectedType: fileValidation.detectedType
       });
       return res.status(400).json({ message: 'File failed security check' });
     }
     
     logger.info('File validation successful', {
-      userId: req.user.id,
-      originalName: req.file.originalname,
-      declaredMime: req.file.mimetype,
+      userId: authReq.user?.id,
+      originalName: authReq.file.originalname,
+      declaredMime: authReq.file.mimetype,
       detectedType: fileValidation.detectedType
     });
     
     // Validate request body with Zod schema
     let validatedRequest: UploadRequestBody;
     try {
-      validatedRequest = uploadRequestSchema.parse(req.body);
+      validatedRequest = uploadRequestSchema.parse(authReq.body);
     } catch (error) {
       if (error instanceof ZodError) {
         logger.warn('Upload request validation failed', { 
-          userId: req.user.id, 
+          userId: authReq.user?.id, 
           errors: error.errors,
-          body: req.body 
+          body: authReq.body 
         });
         return res.status(400).json({ 
           message: 'Invalid request parameters',
@@ -434,14 +427,14 @@ router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken, u
     }
     
     // Determine protection level and watermark based on user tier and validated input
-    const userTier = req.user.tier || 'free';
+    const userTier = authReq.user?.tier || 'free';
     const protectionLevel = validatedRequest.protectionLevel;
     const addWatermark = validatedRequest.addWatermark !== undefined 
       ? validatedRequest.addWatermark 
       : ['free', 'starter'].includes(userTier);
     
     logger.info('Upload request validated', {
-      userId: req.user.id,
+      userId: authReq.user?.id,
       userTier,
       protectionLevel,
       addWatermark,
@@ -449,7 +442,7 @@ router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken, u
     });
     
     // Apply ImageShield protection
-    const protectedFileName = `protected_${req.file.filename}`;
+    const protectedFileName = `protected_${authReq.file.filename}`;
     protectedFilePath = path.join(path.dirname(tempFilePath), protectedFileName);
     
     await applyImageShieldProtection(
@@ -457,7 +450,7 @@ router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken, u
       protectedFilePath,
       protectionLevel as 'light' | 'standard' | 'heavy',
       addWatermark,
-      req.user.id
+      String(authReq.user?.id)
     );
     
     const signature = crypto.randomUUID();
@@ -474,14 +467,14 @@ router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken, u
     const fileUrl = `/uploads/${protectedFileName}`;
     const protectedStats = await fs.stat(protectedFilePath);
     
-    logger.info(`Protected file uploaded: ${protectedFileName} by user ${req.user.id}, tier: ${userTier}`);
+    logger.info(`Protected file uploaded: ${protectedFileName} by user ${authReq.user?.id}, tier: ${userTier}`);
     
     res.json({
       message: 'File uploaded and protected successfully',
       filename: protectedFileName,
       url: fileUrl,
       size: protectedStats.size,
-      originalSize: req.file.size,
+      originalSize: authReq.file.size,
       protectionLevel,
       watermarked: addWatermark,
       signature,
