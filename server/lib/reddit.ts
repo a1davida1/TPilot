@@ -108,9 +108,9 @@ export class RedditManager {
           });
       } else {
         // Text post
-        submission = await this.reddit
-          .getSubreddit(options.subreddit)
-          .submitSelfpost({
+        const subreddit = await (this.reddit as any)
+          .getSubreddit(options.subreddit);
+        submission = await subreddit.submitSelfpost({
             subredditName: options.subreddit,
             title: options.title,
             text: options.body || '',
@@ -136,20 +136,20 @@ export class RedditManager {
 
     } catch (error: unknown) {
       console.error('Reddit submission failed:', {
-        message: error?.message,
-        stack: error?.stack,
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
       });
 
       let errorMessage = 'Failed to submit post';
       
       // Parse common Reddit API errors
-      if (error.message?.includes('RATELIMIT')) {
+      if ((error as any).message?.includes('RATELIMIT')) {
         errorMessage = 'Rate limited by Reddit. Please try again later.';
-      } else if (error.message?.includes('SUBREDDIT_NOTALLOWED')) {
+      } else if ((error as any).message?.includes('SUBREDDIT_NOTALLOWED')) {
         errorMessage = 'Not allowed to post in this subreddit';
-      } else if (error.message?.includes('NO_TEXT')) {
+      } else if ((error as any).message?.includes('NO_TEXT')) {
         errorMessage = 'Post content cannot be empty';
-      } else if (error.message?.includes('TOO_LONG')) {
+      } else if ((error as any).message?.includes('TOO_LONG')) {
         errorMessage = 'Post title or content is too long';
       }
 
@@ -186,7 +186,7 @@ export class RedditManager {
       if (options.imageBuffer || options.imagePath) {
         console.log('Uploading image directly to Reddit (i.redd.it)...');
         
-        const subreddit = reddit.getSubreddit(options.subreddit);
+        const subreddit = (reddit as any).getSubreddit(options.subreddit);
         
         try {
           // Try direct image upload first
@@ -204,7 +204,7 @@ export class RedditManager {
             url: `https://www.reddit.com${submission.permalink}`,
           };
         } catch (imgError: unknown) {
-          console.error('Direct image upload failed, falling back to link post:', imgError.message);
+          console.error('Direct image upload failed, falling back to link post:', (imgError as any).message);
           // Fallback to link post if image upload fails
           if (options.imageUrl) {
             return this.submitPost({
@@ -229,7 +229,7 @@ export class RedditManager {
       console.error('Image submission failed:', error);
       return {
         success: false,
-        error: error.message || 'Failed to upload image'
+        error: (error as any).message || 'Failed to upload image'
       };
     }
   }
@@ -249,7 +249,7 @@ export class RedditManager {
   }): Promise<RedditPostResult> {
     try {
       const reddit = await this.initReddit();
-      const subreddit = reddit.getSubreddit(options.subreddit);
+      const subreddit = (reddit as any).getSubreddit(options.subreddit);
       
       // Prepare images for gallery
       const galleryImages = await Promise.all(
@@ -285,7 +285,7 @@ export class RedditManager {
 
     } catch (error: unknown) {
       // Not all subreddits support galleries
-      if (error.message?.includes('INVALID_OPTION') || error.message?.includes('gallery')) {
+      if ((error as any).message?.includes('INVALID_OPTION') || (error as any).message?.includes('gallery')) {
         console.log('Gallery not supported, falling back to single image');
         return this.submitImagePost({
           subreddit: options.subreddit,
@@ -298,7 +298,7 @@ export class RedditManager {
       
       return {
         success: false,
-        error: error.message || 'Failed to submit gallery'
+        error: (error as any).message || 'Failed to submit gallery'
       };
     }
   }
@@ -314,7 +314,7 @@ export class RedditManager {
   }> {
     try {
       const reddit = await this.initReddit();
-      const subreddit = await reddit.getSubreddit(subredditName).fetch();
+      const subreddit = await (reddit as any).getSubreddit(subredditName).fetch();
       
       return {
         allowsImages: subreddit.allow_images !== false,
@@ -389,7 +389,7 @@ export class RedditManager {
    */
   async getProfile(): Promise<unknown> {
     try {
-      const user = await this.reddit.getMe();
+      const user = await (this.reddit as any).getMe();
       return {
         username: user.name,
         karma: user.link_karma + user.comment_karma,
@@ -409,7 +409,7 @@ export class RedditManager {
    */
   async testConnection(): Promise<boolean> {
     try {
-      await this.reddit.getMe();
+      await (this.reddit as any).getMe();
       return true;
     } catch (error) {
       console.error('Reddit connection test failed:', error);
@@ -423,7 +423,7 @@ export class RedditManager {
   async refreshTokenIfNeeded(): Promise<void> {
     try {
       // snoowrap handles token refresh automatically
-      await this.reddit.getMe();
+      await (this.reddit as any).getMe();
     } catch (error) {
       console.error('Token refresh failed:', error);
       throw error;
