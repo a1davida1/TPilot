@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -408,37 +409,25 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
     window.location.href = url;
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 max-w-md w-full relative overflow-hidden shadow-2xl">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-md bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 overflow-visible" data-testid="auth-modal">
         {/* Background gradient effect */}
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 via-pink-600/10 to-purple-600/10 opacity-30" />
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 via-pink-600/10 to-purple-600/10 opacity-30 pointer-events-none z-0" />
         
-        <div className="relative z-10 p-6">
+        <div className="relative z-10">
           {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                {mode === 'login' ? 'Welcome Back' : mode === 'signup' ? 'Create Account' : 'Reset Password'}
-              </h2>
-              <p className="text-sm text-foreground mt-1">
-                {mode === 'login' 
-                  ? 'Sign in to access your content' 
-                  : mode === 'signup' ? 'Join ThottoPilot today'
-                  : 'Enter your email to receive reset instructions'}
-              </p>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClose}
-              className="text-foreground hover:text-foreground"
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+              {mode === 'login' ? 'Welcome Back' : mode === 'signup' ? 'Create Account' : 'Reset Password'}
+            </DialogTitle>
+            <p className="text-sm text-foreground mt-1">
+              {mode === 'login' 
+                ? 'Sign in to access your content' 
+                : mode === 'signup' ? 'Join ThottoPilot today'
+                : 'Enter your email to receive reset instructions'}
+            </p>
+          </DialogHeader>
 
           {/* Social Auth - Hide for forgot password */}
           {mode !== 'forgot-password' && (
@@ -690,7 +679,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
             </div>
           )}
         </div>
-      </Card>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
