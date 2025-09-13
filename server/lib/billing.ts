@@ -90,7 +90,7 @@ export class CCBillProcessor {
       
       switch (eventType) {
         case 'NewSaleSuccess':
-          await this.createSubscription(userId, subscription_id, {
+          await this.createSubscription(userId, subscription_id as string, {
             status: 'active',
             plan: 'pro',
             priceCents: Math.round(parseFloat(String(billing_amount)) * 100),
@@ -99,7 +99,7 @@ export class CCBillProcessor {
           break;
           
         case 'RenewalSuccess':
-          await this.updateSubscription(subscription_id, {
+          await this.updateSubscription(subscription_id as string, {
             status: 'active',
             nextBillDate: String(next_billing_date),
             amount: Math.round(parseFloat(String(billing_amount)) * 100),
@@ -108,14 +108,14 @@ export class CCBillProcessor {
           
         case 'Cancellation':
         case 'Expiration':
-          await this.updateSubscription(subscription_id, {
+          await this.updateSubscription(subscription_id as string, {
             status: 'canceled',
             reason: reason_desc as string,
           });
           break;
           
         case 'RenewalFailure':
-          await this.updateSubscription(subscription_id, {
+          await this.updateSubscription(subscription_id as string, {
             status: 'past_due',
             reason: reason_desc as string,
           });
