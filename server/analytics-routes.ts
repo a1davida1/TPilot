@@ -25,55 +25,7 @@ export async function initGeoReader() {
   }
 }
 
-// Type Definitions
-interface BaseEvent {
-  sessionId: string;
-  userId?: string;
-  timestamp: string;
-}
-
-interface PageViewEvent extends BaseEvent {
-  eventType: 'page_view';
-  url: string;
-  path: string;
-  title: string;
-  userAgent?: string;
-  referrer?: string;
-}
-
-interface DeviceInfo {
-  deviceType: string;
-  browser: string;
-  os: string;
-}
-
-interface LocationInfo {
-  country?: string;
-  city?: string;
-}
-
-interface EngagementEvent extends BaseEvent {
-  eventType: 'engagement_event';
-  type: string;
-  element: string;
-  page: string;
-  metadata?: any;
-  value?: any;
-}
-
-interface ContentViewEvent extends BaseEvent {
-  eventType: 'content_view';
-  contentId: number;
-  platform?: string;
-  subreddit?: string;
-  viewType?: string;
-  timeSpent?: number;
-}
-
-interface SessionEndEvent extends BaseEvent {
-  eventType: 'session_end';
-  duration?: number;
-}
+// Type Definitions moved to Helper Functions section for better organization
 
 // Validation schemas
 const analyticsEventSchema = z.object({
@@ -114,7 +66,7 @@ export function registerAnalyticsRoutes(app: Express) {
 
       // Process each event
       for (const event of events) {
-        await processAnalyticsEvent(event, ipAddress);
+        await processAnalyticsEvent(event as AnalyticsEvent, ipAddress);
       }
 
       res.json({ success: true, processed: events.length });
@@ -241,8 +193,59 @@ export function registerAnalyticsRoutes(app: Express) {
 }
 
 // Helper Functions
+interface BaseAnalyticsEvent extends z.infer<typeof analyticsEventSchema> {}
 
-type AnalyticsEvent = z.infer<typeof analyticsEventSchema>;
+interface PageViewEvent extends BaseAnalyticsEvent {
+  eventType: 'page_view';
+  path: string;
+  title: string;
+}
+
+interface PageEndEvent extends BaseAnalyticsEvent {
+  eventType: 'page_end';
+  path: string;
+  timeOnPage?: number;
+  scrollDepth?: number;
+  exitPage?: boolean;
+}
+
+interface EngagementEvent extends BaseAnalyticsEvent {
+  eventType: 'engagement_event';
+  type: string;
+  element?: string;
+  page?: string;
+  metadata?: unknown;
+  value?: number;
+}
+
+interface ContentViewEvent extends BaseAnalyticsEvent {
+  eventType: 'content_view';
+  contentId: number;
+  platform?: string;
+  subreddit?: string;
+  viewType?: string;
+  timeSpent?: number;
+}
+
+interface SessionEndEvent extends BaseAnalyticsEvent {
+  eventType: 'session_end';
+  duration?: number;
+}
+
+type AnalyticsEvent =
+  | PageViewEvent
+  | PageEndEvent
+  | EngagementEvent
+  | ContentViewEvent
+  | SessionEndEvent;
+
+interface DeviceInfo {
+  deviceType: string;
+  browser: string;
+  os: string;
+}
+
+type LocationInfo = { country?: string; city?: string };
 
 async function processAnalyticsEvent(event: AnalyticsEvent, ipAddress: string) {
   const deviceInfo = parseUserAgent(event.userAgent ?? '');
@@ -266,11 +269,16 @@ async function processAnalyticsEvent(event: AnalyticsEvent, ipAddress: string) {
       break;
     default:
       // Log unknown event types for debugging
-      console.log('Unknown analytics event type:', event.eventType);
+      console.log('Unknown analytics event type:', (event as any).eventType);
   }
 }
 
-async function handlePageView(event: PageViewEvent, ipAddress: string, deviceInfo: DeviceInfo, locationInfo: LocationInfo | null) {
+async function handlePageView(
+  event: PageViewEvent,
+  ipAddress: string,
+  deviceInfo: DeviceInfo,
+  locationInfo: LocationInfo | null
+) {
   // Create or update session
   await db.insert(userSessions).values({
     sessionId: event.sessionId,
@@ -307,7 +315,7 @@ async function handlePageView(event: PageViewEvent, ipAddress: string, deviceInf
   });
 }
 
-async function handlePageEnd(event: any) {
+async function handlePageEnd(event: PageEndEvent) {
   if (!event.timeOnPage) return;
 
   // Update the latest page view with time spent
@@ -328,8 +336,8 @@ async function handleEngagementEvent(event: EngagementEvent) {
     sessionId: event.sessionId,
     userId: event.userId ? parseInt(event.userId) : null,
     eventType: event.type,
-    element: event.element,
-    page: event.page,
+    element: event.element || null,
+    page: event.page || '/',
     metadata: event.metadata,
     value: event.value,
     createdAt: new Date(event.timestamp)
