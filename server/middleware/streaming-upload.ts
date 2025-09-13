@@ -293,8 +293,8 @@ export function createStreamingUpload(options: StreamingUploadOptions = {}) {
 
     } catch (error: unknown) {
       logger.error('Streaming upload middleware error', {
-        error: error?.message || 'Unknown error',
-        stack: error?.stack
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
       });
       
       return res.status(500).json({
