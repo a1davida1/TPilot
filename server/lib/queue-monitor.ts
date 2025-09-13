@@ -177,8 +177,7 @@ export class QueueMonitor {
       const throughput = Math.floor(Number(completedJobs) / 24);
       
       // Get recent job timing data if available
-      const recentJobs: Array<{ processedOn?: number; timestamp?: number }> =
-        queue.getRecentJobs ? await queue.getRecentJobs(queueName, 10) : [];
+      const recentJobs = queue.getRecentJobs ? (await queue.getRecentJobs(queueName, 10)) as Array<{ processedOn?: number; timestamp?: number }> : [];
       
       // Calculate average processing time from recent jobs
       const avgProcessingTime = Array.isArray(recentJobs) && recentJobs.length > 0 ?
