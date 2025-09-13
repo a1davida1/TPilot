@@ -200,6 +200,7 @@ app.use((req, res, next) => {
       
       app.use(express.static(clientPath));
       app.get("*", (_req, res) => {
+        res.type("html");
         res.sendFile(path.join(clientPath, "index.html"));
       });
     }
