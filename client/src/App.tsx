@@ -98,8 +98,10 @@ function AuthenticatedRoutes() {
         <SEOOptimization {...seoConfigs.landing} />
         <LandingPage />
       </Route>
-      <Route path="/" component={Dashboard} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/">
+        <Redirect to="/dashboard" />
+      </Route>
       <Route path="/caption-generator" component={CaptionGeneratorPage} />
       <Route path="/imageshield" component={ImageShieldPage} />
       <Route path="/enterprise" component={Enterprise} />
@@ -143,11 +145,11 @@ function UnauthenticatedRoutes() {
       <Route path="/caption-generator" component={CaptionGeneratorPage} />
       <Route path="/imageshield" component={ImageShieldPage} />
       <Route path="/reddit" component={RedditPostingPage} />
-      <Route path="/">
+      <Route path="/landing">
         <SEOOptimization {...seoConfigs.landing} />
         <LandingPage />
       </Route>
-      <Route path="/landing">
+      <Route path="/">
         <SEOOptimization {...seoConfigs.landing} />
         <LandingPage />
       </Route>
