@@ -13,7 +13,8 @@ export function mountStripeWebhook(app: Express) {
     try {
       event = stripe.webhooks.constructEvent(req.body as Buffer, sig, process.env.STRIPE_WEBHOOK_SECRET!);
     } catch (err: unknown) {
-      return res.status(400).send(`Webhook Error: ${err.message}`);
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      return res.status(400).send(`Webhook Error: ${message}`);
     }
 
     switch (event.type) {
@@ -58,7 +59,7 @@ export function mountStripeWebhook(app: Express) {
           await db.insert(invoices).values({
             subscriptionId: 0, // unknown without join; keep 0 or extend schema/lookup if needed
             amountCents: inv.amount_paid ?? 0,
-            status: inv.paid ? "paid" : "failed",
+            status: inv.status === "paid" ? "paid" : "failed",
             processor: "stripe",
             processorRef: inv.id
           }).catch(()=>{});
