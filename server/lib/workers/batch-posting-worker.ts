@@ -223,13 +223,18 @@ export class BatchPostingWorker {
     let body = bodyTemplate;
 
     // Add subreddit-specific customizations
-    const customizations = this.getSubredditCustomizations(subreddit);
+    interface Customizations {
+      preferredHashtags?: string;
+      toneAdjustment?: string;
+      contentLength?: string;
+    }
+    const customizations = this.getSubredditCustomizations(subreddit) as Customizations;
     
     // Apply customizations
     title = title.replace(/\{subreddit\}/g, subreddit);
     body = body.replace(/\{subreddit\}/g, subreddit);
     
-    if (customizations.preferredHashtags) {
+    if (customizations?.preferredHashtags) {
       body += `\n\n${customizations.preferredHashtags}`;
     }
 
@@ -241,7 +246,12 @@ export class BatchPostingWorker {
 
   private getSubredditCustomizations(subreddit: string) {
     // In full implementation, this would query subreddit rules/preferences from database
-    const customizations: unknown = {
+    interface Customizations {
+      preferredHashtags?: string;
+      toneAdjustment?: string;
+      contentLength?: string;
+    }
+    const customizations: Customizations = {
       preferredHashtags: '',
       toneAdjustment: 'standard',
       contentLength: 'medium',
