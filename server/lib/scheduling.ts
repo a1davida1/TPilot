@@ -113,7 +113,11 @@ export class PostScheduler {
       }
       
       // Analyze posting times vs engagement
-      const hourlyEngagement = this.analyzeEngagementByHour(recentPosts);
+      const typedPosts = recentPosts as Array<{
+        meta?: { engagement?: { upvotes?: number; comments?: number } };
+        createdAt: string | Date;
+      }>;
+      const hourlyEngagement = this.analyzeEngagementByHour(typedPosts);
       const windows = this.generateOptimalWindows(hourlyEngagement);
       
       return {
