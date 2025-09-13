@@ -1,4 +1,5 @@
 import { useState, useEffect as _useEffect } from 'react';
+import { getErrorMessage } from '@/utils/typeHelpers';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -145,7 +146,7 @@ export function AdminPortal() {
     onError: (error: unknown) => {
       toast({
         title: "Failed to Create Trial",
-        description: error.message || "An error occurred",
+        description: getErrorMessage(error) || "An error occurred",
         variant: "destructive"
       });
     }
@@ -1197,7 +1198,7 @@ function UserManagementTab({ authenticatedRequest, users }: { authenticatedReque
     onError: (error: unknown) => {
       toast({
         title: "Action Failed",
-        description: error.message,
+        description: getErrorMessage(error),
         variant: "destructive"
       });
     }
