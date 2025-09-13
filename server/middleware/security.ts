@@ -269,10 +269,8 @@ export const securityMiddleware = [
           // Allow specific style sources
           "https://fonts.googleapis.com",
           "https://checkout.stripe.com",
-          // In development, allow data: URLs for CSS-in-JS libraries  
-          process.env.NODE_ENV === 'development' ? "data:" : "",
-          // Allow inline styles for dynamic styling (using hash for specific styles if needed)
-          "'sha256-47DEi3KNvcV2DKZM2chqKPKTkhCUYA+5okpCdEM0Jj8='"
+          // In development, allow data: URLs for CSS-in-JS libraries
+          process.env.NODE_ENV === 'development' ? "data:" : ""
         ].filter(Boolean),
         imgSrc: [
           "'self'",
