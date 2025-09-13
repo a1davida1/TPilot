@@ -81,7 +81,7 @@ export class CCBillProcessor {
         next_billing_date,
         billing_amount,
         reason_desc,
-      } = payload;
+      } = payload as Record<string, unknown>;
       
       const userId = parseInt(String(customer_id));
       if (!userId) {
@@ -93,16 +93,16 @@ export class CCBillProcessor {
           await this.createSubscription(userId, subscription_id, {
             status: 'active',
             plan: 'pro',
-            priceCents: Math.round(parseFloat(billing_amount) * 100),
-            nextBillDate: next_billing_date ? new Date(next_billing_date) : new Date(),
+            priceCents: Math.round(parseFloat(String(billing_amount)) * 100),
+            nextBillDate: next_billing_date ? new Date(String(next_billing_date)) : new Date(),
           });
           break;
           
         case 'RenewalSuccess':
           await this.updateSubscription(subscription_id, {
             status: 'active',
-            nextBillDate: next_billing_date,
-            amount: Math.round(parseFloat(billing_amount) * 100),
+            nextBillDate: String(next_billing_date),
+            amount: Math.round(parseFloat(String(billing_amount)) * 100),
           });
           break;
           
@@ -110,14 +110,14 @@ export class CCBillProcessor {
         case 'Expiration':
           await this.updateSubscription(subscription_id, {
             status: 'canceled',
-            reason: reason_desc,
+            reason: reason_desc as string,
           });
           break;
           
         case 'RenewalFailure':
           await this.updateSubscription(subscription_id, {
             status: 'past_due',
-            reason: reason_desc,
+            reason: reason_desc as string,
           });
           break;
           
@@ -171,7 +171,7 @@ export class CCBillProcessor {
       throw new Error(`Subscription not found: ${processorSubId}`);
     }
     
-    const updateData: unknown = {
+    const updateData: Partial<typeof subscriptions.$inferInsert> & { updatedAt: Date } = {
       updatedAt: new Date(),
     };
     
