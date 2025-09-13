@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { db } from '../db.js';
 import { leads, insertLeadSchema } from '@shared/schema';
 import { verifyTurnstileToken } from '../lib/turnstile.js';
-import { parseUTMFromCookie, parseUTMFromURL, mergeUTMParams } from '../lib/utm.js';
+import { parseUTMFromCookie, parseUTMFromURL, mergeUTMParams, UTMParams } from '../lib/utm.js';
 import { sendDoubleOptInEmail } from '../lib/mailer.js';
 import { emailService } from '../services/email-service.js';
 import { createConfirmToken, verifyConfirmToken } from '../lib/tokens.js';
@@ -41,7 +41,7 @@ export async function createLead(req: Request, res: Response) {
     }
 
     // Parse UTM parameters from cookie and current URL - handle missing cookies
-    let cookieUTM: unknown = {};
+    let cookieUTM: Partial<UTMParams> = {};
     try {
       if (req.cookies && req.cookies.utm_params) {
         cookieUTM = JSON.parse(decodeURIComponent(req.cookies.utm_params));
@@ -59,7 +59,7 @@ export async function createLead(req: Request, res: Response) {
       urlUTM.referrer = referrer;
     }
 
-    const mergedUTM = mergeUTMParams(cookieUTM, urlUTM);
+    const mergedUTM = mergeUTMParams(cookieUTM as UTMParams, urlUTM as UTMParams);
 
     // Generate unique ID for lead (under 25 chars for DB)
     const leadId = `L${Date.now().toString(36).substr(-8)}${Math.random().toString(36).substr(2, 4)}`;
