@@ -133,15 +133,17 @@ export function useAuth() {
     }
     
     try {
+      const email = import.meta.env.VITE_ADMIN_EMAIL;
+      const password = import.meta.env.VITE_ADMIN_PASSWORD;
+
+      if (!email || !password) {
+        throw new Error('Admin credentials not configured');
+      }
+
       const response = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: process.env.VITE_ADMIN_EMAIL || 'thottopilot@thottopilot.com',
-          password: process.env.VITE_ADMIN_PASSWORD || 'Struggle123!*'
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
       });
       
       if (response.ok) {
