@@ -137,7 +137,7 @@ export default function SmartAnalytics() {
               }))
             : [],
           revenueByPlatform: stats.platformDistribution
-            ? Object.entries(stats.platformDistribution).map(([platform, count]: [string, any]) => {
+            ? Object.entries(stats.platformDistribution).map(([platform, count]: [string, unknown]) => {
                 const numericCount = safeNumber(count, 0);
                 const estimatedRevenue = Math.round(numericCount * REVENUE_PER_GENERATION);
                 return {

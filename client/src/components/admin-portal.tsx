@@ -695,7 +695,7 @@ export function AdminPortal() {
                         </Select>
                       </div>
                     </div>
-                  )) : null
+                  ))
                 )}
               </div>
             </CardContent>
@@ -1313,7 +1313,7 @@ function UserManagementTab({ authenticatedRequest, users }: { authenticatedReque
                       </div>
                     </td>
                   </tr>
-                )) : []}
+                ))
               </tbody>
             </table>
           </div>

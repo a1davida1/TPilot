@@ -1,0 +1,93 @@
+diff --git a/client/src/components/admin-portal.tsx b/client/src/components/admin-portal.tsx
+@@
+-                    </div>
+-                  )) : null
+-                )}
++                    </div>
++                  ))
++                )}
+@@
+-                    </td>
+-                  </tr>
+-                )) : []}
++                    </td>
++                  </tr>
++                ))}
+diff --git a/client/src/components/analytics/SmartAnalytics.tsx b/client/src/components/analytics/SmartAnalytics.tsx
+@@
+-            ? Object.entries(stats.platformDistribution).map(([platform, count]: [string, any]) => {
++            ? Object.entries(stats.platformDistribution).map(([platform, count]: [string, unknown]) => {
+diff --git a/server/middleware/performance.ts b/server/middleware/performance.ts
+@@
+-    const self = this; // Capture reference to PerformanceMonitor instance
+-    return (req: Request, res: Response, next: NextFunction) => {
++    return (req: Request, res: Response, next: NextFunction) => {
+@@
+-      const originalEnd = res.end.bind(res);
+-
+-      // Override end function to capture metrics
+-      const monitoredEnd: Response['end'] = function (this: Response, ...args: any[]) {
+-        // Restore original end function
+-        res.end = originalEnd;
+-        // Calculate duration
+-        const end = process.hrtime.bigint();
+-        const duration = Number(end - start) / 1000000; // Convert to milliseconds
+-        // Create metric
+-        const metric: PerformanceMetric = {
+-          path: req.path,
+-          method: req.method,
+-          duration,
+-          statusCode: res.statusCode,
+-          timestamp: new Date(),
+-          memoryUsage: process.memoryUsage(),
+-          userAgent: req.get('user-agent'),
+-          userId: (req as { user?: { id: string } }).user?.id
+-        };
+-        // Store metric
+-        self.recordMetric(metric);
+-        // Log slow requests
+-        if (duration > self.slowRequestThreshold) {
+-          self.handleSlowRequest(metric);
+-        }
+-        // Alert on critical performance issues
+-        if (duration > self.criticalThreshold) {
+-          self.handleCriticalPerformance(metric);
+-        }
+-        // Call original end function
+-        return originalEnd(...(args as Parameters<Response['end']>));
+-      };
++      const originalEnd = res.end.bind(res);
++
++      // Override end function to capture metrics
++      const monitoredEnd: Response['end'] = (
++        ...args: Parameters<Response['end']>
++      ) => {
++        // Restore original end function
++        res.end = originalEnd;
++        // Calculate duration
++        const end = process.hrtime.bigint();
++        const duration = Number(end - start) / 1000000; // Convert to milliseconds
++        // Create metric
++        const metric: PerformanceMetric = {
++          path: req.path,
++          method: req.method,
++          duration,
++          statusCode: res.statusCode,
++          timestamp: new Date(),
++          memoryUsage: process.memoryUsage(),
++          userAgent: req.get('user-agent'),
++          userId: (req as { user?: { id: string } }).user?.id
++        };
++        // Store metric
++        this.recordMetric(metric);
++        // Log slow requests
++        if (duration > this.slowRequestThreshold) {
++          this.handleSlowRequest(metric);
++        }
++        // Alert on critical performance issues
++        if (duration > this.criticalThreshold) {
++          this.handleCriticalPerformance(metric);
++        }
++        // Call original end function
++        return originalEnd(...args);
++      };
