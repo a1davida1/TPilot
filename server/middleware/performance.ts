@@ -25,13 +25,15 @@ class PerformanceMonitor {
   middleware() {
     return (req: Request, res: Response, next: NextFunction) => {
       const start = process.hrtime.bigint();
-      const startMemory = process.memoryUsage();
+      const _startMemory = process.memoryUsage();
 
       // Store original end function
       const originalEnd = res.end.bind(res);
       
       // Override end function to capture metrics
-      const monitoredEnd: Response['end'] = (...args: any[]) => {
+      const monitoredEnd: any = (
+        ...args: any[]
+      ) => {
         // Restore original end function
         res.end = originalEnd;
         
@@ -65,7 +67,7 @@ class PerformanceMonitor {
         }
         
         // Call original end function
-        return originalEnd(...(args as Parameters<Response['end']>));
+        return originalEnd(...args);
       };
       res.end = monitoredEnd;
       
