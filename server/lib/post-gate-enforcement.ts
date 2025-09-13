@@ -1,4 +1,5 @@
 import { checkPreviewGate } from "./preview-gate.js";
+import type { Request, Response, NextFunction } from 'express';
 
 export interface PostGateResult {
   canPost: boolean;
@@ -41,9 +42,13 @@ export async function enforcePreviewGate(userId: number): Promise<PostGateResult
  * Middleware-style gate enforcement for Express routes
  */
 export function requirePreviewGate() {
-  return async (req: unknown, res: unknown, next: unknown) => {
+  return async (
+    req: Request & { session?: { userId?: number }; user?: { userId?: number } },
+    res: Response,
+    next: NextFunction
+  ) => {
     try {
-      const userId = req.session?.userId || req.user?.userId || 1; // Get user ID from auth
+      const userId = req.session?.userId || req.user?.userId;
       
       if (!userId) {
         return res.status(401).json({ message: "Authentication required" });
