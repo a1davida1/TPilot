@@ -55,7 +55,7 @@ export async function generateVariantsTextOnly(params:{platform:"instagram"|"x"|
   return CaptionArray.parse(json);
 }
 
-export async function rankAndSelect(variants: unknown, params?: { platform?: string, nsfw?: boolean }){
+export async function rankAndSelect(variants: any[], params?: { platform?: string; nsfw?: boolean }){
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rank.txt");
   const res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+JSON.stringify(variants) }]);
   let json=stripToJSON(res.response.text());
