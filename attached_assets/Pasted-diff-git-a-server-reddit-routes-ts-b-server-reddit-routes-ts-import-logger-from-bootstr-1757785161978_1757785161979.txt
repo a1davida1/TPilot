@@ -1,0 +1,76 @@
+diff --git a/server/reddit-routes.ts b/server/reddit-routes.ts
+@@
+ import { logger } from './bootstrap/logger.js';
+ 
++interface RedditProfile {
++  username: string;
++  karma?: number;
++  verified?: boolean;
++}
+@@
+-        const stateStr = Array.isArray(state) ? state[0] : String(state);
+-        logger.error('Invalid or expired state', { statePreview: stateStr.substring(0, 8) + '...' });
++        const stateStr = Array.isArray(state) ? state[0] : state;
++        const stateString = String(stateStr);
++        logger.error('Invalid or expired state', {
++          statePreview: stateString.substring(0, 8) + '...'
++        });
+@@
+-        const codeStr = Array.isArray(code) ? code[0] : String(code);
+-        tokenData = await exchangeRedditCode(codeStr);
++        const codeStr = Array.isArray(code) ? code[0] : code;
++        tokenData = await exchangeRedditCode(String(codeStr));
+@@
+-      const profile = await tempReddit.getProfile();
++      const redditProfile = await tempReddit.getProfile();
++      const profile = redditProfile as RedditProfile;
+@@
+-        const profile = await reddit.getProfile();
+-        if (profile) {
+-          await db
+-            .update(creatorAccounts)
+-            .set({
+-              metadata: {
+-                karma: profile.karma || 0,
+-                verified: profile.verified || false,
+-                lastTested: Date.now()
+-              },
+-              updatedAt: new Date()
+-            })
+-            .where(eq(creatorAccounts.id, account.id));
+-        }
++        const fetchedProfile = await reddit.getProfile();
++        if (fetchedProfile) {
++          const profile = fetchedProfile as RedditProfile;
++          await db
++            .update(creatorAccounts)
++            .set({
++              metadata: {
++                karma: profile.karma || 0,
++                verified: profile.verified || false,
++                lastTested: Date.now()
++              },
++              updatedAt: new Date()
++            })
++            .where(eq(creatorAccounts.id, account.id));
++        }
+@@
+-          const images = req.body.images.map((img: unknown) => ({
+-            url: img.url,
+-            caption: img.caption || ''
+-          }));
++          const typedImages =
++            req.body.images as Array<{ url: string; caption?: string }>;
++          const images = typedImages.map(img => ({
++            url: img.url,
++            caption: img.caption || ''
++          }));
+@@
+-      res.status(500).json({
+-        error: error.message || 'Failed to submit post to Reddit'
+-      });
++      res.status(500).json({
++        error: error instanceof Error
++          ? error.message
++          : 'Failed to submit post to Reddit'
++      });
