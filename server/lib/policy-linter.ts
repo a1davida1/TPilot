@@ -181,14 +181,3 @@ export async function lintCaption(input: {
     };
   }
 }
-
-// Get feature flag value for policy strictness
-export async function shouldBlockOnWarn(): Promise<boolean> {
-  try {
-    // Check if we have feature flags table and get the setting
-    // For now, default to false (warnings don't block)
-    return false;
-  } catch (error) {
-    return false; // Fail safe
-  }
-}
