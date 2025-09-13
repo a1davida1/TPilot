@@ -260,7 +260,9 @@ export const securityMiddleware = [
           "https://checkout.stripe.com",
           "https://apis.google.com",
           // Replit domain for development
-          process.env.NODE_ENV === 'development' ? "https://replit.com" : ""
+          process.env.NODE_ENV === 'development'
+            ? "https://replit.com"
+            : ""
         ].filter(Boolean),
         styleSrc: [
           "'self'",
