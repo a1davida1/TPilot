@@ -8,14 +8,14 @@ import { queueJobs, type InsertQueueJob } from '@shared/schema';
 import { eq, and, gte, sql } from 'drizzle-orm';
 import type { IQueue, QueueJobHandler, QueueJobOptions, QueueFailureStats } from './queue-interface';
 
-interface ProcessorConfig {
-  handler: QueueJobHandler;
+interface ProcessorConfig<T = unknown> {
+  handler: QueueJobHandler<T>;
   concurrency: number;
   active: boolean;
 }
 
 export class PgQueue implements IQueue {
-  private processors = new Map<string, ProcessorConfig>();
+  private processors = new Map<string, ProcessorConfig<any>>();
   private polling = false;
   private pollInterval = 2000; // 2 seconds
   private pollTimer?: NodeJS.Timeout;
@@ -159,7 +159,7 @@ export class PgQueue implements IQueue {
       );
   }
 
-  private async processQueueJobs(queueName: string, processor: ProcessorConfig): Promise<void> {
+  private async processQueueJobs(queueName: string, processor: ProcessorConfig<any>): Promise<void> {
     // Use PostgreSQL FOR UPDATE SKIP LOCKED for job claiming
     const jobs = await db
       .select()
@@ -178,7 +178,10 @@ export class PgQueue implements IQueue {
     }
   }
 
-  private async processJob(job: unknown, handler: QueueJobHandler): Promise<void> {
+  private async processJob(
+    job: typeof queueJobs.$inferSelect,
+    handler: QueueJobHandler<any>
+  ): Promise<void> {
     try {
       // Mark job as active
       await db
