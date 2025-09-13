@@ -1,6 +1,7 @@
 import sgMail from '@sendgrid/mail';
 import jwt from 'jsonwebtoken';
 import { safeLog } from '../lib/logger-utils.js';
+import type { UTMParams } from '../lib/utm.js';
 
 const FROM_EMAIL = process.env.FROM_EMAIL ?? '';
 const FRONTEND_URL = process.env.FRONTEND_URL ?? '';
@@ -110,4 +111,19 @@ export const emailService = {
   sendPasswordResetEmail,
   sendWelcomeEmail,
   sendUpgradeEmail,
+  async sendAdminWaitlistNotification(
+    email: string,
+    platforms: string[],
+    painPoint: string | null,
+    utm: UTMParams
+  ) {
+    if (!isEmailServiceConfigured) return { skipped: true };
+    const msg: sgMail.MailDataRequired = {
+      to: process.env.ADMIN_EMAIL || FROM_EMAIL,
+      from: FROM_EMAIL,
+      subject: 'New waitlist signup',
+      text: `Email: ${email}\nPlatforms: ${platforms.join(', ')}\nPain point: ${painPoint ?? 'n/a'}\nUTM: ${JSON.stringify(utm)}`
+    };
+    return sendMail(msg);
+  }
 };
