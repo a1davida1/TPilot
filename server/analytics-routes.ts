@@ -179,7 +179,7 @@ export function registerAnalyticsRoutes(app: Express) {
   app.get('/api/revenue', async (_req: Request, res: Response) => {
     try {
       const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-        apiVersion: '2023-10-16',
+        apiVersion: Stripe.LatestApiVersion,
       });
       const balance = await stripe.balance.retrieve();
       res.json({ available: balance.available[0]?.amount ?? 0 });
@@ -192,8 +192,10 @@ export function registerAnalyticsRoutes(app: Express) {
 
 // Helper Functions
 
-async function processAnalyticsEvent(event: unknown, ipAddress: string) {
-  const deviceInfo = parseUserAgent(event.userAgent);
+type AnalyticsEvent = z.infer<typeof analyticsEventSchema>;
+
+async function processAnalyticsEvent(event: AnalyticsEvent, ipAddress: string) {
+  const deviceInfo = parseUserAgent(event.userAgent ?? '');
   const locationInfo = await getLocationFromIP(ipAddress);
 
   switch (event.eventType) {
