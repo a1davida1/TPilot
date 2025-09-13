@@ -13,7 +13,7 @@ function getBaseUrl(req: Request) {
 export function mountBillingRoutes(app: Express) {
   // returns which Pro price this user sees (A/B bucket)
   app.get("/api/billing/prices", async (req: Request & { user?: unknown }, res: Response) => {
-    const uid = req.user?.id?.toString() || req.ip;
+    const uid = (req.user?.id ?? req.ip).toString();
     const bucket = bucketForUser(uid);
     const proPriceId = proPriceIdForBucket(bucket);
     res.json({
