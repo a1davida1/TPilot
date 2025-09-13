@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import type { Request, Response, NextFunction } from 'express';
 
 // Memory-based state store (Redis can be added later if needed)
 const memoryStore = new Map<string, { data: string; expires: number }>();
@@ -64,7 +65,7 @@ export function decrypt(text: string): string {
 // Rate limiting
 const rateLimiter = new Map<string, number[]>();
 
-export function rateLimit(req: unknown, res: unknown, next: unknown) {
+export function rateLimit(req: Request, res: Response, next: NextFunction) {
   const key = `${req.ip}:reddit_oauth`;
   const now = Date.now();
   const attempts = rateLimiter.get(key) || [];
