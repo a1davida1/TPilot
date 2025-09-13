@@ -109,7 +109,7 @@ export class DunningWorker {
       await this.logEvent(0, 'dunning.system_error', {
         subscriptionId,
         attempt,
-        error: error.message,
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
 
       throw error;
@@ -247,7 +247,7 @@ export class DunningWorker {
 
   private async sendRecoveryNotification(user: unknown, subscription: unknown) {
     // In full implementation, this would send an email
-    logger.info(`Sending recovery notification to ${user.email} for subscription ${subscription.id}`);
+    logger.info(`Sending recovery notification to ${(user as any).email} for subscription ${(subscription as any).id}`);
     
     // Would integrate with email service (SendGrid, etc.)
     // await EmailService.send({
@@ -259,7 +259,7 @@ export class DunningWorker {
 
   private async sendSuspensionNotification(user: unknown, subscription: unknown) {
     // In full implementation, this would send an email
-    logger.info(`Sending suspension notification to ${user.email} for subscription ${subscription.id}`);
+    logger.info(`Sending suspension notification to ${(user as any).email} for subscription ${(subscription as any).id}`);
     
     // Would integrate with email service
     // await EmailService.send({
