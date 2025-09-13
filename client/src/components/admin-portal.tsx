@@ -1,5 +1,6 @@
 import { useState, useEffect as _useEffect } from 'react';
 import { getErrorMessage } from '@/utils/typeHelpers';
+import type { UserData } from '@/types/user';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -129,6 +130,8 @@ export function AdminPortal() {
     queryKey: ['/api/admin/users'],
     enabled: !!token
   });
+  
+  const typedUsers: UserData[] = users as UserData[] || [];
 
   // Create trial user mutation
   const createTrialMutation = useMutation({
@@ -615,9 +618,9 @@ export function AdminPortal() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {(Array.isArray(users) ? users.filter((u: unknown) => u.trialEndsAt && new Date(u.trialEndsAt) > new Date())
-                  .slice(0, 5) : [])
-                  .map((user: unknown) => (
+                {typedUsers.filter((u) => u.trialEndsAt && new Date(u.trialEndsAt) > new Date())
+                  .slice(0, 5)
+                  .map((user) => (
                     <div key={user.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
@@ -661,7 +664,7 @@ export function AdminPortal() {
                     <p className="text-muted-foreground mt-2">Loading users...</p>
                   </div>
                 ) : (
-                  Array.isArray(users) ? users.slice(0, 10).map((user: unknown) => (
+                  typedUsers.slice(0, 10).map((user) => (
                     <div key={user.id} className="flex items-center justify-between p-4 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                       <div className="flex items-center gap-3">
                         <div className="h-12 w-12 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-lg">
@@ -1244,7 +1247,7 @@ function UserManagementTab({ authenticatedRequest, users }: { authenticatedReque
                 </tr>
               </thead>
               <tbody>
-                {Array.isArray(users) ? users.slice(0, 10).map((user: unknown) => (
+                {typedUsers.slice(0, 10).map((user) => (
                   <tr key={user.id} className="border-b hover:bg-gray-50 dark:hover:bg-gray-800">
                     <td className="p-2">
                       <div>

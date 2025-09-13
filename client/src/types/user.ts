@@ -4,5 +4,6 @@ export interface UserData {
   email: string;
   tier: string;
   createdAt: string;
+  trialEndsAt?: string;
   // add additional fields as required
 }
