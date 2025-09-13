@@ -3,8 +3,7 @@ export function isError(error: unknown): error is Error {
 }
 
 export function getErrorMessage(error: unknown): string {
-  if (isError(error)) return error.message;
-  return String(error);
+  return isError(error) ? error.message : String(error);
 }
 
 export function assertDefined<T>(
