@@ -41,7 +41,7 @@ export function redactSensitiveData(data: unknown): unknown {
       return data.map(redactSensitiveData);
     }
 
-    const redacted: unknown = {};
+    const redacted: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(data)) {
       const lowercaseKey = key.toLowerCase();
       const isSensitive = SENSITIVE_PATTERNS.some(pattern => 
@@ -76,7 +76,7 @@ export function safeLog(level: 'info' | 'warn' | 'error', message: string, data?
 /**
  * Specific user data redaction for safe logging
  */
-export function redactUserData(user: unknown) {
+export function redactUserData(user: any) {
   if (!user) return user;
   
   return {
@@ -86,7 +86,7 @@ export function redactUserData(user: unknown) {
     isAdmin: user.isAdmin,
     // Redact sensitive fields
     email: user.email ? '[email-redacted]' : undefined,
-    hasEmail: !!user.email,
+    hasEmail: Boolean(user.email),
     emailVerified: user.emailVerified
   };
 }
