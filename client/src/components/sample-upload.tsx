@@ -32,18 +32,28 @@ interface SamplePost {
   updatedAt: string;
 }
 
+interface SampleForm {
+  title: string;
+  content: string;
+  platform: string;
+  subreddit: string;
+  upvotes: number;
+  imageUrl: string;
+  tags: string[];
+}
+
 export default function SampleUpload() {
   const { toast } = useToast();
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedSample, setSelectedSample] = useState<SamplePost | null>(null);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<SampleForm>({
     title: "",
     content: "",
     platform: "reddit",
     subreddit: "",
     upvotes: 0,
     imageUrl: "",
-    tags: [] as string[]
+    tags: []
   });
 
   const { data: samples = [], isLoading } = useQuery<SamplePost[]>({
@@ -51,9 +61,9 @@ export default function SampleUpload() {
     retry: false
   });
 
-  const deleteMutation = useMutation({
+  const deleteMutation = useMutation<void, Error, number>({
     mutationFn: async (id: number) => {
-      return await apiRequest('DELETE', `/api/sample-posts/${id}`);
+      await apiRequest('DELETE', `/api/sample-posts/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/sample-posts'] });
@@ -70,9 +80,9 @@ export default function SampleUpload() {
     }
   });
 
-  const addMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
-      return await apiRequest('POST', '/api/sample-posts', data);
+  const addMutation = useMutation<void, Error, SampleForm>({
+    mutationFn: async (data: SampleForm) => {
+      await apiRequest('POST', '/api/sample-posts', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/sample-posts'] });
@@ -92,18 +102,16 @@ export default function SampleUpload() {
   });
 
   const handleGetUploadParameters = async () => {
-    const response = await apiRequest("/api/objects/upload", "POST") as unknown as { uploadURL: string };
-    return {
-      method: "PUT" as const,
-      url: response.uploadURL
-    };
+    const res = await apiRequest('POST', '/api/objects/upload');
+    const { uploadURL } = (await res.json()) as { uploadURL: string };
+    return { method: 'PUT' as const, url: uploadURL };
   };
 
-  const handleUploadComplete = async (result: unknown) => {
-    const typedResult = result as { successful?: Array<{ uploadURL: string }> };
-    if (typedResult.successful && typedResult.successful.length > 0) {
-      const uploadedUrl = typedResult.successful[0].uploadURL;
-      setFormData({ ...formData, imageUrl: uploadedUrl });
+  interface UploadResult { successful?: Array<{ uploadURL?: string }> }
+  const handleUploadComplete = (result: UploadResult) => {
+    const uploadedUrl = result.successful?.[0]?.uploadURL;
+    if (uploadedUrl) {
+      setFormData((prev) => ({ ...prev, imageUrl: uploadedUrl }));
       toast({
         title: "Image uploaded",
         description: "Your image has been uploaded successfully."
