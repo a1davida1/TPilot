@@ -25,6 +25,56 @@ export async function initGeoReader() {
   }
 }
 
+// Type Definitions
+interface BaseEvent {
+  sessionId: string;
+  userId?: string;
+  timestamp: string;
+}
+
+interface PageViewEvent extends BaseEvent {
+  eventType: 'page_view';
+  url: string;
+  path: string;
+  title: string;
+  userAgent?: string;
+  referrer?: string;
+}
+
+interface DeviceInfo {
+  deviceType: string;
+  browser: string;
+  os: string;
+}
+
+interface LocationInfo {
+  country?: string;
+  city?: string;
+}
+
+interface EngagementEvent extends BaseEvent {
+  eventType: 'engagement_event';
+  type: string;
+  element: string;
+  page: string;
+  metadata?: any;
+  value?: any;
+}
+
+interface ContentViewEvent extends BaseEvent {
+  eventType: 'content_view';
+  contentId: number;
+  platform?: string;
+  subreddit?: string;
+  viewType?: string;
+  timeSpent?: number;
+}
+
+interface SessionEndEvent extends BaseEvent {
+  eventType: 'session_end';
+  duration?: number;
+}
+
 // Validation schemas
 const analyticsEventSchema = z.object({
   eventType: z.string().min(1),
@@ -200,19 +250,19 @@ async function processAnalyticsEvent(event: AnalyticsEvent, ipAddress: string) {
 
   switch (event.eventType) {
     case 'page_view':
-      await handlePageView(event, ipAddress, deviceInfo, locationInfo);
+      await handlePageView(event as unknown as PageViewEvent, ipAddress, deviceInfo, locationInfo);
       break;
     case 'page_end':
       await handlePageEnd(event);
       break;
     case 'engagement_event':
-      await handleEngagementEvent(event);
+      await handleEngagementEvent(event as unknown as EngagementEvent);
       break;
     case 'content_view':
-      await handleContentView(event, ipAddress);
+      await handleContentView(event as unknown as ContentViewEvent, ipAddress);
       break;
     case 'session_end':
-      await handleSessionEnd(event);
+      await handleSessionEnd(event as unknown as SessionEndEvent);
       break;
     default:
       // Log unknown event types for debugging
@@ -220,7 +270,7 @@ async function processAnalyticsEvent(event: AnalyticsEvent, ipAddress: string) {
   }
 }
 
-async function handlePageView(event: any, ipAddress: string, deviceInfo: any, locationInfo: any) {
+async function handlePageView(event: PageViewEvent, ipAddress: string, deviceInfo: DeviceInfo, locationInfo: LocationInfo | null) {
   // Create or update session
   await db.insert(userSessions).values({
     sessionId: event.sessionId,
@@ -273,7 +323,7 @@ async function handlePageEnd(event: any) {
     ));
 }
 
-async function handleEngagementEvent(event: any) {
+async function handleEngagementEvent(event: EngagementEvent) {
   await db.insert(engagementEvents).values({
     sessionId: event.sessionId,
     userId: event.userId ? parseInt(event.userId) : null,
@@ -286,20 +336,20 @@ async function handleEngagementEvent(event: any) {
   });
 }
 
-async function handleContentView(event: any, ipAddress: string) {
+async function handleContentView(event: ContentViewEvent, ipAddress: string) {
   await db.insert(contentViews).values({
     contentId: event.contentId,
     sessionId: event.sessionId,
     userId: event.userId ? parseInt(event.userId) : null,
-    platform: event.platform,
+    platform: event.platform || 'unknown',
     subreddit: event.subreddit,
-    viewType: event.viewType,
+    viewType: event.viewType || 'internal',
     ipAddress,
     timeSpent: event.timeSpent
   });
 }
 
-async function handleSessionEnd(event: any) {
+async function handleSessionEnd(event: SessionEndEvent) {
   await db.update(userSessions)
     .set({
       endedAt: new Date(event.timestamp),
@@ -471,7 +521,7 @@ function extractUTMParam(url: string, param: string): string | null {
   }
 }
 
-function parseUserAgent(userAgent?: string): unknown {
+function parseUserAgent(userAgent?: string): DeviceInfo {
   // Simple user agent parsing - can be enhanced with a library like 'ua-parser-js'
   if (!userAgent) return { deviceType: 'unknown', browser: 'unknown', os: 'unknown' };
   

@@ -1,0 +1,121 @@
+diff --git a/server/routes/upload.ts b/server/routes/upload.ts
+@@
+-import express, { type Request, type Response } from 'express';
+-import multer from 'multer';
++import express, { type Request, type Response } from 'express';
++import multer from 'multer';
++import type { File } from 'multer';
+@@
+-interface AuthRequest extends Request {
+-  user: { id: number; tier?: string };
+-  streamingFiles?: { path: string; filename?: string; length?: number }[];
+-  uploadProgress?: unknown;
+-  file?: {
+-    path: string;
+-    mimetype: string;
+-    originalname: string;
+-    filename: string;
+-    size: number;
+-  };
+-}
++interface AuthRequest extends Request {
++  user?: { id: number; tier?: string };
++  streamingFiles?: { path: string; filename?: string; length?: number }[];
++  uploadProgress?: unknown;
++  file?: Express.Multer.File;
++}
+@@
+-router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken,
+-  cleanupUploadedFiles, imageStreamingUpload, async (req: AuthRequest, res: Response) => {
+-    if (!req.streamingFiles || req.streamingFiles.length === 0) {
+-      return res.status(400).json({ error: 'No files uploaded' });
+-    }
+-    const uploadedFile = req.streamingFiles[0];
++router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken,
++  cleanupUploadedFiles, imageStreamingUpload,
++  async (req: Request, res: Response) => {
++    const authReq = req as AuthRequest;
++    if (!authReq.streamingFiles || authReq.streamingFiles.length === 0) {
++      return res.status(400).json({ error: 'No files uploaded' });
++    }
++    const uploadedFile = authReq.streamingFiles[0];
+@@
+-    const fileValidation = await validateImageFile(tempFilePath, uploadedFile.mimetype);
++    const fileValidation =
++      await validateImageFile(tempFilePath, uploadedFile.mimetype || 'application/octet-stream');
+@@
+-        userId: req.user.id,
+-        originalName: uploadedFile.originalname,
++        userId: authReq.user?.id,
++        originalName: uploadedFile.originalname || 'unknown',
+         declaredMime: uploadedFile.mimetype,
+@@
+-      userId: req.user.id,
++      userId: authReq.user?.id,
+@@
+-      validatedRequest.protectionLevel,
+-      validatedRequest.watermark,
+-      req.user?.id
++      validatedRequest.protectionLevel,
++      validatedRequest.addWatermark,
++      String(authReq.user?.id)
+@@
+-      userId: req.user.id,
++      userId: authReq.user?.id,
+@@
+-      protectionLevel: validatedRequest.protectionLevel,
+-      watermark: validatedRequest.watermark,
+-      originalSize: uploadedFile.size,
+-      uploadProgress: req.uploadProgress
++      protectionLevel: validatedRequest.protectionLevel,
++      watermark: validatedRequest.addWatermark,
++      originalSize: uploadedFile.size || 0,
++      uploadProgress: authReq.uploadProgress
+@@
+-      userId: req.user?.id,
++      userId: authReq.user?.id,
+@@
+-router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken,
+-  upload.single('image'), async (req: AuthRequest, res: Response) => {
+-    if (!req.file) {
+-      return res.status(400).json({ error: 'No file uploaded' });
+-    }
+-    tempFilePath = req.file.path;
+-    const fileValidation = await validateImageFile(tempFilePath, req.file.mimetype);
++router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken,
++  upload.single('image'), async (req: Request, res: Response) => {
++    const authReq = req as AuthRequest;
++    if (!authReq.file) {
++      return res.status(400).json({ error: 'No file uploaded' });
++    }
++    tempFilePath = authReq.file.path;
++    const fileValidation = await validateImageFile(tempFilePath, authReq.file.mimetype);
+@@
+-        userId: req.user.id,
+-        originalName: req.file.originalname,
+-        declaredMime: req.file.mimetype,
++        userId: authReq.user?.id,
++        originalName: authReq.file.originalname,
++        declaredMime: authReq.file.mimetype,
+@@
+-    const userTier = req.user.tier || 'free';
++    const userTier = authReq.user?.tier || 'free';
+@@
+-      req.user.id
++      String(authReq.user?.id)
+@@
+-    const protectedFileName = `protected_${req.file.filename}`;
++    const protectedFileName = `protected_${authReq.file.filename}`;
+@@
+-      originalSize: req.file.size,
+-      uploadProgress: req.uploadProgress,
+-      userId: req.user?.id,
++      originalSize: authReq.file.size,
++      uploadProgress: authReq.uploadProgress,
++      userId: authReq.user?.id,
+@@
+-      req.user.id
++      String(authReq.user.id)
+@@
+-      userId: req.user.id
++      userId: authReq.user?.id
