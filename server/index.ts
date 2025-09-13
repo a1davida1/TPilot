@@ -73,7 +73,7 @@ app.use(cors({
 
 // Initialize Sentry with proper validation
 const Sentry = await initializeSentry();
-if (Sentry && Sentry.Handlers) {
+if (Sentry?.Handlers) {
   app.use(Sentry.Handlers.requestHandler());
 }
 
