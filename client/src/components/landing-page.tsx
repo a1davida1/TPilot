@@ -171,11 +171,13 @@ export function LandingPage({ showLoginModal = false, loginModalMode = 'login' }
             </div>
             <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-6 py-3 flex items-center gap-3 shadow-xl hover:scale-105 transition-all duration-300">
               <div className="p-2 bg-green-400/20 rounded-lg">
-                <Shield className="w-5 h-5 text-green-200" />
+                <TrendingUp className="w-5 h-5 text-green-200" />
               </div>
               <div>
-                <div className="text-white font-bold text-lg">100%</div>
-                <div className="text-green-200 text-sm font-medium">Safe & Secure</div>
+                <div className="text-white font-bold text-lg">
+                  {isLoading ? '...' : isError || !metrics ? '—' : `${metrics.engagement}%`}
+                </div>
+                <div className="text-green-200 text-sm font-medium">Avg Engagement</div>
               </div>
             </div>
           </div>
