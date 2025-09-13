@@ -21,10 +21,8 @@ const upload = multer({
   }
 });
 
-// Auth request interface
-interface AuthRequest extends express.Request {
-  user?: { id: number; tier?: string };
-}
+// Auth request type
+type AuthRequest = express.Request & { user?: { id: number; tier?: string } };
 
 // GET /api/media - Get user's media assets
 router.get('/', authenticateToken, async (req: AuthRequest, res) => {
