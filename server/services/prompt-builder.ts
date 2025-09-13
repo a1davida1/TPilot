@@ -16,6 +16,14 @@ export interface PromptConfig {
   contextDocs?: string[]; // RAG results or brand guidelines
 }
 
+interface ImageMessageParam {
+  role: 'user';
+  content: (
+    | { type: 'text'; text: string }
+    | { type: 'image_url'; image_url: { url: string } }
+  )[];
+}
+
 const systemTemplate = readFileSync(
   resolve(__dirname, '../../prompts/system.txt'),
   'utf8',
@@ -64,13 +72,17 @@ export function buildMessages(cfg: PromptConfig): ChatCompletionMessageParam[] {
   }
 
   if (cfg.imageBase64) {
-    messages.push({
+    const imageMessage: ImageMessageParam = {
       role: 'user',
       content: [
         { type: 'text', text: 'Analyze this image and incorporate it:' },
-        { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${cfg.imageBase64}` } },
+        {
+          type: 'image_url',
+          image_url: { url: `data:image/jpeg;base64,${cfg.imageBase64}` },
+        },
       ],
-    } as any);
+    };
+    messages.push(imageMessage);
   }
 
   return messages;
