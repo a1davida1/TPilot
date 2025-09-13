@@ -27,7 +27,7 @@ import {
 
 export function UnifiedLanding() {
   const [scrollY, setScrollY] = useState(0);
-  const [metrics, setMetrics] = useState<{ creators: number; posts: number; rating: number } | null>(null);
+  const [metrics, setMetrics] = useState<{ creators: number; posts: number; engagement: number } | null>(null);
   const { toast } = useToast();
   
   useEffect(() => {
@@ -113,11 +113,13 @@ export function UnifiedLanding() {
                 <span className="font-semibold">{metrics ? `${metrics.creators.toLocaleString()} creators` : '—'}</span>
               </div>
               <div className="flex items-center gap-1">
-                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                <span className="font-semibold">4.9/5 rating</span>
+                <TrendingUp className="h-4 w-4 text-green-400" />
+                <span className="font-semibold">
+                  {metrics ? `${metrics.engagement}% avg engagement` : 'Engagement data'}
+                </span>
               </div>
               <div className="flex items-center gap-1">
-                <TrendingUp className="h-4 w-4" />
+                <BarChart3 className="h-4 w-4" />
                 <span className="font-semibold">{metrics ? `${metrics.posts.toLocaleString()} posts created` : '—'}</span>
               </div>
             </div>
