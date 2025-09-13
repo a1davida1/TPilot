@@ -10,14 +10,8 @@ rm -rf dist
 echo "📂 Creating dist directory structure..."
 mkdir -p dist/server
 
-# Temporarily move vite.ts to avoid compilation errors
-echo "🔧 Preparing TypeScript compilation..."
-mv server/vite.ts server/vite.ts.bak 2>/dev/null || true
-mv server/vite-stub.ts server/vite.ts 2>/dev/null || true
-
-# Compile TypeScript (server only for deployment)
 echo "⚙️ Compiling TypeScript..."
-npx tsc -p tsconfig.server.json --skipLibCheck || true
+npx tsc -p tsconfig.server.json
 
 echo "📝 Creating production server entry point..."
 # Create package.json to ensure CommonJS mode in dist folder
@@ -77,10 +71,6 @@ process.on('SIGINT', () => {
 EOF
 
 echo "  ✅ Created dist/server/index.js production entry point"
-
-# Restore vite.ts
-mv server/vite.ts server/vite-stub.ts 2>/dev/null || true
-mv server/vite.ts.bak server/vite.ts 2>/dev/null || true
 
 # Apply path mappings
 echo "🔗 Resolving path mappings..."
