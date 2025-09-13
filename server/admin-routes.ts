@@ -781,7 +781,7 @@ export function setupAdminRoutes(app: Express) {
         message: 'Alert acknowledged',
         alertId,
         acknowledgedAt: new Date(),
-        acknowledgedBy: (req as AdminRequest).user.id
+        acknowledgedBy: (req as AdminRequest).user?.id
       });
     } catch (error) {
       console.error('Error acknowledging alert:', error);
