@@ -23,6 +23,7 @@ class PerformanceMonitor {
   private criticalThreshold = 3000; // 3 seconds
 
   middleware() {
+    const self = this; // Capture reference to PerformanceMonitor instance
     return (req: Request, res: Response, next: NextFunction) => {
       const start = process.hrtime.bigint();
       const startMemory = process.memoryUsage();
@@ -31,7 +32,7 @@ class PerformanceMonitor {
       const originalEnd = res.end.bind(res);
       
       // Override end function to capture metrics
-      res.end = function monitoredEnd(...args: Parameters<Response['end']>): Response {
+      const monitoredEnd: Response['end'] = function (this: Response, ...args: any[]) {
         // Restore original end function
         res.end = originalEnd;
         
@@ -52,21 +53,22 @@ class PerformanceMonitor {
         };
         
         // Store metric
-        this.recordMetric(metric);
+        self.recordMetric(metric);
         
         // Log slow requests
-        if (duration > this.slowRequestThreshold) {
-          this.handleSlowRequest(metric);
+        if (duration > self.slowRequestThreshold) {
+          self.handleSlowRequest(metric);
         }
         
         // Alert on critical performance issues
-        if (duration > this.criticalThreshold) {
-          this.handleCriticalPerformance(metric);
+        if (duration > self.criticalThreshold) {
+          self.handleCriticalPerformance(metric);
         }
         
         // Call original end function
-        return originalEnd(...args);
+        return originalEnd(...(args as Parameters<Response['end']>));
       };
+      res.end = monitoredEnd;
       
       next();
     };
