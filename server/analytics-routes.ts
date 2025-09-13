@@ -16,9 +16,9 @@ import {
   users
 } from '@shared/schema';
 import { eq, desc, gte, lte, and, count, sum, avg, sql } from 'drizzle-orm';
-import { Reader, type CityResponse } from '@maxmind/geoip2-node';
+import { Reader } from '@maxmind/geoip2-node';
 
-let geoReader: Reader<CityResponse> | null = null;
+let geoReader: Reader | null = null;
 export async function initGeoReader() {
   if (process.env.MAXMIND_DB_PATH) {
     geoReader = await Reader.open(process.env.MAXMIND_DB_PATH);
@@ -438,7 +438,7 @@ async function getContentAnalytics(contentId: number, userId: number | null) {
 // Utility functions
 function getUserIdFromRequest(req: Request): number | null {
   const user = (req as { user?: { id?: string; userId?: string } }).user;
-  return user?.userId ?? user?.id ?? null;
+  return Number(user?.userId ?? user?.id ?? null);
 }
 
 function getDateRange(period: string): { startDate: Date; endDate: Date } {
@@ -501,7 +501,7 @@ function parseUserAgent(userAgent?: string): unknown {
 async function getLocationFromIP(ipAddress: string): Promise<{ country?: string; city?: string } | null> {
   if (!geoReader) return null;
   try {
-    const record = await geoReader.city(ipAddress);
+    const record = await (geoReader as any).city(ipAddress);
     return {
       country: record.country?.isoCode,
       city: record.city?.names?.en,
