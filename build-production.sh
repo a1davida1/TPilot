@@ -13,64 +13,8 @@ mkdir -p dist/server
 echo "⚙️ Compiling TypeScript..."
 npx tsc -p tsconfig.server.json
 
-echo "📝 Creating production server entry point..."
-# Create package.json to ensure CommonJS mode in dist folder
-cat > dist/package.json << 'EOF'
-{
-  "type": "commonjs",
-  "description": "Production build output - ensures CommonJS module format"
-}
-EOF
-
-# Create the production server entry point that spawns tsx
-cat > dist/server/index.js << 'EOF'
-#!/usr/bin/env node
-
-/**
- * Production server entry point for Replit deployment
- * Spawns tsx to run the TypeScript server, avoiding module format issues
- */
-
-const { spawn } = require('child_process');
-const path = require('path');
-
-// Ensure production environment
-process.env.NODE_ENV = 'production';
-
-// Path to the TypeScript server
-const serverFile = path.resolve(__dirname, '../../server/index.ts');
-
-console.log('Starting ThottoPilot production server...');
-
-// Spawn tsx to run the TypeScript server
-const tsxPath = require.resolve('tsx/cli');
-const server = spawn('node', [tsxPath, serverFile], {
-  stdio: 'inherit',
-  env: process.env
-});
-
-// Handle errors
-server.on('error', (err) => {
-  console.error('Failed to start server:', err);
-  process.exit(1);
-});
-
-// Forward the exit code
-server.on('exit', (code) => {
-  process.exit(code || 0);
-});
-
-// Handle termination signals
-process.on('SIGTERM', () => {
-  server.kill('SIGTERM');
-});
-
-process.on('SIGINT', () => {
-  server.kill('SIGINT');
-});
-EOF
-
-echo "  ✅ Created dist/server/index.js production entry point"
+echo "✅ TypeScript compiled to dist/"
+chmod +x dist/server/index.js
 
 # Apply path mappings
 echo "🔗 Resolving path mappings..."
