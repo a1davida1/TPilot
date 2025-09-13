@@ -7,7 +7,10 @@ import { db } from '../db';
 import { users, referralRewards } from '@shared/schema';
 import { eq, sql } from 'drizzle-orm';
 import { customAlphabet } from 'nanoid';
-import { notificationService } from '../services/notification-service.js';
+// TODO: implement real notification service
+const notificationService = {
+  sendReferralNotification: async () => ({ skipped: true })
+};
 
 // Generate user-friendly referral codes (no confusing characters)
 const generateReferralCode = customAlphabet('ABCDEFGHIJKLMNPQRSTUVWXYZ123456789', 8);
