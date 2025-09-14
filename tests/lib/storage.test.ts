@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { storage } from '../../server/storage.js';
+import { storage } from '../../server/storage.ts';
 
 // Mock database
 const mockDb = {

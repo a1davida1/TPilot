@@ -3,7 +3,7 @@ import request from 'supertest';
 import express from 'express';
 
 // Mock dependencies
-vi.mock('../../server/storage.js', () => ({
+vi.mock('../../server/storage.ts', () => ({
   storage: {
     getAllUsers: vi.fn().mockResolvedValue([
       { id: 1, username: 'user1', email: 'user1@test.com', tier: 'free' },

@@ -15,7 +15,7 @@ const mockMediaManager = {
 
 const mockAuthenticateToken = vi.fn();
 
-vi.mock('../../../server/storage.js', () => ({ storage: mockStorage }));
+vi.mock('../../../server/storage.ts', () => ({ storage: mockStorage }));
 vi.mock('../../../server/lib/media.js', () => ({ MediaManager: mockMediaManager }));
 vi.mock('../../../server/middleware/auth.js', () => ({ authenticateToken: mockAuthenticateToken }));
 vi.mock('fs/promises', () => ({

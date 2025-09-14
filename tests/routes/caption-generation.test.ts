@@ -26,7 +26,7 @@ vi.mock('../../server/caption/openaiFallback.js', () => ({
   }),
 }));
 
-vi.mock('../../server/storage.js', () => ({
+vi.mock('../../server/storage.ts', () => ({
   storage: {
     getUserById: vi.fn(),
     createContentGeneration: vi.fn(),
