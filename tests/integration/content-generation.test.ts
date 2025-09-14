@@ -241,9 +241,10 @@ describe('Content Generation Integration Tests', () => {
 
     test('should respect user tier limitations', async () => {
       // Create free tier user
+      const uniqueName = `freeuser_${Date.now()}`;
       const [freeUser] = await db.insert(users).values({
-        username: 'freeuser',
-        email: 'free@example.com',
+        username: uniqueName,
+        email: `${uniqueName}@example.com`,
         password: 'hashedpassword',
         tier: 'free'
       }).returning();
