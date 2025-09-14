@@ -8,6 +8,7 @@ describe('Policy Linter', () => {
     // Setup test data
     await db.insert(subredditRules).values({
       subreddit: 'testsub',
+      rules_json: {},
       bannedWords: ['banned terms'],
       titleRegex: ['pattern rules'],
       prohibitedLinks: ['formatting rules'],
