@@ -1209,7 +1209,8 @@ function SystemMonitorTab({ authenticatedRequest }: { authenticatedRequest: Auth
 // FEATURE 3: User Management Component
 function UserManagementTab({ authenticatedRequest, users }: { authenticatedRequest: AuthenticatedRequest, users: unknown[] }) {
   const { toast } = useToast();
-  const [_selectedUser, _setSelectedUser] = useState<unknown>(null);
+  const typedUsers: UserData[] = (users as UserData[]) ?? [];
+  const [selectedUser, setSelectedUser] = useState<unknown>(null);
   const [actionType, setActionType] = useState<'ban' | 'suspend' | 'unban' | 'reset-password' | null>(null);
   const [reason, setReason] = useState('');
   const [duration, setDuration] = useState('24');
