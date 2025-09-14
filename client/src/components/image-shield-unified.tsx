@@ -67,8 +67,7 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  // @ts-ignore - token is available in extended auth context
-  const { token } = useAuth() as any;
+  const { token } = useAuth() as { token?: string };
 
   const isProUser = userTier === 'pro';
   const showGallery = isProUser; // Only Pro users see gallery
