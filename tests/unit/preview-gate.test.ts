@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { getPreviewStats, canQueuePosts, checkPreviewGate } from '../../server/lib/preview-gate';
 import { db } from '../../server/db';
-import { postPreviews, users } from '@shared/schema';
+import { postPreviews, contentGenerations, users } from '@shared/schema';
 
 describe('Preview Gate', () => {
   const testUserId = 999; // Test user ID
@@ -23,7 +23,8 @@ describe('Preview Gate', () => {
   });
 
   afterAll(async () => {
-    // Cleanup
+    // Cleanup - delete in correct order
+    await db.delete(contentGenerations).where(eq(contentGenerations.userId, testUserId));
     await db.delete(postPreviews).where(eq(postPreviews.userId, testUserId));
     await db.delete(users).where(eq(users.id, testUserId));
   });
