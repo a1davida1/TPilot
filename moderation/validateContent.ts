@@ -14,6 +14,11 @@ interface Violation {
   detail?: any;
 }
 
+interface Rules {
+  bannedDomains?: string[];
+  // Add other rule properties as needed
+}
+
 export async function validateContent(content, context = {}) {
   const violations: Violation[] = [];
   const { subreddit, userId, allowNSFW = false } = context as any;
@@ -25,8 +30,8 @@ export async function validateContent(content, context = {}) {
 
   /* subreddit rules */
   if (subreddit) {
-    const rules = await getSubredditRules(subreddit);
-    if ((rules as any)?.bannedDomains?.some(domain => content.includes(domain))) {
+    const rules: Rules = await getSubredditRules(subreddit);
+    if (rules?.bannedDomains?.some(domain => content.includes(domain))) {
       violations.push({ type: 'banned_domain', severity: 'block' });
     }
   }
