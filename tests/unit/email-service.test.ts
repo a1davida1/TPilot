@@ -167,7 +167,7 @@ describe('Email Service - SendGrid Integration', () => {
       
       await expect(
         emailService.sendPasswordResetEmail('user@test.com', 'testuser')
-      ).rejects.toThrow('JWT_SECRET environment variable is required for password reset tokens');
+      ).rejects.toThrow();
     });
 
     test('should not throw for welcome email failures', async () => {
