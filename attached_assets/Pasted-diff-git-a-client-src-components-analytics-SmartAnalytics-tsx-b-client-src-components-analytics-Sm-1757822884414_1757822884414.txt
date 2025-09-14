@@ -1,0 +1,149 @@
+diff --git a/client/src/components/analytics/SmartAnalytics.tsx b/client/src/components/analytics/SmartAnalytics.tsx
+index 95c1a84..e3db644 100644
+--- a/client/src/components/analytics/SmartAnalytics.tsx
++++ b/client/src/components/analytics/SmartAnalytics.tsx
+@@
+ const COLORS = ['#8B5CF6', '#EC4899', '#06B6D4', '#10B981', '#F59E0B'];
+ 
++const REVENUE_MULTIPLIER = 0.001;
++const REVENUE_PER_GENERATION = 0.05;
++
+ // Safe number formatting with fallbacks
+ const safeNumber = (value: unknown, fallback: number = 0): number => {
+   const num = Number(value);
+   return isNaN(num) ? fallback : num;
+ };
+diff --git a/client/src/components/enhanced-ai-generator.tsx b/client/src/components/enhanced-ai-generator.tsx
+index 2788609..29a107b 100644
+--- a/client/src/components/enhanced-ai-generator.tsx
++++ b/client/src/components/enhanced-ai-generator.tsx
+@@
+ interface EnhancedAIGeneratorProps {
+   onContentGenerated: (generation: ContentGeneration) => void;
+   isGuestMode?: boolean;
+ }
+ 
++interface GeneratedContentType {
++  titles?: string[];
++  content?: string;
++  photoInstructions?: string | object;
++}
++
+ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }: EnhancedAIGeneratorProps) {
+@@
+   const generateContentMutation = useMutation({
+     mutationFn: async (data: unknown) => {
+       const response = await apiRequest("POST", "/api/generate-unified", {
+         mode: 'text',
+-        platform: data.platform || 'reddit',
+-        style: data.style || 'confident',
+-        theme: data.theme || 'general',
+-        prompt: data.customPrompt || data.prompt,
+-        customInstructions: data.customPrompt || data.prompt,
+-        includePromotion: data.includePromotion || data.allowsPromotion
++        platform: (data as any).platform || 'reddit',
++        style: (data as any).style || 'confident',
++        theme: (data as any).theme || 'general',
++        prompt: (data as any).customPrompt || (data as any).prompt,
++        customInstructions: (data as any).customPrompt || (data as any).prompt,
++        includePromotion: (data as any).includePromotion || (data as any).allowsPromotion
+       });
+       return await response.json();
+     },
+@@
+-            {generatedContent.titles && generatedContent.titles.length > 0 && (
++            {(generatedContent as GeneratedContentType).titles && (generatedContent as GeneratedContentType).titles!.length > 0 && (
+               <div className="space-y-2">
+                 <Label className="text-sm font-medium text-pink-700">Titles:</Label>
+-                {(Array.isArray(generatedContent.titles) ? generatedContent.titles : [generatedContent.titles]).map((title: string, index: number) => (
++                {(Array.isArray((generatedContent as GeneratedContentType).titles) ? (generatedContent as GeneratedContentType).titles! : [(generatedContent as GeneratedContentType).titles!]).map((title: string, index: number) => (
+                   <div key={index} className="relative p-3 bg-white rounded-lg border group">
+                     <p className="text-sm font-medium pr-8">{title}</p>
+                     <Button
+                       variant="ghost"
+                       size="sm"
+diff --git a/client/src/utils/safeDataAccess.ts b/client/src/utils/safeDataAccess.ts
+index 26d05ae..a9bb4b0 100644
+--- a/client/src/utils/safeDataAccess.ts
++++ b/client/src/utils/safeDataAccess.ts
+@@
+   const keys = path.split('.');
+   let current = obj;
+ 
+   for (const key of keys) {
+-    if (current === null || current === undefined || !(key in current)) {
++    if (current === null || current === undefined || (typeof current !== 'object') || !(key in current)) {
+       return fallback;
+     }
+     current = current[key];
+   }
+ 
+-  return current === null || current === undefined ? fallback : current;
++  return current === null || current === undefined ? fallback : current as T;
+ };
+diff --git a/moderation/validateContent.ts b/moderation/validateContent.ts
+index e5dc6cd..b9d0068 100644
+--- a/moderation/validateContent.ts
++++ b/moderation/validateContent.ts
+@@
+ import {
+   getSubredditRules,
+   getUserRecentPosts,
+   calculateSimilarity,
+   mlSafetyCheck,
+   generateSuggestions,
+   getUserPostingStats,
+   detectBenignKeywords
+ } from './moderation-utils.js';
+ 
++interface Violation {
++  type: string;
++  severity: string;
++  detail?: any;
++}
++
+ export async function validateContent(content, context = {}) {
+-  const violations = [];
++  const violations: Violation[] = [];
+   const { subreddit, userId, allowNSFW = false } = context;
+@@
+diff --git a/client/src/pages/reddit-posting.tsx b/client/src/pages/reddit-posting.tsx
+index 3fcb1cf..9db6bb1 100644
+--- a/client/src/pages/reddit-posting.tsx
++++ b/client/src/pages/reddit-posting.tsx
+@@
+     if (postType === 'image' && imageFile) {
+       const reader = new FileReader();
+       reader.onloadend = async () => {
+-        postData.imageData = reader.result;
++        postData.imageData = reader.result as string | undefined;
+         submitPost(postData);
+       };
+       reader.readAsDataURL(imageFile);
+     } else if (postType === 'gallery' && galleryFiles.length > 0) {
+       // For gallery, we'll send URLs or process files
+       const images = await Promise.all(
+         galleryFiles.map(async (file) => {
+           return new Promise((resolve) => {
+             const reader = new FileReader();
+             reader.onloadend = () => {
+               resolve({
+                 data: reader.result,
+                 caption: file.name
+               });
+             };
+             reader.readAsDataURL(file);
+           });
+         })
+       );
+-      postData.images = images;
++      postData.images = images as Array<{ data: string | ArrayBuffer | null; caption: string }>;
+       submitPost(postData);
+     } else if (postType === 'link') {
+       postData.url = url;
+       submitPost(postData);
+     } else {
+       postData.body = body;
+       submitPost(postData);
+     }
+   };
