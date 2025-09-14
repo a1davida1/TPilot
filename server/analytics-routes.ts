@@ -28,7 +28,7 @@ export async function initGeoReader() {
 // Type Definitions moved to Helper Functions section for better organization
 
 // Validation schemas
-const analyticsEventSchema = z.object({
+const baseEventSchema = z.object({
   eventType: z.string().min(1),
   sessionId: z.string().min(1),
   userId: z.string().optional(),
@@ -36,11 +36,64 @@ const analyticsEventSchema = z.object({
   userAgent: z.string().optional(),
   url: z.string().url(),
   referrer: z.string().optional(),
-}).passthrough(); // Allow additional properties
+});
+
+const pageViewSchema = baseEventSchema.extend({
+  eventType: z.literal('page_view'),
+  path: z.string(),
+  title: z.string(),
+});
+
+const pageEndSchema = baseEventSchema.extend({
+  eventType: z.literal('page_end'),
+  path: z.string(),
+  timeOnPage: z.number().optional(),
+  scrollDepth: z.number().optional(),
+  exitPage: z.boolean().optional(),
+});
+
+const engagementEventSchema = baseEventSchema.extend({
+  eventType: z.literal('engagement_event'),
+  type: z.string(),
+  element: z.string().optional(),
+  page: z.string().optional(),
+  metadata: z.unknown().optional(),
+  value: z.number().optional(),
+});
+
+const contentViewSchema = baseEventSchema.extend({
+  eventType: z.literal('content_view'),
+  contentId: z.number(),
+  platform: z.string().optional(),
+  subreddit: z.string().optional(),
+  viewType: z.string().optional(),
+  timeSpent: z.number().optional(),
+});
+
+const sessionEndSchema = baseEventSchema.extend({
+  eventType: z.literal('session_end'),
+  duration: z.number().optional(),
+});
+
+const analyticsEventSchema = z.discriminatedUnion('eventType', [
+  pageViewSchema,
+  pageEndSchema,
+  engagementEventSchema,
+  contentViewSchema,
+  sessionEndSchema,
+]);
 
 const eventsPayloadSchema = z.object({
-  events: z.array(analyticsEventSchema).min(1).max(50) // Limit batch size
+  events: z.array(analyticsEventSchema).min(1).max(50),
 });
+
+type BaseAnalyticsEvent = z.infer<typeof baseEventSchema>;
+type PageViewEvent = z.infer<typeof pageViewSchema>;
+type PageEndEvent = z.infer<typeof pageEndSchema>;
+type EngagementEvent = z.infer<typeof engagementEventSchema>;
+type ContentViewEvent = z.infer<typeof contentViewSchema>;
+type SessionEndEvent = z.infer<typeof sessionEndSchema>;
+type AnalyticsEvent = z.infer<typeof analyticsEventSchema>;
 
 const dateRangeSchema = z.object({
   startDate: z.string().optional(),
@@ -66,7 +119,7 @@ export function registerAnalyticsRoutes(app: Express) {
 
       // Process each event
       for (const event of events) {
-        await processAnalyticsEvent(event as AnalyticsEvent, ipAddress);
+        await processAnalyticsEvent(event, ipAddress);
       }
 
       res.json({ success: true, processed: events.length });
@@ -193,52 +246,6 @@ export function registerAnalyticsRoutes(app: Express) {
 }
 
 // Helper Functions
-interface BaseAnalyticsEvent extends z.infer<typeof analyticsEventSchema> {}
-
-interface PageViewEvent extends BaseAnalyticsEvent {
-  eventType: 'page_view';
-  path: string;
-  title: string;
-}
-
-interface PageEndEvent extends BaseAnalyticsEvent {
-  eventType: 'page_end';
-  path: string;
-  timeOnPage?: number;
-  scrollDepth?: number;
-  exitPage?: boolean;
-}
-
-interface EngagementEvent extends BaseAnalyticsEvent {
-  eventType: 'engagement_event';
-  type: string;
-  element?: string;
-  page?: string;
-  metadata?: unknown;
-  value?: number;
-}
-
-interface ContentViewEvent extends BaseAnalyticsEvent {
-  eventType: 'content_view';
-  contentId: number;
-  platform?: string;
-  subreddit?: string;
-  viewType?: string;
-  timeSpent?: number;
-}
-
-interface SessionEndEvent extends BaseAnalyticsEvent {
-  eventType: 'session_end';
-  duration?: number;
-}
-
-type AnalyticsEvent =
-  | PageViewEvent
-  | PageEndEvent
-  | EngagementEvent
-  | ContentViewEvent
-  | SessionEndEvent;
-
 interface DeviceInfo {
   deviceType: string;
   browser: string;
@@ -253,19 +260,19 @@ async function processAnalyticsEvent(event: AnalyticsEvent, ipAddress: string) {
 
   switch (event.eventType) {
     case 'page_view':
-      await handlePageView(event as unknown as PageViewEvent, ipAddress, deviceInfo, locationInfo);
+      await handlePageView(event, ipAddress, deviceInfo, locationInfo);
       break;
     case 'page_end':
       await handlePageEnd(event);
       break;
     case 'engagement_event':
-      await handleEngagementEvent(event as unknown as EngagementEvent);
+      await handleEngagementEvent(event);
       break;
     case 'content_view':
-      await handleContentView(event as unknown as ContentViewEvent, ipAddress);
+      await handleContentView(event, ipAddress);
       break;
     case 'session_end':
-      await handleSessionEnd(event as unknown as SessionEndEvent);
+      await handleSessionEnd(event);
       break;
     default:
       // Log unknown event types for debugging
