@@ -138,7 +138,7 @@ describe('Login Identifier and Cookie Auth', () => {
         .get('/api/auth/user');
 
       expect(response.status).toBe(401);
-      expect(response.body.message || "").toContain('Access token required');
+      expect(response.body.message).toContain('Access token required');
     });
   });
 });

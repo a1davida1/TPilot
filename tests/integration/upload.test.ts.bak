@@ -236,7 +236,7 @@ describe('Upload and ImageShield Integration Tests', () => {
         });
 
       expect([200, 400]).toContain(response.status);
-      expect(response.body.message || "").toContain('No image data provided');
+      expect(response.body.message).toContain('No image data provided');
     });
 
     test('should handle image protection failures gracefully', async () => {
@@ -254,7 +254,7 @@ describe('Upload and ImageShield Integration Tests', () => {
         });
 
       expect([200, 500]).toContain(response.status);
-      expect(response.body.message || "").toContain('Upload failed');
+      expect(response.body.message).toContain('Upload failed');
     });
   });
 
@@ -295,7 +295,7 @@ describe('Upload and ImageShield Integration Tests', () => {
         .send({});
 
       expect([200, 500]).toContain(response.status);
-      expect(response.body.message || "").toContain('Scan failed');
+      expect(response.body.message).toContain('Scan failed');
     });
   });
 
@@ -331,7 +331,7 @@ describe('Upload and ImageShield Integration Tests', () => {
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(404);
-      expect(response.body.message || "").toContain('Image not found');
+      expect(response.body.message).toContain('Image not found');
     });
   });
 
@@ -410,7 +410,7 @@ describe('Upload and ImageShield Integration Tests', () => {
         });
 
       expect([200, 500]).toContain(response.status);
-      expect(response.body.message || "").toContain('Upload failed');
+      expect(response.body.message).toContain('Upload failed');
     });
   });
 

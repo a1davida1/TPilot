@@ -67,7 +67,7 @@ describe('Email Verification Redirect Tests', () => {
       .get('/api/auth/verify-email?token=invalid-token')
       .expect(400);
 
-    expect(response.body.message || "").toBe('Invalid or expired token');
+    expect(response.body.message).toBe('Invalid or expired token');
     expect(response.headers.location).toBeUndefined(); // No redirect
   });
 });

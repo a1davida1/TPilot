@@ -261,7 +261,7 @@ describe('Content Generation Integration Tests', () => {
         });
 
       expect([200, 429]).toContain(response.status);
-      expect(response.body.message || "").toContain('rate limit');
+      expect(response.body.message).toContain('rate limit');
       expect(response.body.upgradePrompt).toBeDefined();
 
       // Cleanup
@@ -317,7 +317,7 @@ describe('Content Generation Integration Tests', () => {
         });
 
       expect([200, 400]).toContain(response.status);
-      expect(response.body.message || "").toContain('content policy');
+      expect(response.body.message).toContain('content policy');
       expect(response.body.flags).toContain('explicit_content');
     });
   });
@@ -498,7 +498,7 @@ describe('Content Generation Integration Tests', () => {
         });
 
       expect([200, 500]).toContain(response.status);
-      expect(response.body.message || "").toContain('database');
+      expect(response.body.message).toContain('database');
       expect(response.body.fallbackAvailable).toBe(true);
 
       // Restore database
