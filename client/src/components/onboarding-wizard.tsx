@@ -199,7 +199,7 @@ function WelcomeStep({ preferences, setPreferences }: StepProps) {
       
       <RadioGroup
         value={preferences.contentType}
-        onValueChange={(value) => setPreferences({ ...preferences, contentType: value })}
+        onValueChange={(value) => setPreferences({ ...preferences, contentType: value as "sfw" | "nsfw" | "both" })}
       >
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <label htmlFor="sfw" className="cursor-pointer">

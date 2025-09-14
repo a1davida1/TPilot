@@ -62,19 +62,19 @@ interface AdminUser {
 
 interface LiveDataType {
   realTime?: {
-    activeUsers: number;
-    onlineNow: number;
-    contentBeingGenerated: number;
-    apiCallsPerMinute: number;
+    activeUsers?: number;
+    onlineNow?: number;
+    contentBeingGenerated?: number;
+    apiCallsPerMinute?: number;
   };
   systemHealth?: {
-    database: string;
-    ai: string;
-    storage: string;
-    api: string;
+    database?: string;
+    ai?: string;
+    storage?: string;
+    api?: string;
   };
   alerts?: Array<{
-    id: string;
+    id: number;
     type: string;
     title: string;
     message: string;
@@ -868,7 +868,7 @@ function LiveDashboardTab({ authenticatedRequest }: { authenticatedRequest: Auth
                 <p className="text-2xl font-bold text-green-600">{(liveData as LiveDataType)?.realTime?.activeUsers || 0}</p>
                 <div className="flex items-center text-xs text-green-600">
                   <Wifi className="h-3 w-3 mr-1" />
-                  {liveData?.realTime?.onlineNow || 0} online now
+                  {(liveData as LiveDataType)?.realTime?.onlineNow || 0} online now
                 </div>
               </div>
               <Activity className="h-8 w-8 text-green-500" />
@@ -881,7 +881,7 @@ function LiveDashboardTab({ authenticatedRequest }: { authenticatedRequest: Auth
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Content Gen</p>
-                <p className="text-2xl font-bold text-blue-600">{liveData?.realTime?.contentBeingGenerated || 0}</p>
+                <p className="text-2xl font-bold text-blue-600">{(liveData as LiveDataType)?.realTime?.contentBeingGenerated || 0}</p>
                 <p className="text-xs text-blue-600">Active processes</p>
               </div>
               <Zap className="h-8 w-8 text-blue-500" />
@@ -894,7 +894,7 @@ function LiveDashboardTab({ authenticatedRequest }: { authenticatedRequest: Auth
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">API Calls/Min</p>
-                <p className="text-2xl font-bold text-purple-600">{liveData?.realTime?.apiCallsPerMinute || 0}</p>
+                <p className="text-2xl font-bold text-purple-600">{(liveData as LiveDataType)?.realTime?.apiCallsPerMinute || 0}</p>
                 <p className="text-xs text-purple-600">Real-time load</p>
               </div>
               <BarChart3 className="h-8 w-8 text-purple-500" />
@@ -908,10 +908,10 @@ function LiveDashboardTab({ authenticatedRequest }: { authenticatedRequest: Auth
               <div>
                 <p className="text-sm text-muted-foreground">System Health</p>
                 <div className="flex gap-1 mt-1">
-                  <div className={`w-2 h-2 rounded-full ${liveData?.systemHealth?.database === 'healthy' ? 'bg-green-500' : 'bg-red-500'}`} />
-                  <div className={`w-2 h-2 rounded-full ${liveData?.systemHealth?.ai === 'healthy' ? 'bg-green-500' : 'bg-yellow-500'}`} />
-                  <div className={`w-2 h-2 rounded-full ${liveData?.systemHealth?.storage === 'healthy' ? 'bg-green-500' : 'bg-red-500'}`} />
-                  <div className={`w-2 h-2 rounded-full ${liveData?.systemHealth?.api === 'healthy' ? 'bg-green-500' : 'bg-red-500'}`} />
+                  <div className={`w-2 h-2 rounded-full ${(liveData as LiveDataType)?.systemHealth?.database === 'healthy' ? 'bg-green-500' : 'bg-red-500'}`} />
+                  <div className={`w-2 h-2 rounded-full ${(liveData as LiveDataType)?.systemHealth?.ai === 'healthy' ? 'bg-green-500' : 'bg-yellow-500'}`} />
+                  <div className={`w-2 h-2 rounded-full ${(liveData as LiveDataType)?.systemHealth?.storage === 'healthy' ? 'bg-green-500' : 'bg-red-500'}`} />
+                  <div className={`w-2 h-2 rounded-full ${(liveData as LiveDataType)?.systemHealth?.api === 'healthy' ? 'bg-green-500' : 'bg-red-500'}`} />
                 </div>
                 <p className="text-xs text-orange-600">DB • AI • Storage • API</p>
               </div>
@@ -942,7 +942,7 @@ function LiveDashboardTab({ authenticatedRequest }: { authenticatedRequest: Auth
                       <p className="text-xs text-gray-600 dark:text-gray-400">{alert.message}</p>
                     </div>
                     {!alert.acknowledged && (
-                      <Button size="sm" variant="outline" onClick={() => acknowledgeAlert.mutate(alert.id)}
+                      <Button size="sm" variant="outline" onClick={() => acknowledgeAlert.mutate(Number(alert.id))}
                         data-testid={`button-acknowledge-alert-${alert.id}`}>
                         ✓
                       </Button>
@@ -1245,9 +1245,9 @@ function SystemMonitorTab({ authenticatedRequest }: { authenticatedRequest: Auth
               <p className="text-xs text-muted-foreground">{(metrics as MetricsType)?.services?.email ? 'Connected' : 'Offline'}</p>
             </div>
             <div className="text-center p-3 border rounded">
-              <div className={`w-3 h-3 rounded-full mx-auto mb-2 ${metrics?.services?.storage ? 'bg-green-500' : 'bg-red-500'}`} />
+              <div className={`w-3 h-3 rounded-full mx-auto mb-2 ${(metrics as MetricsType)?.services?.storage ? 'bg-green-500' : 'bg-red-500'}`} />
               <p className="text-sm font-medium">Storage</p>
-              <p className="text-xs text-muted-foreground">{metrics?.services?.storage ? 'Connected' : 'Offline'}</p>
+              <p className="text-xs text-muted-foreground">{(metrics as MetricsType)?.services?.storage ? 'Connected' : 'Offline'}</p>
             </div>
           </div>
         </CardContent>
@@ -1283,13 +1283,13 @@ function UserManagementTab({ authenticatedRequest, users }: { authenticatedReque
     },
     onSuccess: (data, variables) => {
       if ((variables as any).action === 'reset-password') {
-        setTempPassword(data.tempPassword);
+        setTempPassword((data as any).tempPassword);
         toast({ 
           title: "Password Reset Successful", 
           description: "Temporary password generated. User must change on next login."
         });
       } else {
-        toast({ title: `User ${variables.action} successful` });
+        toast({ title: `User ${(variables as any).action} successful` });
         setSelectedUser(null);
         setActionType(null);
         setReason('');
@@ -1309,7 +1309,7 @@ function UserManagementTab({ authenticatedRequest, users }: { authenticatedReque
     if (actionType !== 'reset-password' && !reason) return;
     
     const actionData: unknown = {
-      userId: selectedUser.id,
+      userId: (selectedUser as any).id,
       action: actionType,
       reason: actionType === 'reset-password' ? 'Admin password reset' : reason
     };
@@ -1417,7 +1417,7 @@ function UserManagementTab({ authenticatedRequest, users }: { authenticatedReque
         </CardContent>
       </Card>
 
-      <>{/* Action Modal */}</>
+      {/* Action Modal */}
       {selectedUser && actionType && (
         <Card className="border-2 border-red-500/50">
           <CardHeader>
