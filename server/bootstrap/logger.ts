@@ -208,7 +208,7 @@ export function validateSentryDSN(dsn: string): { isValid: boolean; errors: stri
     }
     
   } catch (urlError) {
-    errors.push(`DSN is not a valid URL: ${urlError.message}`);
+    errors.push(`DSN is not a valid URL: ${(urlError as Error).message}`);
   }
   
   return {
@@ -403,8 +403,8 @@ export async function cleanupOldLogs(daysToKeep: number = 30) {
     
     return { cleaned: oldFiles.length };
   } catch (error) {
-    logger.error('Failed to cleanup old logs', { error: error.message });
-    return { error: error.message };
+    logger.error('Failed to cleanup old logs', { error: (error as Error).message });
+    return { error: (error as Error).message };
   }
 }
 
@@ -433,7 +433,7 @@ export async function getLogFileStats() {
     
     return stats;
   } catch (error) {
-    logger.error('Failed to get log file stats', { error: error.message });
-    return { error: error.message };
+    logger.error('Failed to get log file stats', { error: (error as Error).message });
+    return { error: (error as Error).message };
   }
 }

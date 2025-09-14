@@ -22,7 +22,7 @@ export class BatchPostingWorker {
     logger.info('✅ Batch posting worker initialized with queue abstraction');
   }
 
-  private async processJob(jobData: unknown, jobId: string) {
+  private async processJob(jobData: unknown, jobId: string): Promise<void> {
     const { 
       userId, 
       campaignId, 
@@ -186,17 +186,14 @@ export class BatchPostingWorker {
         results,
       });
 
-      logger.info(`Batch posting campaign ${campaignId} completed: ${successCount} success, ${failureCount} failed`);
-
-      return { 
-        success: true, 
-        results, 
-        summary: { 
+      logger.info(`Batch posting campaign ${campaignId} completed: ${successCount} success, ${failureCount} failed`, {
+        summary: {
           total: subreddits.length,
           success: successCount,
-          failed: failureCount 
-        }
-      };
+          failed: failureCount
+        },
+        results
+      });
 
     } catch (error: unknown) {
       logger.error(`Batch posting campaign ${campaignId} failed:`, { error });

@@ -186,7 +186,7 @@ async function validateImageFile(filePath: string, originalMimeType: string): Pr
     return { isValid: true, detectedType: detectedFileType.mime };
     
   } catch (error) {
-    logger.error('File validation error', { error: error.message, filePath });
+    logger.error('File validation error', { error: (error as Error).message, filePath });
     return { isValid: false, error: 'File validation failed' };
   }
 }
@@ -334,8 +334,8 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, 
   } catch (error) {
     logger.error('Streaming upload processing error', {
       userId: authReq.user?.id,
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
+      error: error instanceof Error ? (error as Error).message : String(error),
+      stack: error instanceof Error ? (error as Error).stack : undefined
     });
     
     // Clean up files on error
@@ -481,7 +481,7 @@ router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken, u
       settings: validatedRequest.useCustom ? validatedRequest.customSettings : undefined
     });
   } catch (error) {
-    logger.error('Upload error:', { error: error instanceof Error ? error.message : String(error) });
+    logger.error('Upload error:', { error: error instanceof Error ? (error as Error).message : String(error) });
     
     // Clean up any temp files
     if (tempFilePath) {

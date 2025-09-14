@@ -47,7 +47,7 @@ async function handleSocialAuth(
     
     done(null, user);
   } catch (error) {
-    done(error);
+    done(error as Error);
   }
 }
 

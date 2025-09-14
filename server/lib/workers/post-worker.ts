@@ -25,14 +25,15 @@ export class PostWorker {
     logger.info('✅ Post worker initialized with queue abstraction');
   }
 
-  private async processJob(jobData: unknown, jobId: string) {
+  private async processJob(jobData: unknown, jobId: string): Promise<void> {
     // Validate job data structure
     if (!jobData || typeof jobData !== 'object') {
       throw new Error('Invalid job data: expected object');
     }
     const data = jobData as PostJobData;
     if (data.platforms && data.content) {
-      return this.processSocialMediaJob(data, jobId);
+      await this.processSocialMediaJob(data, jobId);
+      return;
     }
     const { userId, postJobId, subreddit, titleFinal, bodyFinal, mediaKey } = data;
 
@@ -106,7 +107,7 @@ export class PostWorker {
           result,
         });
 
-        return { success: true, result };
+        logger.info(`Post job ${postJobId} completed successfully`, { result });
       } else {
         throw new Error(result.error || 'Reddit posting failed');
       }
@@ -133,7 +134,7 @@ export class PostWorker {
     }
   }
 
-  private async processSocialMediaJob(data: PostJobData, jobId: string) {
+  private async processSocialMediaJob(data: PostJobData, jobId: string): Promise<void> {
     const { userId, platforms, content } = data;
     if (!platforms || !content) return;
 

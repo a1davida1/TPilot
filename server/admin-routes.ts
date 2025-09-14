@@ -543,7 +543,7 @@ export function setupAdminRoutes(app: Express) {
       }
 
       // Return real user session data if available, otherwise empty array
-      const sessions = [];
+      const sessions: any[] = [];
       
       res.json(sessions);
     } catch (error) {
@@ -555,7 +555,7 @@ export function setupAdminRoutes(app: Express) {
   app.get('/api/admin/ip-tracking', requireAdmin, async (req, res) => {
     try {
       // Return empty array since we don't have IP tracking data in the database yet
-      const ipData = [];
+      const ipData: any[] = [];
       res.json(ipData);
     } catch (error) {
       console.error('Error fetching IP data:', error);
@@ -607,7 +607,7 @@ export function setupAdminRoutes(app: Express) {
       const limit = parseInt(req.query.limit as string) || 50;
 
       // Return empty logs array since we don't have system_logs table yet
-      const logs = [];
+      const logs: any[] = [];
 
       res.json(logs);
     } catch (error) {
@@ -711,7 +711,7 @@ export function setupAdminRoutes(app: Express) {
       const status = req.query.status || 'pending';
       
       // Return empty flags array since we don't have content_flags table data yet
-      const flags = [];
+      const flags: any[] = [];
 
       res.json(flags);
     } catch (error) {

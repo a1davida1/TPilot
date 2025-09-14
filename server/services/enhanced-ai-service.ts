@@ -198,7 +198,7 @@ class EnhancedAIContentGenerator {
       return this.generateFromTemplates(request);
       
     } catch (error) {
-      safeLog('error', 'Enhanced AI generation failed', { error: error.message });
+      safeLog('error', 'Enhanced AI generation failed', { error: (error as Error).message });
       return this.generateSafetyFallback(request);
     }
   }
@@ -319,7 +319,7 @@ Create content that feels authentic, drives engagement, and perfectly matches th
       
       return null;
     } catch (error) {
-      safeLog('error', 'AI generation fallback failed', { error: error.message });
+      safeLog('error', 'AI generation fallback failed', { error: (error as Error).message });
       return null;
     }
   }

@@ -801,9 +801,9 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
           platform,
           style: 'default',
           theme: templateId ?? 'general',
-          titles: result.titles,
-          content: result.content,
-          photoInstructions: result.photoInstructions,
+          titles: (result as any).titles || [],
+          content: (result as any).content || '',
+          photoInstructions: (result as any).photoInstructions || {},
           prompt: customPrompt ?? '',
           generationType: 'ai',
           allowsPromotion: allowsPromotion === 'yes'

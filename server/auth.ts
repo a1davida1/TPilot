@@ -345,7 +345,7 @@ export function setupAuth(app: Express) {
     } catch (error) {
       logger.error('Password reset error', {
         error: (error as Error).message,
-        stack: error.stack?.split('\n')[1]?.trim() || 'No stack trace',
+        stack: (error as Error).stack?.split('\n')[1]?.trim() || 'No stack trace',
         email: req.body?.email ? req.body.email.replace(/(.{2})(.*)(@.*)/, '$1***$3') : 'No email',
         timestamp: new Date().toISOString()
       });
@@ -416,7 +416,7 @@ export function setupAuth(app: Express) {
 
         return res.status(404).json({ message: 'User not found' });
       } catch (jwtError) {
-        safeLog('error', 'JWT verification failed', { error: jwtError.message });
+        safeLog('error', 'JWT verification failed', { error: (jwtError as Error).message });
         return res.status(401).json({ message: 'Invalid token' });
       }
     } catch (error) {
@@ -571,7 +571,7 @@ export function setupAuth(app: Express) {
     } catch (error) {
       logger.error('❌ EMAIL VERIFICATION ERROR', {
         error: (error as Error).message,
-        stack: error.stack?.split('\n')[1]?.trim() || 'No stack trace',
+        stack: (error as Error).stack?.split('\n')[1]?.trim() || 'No stack trace',
         time: new Date().toISOString()
       });
       

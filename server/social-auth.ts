@@ -46,7 +46,7 @@ export function setupSocialAuth(app: Express) {
         
         return done(null, user);
       } catch (error) {
-        return done(error, false);
+        return done(error as Error, false);
       }
     }));
   }
@@ -83,7 +83,7 @@ export function setupSocialAuth(app: Express) {
         
         return done(null, user);
       } catch (error) {
-        return done(error, false);
+        return done(error as Error, false);
       }
     }));
   }
@@ -123,7 +123,7 @@ export function setupSocialAuth(app: Express) {
         
         return done(null, user);
       } catch (error) {
-        return done(error, false);
+        return done(error as Error, false);
       }
     }));
   }

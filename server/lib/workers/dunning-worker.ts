@@ -29,7 +29,7 @@ export class DunningWorker {
     logger.info('✅ Dunning worker initialized with queue abstraction');
   }
 
-  private async processJob(jobData: unknown, jobId: string) {
+  private async processJob(jobData: unknown, jobId: string): Promise<void> {
     const { subscriptionId, attempt, maxAttempts = 3 } = jobData as DunningJobData;
 
     try {
@@ -68,7 +68,7 @@ export class DunningWorker {
         // Send success notification
         await this.sendRecoveryNotification(user, subscription);
 
-        return { success: true, recovered: true };
+        logger.info(`Dunning payment recovered for subscription ${subscriptionId}`);
 
       } else if (attempt < maxAttempts) {
         // Payment failed but we have more attempts
@@ -83,7 +83,7 @@ export class DunningWorker {
           error: paymentResult.error,
         });
 
-        return { success: true, retry: true, nextAttempt };
+        logger.info(`Dunning retry scheduled for subscription ${subscriptionId}, next attempt: ${nextAttempt}`);
 
       } else {
         // Max attempts reached - suspend subscription
@@ -99,7 +99,7 @@ export class DunningWorker {
         // Send suspension notification
         await this.sendSuspensionNotification(user, subscription);
 
-        return { success: true, suspended: true };
+        logger.info(`Subscription ${subscriptionId} suspended after ${attempt} attempts`);
       }
 
     } catch (error: unknown) {

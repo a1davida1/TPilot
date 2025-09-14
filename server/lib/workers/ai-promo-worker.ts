@@ -22,7 +22,7 @@ export class AiPromoWorker {
     logger.info('✅ AI Promo worker initialized with queue abstraction');
   }
 
-  private async processJob(jobData: unknown, jobId: string) {
+  private async processJob(jobData: unknown, jobId: string): Promise<void> {
     // Validate job data structure
     if (!jobData || typeof jobData !== 'object') {
       throw new Error('Invalid job data: expected object');
@@ -78,7 +78,7 @@ export class AiPromoWorker {
         platforms,
       });
 
-      return { success: true, results };
+      logger.info(`AI promo job completed successfully`, { generationId, results });
 
     } catch (error: unknown) {
       logger.error(`AI promo job for generation ${generationId} failed:`, {

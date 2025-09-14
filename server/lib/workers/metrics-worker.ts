@@ -22,7 +22,7 @@ export class MetricsWorker {
     logger.info('✅ Metrics worker initialized with queue abstraction');
   }
 
-  private async processJob(jobData: unknown, jobId: string) {
+  private async processJob(jobData: unknown, jobId: string): Promise<void> {
     const { postJobId, redditPostId, scheduledFor } = jobData as MetricsJobData;
 
     try {
@@ -42,7 +42,7 @@ export class MetricsWorker {
       const reddit = await RedditManager.forUser(postJob.userId);
       if (!reddit) {
         logger.warn(`No Reddit access for user ${postJob.userId}, skipping metrics`);
-        return { success: false, reason: 'No Reddit access' };
+        return;
       }
 
       // Fetch post metrics from Reddit
@@ -65,10 +65,9 @@ export class MetricsWorker {
           await this.scheduleNextCheck(postJobId, redditPostId, daysSincePost);
         }
 
-        return { success: true, metrics };
+        logger.info(`Metrics collected successfully for post ${redditPostId}`, { metrics });
       } else {
         logger.warn(`Could not fetch metrics for post ${redditPostId}`);
-        return { success: false, reason: 'Failed to fetch metrics' };
       }
 
     } catch (error: unknown) {
