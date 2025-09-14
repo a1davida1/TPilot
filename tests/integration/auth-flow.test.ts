@@ -128,7 +128,7 @@ describe('Authentication Integration Tests', () => {
   });
 
   afterAll(async () => {
-    await new Promise((resolve) => (server as { close: (callback: () => void) => void }).close(resolve));
+    await new Promise<void>((resolve) => (server as { close: (callback: () => void) => void }).close(() => resolve()));
   });
 
   beforeEach(async () => {
