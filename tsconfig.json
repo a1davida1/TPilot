@@ -19,7 +19,7 @@
     "downlevelIteration": true,
     "baseUrl": ".",
     "rootDir": ".",
-    "types": ["node", "vite/client"],
+    "types": ["node"],
     "typeRoots": ["./node_modules/@types", "./server/types", "./shared"],
     "paths": {
       "@shared/*": ["shared/*"],
