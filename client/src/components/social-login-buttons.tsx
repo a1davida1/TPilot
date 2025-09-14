@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { FaGoogle, FaFacebook, FaRedditAlien } from "react-icons/fa";
+import { Link } from "wouter";
 
 interface SocialLoginButtonsProps {
   onClose?: () => void;
@@ -54,7 +55,14 @@ export function SocialLoginButtons({ onClose }: SocialLoginButtonsProps) {
       </div>
 
       <div className="text-xs text-center text-gray-500">
-        By continuing, you agree to our Terms of Service and Privacy Policy
+        By continuing, you agree to our{" "}
+        <Link href="/terms" className="underline hover:text-gray-400">
+          Terms of Service
+        </Link>{" "}
+        and{" "}
+        <Link href="/privacy" className="underline hover:text-gray-400">
+          Privacy Policy
+        </Link>
       </div>
     </div>
   );

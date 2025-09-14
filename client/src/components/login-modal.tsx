@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { LogIn, UserPlus, Sparkles } from "lucide-react";
 import { SocialLoginButtons } from "./social-login-buttons";
+import { Link } from "wouter";
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -255,7 +256,14 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
         </Tabs>
 
         <div className="text-center text-xs text-gray-400 mt-4">
-          By continuing, you agree to our Terms of Service and Privacy Policy
+          By continuing, you agree to our{" "}
+          <Link href="/terms" className="underline hover:text-gray-300">
+            Terms of Service
+          </Link>{" "}
+          and{" "}
+          <Link href="/privacy" className="underline hover:text-gray-300">
+            Privacy Policy
+          </Link>
         </div>
       </DialogContent>
     </Dialog>
