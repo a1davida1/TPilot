@@ -160,22 +160,29 @@ export const userImages = pgTable("user_images", {
 
 // New tables for Phase 1 expansion
 
-export const creatorAccounts = pgTable("creator_accounts", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(),
-  platform: varchar("platform", { length: 50 }).notNull(), // "reddit"
-  handle: varchar("handle", { length: 100 }).notNull(),
-  platformUsername: varchar("platform_username", { length: 255 }), // Added missing column
-  oauthToken: text("oauth_token").notNull(),
-  oauthRefresh: text("oauth_refresh").notNull(),
-  status: varchar("status", { length: 20 }).default("ok").notNull(), // "ok" | "limited" | "banned"
-  isActive: boolean("is_active").default(true).notNull(), // Added missing column
-  metadata: jsonb("metadata"), // Added missing column
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-}, (table) => ({
-  userPlatformIdx: unique("creator_accounts_user_platform_idx").on(table.userId, table.platform),
-}));
+export const creatorAccounts = pgTable(
+  "creator_accounts",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").references(() => users.id).notNull(),
+    platform: varchar("platform", { length: 50 }).notNull(),
+    handle: varchar("handle", { length: 100 }).notNull(),
+    platformUsername: varchar("platform_username", { length: 255 }),
+    oauthToken: text("oauth_token").notNull(),
+    oauthRefresh: text("oauth_refresh").notNull(),
+    status: varchar("status", { length: 20 }).default("ok").notNull(),
+    isActive: boolean("is_active").default(true).notNull(),
+    metadata: jsonb("metadata"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    userPlatformUnique: unique("creator_accounts_user_platform_idx").on(
+      table.userId,
+      table.platform
+    ),
+  })
+);
 
 export const subredditRules = pgTable("subreddit_rules", {
   id: serial("id").primaryKey(),
