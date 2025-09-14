@@ -27,12 +27,12 @@ class PerformanceMonitor {
       const start = process.hrtime.bigint();
       const startMemory = process.memoryUsage();
 
-      // Store original end function without binding  
+      // Store original end function without binding
       const originalEnd = res.end;
 
-      // Override end function to capture metrics  
+      // Override end function to capture metrics
       const monitoredEnd = (
-        ...args: any[]
+        ...args: Parameters<Response['end']>
       ) => {
         res.end = originalEnd;
 
@@ -61,9 +61,9 @@ class PerformanceMonitor {
         }
 
         // Call original end function
-        return originalEnd.apply(res, args);
+        return originalEnd.apply(this, args);
       };
-      res.end = monitoredEnd;
+      res.end = monitoredEnd as any;
 
       next();
     };
