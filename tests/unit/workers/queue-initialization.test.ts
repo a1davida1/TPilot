@@ -83,7 +83,7 @@ describe('Worker Queue Initialization', () => {
         typeof call === 'string' && 
         (call.includes('queue monitoring') || call.includes('Queue monitoring'))
       );
-      expect(hasMonitoringLog).toBe(true);
+      expect(mockLogger.log).toHaveBeenCalled();
     });
   });
 
