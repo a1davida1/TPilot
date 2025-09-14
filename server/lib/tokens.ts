@@ -1,12 +1,18 @@
 import crypto from 'crypto';
+import { logger } from '../bootstrap/logger';
 
-const SECRET_KEY = process.env.JWT_SECRET || 'dev-secret-key';
+const SECRET_KEY = process.env.JWT_SECRET;
+if (!SECRET_KEY) {
+  throw new Error('JWT_SECRET required');
+}
+// TypeScript assertion - we know SECRET_KEY is defined after the check above
+const VERIFIED_SECRET_KEY: string = SECRET_KEY;
 
 export function createConfirmToken(email: string): string {
   const timestamp = Date.now();
   const payload = `${email}:${timestamp}`;
   const signature = crypto
-    .createHmac('sha256', SECRET_KEY)
+    .createHmac('sha256', VERIFIED_SECRET_KEY)
     .update(payload)
     .digest('hex');
   
@@ -39,7 +45,7 @@ export function verifyConfirmToken(token: string): { valid: boolean; email?: str
     // Verify signature
     const payload = `${email}:${timestampStr}`;
     const expectedSignature = crypto
-      .createHmac('sha256', SECRET_KEY)
+      .createHmac('sha256', VERIFIED_SECRET_KEY)
       .update(payload)
       .digest('hex');
 
@@ -48,8 +54,9 @@ export function verifyConfirmToken(token: string): { valid: boolean; email?: str
     }
 
     return { valid: true, email };
-  } catch (error) {
-    console.error('Token verification error:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('Token verification error', { error: message });
     return { valid: false };
   }
 }

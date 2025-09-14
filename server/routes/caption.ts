@@ -1,26 +1,47 @@
-import { Router, Request, Response } from 'express';
+import { Router, type Request, type Response } from 'express';
 import { pipeline, InvalidImageError } from '../caption/geminiPipeline';
 import { pipelineTextOnly } from '../caption/textOnlyPipeline';
 import { pipelineRewrite } from '../caption/rewritePipeline';
 import { storage } from '../storage';
 import { authenticateToken, type AuthRequest } from '../middleware/auth';
 import { insertContentGenerationSchema } from '@shared/schema';
+import { z } from 'zod';
+import { logger } from '../bootstrap/logger';
 
 const router = Router();
 
+const generateSchema = z.object({
+  imageUrl: z.string(),
+  platform: z.enum(['instagram', 'x', 'reddit', 'tiktok']),
+  voice: z.string().optional(),
+  style: z.string().optional(),
+  mood: z.string().optional(),
+  nsfw: z.boolean().optional()
+});
+
+const generateTextSchema = z.object({
+  platform: z.enum(['instagram', 'x', 'reddit', 'tiktok']),
+  voice: z.string().optional(),
+  style: z.string().optional(),
+  mood: z.string().optional(),
+  theme: z.string(),
+  context: z.string().optional(),
+  nsfw: z.boolean().optional()
+});
+
+const rewriteSchema = z.object({
+  platform: z.enum(['instagram', 'x', 'reddit', 'tiktok']),
+  voice: z.string().optional(),
+  style: z.string().optional(),
+  mood: z.string().optional(),
+  existingCaption: z.string(),
+  imageUrl: z.string().optional(),
+  nsfw: z.boolean().optional()
+});
+
 router.post('/generate', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const { imageUrl, platform, voice, style, mood, nsfw } = req.body || {};
-    
-    if (!imageUrl || !platform) {
-      return res.status(400).json({ error: "imageUrl and platform are required" });
-    }
-    
-    // Validate platform
-    const validPlatforms = ["instagram", "x", "reddit", "tiktok"];
-    if (!validPlatforms.includes(platform)) {
-      return res.status(400).json({ error: "Invalid platform. Must be one of: instagram, x, reddit, tiktok" });
-    }
+    const { imageUrl, platform, voice, style, mood, nsfw } = generateSchema.parse(req.body ?? {});
     
     const result = await pipeline({ imageUrl, platform, voice, style, mood, nsfw: nsfw || false });
     
@@ -47,7 +68,7 @@ router.post('/generate', authenticateToken, async (req: AuthRequest, res: Respon
           allowsPromotion: nsfw || false
         });
       } catch (dbError) {
-        console.error('Failed to save generation to database:', dbError);
+        logger.error('Failed to save generation to database', { error: dbError });
         // Don't fail the request if database save fails
       }
     }
@@ -55,28 +76,18 @@ router.post('/generate', authenticateToken, async (req: AuthRequest, res: Respon
     return res.status(200).json(result);
     
   } catch (e: unknown) {
-    console.error('Caption generation error:', e);
-    const errorMessage = e instanceof Error ? e.message : "generation failed";
+    const message = e instanceof Error ? e.message : "generation failed";
+    logger.error('Caption generation error', { error: message });
     if (e instanceof InvalidImageError) {
-      return res.status(422).json({ error: errorMessage });
+      return res.status(422).json({ error: message });
     }
-    return res.status(500).json({ error: errorMessage });
+    return res.status(500).json({ error: message });
   }
 });
 
 router.post('/generate-text', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const { platform, voice, style, mood, theme, context, nsfw } = req.body || {};
-    
-    if (!platform || !theme) {
-      return res.status(400).json({ error: "platform and theme are required" });
-    }
-    
-    // Validate platform
-    const validPlatforms = ["instagram", "x", "reddit", "tiktok"];
-    if (!validPlatforms.includes(platform)) {
-      return res.status(400).json({ error: "Invalid platform. Must be one of: instagram, x, reddit, tiktok" });
-    }
+    const { platform, voice, style, mood, theme, context, nsfw } = generateTextSchema.parse(req.body ?? {});
     
     const result = await pipelineTextOnly({ platform, voice, style, mood, theme, context, nsfw: nsfw || false });
     
@@ -103,7 +114,7 @@ router.post('/generate-text', authenticateToken, async (req: AuthRequest, res: R
           allowsPromotion: nsfw || false
         });
       } catch (dbError) {
-        console.error('Failed to save generation to database:', dbError);
+        logger.error('Failed to save generation to database', { error: dbError });
         // Don't fail the request if database save fails
       }
     }
@@ -111,28 +122,18 @@ router.post('/generate-text', authenticateToken, async (req: AuthRequest, res: R
     return res.status(200).json(result);
     
   } catch (e: unknown) {
-    console.error('Text caption generation error:', e);
-    const errorMessage = e instanceof Error ? e.message : "generation failed";
+    const message = e instanceof Error ? e.message : "generation failed";
+    logger.error('Text caption generation error', { error: message });
     if (e instanceof InvalidImageError) {
-      return res.status(422).json({ error: errorMessage });
+      return res.status(422).json({ error: message });
     }
-    return res.status(500).json({ error: errorMessage });
+    return res.status(500).json({ error: message });
   }
 });
 
 router.post('/rewrite', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const { platform, voice, style, mood, existingCaption, imageUrl, nsfw } = req.body || {};
-    
-    if (!platform || !existingCaption) {
-      return res.status(400).json({ error: "platform and existingCaption are required" });
-    }
-    
-    // Validate platform
-    const validPlatforms = ["instagram", "x", "reddit", "tiktok"];
-    if (!validPlatforms.includes(platform)) {
-      return res.status(400).json({ error: "Invalid platform. Must be one of: instagram, x, reddit, tiktok" });
-    }
+    const { platform, voice, style, mood, existingCaption, imageUrl, nsfw } = rewriteSchema.parse(req.body ?? {});
     
     const result = await pipelineRewrite({ platform, voice, style, mood, existingCaption, imageUrl, nsfw: nsfw || false });
     
@@ -159,7 +160,7 @@ router.post('/rewrite', authenticateToken, async (req: AuthRequest, res: Respons
           allowsPromotion: nsfw || false
         });
       } catch (dbError) {
-        console.error('Failed to save generation to database:', dbError);
+        logger.error('Failed to save generation to database', { error: dbError });
         // Don't fail the request if database save fails
       }
     }
@@ -167,12 +168,12 @@ router.post('/rewrite', authenticateToken, async (req: AuthRequest, res: Respons
     return res.status(200).json(result);
     
   } catch (e: unknown) {
-    console.error('Caption rewrite error:', e);
-    const errorMessage = e instanceof Error ? e.message : "rewrite failed";
+    const message = e instanceof Error ? e.message : "rewrite failed";
+    logger.error('Caption rewrite error', { error: message });
     if (e instanceof InvalidImageError) {
-      return res.status(422).json({ error: errorMessage });
+      return res.status(422).json({ error: message });
     }
-    return res.status(500).json({ error: errorMessage });
+    return res.status(500).json({ error: message });
   }
 });
 

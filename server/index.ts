@@ -12,6 +12,14 @@ import { logger } from "./bootstrap/logger";
 import { startQueue } from "./bootstrap/queue";
 import { notFoundHandler } from "./middleware/security";
 
+process.on('unhandledRejection', (err: unknown) => {
+  const message = err instanceof Error ? err.message : String(err);
+  logger.error('Unhandled rejection', { error: message });
+  process.exit(1);
+});
+
+const API_PREFIX = '/api/v1';
+
 declare global {
   namespace Express {
     interface Request {
@@ -73,13 +81,14 @@ app.use(cors({
 
 // Sentry integration removed; add it back once you have a DSN
 
-app.use((req, _res, next) => {
+app.use((req, res, next) => {
   req.id = uuidv4();
+  res.setHeader('X-Request-ID', req.id);
   next();
 });
 
 // Raw body for Stripe webhook signature verification
-app.post("/api/webhooks/stripe", express.raw({ type: "application/json" }), (_req,_res,next)=>next());
+app.post(`${API_PREFIX}/webhooks/stripe`, express.raw({ type: "application/json" }), (_req,_res,next)=>next());
 app.use(cookieParser()); // Parse cookies for authentication
 app.use(express.json({ limit: '50mb' })); // Increase for image uploads
 app.use(express.urlencoded({ extended: false, limit: '50mb' })); // Increase for image uploads
@@ -117,7 +126,7 @@ app.use((req, res, next) => {
 
 (async () => {
   try {
-    app.use('/api/auth', authLimiter);
+    app.use(`${API_PREFIX}/auth`, authLimiter);
     // Initialize queue system
     await startQueue();
   
@@ -129,7 +138,7 @@ app.use((req, res, next) => {
     mountStripeWebhook(app);
     mountBillingRoutes(app);
   
-    const server = await registerRoutes(app);
+    const server = await registerRoutes(app, API_PREFIX);
 
     // importantly only setup vite in development and after
     // setting up all the other routes so the catch-all route

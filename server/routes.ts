@@ -147,7 +147,7 @@ interface PhotoInstructionsResult {
   technicalSettings?: string;
 }
 
-export async function registerRoutes(app: Express): Promise<Server> {
+export async function registerRoutes(app: Express, apiPrefix: string = '/api'): Promise<Server> {
   // ==========================================
   // VALIDATE ENVIRONMENT & APPLY SECURITY
   // ==========================================
