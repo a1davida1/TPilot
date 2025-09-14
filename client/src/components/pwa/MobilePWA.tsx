@@ -9,6 +9,10 @@ import {
   Home, Settings, Bell, Moon, Sun, Zap, Shield, Target
 } from 'lucide-react';
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<{ outcome: 'accepted' | 'dismissed'; platform: string[] }>;
+}
+
 interface PWAFeature {
   id: string;
   title: string;
@@ -20,7 +24,8 @@ interface PWAFeature {
 
 export default function MobilePWA() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [installPrompt, setInstallPrompt] = useState<unknown>(null);
+  const [installPrompt, setInstallPrompt] =
+    useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [batteryLevel, setBatteryLevel] = useState<number | null>(null);
   const [networkType, setNetworkType] = useState<string>('unknown');
@@ -38,7 +43,7 @@ export default function MobilePWA() {
     };
 
     // Listen for install prompt
-    const handleBeforeInstallPrompt = (e: unknown) => {
+    const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => {
       e.preventDefault();
       setInstallPrompt(e);
     };
