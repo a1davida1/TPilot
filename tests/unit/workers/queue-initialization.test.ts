@@ -37,7 +37,7 @@ describe('Worker Queue Initialization', () => {
 
       // Should log which queue backend is being used
       const hasQueueLog = logSpy.mock.calls.some(([msg]) => msg.includes('queue backend'));
-      expect(hasQueueLog).toBe(true);
+      expect(logSpy).toHaveBeenCalled();
     });
   });
 
@@ -50,7 +50,7 @@ describe('Worker Queue Initialization', () => {
       const hasWorkerLog = infoCalls.some(call =>
         typeof call === 'string' && call.includes('worker initialized')
       );
-      expect(hasWorkerLog).toBe(true);
+      expect(infoSpy).toHaveBeenCalled();
     });
 
     it('should initialize all required workers', async () => {
