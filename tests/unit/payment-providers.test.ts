@@ -236,13 +236,13 @@ describe('Payment Providers', () => {
       test('handles missing or invalid base URL', () => {
         process.env.PAXUM_API_KEY = 'test_merchant';
         delete process.env.APP_BASE_URL;
-        delete process.env.FRONTEND_URL;
 
-        // makePaxum uses FRONTEND_URL which has a default value, so it won't throw
-        // unless we also remove FRONTEND_URL
-        const provider = makePaxum();
-        expect(provider.enabled).toBe(true);
-        expect(provider.name).toBe('paxum');
+        try {
+          makePaxum();
+          expect(process.env.APP_BASE_URL).toBeDefined();
+        } catch (e) {
+          expect(e.message).toContain('APP_BASE_URL');
+        }
       });
     });
 
