@@ -84,7 +84,7 @@ export async function nsfwCaptionFallback(imageUrl: string): Promise<NSFWCaption
     hashtags: ['#nsfw'],
     cta: 'See more',
     mood: 'provocative',
-    style: 'explicit',
+    style: 'needs_review',
     safety_level: 'nsfw',
     nsfw: isNsfw,
   };

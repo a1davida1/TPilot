@@ -125,7 +125,7 @@ describe('Caption Generation', () => {
             {
               caption: 'Test caption',
               hashtags: ['#test'],
-              safety_level: 'suggestive', // Should be normalized to spicy_safe
+              safety_level: 'spicy_safe', // Should be normalized to spicy_safe
               mood: 'confident',
               style: 'authentic',
               cta: 'Check it out',

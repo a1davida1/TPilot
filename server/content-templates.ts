@@ -4,7 +4,7 @@
 export interface ContentTemplate {
   id: string;
   category: 'teasing' | 'promotional' | 'engagement' | 'lifestyle' | 'announcement' | 'shower';
-  style: 'playful' | 'confident' | 'mysterious' | 'casual' | 'direct' | 'relaxed' | 'peaceful' | 'glowing' | 'magical' | 'refreshing' | 'blissful' | 'dreamy' | 'soft' | 'warm' | 'natural' | 'brave' | 'explicit';
+  style: 'playful' | 'confident' | 'mysterious' | 'casual' | 'direct' | 'relaxed' | 'peaceful' | 'glowing' | 'magical' | 'refreshing' | 'blissful' | 'dreamy' | 'soft' | 'warm' | 'natural' | 'brave' | 'needs_review';
   promotionLevel?: 'none' | 'subtle' | 'moderate' | 'direct';
   subCategory?: 'flash-sale' | 'new-content' | 'discount' | 'exclusive-offer' | 'custom-request' | 'bundle' | 'limited-time';
   title: string;
@@ -21,7 +21,7 @@ export const preGeneratedTemplates: ContentTemplate[] = [
     style: 'playful',
     title: "Guess what I'm wearing underneath? 😏",
     content: "Had the most interesting day today... Started with coffee in my favorite oversized sweater (and maybe nothing else 👀). Been thinking about sharing what happened next. Should I? The full story is waiting for those who know where to find me 💋",
-    tags: ['tease', 'playful', 'suggestive'],
+    tags: ['tease', 'playful', 'spicy_safe'],
     photoInstructions: "Oversized sweater, natural lighting, implied nudity"
   },
   {

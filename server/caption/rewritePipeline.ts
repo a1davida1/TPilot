@@ -46,7 +46,7 @@ export async function variantsRewrite(params:{platform:"instagram"|"x"|"reddit"|
     json.forEach((item) => {
       const variant = item as Record<string, unknown>;
       variant.safety_level = normalizeSafetyLevel(
-        typeof variant.safety_level === 'string' ? variant.safety_level : 'safe'
+        typeof variant.safety_level === 'string' ? variant.safety_level : 'normal'
       );
       // Fix other fields
       if(typeof variant.mood !== 'string' || variant.mood.length<2) variant.mood="engaging";
@@ -66,7 +66,7 @@ export async function variantsRewrite(params:{platform:"instagram"|"x"|"reddit"|
         cta: "Check it out",
         mood: "engaging",
         style: "authentic",
-        safety_level: normalizeSafetyLevel('safe'),
+        safety_level: normalizeSafetyLevel('normal'),
         nsfw: false
       };
       json.push({
@@ -108,7 +108,7 @@ export async function rankAndSelect(variants: unknown[]){
   if((json as Record<string, unknown>).final){
     const final = (json as { final: Record<string, unknown> }).final;
     final.safety_level = normalizeSafetyLevel(
-      typeof final.safety_level === 'string' ? final.safety_level : 'safe'
+      typeof final.safety_level === 'string' ? final.safety_level : 'normal'
     );
     if(typeof final.mood !== 'string' || final.mood.length<2) final.mood="engaging";
     if(typeof final.style !== 'string' || final.style.length<2) final.style="authentic";
