@@ -9,11 +9,14 @@ const mockEnv = {
 };
 
 const mockMultiProvider = {
+  generateContent: vi.fn(),
   generateWithMultiProvider: vi.fn(),
 };
 
 // Mock the dependencies before importing the service
-vi.mock('../../../server/services/multi-ai-provider', () => mockMultiProvider);
+vi.mock('../../../server/services/multi-ai-provider.ts', () => ({
+  MultiAIProvider: vi.fn(() => mockMultiProvider)
+}));
 vi.mock('../../../server/lib/logger-utils.js', () => ({
   safeLog: vi.fn(),
 }));
