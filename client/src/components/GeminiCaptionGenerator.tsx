@@ -235,7 +235,7 @@ export function GeminiCaptionGenerator() {
         </CardContent>
       </Card>
 
-      <>{/* Caption Preview */}</>
+      {/* Caption Preview */}
       {captionData && (
         <div className="space-y-4">
           <CaptionPreview data={captionData as any} />
