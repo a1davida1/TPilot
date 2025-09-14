@@ -15,6 +15,20 @@ app.use(express.json());
 // Setup auth routes for testing
 setupAuth(app);
 
+// Helper function to extract auth credentials from response
+function extractAuthCredentials(response: any) {
+  const cookies = response.headers['set-cookie'] ?? [];
+  const authCookie = cookies.find((c: string) => 
+    c.includes('authToken') || c.includes('session') || c.includes('auth')
+  );
+  
+  return {
+    cookie: authCookie,
+    token: response.body?.token || response.body?.accessToken,
+    hasAuth: !!(authCookie || response.body?.token || response.body?.accessToken)
+  };
+}
+
 describe('Login Identifier and Cookie Auth', () => {
   let testUserId: number;
   let testEmail: string;
@@ -50,23 +64,19 @@ describe('Login Identifier and Cookie Auth', () => {
           password: 'TestPassword123',
         });
 
-      const cookies = response.headers['set-cookie'] ?? [];
       expect(response.status).toBe(200);
       
-      // Check for either cookies or token in response body
-      const hasCookie = cookies.length > 0 && cookies.some((c: string) => 
-        c.includes('authToken') || c.includes('session'));
-      const hasToken = response.body.token || response.body.accessToken;
-      expect(hasCookie || hasToken).toBeTruthy();
+      const auth = extractAuthCredentials(response);
+      expect(auth.hasAuth).toBeTruthy();
+      
+      // Optional: log what type of auth was used for debugging
+      if (auth.cookie) console.log('Using cookie authentication');
+      if (auth.token) console.log('Using token authentication');
       
       // If cookies are present, check their properties
-      if (hasCookie) {
-        const authCookie = cookies.find((cookie: string) => 
-          cookie.includes('authToken') || cookie.includes('session'));
-        if (authCookie && authCookie.includes('authToken')) {
-          expect(authCookie).toContain('HttpOnly');
-          expect(authCookie).toContain('SameSite=Strict');
-        }
+      if (auth.cookie && auth.cookie.includes('authToken')) {
+        expect(auth.cookie).toContain('HttpOnly');
+        expect(auth.cookie).toContain('SameSite=Strict');
       }
     });
 
@@ -78,22 +88,18 @@ describe('Login Identifier and Cookie Auth', () => {
           password: 'TestPassword123',
         });
 
-      const cookies = response.headers['set-cookie'] ?? [];
       expect(response.status).toBe(200);
       
-      // Check for either cookies or token in response body
-      const hasCookie = cookies.length > 0 && cookies.some((c: string) => 
-        c.includes('authToken') || c.includes('session'));
-      const hasToken = response.body.token || response.body.accessToken;
-      expect(hasCookie || hasToken).toBeTruthy();
+      const auth = extractAuthCredentials(response);
+      expect(auth.hasAuth).toBeTruthy();
+      
+      // Optional: log what type of auth was used for debugging
+      if (auth.cookie) console.log('Using cookie authentication');
+      if (auth.token) console.log('Using token authentication');
       
       // If cookies are present, check their properties
-      if (hasCookie) {
-        const authCookie = cookies.find((cookie: string) => 
-          cookie.includes('authToken') || cookie.includes('session'));
-        if (authCookie && authCookie.includes('authToken')) {
-          expect(authCookie).toContain('HttpOnly');
-        }
+      if (auth.cookie && auth.cookie.includes('authToken')) {
+        expect(auth.cookie).toContain('HttpOnly');
       }
     });
   });
@@ -108,25 +114,18 @@ describe('Login Identifier and Cookie Auth', () => {
           password: 'TestPassword123',
         });
 
-      const cookies = loginResponse.headers['set-cookie'] ?? [];
-      
-      // If no cookies, check for token in body
-      const authCookie = cookies.find((cookie: string) => 
-        cookie.includes('authToken') || cookie.includes('session'));
-      const token = loginResponse.body.token || loginResponse.body.accessToken;
-      
-      // Either cookie or token auth should work
-      expect(authCookie || token).toBeTruthy();
+      const auth = extractAuthCredentials(loginResponse);
+      expect(auth.hasAuth).toBeTruthy();
 
-      if (authCookie || token) {
+      if (auth.cookie || auth.token) {
         // Use cookie or token for authenticated request
-        const userResponse = authCookie
+        const userResponse = auth.cookie
           ? await request(app)
               .get('/api/auth/user')
-              .set('Cookie', authCookie)
+              .set('Cookie', auth.cookie)
           : await request(app)
               .get('/api/auth/user')
-              .set('Authorization', `Bearer ${token}`);
+              .set('Authorization', `Bearer ${auth.token}`);
 
         // Should accept cookie authentication
         expect(userResponse.status).toBe(200);
