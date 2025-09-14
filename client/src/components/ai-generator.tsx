@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import type { ContentGeneration } from '@shared/schema';
+import { getErrorMessage } from '@/utils/errorHelpers';
 
 // Extended interface for frontend display with dynamic server properties
 interface GeneratedContentDisplay extends Omit<ContentGeneration, 'titles' | 'photoInstructions'> {
@@ -164,7 +165,7 @@ export function AIGenerator({ onContentGenerated }: AIGeneratorProps) {
     onError: (error: unknown) => {
       toast({
         title: "Generation failed",
-        description: error.message || "Failed to generate content. Please try again.",
+        description: getErrorMessage(error) || "Failed to generate content. Please try again.",
         variant: "destructive"
       });
     }
