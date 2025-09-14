@@ -367,9 +367,10 @@ describe('Upload and ImageShield Integration Tests', () => {
   describe('Watermark Application', () => {
     test('should apply watermarks based on user tier', async () => {
       // Test free tier user gets watermark
+      const uniqueName = `freeuser_${Date.now()}`;
       const [freeUser] = await db.insert(users).values({
-        username: 'freeuser',
-        email: 'free@test.com',
+        username: uniqueName,
+        email: `${uniqueName}@test.com`,
         password: 'password',
         tier: 'free'
       }).returning();
