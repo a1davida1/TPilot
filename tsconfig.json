@@ -20,6 +20,7 @@
     "baseUrl": ".",
     "rootDir": ".",
     "types": ["node", "vite/client"],
+    "typeRoots": ["./node_modules/@types", "./server/types", "./shared"],
     "paths": {
       "@shared/*": ["shared/*"],
       "@server/*": ["server/*"],

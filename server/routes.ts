@@ -34,7 +34,7 @@ interface AnalyticsRequest extends express.Request {
 }
 
 // Import users table for type inference
-import { users } from "@shared/schema.js";
+import { users, type ContentGeneration } from "@shared/schema.js";
 
 // AuthUser interface for passport serialization
 interface AuthUser {
