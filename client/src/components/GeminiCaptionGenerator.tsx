@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CaptionPreview } from "./CaptionPreview";
 import { Loader2, Sparkles, Upload, AlertCircle, Image as ImageIcon } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { getErrorMessage } from "@/utils/errorHelpers";
 
 const PLATFORMS = [
   { value: "instagram", label: "Instagram" },
@@ -94,10 +95,11 @@ export function GeminiCaptionGenerator() {
       });
     } catch (err: unknown) {
       console.error('Generation error:', err);
-      setError(err.message || 'Failed to generate caption');
+      const message = getErrorMessage(err);
+      setError(message || 'Failed to generate caption');
       toast({
         title: "Generation failed",
-        description: err.message || 'Please try again',
+        description: message || 'Please try again',
         variant: "destructive"
       });
     } finally {
