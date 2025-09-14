@@ -37,7 +37,7 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
   const [includePromotion, setIncludePromotion] = useState(true);
   const [includeHashtags, setIncludeHashtags] = useState(true);
   const [selectedHashtags, setSelectedHashtags] = useState<string[]>([]);
-  const [generatedContent, setGeneratedContent] = useState<unknown>(null);
+  const [generatedContent, setGeneratedContent] = useState<any>(null);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -334,22 +334,18 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
           />
         </div>
 
-        {/* Advanced Settings Toggle */}
-        <>
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="advanced-settings"
-              checked={useAdvancedSettings}
-              onCheckedChange={setUseAdvancedSettings}
-            />
-            <Label htmlFor="advanced-settings" className="text-sm text-gray-600">
-              <Settings className="inline h-4 w-4 mr-1" />
-              Advanced Settings
-            </Label>
-          </div>
-        </>
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="advanced-settings"
+            checked={useAdvancedSettings}
+            onCheckedChange={setUseAdvancedSettings}
+          />
+          <Label htmlFor="advanced-settings" className="text-sm text-gray-600">
+            <Settings className="inline h-4 w-4 mr-1" />
+            Advanced Settings
+          </Label>
+        </div>
 
-        {/* Advanced Settings (Hidden by default) */}
         {useAdvancedSettings && (
           <div className="space-y-6 p-4 bg-gray-50 rounded-lg border">
             {/* Main Categories */}

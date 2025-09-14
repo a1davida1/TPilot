@@ -31,7 +31,7 @@ export function GeminiCaptionGenerator() {
   const [platform, setPlatform] = useState<string>("instagram");
   const [voice, setVoice] = useState<string>("flirty_playful");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [captionData, setCaptionData] = useState<unknown>(null);
+  const [captionData, setCaptionData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -235,8 +235,7 @@ export function GeminiCaptionGenerator() {
         </CardContent>
       </Card>
 
-      {/* Caption Preview */}
-      {captionData && (
+      {captionData ? (
         <div className="space-y-4">
           <CaptionPreview data={captionData as any} />
           
@@ -262,7 +261,7 @@ export function GeminiCaptionGenerator() {
             </details>
           )}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

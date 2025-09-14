@@ -149,8 +149,7 @@ export default function MediaLibrary() {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Storage Usage */}
-      {usage && (
+      {usage ? (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -173,7 +172,7 @@ export default function MediaLibrary() {
             )}
           </CardContent>
         </Card>
-      )}
+      ) : null}
 
       {/* Upload Area */}
       <Card>

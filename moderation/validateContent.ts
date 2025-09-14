@@ -26,7 +26,7 @@ export async function validateContent(content, context = {}) {
   /* subreddit rules */
   if (subreddit) {
     const rules = await getSubredditRules(subreddit);
-    if (rules?.bannedDomains?.some(domain => content.includes(domain))) {
+    if ((rules as any)?.bannedDomains?.some(domain => content.includes(domain))) {
       violations.push({ type: 'banned_domain', severity: 'block' });
     }
   }

@@ -1417,8 +1417,7 @@ function UserManagementTab({ authenticatedRequest, users }: { authenticatedReque
         </CardContent>
       </Card>
 
-      {/* Action Modal */}
-      {selectedUser && actionType && (
+      {selectedUser && actionType ? (
         <Card className="border-2 border-red-500/50">
           <CardHeader>
             <CardTitle className="text-red-600">
@@ -1505,7 +1504,7 @@ function UserManagementTab({ authenticatedRequest, users }: { authenticatedReque
             </div>
           </CardContent>
         </Card>
-      )}
+      ) : null}
     </div>
   );
 }

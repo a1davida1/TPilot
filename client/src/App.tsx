@@ -97,7 +97,7 @@ function AuthenticatedRoutes() {
     <Switch>
       <Route path="/landing">
         <SEOOptimization {...seoConfigs.landing} />
-        <LandingPage />
+        <UnifiedLanding />
       </Route>
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/">
