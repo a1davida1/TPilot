@@ -1,5 +1,7 @@
 // User-friendly error message mapping and retry logic
 
+import { hasErrorCode, getErrorMessage } from './errorHelpers';
+
 export const errorMessages: Record<string, string> = {
   // Authentication errors
   'auth/invalid-credentials': 'Incorrect email or password. Please try again.',
@@ -104,12 +106,12 @@ export async function retryWithBackoff<T>(
  */
 export function getUserFriendlyError(error: unknown): string {
   // Check for known error codes
-  if (error?.code && errorMessages[error.code]) {
+  if (hasErrorCode(error) && errorMessages[error.code]) {
     return errorMessages[error.code];
   }
   
   // Check for error message patterns
-  const errorString = error?.message || error?.toString() || '';
+  const errorString = getErrorMessage(error);
   
   // Pattern matching for common errors
   if (errorString.includes('quota') || errorString.includes('limit exceeded')) {
@@ -141,11 +143,12 @@ export function getUserFriendlyError(error: unknown): string {
  * Determine if an error is retryable
  */
 export function isRetryableError(error: unknown): boolean {
-  const errorString = error?.message || error?.toString() || '';
-  const code = error?.code || '';
+  const errorString = getErrorMessage(error);
+  const code = hasErrorCode(error) ? error.code : '';
+  const errorWithStatus = error as { status?: number };
   
   // Don't retry client errors
-  if (error?.status >= 400 && error?.status < 500) {
+  if (errorWithStatus?.status && errorWithStatus.status >= 400 && errorWithStatus.status < 500) {
     return false;
   }
   
@@ -154,7 +157,7 @@ export function isRetryableError(error: unknown): boolean {
     errorString.includes('network') ||
     errorString.includes('timeout') ||
     errorString.includes('fetch') ||
-    error?.status >= 500 ||
+    (errorWithStatus?.status && errorWithStatus.status >= 500) ||
     code === 'ECONNRESET' ||
     code === 'ETIMEDOUT'
   ) {
