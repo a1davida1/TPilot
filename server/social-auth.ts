@@ -6,6 +6,9 @@ import type { Express, Request, Response } from 'express';
 import type { AuthenticateOptions } from 'passport';
 import type { User } from '@shared/schema';
 import { storage } from './storage';
+import jwt from 'jsonwebtoken';
+import { blacklistToken } from './lib/tokenBlacklist';
+import { logger } from './bootstrap/logger';
 
 export function setupSocialAuth(app: Express) {
   // Note: passport.initialize() and passport.session() are now called from routes.ts
@@ -169,7 +172,7 @@ function setupAuthRoutes(app: Express) {
   );
 
   // Logout with comprehensive error handling
-  app.post('/api/auth/logout', (req: Request, res: Response) => {
+  app.post('/api/auth/logout', async (req: Request, res: Response) => {
     const r = req as Request & {
       session?: { destroy?: (cb: (err?: unknown) => void) => void };
       logout?: (cb: (err?: unknown) => void) => void;
@@ -193,22 +196,29 @@ function setupAuthRoutes(app: Express) {
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'strict'
         });
+        const authHeader = req.headers['authorization'];
+        const token = authHeader?.split(' ')[1] || req.cookies?.authToken;
+        if (token) {
+          const decoded = jwt.decode(token) as { exp?: number } | null;
+          const ttl = decoded?.exp ? decoded.exp - Math.floor(Date.now() / 1000) : 86400;
+          await blacklistToken(token, ttl);
+        }
         return res.json({ message: 'Logged out successfully' });
       }
 
       // If using Passport and session exists
       if (r.logout) {
-        r.logout((err) => {
+        r.logout(async (err) => {
           if (err) {
-            console.error('Passport logout error:', err);
+            logger.error('Passport logout error', { error: err instanceof Error ? err.message : String(err) });
             // Continue with logout anyway
           }
           
           // Destroy session if it exists
           if (r.session && r.session.destroy) {
-            r.session.destroy((destroyErr) => {
+            r.session.destroy(async (destroyErr) => {
               if (destroyErr) {
-                console.error('Session destroy error:', destroyErr);
+                logger.error('Session destroy error', { error: destroyErr instanceof Error ? destroyErr.message : String(destroyErr) });
               }
               // Clear cookies regardless
               res.clearCookie('connect.sid', {
@@ -226,6 +236,13 @@ function setupAuthRoutes(app: Express) {
                 secure: process.env.NODE_ENV === 'production',
                 sameSite: 'strict'
               });
+              const authHeader = req.headers['authorization'];
+              const token = authHeader?.split(' ')[1] || req.cookies?.authToken;
+              if (token) {
+                const decoded = jwt.decode(token) as { exp?: number } | null;
+                const ttl = decoded?.exp ? decoded.exp - Math.floor(Date.now() / 1000) : 86400;
+                await blacklistToken(token, ttl);
+              }
               res.json({ message: 'Logged out successfully' });
             });
           } else {
@@ -245,15 +262,22 @@ function setupAuthRoutes(app: Express) {
               secure: process.env.NODE_ENV === 'production',
               sameSite: 'strict'
             });
+            const authHeader = req.headers['authorization'];
+            const token = authHeader?.split(' ')[1] || req.cookies?.authToken;
+            if (token) {
+              const decoded = jwt.decode(token) as { exp?: number } | null;
+              const ttl = decoded?.exp ? decoded.exp - Math.floor(Date.now() / 1000) : 86400;
+              await blacklistToken(token, ttl);
+            }
             res.json({ message: 'Logged out successfully' });
           }
         });
       } else {
         // No passport logout, destroy session directly
         if (r.session && r.session.destroy) {
-          r.session.destroy((err) => {
+          r.session.destroy(async (err) => {
             if (err) {
-              console.error('Session destroy error:', err);
+              logger.error('Session destroy error', { error: err instanceof Error ? err.message : String(err) });
             }
             res.clearCookie('connect.sid', {
               httpOnly: true,
@@ -270,6 +294,13 @@ function setupAuthRoutes(app: Express) {
               secure: process.env.NODE_ENV === 'production',
               sameSite: 'strict'
             });
+            const authHeader = req.headers['authorization'];
+            const token = authHeader?.split(' ')[1] || req.cookies?.authToken;
+            if (token) {
+              const decoded = jwt.decode(token) as { exp?: number } | null;
+              const ttl = decoded?.exp ? decoded.exp - Math.floor(Date.now() / 1000) : 86400;
+              await blacklistToken(token, ttl);
+            }
             res.json({ message: 'Logged out successfully' });
           });
         } else {
@@ -289,11 +320,18 @@ function setupAuthRoutes(app: Express) {
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict'
           });
+          const authHeader = req.headers['authorization'];
+          const token = authHeader?.split(' ')[1] || req.cookies?.authToken;
+          if (token) {
+            const decoded = jwt.decode(token) as { exp?: number } | null;
+            const ttl = decoded?.exp ? decoded.exp - Math.floor(Date.now() / 1000) : 86400;
+            await blacklistToken(token, ttl);
+          }
           res.json({ message: 'Logged out successfully' });
         }
       }
     } catch (error) {
-      console.error('Logout error:', error);
+      logger.error('Logout error', { error: error instanceof Error ? error.message : String(error) });
       // Even on error, clear cookies to help user
       res.clearCookie('connect.sid', {
         httpOnly: true,

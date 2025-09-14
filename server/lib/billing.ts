@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { env } from "./config.js";
 import { db } from "../db.js";
 import { subscriptions, invoices } from "@shared/schema.js";
+import { logger } from "../bootstrap/logger";
 import { eq } from "drizzle-orm";
 
 export interface CCBillFormData {
@@ -122,13 +123,14 @@ export class CCBillProcessor {
           break;
           
         default:
-          console.warn(`Unhandled CCBill event: ${eventType}`);
+          logger.warn('Unhandled CCBill event', { eventType });
       }
       
       return { success: true, message: 'Webhook processed successfully' };
       
-    } catch (error) {
-      console.error('CCBill webhook error:', error);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('CCBill webhook error', { error: message });
       return { success: false, message: 'Internal server error' };
     }
   }

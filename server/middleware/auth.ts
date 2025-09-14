@@ -3,6 +3,7 @@ import express from 'express';
 import { logger } from './security.js';
 import { db } from '../db.js';
 import { users } from '@shared/schema.js';
+import { isTokenBlacklisted } from '../lib/tokenBlacklist';
 
 import { eq } from 'drizzle-orm';
 
@@ -14,7 +15,7 @@ export interface AuthRequest extends express.Request {
 }
 
 // Get JWT secret (must be set in environment)
-const JWT_SECRET = process.env.JWT_SECRET!;
+const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
   throw new Error('JWT_SECRET environment variable is required');
 }
@@ -38,6 +39,9 @@ export const authenticateToken = async (req: AuthRequest, res: express.Response,
 
   // Try JWT token first
   if (token) {
+    if (await isTokenBlacklisted(token)) {
+      return res.status(401).json({ message: 'Token revoked' });
+    }
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as { userId: number; email: string; iat: number; exp: number };
       
