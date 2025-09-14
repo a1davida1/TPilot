@@ -5,17 +5,29 @@ import { Badge } from "@/components/ui/badge";
 import { Copy, Check, AlertCircle } from "lucide-react";
 import { useState } from "react";
 
-export function CaptionPreview({ data }: { data: unknown }) {
+interface CaptionPreviewData {
+  final: {
+    caption: string;
+    alt?: string;
+    hashtags?: string[];
+    mood?: string;
+    style?: string;
+    cta?: string;
+    safety_level: string;
+  };
+  ranked: { reason: string };
+}
+
+export function CaptionPreview({ data }: { data: CaptionPreviewData }) {
   const [copiedCaption, setCopiedCaption] = useState(false);
   const [copiedJSON, setCopiedJSON] = useState(false);
 
   if (!data) return null;
   
-  // Safe destructuring with fallbacks
-  const { final, ranked } = (data as any) || {};
+  const { final, ranked } = data;
   if (!final) return null;
   
-  const charCount = final.caption?.length || 0;
+  const charCount = final.caption.length;
 
   const handleCopyCaption = async () => {
     await navigator.clipboard.writeText(final.caption);
@@ -60,7 +72,7 @@ export function CaptionPreview({ data }: { data: unknown }) {
         {/* Hashtags */}
         {final.hashtags && final.hashtags.length > 0 && (
           <div className="flex flex-wrap gap-2">
-            {final.hashtags.map((h: string, index: number) => (
+            {final.hashtags.map((h, index) => (
               <Badge 
                 key={`${h}-${index}`} 
                 variant="secondary" 
@@ -80,11 +92,11 @@ export function CaptionPreview({ data }: { data: unknown }) {
           </div>
           <div className="space-y-1">
             <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Style</p>
-            <p className="text-sm text-gray-700 dark:text-gray-300">{final.style}</p>
+            <p className="text-sm text-gray-700 dark:text-gray-300">{final.style || 'N/A'}</p>
           </div>
           <div className="space-y-1">
             <p className="text-xs font-medium text-gray-500 dark:text-gray-400">CTA</p>
-            <p className="text-sm text-gray-700 dark:text-gray-300">{final.cta}</p>
+            <p className="text-sm text-gray-700 dark:text-gray-300">{final.cta || 'N/A'}</p>
           </div>
           <div className="space-y-1">
             <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Safety Level</p>
