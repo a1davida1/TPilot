@@ -47,6 +47,7 @@ interface MultiAIResponse {
   };
   provider: string;
   estimatedCost: number;
+  platform?: string;
 }
 
 export async function generateWithMultiProvider(request: MultiAIRequest): Promise<MultiAIResponse> {
@@ -78,6 +79,7 @@ export async function generateWithMultiProvider(request: MultiAIRequest): Promis
         safeLog('info', 'AI generation successful', { provider: provider.name });
         return {
           ...result,
+          platform: request.platform,
           provider: provider.name,
           estimatedCost: calculateCost(prompt, result.content, provider)
         };
@@ -237,8 +239,19 @@ function buildPrompt(request: MultiAIRequest): string {
     mainPrompt = 'Create engaging content that fits my personality and brand.';
   }
 
+  const platformHint = platform === 'reddit'
+    ? `Use Reddit markdown and community tone${subreddit ? ` for r/${subreddit}` : ''}.`
+    : platform === 'instagram'
+    ? 'Write in Instagram caption style with hashtag suggestions.'
+    : platform === 'x'
+    ? 'Keep responses concise for Twitter/X.'
+    : platform === 'tiktok'
+    ? 'Focus on short hooks suitable for TikTok.'
+    : '';
+
   return `
 You are creating content for ${platform}${subreddit ? ` (specifically for r/${subreddit})` : ''}.
+${platformHint}
 
 User Profile:
 - Tone: ${profile.toneOfVoice}
