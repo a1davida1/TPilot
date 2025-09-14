@@ -13,6 +13,19 @@ vi.mock('../../server/lib/gemini.js', () => ({
   },
 }));
 
+vi.mock('../../server/caption/openaiFallback.js', () => ({
+  openAICaptionFallback: vi.fn().mockResolvedValue({
+    caption: 'Fallback caption',
+    hashtags: ['#fallback1', '#fallback2', '#fallback3'],
+    safety_level: 'normal',
+    alt: 'Fallback alt text that is sufficiently long',
+    mood: 'neutral',
+    style: 'informative',
+    cta: 'Check this out',
+    nsfw: false,
+  }),
+}));
+
 vi.mock('../../server/storage.js', () => ({
   storage: {
     getUserById: vi.fn(),
@@ -28,7 +41,9 @@ describe('Caption Generation', () => {
 
   describe('Gemini Pipeline', () => {
     it('should handle image-based caption generation', async () => {
-      const mockImageUrl = 'data:image/jpeg;base64,abc123';
+      const mockImageUrl =
+        'data:image/jpeg;base64,' +
+        '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP///////////////wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACP/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8Af//Z';
       const mockPlatform = 'instagram';
       const mockVoice = 'flirty_playful';
 
@@ -45,37 +60,46 @@ describe('Caption Generation', () => {
 
       const mockVariantsResponse = {
         response: {
-          text: () => JSON.stringify([
-            {
-              caption: 'Feeling gorgeous tonight ✨',
-              hashtags: ['#lingerie', '#confidence'],
-              safety_level: 'spicy_safe',
-              mood: 'confident',
-              style: 'authentic',
-              cta: 'What do you think?',
-            },
-          ]),
+          text: () =>
+            JSON.stringify([
+              {
+                caption: 'Feeling gorgeous tonight ✨',
+                hashtags: ['#lingerie', '#confidence', '#style'],
+                safety_level: 'spicy_safe',
+                mood: 'confident',
+                style: 'authentic',
+                cta: 'What do you think?',
+                alt: 'A glamorous example alt text to satisfy schema',
+                nsfw: false,
+              },
+            ]),
         },
       };
 
       const mockRankResponse = {
         response: {
-          text: () => JSON.stringify({
-            final: {
-              caption: 'Feeling gorgeous tonight ✨',
-              hashtags: ['#lingerie', '#confidence'],
-              safety_level: 'spicy_safe',
-              mood: 'confident',
-              style: 'authentic',
-              cta: 'What do you think?',
-            },
-          }),
+          text: () =>
+            JSON.stringify({
+              winner_index: 0,
+              scores: [5, 4, 3, 2, 1],
+              reason: 'Selected based on engagement potential',
+              final: {
+                caption: 'Feeling gorgeous tonight ✨',
+                hashtags: ['#lingerie', '#confidence', '#style'],
+                safety_level: 'spicy_safe',
+                mood: 'confident',
+                style: 'authentic',
+                cta: 'What do you think?',
+                alt: 'A glamorous example alt text to satisfy schema',
+                nsfw: false,
+              },
+            }),
         },
       };
 
       const { textModel, visionModel } = await import('../../server/lib/gemini.js');
-      visionModel.generateContent.mockResolvedValueOnce(mockFactsResponse);
-      textModel.generateContent
+      (visionModel.generateContent as any).mockResolvedValueOnce(mockFactsResponse);
+      (textModel.generateContent as any)
         .mockResolvedValueOnce(mockVariantsResponse)
         .mockResolvedValueOnce(mockRankResponse);
 
@@ -85,6 +109,9 @@ describe('Caption Generation', () => {
         voice: mockVoice,
       });
 
+      const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.js');
+
+      expect(openAICaptionFallback).not.toHaveBeenCalled();
       expect(result.final).toMatchObject({
         caption: expect.any(String),
         safety_level: expect.stringMatching(/safe|low|spicy_safe/),
@@ -108,7 +135,7 @@ describe('Caption Generation', () => {
       };
 
       const { textModel } = await import('../../server/lib/gemini.js');
-      textModel.generateContent.mockResolvedValue(mockResponse);
+      (textModel.generateContent as any).mockResolvedValue(mockResponse);
 
       // This would normally be called as part of the pipeline
       const { generateVariants } = await import('../../server/caption/geminiPipeline.js');
@@ -140,7 +167,7 @@ describe('Caption Generation', () => {
       };
 
       const { textModel } = await import('../../server/lib/gemini.js');
-      textModel.generateContent.mockResolvedValue(mockResponse);
+      (textModel.generateContent as any).mockResolvedValue(mockResponse);
 
       const result = await pipelineTextOnly({
         platform: 'instagram',
@@ -175,7 +202,7 @@ describe('Caption Generation', () => {
       };
 
       const { textModel } = await import('../../server/lib/gemini.js');
-      const genSpy = vi.spyOn(textModel, 'generateContent').mockResolvedValue(mockResponse);
+      const genSpy = vi.spyOn(textModel, 'generateContent').mockResolvedValue(mockResponse as any);
 
       const result = await pipelineRewrite({
         platform: 'instagram',
