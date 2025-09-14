@@ -143,7 +143,8 @@ app.use((req, res, next) => {
         const path = await import("path");
         const { fileURLToPath } = await import("url");
         const __dirname = path.dirname(fileURLToPath(import.meta.url));
-        const clientPath = path.join(__dirname, "..", "client", "dist");
+        // In production the build output is copied to dist/client
+        const clientPath = path.join(__dirname, "..", "client");
         
         // Check if build directory exists
         const fs = await import("fs");
@@ -175,7 +176,8 @@ app.use((req, res, next) => {
       const path = await import("path");
       const { fileURLToPath } = await import("url");
       const __dirname = path.dirname(fileURLToPath(import.meta.url));
-      const clientPath = path.join(__dirname, "..", "client", "dist");
+      // In production the build output is copied to dist/client
+      const clientPath = path.join(__dirname, "..", "client");
       
       // Check if build directory exists
       const fs = await import("fs");
