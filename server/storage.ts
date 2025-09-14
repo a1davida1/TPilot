@@ -38,7 +38,7 @@ import {
   verificationTokens,
   invoices,
   userSessions
-} from "@shared/schema";
+} from "../shared/schema.js";
 import { db } from "./db.js";
 import { eq, desc, and, gte, sql, count, isNull } from "drizzle-orm";
 import { safeLog } from './lib/logger-utils.js';

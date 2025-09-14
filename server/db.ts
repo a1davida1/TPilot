@@ -1,7 +1,8 @@
 import { Pool, neonConfig } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import ws from "ws";
-import * as schema from "@shared/schema";
+// Use a relative import so Node doesn't rely on build‑time aliases.
+import * as schema from "../shared/schema.js";
 
 neonConfig.webSocketConstructor = ws;
 
