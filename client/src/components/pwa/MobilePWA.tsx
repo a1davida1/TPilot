@@ -44,7 +44,7 @@ export default function MobilePWA() {
 
     // Listen for install prompt
     const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => {
-      e.preventDefault();
+      (e as Event).preventDefault();
       setInstallPrompt(e);
     };
 
@@ -148,7 +148,7 @@ export default function MobilePWA() {
       return;
     }
 
-    const result = await installPrompt.prompt();
+    const result = await (installPrompt as any).prompt();
     
     if (result.outcome === 'accepted') {
       setIsInstalled(true);
@@ -286,7 +286,7 @@ export default function MobilePWA() {
                   <Share2 className="h-4 w-4 mr-1" />
                   Share
                 </Button>
-                {installPrompt && (
+                {installPrompt && <>
                   <Button
                     size="sm"
                     onClick={handleInstallApp}
@@ -295,7 +295,7 @@ export default function MobilePWA() {
                     <Download className="h-4 w-4 mr-1" />
                     Install
                   </Button>
-                )}
+                </>}
               </div>
             </div>
           </AlertDescription>

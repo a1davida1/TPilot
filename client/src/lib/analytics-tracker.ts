@@ -228,7 +228,7 @@ class AnalyticsTracker {
       userAgent: navigator.userAgent,
       url: window.location.href,
       referrer: document.referrer,
-      ...data
+      ...(data as Record<string, any>)
     };
 
     this.eventQueue.push(eventData);

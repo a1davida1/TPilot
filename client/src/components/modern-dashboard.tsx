@@ -480,12 +480,12 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                       
                       // Only add auth header if we have a valid token
                       if (token && token !== 'undefined' && token !== 'null') {
-                        headers['Authorization'] = `Bearer ${token}`;
+                        (headers as any)['Authorization'] = `Bearer ${token}`;
                       }
                       
                       const response = await fetch('/api/reddit/connect', {
                         method: 'GET',
-                        headers,
+                        headers: headers as HeadersInit,
                         credentials: 'include' // Include cookies for session auth
                       });
                       

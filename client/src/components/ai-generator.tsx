@@ -117,13 +117,14 @@ export function AIGenerator({ onContentGenerated }: AIGeneratorProps) {
     mutationFn: async (data: unknown) => {
       try {
         const formData = new FormData();
-        Object.keys(data).forEach(key => {
+        Object.keys(data as Record<string, any>).forEach(key => {
+          const typedData = data as Record<string, any>;
           if (key === 'userProfile') {
-            formData.append(key, JSON.stringify(data[key]));
-          } else if (key === 'image' && data[key]) {
-            formData.append(key, data[key]);
-          } else if (data[key] !== undefined && data[key] !== null) {
-            formData.append(key, data[key]);
+            formData.append(key, JSON.stringify(typedData[key]));
+          } else if (key === 'image' && typedData[key]) {
+            formData.append(key, typedData[key]);
+          } else if (typedData[key] !== undefined && typedData[key] !== null) {
+            formData.append(key, typedData[key]);
           }
         });
         

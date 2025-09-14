@@ -101,7 +101,7 @@ export function AppleInspiredApp() {
   const generateContentMutation = useMutation({
     mutationFn: async (data: unknown) => {
       const response = await apiRequest("POST", "/api/generate-ai", {
-        ...data,
+        ...(data as Record<string, any>),
         generationType: "prompt",
         userProfile: {
           toneOfVoice: "confident",
