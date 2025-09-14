@@ -27,19 +27,14 @@ class PerformanceMonitor {
       const start = process.hrtime.bigint();
       const startMemory = process.memoryUsage();
 
-      // Store original end function
       const originalEnd = res.end.bind(res);
 
-      // Override end function to capture metrics
-      const monitoredEnd = (...args: any[]) => {
-        // Restore original end function
+      const monitoredEnd: Response['end'] = (...args: Parameters<Response['end']>) => {
         res.end = originalEnd;
 
-        // Calculate duration
         const end = process.hrtime.bigint();
-        const duration = Number(end - start) / 1000000; // Convert to milliseconds
+        const duration = Number(end - start) / 1000000;
 
-        // Create metric
         const metric: PerformanceMetric = {
           path: req.path,
           method: req.method,
@@ -51,20 +46,16 @@ class PerformanceMonitor {
           userId: (req as { user?: { id: string } }).user?.id
         };
 
-        // Store metric
         this.recordMetric(metric);
 
-        // Log slow requests
         if (duration > this.slowRequestThreshold) {
           this.handleSlowRequest(metric);
         }
 
-        // Alert on critical performance issues
         if (duration > this.criticalThreshold) {
           this.handleCriticalPerformance(metric);
         }
 
-        // Call original end function
         return originalEnd(...args);
       };
       res.end = monitoredEnd;
