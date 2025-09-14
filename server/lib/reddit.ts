@@ -1,8 +1,24 @@
 import snoowrap from 'snoowrap';
 import { db } from '../db.js';
-import { users, creatorAccounts } from '@shared/schema.js';
+import { creatorAccounts } from '@shared/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { decrypt } from '../services/state-store.js';
+
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    const message = `Missing required environment variable: ${name}`;
+    console.warn(message);
+    throw new Error(message);
+  }
+  return value;
+}
+
+const REDDIT_CLIENT_ID = requireEnv('REDDIT_CLIENT_ID');
+const REDDIT_CLIENT_SECRET = requireEnv('REDDIT_CLIENT_SECRET');
+const REDDIT_USER_AGENT = requireEnv('REDDIT_USER_AGENT');
+requireEnv('REDDIT_USERNAME');
+requireEnv('REDDIT_PASSWORD');
 
 export interface RedditPostOptions {
   subreddit: string;
@@ -38,9 +54,9 @@ export class RedditManager {
   constructor(accessToken: string, refreshToken: string, userId: number) {
     this.userId = userId;
     this.reddit = new snoowrap({
-      userAgent: 'ThottoPilot/1.0 (Content scheduling bot)',
-      clientId: process.env.REDDIT_CLIENT_ID!,
-      clientSecret: process.env.REDDIT_CLIENT_SECRET!,
+      userAgent: REDDIT_USER_AGENT,
+      clientId: REDDIT_CLIENT_ID,
+      clientSecret: REDDIT_CLIENT_SECRET,
       accessToken,
       refreshToken,
     });
@@ -511,10 +527,6 @@ export class RedditManager {
  * Initialize Reddit OAuth flow
  */
 export function getRedditAuthUrl(state: string): string {
-  if (!process.env.REDDIT_CLIENT_ID) {
-    throw new Error('Reddit OAuth credentials not configured');
-  }
-
   // Always use a consistent redirect URI
   let redirectUri = process.env.REDDIT_REDIRECT_URI;
   
@@ -529,7 +541,7 @@ export function getRedditAuthUrl(state: string): string {
 
   const baseUrl = 'https://www.reddit.com/api/v1/authorize';
   const params = new URLSearchParams({
-    client_id: process.env.REDDIT_CLIENT_ID,
+    client_id: REDDIT_CLIENT_ID,
     response_type: 'code',
     state,
     redirect_uri: redirectUri,
@@ -548,10 +560,6 @@ export async function exchangeRedditCode(code: string): Promise<{
   refreshToken: string;
   expiresIn: number;
 }> {
-  if (!process.env.REDDIT_CLIENT_ID || !process.env.REDDIT_CLIENT_SECRET) {
-    throw new Error('Reddit OAuth credentials not configured');
-  }
-
   // Always use a consistent redirect URI (must match exactly)
   let redirectUri = process.env.REDDIT_REDIRECT_URI;
   
@@ -568,9 +576,9 @@ export async function exchangeRedditCode(code: string): Promise<{
     const response = await fetch('https://www.reddit.com/api/v1/access_token', {
       method: 'POST',
       headers: {
-        'Authorization': `Basic ${Buffer.from(`${process.env.REDDIT_CLIENT_ID}:${process.env.REDDIT_CLIENT_SECRET}`).toString('base64')}`,
+        'Authorization': `Basic ${Buffer.from(`${REDDIT_CLIENT_ID}:${REDDIT_CLIENT_SECRET}`).toString('base64')}`,
         'Content-Type': 'application/x-www-form-urlencoded',
-        'User-Agent': 'ThottoPilot/1.0',
+        'User-Agent': REDDIT_USER_AGENT,
       },
       body: new URLSearchParams({
         grant_type: 'authorization_code',
