@@ -98,7 +98,7 @@ export function RedditQuickPost() {
       return response.json();
     },
     onSuccess: (data: unknown) => {
-      if (data.success) {
+      if ((data as any).success) {
         toast({
           title: "🎉 Posted Successfully!",
           description: `Your post is now live on Reddit`,
@@ -112,7 +112,7 @@ export function RedditQuickPost() {
       } else {
         toast({
           title: "❌ Posting Failed",
-          description: data.error || "Unable to post to Reddit",
+          description: (data as any).error || "Unable to post to Reddit",
           variant: "destructive"
         });
       }

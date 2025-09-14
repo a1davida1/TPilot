@@ -12,6 +12,7 @@ import { CaptionPreview } from "./CaptionPreview";
 import { Loader2, Sparkles, Upload, AlertCircle, Image as ImageIcon, Type, Edit3 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { getErrorMessage } from '@/utils/errorHelpers';
 
 const PLATFORMS = [
   { value: "reddit", label: "Reddit" },
@@ -126,10 +127,10 @@ export function GeminiCaptionGeneratorTabs() {
       });
     } catch (err: unknown) {
       console.error('Generation error:', err);
-      setError(err.message || 'Failed to generate caption');
+      setError(getErrorMessage(err) || 'Failed to generate caption');
       toast({
         title: "Generation failed",
-        description: err.message || 'Please try again',
+        description: getErrorMessage(err) || 'Please try again',
         variant: "destructive"
       });
     } finally {
@@ -161,10 +162,10 @@ export function GeminiCaptionGeneratorTabs() {
       });
     } catch (err: unknown) {
       console.error('Generation error:', err);
-      setError(err.message || 'Failed to generate caption');
+      setError(getErrorMessage(err) || 'Failed to generate caption');
       toast({
         title: "Generation failed",
-        description: err.message || 'Please try again',
+        description: getErrorMessage(err) || 'Please try again',
         variant: "destructive"
       });
     } finally {
@@ -203,10 +204,10 @@ export function GeminiCaptionGeneratorTabs() {
       });
     } catch (err: unknown) {
       console.error('Rewrite error:', err);
-      setError(err.message || 'Failed to rewrite caption');
+      setError(getErrorMessage(err) || 'Failed to rewrite caption');
       toast({
         title: "Rewrite failed",
-        description: err.message || 'Please try again',
+        description: getErrorMessage(err) || 'Please try again',
         variant: "destructive"
       });
     } finally {

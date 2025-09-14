@@ -203,7 +203,7 @@ export async function fetchWithRetry(
  * Error recovery suggestions
  */
 export function getErrorRecoverySuggestion(error: unknown): string | null {
-  const errorString = error?.message || error?.code || '';
+  const errorString = (error as any)?.message || (error as any)?.code || '';
   
   if (errorString.includes('quota') || errorString.includes('limit')) {
     return 'Consider upgrading to Pro for unlimited access';

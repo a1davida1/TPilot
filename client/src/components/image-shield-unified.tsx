@@ -33,6 +33,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { protectImage, downloadProtectedImage, protectionPresets, type ImageProcessingOptions } from '@/lib/image-protection';
+import { getErrorMessage } from '@/utils/errorHelpers';
 
 interface ImageShieldUnifiedProps {
   userTier?: 'guest' | 'free' | 'pro' | 'premium';
@@ -127,7 +128,7 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
     onError: (error: unknown) => {
       toast({
         title: "Upload failed",
-        description: error.message || "Failed to upload image to gallery.",
+        description: getErrorMessage(error) || "Failed to upload image to gallery.",
         variant: "destructive"
       });
     }
