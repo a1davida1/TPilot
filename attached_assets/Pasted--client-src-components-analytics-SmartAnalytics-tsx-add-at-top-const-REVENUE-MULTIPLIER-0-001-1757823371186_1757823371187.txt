@@ -1,0 +1,95 @@
+# client/src/components/analytics/SmartAnalytics.tsx (add at top)
++ const REVENUE_MULTIPLIER = 0.001;
++ const REVENUE_PER_GENERATION = 0.05;
++ 
++ interface PostType {
++   title?: string;
++   platform?: string;
++   views?: number;
++   engagement?: number;
++ }
++ 
++ interface ItemType {
++   date?: string;
++   estimatedViews?: number;
++   estimatedEngagement?: number;
++ }
+
+# Update all post accesses
+- title: String(post?.title || `Post ${index + 1}`),
++ title: String((post as PostType)?.title || `Post ${index + 1}`),
+# Apply same pattern to all post property accesses
+
+# client/src/components/enhanced-ai-generator.tsx (lines 135-140, 514-567)
++ interface GeneratedContentType {
++   titles?: string[];
++   content?: string;
++   photoInstructions?: string | object;
++ }
+
+- platform: data.platform || 'reddit',
++ platform: (data as any).platform || 'reddit',
+# Apply to all data accesses
+
+- {generatedContent.titles && generatedContent.titles.length > 0 && (
++ {(generatedContent as GeneratedContentType).titles && (generatedContent as GeneratedContentType).titles!.length > 0 && (
+# Apply to all generatedContent accesses
+
+# client/src/components/CaptionPreview.tsx (line 15)
+- const { final, ranked } = data || {};
++ const { final, ranked } = (data as any) || {};
+
+# client/src/components/GeminiCaptionGenerator.tsx (lines 238, 260)
+- {/* Caption Preview */}
++ <>{/* Caption Preview */}</>
+
+- {JSON.stringify(captionData.facts, null, 2)}
++ {JSON.stringify((captionData as any).facts, null, 2)}
+
+# client/src/components/GeminiCaptionGeneratorTabs.tsx (line 537)
+- {/* Caption Preview - Shared across all tabs */}
++ <>{/* Caption Preview - Shared across all tabs */}</>
+
+# client/src/components/enterprise files
+- {post.resultJson?.url && (
++ {(post.resultJson as any)?.url && (
+
+# client/src/components/provider-status.tsx (lines 90-95)
++ const typedProvider = provider as {name?: string; description?: string; status?: string; inputCost?: string; outputCost?: string; savings?: string};
+- const providerName = safeString(provider?.name, `Provider ${index + 1}`);
++ const providerName = safeString(typedProvider?.name, `Provider ${index + 1}`);
+# Apply to all provider accesses
+
+# client/src/utils/safeDataAccess.ts (lines 27, 33, 49)
+- if (current === null || current === undefined || !(key in current)) {
++ if (current === null || current === undefined || typeof current !== 'object' || !(key in current)) {
+
+- return current === null || current === undefined ? fallback : current;
++ return current === null || current === undefined ? fallback : current as T;
+
+- return value && typeof value === 'object' && !Array.isArray(value) ? value : fallback;
++ return value && typeof value === 'object' && !Array.isArray(value) ? value as T : fallback;
+
+# moderation/validateContent.ts (add at top)
++ interface Violation {
++   type: string;
++   severity: string;
++   detail?: any;
++ }
+
+- const violations = [];
++ const violations: Violation[] = [];
+
+- const { subreddit, userId, allowNSFW = false } = context;
++ const { subreddit, userId, allowNSFW = false } = context as any;
+
+# client/src/pages/admin.tsx (apply same fixes as admin-portal.tsx)
+# Cast all user, provider, page, source to appropriate types
+
+# client/src/pages/admin-leads.tsx (line 220)
+- onValueChange={(value: 'all' | 'confirmed' | 'pending') => setStatusFilter(value)}
++ onValueChange={(value) => setStatusFilter(value as 'all' | 'confirmed' | 'pending')}
+
+# client/src/components/enterprise/MediaLibrary.tsx (line 152)
+- {/* Storage Usage */}
++ <>{/* Storage Usage */}</>

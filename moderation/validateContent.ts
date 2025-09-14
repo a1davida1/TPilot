@@ -8,8 +8,14 @@ import {
   detectBenignKeywords
 } from './moderation-utils.js';
 
+interface Violation {
+  type: string;
+  severity: string;
+  detail?: any;
+}
+
 export async function validateContent(content, context = {}) {
-  const violations = [];
+  const violations: Violation[] = [];
   const { subreddit, userId, allowNSFW = false } = context;
 
   /* length check */

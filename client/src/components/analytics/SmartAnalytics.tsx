@@ -53,6 +53,9 @@ interface AnalyticsData {
 
 const COLORS = ['#8B5CF6', '#EC4899', '#06B6D4', '#10B981', '#F59E0B'];
 
+const REVENUE_MULTIPLIER = 0.001;
+const REVENUE_PER_GENERATION = 0.05;
+
 // Safe number formatting with fallbacks
 const safeNumber = (value: unknown, fallback: number = 0): number => {
   const num = Number(value);

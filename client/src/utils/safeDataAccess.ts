@@ -24,13 +24,13 @@ export const safeGet = <T>(obj: unknown, path: string, fallback: T): T => {
   let current = obj;
   
   for (const key of keys) {
-    if (current === null || current === undefined || !(key in current)) {
+    if (current === null || current === undefined || (typeof current !== 'object') || !(key in current)) {
       return fallback;
     }
     current = current[key];
   }
   
-  return current === null || current === undefined ? fallback : current;
+  return current === null || current === undefined ? fallback : current as T;
 };
 
 // Safe string conversion with fallback

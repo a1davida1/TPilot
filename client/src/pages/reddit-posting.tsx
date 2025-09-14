@@ -326,7 +326,7 @@ export default function RedditPostingPage() {
     if (postType === 'image' && imageFile) {
       const reader = new FileReader();
       reader.onloadend = async () => {
-        postData.imageData = reader.result;
+        postData.imageData = reader.result as string | undefined;
         submitPost(postData);
       };
       reader.readAsDataURL(imageFile);
@@ -338,7 +338,7 @@ export default function RedditPostingPage() {
             const reader = new FileReader();
             reader.onloadend = () => {
               resolve({
-                data: reader.result,
+                data: reader.result as string | ArrayBuffer | null,
                 caption: file.name
               });
             };
@@ -346,7 +346,7 @@ export default function RedditPostingPage() {
           });
         })
       );
-      postData.images = images;
+      postData.images = images as Array<{ data: string | ArrayBuffer | null; caption: string }>;
       submitPost(postData);
     } else if (postType === 'link') {
       postData.url = url;

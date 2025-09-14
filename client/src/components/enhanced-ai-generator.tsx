@@ -17,6 +17,12 @@ interface EnhancedAIGeneratorProps {
   isGuestMode?: boolean;
 }
 
+interface GeneratedContentType {
+  titles?: string[];
+  content?: string;
+  photoInstructions?: string | object;
+}
+
 export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }: EnhancedAIGeneratorProps) {
   const [customPrompt, setCustomPrompt] = useState("");
   const [platform, setPlatform] = useState("reddit");
@@ -132,12 +138,12 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
     mutationFn: async (data: unknown) => {
       const response = await apiRequest("POST", "/api/generate-unified", {
         mode: 'text',
-        platform: data.platform || 'reddit',
-        style: data.style || 'confident',
-        theme: data.theme || 'general',
-        prompt: data.customPrompt || data.prompt,
-        customInstructions: data.customPrompt || data.prompt,
-        includePromotion: data.includePromotion || data.allowsPromotion
+        platform: (data as any).platform || 'reddit',
+        style: (data as any).style || 'confident',
+        theme: (data as any).theme || 'general',
+        prompt: (data as any).customPrompt || (data as any).prompt,
+        customInstructions: (data as any).customPrompt || (data as any).prompt,
+        includePromotion: (data as any).includePromotion || (data as any).allowsPromotion
       });
       return await response.json();
     },
@@ -511,10 +517,10 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
             <h4 className="font-semibold text-lg text-pink-800">Generated Content</h4>
             
             {/* Titles */}
-            {generatedContent.titles && generatedContent.titles.length > 0 && (
+            {(generatedContent as GeneratedContentType).titles && (generatedContent as GeneratedContentType).titles!.length > 0 && (
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-pink-700">Titles:</Label>
-                {(Array.isArray(generatedContent.titles) ? generatedContent.titles : [generatedContent.titles]).map((title: string, index: number) => (
+                {(Array.isArray((generatedContent as GeneratedContentType).titles) ? (generatedContent as GeneratedContentType).titles! : [(generatedContent as GeneratedContentType).titles!]).map((title: string, index: number) => (
                   <div key={index} className="relative p-3 bg-white rounded-lg border group">
                     <p className="text-sm font-medium pr-8">{title}</p>
                     <Button
