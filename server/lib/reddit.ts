@@ -26,6 +26,11 @@ export interface PostingPermission {
   nextAllowedPost?: Date;
 }
 
+interface RedditSubmission {
+  id: string;
+  permalink: string;
+}
+
 export class RedditManager {
   private reddit: snoowrap;
   private userId: number;
@@ -93,30 +98,48 @@ export class RedditManager {
         };
       }
 
-      let submission;
+      let submission: RedditSubmission;
 
       if (options.url) {
         // Link post
-        submission = await this.reddit
-          .getSubreddit(options.subreddit)
-          .submitLink({
-            subredditName: options.subreddit,
-            title: options.title,
-            url: options.url,
-            nsfw: options.nsfw || false,
-            spoiler: options.spoiler || false,
-          });
+        const subreddit = (this.reddit as unknown as {
+          getSubreddit(name: string): {
+            submitLink(input: {
+              subredditName: string;
+              title: string;
+              url: string;
+              nsfw: boolean;
+              spoiler: boolean;
+            }): Promise<RedditSubmission>;
+          };
+        }).getSubreddit(options.subreddit);
+        submission = await subreddit.submitLink({
+          subredditName: options.subreddit,
+          title: options.title,
+          url: options.url,
+          nsfw: options.nsfw ?? false,
+          spoiler: options.spoiler ?? false,
+        });
       } else {
         // Text post
-        const subreddit = await (this.reddit as any)
-          .getSubreddit(options.subreddit);
-        submission = await (subreddit.submitSelfpost({
-            subredditName: options.subreddit,
-            title: options.title,
-            text: options.body || '',
-            nsfw: options.nsfw || false,
-            spoiler: options.spoiler || false,
-          }));
+        const subreddit = (this.reddit as unknown as {
+          getSubreddit(name: string): {
+            submitSelfpost(input: {
+              subredditName: string;
+              title: string;
+              text: string;
+              nsfw: boolean;
+              spoiler: boolean;
+            }): Promise<RedditSubmission>;
+          };
+        }).getSubreddit(options.subreddit);
+        submission = await subreddit.submitSelfpost({
+          subredditName: options.subreddit,
+          title: options.title,
+          text: options.body ?? '',
+          nsfw: options.nsfw ?? false,
+          spoiler: options.spoiler ?? false,
+        });
       }
 
       // Update rate limiting
