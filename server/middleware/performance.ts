@@ -25,22 +25,20 @@ class PerformanceMonitor {
   middleware() {
     return (req: Request, res: Response, next: NextFunction) => {
       const start = process.hrtime.bigint();
-      const _startMemory = process.memoryUsage();
+      const startMemory = process.memoryUsage();
 
       // Store original end function
       const originalEnd = res.end.bind(res);
-      
+
       // Override end function to capture metrics
-      const monitoredEnd: any = (
-        ...args: any[]
-      ) => {
+      const monitoredEnd = (...args: any[]) => {
         // Restore original end function
         res.end = originalEnd;
-        
+
         // Calculate duration
         const end = process.hrtime.bigint();
         const duration = Number(end - start) / 1000000; // Convert to milliseconds
-        
+
         // Create metric
         const metric: PerformanceMetric = {
           path: req.path,
@@ -52,25 +50,25 @@ class PerformanceMonitor {
           userAgent: req.get('user-agent'),
           userId: (req as { user?: { id: string } }).user?.id
         };
-        
+
         // Store metric
         this.recordMetric(metric);
-        
+
         // Log slow requests
         if (duration > this.slowRequestThreshold) {
           this.handleSlowRequest(metric);
         }
-        
+
         // Alert on critical performance issues
         if (duration > this.criticalThreshold) {
           this.handleCriticalPerformance(metric);
         }
-        
+
         // Call original end function
         return originalEnd(...args);
       };
       res.end = monitoredEnd;
-      
+
       next();
     };
   }
