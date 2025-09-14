@@ -107,9 +107,10 @@ describe('Upload and ImageShield Integration Tests', () => {
     });
     
     // Create test user
+    const uniqueName = `uploaduser_${Date.now()}`;
     const [user] = await db.insert(users).values({
-      username: 'uploaduser',
-      email: 'upload@example.com',
+      username: uniqueName,
+      email: `${uniqueName}@example.com`,
       password: 'hashedpassword',
       tier: 'pro'
     }).returning();
