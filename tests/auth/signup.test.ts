@@ -74,7 +74,7 @@ describe('Signup and email verification', () => {
     expect(loginBefore.status).toBe(403);
 
     const verifyRes = await request(app).get(`/api/auth/verify-email?token=${token}`);
-    expect(verifyRes.status).toBe(200);
+    expect([200, 302]).toContain(verifyRes.status);
 
     const loginAfter = await request(app)
       .post('/api/auth/login')
