@@ -73,9 +73,6 @@ app.use(cors({
 
 // Initialize Sentry with proper validation
 const Sentry = await initializeSentry();
-if (Sentry && 'requestHandler' in Sentry) {
-  app.use((Sentry.requestHandler as () => RequestHandler)());
-}
 
 app.use((req, _res, next) => {
   req.id = uuidv4();
@@ -133,7 +130,7 @@ app.use((req, res, next) => {
     mountStripeWebhook(app);
     mountBillingRoutes(app);
   
-    const server = await registerRoutes(app);
+    const server = await registerRoutes(app, Sentry || undefined);
 
     // importantly only setup vite in development and after
     // setting up all the other routes so the catch-all route

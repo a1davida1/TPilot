@@ -303,6 +303,7 @@ export async function initializeSentry(): Promise<typeof import('@sentry/node') 
         environment: process.env.NODE_ENV,
         tracesSampleRate: parseFloat(process.env.SENTRY_SAMPLE_RATE || '0.1'),
         profilesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+        integrations: [Sentry.expressIntegration()],
         
         // Enhanced error filtering
         beforeSend(event: unknown, hint: unknown) {
