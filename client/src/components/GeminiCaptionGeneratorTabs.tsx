@@ -537,7 +537,7 @@ export function GeminiCaptionGeneratorTabs() {
 
       <>{/* Caption Preview - Shared across all tabs */}</>
       {captionData && (
-        <CaptionPreview data={captionData} />
+        <CaptionPreview data={captionData as any} />
       )}
     </div>
   );

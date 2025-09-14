@@ -5,26 +5,18 @@ import { Badge } from "@/components/ui/badge";
 import { Copy, Check, AlertCircle } from "lucide-react";
 import { useState } from "react";
 
-interface CaptionPreviewData {
-  final: {
-    caption: string;
-    alt?: string;
-    hashtags?: string[];
-    mood?: string;
-    style?: string;
-    cta?: string;
-    safety_level: string;
-  };
-  ranked: { reason: string };
+export interface CaptionPreviewData {
+  final: string;
+  ranked: string[];
 }
 
-export function CaptionPreview({ data }: { data: CaptionPreviewData }) {
+export function CaptionPreview({ data }: { data: CaptionPreviewData | any }) {
   const [copiedCaption, setCopiedCaption] = useState(false);
   const [copiedJSON, setCopiedJSON] = useState(false);
 
   if (!data) return null;
   
-  const { final, ranked } = data;
+  const { final = '', ranked = [] } = data || {};
   if (!final) return null;
   
   const charCount = final.caption.length;

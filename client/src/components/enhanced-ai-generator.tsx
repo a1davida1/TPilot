@@ -526,7 +526,7 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
             {(generatedContent as GeneratedContentType).titles && (generatedContent as GeneratedContentType).titles!.length > 0 && (
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-pink-700">Titles:</Label>
-                {(Array.isArray((generatedContent as GeneratedContentType).titles) ? (generatedContent as GeneratedContentType).titles! : [(generatedContent as GeneratedContentType).titles!]).map((title: string, index: number) => (
+                {(Array.isArray((generatedContent as GeneratedContentType).titles) ? (generatedContent as GeneratedContentType).titles! : [(generatedContent as GeneratedContentType).titles!]).map((title: any, index: number) => (
                   <div key={index} className="relative p-3 bg-white rounded-lg border group">
                     <p className="text-sm font-medium pr-8">{title}</p>
                     <Button
@@ -543,15 +543,15 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
             )}
 
             {/* Content */}
-            {generatedContent.content && (
+            {(generatedContent as any).content && (
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-purple-700">Content:</Label>
                 <div className="relative p-3 bg-white rounded-lg border group">
-                  <p className="text-sm whitespace-pre-wrap pr-8">{generatedContent.content}</p>
+                  <p className="text-sm whitespace-pre-wrap pr-8">{(generatedContent as any).content}</p>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => copyToClipboard(generatedContent.content, 'Content')}
+                    onClick={() => copyToClipboard((generatedContent as any).content, 'Content')}
                     className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <Copy className="h-3 w-3" />
@@ -561,22 +561,22 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
             )}
 
             {/* Photo Instructions */}
-            {generatedContent.photoInstructions && (
+            {(generatedContent as any).photoInstructions && (
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-blue-700">Photo Instructions:</Label>
                 <div className="relative p-3 bg-white rounded-lg border group">
                   <p className="text-sm whitespace-pre-wrap pr-8">
-                    {typeof generatedContent.photoInstructions === 'string' 
-                      ? generatedContent.photoInstructions 
-                      : JSON.stringify(generatedContent.photoInstructions, null, 2)}
+                    {typeof (generatedContent as any).photoInstructions === 'string' 
+                      ? (generatedContent as any).photoInstructions 
+                      : JSON.stringify((generatedContent as any).photoInstructions, null, 2)}
                   </p>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => copyToClipboard(
-                      typeof generatedContent.photoInstructions === 'string' 
-                        ? generatedContent.photoInstructions 
-                        : JSON.stringify(generatedContent.photoInstructions, null, 2), 
+                      typeof (generatedContent as any).photoInstructions === 'string' 
+                        ? (generatedContent as any).photoInstructions 
+                        : JSON.stringify((generatedContent as any).photoInstructions, null, 2), 
                       'Photo Instructions'
                     )}
                     className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"

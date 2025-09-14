@@ -238,7 +238,7 @@ export function GeminiCaptionGenerator() {
       <>{/* Caption Preview */}</>
       {captionData && (
         <div className="space-y-4">
-          <CaptionPreview data={captionData} />
+          <CaptionPreview data={captionData as any} />
           
           {/* Regenerate Button */}
           <Button
