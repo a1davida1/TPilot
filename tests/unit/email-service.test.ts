@@ -12,8 +12,14 @@ vi.mock('@sendgrid/mail', () => ({
 }));
 
 // Mock logger
+const mockLogger = {
+  log: vi.fn(),
+  error: vi.fn(),
+  warn: vi.fn()
+};
+
 vi.mock('../../server/lib/logger-utils', () => ({
-  safeLog: vi.fn()
+  safeLog: mockLogger.log
 }));
 
 describe('Email Service - SendGrid Integration', () => {
