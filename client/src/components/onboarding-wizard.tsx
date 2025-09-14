@@ -44,6 +44,11 @@ interface UserPreferences {
   protectionLevel: string;
 }
 
+interface StepProps {
+  preferences: UserPreferences;
+  setPreferences: React.Dispatch<React.SetStateAction<UserPreferences>>;
+}
+
 export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [preferences, setPreferences] = useState<UserPreferences>({
@@ -184,7 +189,7 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
 }
 
 // Step 1: Welcome & Content Type
-function WelcomeStep({ preferences, setPreferences }: unknown) {
+function WelcomeStep({ preferences, setPreferences }: StepProps) {
   return (
     <div className="space-y-6">
       <div className="text-center mb-6">
@@ -248,7 +253,7 @@ function WelcomeStep({ preferences, setPreferences }: unknown) {
 }
 
 // Step 2: Platform Selection
-function PlatformStep({ preferences, setPreferences }: unknown) {
+function PlatformStep({ preferences, setPreferences }: StepProps) {
   const platforms = [
     { id: 'reddit', name: 'Reddit', icon: '🔥', description: 'Communities & discussions' },
     { id: 'twitter', name: 'Twitter/X', icon: '🐦', description: 'Quick updates & threads' },
@@ -302,7 +307,7 @@ function PlatformStep({ preferences, setPreferences }: unknown) {
 }
 
 // Step 3: AI Setup
-function AISetupStep({ preferences, setPreferences }: unknown) {
+function AISetupStep({ preferences, setPreferences }: StepProps) {
   const styles = [
     { id: 'playful', name: 'Playful & Fun', example: 'Hey babes! 💕 Check out this cutie moment!' },
     { id: 'professional', name: 'Professional', example: 'Excited to share this exclusive content with you.' },
