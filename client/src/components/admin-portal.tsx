@@ -18,22 +18,22 @@ import {
   Gift,
   TrendingUp,
   Settings,
-  Mail as _Mail,
+  Mail,
   Shield,
   Activity,
   DollarSign,
-  UserPlus as _UserPlus,
+  UserPlus,
   Clock,
   CheckCircle,
-  AlertCircle as _AlertCircle,
+  AlertCircle,
   Star,
   Zap,
   Crown,
   Sparkles,
-  ChevronRight as _ChevronRight,
+  ChevronRight,
   RefreshCw,
-  _Target,
-  _Rocket,
+  Target,
+  Rocket,
   CheckSquare,
   Square,
   Eye,
@@ -51,7 +51,7 @@ import {
   Clock3
 } from 'lucide-react';
 
-interface _UserStats {
+interface UserStats {
   totalUsers: number;
   freeUsers: number;
   proUsers: number;
@@ -88,18 +88,22 @@ export function AdminPortal() {
     duration: 30,
     tier: 'starter'
   });
-  const [_selectedUser, _setSelectedUser] = useState<unknown>(null);
+  const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
+  const [actionType, setActionType] = useState<string | null>(null);
+  const [duration, setDuration] = useState<string>('24');
+  const [tempPassword, setTempPassword] = useState<string>('');
+  const [reason, setReason] = useState<string>('');
   const { toast } = useToast();
-  const { token } = useAuth();
+  const { user: currentUser } = useAuth();
   
-  // Authenticated API request with JWT token
+  // Authenticated API request with cookie-based auth
   const authenticatedRequest = async (url: string, method: string = 'GET', data?: unknown) => {
     const response = await fetch(url, {
       method,
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Content-Type': 'application/json'
       },
+      credentials: 'include', // Include cookies for session-based auth
       body: data ? JSON.stringify(data) : undefined
     });
     
@@ -122,13 +126,13 @@ export function AdminPortal() {
   const { data: stats, isLoading: _statsLoading } = useQuery<AdminStats>({
     queryKey: ['/api/admin/stats'],
     refetchInterval: 30000, // Refresh every 30 seconds
-    enabled: !!token
+    enabled: !!currentUser
   });
 
   // Fetch all users
   const { data: users, isLoading: usersLoading, error: _usersError } = useQuery<unknown[]>({
     queryKey: ['/api/admin/users'],
-    enabled: !!token
+    enabled: !!currentUser
   });
   
   const typedUsers: UserData[] = users as UserData[] || [];
@@ -169,6 +173,28 @@ export function AdminPortal() {
     }
   });
 
+  // Action mutation for user management
+  const actionMutation = useMutation({
+    mutationFn: (data: { userId: number; action: string; duration?: string }) => 
+      authenticatedRequest('/api/admin/user-action', 'POST', data),
+    onSuccess: () => {
+      toast({
+        title: "Action Completed",
+        description: "User action has been executed successfully"
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      setSelectedUser(null);
+      setActionType(null);
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: "Action Failed",
+        description: getErrorMessage(error) || "An error occurred",
+        variant: "destructive"
+      });
+    }
+  });
+
   const handleCreateTrial = () => {
     if (!trialForm.email || !trialForm.username) {
       toast({
@@ -188,6 +214,23 @@ export function AdminPortal() {
       case 'starter': return 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white';
       case 'free': return 'bg-gray-100 text-gray-800 border border-gray-300';
       default: return 'bg-gray-100 text-gray-800 border border-gray-300';
+    }
+  };
+
+  const handleAction = () => {
+    if (!selectedUser || !actionType) return;
+    
+    if (actionType === 'reset-password') {
+      actionMutation.mutate({ 
+        userId: selectedUser.id, 
+        action: actionType 
+      });
+    } else {
+      actionMutation.mutate({ 
+        userId: selectedUser.id, 
+        action: actionType, 
+        duration: actionType === 'suspend' ? duration : undefined 
+      });
     }
   };
 
@@ -742,8 +785,11 @@ export function AdminPortal() {
 // ADMIN FEATURE COMPONENTS
 // ============================================================================
 
+// Component type for authenticatedRequest  
+type AuthenticatedRequest = (url: string, method?: string, data?: unknown) => Promise<unknown>;
+
 // FEATURE 5: Live Dashboard Component
-function LiveDashboardTab({ authenticatedRequest }: { authenticatedRequest: unknown }) {
+function LiveDashboardTab({ authenticatedRequest }: { authenticatedRequest: AuthenticatedRequest }) {
   const { data: liveData, refetch } = useQuery({
     queryKey: ['/api/admin/live-dashboard'],
     queryFn: () => authenticatedRequest('/api/admin/live-dashboard'),
@@ -887,7 +933,7 @@ function LiveDashboardTab({ authenticatedRequest }: { authenticatedRequest: unkn
 }
 
 // FEATURE 1: IP Tracking Component
-function IPTrackingTab({ authenticatedRequest }: { authenticatedRequest: unknown }) {
+function IPTrackingTab({ authenticatedRequest }: { authenticatedRequest: AuthenticatedRequest }) {
   const { data: ipData } = useQuery({
     queryKey: ['/api/admin/ip-tracking'],
     queryFn: () => authenticatedRequest('/api/admin/ip-tracking'),
@@ -995,7 +1041,7 @@ function IPTrackingTab({ authenticatedRequest }: { authenticatedRequest: unknown
 }
 
 // FEATURE 2: System Monitoring Component
-function SystemMonitorTab({ authenticatedRequest }: { authenticatedRequest: unknown }) {
+function SystemMonitorTab({ authenticatedRequest }: { authenticatedRequest: AuthenticatedRequest }) {
   const { data: metrics, refetch: refetchMetrics } = useQuery({
     queryKey: ['/api/admin/system-metrics'],
     queryFn: () => authenticatedRequest('/api/admin/system-metrics'),
@@ -1161,7 +1207,7 @@ function SystemMonitorTab({ authenticatedRequest }: { authenticatedRequest: unkn
 }
 
 // FEATURE 3: User Management Component
-function UserManagementTab({ authenticatedRequest, users }: { authenticatedRequest: unknown, users: unknown[] }) {
+function UserManagementTab({ authenticatedRequest, users }: { authenticatedRequest: AuthenticatedRequest, users: unknown[] }) {
   const { toast } = useToast();
   const [_selectedUser, _setSelectedUser] = useState<unknown>(null);
   const [actionType, setActionType] = useState<'ban' | 'suspend' | 'unban' | 'reset-password' | null>(null);
@@ -1413,8 +1459,8 @@ function UserManagementTab({ authenticatedRequest, users }: { authenticatedReque
   );
 }
 
-// FEATURE 4: Content Moderation Component
-function ContentModerationTab({ authenticatedRequest }: { authenticatedRequest: unknown }) {
+// FEATURE 4: Content Moderation Component  
+function ContentModerationTab({ authenticatedRequest }: { authenticatedRequest: AuthenticatedRequest }) {
   const { toast } = useToast();
   const [statusFilter, setStatusFilter] = useState('pending');
 
@@ -1424,7 +1470,8 @@ function ContentModerationTab({ authenticatedRequest }: { authenticatedRequest: 
   });
 
   const moderateMutation = useMutation({
-    mutationFn: (data: unknown) => authenticatedRequest('/api/admin/moderate-content', 'POST', data),
+    mutationFn: (data: { flagId: number; action: string; reason: string }) => 
+      authenticatedRequest('/api/admin/moderate-content', 'POST', data),
     onSuccess: (_, variables) => {
       toast({ title: `Content ${variables.action}d successfully` });
       refetch();
@@ -1458,12 +1505,12 @@ function ContentModerationTab({ authenticatedRequest }: { authenticatedRequest: 
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {flaggedContent?.map((flag: unknown) => (
+            {(flaggedContent as any[])?.map((flag: any) => (
               <div key={flag.id} className="border rounded-lg p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center gap-2">
-                      <Badge className="bg-gray-500">{flag.content.platform}</Badge>
+                      <Badge className="bg-gray-500">{flag.content?.platform || 'Unknown'}</Badge>
                       <Badge className={
                         flag.reason === 'inappropriate' ? 'bg-red-500' :
                         flag.reason === 'spam' ? 'bg-yellow-500' : 'bg-blue-500'
@@ -1471,20 +1518,20 @@ function ContentModerationTab({ authenticatedRequest }: { authenticatedRequest: 
                         {flag.reason}
                       </Badge>
                       <span className="text-sm text-gray-500">
-                        Reported by {flag.reportedBy}
+                        Reported by {flag.reportedBy || 'System'}
                       </span>
                     </div>
                     <div>
-                      <p className="font-medium">{flag.content.titles[0]}</p>
+                      <p className="font-medium">{flag.content?.titles?.[0] || 'No title'}</p>
                       <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        {flag.content.preview}
+                        {flag.content?.preview || 'No preview available'}
                       </p>
                     </div>
                     <p className="text-sm">
-                      <strong>Reason:</strong> {flag.description}
+                      <strong>Reason:</strong> {flag.description || 'No description'}
                     </p>
                     <p className="text-xs text-gray-500">
-                      Flagged {new Date(flag.createdAt).toLocaleString()}
+                      Flagged {flag.createdAt ? new Date(flag.createdAt).toLocaleString() : 'Unknown date'}
                     </p>
                   </div>
                   <div className="flex gap-2 ml-4">
@@ -1503,8 +1550,7 @@ function ContentModerationTab({ authenticatedRequest }: { authenticatedRequest: 
                   </div>
                 </div>
               </div>
-            ))}
-            {!flaggedContent?.length && (
+            )) || (
               <div className="text-center py-8 text-gray-500">
                 No {statusFilter === 'all' ? '' : statusFilter} content flags found
               </div>
