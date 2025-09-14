@@ -7,7 +7,7 @@
     "noEmit": false,
     "module": "ESNext",
     "target": "ES2022",
-    "strict": false,
+    "strict": true,
     "strictNullChecks": true,
     "strictFunctionTypes": true,
     "lib": ["esnext", "dom", "dom.iterable"],
