@@ -83,7 +83,7 @@ export function RedditQuickPost() {
     } catch (error) {
       toast({
         title: "❌ Connection Failed",
-        description: error.message,
+        description: (error as Error).message,
         variant: "destructive"
       });
     } finally {
@@ -120,7 +120,7 @@ export function RedditQuickPost() {
     onError: (error: Error) => {
       toast({
         title: "❌ Error",
-        description: error.message,
+        description: (error as Error).message,
         variant: "destructive"
       });
     }

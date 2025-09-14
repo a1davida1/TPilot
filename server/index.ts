@@ -242,7 +242,7 @@ app.use((req, res, next) => {
       server.on('error', (err: unknown) => {
         const error = err as NodeJS.ErrnoException;
         if (error.code === 'EADDRINUSE') {
-          logger.warn(`Port ${attemptPort} is in use`, { error: error.message });
+          logger.warn(`Port ${attemptPort} is in use`, { error: (error as Error).message });
         
           if (retryCount < maxRetries) {
             // In Replit, we can only use the PORT environment variable

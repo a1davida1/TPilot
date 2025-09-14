@@ -19,7 +19,7 @@ export function CaptionPreview({ data }: { data: CaptionPreviewData | any }) {
   const { final = '', ranked = [] } = data || {};
   if (!final) return null;
   
-  const charCount = final.caption.length;
+  const charCount = typeof final === 'object' && final.caption ? final.caption.length : 0;
 
   const handleCopyCaption = async () => {
     await navigator.clipboard.writeText(final.caption);
@@ -64,7 +64,7 @@ export function CaptionPreview({ data }: { data: CaptionPreviewData | any }) {
         {/* Hashtags */}
         {final.hashtags && final.hashtags.length > 0 && (
           <div className="flex flex-wrap gap-2">
-            {final.hashtags.map((h, index) => (
+            {final.hashtags.map((h: string, index: number) => (
               <Badge 
                 key={`${h}-${index}`} 
                 variant="secondary" 
@@ -107,7 +107,7 @@ export function CaptionPreview({ data }: { data: CaptionPreviewData | any }) {
             <AlertCircle className="h-4 w-4 text-blue-500 mt-0.5" />
             <div className="space-y-1">
               <p className="text-xs font-medium text-blue-700 dark:text-blue-400">Why this caption won</p>
-              <p className="text-xs text-blue-600 dark:text-blue-300">{ranked.reason}</p>
+              <p className="text-xs text-blue-600 dark:text-blue-300">{typeof ranked === 'object' && (ranked as any).reason ? (ranked as any).reason : 'Based on engagement optimization'}</p>
             </div>
           </div>
         </div>

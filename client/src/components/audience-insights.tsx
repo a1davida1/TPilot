@@ -85,7 +85,7 @@ export function AudienceInsights() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {audienceData.map((platform) => (
+            {audienceData.map((platform: AudienceData) => (
               <div key={platform.platform} className="p-4 bg-white/5 rounded-lg">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-medium text-lg">{platform.platform}</h3>
@@ -113,7 +113,7 @@ export function AudienceInsights() {
                 </div>
                 
                 <div className="mt-3 flex flex-wrap gap-1">
-                  {platform.demographics?.interests.map((interest) => (
+                  {platform.demographics?.interests.map((interest: string) => (
                     <Badge key={interest} variant="secondary" className="text-xs">
                       {interest}
                     </Badge>
@@ -138,7 +138,7 @@ export function AudienceInsights() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {topSubreddits.map((subreddit, index) => (
+            {topSubreddits.map((subreddit: any, index: number) => (
               <div key={subreddit.name} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
                 <div className="flex items-center gap-3">
                   <span className="text-lg font-bold text-gray-500">#{index + 1}</span>
@@ -166,11 +166,11 @@ export function AudienceInsights() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-7 gap-2 text-xs">
-              {Object.entries(postingSchedule).map(([day, times]) => (
+              {Object.entries(postingSchedule).map(([day, times]: [string, string[]]) => (
                 <div key={day} className="text-center">
                   <p className="font-medium mb-2">{day}</p>
                   <div className="space-y-1">
-                    {times.map(t => (
+                    {times.map((t: string) => (
                       <div key={t} className="h-6 bg-green-500/20 rounded text-green-400 flex items-center justify-center">
                         {t}
                       </div>

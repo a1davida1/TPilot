@@ -331,7 +331,7 @@ function setupAuthRoutes(app: Express) {
         }
       }
     } catch (error) {
-      logger.error('Logout error', { error: error instanceof Error ? error.message : String(error) });
+      logger.error('Logout error', { error: error instanceof Error ? (error as Error).message : String(error) });
       // Even on error, clear cookies to help user
       res.clearCookie('connect.sid', {
         httpOnly: true,

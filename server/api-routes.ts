@@ -135,7 +135,7 @@ export function registerApiRoutes(app: Express) {
       res.json(result);
     } catch (error: unknown) {
       console.error('Media upload failed:', error);
-      const message = error instanceof Error ? error.message : 'Unknown error';
+      const message = error instanceof Error ? (error as Error).message : 'Unknown error';
       res.status(500).json({ error: message });
     }
   });

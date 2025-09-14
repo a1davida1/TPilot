@@ -400,7 +400,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
     } catch (error: unknown) {
       logger.error("Subscription creation error:", error);
       res.status(500).json({ 
-        message: "Error creating subscription: " + (error instanceof Error ? error.message : 'Unknown error') 
+        message: "Error creating subscription: " + (error instanceof Error ? (error as Error).message : 'Unknown error') 
       });
     }
   });
@@ -642,17 +642,17 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
 
       const generations = await storage.getGenerationsByUserId(req.user.id);
       const today = new Date();
-      const todayGenerations = generations.filter(g => 
+      const todayGenerations = generations.filter((g: ContentGeneration) => 
         g.createdAt && new Date(g.createdAt).toDateString() === today.toDateString()
       );
       
       const stats = {
         total: generations.length,
         today: todayGenerations.length,
-        thisWeek: generations.filter(g => g.createdAt && 
+        thisWeek: generations.filter((g: ContentGeneration) => g.createdAt && 
           new Date(g.createdAt) > new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
         ).length,
-        thisMonth: generations.filter(g => g.createdAt && 
+        thisMonth: generations.filter((g: ContentGeneration) => g.createdAt && 
           new Date(g.createdAt).getMonth() === today.getMonth() &&
           new Date(g.createdAt).getFullYear() === today.getFullYear()
         ).length,
@@ -662,7 +662,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
       const userTier = user?.tier || 'free';
 
       // Calculate daily generation limits based on tier
-      let dailyLimit;
+      let dailyLimit: number = 10;
       if (userTier === 'free') {
         dailyLimit = 10;
       } else if (userTier === 'pro') {

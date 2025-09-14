@@ -79,7 +79,7 @@ export function registerSocialMediaRoutes(app: Express) {
       res.status(500).json({ 
         success: false,
         message: "Failed to connect social media account",
-        error: error instanceof Error ? error.message : "Unknown error"
+        error: error instanceof Error ? (error as Error).message : "Unknown error"
       });
     }
   });
@@ -265,7 +265,7 @@ export function registerSocialMediaRoutes(app: Express) {
       res.status(500).json({ 
         success: false,
         message: "Failed to post to social media",
-        error: error instanceof Error ? error.message : "Unknown error"
+        error: error instanceof Error ? (error as Error).message : "Unknown error"
       });
     }
   });

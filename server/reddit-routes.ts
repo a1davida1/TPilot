@@ -114,7 +114,7 @@ export function registerRedditRoutes(app: Express) {
         tokenData = await exchangeRedditCode(String(codeStr));
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
-        logger.error('Reddit token exchange error', { error: error.message, stack: error.stack });
+        logger.error('Reddit token exchange error', { error: (error as Error).message, stack: error.stack });
         return res.redirect('/dashboard?error=reddit_token_exchange_failed');
       }
 
@@ -485,7 +485,7 @@ export function registerRedditRoutes(app: Express) {
       console.error('Reddit submit error:', error);
       res.status(500).json({
         error: error instanceof Error
-          ? error.message
+          ? (error as Error).message
           : 'Failed to submit post to Reddit'
       });
     }

@@ -139,10 +139,10 @@ export function setupAuth(app: Express) {
       authMetrics.track('signup', true, Date.now() - startTime);
       
     } catch (error) {
-      safeLog('error', 'Authentication signup failed', { error: error.message });
+      safeLog('error', 'Authentication signup failed', { error: (error as Error).message });
       
       // Track failed signup
-      authMetrics.track('signup', false, Date.now() - startTime, error.message);
+      authMetrics.track('signup', false, Date.now() - startTime, (error as Error).message);
       
       res.status(500).json({ message: 'Error creating user' });
     }
@@ -270,10 +270,10 @@ export function setupAuth(app: Express) {
       authMetrics.track('login', true, Date.now() - startTime);
       
     } catch (error) {
-      safeLog('error', 'Authentication login failed', { error: error.message });
+      safeLog('error', 'Authentication login failed', { error: (error as Error).message });
       
       // Track failed login metrics
-      authMetrics.track('login', false, Date.now() - startTime, error.message);
+      authMetrics.track('login', false, Date.now() - startTime, (error as Error).message);
       
       res.status(500).json({ message: 'Error logging in' });
     }
@@ -344,13 +344,13 @@ export function setupAuth(app: Express) {
       res.json({ message: 'If the email exists, a reset link has been sent' });
     } catch (error) {
       logger.error('Password reset error', {
-        error: error.message,
+        error: (error as Error).message,
         stack: error.stack?.split('\n')[1]?.trim() || 'No stack trace',
         email: req.body?.email ? req.body.email.replace(/(.{2})(.*)(@.*)/, '$1***$3') : 'No email',
         timestamp: new Date().toISOString()
       });
       
-      safeLog('error', 'Password reset request failed', { error: error.message });
+      safeLog('error', 'Password reset request failed', { error: (error as Error).message });
       res.status(500).json({ message: 'Error processing password reset' });
     }
   });
@@ -420,7 +420,7 @@ export function setupAuth(app: Express) {
         return res.status(401).json({ message: 'Invalid token' });
       }
     } catch (error) {
-      safeLog('error', 'Get user failed', { error: error.message });
+      safeLog('error', 'Get user failed', { error: (error as Error).message });
       res.status(500).json({ message: 'Error fetching user data' });
     }
   });
@@ -491,7 +491,7 @@ export function setupAuth(app: Express) {
         }
       });
     } catch (error) {
-      safeLog('error', 'Password change failed', { error: error.message });
+      safeLog('error', 'Password change failed', { error: (error as Error).message });
       res.status(500).json({ message: 'Error changing password' });
     }
   });
@@ -570,12 +570,12 @@ export function setupAuth(app: Express) {
       
     } catch (error) {
       logger.error('❌ EMAIL VERIFICATION ERROR', {
-        error: error.message,
+        error: (error as Error).message,
         stack: error.stack?.split('\n')[1]?.trim() || 'No stack trace',
         time: new Date().toISOString()
       });
       
-      safeLog('error', 'Email verification error:', { error: error.message });
+      safeLog('error', 'Email verification error:', { error: (error as Error).message });
       res.redirect(`${FRONTEND_URL}/email-verification?error=verification_failed`);
     }
   });
@@ -626,7 +626,7 @@ export function setupAuth(app: Express) {
       res.json({ message: 'Password reset successful' });
       
     } catch (error) {
-      safeLog('error', 'Password reset error:', { error: error.message });
+      safeLog('error', 'Password reset error:', { error: (error as Error).message });
       res.status(400).json({ message: 'Invalid or expired token' });
     }
   });
@@ -676,7 +676,7 @@ export function setupAuth(app: Express) {
         res.json({ valid: true, email: user.email });
       }
     } catch (error) {
-      safeLog('error', 'Token verification error:', { error: error.message });
+      safeLog('error', 'Token verification error:', { error: (error as Error).message });
       res.status(400).json({ message: 'Invalid or expired token' });
     }
   });
@@ -729,7 +729,7 @@ export function setupAuth(app: Express) {
       
       res.json({ message: 'Account deleted successfully' });
     } catch (error) {
-      safeLog('error', 'Delete account error:', { error: error.message });
+      safeLog('error', 'Delete account error:', { error: (error as Error).message });
       res.status(500).json({ message: 'Error deleting account' });
     }
   });
@@ -763,7 +763,7 @@ export function setupAuth(app: Express) {
         recentEvents
       });
     } catch (error) {
-      safeLog('error', 'Admin metrics error:', { error: error.message });
+      safeLog('error', 'Admin metrics error:', { error: (error as Error).message });
       res.status(500).json({ error: 'Error fetching metrics' });
     }
   });
@@ -806,7 +806,7 @@ export function setupAuth(app: Express) {
       });
 
     } catch (error) {
-      safeLog('error', 'Resend verification error:', { error: error.message });
+      safeLog('error', 'Resend verification error:', { error: (error as Error).message });
       res.status(500).json({ message: 'Error sending verification email' });
     }
   });

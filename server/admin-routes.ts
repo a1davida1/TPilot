@@ -120,18 +120,18 @@ export function setupAdminRoutes(app: Express) {
       
       // Get real active users (logged in within last 30 days)
       const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      const realActiveUsers = users.filter(u => u.lastLogin && new Date(u.lastLogin) >= thirtyDaysAgo).length;
+      const realActiveUsers = users.filter((u: User) => u.lastLogin && new Date(u.lastLogin) >= thirtyDaysAgo).length;
       
       // Get real revenue from paid invoices
       const realRevenue = await storage.getRevenue() || 0;
       
       const stats = {
         totalUsers: users.length,
-        freeUsers: users.filter(u => u.tier === 'free').length,
-        proUsers: users.filter(u => u.tier === 'pro').length,
-        starterUsers: users.filter(u => u.tier === 'starter').length,
-        trialUsers: users.filter(u => u.trialEndsAt && new Date(u.trialEndsAt) > now).length,
-        newUsersToday: users.filter(u => u.createdAt && new Date(u.createdAt) >= today).length,
+        freeUsers: users.filter((u: User) => u.tier === 'free').length,
+        proUsers: users.filter((u: User) => u.tier === 'pro').length,
+        starterUsers: users.filter((u: User) => u.tier === 'starter').length,
+        trialUsers: users.filter((u: User) => u.trialEndsAt && new Date(u.trialEndsAt) > now).length,
+        newUsersToday: users.filter((u: User) => u.createdAt && new Date(u.createdAt) >= today).length,
         activeUsers: realActiveUsers,
         contentGenerated: await storage.getContentGenerationCount() || 0,
         revenue: realRevenue,
@@ -477,11 +477,11 @@ export function setupAdminRoutes(app: Express) {
       const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
       
-      const lastMonthUsers = users.filter(u => 
+      const lastMonthUsers = users.filter((u: User) => 
         u.createdAt && new Date(u.createdAt) >= thirtyDaysAgo
       ).length;
       
-      const previousMonthUsers = users.filter(u => 
+      const previousMonthUsers = users.filter((u: User) => 
         u.createdAt && 
         new Date(u.createdAt) >= sixtyDaysAgo && 
         new Date(u.createdAt) < thirtyDaysAgo
@@ -509,13 +509,13 @@ export function setupAdminRoutes(app: Express) {
           averageSessionTime: '12m 34s'
         },
         revenue: {
-          mrr: users.filter(u => u.tier === 'pro').length * 20 + 
-               users.filter(u => u.tier === 'starter').length * 10,
-          arr: (users.filter(u => u.tier === 'pro').length * 20 + 
-               users.filter(u => u.tier === 'starter').length * 10) * 12,
+          mrr: users.filter((u: User) => u.tier === 'pro').length * 20 + 
+               users.filter((u: User) => u.tier === 'starter').length * 10,
+          arr: (users.filter((u: User) => u.tier === 'pro').length * 20 + 
+               users.filter((u: User) => u.tier === 'starter').length * 10) * 12,
           avgRevenuePerUser: users.length > 0 
-            ? ((users.filter(u => u.tier === 'pro').length * 20 + 
-               users.filter(u => u.tier === 'starter').length * 10) / users.length).toFixed(2)
+            ? ((users.filter((u: User) => u.tier === 'pro').length * 20 + 
+               users.filter((u: User) => u.tier === 'starter').length * 10) / users.length).toFixed(2)
             : 0
         }
       };

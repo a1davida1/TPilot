@@ -19,7 +19,7 @@ interface Rules {
   // Add other rule properties as needed
 }
 
-export async function validateContent(content, context = {}) {
+export async function validateContent(content: string, context: any = {}) {
   const violations: Violation[] = [];
   const { subreddit, userId, allowNSFW = false } = context as any;
 
@@ -31,14 +31,14 @@ export async function validateContent(content, context = {}) {
   /* subreddit rules */
   if (subreddit) {
     const rules: Rules = await getSubredditRules(subreddit);
-    if (rules?.bannedDomains?.some(domain => content.includes(domain))) {
+    if (rules?.bannedDomains?.some((domain: string) => content.includes(domain))) {
       violations.push({ type: 'banned_domain', severity: 'block' });
     }
   }
 
   /* disguised links */
   const shorteners = [/bit\.ly/i, /tinyurl\.com/i, /goo\.gl/i, /t\.co/i, /is\.gd/i, /ow\.ly/i];
-  if (shorteners.some(rx => rx.test(content))) {
+  if (shorteners.some((rx: RegExp) => rx.test(content))) {
     violations.push({ type: 'url_shortener', severity: 'warn' });
   }
 
@@ -66,12 +66,12 @@ export async function validateContent(content, context = {}) {
       violations.push({ type: 'nsfw_content', severity: 'block' });
     }
   } catch (err) {
-    violations.push({ type: 'ml_error', severity: 'warn', detail: err.message });
+    violations.push({ type: 'ml_error', severity: 'warn', detail: (err as Error).message });
   }
 
   /* context-aware filtering */
   if (detectBenignKeywords(content)) {
-    const idx = violations.findIndex(v => v.type === 'nsfw_content');
+    const idx = violations.findIndex((v: Violation) => v.type === 'nsfw_content');
     if (idx !== -1) violations.splice(idx, 1);
   }
 

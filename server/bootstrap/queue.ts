@@ -65,7 +65,7 @@ export async function checkQueueHealth() {
     logger.error('Queue health check failed', { error });
     return {
       status: 'unhealthy',
-      error: error.message,
+      error: (error as Error).message,
       timestamp: new Date().toISOString()
     };
   }

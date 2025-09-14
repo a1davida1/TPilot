@@ -46,7 +46,7 @@ export function validate(schema: ZodSchema, source: ValidationSource = Validatio
       
     } catch (error) {
       logger.error('Validation middleware error', {
-        error: error.message,
+        error: (error as Error).message,
         path: req.path,
         method: req.method,
         source,

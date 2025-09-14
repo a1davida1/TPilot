@@ -63,7 +63,7 @@ async function fixProductionSubscriptionStatus() {
       }
     } catch (error: unknown) {
       if (error instanceof Error) {
-        if (error.message.includes('already exists')) {
+        if ((error as Error).message.includes('already exists')) {
           console.log('⚠️  Constraint already exists, continuing...');
         } else {
           throw error;
@@ -83,7 +83,7 @@ async function fixProductionSubscriptionStatus() {
       console.log('✅ Constraint validated successfully');
     } catch (error: unknown) {
       if (error instanceof Error) {
-        if (error.message.includes('is already validated')) {
+        if ((error as Error).message.includes('is already validated')) {
           console.log('✅ Constraint was already validated');
         } else {
           throw error;
