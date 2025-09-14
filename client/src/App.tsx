@@ -9,7 +9,7 @@ import { ErrorBoundary } from "@/components/error-boundary";
 import { Header } from "@/components/header";
 import { useAuth } from "@/hooks/useAuth";
 import { SEOOptimization, seoConfigs } from "@/components/seo-optimization";
-import { LandingPage } from "@/components/landing-page";
+import { UnifiedLanding } from "@/components/unified-landing";
 const Dashboard = React.lazy(() => import("@/pages/dashboard"));
 import { OnboardingWalkthrough } from "@/components/onboarding-walkthrough";
 import { useOnboarding } from "@/hooks/useOnboarding";
@@ -134,11 +134,11 @@ function UnauthenticatedRoutes() {
     <Switch>
       <Route path="/login">
         <SEOOptimization {...seoConfigs.landing} />
-        <LandingPage showLoginModal={true} loginModalMode="login" />
+        <UnifiedLanding />
       </Route>
       <Route path="/signup">
         <SEOOptimization {...seoConfigs.landing} />
-        <LandingPage showLoginModal={true} loginModalMode="signup" />
+        <UnifiedLanding />
       </Route>
       <Route path="/email-verification" component={EmailVerificationPage} />
       <Route path="/reset-password" component={ResetPasswordPage} />
@@ -149,12 +149,12 @@ function UnauthenticatedRoutes() {
       <Route path="/reddit" component={RedditPostingPage} />
       <Route path="/landing">
         <SEOOptimization {...seoConfigs.landing} />
-        <LandingPage />
+        <UnifiedLanding />
       </Route>
       <Route path="/terms" component={TermsOfService} />
       <Route path="/">
         <SEOOptimization {...seoConfigs.landing} />
-        <LandingPage />
+        <UnifiedLanding />
       </Route>
       <Route>
         <Redirect to="/" />
