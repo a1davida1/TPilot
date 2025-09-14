@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { textModel } from "../lib/gemini";
 import { CaptionArray, RankResult, platformChecks } from "./schema";
+import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
 
 async function load(p:string){ return fs.readFile(path.join(process.cwd(),"prompts",p),"utf8"); }
 function stripToJSON(txt:string){ const i=Math.min(...[txt.indexOf("{"),txt.indexOf("[")].filter(x=>x>=0));
@@ -15,37 +16,42 @@ export async function generateVariantsTextOnly(params:{platform:"instagram"|"x"|
   const json=Array.isArray(raw)?raw:[raw];
   // Fix common safety_level values and missing fields
   if(Array.isArray(json)){
-    json.forEach((item: any)=>{
-      // Accept any safety_level from AI
-      if(!item.safety_level) item.safety_level="suggestive";
+    json.forEach((item) => {
+      const variant = item as Record<string, unknown>;
+      variant.safety_level = normalizeSafetyLevel(
+        typeof variant.safety_level === 'string' ? variant.safety_level : 'safe'
+      );
       // Fix other fields
-      if(!item.mood || item.mood.length<2) item.mood="engaging";
-      if(!item.style || item.style.length<2) item.style="authentic";
-      if(!item.cta || item.cta.length<2) item.cta="Check it out";
-      if(!item.alt || item.alt.length<20) item.alt="Engaging social media content";
-      if(!item.hashtags || !Array.isArray(item.hashtags) || item.hashtags.length < 3) {
+      if(typeof variant.mood !== 'string' || variant.mood.length<2) variant.mood="engaging";
+      if(typeof variant.style !== 'string' || variant.style.length<2) variant.style="authentic";
+      if(typeof variant.cta !== 'string' || variant.cta.length<2) variant.cta="Check it out";
+      if(typeof variant.alt !== 'string' || variant.alt.length<20) variant.alt="Engaging social media content";
+      if(!Array.isArray(variant.hashtags) || variant.hashtags.length < 3) {
         if(params.platform === 'instagram') {
-          item.hashtags=["#content", "#creative", "#amazing", "#lifestyle"];
+          variant.hashtags=["#content", "#creative", "#amazing", "#lifestyle"];
         } else {
-          item.hashtags=["#content", "#creative", "#amazing"];
+          variant.hashtags=["#content", "#creative", "#amazing"];
         }
       }
-      if(!item.caption || item.caption.length<1) item.caption="Check out this amazing content!";
+      if(typeof variant.caption !== 'string' || variant.caption.length<1) variant.caption="Check out this amazing content!";
     });
 
     // Ensure exactly 5 variants by padding with variations if needed
     while(json.length < 5) {
-      const template = json[0] || {
+      const template = (json[0] as Record<string, unknown>) || {
         caption: "Check out this amazing content!",
         alt: "Engaging social media content",
         hashtags: ["#content", "#creative", "#amazing"],
         cta: "Check it out",
         mood: "engaging",
         style: "authentic",
-        safety_level: "suggestive",
+        safety_level: normalizeSafetyLevel('safe'),
         nsfw: false
       };
-      json.push({...template, caption: template.caption + ` (Variant ${json.length + 1})`});
+      json.push({
+        ...template,
+        caption: `${template.caption as string} (Variant ${json.length + 1})`
+      });
     }
 
     // Trim to exactly 5 if more than 5
@@ -56,10 +62,10 @@ export async function generateVariantsTextOnly(params:{platform:"instagram"|"x"|
   return CaptionArray.parse(json);
 }
 
-export async function rankAndSelect(variants: any[], params?: { platform?: string; nsfw?: boolean }){
+export async function rankAndSelect(variants: unknown[], params?: { platform?: string; nsfw?: boolean }){
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rank.txt");
   const res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+JSON.stringify(variants) }]);
-  let json=stripToJSON(res.response.text());
+  let json=stripToJSON(res.response.text()) as unknown;
   
   // Handle case where AI returns array instead of ranking object
   if(Array.isArray(json)) {
@@ -73,21 +79,23 @@ export async function rankAndSelect(variants: any[], params?: { platform?: strin
   }
   
   // Fix safety_level in final result
-  if(json.final){
-    // Accept any safety_level in final result
-    if(!json.final.safety_level) json.final.safety_level="suggestive";
-    if(!json.final.mood || json.final.mood.length<2) json.final.mood="engaging";
-    if(!json.final.style || json.final.style.length<2) json.final.style="authentic";
-    if(!json.final.cta || json.final.cta.length<2) json.final.cta="Check it out";
-    if(!json.final.alt || json.final.alt.length<20) json.final.alt="Engaging social media content";
-    if(!json.final.hashtags || !Array.isArray(json.final.hashtags) || json.final.hashtags.length < 3) {
+  if((json as Record<string, unknown>).final){
+    const final = (json as { final: Record<string, unknown> }).final;
+    final.safety_level = normalizeSafetyLevel(
+      typeof final.safety_level === 'string' ? final.safety_level : 'safe'
+    );
+    if(typeof final.mood !== 'string' || final.mood.length<2) final.mood="engaging";
+    if(typeof final.style !== 'string' || final.style.length<2) final.style="authentic";
+    if(typeof final.cta !== 'string' || final.cta.length<2) final.cta="Check it out";
+    if(typeof final.alt !== 'string' || final.alt.length<20) final.alt="Engaging social media content";
+    if(!Array.isArray(final.hashtags) || final.hashtags.length < 3) {
       if(params?.platform === 'instagram') {
-        json.final.hashtags=["#content", "#creative", "#amazing", "#lifestyle"];
+        final.hashtags=["#content", "#creative", "#amazing", "#lifestyle"];
       } else {
-        json.final.hashtags=["#content", "#creative", "#amazing"];
+        final.hashtags=["#content", "#creative", "#amazing"];
       }
     }
-    if(!json.final.caption || json.final.caption.length<1) json.final.caption="Check out this amazing content!";
+    if(typeof final.caption !== 'string' || final.caption.length<1) final.caption="Check out this amazing content!";
   }
   return RankResult.parse(json);
 }

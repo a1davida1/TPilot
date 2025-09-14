@@ -139,14 +139,15 @@ router.post('/rewrite', authenticateToken, async (req: AuthRequest, res: Respons
     
     // Save generation to database
     if (req.user?.id && result.final) {
+      const finalResult = result.final as Record<string, any>;
       try {
         await storage.createGeneration({
           userId: req.user.id,
           platform,
           style: style || voice || 'default',
           theme: 'rewrite',
-          titles: [result.final.caption || 'Generated content'],
-          content: result.final.caption || '',
+          titles: [finalResult.caption || 'Generated content'],
+          content: finalResult.caption || '',
           photoInstructions: {
             lighting: 'Natural lighting',
             cameraAngle: 'Eye level',

@@ -2,14 +2,15 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { textModel, visionModel } from "../lib/gemini";
 import { CaptionArray, RankResult, platformChecks } from "./schema";
+import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
 
 // CaptionResult interface for type safety
 interface CaptionResult {
   provider: string;
-  final: any;
-  facts?: any;
-  variants?: any;
-  ranked?: any;
+  final: unknown;
+  facts?: unknown;
+  variants?: unknown;
+  ranked?: unknown;
 }
 
 async function load(p:string){ return fs.readFile(path.join(process.cwd(),"prompts",p),"utf8"); }
@@ -29,7 +30,7 @@ export async function extractFacts(imageUrl:string){
   }
 }
 
-export async function variantsRewrite(params:{platform:"instagram"|"x"|"reddit"|"tiktok", voice:string, style?:string, mood?:string, existingCaption:string, facts?:any, hint?:string, nsfw?:boolean}){
+export async function variantsRewrite(params:{platform:"instagram"|"x"|"reddit"|"tiktok", voice:string, style?:string, mood?:string, existingCaption:string, facts?:Record<string, unknown>, hint?:string, nsfw?:boolean}){
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rewrite.txt");
   const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\n${params.style ? `STYLE: ${params.style}\n` : ''}${params.mood ? `MOOD: ${params.mood}\n` : ''}EXISTING_CAPTION: "${params.existingCaption}"${params.facts?`\nIMAGE_FACTS: ${JSON.stringify(params.facts)}`:""}\nNSFW: ${params.nsfw || false}${params.hint?`\nHINT:${params.hint}`:""}`;
   let res;
@@ -39,35 +40,39 @@ export async function variantsRewrite(params:{platform:"instagram"|"x"|"reddit"|
     console.error('Gemini textModel.generateContent failed:', error);
     throw error;
   }
-  const json=stripToJSON(res.response.text());
+  const json=stripToJSON(res.response.text()) as unknown;
   // Fix common safety_level values and missing fields
   if(Array.isArray(json)){
-    json.forEach((item: any)=>{
-      // Accept any safety_level from AI but normalize "suggestive"
-      if(!item.safety_level) item.safety_level="suggestive";
-      else if(item.safety_level === 'suggestive') item.safety_level = 'spicy_safe';
+    json.forEach((item) => {
+      const variant = item as Record<string, unknown>;
+      variant.safety_level = normalizeSafetyLevel(
+        typeof variant.safety_level === 'string' ? variant.safety_level : 'safe'
+      );
       // Fix other fields
-      if(!item.mood || item.mood.length<2) item.mood="engaging";
-      if(!item.style || item.style.length<2) item.style="authentic";
-      if(!item.cta || item.cta.length<2) item.cta="Check it out";
-      if(!item.alt || item.alt.length<20) item.alt="Engaging social media content";
-      if(!item.hashtags || !Array.isArray(item.hashtags)) item.hashtags=["#content", "#creative", "#amazing"];
-      if(!item.caption || item.caption.length<1) item.caption="Check out this amazing content, you'll love it and want more!";
+      if(typeof variant.mood !== 'string' || variant.mood.length<2) variant.mood="engaging";
+      if(typeof variant.style !== 'string' || variant.style.length<2) variant.style="authentic";
+      if(typeof variant.cta !== 'string' || variant.cta.length<2) variant.cta="Check it out";
+      if(typeof variant.alt !== 'string' || variant.alt.length<20) variant.alt="Engaging social media content";
+      if(!Array.isArray(variant.hashtags)) variant.hashtags=["#content", "#creative", "#amazing"];
+      if(typeof variant.caption !== 'string' || variant.caption.length<1) variant.caption="Check out this amazing content, you'll love it and want more!";
     });
 
     // Ensure exactly 5 variants by padding with variations if needed
     while(json.length < 5) {
-      const template = json[0] || {
+      const template = (json[0] as Record<string, unknown>) || {
         caption: "Check out this amazing content, you'll love it and want more!",
         alt: "Engaging social media content",
         hashtags: ["#content", "#creative", "#amazing"],
         cta: "Check it out",
         mood: "engaging",
         style: "authentic",
-        safety_level: "suggestive",
+        safety_level: normalizeSafetyLevel('safe'),
         nsfw: false
       };
-      json.push({...template, caption: template.caption + ` This enhanced version provides much more engaging content and better call-to-action for your audience! (Variant ${json.length + 1})`});
+      json.push({
+        ...template,
+        caption: `${template.caption as string} This enhanced version provides much more engaging content and better call-to-action for your audience! (Variant ${json.length + 1})`
+      });
     }
 
     // Trim to exactly 5 if more than 5
@@ -78,7 +83,7 @@ export async function variantsRewrite(params:{platform:"instagram"|"x"|"reddit"|
   return CaptionArray.parse(json);
 }
 
-export async function rankAndSelect(variants: any[]){
+export async function rankAndSelect(variants: unknown[]){
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rank.txt");
   let res;
   try {
@@ -87,7 +92,7 @@ export async function rankAndSelect(variants: any[]){
     console.error('Gemini textModel.generateContent failed:', error);
     throw error;
   }
-  let json=stripToJSON(res.response.text());
+  let json=stripToJSON(res.response.text()) as unknown;
   
   // Handle case where AI returns array instead of ranking object
   if(Array.isArray(json)) {
@@ -100,15 +105,17 @@ export async function rankAndSelect(variants: any[]){
     };
   }
   
-  // Fix safety_level in final result
-  if(json.final){
-    if(!json.final.safety_level) json.final.safety_level="suggestive";
-    if(!json.final.mood || json.final.mood.length<2) json.final.mood="engaging";
-    if(!json.final.style || json.final.style.length<2) json.final.style="authentic";
-    if(!json.final.cta || json.final.cta.length<2) json.final.cta="Check it out";
-    if(!json.final.alt || json.final.alt.length<20) json.final.alt="Engaging social media content";
-    if(!json.final.hashtags || !Array.isArray(json.final.hashtags)) json.final.hashtags=["#content", "#creative", "#amazing"];
-    if(!json.final.caption || json.final.caption.length<1) json.final.caption="Check out this amazing content!";
+  if((json as Record<string, unknown>).final){
+    const final = (json as { final: Record<string, unknown> }).final;
+    final.safety_level = normalizeSafetyLevel(
+      typeof final.safety_level === 'string' ? final.safety_level : 'safe'
+    );
+    if(typeof final.mood !== 'string' || final.mood.length<2) final.mood="engaging";
+    if(typeof final.style !== 'string' || final.style.length<2) final.style="authentic";
+    if(typeof final.cta !== 'string' || final.cta.length<2) final.cta="Check it out";
+    if(typeof final.alt !== 'string' || final.alt.length<20) final.alt="Engaging social media content";
+    if(!Array.isArray(final.hashtags)) final.hashtags=["#content", "#creative", "#amazing"];
+    if(typeof final.caption !== 'string' || final.caption.length<1) final.caption="Check out this amazing content!";
   }
   return RankResult.parse(json);
 }
