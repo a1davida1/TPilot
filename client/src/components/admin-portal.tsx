@@ -51,6 +51,44 @@ import {
   Clock3
 } from 'lucide-react';
 
+interface AdminUser {
+  id: string;
+  username: string;
+  email: string;
+  tier: string;
+  createdAt: string;
+  trialEndsAt?: string;
+}
+
+interface LiveDataType {
+  realTime?: {
+    activeUsers: number;
+    onlineNow: number;
+    contentBeingGenerated: number;
+    apiCallsPerMinute: number;
+  };
+  systemHealth?: {
+    database: string;
+    ai: string;
+    storage: string;
+    api: string;
+  };
+  alerts?: Array<{
+    id: string;
+    type: string;
+    title: string;
+    message: string;
+    acknowledged: boolean;
+  }>;
+  recentActivity?: Array<{
+    user: string;
+    action: string;
+    target?: string;
+    platform?: string;
+    time: string;
+  }>;
+}
+
 interface UserStats {
   totalUsers: number;
   freeUsers: number;
@@ -680,7 +718,7 @@ export function AdminPortal() {
                         </Badge>
                         <Badge variant="outline" className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                          {Math.ceil((new Date(user.trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} days left
+                          {user.trialEndsAt ? Math.ceil((new Date(user.trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0} days left
                         </Badge>
                       </div>
                     </div>
@@ -815,7 +853,7 @@ function LiveDashboardTab({ authenticatedRequest }: { authenticatedRequest: Auth
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Active Users</p>
-                <p className="text-2xl font-bold text-green-600">{liveData?.realTime?.activeUsers || 0}</p>
+                <p className="text-2xl font-bold text-green-600">{(liveData as LiveDataType)?.realTime?.activeUsers || 0}</p>
                 <div className="flex items-center text-xs text-green-600">
                   <Wifi className="h-3 w-3 mr-1" />
                   {liveData?.realTime?.onlineNow || 0} online now
@@ -882,7 +920,7 @@ function LiveDashboardTab({ authenticatedRequest }: { authenticatedRequest: Auth
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {liveData?.alerts?.map((alert: unknown) => (
+              {(liveData as LiveDataType)?.alerts?.map((alert) => (
                 <div key={alert.id} className={`p-3 rounded-lg border ${
                   alert.type === 'warning' ? 'bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20' : 'bg-blue-50 border-blue-200 dark:bg-blue-900/20'
                 }`}>
