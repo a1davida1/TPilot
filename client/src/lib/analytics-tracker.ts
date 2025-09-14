@@ -221,6 +221,8 @@ class AnalyticsTracker {
     if (!this.isTracking) return;
 
     const eventData = {
+      type: 'page_view' as const,
+      page: window.location.pathname,
       eventType,
       sessionId: this.sessionId,
       userId: this.userId,

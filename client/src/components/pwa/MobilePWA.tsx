@@ -76,12 +76,12 @@ export default function MobilePWA() {
     getBatteryInfo();
     getNetworkInfo();
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('beforeinstallprompt' as any, handleBeforeInstallPrompt as any);
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('beforeinstallprompt' as any, handleBeforeInstallPrompt as any);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };

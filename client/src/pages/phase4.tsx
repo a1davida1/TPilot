@@ -195,7 +195,7 @@ export default function Phase4Dashboard() {
             {/* Quick Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {quickStats.map((stat, index) => {
-                const IconComponent = getIconComponent(stat.icon);
+                const IconComponent = getIconComponent(stat.icon) as any;
                 return (
                   <Card key={index} className="bg-gradient-to-r from-gray-900/80 to-gray-800/80 border-gray-700/50 backdrop-blur-sm">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -216,7 +216,7 @@ export default function Phase4Dashboard() {
             {/* Feature Overview */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {phase4Features.map((feature) => {
-                const IconComponent = getIconComponent(feature.icon);
+                const IconComponent = getIconComponent(feature.icon) as any;
                 return (
                   <Card key={feature.id} className="bg-gradient-to-r from-gray-900/80 to-gray-800/80 border-gray-700/50 backdrop-blur-sm overflow-hidden">
                     <div className={`h-1 bg-gradient-to-r ${feature.color}`} />
