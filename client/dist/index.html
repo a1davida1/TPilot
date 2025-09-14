@@ -27,12 +27,12 @@
     
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="/logo.png" />
-    <script type="module" crossorigin src="/assets/index-DfyEM5hu.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-DwpN0kQB.css">
+    <script type="module" crossorigin src="/assets/index-LSFuIUNm.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-4XtPlIUC.css">
   </head>
   <body>
     <!-- Static content visible to AI models and search engines -->
-    <div id="static-content" style="display: block;">
+    <div id="static-content">
       <header>
         <h1>ThottoPilot - From Photo to Posted in 5 Seconds</h1>
         <p><strong>AI-powered content creation platform for adult content creators</strong></p>
@@ -102,18 +102,7 @@
     <div id="root"></div>
     
     <!-- Hide static content when React app loads -->
-    <script>
-      document.addEventListener('DOMContentLoaded', function() {
-        // Hide static content once React starts loading
-        setTimeout(function() {
-          const staticContent = document.getElementById('static-content');
-          if (staticContent && document.getElementById('root').children.length > 0) {
-            staticContent.style.display = 'none';
-          }
-        }, 100);
-      });
-    </script>
-    <!-- This is a replit script which adds a banner on the top of the page when opened in development mode outside the replit environment -->
-    <script type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js"></script>
+    <script src="./hide-static-content.js" defer></script>
+    <!-- Dev-only Replit banner -->
   </body>
 </html>

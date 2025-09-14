@@ -1359,7 +1359,7 @@ function UserManagementTab({ authenticatedRequest, users }: { authenticatedReque
                       </div>
                     </td>
                   </tr>
-                ))
+                ))}
               </tbody>
             </table>
           </div>
