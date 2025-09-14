@@ -1,0 +1,57 @@
+diff --git a/client/src/components/analytics/SmartAnalytics.tsx b/client/src/components/analytics/SmartAnalytics.tsx
+index c339bdc5d37df5ad24cce93988df0c3b7fc42eef..18a5f5c171765db917536d26808b363789f2f70b 100644
+--- a/client/src/components/analytics/SmartAnalytics.tsx
++++ b/client/src/components/analytics/SmartAnalytics.tsx
+@@ -115,51 +115,51 @@ export default function SmartAnalytics() {
+         const averageEngagementRate = safeNumber(analytics.averageEngagementRate, 0);
+         const successRate = safeNumber(stats.successRate, 0);
+         
+         // Revenue calculation with real Stripe data
+         const totalRevenue = safeNumber(revenue.available, 0) / 100; // Convert from cents to dollars
+         
+         // Transform the data to match our interface with safe operations
+         return {
+           totalRevenue: Math.round(totalRevenue),
+           revenueChange: safeNumber(analytics.growthMetrics?.viewsGrowth, 0),
+           totalViews,
+           viewsChange: safeNumber(analytics.growthMetrics?.viewsGrowth, 0),
+           engagementRate: averageEngagementRate,
+           engagementChange: safeNumber(analytics.growthMetrics?.engagementGrowth, 0),
+           topPerformingContent: Array.isArray(analytics.topPerformingPosts) 
+             ? analytics.topPerformingPosts.map((post: unknown, index: number) => ({
+                 id: String(index + 1),
+                 title: String(post?.title || `Post ${index + 1}`),
+                 platform: String(post?.platform || 'Unknown'),
+                 views: safeNumber(post?.views, 0),
+                 engagement: safeNumber(post?.engagement, 0),
+                 revenue: Math.round(safeNumber(post?.views, 0) * REVENUE_MULTIPLIER)
+               }))
+             : [],
+           revenueByPlatform: stats.platformDistribution
+-            ? Object.entries(stats.platformDistribution).map(([platform, count]: [string, any]) => {
++            ? Object.entries(stats.platformDistribution).map(([platform, count]: [string, unknown]) => {
+                 const numericCount = safeNumber(count, 0);
+                 const estimatedRevenue = Math.round(numericCount * REVENUE_PER_GENERATION);
+                 return {
+                   platform: String(platform),
+                   revenue: estimatedRevenue,
+                   percentage: Number(safeDivide(numericCount * 100, totalGenerations, 0).toFixed(1))
+                 };
+               })
+             : [],
+           performanceTimeline: Array.isArray(analytics.activityTimeline)
+             ? analytics.activityTimeline.map((item: unknown) => ({
+                 date: String(item?.date || new Date().toISOString().split('T')[0]),
+                 views: safeNumber(item?.estimatedViews, 0),
+                 engagement: safeNumber(item?.estimatedEngagement, 0),
+                 revenue: Math.round(safeNumber(item?.estimatedViews, 0) * REVENUE_MULTIPLIER)
+               }))
+             : [],
+           aiInsights: {
+             bestPostingTimes: Array.isArray(analytics.bestPostingTimes) 
+               ? analytics.bestPostingTimes.map((t: unknown) => String(t?.time || '12:00')).filter(Boolean)
+               : ['09:00', '19:00', '12:00'],
+             topPerformingTags: ['#content', '#creator', '#engagement', '#growth'], // Safe fallback
+             contentRecommendations: [
+               `You've generated ${totalGenerations} pieces of content`,
+               `${successRate}% success rate with content generation`,

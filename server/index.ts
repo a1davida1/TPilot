@@ -73,8 +73,8 @@ app.use(cors({
 
 // Initialize Sentry with proper validation
 const Sentry = await initializeSentry();
-if (Sentry?.Handlers) {
-  app.use(Sentry.Handlers.requestHandler());
+if (Sentry?.handlers?.requestHandler) {
+  app.use(Sentry.handlers.requestHandler());
 }
 
 app.use((req, _res, next) => {
