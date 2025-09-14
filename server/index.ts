@@ -1,4 +1,4 @@
-import express, { type Request, Response, NextFunction } from "express";
+import express, { type Request, Response, NextFunction, type RequestHandler } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
@@ -73,8 +73,8 @@ app.use(cors({
 
 // Initialize Sentry with proper validation
 const Sentry = await initializeSentry();
-if (Sentry?.handlers?.requestHandler) {
-  app.use(Sentry.handlers.requestHandler());
+if (Sentry && 'requestHandler' in Sentry) {
+  app.use((Sentry.requestHandler as () => RequestHandler)());
 }
 
 app.use((req, _res, next) => {
