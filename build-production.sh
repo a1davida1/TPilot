@@ -38,7 +38,10 @@ find dist -name '*.js' -exec sed -i 's/\.js\.js/\.js/g' {} + 2>/dev/null || true
 
 # Build client for production
 echo "🎨 Building client..."
-npm run build:client && npm run build:server
+npm run build:client
+mkdir -p dist/client
+cp -r client/dist/* dist/client/
+npm run build:server
 find dist/client -name "*.js" -o -name "*.css" | xargs gzip -9 --keep
 
 echo "✅ Production build complete!"
