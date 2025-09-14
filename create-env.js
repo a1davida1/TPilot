@@ -1,0 +1,34 @@
+const fs = require('fs');
+
+// List the secrets you need for testing
+const secrets = [
+  'DATABASE_URL',
+  'APP_BASE_URL',
+  'JWT_SECRET',
+  'SESSION_SECRET',
+  'REDDIT_CLIENT_ID',
+  'REDDIT_CLIENT_SECRET',
+  'REDDIT_USERNAME',
+  'REDDIT_PASSWORD',
+  'REDDIT_USER_AGENT',
+  'GEMINI_API_KEY',
+  'OPENAI_API_KEY',
+  'STRIPE_SECRET_KEY',
+  'COINBASE_API_KEY',
+  'PAXUM_MERCHANT_EMAIL',
+  'FROM_EMAIL'
+];
+
+// Build .env content
+let envContent = '';
+secrets.forEach(key => {
+  if (process.env[key]) {
+    envContent += `${key}=${process.env[key]}\n`;
+  } else {
+    console.warn(`Warning: ${key} is not set in Replit Secrets`);
+  }
+});
+
+// Write to .env file
+fs.writeFileSync('.env', envContent);
+console.log('.env file created with', envContent.split('\n').filter(l => l).length, 'variables');

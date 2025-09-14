@@ -173,7 +173,9 @@ export const creatorAccounts = pgTable("creator_accounts", {
   metadata: jsonb("metadata"), // Added missing column
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  userPlatformIdx: unique("creator_accounts_user_platform_idx").on(table.userId, table.platform),
+}));
 
 export const subredditRules = pgTable("subreddit_rules", {
   id: serial("id").primaryKey(),

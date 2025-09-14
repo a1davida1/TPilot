@@ -4,21 +4,19 @@ import { creatorAccounts } from '@shared/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { decrypt } from '../services/state-store.js';
 
-function requireEnv(name: string): string {
+function getEnvOrDefault(name: string, defaultValue?: string): string {
   const value = process.env[name];
-  if (!value) {
-    const message = `Missing required environment variable: ${name}`;
-    console.warn(message);
-    throw new Error(message);
+  if (!value && !defaultValue) {
+    console.warn(`Warning: Missing environment variable: ${name}`);
+    return '';
   }
-  return value;
+  return value || defaultValue || '';
 }
 
-const REDDIT_CLIENT_ID = requireEnv('REDDIT_CLIENT_ID');
-const REDDIT_CLIENT_SECRET = requireEnv('REDDIT_CLIENT_SECRET');
-const REDDIT_USER_AGENT = requireEnv('REDDIT_USER_AGENT');
-requireEnv('REDDIT_USERNAME');
-requireEnv('REDDIT_PASSWORD');
+// These will be validated when actually needed, not at startup
+const REDDIT_CLIENT_ID = getEnvOrDefault('REDDIT_CLIENT_ID');
+const REDDIT_CLIENT_SECRET = getEnvOrDefault('REDDIT_CLIENT_SECRET');
+const REDDIT_USER_AGENT = getEnvOrDefault('REDDIT_USER_AGENT', 'ThottoPilot/1.0 (Content scheduling bot)');
 
 export interface RedditPostOptions {
   subreddit: string;
