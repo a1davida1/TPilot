@@ -89,6 +89,18 @@ interface LiveDataType {
   }>;
 }
 
+interface MetricsType {
+  uptime?: number;
+  memoryUsage?: { heapUsed: number };
+  database?: { connections: number; avgQueryTime: string };
+  api?: { totalRequests: number; avgResponseTime: string; errorRate: string };
+  services?: {
+    ai?: { gemini: boolean; openai: boolean };
+    email?: boolean;
+    storage?: boolean;
+  };
+}
+
 interface UserStats {
   totalUsers: number;
   freeUsers: number;
@@ -260,12 +272,12 @@ export function AdminPortal() {
     
     if (actionType === 'reset-password') {
       actionMutation.mutate({ 
-        userId: selectedUser.id, 
+        userId: (selectedUser as any).id, 
         action: actionType 
       });
     } else {
       actionMutation.mutate({ 
-        userId: selectedUser.id, 
+        userId: (selectedUser as any).id, 
         action: actionType, 
         duration: actionType === 'suspend' ? duration : undefined 
       });
@@ -951,7 +963,7 @@ function LiveDashboardTab({ authenticatedRequest }: { authenticatedRequest: Auth
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {liveData?.recentActivity?.map((activity: unknown, index: number) => (
+              {(liveData as LiveDataType)?.recentActivity?.map((activity, index) => (
                 <div key={index} className="flex items-center justify-between py-2 border-b last:border-b-0">
                   <div>
                     <p className="text-sm font-medium">{activity.user}</p>
@@ -1008,7 +1020,7 @@ function IPTrackingTab({ authenticatedRequest }: { authenticatedRequest: Authent
                 </tr>
               </thead>
               <tbody>
-                {ipData?.map((ip: unknown) => (
+                {(ipData as Array<{ip: string; users: number; location: string; lastSeen: string; flagged: boolean}>)?.map((ip) => (
                   <tr key={ip.ip} className="border-b hover:bg-gray-50 dark:hover:bg-gray-800">
                     <td className="p-2 font-mono text-sm">{ip.ip}</td>
                     <td className="p-2">{ip.users}</td>
@@ -1046,7 +1058,7 @@ function IPTrackingTab({ authenticatedRequest }: { authenticatedRequest: Authent
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {userActivity?.map((session: unknown) => (
+              {(userActivity as Array<{id: string; ipAddress: string; isActive: boolean; deviceType: string; browser: string; os: string; location?: {city: string; country: string}; loginAt: string; lastActivity: string}>)?.map((session) => (
                 <div key={session.id} className="p-3 border rounded-lg">
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
@@ -1116,11 +1128,11 @@ function SystemMonitorTab({ authenticatedRequest }: { authenticatedRequest: Auth
           <CardContent className="space-y-2">
             <div className="flex justify-between">
               <span className="text-sm text-gray-600">Uptime</span>
-              <span className="text-sm font-medium">{formatUptime(metrics?.uptime || 0)}</span>
+              <span className="text-sm font-medium">{formatUptime((metrics as MetricsType)?.uptime || 0)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-gray-600">Memory</span>
-              <span className="text-sm font-medium">{formatMemory(metrics?.memoryUsage?.heapUsed || 0)}</span>
+              <span className="text-sm font-medium">{formatMemory((metrics as MetricsType)?.memoryUsage?.heapUsed || 0)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-gray-600">Status</span>
@@ -1139,11 +1151,11 @@ function SystemMonitorTab({ authenticatedRequest }: { authenticatedRequest: Auth
           <CardContent className="space-y-2">
             <div className="flex justify-between">
               <span className="text-sm text-gray-600">Connections</span>
-              <span className="text-sm font-medium">{metrics?.database?.connections}/100</span>
+              <span className="text-sm font-medium">{(metrics as MetricsType)?.database?.connections}/100</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-gray-600">Avg Query</span>
-              <span className="text-sm font-medium">{metrics?.database?.avgQueryTime}</span>
+              <span className="text-sm font-medium">{(metrics as MetricsType)?.database?.avgQueryTime}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-gray-600">Status</span>
@@ -1162,15 +1174,15 @@ function SystemMonitorTab({ authenticatedRequest }: { authenticatedRequest: Auth
           <CardContent className="space-y-2">
             <div className="flex justify-between">
               <span className="text-sm text-gray-600">Requests</span>
-              <span className="text-sm font-medium">{metrics?.api?.totalRequests}</span>
+              <span className="text-sm font-medium">{(metrics as MetricsType)?.api?.totalRequests}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-gray-600">Avg Response</span>
-              <span className="text-sm font-medium">{metrics?.api?.avgResponseTime}</span>
+              <span className="text-sm font-medium">{(metrics as MetricsType)?.api?.avgResponseTime}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-gray-600">Error Rate</span>
-              <span className="text-sm font-medium text-green-600">{metrics?.api?.errorRate}</span>
+              <span className="text-sm font-medium text-green-600">{(metrics as MetricsType)?.api?.errorRate}</span>
             </div>
           </CardContent>
         </Card>
@@ -1186,7 +1198,7 @@ function SystemMonitorTab({ authenticatedRequest }: { authenticatedRequest: Auth
         </CardHeader>
         <CardContent>
           <div className="space-y-2 max-h-64 overflow-y-auto">
-            {logs?.map((log: unknown) => (
+            {(logs as Array<{id: string; level: string; message: string; service: string; ipAddress?: string; createdAt: string}>)?.map((log) => (
               <div key={log.id} className={`p-2 rounded text-sm border-l-4 ${
                 log.level === 'error' ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : 
                 log.level === 'warn' ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20' : 
@@ -1218,19 +1230,19 @@ function SystemMonitorTab({ authenticatedRequest }: { authenticatedRequest: Auth
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center p-3 border rounded">
-              <div className={`w-3 h-3 rounded-full mx-auto mb-2 ${metrics?.services?.ai?.gemini ? 'bg-green-500' : 'bg-red-500'}`} />
+              <div className={`w-3 h-3 rounded-full mx-auto mb-2 ${(metrics as MetricsType)?.services?.ai?.gemini ? 'bg-green-500' : 'bg-red-500'}`} />
               <p className="text-sm font-medium">Gemini AI</p>
-              <p className="text-xs text-muted-foreground">{metrics?.services?.ai?.gemini ? 'Connected' : 'Offline'}</p>
+              <p className="text-xs text-muted-foreground">{(metrics as MetricsType)?.services?.ai?.gemini ? 'Connected' : 'Offline'}</p>
             </div>
             <div className="text-center p-3 border rounded">
-              <div className={`w-3 h-3 rounded-full mx-auto mb-2 ${metrics?.services?.ai?.openai ? 'bg-green-500' : 'bg-red-500'}`} />
+              <div className={`w-3 h-3 rounded-full mx-auto mb-2 ${(metrics as MetricsType)?.services?.ai?.openai ? 'bg-green-500' : 'bg-red-500'}`} />
               <p className="text-sm font-medium">OpenAI</p>
-              <p className="text-xs text-muted-foreground">{metrics?.services?.ai?.openai ? 'Connected' : 'Offline'}</p>
+              <p className="text-xs text-muted-foreground">{(metrics as MetricsType)?.services?.ai?.openai ? 'Connected' : 'Offline'}</p>
             </div>
             <div className="text-center p-3 border rounded">
-              <div className={`w-3 h-3 rounded-full mx-auto mb-2 ${metrics?.services?.email ? 'bg-green-500' : 'bg-red-500'}`} />
+              <div className={`w-3 h-3 rounded-full mx-auto mb-2 ${(metrics as MetricsType)?.services?.email ? 'bg-green-500' : 'bg-red-500'}`} />
               <p className="text-sm font-medium">Email</p>
-              <p className="text-xs text-muted-foreground">{metrics?.services?.email ? 'Connected' : 'Offline'}</p>
+              <p className="text-xs text-muted-foreground">{(metrics as MetricsType)?.services?.email ? 'Connected' : 'Offline'}</p>
             </div>
             <div className="text-center p-3 border rounded">
               <div className={`w-3 h-3 rounded-full mx-auto mb-2 ${metrics?.services?.storage ? 'bg-green-500' : 'bg-red-500'}`} />
@@ -1256,7 +1268,7 @@ function UserManagementTab({ authenticatedRequest, users }: { authenticatedReque
 
   const actionMutation = useMutation({
     mutationFn: async (data: unknown) => {
-      switch (data.action) {
+      switch ((data as any).action) {
         case 'ban':
           return authenticatedRequest('/api/admin/ban-user', 'POST', data);
         case 'unban':
@@ -1270,7 +1282,7 @@ function UserManagementTab({ authenticatedRequest, users }: { authenticatedReque
       }
     },
     onSuccess: (data, variables) => {
-      if (variables.action === 'reset-password') {
+      if ((variables as any).action === 'reset-password') {
         setTempPassword(data.tempPassword);
         toast({ 
           title: "Password Reset Successful", 
@@ -1303,7 +1315,7 @@ function UserManagementTab({ authenticatedRequest, users }: { authenticatedReque
     };
 
     if (actionType === 'suspend') {
-      actionData.hours = parseInt(duration);
+      (actionData as any).hours = parseInt(duration);
     }
 
     actionMutation.mutate(actionData);
@@ -1405,12 +1417,12 @@ function UserManagementTab({ authenticatedRequest, users }: { authenticatedReque
         </CardContent>
       </Card>
 
-      {/* Action Modal */}
+      <>{/* Action Modal */}</>
       {selectedUser && actionType && (
         <Card className="border-2 border-red-500/50">
           <CardHeader>
             <CardTitle className="text-red-600">
-              {actionType.toUpperCase()} User: {selectedUser.username}
+              {actionType.toUpperCase()} User: {(selectedUser as any).username}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
