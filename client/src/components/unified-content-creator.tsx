@@ -29,7 +29,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import type { ContentGeneration } from "@shared/schema";
+import type { ContentGeneration } from "@shared/schema.js";
 import { GenerationHistory } from "./generation-history";
 import { AuthModal } from "./auth-modal";
 import { protectImage, protectionPresets, downloadProtectedImage } from "@/lib/image-protection";

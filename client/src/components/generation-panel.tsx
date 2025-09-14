@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { ContentGeneration } from "@shared/schema";
+import type { ContentGeneration } from "@shared/schema.js";
 import { Sparkles, Copy, Check, Loader2 } from "lucide-react";
 
 interface GenerationPanelProps {

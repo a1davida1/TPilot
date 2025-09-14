@@ -4,7 +4,7 @@
  */
 
 import { db } from '../db';
-import { postRateLimits, postDuplicates, users } from '@shared/schema';
+import { postRateLimits, postDuplicates, users } from '@shared/schema.js';
 import { eq, and, gte, sql } from 'drizzle-orm';
 import { env } from './config';
 import { createHash } from 'crypto';

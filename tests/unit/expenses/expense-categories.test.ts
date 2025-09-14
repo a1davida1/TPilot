@@ -1,7 +1,7 @@
-import { storage } from "../../server/storage.ts";
+import { storage } from "../../server/storage";
 /* eslint-env node, jest */
 import { describe, test, expect, beforeEach, vi } from 'vitest';
-import { InsertExpenseCategory } from '@shared/schema';
+import { InsertExpenseCategory } from '../../../shared/schema.js';
 
 // Mock database with proper hoisting
 vi.mock('../../../server/db.js', () => ({

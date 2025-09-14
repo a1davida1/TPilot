@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { db } from '../db.js';
-import { leads, insertLeadSchema } from '@shared/schema';
+import { leads, insertLeadSchema } from '@shared/schema.js';
 import { verifyTurnstileToken } from '../lib/turnstile.js';
 import { parseUTMFromCookie, parseUTMFromURL, mergeUTMParams, UTMParams } from '../lib/utm.js';
 import { sendDoubleOptInEmail } from '../lib/mailer.js';

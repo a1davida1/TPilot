@@ -7,7 +7,7 @@ const RedditStrategy = (
   redditStrategyPkg as unknown as { Strategy: typeof import('passport-reddit').Strategy }
 ).Strategy;
 import { storage } from './storage';
-import type { User } from '@shared/schema';
+import type { User } from '@shared/schema.js';
 
 // Helper function to handle social auth user creation/update
 async function handleSocialAuth(

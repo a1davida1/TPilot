@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { ModernDashboard } from "@/components/modern-dashboard";
 import { useToast } from "@/hooks/use-toast";
-import { type User } from "@shared/schema";
+import { type User } from "@shared/schema.js";
 
 // DashboardUser interface extending User with additional properties
 interface DashboardUser extends User {

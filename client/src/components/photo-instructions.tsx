@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import type { ContentGeneration } from "@shared/schema";
+import type { ContentGeneration } from "@shared/schema.js";
 import { Camera, Lightbulb, CameraIcon, Crop, Palette, Settings, Save, History, Download, ChevronDown, ChevronUp } from "lucide-react";
 
 interface PhotoInstructionsProps {

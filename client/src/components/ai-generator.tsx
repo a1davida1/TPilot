@@ -11,7 +11,7 @@ import { Brain, Upload, Sparkles, Image as ImageIcon, Settings, Copy, Check } fr
 import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
-import type { ContentGeneration } from '@shared/schema';
+import type { ContentGeneration } from '@shared/schema.js';
 import { getErrorMessage } from '@/utils/errorHelpers';
 
 // Extended interface for frontend display with dynamic server properties

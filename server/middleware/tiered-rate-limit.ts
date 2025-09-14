@@ -1,7 +1,7 @@
 import rateLimit from 'express-rate-limit';
 import { Request, Response, NextFunction } from 'express';
 import { db } from '../db';
-import { users } from '@shared/schema';
+import { users } from '@shared/schema.js';
 import { eq } from 'drizzle-orm';
 
 // Rate limit configurations by tier

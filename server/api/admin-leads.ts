@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { db } from '../db';
-import { leads } from '@shared/schema';
+import { leads } from '@shared/schema.js';
 import { desc } from 'drizzle-orm';
 
 export async function getLeads(req: Request, res: Response) {

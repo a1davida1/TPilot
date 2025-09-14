@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { getPreviewStats, canQueuePosts, checkPreviewGate } from '../../server/lib/preview-gate';
 import { db } from '../../server/db';
-import { postPreviews, contentGenerations, users } from '@shared/schema';
+import { postPreviews, contentGenerations, users } from '@shared/schema.js';
 
 describe('Preview Gate', () => {
   const testUserId = 999; // Test user ID

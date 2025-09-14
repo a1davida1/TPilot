@@ -4,7 +4,7 @@
  */
 
 import { db } from '../db';
-import { queueJobs, type InsertQueueJob } from '@shared/schema';
+import { queueJobs, type InsertQueueJob } from '@shared/schema.js';
 import { eq, and, gte, sql } from 'drizzle-orm';
 import type { IQueue, QueueJobHandler, QueueJobOptions, QueueFailureStats } from './queue-interface';
 

@@ -82,7 +82,7 @@ import { contentGenerationLimiter } from "./middleware/tiered-rate-limit.js";
 import { registerSocialMediaRoutes } from "./social-media-routes.js";
 
 // Schema imports
-import { insertContentGenerationSchema, insertUserImageSchema } from "@shared/schema";
+import { insertContentGenerationSchema, insertUserImageSchema } from "@shared/schema.js";
 
 // Core dependencies
 import multer from 'multer';

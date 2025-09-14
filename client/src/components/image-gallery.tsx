@@ -12,7 +12,7 @@ import { protectImage, downloadProtectedImage } from '@/lib/image-protection';
 import { Upload, Shield, Download, Trash2, Eye, Tag, Plus } from 'lucide-react';
 
 // Import MediaAsset type from schema
-import type { MediaAsset } from '@shared/schema';
+import type { MediaAsset } from '@shared/schema.js';
 
 // Extended interface for gallery display with additional properties
 interface UserImage extends MediaAsset {
