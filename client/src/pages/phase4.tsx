@@ -23,6 +23,8 @@ import {
   Activity
 } from 'lucide-react';
 
+type IconType = React.ComponentType<{ className: string }>;
+
 export default function Phase4Dashboard() {
   const [activeTab, setActiveTab] = useState('overview');
 
@@ -159,7 +161,7 @@ export default function Phase4Dashboard() {
     }
   ];
 
-  const getIconComponent = (IconComponent: unknown) => IconComponent;
+  const getIconComponent = (IconComponent: IconType | null) => IconComponent;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900 p-6">
@@ -197,7 +199,9 @@ export default function Phase4Dashboard() {
                   <Card key={index} className="bg-gradient-to-r from-gray-900/80 to-gray-800/80 border-gray-700/50 backdrop-blur-sm">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium text-gray-400">{stat.title}</CardTitle>
-                      <IconComponent className={`h-5 w-5 ${stat.color}`} />
+                      {IconComponent && React.createElement(IconComponent, {
+                        className: `h-5 w-5 ${stat.color}`
+                      })}
                     </CardHeader>
                     <CardContent>
                       <div className="text-2xl font-bold text-white">{stat.value}</div>
@@ -218,7 +222,9 @@ export default function Phase4Dashboard() {
                     <CardHeader className="flex flex-row items-center justify-between space-y-0">
                       <div className="flex items-center space-x-3">
                         <div className={`p-3 rounded-lg bg-gradient-to-r ${feature.color} bg-opacity-20`}>
-                          <IconComponent className="h-6 w-6 text-white" />
+                          {IconComponent && React.createElement(IconComponent, {
+                            className: "h-6 w-6 text-white"
+                          })}
                         </div>
                         <div>
                           <CardTitle className="text-xl text-white">{feature.title}</CardTitle>
@@ -312,7 +318,9 @@ export default function Phase4Dashboard() {
                   return (
                     <div key={activity.id} className="flex items-center space-x-4 p-3 rounded-lg bg-gray-800/20 border border-gray-700/30">
                       <div className="p-2 rounded-lg bg-gray-700/50">
-                        <IconComponent className={`h-4 w-4 ${activity.color}`} />
+                        {IconComponent && React.createElement(IconComponent, {
+                          className: `h-4 w-4 ${activity.color}`
+                        })}
                       </div>
                       <div className="flex-1">
                         <p className="text-white text-sm">{activity.action}</p>
