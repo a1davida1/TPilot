@@ -16,7 +16,7 @@ interface Violation {
 
 export async function validateContent(content, context = {}) {
   const violations: Violation[] = [];
-  const { subreddit, userId, allowNSFW = false } = context;
+  const { subreddit, userId, allowNSFW = false } = context as any;
 
   /* length check */
   if (content.length > 280) {

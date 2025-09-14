@@ -149,7 +149,7 @@ export default function MediaLibrary() {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Storage Usage */}
+      <>{/* Storage Usage */}</>
       {usage && (
         <Card>
           <CardHeader>

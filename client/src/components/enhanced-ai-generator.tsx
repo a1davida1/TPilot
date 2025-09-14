@@ -134,6 +134,12 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
     }
   ];
 
+  interface GeneratedContentType {
+    titles?: string[];
+    content?: string;
+    photoInstructions?: string | object;
+  }
+
   const generateContentMutation = useMutation({
     mutationFn: async (data: unknown) => {
       const response = await apiRequest("POST", "/api/generate-unified", {

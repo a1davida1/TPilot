@@ -217,7 +217,7 @@ export function AdminLeadsPage() {
                   className="pl-10"
                 />
               </div>
-              <Tabs value={statusFilter} onValueChange={(value: 'all' | 'confirmed' | 'pending') => setStatusFilter(value)}>
+              <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as 'all' | 'confirmed' | 'pending')}>
                 <TabsList>
                   <TabsTrigger value="all">All</TabsTrigger>
                   <TabsTrigger value="confirmed">Confirmed</TabsTrigger>

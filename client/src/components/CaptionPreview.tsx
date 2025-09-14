@@ -12,7 +12,7 @@ export function CaptionPreview({ data }: { data: unknown }) {
   if (!data) return null;
   
   // Safe destructuring with fallbacks
-  const { final, ranked } = data || {};
+  const { final, ranked } = (data as any) || {};
   if (!final) return null;
   
   const charCount = final.caption?.length || 0;

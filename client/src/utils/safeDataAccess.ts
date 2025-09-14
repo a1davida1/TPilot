@@ -24,7 +24,7 @@ export const safeGet = <T>(obj: unknown, path: string, fallback: T): T => {
   let current = obj;
   
   for (const key of keys) {
-    if (current === null || current === undefined || (typeof current !== 'object') || !(key in current)) {
+    if (current === null || current === undefined || typeof current !== 'object' || !(key in current)) {
       return fallback;
     }
     current = current[key];
@@ -46,7 +46,7 @@ export const safeArray = <T>(value: unknown, fallback: T[] = []): T[] => {
 
 // Safe object validation
 export const safeObject = <T>(value: unknown, fallback: T): T => {
-  return value && typeof value === 'object' && !Array.isArray(value) ? value : fallback;
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as T : fallback;
 };
 
 // Safe percentage formatting

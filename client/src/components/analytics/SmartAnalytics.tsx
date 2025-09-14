@@ -56,6 +56,19 @@ const COLORS = ['#8B5CF6', '#EC4899', '#06B6D4', '#10B981', '#F59E0B'];
 const REVENUE_MULTIPLIER = 0.001;
 const REVENUE_PER_GENERATION = 0.05;
 
+interface PostType {
+  title?: string;
+  platform?: string;
+  views?: number;
+  engagement?: number;
+}
+
+interface ItemType {
+  date?: string;
+  estimatedViews?: number;
+  estimatedEngagement?: number;
+}
+
 // Safe number formatting with fallbacks
 const safeNumber = (value: unknown, fallback: number = 0): number => {
   const num = Number(value);
@@ -132,11 +145,11 @@ export default function SmartAnalytics() {
           topPerformingContent: Array.isArray(analytics.topPerformingPosts) 
             ? analytics.topPerformingPosts.map((post: unknown, index: number) => ({
                 id: String(index + 1),
-                title: String(post?.title || `Post ${index + 1}`),
-                platform: String(post?.platform || 'Unknown'),
-                views: safeNumber(post?.views, 0),
-                engagement: safeNumber(post?.engagement, 0),
-                revenue: Math.round(safeNumber(post?.views, 0) * REVENUE_MULTIPLIER)
+                title: String((post as PostType)?.title || `Post ${index + 1}`),
+                platform: String((post as PostType)?.platform || 'Unknown'),
+                views: safeNumber((post as PostType)?.views, 0),
+                engagement: safeNumber((post as PostType)?.engagement, 0),
+                revenue: Math.round(safeNumber((post as PostType)?.views, 0) * REVENUE_MULTIPLIER)
               }))
             : [],
           revenueByPlatform: stats.platformDistribution
@@ -152,10 +165,10 @@ export default function SmartAnalytics() {
             : [],
           performanceTimeline: Array.isArray(analytics.activityTimeline)
             ? analytics.activityTimeline.map((item: unknown) => ({
-                date: String(item?.date || new Date().toISOString().split('T')[0]),
-                views: safeNumber(item?.estimatedViews, 0),
-                engagement: safeNumber(item?.estimatedEngagement, 0),
-                revenue: Math.round(safeNumber(item?.estimatedViews, 0) * REVENUE_MULTIPLIER)
+                date: String((item as ItemType)?.date || new Date().toISOString().split('T')[0]),
+                views: safeNumber((item as ItemType)?.estimatedViews, 0),
+                engagement: safeNumber((item as ItemType)?.estimatedEngagement, 0),
+                revenue: Math.round(safeNumber((item as ItemType)?.estimatedViews, 0) * REVENUE_MULTIPLIER)
               }))
             : [],
           aiInsights: {

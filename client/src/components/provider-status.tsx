@@ -87,12 +87,13 @@ export function ProviderStatus() {
         <div className="space-y-4">
           {safeArray(providers, []).map((provider: unknown, index: number) => {
             // Safe provider data extraction
-            const providerName = safeString(provider?.name, `Provider ${index + 1}`);
-            const providerDescription = safeString(provider?.description, 'AI content generation provider');
-            const providerStatus = provider?.status || 'unknown';
-            const inputCost = safeString(provider?.inputCost, 'N/A');
-            const outputCost = safeString(provider?.outputCost, 'N/A');
-            const savings = safeString(provider?.savings, '0%');
+            const typedProvider = provider as {name?: string; description?: string; status?: string; inputCost?: string; outputCost?: string; savings?: string};
+            const providerName = safeString(typedProvider?.name, `Provider ${index + 1}`);
+            const providerDescription = safeString(typedProvider?.description, 'AI content generation provider');
+            const providerStatus = typedProvider?.status || 'unknown';
+            const inputCost = safeString(typedProvider?.inputCost, 'N/A');
+            const outputCost = safeString(typedProvider?.outputCost, 'N/A');
+            const savings = safeString(typedProvider?.savings, '0%');
             
             return (
               <div key={providerName + index} className="flex items-center justify-between p-4 border rounded-lg">

@@ -403,22 +403,22 @@ export function AdminDashboard() {
                   </thead>
                   <tbody>
                     {(users as any)?.slice(0, 5).map((user: unknown) => (
-                      <tr key={user.id} className="border-b border-white/5">
+                      <tr key={(user as User).id} className="border-b border-white/5">
                         <td className="p-4">
                           <div>
-                            <p className="font-medium">{user.username}</p>
-                            <p className="text-xs text-gray-500">{user.email}</p>
+                            <p className="font-medium">{(user as User).username}</p>
+                            <p className="text-xs text-gray-500">{(user as User).email}</p>
                           </div>
                         </td>
                         <td className="p-4">
-                          <Badge variant={user.tier === 'premium' ? 'default' : 'secondary'}>
-                            {user.tier}
+                          <Badge variant={(user as User).tier === 'premium' ? 'default' : 'secondary'}>
+                            {(user as User).tier}
                           </Badge>
                         </td>
                         <td className="p-4 text-sm text-gray-400">
-                          {new Date(user.createdAt).toLocaleDateString()}
+                          {new Date((user as User).createdAt || '').toLocaleDateString()}
                         </td>
-                        <td className="p-4">{user.contentCount || 0}</td>
+                        <td className="p-4">{(user as User).contentCount || 0}</td>
                         <td className="p-4">
                           <Badge variant="outline" className="text-green-400 border-green-400">
                             Active
@@ -429,24 +429,24 @@ export function AdminDashboard() {
                             <Button 
                               size="sm" 
                               variant="ghost"
-                              onClick={() => { setSelectedUser(user); setActionType('user-details'); }}
-                              data-testid={`button-user-details-${user.id}`}
+                              onClick={() => { setSelectedUser(user as User); setActionType('user-details'); }}
+                              data-testid={`button-user-details-${(user as User).id}`}
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
                             <Button 
                               size="sm" 
                               variant="ghost"
-                              onClick={() => { setSelectedUser(user); setActionType('tier-management'); setNewTier(user.tier); }}
-                              data-testid={`button-tier-management-${user.id}`}
+                              onClick={() => { setSelectedUser(user as User); setActionType('tier-management'); setNewTier((user as User).tier); }}
+                              data-testid={`button-tier-management-${(user as User).id}`}
                             >
                               <Settings className="h-4 w-4" />
                             </Button>
                             <Button 
                               size="sm" 
                               variant="outline"
-                              onClick={() => { setSelectedUser(user); setActionType('reset-password'); }}
-                              data-testid={`button-reset-password-${user.id}`}
+                              onClick={() => { setSelectedUser(user as User); setActionType('reset-password'); }}
+                              data-testid={`button-reset-password-${(user as User).id}`}
                               className="text-orange-600 hover:text-orange-700"
                             >
                               <Key className="h-4 w-4" />
@@ -471,33 +471,36 @@ export function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {(providers as any)?.map((provider: unknown) => (
-                  <div key={provider.name} className="p-4 bg-white/5 rounded-lg">
+                {(providers as any)?.map((provider: unknown) => {
+                  const typedProvider = provider as {name?: string; available?: boolean; inputCost?: string; outputCost?: string; savings?: string};
+                  return (
+                  <div key={typedProvider.name} className="p-4 bg-white/5 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-3">
-                        <div className={`w-3 h-3 rounded-full ${provider.available ? 'bg-green-500' : 'bg-red-500'}`} />
-                        <h3 className="font-medium">{provider.name}</h3>
+                        <div className={`w-3 h-3 rounded-full ${typedProvider.available ? 'bg-green-500' : 'bg-red-500'}`} />
+                        <h3 className="font-medium">{typedProvider.name}</h3>
                       </div>
-                      <Badge variant={provider.available ? 'default' : 'destructive'}>
-                        {provider.available ? 'Active' : 'Inactive'}
+                      <Badge variant={typedProvider.available ? 'default' : 'destructive'}>
+                        {typedProvider.available ? 'Active' : 'Inactive'}
                       </Badge>
                     </div>
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div>
                         <p className="text-gray-500">Input Cost</p>
-                        <p className="font-medium">${provider.inputCost}/1M tokens</p>
+                        <p className="font-medium">${typedProvider.inputCost}/1M tokens</p>
                       </div>
                       <div>
                         <p className="text-gray-500">Output Cost</p>
-                        <p className="font-medium">${provider.outputCost}/1M tokens</p>
+                        <p className="font-medium">${typedProvider.outputCost}/1M tokens</p>
                       </div>
                       <div>
                         <p className="text-gray-500">Savings vs GPT-4</p>
-                        <p className="font-medium text-green-400">{provider.savings}%</p>
+                        <p className="font-medium text-green-400">{typedProvider.savings}%</p>
                       </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
@@ -690,8 +693,8 @@ export function AdminDashboard() {
                 <div className="space-y-3">
                   {(analytics as any)?.topPages?.slice(0, 5).map((page: unknown, index: number) => (
                     <div key={index} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
-                      <span className="text-sm">{page.path}</span>
-                      <Badge variant="secondary">{page.views} views</Badge>
+                      <span className="text-sm">{(page as {path?: string; views?: number})?.path}</span>
+                      <Badge variant="secondary">{(page as {path?: string; views?: number})?.views} views</Badge>
                     </div>
                   )) || (
                     <div className="text-center text-gray-500 py-8">
@@ -712,8 +715,8 @@ export function AdminDashboard() {
                 <div className="space-y-3">
                   {(analytics as any)?.trafficSources?.slice(0, 5).map((source: unknown, index: number) => (
                     <div key={index} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
-                      <span className="text-sm">{source.source}</span>
-                      <Badge variant="secondary">{source.visitors} visitors</Badge>
+                      <span className="text-sm">{(source as {source?: string; visitors?: number})?.source}</span>
+                      <Badge variant="secondary">{(source as {source?: string; visitors?: number})?.visitors} visitors</Badge>
                     </div>
                   )) || (
                     <div className="text-center text-gray-500 py-8">

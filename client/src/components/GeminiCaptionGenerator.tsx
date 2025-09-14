@@ -235,7 +235,7 @@ export function GeminiCaptionGenerator() {
         </CardContent>
       </Card>
 
-      {/* Caption Preview */}
+      <>{/* Caption Preview */}</>
       {captionData && (
         <div className="space-y-4">
           <CaptionPreview data={captionData} />
@@ -257,7 +257,7 @@ export function GeminiCaptionGenerator() {
                 Debug: Image Facts
               </summary>
               <pre className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs overflow-x-auto">
-                {JSON.stringify(captionData.facts, null, 2)}
+                {JSON.stringify((captionData as any).facts, null, 2)}
               </pre>
             </details>
           )}
