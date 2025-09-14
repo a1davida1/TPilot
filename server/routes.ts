@@ -1,5 +1,4 @@
 import type { Express, Response, NextFunction } from "express";
-import type * as SentryType from "@sentry/node";
 import express from "express";
 import { createServer, type Server } from "http";
 import session from 'express-session';
@@ -147,7 +146,7 @@ interface PhotoInstructionsResult {
   technicalSettings?: string;
 }
 
-export async function registerRoutes(app: Express, Sentry?: typeof SentryType): Promise<Server> {
+export async function registerRoutes(app: Express): Promise<Server> {
   // ==========================================
   // VALIDATE ENVIRONMENT & APPLY SECURITY
   // ==========================================
@@ -1171,9 +1170,6 @@ export async function registerRoutes(app: Express, Sentry?: typeof SentryType): 
   // ==========================================
   
   // Apply error handling middleware last
-  if (Sentry) {
-    Sentry.setupExpressErrorHandler(app);
-  }
   app.use(errorHandler);
 
   const httpServer = createServer(app);

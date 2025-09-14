@@ -8,7 +8,7 @@ import { setupSocialAuth } from "./social-auth";
 import { mountStripeWebhook } from "./routes/webhooks.stripe";
 import { mountBillingRoutes } from "./routes/billing";
 import { v4 as uuidv4 } from "uuid";
-import { logger, initializeSentry } from "./bootstrap/logger";
+import { logger } from "./bootstrap/logger";
 import { startQueue } from "./bootstrap/queue";
 import { notFoundHandler } from "./middleware/security";
 
@@ -71,8 +71,7 @@ app.use(cors({
   credentials: true
 }));
 
-// Initialize Sentry with proper validation
-const Sentry = await initializeSentry();
+// Sentry integration removed; add it back once you have a DSN
 
 app.use((req, _res, next) => {
   req.id = uuidv4();
@@ -130,7 +129,7 @@ app.use((req, res, next) => {
     mountStripeWebhook(app);
     mountBillingRoutes(app);
   
-    const server = await registerRoutes(app, Sentry || undefined);
+    const server = await registerRoutes(app);
 
     // importantly only setup vite in development and after
     // setting up all the other routes so the catch-all route
