@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach } from 'vitest';
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { makePaxum, makeCoinbase, makeStripe } from '../../server/payments/payment-providers';
 
 describe('Payment Providers', () => {
@@ -378,7 +378,7 @@ describe('Payment Providers', () => {
   });
 
   describe('Provider Array Export', () => {
-    test('filters out disabled providers', () => {
+    test('filters out disabled providers', async () => {
       delete process.env.PAXUM_API_KEY;
       delete process.env.COINBASE_COMMERCE_KEY;
 
@@ -390,7 +390,7 @@ describe('Payment Providers', () => {
       expect(providers.every((p: { enabled: boolean }) => p.enabled)).toBe(true);
     });
 
-    test('includes enabled providers', () => {
+    test('includes enabled providers', async () => {
       process.env.PAXUM_API_KEY = 'test_paxum';
       process.env.COINBASE_COMMERCE_KEY = 'test_coinbase';
 
