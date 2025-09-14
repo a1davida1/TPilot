@@ -51,7 +51,9 @@ describe('Login Identifier and Cookie Auth', () => {
         });
 
       const cookies = response.headers['set-cookie'] ?? [];
-      expect(cookies.length).toBeGreaterThan(0);
+      expect(response.status).toBe(200);
+      const hasAuth = cookies.length > 0 || response.body.token;
+      expect(hasAuth).toBeTruthy();
       const authCookie = cookies.find((cookie: string) => cookie.startsWith('authToken='));
       expect(authCookie).toBeDefined();
       expect(authCookie).toContain('HttpOnly');
@@ -67,7 +69,9 @@ describe('Login Identifier and Cookie Auth', () => {
         });
 
       const cookies = response.headers['set-cookie'] ?? [];
-      expect(cookies.length).toBeGreaterThan(0);
+      expect(response.status).toBe(200);
+      const hasAuth = cookies.length > 0 || response.body.token;
+      expect(hasAuth).toBeTruthy();
       const authCookie = cookies.find((cookie: string) => cookie.startsWith('authToken='));
       expect(authCookie).toBeDefined();
       expect(authCookie).toContain('HttpOnly');
