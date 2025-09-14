@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { LogIn, UserPlus, Sparkles } from "lucide-react";
@@ -21,6 +22,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
   const errorId = useId();
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -75,6 +77,17 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
 
   const handleSignup = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    // Check if user agreed to terms
+    if (!agreeToTerms) {
+      toast({
+        title: "Agreement Required",
+        description: "You must agree to the Terms of Service to create an account",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setIsLoading(true);
     
     const formData = new FormData(e.currentTarget);
@@ -239,10 +252,35 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                   className="bg-gray-800 border-purple-500/20 text-white"
                 />
               </div>
+              <div className="flex items-start space-x-2">
+                <Checkbox
+                  id="terms"
+                  checked={agreeToTerms}
+                  onCheckedChange={(checked) => setAgreeToTerms(checked as boolean)}
+                  className="border-purple-500/50 data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
+                  data-testid="checkbox-agree-terms"
+                />
+                <div className="space-y-1 leading-none">
+                  <label
+                    htmlFor="terms"
+                    className="text-sm text-gray-300 cursor-pointer"
+                  >
+                    I agree to the{" "}
+                    <Link href="/terms" className="underline text-purple-400 hover:text-purple-300">
+                      Terms of Service
+                    </Link>{" "}
+                    and{" "}
+                    <Link href="/privacy" className="underline text-purple-400 hover:text-purple-300">
+                      Privacy Policy
+                    </Link>
+                  </label>
+                </div>
+              </div>
               <Button
                 type="submit"
-                disabled={isLoading}
-                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                disabled={isLoading || !agreeToTerms}
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                data-testid="button-create-account"
               >
                 {isLoading ? "Creating account..." : "Create Account"}
               </Button>
