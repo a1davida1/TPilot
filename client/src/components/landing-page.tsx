@@ -141,7 +141,7 @@ export function LandingPage({ showLoginModal = false, loginModalMode = 'login' }
           <p className="text-lg md:text-xl mb-12 text-white/95 drop-shadow-lg max-w-3xl mx-auto leading-relaxed font-medium">
             Smart captions, automated scheduling, and bulletproof image protection. 
             <span className="block mt-2 bg-gradient-to-r from-yellow-200 to-white bg-clip-text text-transparent font-semibold">
-              Transform your content creation workflow with AI-powered optimization.
+              Transform your content creation workflow with AI-powered tools.
             </span>
           </p>
 
@@ -275,7 +275,7 @@ export function LandingPage({ showLoginModal = false, loginModalMode = 'login' }
               },
               {
                 icon: <Target className="w-8 h-8" />,
-                title: "Platform Optimization",
+                title: "Multi-Platform Support",
                 description: "Automatically adapt content for each platform's requirements and best practices for maximum visibility",
                 highlight: "Cross-Platform Ready"
               },
