@@ -8,7 +8,7 @@
     "build": "bash build-production.sh",
     "build:client": "vite build",
     "build:server": "tsc -p tsconfig.server.json",
-    "start": "NODE_ENV=production tsx server/index.ts",
+    "start": "NODE_ENV=production node dist/server/server/index.js",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
