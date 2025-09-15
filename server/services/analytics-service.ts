@@ -101,7 +101,9 @@ class AnalyticsService {
   async trackFeatureUsage(userId: string, feature: string, metadata?: unknown) {
     await this.trackEvent(userId, 'feature_used', {
       feature,
-      ...(typeof metadata === 'object' && metadata !== null ? metadata : {}),
+      ...(typeof metadata === 'object' && metadata !== null && !Array.isArray(metadata) 
+        ? (metadata as Record<string, unknown>) 
+        : {}),
       timestamp: new Date().toISOString()
     });
   }

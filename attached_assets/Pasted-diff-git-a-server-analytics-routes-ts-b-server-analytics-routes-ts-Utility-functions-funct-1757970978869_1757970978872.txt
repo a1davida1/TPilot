@@ -1,0 +1,359 @@
+diff --git a/server/analytics-routes.ts b/server/analytics-routes.ts
+@@
+ // Utility functions
+-function getUserIdFromRequest(req: Request): number | null {
+-  const user = (req as { user?: { id?: string; userId?: string } }).user;
+-  return Number(user?.userId ?? user?.id ?? null);
+-}
++function getUserIdFromRequest(req: Request): number | null {
++  const user = (
++    req as unknown as { user?: { id?: string | number; userId?: string | number } }
++  ).user;
++  const id = user?.userId ?? user?.id;
++  if (typeof id === 'string') return parseInt(id, 10);
++  if (typeof id === 'number') return id;
++  return null;
++}
+ 
+ function getDateRange(period: string): { startDate: Date; endDate: Date } {
+   const endDate = new Date();
+   const startDate = new Date();
+diff --git a/server/api-routes.ts b/server/api-routes.ts
+@@
+-import { insertUserPreferenceSchema } from "@shared/schema.js";
+ import { AiService } from "./lib/ai-service.js";
+ import { generateEnhancedContent } from "./services/enhanced-ai-service.js";
+@@
+       const schema = z.object({
+         prompt: z.string().optional(),
+         platforms: z.array(z.string()).min(1),
+         styleHints: z.array(z.string()).optional(),
+         variants: z.number().min(1).max(5).default(1),
+       });
+-      const data = schema.parse(req.body);
++      const data: z.infer<typeof schema> = schema.parse(req.body);
+       if (!req.user?.id) {
+         return res.status(401).json({ error: 'Authentication required' });
+       }
+-      const result = await aiServiceBreaker.call({
+-        userId: req.user.id,
+-        ...data,
+-      });
++      const result = await aiServiceBreaker.call({
++        ...data,
++        userId: req.user.id,
++      });
+       res.json(result);
+     } catch (error: unknown) {
+       next(error instanceof AppError ? error : new AppError('AI generation failed', 500));
+     }
+   });
+@@
+         personalBrand: z.string().optional(),
+       });
+-      const data = schema.parse(req.body);
++      const data: z.infer<typeof schema> = schema.parse(req.body);
+       if (!req.user?.id) {
+         return res.status(401).json({ error: 'Authentication required' });
+       }
+       const result = await enhancedContentBreaker.call({
+         ...data,
+@@
+   app.put('/api/user/profile', authenticateToken, async (req: Request, res) => {
+     if (!req.user?.id) return res.status(401).json({ error: 'Authentication required' });
+-    const body = insertUserPreferenceSchema.pick({ contentPreferences: true }).parse({
+-      contentPreferences: {
+-        toneOfVoice: req.body.toneOfVoice,
+-        contentStyle: req.body.contentStyle,
+-        personalBrand: req.body.personalBrand,
+-        contentLength: req.body.contentLength,
+-        includeEmojis: req.body.includeEmojis,
+-        promotionLevel: req.body.promotionLevel
+-      }
+-    });
++    const preferenceSchema = z.object({
++      contentPreferences: z.object({
++        toneOfVoice: z.string().optional(),
++        contentStyle: z.string().optional(),
++        personalBrand: z.string().optional(),
++        contentLength: z.string().optional(),
++        includeEmojis: z.boolean().optional(),
++        promotionLevel: z.string().optional()
++      })
++    });
++    const body = preferenceSchema.parse({
++      contentPreferences: {
++        toneOfVoice: req.body.toneOfVoice,
++        contentStyle: req.body.contentStyle,
++        personalBrand: req.body.personalBrand,
++        contentLength: req.body.contentLength,
++        includeEmojis: req.body.includeEmojis,
++        promotionLevel: req.body.promotionLevel
++      }
++    });
+     await storage.updateUserPreferences(req.user.id, { userId: req.user.id, ...body });
+     res.json(req.body);
+   });
+diff --git a/server/api/leads.ts b/server/api/leads.ts
+@@
+ // Validation schema for lead creation
+-const createLeadSchema = insertLeadSchema.pick({
+-  email: true,
+-  platformTags: true,
+-  painPoint: true,
+-}).extend({
+-  turnstileToken: z.string().min(1, 'Anti-bot verification required'),
+-  currentUrl: z.string().url().optional(),
+-});
++const createLeadSchema = (insertLeadSchema as z.ZodTypeAny)
++  .pick({
++    email: true,
++    platformTags: true,
++    painPoint: true,
++  })
++  .extend({
++    turnstileToken: z.string().min(1, 'Anti-bot verification required'),
++    currentUrl: z.string().url().optional(),
++  });
+diff --git a/server/lib/workers/post-worker.ts b/server/lib/workers/post-worker.ts
+@@
+       for (const acc of accounts) {
+         if (connected.includes(acc.platform as Platform) && acc.accessToken) {
+-          const credentials: Record<string, string> = {
++          const credentials: Record<string, unknown> = {
+             accessToken: acc.accessToken || '',
+-            ...(acc.refreshToken && { refreshToken: acc.refreshToken }),
+-            ...(acc.metadata || {}),
++            ...(acc.refreshToken ? { refreshToken: acc.refreshToken } : {}),
++            ...(typeof acc.metadata === 'object' && acc.metadata !== null
++              ? (acc.metadata as Record<string, unknown>)
++              : {}),
+           };
+           socialMediaManager.connectAccount(acc.platform as Platform, credentials);
+         }
+       }
+diff --git a/server/middleware/performance.ts b/server/middleware/performance.ts
+@@
+-        const metric: PerformanceMetric = {
++        const id = (
++          req as unknown as { user?: { id?: string | number } }
++        ).user?.id;
++        const metric: PerformanceMetric = {
+           path: req.path,
+           method: req.method,
+           duration,
+           statusCode: res.statusCode,
+           timestamp: new Date(),
+           memoryUsage: process.memoryUsage(),
+           userAgent: req.get('user-agent'),
+-          userId: (req as { user?: { id: string } }).user?.id
++          userId: id !== undefined ? String(id) : undefined
+         };
+ 
+         this.recordMetric(metric);
+diff --git a/server/reddit-communities.ts b/server/reddit-communities.ts
+@@
+-import { db } from './db.js';
+-import { redditCommunities, type RedditCommunity, insertRedditCommunitySchema } from '@shared/schema.js';
++import { db } from './db.js';
++import {
++  redditCommunities,
++  type RedditCommunity,
++  insertRedditCommunitySchema,
++  type InsertRedditCommunity
++} from '@shared/schema.js';
+ import { eq, ilike, desc, or } from 'drizzle-orm';
+@@
+ export async function createCommunity(data: unknown) {
+-  const value = insertRedditCommunitySchema.parse(data);
++  const value: InsertRedditCommunity = insertRedditCommunitySchema.parse(data);
+   const [row] = await db.insert(redditCommunities).values(value).returning();
+   return row;
+ }
+ 
+ export async function updateCommunity(id: string, data: unknown) {
+-  const value = insertRedditCommunitySchema.partial().parse(data);
++  const value: Partial<InsertRedditCommunity> = insertRedditCommunitySchema
++    .partial()
++    .parse(data);
+   const [row] = await db.update(redditCommunities).set(value).where(eq(redditCommunities.id, id)).returning();
+   return row;
+ }
+diff --git a/server/seed-reddit-communities.ts b/server/seed-reddit-communities.ts
+@@
+-import { redditCommunities, insertRedditCommunitySchema } from '@shared/schema.js';
++import {
++  redditCommunities,
++  insertRedditCommunitySchema,
++  type InsertRedditCommunity
++} from '@shared/schema.js';
+@@
+-  const data = insertRedditCommunitySchema.array().parse(JSON.parse(raw));
+-  await db.insert(redditCommunities).values(data).onConflictDoNothing();
++  const data: InsertRedditCommunity[] = insertRedditCommunitySchema
++    .array()
++    .parse(JSON.parse(raw));
++  await db.insert(redditCommunities).values(data).onConflictDoNothing();
+diff --git a/server/services/analytics-service.ts b/server/services/analytics-service.ts
+@@
+   async trackFeatureUsage(userId: string, feature: string, metadata?: unknown) {
+     await this.trackEvent(userId, 'feature_used', {
+       feature,
+-      ...(metadata || {}),
++       ...(typeof metadata === 'object' && metadata !== null ? metadata : {}),
+       timestamp: new Date().toISOString()
+     });
+   }
+diff --git a/server/storage.ts b/server/storage.ts
+@@
+   async createUser(userData: InsertUser): Promise<User> {
+     try {
+-      const result = await db.insert(users).values(userData).returning();
++      const result = await db
++        .insert(users)
++        .values(userData as typeof users.$inferInsert)
++        .returning();
+       const user = result[0];
+       return user;
+     } catch (error) {
+       safeLog('error', 'Storage operation failed - creating user:', { error: (error as Error).message });
+       throw error;
+@@
+   async createVerificationToken(tokenData: InsertVerificationToken): Promise<VerificationToken> {
+     try {
+-      const [token] = await db.insert(verificationTokens).values(tokenData).returning();
++      const [token] = await db
++        .insert(verificationTokens)
++        .values(tokenData as typeof verificationTokens.$inferInsert)
++        .returning();
+       return token;
+     } catch (error) {
+       safeLog('error', 'Storage operation failed - creating verification token:', { error: (error as Error).message });
+       throw error;
+     }
+@@
+   async createGeneration(gen: InsertContentGeneration): Promise<ContentGeneration> {
+     try {
+-      // Ensure proper typing for database insertion
+-      const genData = {
+-        ...gen,
+-        titles: gen.titles as string[]
+-      };
+-      const result = await db.insert(contentGenerations).values([genData]).returning();
++      const genData: typeof contentGenerations.$inferInsert = {
++        ...(gen as typeof contentGenerations.$inferInsert),
++        titles: (gen as { titles: string[] }).titles
++      };
++      const result = await db
++        .insert(contentGenerations)
++        .values([genData])
++        .returning();
+       return result[0];
+     } catch (error) {
+       safeLog('error', 'Storage operation failed - creating generation:', { error: (error as Error).message });
+       throw error;
+     }
+@@
+   async createUserImage(image: InsertUserImage): Promise<UserImage> {
+     try {
+-      const result = await db.insert(userImages).values(image).returning();
++      const result = await db
++        .insert(userImages)
++        .values(image as typeof userImages.$inferInsert)
++        .returning();
+       return result[0];
+     } catch (error) {
+       safeLog('error', 'Storage operation failed - creating user image:', { error: (error as Error).message });
+       throw error;
+     }
+@@
+   async createExpenseCategory(category: InsertExpenseCategory): Promise<ExpenseCategory> {
+     try {
+-      const [result] = await db.insert(expenseCategories).values(category).returning();
++      const [result] = await db
++        .insert(expenseCategories)
++        .values(category as typeof expenseCategories.$inferInsert)
++        .returning();
+       return result;
+     } catch (error) {
+       console.error('Error creating expense category:', { error: (error as Error).message });
+       throw error;
+     }
+@@
+   async createExpense(expense: InsertExpense): Promise<Expense> {
+     try {
+-      const [result] = await db.insert(expenses).values(expense).returning();
++      const [result] = await db
++        .insert(expenses)
++        .values(expense as typeof expenses.$inferInsert)
++        .returning();
+       return result;
+     } catch (error) {
+       console.error('Error creating expense:', { error: (error as Error).message });
+       throw error;
+     }
+@@
+   async createTaxDeductionInfo(info: InsertTaxDeductionInfo): Promise<TaxDeductionInfo> {
+     try {
+-      const [result] = await db.insert(taxDeductionInfo).values(info).returning();
++      const [result] = await db
++        .insert(taxDeductionInfo)
++        .values(info as typeof taxDeductionInfo.$inferInsert)
++        .returning();
+       return result;
+     } catch (error) {
+       console.error('Error creating tax deduction info:', { error: (error as Error).message });
+       throw error;
+     }
+@@
+   async createSocialMediaAccount(account: InsertSocialMediaAccount): Promise<SocialMediaAccount> {
+     try {
+-      const [result] = await db.insert(socialMediaAccounts).values(account).returning();
++      const [result] = await db
++        .insert(socialMediaAccounts)
++        .values(account as typeof socialMediaAccounts.$inferInsert)
++        .returning();
+       return result;
+     } catch (error) {
+       console.error('Error creating social media account:', { error: (error as Error).message });
+       throw error;
+     }
+@@
+   async createSocialMediaPost(post: InsertSocialMediaPost): Promise<SocialMediaPost> {
+     try {
+-      const [result] = await db.insert(socialMediaPosts).values(post).returning();
++      const [result] = await db
++        .insert(socialMediaPosts)
++        .values(post as typeof socialMediaPosts.$inferInsert)
++        .returning();
+       return result;
+     } catch (error) {
+       console.error('Error creating social media post:', { error: (error as Error).message });
+       throw error;
+     }
+@@
+   async createPlatformEngagement(engagement: InsertPlatformEngagement): Promise<PlatformEngagement> {
+     try {
+-      const [result] = await db.insert(platformEngagement).values(engagement).returning();
++      const [result] = await db
++        .insert(platformEngagement)
++        .values(engagement as typeof platformEngagement.$inferInsert)
++        .returning();
+       return result;
+     } catch (error) {
+       console.error('Error creating platform engagement:', { error: (error as Error).message });
+       throw error;
+     }
+@@
+   async createPostSchedule(schedule: InsertPostSchedule): Promise<PostSchedule> {
+     try {
+-      const [result] = await db.insert(postSchedule).values(schedule).returning();
++      const [result] = await db
++        .insert(postSchedule)
++        .values(schedule as typeof postSchedule.$inferInsert)
++        .returning();
+       return result;
+     } catch (error) {
+       console.error('Error creating post schedule:', { error: (error as Error).message });
+       throw error;
+     }

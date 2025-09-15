@@ -39,9 +39,13 @@ class PerformanceMonitor {
         const end = process.hrtime.bigint();
         const duration = Number(end - start) / 1000000;
 
-        const id = (
-          req as unknown as { user?: { id?: string | number } }
-        ).user?.id;
+        // Extract user ID from request - handle both string and number types
+        const authUser = (req as any).user;
+        let userId: string | undefined;
+        if (authUser?.id) {
+          userId = typeof authUser.id === 'string' ? authUser.id : String(authUser.id);
+        }
+        
         const metric: PerformanceMetric = {
           path: req.path,
           method: req.method,
@@ -50,7 +54,7 @@ class PerformanceMonitor {
           timestamp: new Date(),
           memoryUsage: process.memoryUsage(),
           userAgent: req.get('user-agent'),
-          userId: id !== undefined ? String(id) : undefined
+          userId
         };
 
         this.recordMetric(metric);

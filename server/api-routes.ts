@@ -61,7 +61,7 @@ export function registerApiRoutes(app: Express) {
         platforms: z.array(z.string()).min(1),
         styleHints: z.array(z.string()).optional(),
         variants: z.number().min(1).max(5).default(1),
-      });
+      }) as z.ZodTypeAny;
       const data: z.infer<typeof schema> = schema.parse(req.body);
       if (!req.user?.id) {
         return res.status(401).json({ error: 'Authentication required' });
@@ -96,7 +96,7 @@ export function registerApiRoutes(app: Express) {
         subreddit: z.string().optional(),
         niche: z.string().optional(),
         personalBrand: z.string().optional(),
-      });
+      }) as z.ZodTypeAny;
       const data: z.infer<typeof schema> = schema.parse(req.body);
       if (!req.user?.id) {
         return res.status(401).json({ error: 'Authentication required' });

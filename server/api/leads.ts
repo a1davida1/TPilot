@@ -17,7 +17,7 @@ const createLeadSchema = z.object({
   painPoint: z.string().optional(),
   turnstileToken: z.string().min(1, 'Anti-bot verification required'),
   currentUrl: z.string().url().optional(),
-});
+}) as z.ZodTypeAny;
 
 export async function createLead(req: Request, res: Response) {
   try {
