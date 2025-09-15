@@ -11,7 +11,7 @@ if ! npm run build:server; then
   echo "TypeScript build failed, trying fallback compilation..."
   npx tsx server/index.ts --outDir dist/server
 fi
-chmod +x dist/server/index.js
+chmod +x dist/server/server/index.js
 
 echo "🔗 Resolving path mappings..."
 tsc-alias -p tsconfig.server.json
