@@ -14,10 +14,10 @@ function fixTypeErrors(filePath) {
   content = content.replace(/(\s)error\.stack/g, '$1(error as Error).stack');
   
   // Fix implicit any in map functions
-  content = content.replace(/\.map\(\(([^,)]+),\s*([^)]+)\)/g, '.map(($1: any, $2: number)');
+  content = content.replace(/\.map\(\(([^,)]+),\s*([^)]+)\)/g, '.map(($1: unknown, $2: number)');
   
   // Fix implicit any in function parameters
-  content = content.replace(/function\s+(\w+)\(([^:)]+)\)/g, 'function $1($2: any)');
+  content = content.replace(/function\s+(\w+)\(([^:)]+)\)/g, 'function $1($2: unknown)');
   
   fs.writeFileSync(filePath, content);
 }

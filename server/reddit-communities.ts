@@ -24,16 +24,16 @@ export async function searchCommunities(query: string) {
     );
 }
 
-export async function createCommunity(data: unknown) {
+export async function createCommunity(data: unknown): Promise<RedditCommunity> {
   const value = insertRedditCommunitySchema.parse(data) as InsertRedditCommunity;
   const [row] = await db.insert(redditCommunities).values(value).returning();
   return row;
 }
 
-export async function updateCommunity(id: string, data: unknown) {
-  const value: Partial<InsertRedditCommunity> = insertRedditCommunitySchema
+export async function updateCommunity(id: string, data: unknown): Promise<RedditCommunity> {
+  const value = insertRedditCommunitySchema
     .partial()
-    .parse(data);
+    .parse(data) as Partial<InsertRedditCommunity>;
   const [row] = await db.update(redditCommunities).set(value).where(eq(redditCommunities.id, id)).returning();
   return row;
 }
