@@ -738,7 +738,8 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
   // Register Expense Routes (Tax Tracker API)
   registerExpenseRoutes(app);
 
-  const generationCache = new Map<string, { response: Record<string, unknown>; timestamp: number }>();
+  const generationCache = new Map<string, { response: unknown; timestamp: number }>();
+  type MultiAIResponse = Awaited<ReturnType<typeof generateWithMultiProvider>>;
 
   app.post('/api/caption/generate', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
     contentGenerationLimiter(req, res, async () => {
@@ -771,7 +772,8 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
       const cacheKey = JSON.stringify({ platform, imageDescription, customPrompt, subreddit, allowsPromotion, imageUrl });
       const cached = generationCache.get(cacheKey);
       if (cached) {
-        return res.json({ ...cached.response, cached: true });
+        const cachedResponse = cached.response as MultiAIResponse;
+        return res.json({ ...cachedResponse, cached: true });
       }
 
       try {
