@@ -10,15 +10,14 @@ rm -rf dist
 echo "📂 Creating dist directory structure..."
 mkdir -p dist/server
 
-echo "⚙️ Compiling TypeScript..."
-npx tsc -p tsconfig.server.json
-
-echo "✅ TypeScript compiled to dist/"
+echo "⚙️ Compiling server TypeScript..."
+npm run build:server
 chmod +x dist/server/index.js
+echo "✅ Server TypeScript compiled to dist/"
 
 # Apply path mappings
 echo "🔗 Resolving path mappings..."
-tsc-alias -p tsconfig.json
+tsc-alias -p tsconfig.server.json
 
 # Fix imports - add .js extensions
 echo "🔄 Fixing import extensions..."
@@ -41,7 +40,6 @@ echo "🎨 Building client..."
 npm run build:client
 mkdir -p dist/client
 cp -r client/dist/* dist/client/
-npm run build:server
 find dist/client -name "*.js" -o -name "*.css" | xargs gzip -9 --keep
 
 echo "✅ Production build complete!"
