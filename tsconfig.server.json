@@ -1,26 +1,12 @@
 {
-  "extends": "../tsconfig.json",
-  "include": ["**/*", "../shared/**/*"],
-  "exclude": ["node_modules", "dist"],
+  "extends": "./tsconfig.json",
   "compilerOptions": {
-    "module": "ESNext",
-    "target": "ES2022",
-    "moduleResolution": "Node",
-    "resolvePackageJsonExports": false,
-    "resolvePackageJsonImports": false,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "strict": false,
-    "strictNullChecks": true,
-    "strictFunctionTypes": true,
-    "skipLibCheck": true,
-    "resolveJsonModule": true,
-    "outDir": "../dist/server",
-    "rootDir": "../",
-    "baseUrl": "../",
-    "paths": { "@shared/*": ["shared/*"] },
-    "types": ["node"],
-    "declaration": false,
-    "sourceMap": false
-  }
+    "noEmit": false,
+    "outDir": "dist",
+    "rootDir": ".",
+    "composite": false,
+    "types": ["node"]
+  },
+  "include": ["server/**/*", "shared/**/*"],
+  "exclude": ["node_modules", "client", "**/*.test.ts", "**/*.spec.ts", "moderation"]
 }
