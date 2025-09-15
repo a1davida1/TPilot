@@ -4,6 +4,7 @@
     "noEmit": false,
     "outDir": "dist/server",
     "rootDir": ".",
+    "rootDirs": ["server", "shared"],
     "moduleResolution": "Node",
     "module": "ESNext",
     "composite": false,
