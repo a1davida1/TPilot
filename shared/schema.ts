@@ -249,6 +249,7 @@ export const redditCommunities = pgTable("reddit_communities", {
   competitionLevel: varchar("competition_level", { length: 20 })
 });
 export type RedditCommunity = typeof redditCommunities.$inferSelect;
+export type InsertRedditCommunity = typeof redditCommunities.$inferInsert;
 export const insertRedditCommunitySchema = createInsertSchema(redditCommunities);
 
 export const subscriptions = pgTable("subscriptions", {

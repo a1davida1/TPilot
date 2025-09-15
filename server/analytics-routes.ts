@@ -502,8 +502,9 @@ async function getContentAnalytics(contentId: number, userId: number | null) {
 
 // Utility functions
 function getUserIdFromRequest(req: Request): number | null {
-  const user = (req as { user?: { id?: string; userId?: string } }).user;
-  return Number(user?.userId ?? user?.id ?? null);
+  const user = (req as { user?: { id?: number; userId?: number } }).user;
+  const id = user?.userId ?? user?.id;
+  return id !== undefined ? id : null;
 }
 
 function getDateRange(period: string): { startDate: Date; endDate: Date } {

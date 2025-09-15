@@ -1,7 +1,11 @@
 import fs from 'fs/promises';
 import { fileURLToPath } from 'node:url';
 import { db } from './db.js';
-import { redditCommunities, insertRedditCommunitySchema } from '@shared/schema.js';
+import {
+  redditCommunities,
+  insertRedditCommunitySchema,
+  type InsertRedditCommunity
+} from '@shared/schema.js';
 
 export async function seedRedditCommunities() {
   // Try the full dataset first, fallback to basic if not found
@@ -14,7 +18,9 @@ export async function seedRedditCommunities() {
     console.log('Loading basic Reddit communities dataset...');
   }
   
-  const data = insertRedditCommunitySchema.array().parse(JSON.parse(raw));
+  const data: InsertRedditCommunity[] = insertRedditCommunitySchema
+    .array()
+    .parse(JSON.parse(raw));
   await db.insert(redditCommunities).values(data).onConflictDoNothing();
   console.log(`Successfully seeded ${data.length} Reddit communities`);
 }

@@ -1,5 +1,10 @@
 import { db } from './db.js';
-import { redditCommunities, type RedditCommunity, insertRedditCommunitySchema } from '@shared/schema.js';
+import {
+  redditCommunities,
+  type RedditCommunity,
+  insertRedditCommunitySchema,
+  type InsertRedditCommunity
+} from '@shared/schema.js';
 import { eq, ilike, desc, or } from 'drizzle-orm';
 
 export async function listCommunities() {
@@ -20,13 +25,15 @@ export async function searchCommunities(query: string) {
 }
 
 export async function createCommunity(data: unknown) {
-  const value = insertRedditCommunitySchema.parse(data);
+  const value: InsertRedditCommunity = insertRedditCommunitySchema.parse(data);
   const [row] = await db.insert(redditCommunities).values(value).returning();
   return row;
 }
 
 export async function updateCommunity(id: string, data: unknown) {
-  const value = insertRedditCommunitySchema.partial().parse(data);
+  const value: Partial<InsertRedditCommunity> = insertRedditCommunitySchema
+    .partial()
+    .parse(data);
   const [row] = await db.update(redditCommunities).set(value).where(eq(redditCommunities.id, id)).returning();
   return row;
 }

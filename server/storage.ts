@@ -183,7 +183,10 @@ export class DatabaseStorage implements IStorage {
 
   async createUser(userData: InsertUser): Promise<User> {
     try {
-      const result = await db.insert(users).values(userData).returning();
+      const result = await db
+        .insert(users)
+        .values(userData as typeof users.$inferInsert)
+        .returning();
       const user = result[0];
       return user;
     } catch (error) {
@@ -244,7 +247,10 @@ export class DatabaseStorage implements IStorage {
 
   async createVerificationToken(tokenData: InsertVerificationToken): Promise<VerificationToken> {
     try {
-      const [token] = await db.insert(verificationTokens).values(tokenData).returning();
+      const [token] = await db
+        .insert(verificationTokens)
+        .values(tokenData as typeof verificationTokens.$inferInsert)
+        .returning();
       return token;
     } catch (error) {
       safeLog('error', 'Storage operation failed - creating verification token:', { error: (error as Error).message });
@@ -295,12 +301,14 @@ export class DatabaseStorage implements IStorage {
   // Generation operations
   async createGeneration(gen: InsertContentGeneration): Promise<ContentGeneration> {
     try {
-      // Ensure proper typing for database insertion
-      const genData = {
-        ...gen,
-        titles: gen.titles as string[]
+      const genData: typeof contentGenerations.$inferInsert = {
+        ...(gen as typeof contentGenerations.$inferInsert),
+        titles: (gen as { titles: string[] }).titles
       };
-      const result = await db.insert(contentGenerations).values([genData]).returning();
+      const result = await db
+        .insert(contentGenerations)
+        .values([genData])
+        .returning();
       return result[0];
     } catch (error) {
       safeLog('error', 'Storage operation failed - creating generation:', { error: (error as Error).message });
@@ -491,7 +499,10 @@ export class DatabaseStorage implements IStorage {
   // Image operations
   async createUserImage(image: InsertUserImage): Promise<UserImage> {
     try {
-      const result = await db.insert(userImages).values(image).returning();
+      const result = await db
+        .insert(userImages)
+        .values(image as typeof userImages.$inferInsert)
+        .returning();
       return result[0];
     } catch (error) {
       safeLog('error', 'Storage operation failed - creating user image:', { error: (error as Error).message });
@@ -634,7 +645,10 @@ export class DatabaseStorage implements IStorage {
   // Expense Category operations
   async createExpenseCategory(category: InsertExpenseCategory): Promise<ExpenseCategory> {
     try {
-      const [result] = await db.insert(expenseCategories).values(category).returning();
+      const [result] = await db
+        .insert(expenseCategories)
+        .values(category as typeof expenseCategories.$inferInsert)
+        .returning();
       return result;
     } catch (error) {
       console.error('Error creating expense category:', { error: (error as Error).message });
@@ -691,7 +705,10 @@ export class DatabaseStorage implements IStorage {
   // Expense operations
   async createExpense(expense: InsertExpense): Promise<Expense> {
     try {
-      const [result] = await db.insert(expenses).values(expense).returning();
+      const [result] = await db
+        .insert(expenses)
+        .values(expense as typeof expenses.$inferInsert)
+        .returning();
       return result;
     } catch (error) {
       console.error('Error creating expense:', { error: (error as Error).message });
@@ -855,7 +872,10 @@ export class DatabaseStorage implements IStorage {
 
   async createTaxDeductionInfo(info: InsertTaxDeductionInfo): Promise<TaxDeductionInfo> {
     try {
-      const [result] = await db.insert(taxDeductionInfo).values(info).returning();
+      const [result] = await db
+        .insert(taxDeductionInfo)
+        .values(info as typeof taxDeductionInfo.$inferInsert)
+        .returning();
       return result;
     } catch (error) {
       console.error('Error creating tax deduction info:', { error: (error as Error).message });
@@ -866,7 +886,10 @@ export class DatabaseStorage implements IStorage {
   // Social Media operations
   async createSocialMediaAccount(account: InsertSocialMediaAccount): Promise<SocialMediaAccount> {
     try {
-      const [result] = await db.insert(socialMediaAccounts).values(account).returning();
+      const [result] = await db
+        .insert(socialMediaAccounts)
+        .values(account as typeof socialMediaAccounts.$inferInsert)
+        .returning();
       return result;
     } catch (error) {
       console.error('Error creating social media account:', { error: (error as Error).message });
@@ -921,7 +944,10 @@ export class DatabaseStorage implements IStorage {
 
   async createSocialMediaPost(post: InsertSocialMediaPost): Promise<SocialMediaPost> {
     try {
-      const [result] = await db.insert(socialMediaPosts).values(post).returning();
+      const [result] = await db
+        .insert(socialMediaPosts)
+        .values(post as typeof socialMediaPosts.$inferInsert)
+        .returning();
       return result;
     } catch (error) {
       console.error('Error creating social media post:', { error: (error as Error).message });
@@ -994,7 +1020,10 @@ export class DatabaseStorage implements IStorage {
 
   async createPlatformEngagement(engagement: InsertPlatformEngagement): Promise<PlatformEngagement> {
     try {
-      const [result] = await db.insert(platformEngagement).values(engagement).returning();
+      const [result] = await db
+        .insert(platformEngagement)
+        .values(engagement as typeof platformEngagement.$inferInsert)
+        .returning();
       return result;
     } catch (error) {
       console.error('Error creating platform engagement:', { error: (error as Error).message });
@@ -1022,7 +1051,10 @@ export class DatabaseStorage implements IStorage {
 
   async createPostSchedule(schedule: InsertPostSchedule): Promise<PostSchedule> {
     try {
-      const [result] = await db.insert(postSchedule).values(schedule).returning();
+      const [result] = await db
+        .insert(postSchedule)
+        .values(schedule as typeof postSchedule.$inferInsert)
+        .returning();
       return result;
     } catch (error) {
       console.error('Error creating post schedule:', { error: (error as Error).message });

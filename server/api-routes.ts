@@ -2,7 +2,6 @@ import type { Express } from "express";
 import { z } from "zod";
 import { db } from "./db.js";
 import { storage } from "./storage.js";
-import { insertUserPreferenceSchema } from "@shared/schema.js";
 import { AiService } from "./lib/ai-service.js";
 import { generateEnhancedContent } from "./services/enhanced-ai-service.js";
 import { AppError, CircuitBreaker } from "./lib/errors.js";
@@ -63,13 +62,14 @@ export function registerApiRoutes(app: Express) {
         styleHints: z.array(z.string()).optional(),
         variants: z.number().min(1).max(5).default(1),
       });
-      const data = schema.parse(req.body);
+      const data: z.infer<typeof schema> = schema.parse(req.body);
       if (!req.user?.id) {
         return res.status(401).json({ error: 'Authentication required' });
       }
       const result = await aiServiceBreaker.call({
-        userId: req.user.id,
         ...data,
+        platforms: data.platforms || [],
+        userId: req.user.id,
       });
       res.json(result);
     } catch (error: unknown) {
@@ -97,12 +97,15 @@ export function registerApiRoutes(app: Express) {
         niche: z.string().optional(),
         personalBrand: z.string().optional(),
       });
-      const data = schema.parse(req.body);
+      const data: z.infer<typeof schema> = schema.parse(req.body);
       if (!req.user?.id) {
         return res.status(401).json({ error: 'Authentication required' });
       }
       const result = await enhancedContentBreaker.call({
         ...data,
+        mode: data.mode || 'text',
+        platform: data.platform || 'reddit',
+        style: data.style || 'authentic',
         userId: String(req.user.id),
       });
       res.json(result);
@@ -461,7 +464,17 @@ export function registerApiRoutes(app: Express) {
 
   app.put('/api/user/profile', authenticateToken, async (req: Request, res) => {
     if (!req.user?.id) return res.status(401).json({ error: 'Authentication required' });
-    const body = insertUserPreferenceSchema.pick({ contentPreferences: true }).parse({
+    const preferenceSchema = z.object({
+      contentPreferences: z.object({
+        toneOfVoice: z.string().optional(),
+        contentStyle: z.string().optional(),
+        personalBrand: z.string().optional(),
+        contentLength: z.string().optional(),
+        includeEmojis: z.boolean().optional(),
+        promotionLevel: z.string().optional()
+      })
+    });
+    const body = preferenceSchema.parse({
       contentPreferences: {
         toneOfVoice: req.body.toneOfVoice,
         contentStyle: req.body.contentStyle,

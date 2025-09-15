@@ -147,12 +147,14 @@ export class PostWorker {
 
       for (const acc of accounts) {
         if (connected.includes(acc.platform as Platform) && acc.accessToken) {
-          const credentials: Record<string, string> = {
+          const credentials: Record<string, unknown> = {
             accessToken: acc.accessToken || '',
-            ...(acc.refreshToken && { refreshToken: acc.refreshToken }),
-            ...(acc.metadata || {}),
+            ...(acc.refreshToken ? { refreshToken: acc.refreshToken } : {}),
+            ...(typeof acc.metadata === 'object' && acc.metadata !== null
+              ? (acc.metadata as Record<string, unknown>)
+              : {}),
           };
-          socialMediaManager.connectAccount(acc.platform as Platform, credentials);
+          socialMediaManager.connectAccount(acc.platform as Platform, credentials as Record<string, string>);
         }
       }
 
