@@ -47,7 +47,7 @@ describe('Payment Providers', () => {
       });
 
       expect(result.url).toContain('return_url=https%3A%2F%2Fthottopilot.com%2Fbilling%2Fsuccess');
-      expect(result.url).toContain('cancel_url=https://thottopilot.com/billing/cancelled');
+      expect(result.url).toContain('cancel_url=https%3A%2F%2Fthottopilot.com%2Fbilling%2Fcancelled');
     });
 
     test('returns disabled provider when API key missing', () => {

@@ -53,7 +53,8 @@ export async function validateContent(content: string, context: any = {}) {
 
   /* rate‑limit circumvention */
   if (userId) {
-    const stats = await getUserPostingStats(userId);
+    const stats =
+      (await getUserPostingStats(userId)) || { requests: 0, allowed: Infinity };
     if (stats.requests > stats.allowed) {
       violations.push({ type: 'rate_limit', severity: 'throttle' });
     }

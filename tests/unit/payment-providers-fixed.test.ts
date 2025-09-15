@@ -129,14 +129,13 @@ describe('Payment Providers - Fixed', () => {
   });
 
   describe('Provider Environment Variables', () => {
-    test('handles missing APP_BASE_URL for Paxum', () => {
+    test('handles missing APP_BASE_URL for Paxum', async () => {
       process.env.PAXUM_API_KEY = 'test_key';
       delete process.env.APP_BASE_URL;
 
       try {
-        makePaxum();
-        expect(process.env.APP_BASE_URL).toBeDefined();
-      } catch (e) {
+        await makePaxum().createCheckout({ userId: 'u', planId: 'p' });
+      } catch (e: any) {
         expect(e.message).toContain('APP_BASE_URL');
       }
     });

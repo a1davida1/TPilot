@@ -19,9 +19,10 @@ function disabled(name: PaymentProvider["name"]): PaymentProvider {
 // Paxum
 export function makePaxum(): PaymentProvider {
   const key = process.env.PAXUM_API_KEY;
-  const baseUrl = FRONTEND_URL;
-  
-  if (!key) return disabled("paxum");
+  const baseUrl =
+    process.env.APP_BASE_URL || process.env.FRONTEND_URL || FRONTEND_URL;
+
+  if (!key) return disabled('paxum');
   if (!baseUrl) throw new Error('APP_BASE_URL environment variable is required');
   
   return {
@@ -64,7 +65,7 @@ export function makePaxum(): PaymentProvider {
 // Coinbase Commerce
 export function makeCoinbase(): PaymentProvider {
   const key = process.env.COINBASE_COMMERCE_KEY;
-  if (!key) return disabled("coinbase");
+  if (!key) return disabled('coinbase');
   return {
     name: "coinbase",
     enabled: true,
@@ -104,7 +105,9 @@ export function makeCoinbase(): PaymentProvider {
         });
 
         if (!response.ok) {
-          throw new Error(`Coinbase API error: ${response.status}`);
+          throw new Error(
+            'Failed to create Coinbase Commerce checkout session',
+          );
         }
 
         const data = await response.json();
@@ -117,9 +120,6 @@ export function makeCoinbase(): PaymentProvider {
         return { url: data.data.hosted_url };
       } catch (error) {
         console.error('Coinbase Commerce checkout creation failed:', error);
-        
-        if (error instanceof Error) throw error;
-        
         throw new Error('Failed to create Coinbase Commerce checkout session');
       }
     },
@@ -129,9 +129,9 @@ export function makeCoinbase(): PaymentProvider {
 // Stripe
 export function makeStripe(): PaymentProvider {
   const secretKey = process.env.STRIPE_SECRET_KEY;
-  const baseUrl = FRONTEND_URL;
-  
-  if (!secretKey) return disabled("stripe");
+  const baseUrl =
+    process.env.APP_BASE_URL || process.env.FRONTEND_URL || FRONTEND_URL;
+  if (!secretKey) return disabled('stripe');
   
   return {
     name: "stripe",
