@@ -97,7 +97,7 @@
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "crypto-js": "^4.2.0",
-    "csurf": "^1.11.0",
+    "csurf": "^1.2.2",
     "date-fns": "^3.6.0",
     "dotenv": "^17.2.1",
     "drizzle-orm": "^0.44.5",
@@ -147,7 +147,7 @@
     "react-resizable-panels": "^2.1.7",
     "recharts": "^2.15.2",
     "sharp": "^0.34.3",
-    "snoowrap": "^1.23.0",
+    "snoowrap": "^1.15.2",
     "stripe": "^18.5.0",
     "supertest": "^7.1.4",
     "tailwind-merge": "^2.6.0",
@@ -185,13 +185,13 @@
     "@types/ws": "^8.5.13",
     "@vitejs/plugin-react": "^4.3.2",
     "autoprefixer": "^10.4.20",
-    "drizzle-kit": "^0.30.4",
+    "drizzle-kit": "^0.31.4",
     "esbuild": "^0.25.0",
     "eslint-formatter-compact": "^8.40.0",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.17",
     "typescript": "5.6.3",
-    "vite": "^5.4.19"
+    "vite": "^7.1.5"
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.8"
