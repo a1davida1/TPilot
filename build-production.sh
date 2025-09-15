@@ -12,6 +12,10 @@ mkdir -p dist/server
 
 echo "⚙️ Compiling server TypeScript..."
 npm run build:server
+if [ ! -f dist/server/index.js ]; then
+  echo "Server build failed: dist/server/index.js not found" >&2
+  exit 1
+fi
 chmod +x dist/server/index.js
 echo "✅ Server TypeScript compiled to dist/"
 
