@@ -2,12 +2,12 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "noEmit": false,
-    "outDir": "dist",
+    "outDir": "dist/server",
     "rootDir": ".",
-    "composite": false,
-    "types": ["node"],
+    "moduleResolution": "Node",
     "module": "ESNext",
-    "moduleResolution": "Node"
+    "composite": false,
+    "types": ["node"]
   },
   "include": ["server/**/*"],
   "exclude": ["node_modules", "client", "**/*.test.ts", "**/*.spec.ts", "moderation", "server/vite.ts"]
