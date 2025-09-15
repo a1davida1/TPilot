@@ -4,7 +4,7 @@ import {
   type RedditCommunity,
   insertRedditCommunitySchema,
   type InsertRedditCommunity
-} from '@shared/schema.js';
+} from '@shared/schema';
 import { eq, ilike, desc, or } from 'drizzle-orm';
 
 export async function listCommunities() {

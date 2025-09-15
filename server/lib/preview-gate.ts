@@ -1,5 +1,5 @@
 import { db } from "../db.js";
-import { postPreviews } from "@shared/schema.js";
+import { postPreviews } from "@shared/schema";
 import { eq, and, gte } from "drizzle-orm";
 
 export interface PreviewStats {

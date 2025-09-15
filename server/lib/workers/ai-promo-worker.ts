@@ -1,7 +1,7 @@
 import { registerProcessor } from "../queue-factory.js";
 import { QUEUE_NAMES, type AiPromoJobData } from "../queue/index.js";
 import { db } from "../../db.js";
-import { contentGenerations, eventLogs } from "@shared/schema.js";
+import { contentGenerations, eventLogs } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { AiService } from "../ai-service.js";
 import { logger } from "../logger.js";

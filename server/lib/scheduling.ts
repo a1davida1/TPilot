@@ -1,5 +1,5 @@
 import { db } from "../db.js";
-import { eventLogs } from "@shared/schema.js";
+import { eventLogs } from "@shared/schema";
 import { eq, and, gte, desc } from "drizzle-orm";
 
 export interface PostingWindow {

@@ -1,6 +1,6 @@
 import { db } from "../db.js";
 import { eq } from "drizzle-orm";
-import { subredditRules } from "@shared/schema.js";
+import { subredditRules } from "@shared/schema";
 
 export interface PolicyWarning {
   type: 'bannedWord' | 'linkPolicy' | 'flairRequired' | 'lengthLimit' | 'imagePolicy';

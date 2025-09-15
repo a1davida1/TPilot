@@ -1,5 +1,5 @@
 import { db } from '../db';
-import { socialMediaPosts, platformEngagement } from '@shared/schema.js';
+import { socialMediaPosts, platformEngagement } from '@shared/schema';
 import { and, eq, gte, lte, sql, desc } from 'drizzle-orm';
 
 interface ContentSuggestion {

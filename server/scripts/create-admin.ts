@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
 import { db } from '../db.js';
-import { users } from '@shared/schema.js';
+import { users } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 
 async function createAdmin() {

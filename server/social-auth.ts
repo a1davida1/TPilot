@@ -4,7 +4,7 @@ import { Strategy as FacebookStrategy } from 'passport-facebook';
 import { Strategy as RedditStrategy } from 'passport-reddit';
 import type { Express, Request, Response } from 'express';
 import type { AuthenticateOptions } from 'passport';
-import type { User } from '@shared/schema.js';
+import type { User } from '@shared/schema';
 import { storage } from './storage';
 import jwt from 'jsonwebtoken';
 import { blacklistToken } from './lib/tokenBlacklist';

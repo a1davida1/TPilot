@@ -14,7 +14,7 @@ import {
   analyticsMetrics,
   contentGenerations,
   users
-} from '@shared/schema.js';
+} from '@shared/schema';
 import { eq, desc, gte, lte, and, count, sum, avg, sql } from 'drizzle-orm';
 import { Reader } from '@maxmind/geoip2-node';
 

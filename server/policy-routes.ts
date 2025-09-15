@@ -7,7 +7,7 @@ type AuthenticatedRequest = Request & {
 import { lintCaption } from "./lib/policy-linter.js";
 import { getPreviewStats, checkPreviewGate } from "./lib/preview-gate.js";
 import { db } from "./db.js";
-import { postPreviews, featureFlags } from "@shared/schema.js";
+import { postPreviews, featureFlags } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 

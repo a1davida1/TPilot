@@ -4,7 +4,7 @@
  */
 
 import { db } from '../db';
-import { users, referralRewards } from '@shared/schema.js';
+import { users, referralRewards } from '@shared/schema';
 import { eq, sql } from 'drizzle-orm';
 import { customAlphabet } from 'nanoid';
 // TODO: implement real notification service

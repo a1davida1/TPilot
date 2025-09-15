@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 import { db } from './db.js';
-import { users } from '@shared/schema.js';
+import { users } from '@shared/schema';
 import { sql } from 'drizzle-orm';
 
 async function fixSubscriptionStatus() {

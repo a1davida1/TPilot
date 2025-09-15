@@ -34,7 +34,7 @@ interface AnalyticsRequest extends express.Request {
 }
 
 // Import users table for type inference
-import { users, type ContentGeneration } from "@shared/schema.js";
+import { users, type ContentGeneration } from "@shared/schema";
 
 // AuthUser interface for passport serialization
 interface AuthUser {
@@ -82,7 +82,7 @@ import { contentGenerationLimiter } from "./middleware/tiered-rate-limit.js";
 import { registerSocialMediaRoutes } from "./social-media-routes.js";
 
 // Schema imports
-import { insertContentGenerationSchema, insertUserImageSchema } from "@shared/schema.js";
+import { insertContentGenerationSchema, insertUserImageSchema } from "@shared/schema";
 
 // Core dependencies
 import multer from 'multer';
