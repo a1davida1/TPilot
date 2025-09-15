@@ -25,7 +25,7 @@ export async function searchCommunities(query: string) {
 }
 
 export async function createCommunity(data: unknown) {
-  const value: InsertRedditCommunity = insertRedditCommunitySchema.parse(data);
+  const value = insertRedditCommunitySchema.parse(data) as InsertRedditCommunity;
   const [row] = await db.insert(redditCommunities).values(value).returning();
   return row;
 }

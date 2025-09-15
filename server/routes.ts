@@ -270,15 +270,15 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
     if (route.includes('*')) {
       // Handle wildcard routes
       const baseRoute = route.replace('/*', '');
-      app.use(baseRoute, csrfProtection);
+      app.use(baseRoute, csrfProtection as unknown as express.RequestHandler);
     } else {
-      app.use(route, csrfProtection);
+      app.use(route, csrfProtection as unknown as express.RequestHandler);
     }
   });
   
   // CSRF token endpoint
-  app.get('/api/csrf-token', csrfProtection, (req, res) => {
-    res.json({ csrfToken: req.csrfToken() });
+  app.get('/api/csrf-token', csrfProtection as unknown as express.RequestHandler, (req: express.Request & { csrfToken?: () => string }, res: express.Response) => {
+    res.json({ csrfToken: req.csrfToken?.() });
   });
 
   // ==========================================

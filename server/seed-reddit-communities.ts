@@ -18,9 +18,9 @@ export async function seedRedditCommunities() {
     console.log('Loading basic Reddit communities dataset...');
   }
   
-  const data: InsertRedditCommunity[] = insertRedditCommunitySchema
+  const data = insertRedditCommunitySchema
     .array()
-    .parse(JSON.parse(raw));
+    .parse(JSON.parse(raw)) as InsertRedditCommunity[];
   await db.insert(redditCommunities).values(data).onConflictDoNothing();
   console.log(`Successfully seeded ${data.length} Reddit communities`);
 }
