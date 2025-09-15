@@ -10,10 +10,11 @@ rm -rf dist
 echo "📂 Creating dist directory structure..."
 mkdir -p dist/server
 
-echo "⚙️ Compiling server TypeScript..."
-npm run build:server
+echo "⚙️ Compiling TypeScript..."
+npx tsc -p tsconfig.server.json || { echo "TypeScript compilation failed"; exit 1; }
+
+echo "✅ TypeScript compiled to dist/"
 chmod +x dist/server/index.js
-echo "✅ Server TypeScript compiled to dist/"
 
 # Apply path mappings
 echo "🔗 Resolving path mappings..."
