@@ -1,0 +1,237 @@
+diff --git a/src/shared/contentModeration/hateTerms.ts b/src/shared/contentModeration/hateTerms.ts
+new file mode 100644
+index 0000000..c257e09
+--- /dev/null
++++ b/src/shared/contentModeration/hateTerms.ts
+@@
++// Terms included solely to detect hate speech. This list is not exhaustive.
++// All strings must be lowercase to ensure case-insensitive matching.
++export const hateTerms: readonly string[] = [
++  'nigger',
++  'kike',
++  'spic',
++  'chink',
++  'faggot',
++];
++
++export default hateTerms;
+diff --git a/src/contentPolicy.ts b/src/contentPolicy.ts
+index 2d2fb14..4c8fd7a 100644
+--- a/src/contentPolicy.ts
++++ b/src/contentPolicy.ts
+@@
+-import CONTENT_POLICY from ...?  // (original file had no imports)
++import hateTerms from './shared/contentModeration/hateTerms';
++
++interface AllowedContent {
++  nsfw: boolean;
++  suggestive: boolean;
++  explicit: boolean;
++  nudity: boolean;
++  sexualContent: boolean;
++  categories: string[];
++}
++
++interface BlockedContent {
++  illegal: boolean;
++  underage: boolean;
++  nonConsensual: boolean;
++  revenge: boolean;
++  deepfake: boolean;
++  violence: boolean;
++  selfHarm: boolean;
++  animalAbuse: boolean;
++  terrorism: boolean;
++  spam: boolean;
++  malware: boolean;
++  phishing: boolean;
++  urlShorteners: boolean;
++}
++
++interface ValidationRules {
++  checkForBlockedContent: boolean;
++  blockNSFW: boolean;
++  enforceRateLimit: boolean;
++  dailyPostLimit: Record<string, number>;
++  preventDuplicates: boolean;
++  duplicateTimeWindow: number;
++}
++
++interface AIGenerationSettings {
++  allowNSFWGeneration: boolean;
++  safetyLevels: Record<string, { allowed: boolean; emoji: string }>;
++  platformStyles: Record<string, { allowExplicit: boolean; defaultEmoji: string; hashtagStyle: string }>;
++}
++
++interface PlatformRules {
++  requireAgeVerification: boolean;
++  minimumAge: number;
++  requireContentWarnings: boolean;
++  autoWatermark: boolean;
++  watermarkText: string;
++  dmcaProtection: boolean;
++  allowTips: boolean;
++  allowSubscriptions: boolean;
++  allowPPV: boolean;
++}
++
++interface ModerationSettings {
++  autoModerate: boolean;
++  checkForSpam: boolean;
++  checkForHate: boolean;
++  checkForScams: boolean;
++  checkForNSFW: boolean;
++  spamThreshold: number;
++  hateThreshold: number;
++  requireManualReview: string[];
++}
++
++interface ContentPolicy {
++  platformType: string;
++  allowedContent: AllowedContent;
++  blockedContent: BlockedContent;
++  validation: ValidationRules;
++  aiGeneration: AIGenerationSettings;
++  platformRules: PlatformRules;
++  moderation: ModerationSettings;
++}
++
++interface CategorizationResult {
++  isNSFW: boolean;
++  isSuggestive: boolean;
++  isExplicit: boolean;
++  hasViolations: boolean;
++  violations: string[];
++}
+@@
+-export const CONTENT_POLICY = {
++export const CONTENT_POLICY: ContentPolicy = {
+@@
+ export function categorizeContent(content: string) {
+-  const lower = content.toLowerCase();
+-  
+-  return {
+-    // Categories (not violations!)
+-    isNSFW: checkNSFW(lower),
+-    isSuggestive: checkSuggestive(lower),
+-    isExplicit: checkExplicit(lower),
+-    
+-    // Actual violations (only harmful content)
+-    hasViolations: checkViolations(lower),
+-    violations: getViolations(lower)
+-  };
++  const lower = content.toLowerCase();
++
++  return {
++    isNSFW: checkNSFW(lower),
++    isSuggestive: checkSuggestive(lower),
++    isExplicit: checkExplicit(lower),
++    hasViolations: checkViolations(lower),
++    violations: getViolations(lower)
++  } as CategorizationResult;
+ }
+@@
+-function checkNSFW(content: string): boolean {
+-  const nsfwTerms = ['nude', 'naked', 'topless', 'sexy', 'hot', 'adult'];
+-  return nsfwTerms.some(term => content.includes(term));
+-}
+-
+-function checkSuggestive(content: string): boolean {
+-  const suggestiveTerms = ['tease', 'peek', 'preview', 'exclusive', 'spicy'];
+-  return suggestiveTerms.some(term => content.includes(term));
+-}
+-
+-function checkExplicit(content: string): boolean {
+-  const explicitTerms = ['xxx', 'explicit', 'uncensored', 'full'];
+-  return explicitTerms.some(term => content.includes(term));
+-}
++function checkNSFW(content: string): boolean {
++  const nsfwTerms = ['nude', 'naked', 'topless', 'sexy', 'hot', 'adult'];
++  return nsfwTerms.some(term => new RegExp(`\\b${term}\\b`, 'i').test(content));
++}
++
++function checkSuggestive(content: string): boolean {
++  const suggestiveTerms = ['tease', 'peek', 'preview', 'exclusive', 'spicy'];
++  return suggestiveTerms.some(term => new RegExp(`\\b${term}\\b`, 'i').test(content));
++}
++
++function checkExplicit(content: string): boolean {
++  const explicitTerms = ['xxx', 'explicit', 'uncensored', 'full'];
++  return explicitTerms.some(term => new RegExp(`\\b${term}\\b`, 'i').test(content));
++}
+@@
+-function getViolations(content: string): string[] {
+-  const violations = [];
+-  
+-  // Check for spam indicators
+-  if (content.includes('bit.ly') || content.includes('tinyurl.com')) {
+-    violations.push('url_shortener');
+-  }
+-  
+-  // Check for potential scams
+-  if (content.includes('get rich quick') || content.includes('guaranteed money')) {
+-    violations.push('potential_scam');
+-  }
+-  
+-  // Check for hate speech (simplified)
+-  const hateTerms = [/* actual hate speech terms */];
+-  if (hateTerms.some(term => content.includes(term))) {
+-    violations.push('hate_speech');
+-  }
+-  
+-  // NOTE: We do NOT add violations for NSFW/adult content
+-  // That content is allowed on this platform
+-  
+-  return violations;
+-}
++function getViolations(content: string): string[] {
++  const violations: string[] = [];
++
++  // Check for spam indicators (common URL shorteners)
++  if (/\b(bit\.ly|tinyurl\.com|t\.co|goo\.gl)\b/.test(content)) {
++    violations.push('url_shortener');
++  }
++
++  // Check for potential scams
++  if (content.includes('get rich quick') || content.includes('guaranteed money')) {
++    violations.push('potential_scam');
++  }
++
++  // Check for hate speech
++  if (hateTerms.some(term => new RegExp(`\\b${term}\\b`, 'i').test(content))) {
++    violations.push('hate_speech');
++  }
++
++  // NOTE: We do NOT add violations for NSFW/adult content
++  return violations;
++}
+diff --git a/tests/categorizeContent.test.ts b/tests/categorizeContent.test.ts
+new file mode 100644
+index 0000000..5c5b73a
+--- /dev/null
++++ b/tests/categorizeContent.test.ts
+@@
++import { categorizeContent } from '../src/contentPolicy';
++
++describe('categorizeContent', () => {
++  it('flags NSFW words with word boundaries', () => {
++    expect(categorizeContent('nude art').isNSFW).toBe(true);
++    expect(categorizeContent('adulting 101').isNSFW).toBe(false);
++  });
++
++  it('detects URL shorteners', () => {
++    const result = categorizeContent('visit goo.gl/xyz');
++    expect(result.hasViolations).toBe(true);
++    expect(result.violations).toContain('url_shortener');
++  });
++
++  it('detects hate speech', () => {
++    const result = categorizeContent('you are a kike');
++    expect(result.violations).toContain('hate_speech');
++  });
++
++  it('keeps clean content clean', () => {
++    const result = categorizeContent('hello world');
++    expect(result.hasViolations).toBe(false);
++  });
++});
