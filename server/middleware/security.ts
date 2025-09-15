@@ -259,18 +259,19 @@ export const securityMiddleware = [
           "https://js.stripe.com",
           "https://checkout.stripe.com",
           "https://apis.google.com",
-          // Replit domain for development
-          process.env.NODE_ENV === 'development'
-            ? "https://replit.com"
-            : ""
+          // Replit domains for development
+          process.env.NODE_ENV === 'development' ? "https://replit.com" : "",
+          process.env.NODE_ENV === 'development' ? "https://*.replit.dev" : "",
+          process.env.NODE_ENV === 'development' ? "https://*.replit.app" : ""
         ].filter(Boolean),
         styleSrc: [
           "'self'",
           // Allow specific style sources
           "https://fonts.googleapis.com",
           "https://checkout.stripe.com",
-          // In development, allow data: URLs for CSS-in-JS libraries
-          process.env.NODE_ENV === 'development' ? "data:" : ""
+          // In development, allow data: URLs for CSS-in-JS libraries and unsafe-inline for Vite
+          process.env.NODE_ENV === 'development' ? "data:" : "",
+          process.env.NODE_ENV === 'development' ? "'unsafe-inline'" : ""
         ].filter(Boolean),
         imgSrc: [
           "'self'",
