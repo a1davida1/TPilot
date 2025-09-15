@@ -19,7 +19,6 @@
     "lib": ["esnext", "dom", "dom.iterable"],
     "jsx": "preserve",
     "esModuleInterop": true,
-    "skipLibCheck": true,
     "moduleResolution": "Bundler",
     "resolveJsonModule": true,
     "downlevelIteration": true,
@@ -31,6 +30,7 @@
       "@server/*": ["server/*"],
       "@/*": ["client/src/*"]
     },
+    "preserveSymlinks": true,
     "outDir": "dist"
   }
 }
