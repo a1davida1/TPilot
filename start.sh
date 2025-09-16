@@ -7,6 +7,6 @@ echo "Starting production server..."
 echo "Syncing database..."
 npx drizzle-kit push --force
 
-# Start server using tsx directly
+# Start server using compiled JS for production
 echo "Starting application..."
-NODE_ENV=production npx tsx server/index.ts
+NODE_ENV=production node dist/server/server/index.js

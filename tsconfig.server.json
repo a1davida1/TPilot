@@ -1,12 +1,23 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "noEmit": false,
-    "outDir": "dist",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "target": "ES2022",
+    "outDir": "dist/server",
     "rootDir": ".",
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": ["shared/*"],
+      "@server/*": ["server/*"]
+    },
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "noEmit": false,
     "composite": false,
     "types": ["node"]
   },
-  "include": ["server/**/*", "shared/**/*"],
-  "exclude": ["node_modules", "client", "**/*.test.ts", "**/*.spec.ts", "moderation"]
+  "include": ["server/**/*.ts", "shared/**/*.ts"],
+  "exclude": ["node_modules", "client/**", "dist/**", "**/*.test.ts", "**/*.spec.ts", "moderation"]
 }
