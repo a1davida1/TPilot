@@ -1243,6 +1243,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
     res.json({
       hasAdminEmail: !!process.env.ADMIN_EMAIL,
       hasAdminPassword: !!process.env.ADMIN_PASSWORD,
+      hasAdminPasswordHash: !!process.env.ADMIN_PASSWORD_HASH,
       adminEmailLength: process.env.ADMIN_EMAIL?.length || 0,
       nodeEnv: process.env.NODE_ENV,
       // Don't send actual values for security!

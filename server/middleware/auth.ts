@@ -4,6 +4,7 @@ import { logger } from './security.js';
 import { db } from '../db.js';
 import { users } from '@shared/schema';
 import { isTokenBlacklisted } from '../lib/tokenBlacklist';
+import { getAdminCredentials } from '../lib/admin-auth.js';
 
 import { eq } from 'drizzle-orm';
 
@@ -21,12 +22,18 @@ if (!JWT_SECRET) {
 }
 
 // Get admin credentials from environment (required)
-if (!process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD) {
-  throw new Error('ADMIN_EMAIL and ADMIN_PASSWORD environment variables are required');
+const adminCredentials = getAdminCredentials();
+
+export const ADMIN_EMAIL = adminCredentials.email;
+export const ADMIN_PASSWORD_HASH = adminCredentials.passwordHash;
+
+if (!ADMIN_PASSWORD_HASH) {
+  logger.warn('ADMIN_PASSWORD_HASH environment variable is not set. Admin login is disabled.');
 }
 
-export const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
-export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+if (!ADMIN_EMAIL) {
+  logger.warn('ADMIN_EMAIL environment variable is not set. Admin login is disabled.');
+}
 
 export const authenticateToken = async (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
   const authHeader = req.headers['authorization'];

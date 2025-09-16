@@ -12,6 +12,7 @@ import { FRONTEND_URL } from './config.js';
 import { verificationLimiter, passwordResetLimiter, loginLimiter, signupLimiter, passwordChangeLimiter } from './middleware/simple-rate-limit.js';
 import { authMetrics } from './services/basic-metrics.js';
 import { logger } from './bootstrap/logger.js';
+import { verifyAdminCredentials } from './lib/admin-auth.js';
 import { validate, ValidationSource, loginValidationSchema, signupValidationSchema, passwordChangeValidationSchema, passwordResetValidationSchema } from './middleware/validation.js';
 import { extractAuthToken } from './middleware/extract-token.js';
 
@@ -156,12 +157,9 @@ export function setupAuth(app: Express) {
       const { username, password, email } = req.body;
       const loginIdentifier = email || username;
 
-      const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
-      const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH;
+      const adminEmail = await verifyAdminCredentials(loginIdentifier, password);
 
-      if (ADMIN_EMAIL && ADMIN_PASSWORD_HASH &&
-          loginIdentifier === ADMIN_EMAIL &&
-          await bcrypt.compare(password, ADMIN_PASSWORD_HASH)) {
+      if (adminEmail) {
         
         // Create admin token
         const token = jwt.sign(
@@ -184,17 +182,17 @@ export function setupAuth(app: Express) {
           maxAge: 24 * 60 * 60 * 1000
         });
 
-          return res.json({
-            token,
-            user: {
-              id: 999,
-              username: 'admin',
-              email: ADMIN_EMAIL,
-              tier: 'admin',
-              isAdmin: true,
-              role: 'admin'
-            }
-          });
+        return res.json({
+          token,
+          user: {
+            id: 999,
+            username: 'admin',
+            email: adminEmail,
+            tier: 'admin',
+            isAdmin: true,
+            role: 'admin'
+          }
+        });
       }
 
       // Regular user login continues...
