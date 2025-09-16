@@ -88,7 +88,7 @@ export function UnifiedLanding() {
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
               <Link to="/login">
-                <Button size="lg" className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold text-lg px-8 py-4">
+                <Button size="lg" className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-black font-semibold text-lg px-8 py-4">
                   <Sparkles className="h-5 w-5 mr-2" />
                   Start Creating Free
                 </Button>
@@ -213,18 +213,18 @@ export function UnifiedLanding() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600">
+      <section className="py-20 bg-gradient-to-br from-orange-200 via-orange-300 to-orange-400">
         <div className="max-w-4xl mx-auto text-center px-6">
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-800 mb-6">
             Ready to transform your content?
           </h2>
-          <p className="text-xl text-indigo-100 mb-8">
+          <p className="text-xl text-gray-700 mb-8">
             Join thousands of creators who've already upgraded their workflow
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/login">
-              <Button size="lg" className="bg-white text-indigo-600 hover:bg-gray-100 font-semibold text-lg px-8 py-4">
+              <Button size="lg" className="bg-white text-black hover:bg-gray-100 font-semibold text-lg px-8 py-4">
                 <Sparkles className="h-5 w-5 mr-2" />
                 Get Started Free
               </Button>

@@ -169,7 +169,7 @@ export function PremiumLanding() {
                 <div className="flex flex-col sm:flex-row gap-4">
                   <Button 
                     size="lg"
-                    className="btn-premium text-lg px-8 py-4 h-auto shadow-glow"
+                    className="btn-premium text-black text-lg px-8 py-4 h-auto shadow-glow"
                     onClick={() => document.getElementById('signup-section')?.scrollIntoView({ behavior: 'smooth' })}
                   >
                     <Zap className="mr-2 h-5 w-5" />
