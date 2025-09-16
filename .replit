@@ -8,8 +8,8 @@ packages = ["vim", "nano"]
 
 [deployment]
 deploymentTarget = "autoscale"
-build = ["npm", "run", "build"]
-run = ["sh", "-c", "NODE_ENV=production node dist/server/index.js"]
+run = ["sh", "-c", "NODE_ENV=production node dist/server/server/index.js"]
+build = ["sh", "-c", "npm run build"]
 
 [[ports]]
 localPort = 5000
@@ -24,12 +24,12 @@ localPort = 33227
 externalPort = 8008
 
 [[ports]]
-localPort = 33785
-externalPort = 8081
-
-[[ports]]
 localPort = 35953
 externalPort = 4200
+
+[[ports]]
+localPort = 36919
+externalPort = 8081
 
 [[ports]]
 localPort = 37205

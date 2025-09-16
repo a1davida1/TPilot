@@ -17,8 +17,8 @@ npx tsc -p tsconfig.server.json --listFiles | head -3
 echo "Compilation finished, checking output..."
 
 # Check if the compiled server file exists
-if [ ! -f dist/server/index.js ] && [ ! -f dist/server/server/index.js ]; then
-  echo "❌ Server build failed: dist/server/server/index.js missing"
+if [ ! -f dist/server/index.js ]; then
+  echo "❌ Server build failed: dist/server/index.js missing"
   echo "Checking build output..."
   ls -la dist/server/ || echo "No dist/server directory found"
   if [ -d dist/server ]; then
@@ -29,19 +29,8 @@ if [ ! -f dist/server/index.js ] && [ ! -f dist/server/server/index.js ]; then
   exit 1
 fi
 
-# Set executable permissions on whichever entry file exists
-ENTRY_FILE=""
-if [ -f dist/server/server/index.js ]; then
-  ENTRY_FILE="dist/server/server/index.js"
-elif [ -f dist/server/index.js ]; then
-  ENTRY_FILE="dist/server/index.js"
-else
-  echo "❌ No entry file found at dist/server/server/index.js or dist/server/index.js"
-  exit 1
-fi
-
-chmod +x "$ENTRY_FILE"
-echo "✅ Set executable permissions on $ENTRY_FILE"
+chmod +x dist/server/index.js
+echo "✅ Set executable permissions on dist/server/index.js"
 echo "✅ Server TypeScript compiled to dist/"
 
 # Apply path mappings
@@ -74,7 +63,7 @@ find dist/client -name "*.js" -o -name "*.css" | xargs gzip -9 --keep
 echo "✅ Production build complete!"
 echo ""
 echo "To run in production:"
-echo "  NODE_ENV=production node $ENTRY_FILE"
+echo "  NODE_ENV=production node dist/server/index.js"
 echo ""
 echo "Or for deployment:"
 echo "  Use the dist/ directory as your deployment artifact"

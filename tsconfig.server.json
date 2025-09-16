@@ -3,7 +3,7 @@
     "module": "ESNext",
     "moduleResolution": "Node",
     "target": "ES2022",
-    "outDir": "dist/server",
+    "outDir": "dist",
     "rootDir": ".",
     "baseUrl": ".",
     "paths": {

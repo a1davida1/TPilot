@@ -9,4 +9,4 @@ npx drizzle-kit push --force
 
 # Start server using compiled JS for production
 echo "Starting application..."
-NODE_ENV=production node dist/server/server/index.js
+NODE_ENV=production node dist/server/index.js
