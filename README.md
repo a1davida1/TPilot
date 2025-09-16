@@ -273,6 +273,11 @@ ThottoPilot uses environment variables for secure configuration of external serv
 - **Obtain**: Stripe Dashboard → Developers → API Keys
 - **Format**: Starts with `sk_`
 
+**STRIPE_API_VERSION** - Stripe API release version used for requests
+- **Required**: Yes (whenever STRIPE_SECRET_KEY is configured)
+- **Format**: `YYYY-MM-DD`
+- **Example**: `2023-10-16`
+
 **REDDIT_CLIENT_ID** - Reddit OAuth application client ID
 - **Required**: Optional (enables Reddit integration)
 - **Obtain**: Reddit App Preferences (https://www.reddit.com/prefs/apps)
@@ -422,6 +427,7 @@ OPENAI_API_KEY=your-openai-api-key
 
 # Payment Processing
 STRIPE_SECRET_KEY=sk_live_your_stripe_secret
+STRIPE_API_VERSION=2023-10-16
 PAXUM_API_KEY=your-paxum-merchant-id
 COINBASE_COMMERCE_KEY=your-coinbase-commerce-key
 
@@ -460,6 +466,11 @@ ANALYTICS_WRITE_KEY=your-analytics-key
 - **Obtain**: Stripe Dashboard (https://dashboard.stripe.com/apikeys)
 - **Usage**: Primary payment processing for subscriptions and one-time purchases
 - **Security**: Critical - must be kept secret, starts with `sk_`
+
+**STRIPE_API_VERSION** - Stripe API release version used by the server
+- **Required**: Yes when Stripe billing is enabled
+- **Usage**: Pin Stripe client to a supported API date (e.g. `2023-10-16`)
+- **Validation**: Must follow the `YYYY-MM-DD` format
 
 ### CCBill Payment Processing
 

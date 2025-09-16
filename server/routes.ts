@@ -28,6 +28,7 @@ import { setupAdminRoutes } from "./admin-routes.js";
 import { configureSocialAuth, socialAuthRoutes } from "./social-auth-config.js";
 import { visitorAnalytics } from "./visitor-analytics.js";
 import { makePaxum, makeCoinbase, makeStripe } from "./payments/payment-providers.js";
+import { deriveStripeConfig } from "./payments/stripe-config.js";
 // Analytics request type
 interface AnalyticsRequest extends express.Request {
   sessionID: string;
@@ -101,11 +102,14 @@ const SESSION_SECRET: string = rawSessionSecret;
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 const DATABASE_URL = process.env.DATABASE_URL;
 const REDIS_URL = process.env.REDIS_URL;
-const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+const stripeConfig = deriveStripeConfig({
+  env: process.env,
+  logger,
+});
 
 // Initialize Stripe if configured
-const stripe = STRIPE_SECRET_KEY ? new Stripe(STRIPE_SECRET_KEY, {
-  apiVersion: "2025-08-27.basil",
+const stripe = stripeConfig ? new Stripe(stripeConfig.secretKey, {
+  apiVersion: stripeConfig.apiVersion as any,
 }) : null;
 
 // Configure multer for optional image uploads
