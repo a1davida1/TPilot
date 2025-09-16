@@ -29,8 +29,8 @@
     <link rel="icon" type="image/png" href="/logo.png" />
   </head>
   <body>
-    <!-- SEO content for crawlers - visually hidden from users -->
-    <div id="static-content" class="visually-hidden">
+    <!-- SEO content for crawlers - hidden from users with inline style -->
+    <div id="static-content" style="position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden;">
       <h1>ThottoPilot - AI-Powered Content Creation Platform</h1>
       <p>Create engaging content with AI, protect your images from reverse searches, and optimize your content strategy for maximum engagement.</p>
       <h2>Features</h2>
@@ -44,8 +44,6 @@
 
     <div id="root"></div>
     
-    <!-- Hide static content after React mounts -->
-    <script type="module" src="./hide-static-content.js" defer></script>
     <script type="module" src="/src/main.tsx"></script>
     <!-- Dev-only Replit banner -->
     <script type="module" src="./load-replit-banner.js"></script>
