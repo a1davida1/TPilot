@@ -11,7 +11,7 @@
        "build:client": "vite build",
        "build:server": "tsc -p tsconfig.server.json",
        "postbuild": "echo 'Build complete. Run npm start to launch production server'",
-       "start": "NODE_ENV=production node dist/server/server/index.js",
+       "start": "NODE_ENV=production node dist/server/index.js",
        "start:fallback": "NODE_ENV=production tsx server/index.ts",
        "preview": "npm run build && npm run start",
        "typecheck": "tsc --noEmit",
