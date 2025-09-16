@@ -7,7 +7,9 @@ rm -rf dist
 mkdir -p dist/server
 
 echo "⚙️ Compiling server TypeScript..."
-npm run build:server
+# Clear TypeScript incremental cache to force fresh compilation
+rm -f ./node_modules/typescript/tsbuildinfo
+npx tsc -p tsconfig.server.json
 
 # Verify the build succeeded and the expected output exists
 if [ ! -f dist/server/index.js ]; then

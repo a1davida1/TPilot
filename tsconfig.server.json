@@ -5,6 +5,7 @@
     "outDir": "dist",
     "rootDir": ".",
     "composite": false,
+    "incremental": false,
     "types": ["node"],
     "module": "ESNext",
     "moduleResolution": "Node",
