@@ -18,12 +18,22 @@ if [ ! -f dist/server/server/index.js ]; then
   echo "❌ Server build failed: dist/server/server/index.js missing"
   echo "Checking build output..."
   ls -la dist/server/ || echo "No dist/server directory found"
+  if [ -d dist/server ]; then
+    echo "Contents of dist/server:"
+    find dist/server -name "*.js" -type f | head -10
+  fi
   echo "TypeScript compilation may have failed or output to wrong directory"
   exit 1
 fi
 
 # Set executable permissions only if file exists
-[ -f dist/server/server/index.js ] && chmod +x dist/server/server/index.js || echo "Skipping chmod - file not found"
+if [ -f dist/server/server/index.js ]; then
+  chmod +x dist/server/server/index.js
+  echo "✅ Set executable permissions on dist/server/server/index.js"
+else
+  echo "❌ Skipping chmod - dist/server/server/index.js not found"
+  exit 1
+fi
 echo "✅ Server TypeScript compiled to dist/"
 
 # Apply path mappings
