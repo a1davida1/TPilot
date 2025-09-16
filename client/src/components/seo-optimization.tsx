@@ -66,7 +66,47 @@ export function SEOOptimization({
       canonical.href = url;
       document.head.appendChild(canonical);
     }
+
+    // Add JSON-LD structured data
+    const prevLd = document.querySelector('script[data-seo="ldjson"]');
+    if (prevLd) prevLd.remove();
     
+    const structuredData = {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "ThottoPilot",
+      "description": "AI-powered content creation platform for social media creators",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "ratingCount": "1250"
+      },
+      "author": {
+        "@type": "Organization",
+        "name": "ThottoPilot"
+      }
+    };
+    
+    const script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.setAttribute('data-seo', 'ldjson');
+    script.textContent = JSON.stringify(structuredData);
+    document.head.appendChild(script);
+
+    // Cleanup function
+    return () => {
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+    };
   }, [title, description, keywords, image, url]);
   
   function updateOrCreateMetaTag(attribute: string, value: string, content: string) {
@@ -113,40 +153,3 @@ export const seoConfigs = {
   }
 };
 
-// JSON-LD structured data for better SEO
-export function addStructuredData() {
-  useEffect(() => {
-    const structuredData = {
-      "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
-      "name": "ThottoPilot",
-      "description": "AI-powered content creation platform for social media creators",
-      "applicationCategory": "BusinessApplication",
-      "operatingSystem": "Web",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "USD",
-        "availability": "https://schema.org/InStock"
-      },
-      "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": "4.8",
-        "ratingCount": "1250"
-      },
-      "author": {
-        "@type": "Organization",
-        "name": "ThottoPilot"
-      }
-    };
-    
-    const script = document.createElement('script');
-    script.type = 'application/ld+json';
-    script.textContent = JSON.stringify(structuredData);
-    document.head.appendChild(script);
-    
-    return () => {
-      document.head.removeChild(script);
-    };
-  }, []);
-}
