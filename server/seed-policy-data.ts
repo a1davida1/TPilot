@@ -1,5 +1,5 @@
 import { db } from "./db.js";
-import { subredditRules, featureFlags } from "@shared/schema.js";
+import { subredditRules, featureFlags } from "@shared/schema";
 import type { RuleSpec } from "./lib/policy-linter.js";
 
 export async function seedPolicyData() {

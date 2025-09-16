@@ -5,7 +5,7 @@ import {
   redditCommunities,
   insertRedditCommunitySchema,
   type InsertRedditCommunity
-} from '@shared/schema.js';
+} from '@shared/schema';
 
 export async function seedRedditCommunities() {
   // Try the full dataset first, fallback to basic if not found

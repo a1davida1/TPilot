@@ -12,7 +12,7 @@ import { PostScheduler } from "./lib/scheduling.js";
 import { addJob, QueueNames } from "./lib/queue/index.js";
 import { getErrorMessage } from "./utils/error.js";
 import { RedditManager } from "./lib/reddit.js";
-import { postJobs, subscriptions, mediaAssets, creatorAccounts, users, userSamples } from "@shared/schema.js";
+import { postJobs, subscriptions, mediaAssets, creatorAccounts, users, userSamples } from "@shared/schema";
 import { eq, desc, sql } from "drizzle-orm";
 import multer from "multer";
 import type { Request, Response, NextFunction } from 'express';

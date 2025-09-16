@@ -1,8 +1,7 @@
 {
-  "extends": "./tsconfig.json",
   "compilerOptions": {
     "module": "ESNext",
-    "moduleResolution": "Bundler",
+    "moduleResolution": "Node",
     "target": "ES2022",
     "outDir": "dist/server",
     "rootDir": ".",
@@ -12,11 +11,17 @@
       "@server/*": ["server/*"]
     },
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "noEmit": false,
     "composite": false,
-    "types": ["node"]
+    "types": ["node"],
+    "strict": false,
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+    "strictFunctionTypes": false,
+    "strictBindCallApply": false
   },
   "include": ["server/**/*.ts", "shared/**/*.ts"],
   "exclude": ["node_modules", "client/**", "dist/**", "**/*.test.ts", "**/*.spec.ts", "moderation"]

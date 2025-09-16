@@ -2,7 +2,7 @@ import type { Express, Request } from "express";
 import { socialMediaManager, type Platform, type PostContent } from "./social-media/social-media-manager.js";
 import { storage } from "./storage.js";
 import { authenticateToken } from "./middleware/auth.js";
-import type { User } from "@shared/schema.js";
+import type { User } from "@shared/schema";
 import { z } from "zod";
 
 interface AuthRequest<

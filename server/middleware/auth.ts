@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import express from 'express';
 import { logger } from './security.js';
 import { db } from '../db.js';
-import { users } from '@shared/schema.js';
+import { users } from '@shared/schema';
 import { isTokenBlacklisted } from '../lib/tokenBlacklist';
 
 import { eq } from 'drizzle-orm';

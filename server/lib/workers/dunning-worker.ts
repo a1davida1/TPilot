@@ -1,7 +1,7 @@
 import { registerProcessor } from "../queue-factory.js";
 import { QUEUE_NAMES, type DunningJobData } from "../queue/index.js";
 import { db } from "../../db.js";
-import { users, eventLogs, subscriptions } from "@shared/schema.js";
+import { users, eventLogs, subscriptions } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { logger } from "../logger.js";
 import fetch from "node-fetch";

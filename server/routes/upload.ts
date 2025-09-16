@@ -8,7 +8,7 @@ import { fileTypeFromBuffer } from 'file-type';
 import { authenticateToken, type AuthRequest } from '../middleware/auth.js';
 import { uploadLimiter, logger } from '../middleware/security.js';
 import { imageProtectionLimiter as tierProtectionLimiter } from '../middleware/tiered-rate-limit.js';
-import { uploadRequestSchema, type ProtectionLevel, type UploadRequest as UploadRequestBody } from '@shared/schema.js';
+import { uploadRequestSchema, type ProtectionLevel, type UploadRequest as UploadRequestBody } from '@shared/schema';
 import { ZodError } from 'zod';
 import { imageStreamingUpload, cleanupUploadedFiles } from '../middleware/streaming-upload.js';
 import { embedSignature } from '../lib/steganography.js';

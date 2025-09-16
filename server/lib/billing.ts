@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { env } from "./config.js";
 import { db } from "../db.js";
-import { subscriptions, invoices } from "@shared/schema.js";
+import { subscriptions, invoices } from "@shared/schema";
 import { logger } from "../bootstrap/logger";
 import { eq } from "drizzle-orm";
 

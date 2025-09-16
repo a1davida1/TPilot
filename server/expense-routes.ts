@@ -8,7 +8,7 @@ import { authenticateToken } from './middleware/auth.js';
 import { storage } from './storage.js';
 import { MediaManager } from './lib/media.js';
 import { logger } from './bootstrap/logger.js';
-import { type InsertExpense, type User } from '@shared/schema.js';
+import { type InsertExpense, type User } from '@shared/schema';
 
 interface AuthRequest extends express.Request {
   user?: User;

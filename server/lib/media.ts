@@ -4,7 +4,7 @@ import sharp from "sharp";
 import crypto from "crypto";
 import { env, config } from "./config.js";
 import { db } from "../db.js";
-import { mediaAssets, mediaUsages } from "@shared/schema.js";
+import { mediaAssets, mediaUsages } from "@shared/schema";
 import { eq, sum, and } from "drizzle-orm";
 import fs from "fs/promises";
 import path from "path";

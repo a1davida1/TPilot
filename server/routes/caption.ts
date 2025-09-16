@@ -4,7 +4,7 @@ import { pipelineTextOnly } from '../caption/textOnlyPipeline';
 import { pipelineRewrite } from '../caption/rewritePipeline';
 import { storage } from '../storage';
 import { authenticateToken, type AuthRequest } from '../middleware/auth';
-import { insertContentGenerationSchema } from '@shared/schema.js';
+import { insertContentGenerationSchema } from '@shared/schema';
 import { z } from 'zod';
 import { logger } from '../bootstrap/logger';
 

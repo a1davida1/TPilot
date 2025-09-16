@@ -1,7 +1,7 @@
 import { registerProcessor } from "../queue-factory.js";
 import { QUEUE_NAMES, type PostJobData } from "../queue/index.js";
 import { db } from "../../db.js";
-import { postJobs, eventLogs } from "@shared/schema.js";
+import { postJobs, eventLogs } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { RedditManager } from "../reddit.js";
 import { MediaManager } from "../media.js";

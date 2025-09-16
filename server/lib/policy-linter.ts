@@ -1,5 +1,5 @@
 import { db } from "../db.js";
-import { subredditRules } from "@shared/schema.js";
+import { subredditRules } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
 export type PolicyResult = {

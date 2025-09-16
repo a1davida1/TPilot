@@ -1,6 +1,6 @@
 import snoowrap from 'snoowrap';
 import { db } from '../db.js';
-import { creatorAccounts } from '@shared/schema.js';
+import { creatorAccounts } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
 import { decrypt } from '../services/state-store.js';
 

@@ -1,5 +1,5 @@
 import { db } from '../db';
-import { users } from '@shared/schema.js';
+import { users } from '@shared/schema';
 import { and, eq, gte, lte, sql, desc } from 'drizzle-orm';
 
 export interface AnalyticsEvent<T extends Record<string, unknown> = Record<string, unknown>> {

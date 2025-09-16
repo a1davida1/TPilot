@@ -3,7 +3,7 @@ import OpenAI from "openai";
 import crypto from "crypto";
 import { env } from "./config.js";
 import { db } from "../db.js";
-import { aiGenerations } from "@shared/schema.js";
+import { aiGenerations } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
 // AI service initialization
