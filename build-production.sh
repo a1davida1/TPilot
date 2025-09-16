@@ -7,11 +7,14 @@ rm -rf dist
 mkdir -p dist/server
 
 echo "⚙️ Compiling server TypeScript..."
-if ! npm run build:server; then
-  echo "TypeScript build failed, trying fallback compilation..."
-  npx tsx server/index.ts --outDir dist/server
+npm run build:server
+
+# Verify the build succeeded and the expected output exists
+if [ ! -f dist/server/index.js ]; then
+  echo "❌ Server build failed: dist/server/index.js not found"
+  exit 1
 fi
-chmod +x dist/server/server/index.js
+echo "✅ Server build verified: dist/server/index.js exists"
 
 echo "🔗 Resolving path mappings..."
 tsc-alias -p tsconfig.server.json
