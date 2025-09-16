@@ -1,4 +1,5 @@
-const fs = require('fs');
+import fs from 'fs';
+import process from 'node:process';
 
 // List the secrets you need for testing
 const secrets = [
@@ -21,14 +22,16 @@ const secrets = [
 
 // Build .env content
 let envContent = '';
-secrets.forEach(key => {
-  if (process.env[key]) {
-    envContent += `${key}=${process.env[key]}\n`;
+for (const key of secrets) {
+  const value = process.env[key];
+  if (value) {
+    envContent += `${key}=${value}\n`;
   } else {
     console.warn(`Warning: ${key} is not set in Replit Secrets`);
   }
-});
+}
 
 // Write to .env file
 fs.writeFileSync('.env', envContent);
-console.log('.env file created with', envContent.split('\n').filter(l => l).length, 'variables');
+const variableCount = envContent.split('\n').filter((line) => line).length;
+console.log('.env file created with', variableCount, 'variables');

@@ -2,6 +2,7 @@ import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } fro
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import sharp from "sharp";
 import crypto from "crypto";
+import Redis from "ioredis";
 import { env, config } from "./config.js";
 import { db } from "../db.js";
 import { mediaAssets, mediaUsages } from "@shared/schema";
@@ -25,6 +26,22 @@ const s3Client = isS3Configured ? new S3Client({
 const uploadsDir = path.join(process.cwd(), 'uploads');
 fs.mkdir(uploadsDir, { recursive: true }).catch(() => {});
 
+type MediaAssetRow = typeof mediaAssets.$inferSelect;
+
+interface DownloadTokenPayload {
+  assetId: number;
+  userId: number;
+  key: string;
+}
+
+interface MemoryDownloadTokenPayload extends DownloadTokenPayload {
+  expiresAt: number;
+}
+
+const DOWNLOAD_TOKEN_PREFIX = 'media:download:';
+const downloadRedisClient = env.REDIS_URL ? new Redis(env.REDIS_URL) : null;
+const memoryDownloadTokens = new Map<string, MemoryDownloadTokenPayload>();
+
 export interface MediaUploadOptions {
   visibility?: 'private' | 'preview-watermarked';
   applyWatermark?: boolean;
@@ -41,11 +58,122 @@ export interface MediaAssetWithUrl {
   visibility: string;
   signedUrl?: string;
   downloadUrl?: string;
+  downloadToken?: string;
   createdAt: Date;
 }
 
 export class MediaManager {
   
+
+  private static getDownloadTokenKey(token: string): string {
+    return `${DOWNLOAD_TOKEN_PREFIX}${token}`;
+  }
+
+  private static sanitizeLocalKey(key: string): string {
+    return key.replace(/\//g, '_');
+  }
+
+  private static getDownloadTokenTTL(): number {
+    return Math.max(1, config.signedUrlTTL || 900);
+  }
+
+  static usesLocalStorage(): boolean {
+    return !isS3Configured;
+  }
+
+  static getLocalAssetPath(key: string): string {
+    return path.join(uploadsDir, this.sanitizeLocalKey(key));
+  }
+
+  static async validateDownloadToken(token: string): Promise<DownloadTokenPayload | null> {
+    if (!token) {
+      return null;
+    }
+
+    if (downloadRedisClient) {
+      try {
+        const raw = await downloadRedisClient.get(this.getDownloadTokenKey(token));
+        if (raw) {
+          return JSON.parse(raw) as DownloadTokenPayload;
+        }
+      } catch (error) {
+        console.error('Failed to read download token from Redis:', error);
+      }
+    }
+
+    const memoryEntry = memoryDownloadTokens.get(token);
+    if (!memoryEntry) {
+      return null;
+    }
+
+    if (memoryEntry.expiresAt <= Date.now()) {
+      memoryDownloadTokens.delete(token);
+      return null;
+    }
+
+    return {
+      assetId: memoryEntry.assetId,
+      userId: memoryEntry.userId,
+      key: memoryEntry.key,
+    };
+  }
+
+  private static async persistDownloadToken(token: string, payload: DownloadTokenPayload): Promise<void> {
+    const ttlSeconds = this.getDownloadTokenTTL();
+
+    if (downloadRedisClient) {
+      try {
+        await downloadRedisClient.setex(this.getDownloadTokenKey(token), ttlSeconds, JSON.stringify(payload));
+        return;
+      } catch (error) {
+        console.error('Failed to store download token in Redis:', error);
+      }
+    }
+
+    const expiresAt = Date.now() + ttlSeconds * 1000;
+    memoryDownloadTokens.set(token, { ...payload, expiresAt });
+    const timeout = setTimeout(() => {
+      const entry = memoryDownloadTokens.get(token);
+      if (entry && entry.expiresAt <= Date.now()) {
+        memoryDownloadTokens.delete(token);
+      }
+    }, ttlSeconds * 1000);
+
+    if (typeof timeout.unref === 'function') {
+      timeout.unref();
+    }
+  }
+
+  private static async generateLocalDownloadToken(asset: MediaAssetRow): Promise<string> {
+    const token = crypto.randomUUID();
+    await this.persistDownloadToken(token, {
+      assetId: asset.id,
+      userId: asset.userId,
+      key: asset.key,
+    });
+    return token;
+  }
+
+  private static async buildAssetResponse(asset: MediaAssetRow): Promise<MediaAssetWithUrl> {
+    const response: MediaAssetWithUrl = { ...asset };
+
+    if (isS3Configured && s3Client) {
+      const signedUrl = await this.getSignedUrl(asset.key);
+      response.signedUrl = signedUrl;
+      response.downloadUrl = env.S3_PUBLIC_CDN_DOMAIN
+        ? `${env.S3_PUBLIC_CDN_DOMAIN}/${asset.key}`
+        : undefined;
+    } else {
+      const token = await this.generateLocalDownloadToken(asset);
+      const downloadPath = `/uploads/${token}`;
+      response.signedUrl = downloadPath;
+      response.downloadUrl = downloadPath;
+      response.downloadToken = token;
+    }
+
+    return response;
+  }
+
   static async uploadFile(
     buffer: Buffer,
     options: MediaUploadOptions
@@ -93,7 +221,7 @@ export class MediaManager {
       }));
     } else {
       // Fallback to local filesystem
-      const localPath = path.join(uploadsDir, key.replace(/\//g, '_'));
+      const localPath = this.getLocalAssetPath(key);
       await fs.writeFile(localPath, finalBuffer);
     }
     
@@ -108,10 +236,7 @@ export class MediaManager {
       visibility,
     }).returning();
     
-    return {
-      ...asset,
-      signedUrl: isS3Configured ? await this.getSignedUrl(key) : `/uploads/${key.replace(/\//g, '_')}`,
-    };
+    return this.buildAssetResponse(asset);
   }
   
   static async getAsset(id: number, userId?: number): Promise<MediaAssetWithUrl | null> {
@@ -126,13 +251,7 @@ export class MediaManager {
       .limit(1);
     if (!asset) return null;
     
-    return {
-      ...asset,
-      signedUrl: isS3Configured ? await this.getSignedUrl(asset.key) : `/uploads/${asset.key.replace(/\//g, '_')}`,
-      downloadUrl: env.S3_PUBLIC_CDN_DOMAIN 
-        ? `${env.S3_PUBLIC_CDN_DOMAIN}/${asset.key}`
-        : undefined,
-    };
+    return this.buildAssetResponse(asset);
   }
   
   static async getUserAssets(userId: number, limit: number = 50): Promise<MediaAssetWithUrl[]> {
@@ -143,10 +262,7 @@ export class MediaManager {
       .orderBy(mediaAssets.createdAt)
       .limit(limit);
     
-    return Promise.all(assets.map(async (asset) => ({
-      ...asset,
-      signedUrl: isS3Configured ? await this.getSignedUrl(asset.key) : `/uploads/${asset.key.replace(/\//g, '_')}`,
-    })));
+    return Promise.all(assets.map(async (asset) => this.buildAssetResponse(asset)));
   }
   
   static async deleteAsset(id: number, userId: number): Promise<boolean> {
@@ -167,7 +283,7 @@ export class MediaManager {
         }));
       } else {
         // Delete from local filesystem
-        const localPath = path.join(uploadsDir, asset.key.replace(/\//g, '_'));
+        const localPath = this.getLocalAssetPath(asset.key);
         await fs.unlink(localPath).catch(() => {});
       }
       
