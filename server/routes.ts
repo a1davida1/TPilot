@@ -220,13 +220,13 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
   });
 
   // CSRF protection for session-based routes
-  const csrfProtection = csrf({ 
+  const csrfProtection: express.RequestHandler = csrf({ 
     cookie: {
       httpOnly: true,
       secure: IS_PRODUCTION,
       sameSite: 'strict'
     }
-  });
+  }) as unknown as express.RequestHandler;
   
   // CSRF error handling middleware
   app.use((err: unknown, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -271,6 +271,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
       // Handle wildcard routes
       const baseRoute = route.replace('/*', '');
       app.use(baseRoute, csrfProtection);
+      app.use(baseRoute + '/*', csrfProtection);
     } else {
       app.use(route, csrfProtection);
     }

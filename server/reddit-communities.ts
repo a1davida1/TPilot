@@ -25,7 +25,7 @@ export async function searchCommunities(query: string) {
 }
 
 export async function createCommunity(data: unknown) {
-  const value: InsertRedditCommunity = insertRedditCommunitySchema.parse(data);
+  const value: InsertRedditCommunity = insertRedditCommunitySchema.parse(data) as InsertRedditCommunity;
   const [row] = await db.insert(redditCommunities).values(value).returning();
   return row;
 }
@@ -33,7 +33,7 @@ export async function createCommunity(data: unknown) {
 export async function updateCommunity(id: string, data: unknown) {
   const value: Partial<InsertRedditCommunity> = insertRedditCommunitySchema
     .partial()
-    .parse(data);
+    .parse(data) as Partial<InsertRedditCommunity>;
   const [row] = await db.update(redditCommunities).set(value).where(eq(redditCommunities.id, id)).returning();
   return row;
 }
@@ -42,7 +42,11 @@ export async function deleteCommunity(id: string) {
   await db.delete(redditCommunities).where(eq(redditCommunities.id, id));
 }
 
-export async function getCommunityInsights(communityId: string) {
+export async function getCommunityInsights(communityId: string): Promise<{
+  bestTimes: string[];
+  successTips: string[];
+  warnings: string[];
+}> {
   const community = await db.query.redditCommunities.findFirst({ where: eq(redditCommunities.id, communityId) });
   if (!community) return { bestTimes: [], successTips: [], warnings: [] };
 
