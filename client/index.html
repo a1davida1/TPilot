@@ -30,7 +30,7 @@
   </head>
   <body>
     <!-- SEO content for crawlers - visually hidden from users -->
-    <div style="position: absolute !important; left: -10000px !important; width: 1px !important; height: 1px !important; overflow: hidden !important;">
+    <div id="static-content" class="visually-hidden">
       <h1>ThottoPilot - AI-Powered Content Creation Platform</h1>
       <p>Create engaging content with AI, protect your images from reverse searches, and optimize your content strategy for maximum engagement.</p>
       <h2>Features</h2>
@@ -44,8 +44,8 @@
 
     <div id="root"></div>
     
-    <!-- Optional: remove the following script if the div is permanently hidden -->
-    <!-- <script type="module" src="./hide-static-content.js" defer></script> -->
+    <!-- Hide static content after React mounts -->
+    <script type="module" src="./hide-static-content.js" defer></script>
     <script type="module" src="/src/main.tsx"></script>
     <!-- Dev-only Replit banner -->
     <script type="module" src="./load-replit-banner.js"></script>
