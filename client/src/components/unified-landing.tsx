@@ -88,7 +88,7 @@ export function UnifiedLanding() {
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
               <Link to="/login">
-                <Button size="lg" className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-black font-semibold text-lg px-8 py-4">
+                <Button size="lg" className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold text-lg px-8 py-4 shadow-lg">
                   <Sparkles className="h-5 w-5 mr-2" />
                   Start Creating Free
                 </Button>
@@ -96,9 +96,11 @@ export function UnifiedLanding() {
               <Button 
                 size="lg" 
                 variant="outline" 
-                className="font-semibold text-lg px-8 py-4 border-2"
+                className="font-semibold text-lg px-8 py-4 border-2 hover:bg-gray-100 dark:hover:bg-gray-800"
+                onClick={() => window.open('https://www.youtube.com/watch?v=dQw4w9WgXcQ', '_blank')}
               >
                 <Play className="h-5 w-5 mr-2" />
+                Watch Demo
               </Button>
             </div>
 
