@@ -666,7 +666,9 @@ td {
   }
   
   /* Accessibility utilities */
-  .visually-hidden {
+  .visually-hidden,
+  .seo-only,
+  .sr-only {
     position: absolute !important;
     width: 1px !important;
     height: 1px !important;
