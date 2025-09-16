@@ -27,16 +27,12 @@ const mockAnthropic = {
 };
 
 // Mock logger
-const mockLogger = {
-  log: vi.fn(),
-  error: vi.fn(),
-  warn: vi.fn()
-};
+const mockLogger = { info: vi.fn(), error: vi.fn() };
 
 vi.mock('openai', () => ({ default: vi.fn(() => mockOpenAI) }));
 vi.mock('@google/genai', () => ({ GoogleGenAI: vi.fn(() => mockGemini) }));
 vi.mock('@anthropic-ai/sdk', () => ({ default: vi.fn(() => mockAnthropic) }));
-vi.mock('../../../server/lib/logger-utils.js', () => ({ safeLog: mockLogger.log }));
+vi.mock('../../../server/lib/logger-utils.js', () => ({ safeLog: mockLogger }));
 
 // Import after mocking
 import { generateWithMultiProvider } from '../../../server/services/multi-ai-provider';

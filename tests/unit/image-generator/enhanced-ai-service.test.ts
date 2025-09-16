@@ -14,19 +14,13 @@ const mockMultiProvider = {
 };
 
 // Mock logger
-const mockLogger = {
-  log: vi.fn(),
-  error: vi.fn(),
-  warn: vi.fn()
-};
+const mockLogger = { info: vi.fn(), error: vi.fn() };
 
 // Mock the dependencies before importing the service
 vi.mock('../../../server/services/multi-ai-provider.ts', () => ({
   MultiAIProvider: vi.fn(() => mockMultiProvider)
 }));
-vi.mock('../../../server/lib/logger-utils.js', () => ({
-  safeLog: mockLogger.log,
-}));
+vi.mock('../../../server/lib/logger-utils.js', () => ({ safeLog: mockLogger }));
 
 // Mock process.env
 Object.defineProperty(process, 'env', {

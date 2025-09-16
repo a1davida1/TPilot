@@ -13,7 +13,9 @@ describe('Policy Linter', () => {
       titleRegex: ['pattern rules'],
       prohibitedLinks: ['formatting rules'],
       maxLength: 100,
-      minLength: 5
+      minLength: 5,
+      updatedAt: new Date(),
+      createdAt: new Date()
     }).onConflictDoNothing();
   });
 

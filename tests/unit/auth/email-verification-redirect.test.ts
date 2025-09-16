@@ -4,6 +4,9 @@ import express from 'express';
 
 // Mock the storage and email service for redirect testing
 const mockStorage = {
+  getUserByEmail: vi.fn(),
+  updateUser: vi.fn(),
+  createUser: vi.fn(),
   getVerificationToken: vi.fn(),
   getUser: vi.fn(),
   updateUserEmailVerified: vi.fn(),

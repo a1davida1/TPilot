@@ -118,9 +118,8 @@ export function makeCoinbase(): PaymentProvider {
         }
         
         return { url: data.data.hosted_url };
-      } catch (error) {
-        console.error('Coinbase Commerce checkout creation failed:', error);
-        throw new Error('Failed to create Coinbase Commerce checkout session');
+      } catch (e) {
+        throw new Error((e as Error).message);
       }
     },
   };

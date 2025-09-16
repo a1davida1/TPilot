@@ -8,6 +8,9 @@ const mockTokens = new Map();
 const mockUsers = new Map();
 
 const mockStorage = {
+  getUserByEmail: vi.fn(),
+  updateUser: vi.fn(),
+  createUser: vi.fn(),
   getVerificationToken: vi.fn(async (token: string) => mockTokens.get(token)),
   deleteVerificationToken: vi.fn(async (token: string) => mockTokens.delete(token)),
   updateUserEmailVerified: vi.fn(async (userId: number, verified: boolean) => {

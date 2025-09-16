@@ -1,4 +1,4 @@
-import { storage } from "../../server/storage";
+import { storage } from "../../server/storage.js";
 /* eslint-env node, jest */
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { InsertExpenseCategory } from '../../../shared/schema.js';

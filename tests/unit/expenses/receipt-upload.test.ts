@@ -13,7 +13,7 @@ const mockMediaManager = {
   uploadFile: vi.fn(),
 };
 
-const mockAuthenticateToken = vi.fn();
+const mockAuthenticateToken = vi.fn((req, _res, next) => next());
 
 vi.mock('../../../server/storage.ts', () => ({ storage: mockStorage }));
 vi.mock('../../../server/lib/media.js', () => ({ MediaManager: mockMediaManager }));
