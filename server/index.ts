@@ -185,8 +185,8 @@ app.use((req, res, next) => {
       const path = await import("path");
       const { fileURLToPath } = await import("url");
       const __dirname = path.dirname(fileURLToPath(import.meta.url));
-      // In production the build output is in dist/client
-      const clientPath = path.join(__dirname, "..", "dist", "client");
+      // In production the server runs from dist/server, so client files are at ../client
+      const clientPath = path.join(__dirname, "..", "client");
       
       // Check if build directory exists
       const fs = await import("fs");
