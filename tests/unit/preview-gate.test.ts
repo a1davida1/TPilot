@@ -8,13 +8,21 @@ describe('Preview Gate', () => {
   
   beforeAll(async () => {
     // Create test user
+    const uniqueSuffix = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
     await db.insert(users).values({
       id: testUserId,
-      username: 'testuser',
-      email: 'test@example.com',
+      username: `testuser-${uniqueSuffix}`,
+      email: `test-${uniqueSuffix}@example.com`,
       password: 'hashedpassword',
       tier: 'free'
     }).onConflictDoNothing();
+
+    const insertedUser = await db.select().from(users).where(eq(users.id, testUserId));
+
+    if (insertedUser.length === 0) {
+      throw new Error('Failed to insert test user for preview gate tests');
+    }
   });
 
   beforeEach(async () => {
