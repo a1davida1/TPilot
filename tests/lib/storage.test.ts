@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { storage } from '../../server/storage.ts';
 
 // Mock database
-const mockDb = {
+const mockDb = vi.hoisted(() => ({
   select: vi.fn().mockReturnThis(),
   from: vi.fn().mockReturnThis(),
   where: vi.fn().mockReturnThis(),
@@ -17,11 +17,9 @@ const mockDb = {
   leftJoin: vi.fn().mockReturnThis(),
   orderBy: vi.fn().mockReturnThis(),
   limit: vi.fn().mockReturnThis(),
-};
-
-vi.mock('../../server/db.js', () => ({
-  db: mockDb
 }));
+
+vi.mock('../../server/db.js', () => ({ db: mockDb }));
 
 vi.mock('@shared/schema.js', () => ({
   users: { id: 'id', username: 'username', email: 'email' },

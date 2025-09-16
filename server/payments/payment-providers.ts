@@ -19,9 +19,7 @@ function disabled(name: PaymentProvider["name"]): PaymentProvider {
 // Paxum
 export function makePaxum(): PaymentProvider {
   const key = process.env.PAXUM_API_KEY;
-  const baseUrl =
-    process.env.APP_BASE_URL || process.env.FRONTEND_URL || FRONTEND_URL;
-
+  const baseUrl = process.env.APP_BASE_URL;
   if (!key) return disabled('paxum');
   if (!baseUrl) throw new Error('APP_BASE_URL environment variable is required');
   
@@ -118,8 +116,13 @@ export function makeCoinbase(): PaymentProvider {
         }
         
         return { url: data.data.hosted_url };
-      } catch (e) {
-        throw new Error((e as Error).message);
+      } catch (error) {
+        console.error('Coinbase Commerce checkout creation failed:', error);
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'Failed to create Coinbase Commerce checkout session';
+        throw new Error(message);
       }
     },
   };

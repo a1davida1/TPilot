@@ -7,7 +7,7 @@ import request from 'supertest';
 const mockTokens = new Map();
 const mockUsers = new Map();
 
-const mockStorage = {
+const mockStorage = vi.hoisted(() => ({
   getUserByEmail: vi.fn(),
   updateUser: vi.fn(),
   createUser: vi.fn(),
@@ -22,11 +22,11 @@ const mockStorage = {
     return data;
   }),
   getUser: vi.fn(async (id: number) => mockUsers.get(id))
-};
+}));
 
-const mockEmailService = {
+const mockEmailService = vi.hoisted(() => ({
   sendVerificationEmail: vi.fn().mockResolvedValue(true)
-};
+}));
 
 vi.mock('../../../server/storage', () => ({ storage: mockStorage }));
 vi.mock('../../../server/services/email-service', () => ({ emailService: mockEmailService }));

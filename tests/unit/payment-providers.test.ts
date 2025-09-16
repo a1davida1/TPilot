@@ -386,6 +386,7 @@ describe('Payment Providers', () => {
     test('filters out disabled providers', async () => {
       delete process.env.PAXUM_API_KEY;
       delete process.env.COINBASE_COMMERCE_KEY;
+      delete process.env.STRIPE_SECRET_KEY;
 
       // Re-import to get fresh providers array
       vi.resetModules();

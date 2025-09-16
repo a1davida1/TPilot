@@ -13,8 +13,7 @@ const mockMultiProvider = {
   generateWithMultiProvider: vi.fn(),
 };
 
-// Mock logger
-const mockLogger = { info: vi.fn(), error: vi.fn() };
+const mockLogger = vi.hoisted(() => ({ log: vi.fn(), error: vi.fn(), warn: vi.fn() }));
 
 // Mock the dependencies before importing the service
 vi.mock('../../../server/services/multi-ai-provider.ts', () => ({

@@ -185,6 +185,7 @@ export function setupAuth(app: Express) {
         });
 
           return res.json({
+            token,
             user: {
               id: 999,
               username: 'admin',
@@ -254,9 +255,9 @@ export function setupAuth(app: Express) {
         sameSite: 'strict',
         maxAge: 24 * 60 * 60 * 1000 // 24 hours
       });
-
-        res.json({
-          user: {
+      res.json({
+        token,
+        user: {
           id: user.id,
           username: user.username,
           email: user.email,

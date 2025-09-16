@@ -24,6 +24,10 @@ export async function initializeWorkers() {
   
   await batchPostingWorker.initialize();
   logger.info('✅ Batch posting worker initialized');
+
+  const { queueMonitor } = await import("../queue-monitor.js");
+  await queueMonitor.startMonitoring(30000);
+  logger.info('🚀 Queue monitoring started');
 }
 
 // Graceful shutdown

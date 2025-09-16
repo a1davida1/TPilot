@@ -46,6 +46,7 @@ describe('Login Identifier and Cookie Auth', () => {
         email: testEmail,
         password: hashed,
         tier: 'free',
+        emailVerified: true,
       })
       .returning();
     testUserId = user.id;

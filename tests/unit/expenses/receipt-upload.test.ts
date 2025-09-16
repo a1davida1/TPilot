@@ -5,15 +5,15 @@ import express from 'express';
 import fs from 'fs/promises';
 
 // Mock dependencies
-const mockStorage = {
+const mockStorage = vi.hoisted(() => ({
   updateExpense: vi.fn(),
-};
+}));
 
-const mockMediaManager = {
+const mockMediaManager = vi.hoisted(() => ({
   uploadFile: vi.fn(),
-};
+}));
 
-const mockAuthenticateToken = vi.fn((req, _res, next) => next());
+const mockAuthenticateToken = vi.hoisted(() => vi.fn());
 
 vi.mock('../../../server/storage.ts', () => ({ storage: mockStorage }));
 vi.mock('../../../server/lib/media.js', () => ({ MediaManager: mockMediaManager }));

@@ -8,20 +8,19 @@ describe('Policy Linter', () => {
     // Setup test data
     await db.insert(subredditRules).values({
       subreddit: 'testsub',
-      rules_json: {},
-      bannedWords: ['banned terms'],
-      titleRegex: ['pattern rules'],
-      prohibitedLinks: ['formatting rules'],
-      maxLength: 100,
-      minLength: 5,
-      updatedAt: new Date(),
-      createdAt: new Date()
+      rulesJson: {
+        bannedWords: ['banned terms'],
+        titleRegex: ['pattern rules'],
+        prohibitedLinks: ['formatting rules'],
+        maxLength: 100,
+        minLength: 5
+      }
     }).onConflictDoNothing();
   });
 
   afterAll(async () => {
     // Cleanup test data
-    await db.delete(subredditRules).where(eq(subredditRules.subreddit, 'test_sub'));
+    await db.delete(subredditRules).where(eq(subredditRules.subreddit, 'testsub'));
   });
 
   describe('Blocked Content', () => {

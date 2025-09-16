@@ -26,8 +26,10 @@ const mockAnthropic = {
     }
 };
 
-// Mock logger
-const mockLogger = { info: vi.fn(), error: vi.fn() };
+const mockOpenAI = vi.hoisted(() => ({ chat: { completions: { create: vi.fn() } } }));
+const mockGemini = vi.hoisted(() => ({ generateContent: vi.fn() }));
+const mockAnthropic = vi.hoisted(() => ({ messages: { create: vi.fn() } }));
+const mockLogger = vi.hoisted(() => ({ log: vi.fn(), error: vi.fn(), warn: vi.fn() }));
 
 vi.mock('openai', () => ({ default: vi.fn(() => mockOpenAI) }));
 vi.mock('@google/genai', () => ({ GoogleGenAI: vi.fn(() => mockGemini) }));

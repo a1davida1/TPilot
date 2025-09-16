@@ -3,7 +3,7 @@ import request from 'supertest';
 import express from 'express';
 
 // Mock the storage and email service for redirect testing
-const mockStorage = {
+const mockStorage = vi.hoisted(() => ({
   getUserByEmail: vi.fn(),
   updateUser: vi.fn(),
   createUser: vi.fn(),
@@ -11,11 +11,11 @@ const mockStorage = {
   getUser: vi.fn(),
   updateUserEmailVerified: vi.fn(),
   deleteVerificationToken: vi.fn(),
-};
+}));
 
-const mockEmailService = {
+const mockEmailService = vi.hoisted(() => ({
   sendWelcomeEmail: vi.fn(),
-};
+}));
 
 vi.mock('../../../server/storage', () => ({ storage: mockStorage }));
 vi.mock('../../../server/services/email-service', () => ({ emailService: mockEmailService }));
