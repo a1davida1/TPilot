@@ -28,7 +28,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
     const formData = new FormData(e.currentTarget);
     const username = formData.get("username") as string;
     const password = formData.get("password") as string;
@@ -56,7 +56,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
 
       localStorage.setItem("authToken", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
-      
+
       toast({
         title: "Welcome back!",
         description: `Logged in as ${data.user.username}`,
@@ -77,7 +77,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
 
   const handleSignup = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
+
     // Check if user agreed to terms
     if (!agreeToTerms) {
       toast({
@@ -87,9 +87,9 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
       });
       return;
     }
-    
+
     setIsLoading(true);
-    
+
     const formData = new FormData(e.currentTarget);
     const username = formData.get("username") as string;
     const email = formData.get("email") as string;
@@ -105,7 +105,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
 
       localStorage.setItem("authToken", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
-      
+
       toast({
         title: "Account created!",
         description: "Welcome to ThottoPilot",
@@ -164,7 +164,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
               className="space-y-4"
             >
               <div className="space-y-2">
-                <Label htmlFor="username" className="text-gray-300">Username</Label>
+                <Label htmlFor="username" className="text-gray-300">Username or Email</Label>
                 <Input
                   id="username"
                   name="username"
@@ -174,6 +174,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                   aria-invalid={Boolean(errors.username)}
                   aria-describedby={errors.username ? `${errorId}-username` : undefined}
                   className="bg-gray-800 border-purple-500/20 text-white"
+                  placeholder="Enter username or email"
                 />
                 {errors.username && (
                   <span
@@ -212,7 +213,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
             <div className="text-center text-xs text-gray-500">
               Test account: admin (or admin@thottopilot.com) / Admin123!*
             </div>
-            
+
             {/* Social login buttons */}
             <div className="mt-6">
               <SocialLoginButtons onClose={onClose} />
@@ -285,7 +286,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                 {isLoading ? "Creating account..." : "Create Account"}
               </Button>
             </form>
-            
+
             {/* Social login buttons */}
             <div className="mt-6">
               <SocialLoginButtons onClose={onClose} />

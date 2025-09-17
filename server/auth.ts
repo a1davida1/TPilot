@@ -157,10 +157,10 @@ export function setupAuth(app: Express, apiPrefix: string = '/api') {
       const { username, password, email } = req.body;
       const loginIdentifier = email || username;
 
+      // Check for admin credentials first
       const adminEmail = await verifyAdminCredentials(loginIdentifier, password);
 
       if (adminEmail) {
-        
         // Create admin token
         const token = jwt.sign(
           {
@@ -195,14 +195,21 @@ export function setupAuth(app: Express, apiPrefix: string = '/api') {
         });
       }
 
-      // Regular user login continues...
+      // Regular user login - try both email and username
+      // Try to find user by email first, then by username
       let user;
       if (loginIdentifier && loginIdentifier.includes('@')) {
         // It's an email
         user = await storage.getUserByEmail(loginIdentifier);
-      } else {
+      } else if (loginIdentifier) {
         // It's a username
-        user = await storage.getUserByUsername(loginIdentifier || '');
+        user = await storage.getUserByUsername(loginIdentifier);
+      }
+
+      // If not found and loginIdentifier doesn't contain @, also try as email
+      // This handles edge cases where someone might have @ in username
+      if (!user && loginIdentifier && !loginIdentifier.includes('@')) {
+        user = await storage.getUserByEmail(loginIdentifier);
       }
 
       if (!user || user.isDeleted) {

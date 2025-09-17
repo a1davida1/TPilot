@@ -22,8 +22,9 @@ export const verifyAdminCredentials = async (
     return null;
   }
 
-  // Accept both email and "admin" as username
-  if (identifier !== email && identifier !== 'admin') {
+  // Accept email, "admin" as username, or any part of email before @ as username
+  const emailUsername = email.split('@')[0]; // Get username part of email
+  if (identifier !== email && identifier !== 'admin' && identifier !== emailUsername) {
     return null;
   }
 
