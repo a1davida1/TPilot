@@ -14,11 +14,25 @@ interface AuthRequest extends express.Request {
   user?: User;
 }
 
+const knownImageExtensions = new Set([
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.gif',
+  '.bmp',
+  '.webp',
+  '.tiff'
+]);
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
+    const hasImageMimeType = file.mimetype.startsWith('image/');
+    const fileExtension = path.extname(file.originalname).toLowerCase();
+    const hasKnownImageExtension = knownImageExtensions.has(fileExtension);
+
+    if (hasImageMimeType || hasKnownImageExtension) {
       cb(null, true);
     } else {
       cb(new Error('Only image files are allowed!'));
@@ -49,7 +63,14 @@ async function applyReceiptImageShieldProtection(
 ): Promise<Buffer> {
   try {
     const settings = protectionPresets[protectionLevel];
-    let pipeline = sharp(inputBuffer);
+    let pipeline: sharp.Sharp;
+
+    try {
+      pipeline = sharp(inputBuffer);
+    } catch (sharpError) {
+      logger.warn('Unable to process receipt image buffer with Sharp:', sharpError);
+      return inputBuffer;
+    }
 
     // Apply protection transformations
     if (settings.blur > 0) {
@@ -65,7 +86,7 @@ async function applyReceiptImageShieldProtection(
     }
 
     if (settings.resize < 100) {
-      const metadata = await sharp(inputBuffer).metadata();
+      const metadata = await pipeline.metadata();
       if (metadata.width && metadata.height) {
         const newWidth = Math.round(metadata.width * (settings.resize / 100));
         const newHeight = Math.round(metadata.height * (settings.resize / 100));
