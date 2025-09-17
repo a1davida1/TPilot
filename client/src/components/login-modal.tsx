@@ -210,7 +210,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
 
             {/* Quick test login */}
             <div className="text-center text-xs text-gray-500">
-              Test account: admin@thottopilot.com / admin123
+              Test account: admin@thottopilot.com / Admin123
             </div>
             
             {/* Social login buttons */}
