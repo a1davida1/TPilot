@@ -14,15 +14,22 @@ export function CaptionPreview({ data }: { data: CaptionPreviewData | any }) {
   const [copiedCaption, setCopiedCaption] = useState(false);
   const [copiedJSON, setCopiedJSON] = useState(false);
 
+  // Debug logging to help understand data structure
+  console.log('CaptionPreview received data:', data);
+
   if (!data) return null;
   
   const { final = '', ranked = [] } = data || {};
   if (!final) return null;
   
-  const charCount = typeof final === 'object' && final.caption ? final.caption.length : 0;
+  // Handle different data formats - final could be a string or object with caption property
+  const captionText = typeof final === 'string' ? final : (final.caption || final);
+  const charCount = captionText ? captionText.length : 0;
+  
+  if (!captionText) return null;
 
   const handleCopyCaption = async () => {
-    await navigator.clipboard.writeText(final.caption);
+    await navigator.clipboard.writeText(captionText);
     setCopiedCaption(true);
     setTimeout(() => setCopiedCaption(false), 2000);
   };
@@ -47,12 +54,12 @@ export function CaptionPreview({ data }: { data: CaptionPreviewData | any }) {
         {/* Main Caption */}
         <div className="p-4 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/20 dark:to-purple-950/20 rounded-lg">
           <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
-            {final.caption}
+            {captionText}
           </p>
         </div>
 
         {/* ALT Text */}
-        {final.alt && (
+        {typeof final === 'object' && final.alt && (
           <div className="space-y-1">
             <p className="text-xs font-medium text-gray-500 dark:text-gray-400">ALT Text</p>
             <p className="text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 p-2 rounded">
@@ -62,7 +69,7 @@ export function CaptionPreview({ data }: { data: CaptionPreviewData | any }) {
         )}
 
         {/* Hashtags */}
-        {final.hashtags && final.hashtags.length > 0 && (
+        {typeof final === 'object' && final.hashtags && final.hashtags.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {final.hashtags.map((h: string, index: number) => (
               <Badge 
@@ -80,23 +87,23 @@ export function CaptionPreview({ data }: { data: CaptionPreviewData | any }) {
         <div className="grid grid-cols-2 gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
           <div className="space-y-1">
             <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Mood</p>
-            <p className="text-sm text-gray-700 dark:text-gray-300">{final.mood || 'N/A'}</p>
+            <p className="text-sm text-gray-700 dark:text-gray-300">{typeof final === 'object' && final.mood || 'N/A'}</p>
           </div>
           <div className="space-y-1">
             <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Style</p>
-            <p className="text-sm text-gray-700 dark:text-gray-300">{final.style || 'N/A'}</p>
+            <p className="text-sm text-gray-700 dark:text-gray-300">{typeof final === 'object' && final.style || 'N/A'}</p>
           </div>
           <div className="space-y-1">
             <p className="text-xs font-medium text-gray-500 dark:text-gray-400">CTA</p>
-            <p className="text-sm text-gray-700 dark:text-gray-300">{final.cta || 'N/A'}</p>
+            <p className="text-sm text-gray-700 dark:text-gray-300">{typeof final === 'object' && final.cta || 'N/A'}</p>
           </div>
           <div className="space-y-1">
             <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Safety Level</p>
             <Badge 
-              variant={final.safety_level === 'normal' ? 'default' : final.safety_level === 'spicy_safe' ? 'secondary' : 'destructive'}
+              variant={typeof final === 'object' && final.safety_level === 'normal' ? 'default' : typeof final === 'object' && final.safety_level === 'spicy_safe' ? 'secondary' : 'destructive'}
               className="text-xs"
             >
-              {final.safety_level}
+              {typeof final === 'object' && final.safety_level || 'Generated'}
             </Badge>
           </div>
         </div>
