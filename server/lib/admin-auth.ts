@@ -22,7 +22,8 @@ export const verifyAdminCredentials = async (
     return null;
   }
 
-  if (identifier !== email) {
+  // Accept both email and "admin" as username
+  if (identifier !== email && identifier !== 'admin') {
     return null;
   }
 
