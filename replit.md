@@ -2,9 +2,15 @@
 
 ThottoPilot is a social media content creation platform for adult content creators, generating engaging Reddit posts with personalized titles, content, and photo instructions. It offers intelligent promotion features, image protection capabilities, and adapts content based on subreddit promotion rules. The platform aims to streamline content monetization and protection for creators.
 
-## Recent Changes (August 19, 2025)
+## Recent Changes (September 17, 2025)
 
-### TypeScript Deployment Fixes Applied
+### Test Stabilization Completed
+- ✅ **Email verification tests stabilized**: Fixed request type detection using req.accepts(['html','json']), added missing sendWelcomeEmail call
+- ✅ **Policy linter database normalization fixed**: Subreddit names now preserve underscores for correct database lookups
+- ✅ Authentication flow tests now 4/4 passing with consistent JSON vs redirect behavior
+- ✅ Content moderation system stabilized with proper subreddit rule matching
+
+### TypeScript Deployment Fixes Applied (August 19, 2025)
 - ✅ Fixed duplicate property names in server/lib/config.ts (APP_BASE_URL, CCBILL_*, WATERMARK_*, etc.)
 - ✅ Added missing database schema properties (MEDIA_MAX_BYTES_FREE, MEDIA_MAX_BYTES_PRO)
 - ✅ Fixed TypeScript strict type checking with proper null checks and type assertions
