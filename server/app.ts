@@ -1,4 +1,3 @@
-
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
@@ -148,12 +147,16 @@ async function configureStaticAssets(
   const path = await import('path');
   const { fileURLToPath } = await import('url');
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
-  const clientPath = path.join(__dirname, '..', 'client');
+  const clientPath = path.join(__dirname, '..', 'client', 'dist');
   const fs = await import('fs');
 
   if (!fs.existsSync(clientPath)) {
-    logger.error(`Production build directory not found: ${clientPath}`);
-    logger.error("Please run 'npm run build' to create the production build");
+    logger.warn(`Client build directory not found: ${clientPath}`);
+    logger.warn("Serving from client/public directory for development");
+    const devClientPath = path.join(__dirname, '..', 'client');
+    if (fs.existsSync(devClientPath)) {
+      app.use(express.static(devClientPath));
+    }
     return;
   }
 

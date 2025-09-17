@@ -1185,25 +1185,27 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
   app.use(errorHandler);
 
   // Final catch-all for any remaining requests (ensures SPA routing works)
-  app.get('*', async (req, res, next) => {
+  app.get('*', (req, res, next) => {
     // Skip if it's an API or auth route
     if (req.path.startsWith('/api/') || req.path.startsWith('/auth/') || req.path.startsWith('/webhook/')) {
       return next();
     }
     
     // For SPA, always serve index.html for non-asset requests
-    const { fileURLToPath } = await import('url');
-    const path = await import('path');
-    const fs = await import('fs');
-    
-    const __dirname = path.dirname(fileURLToPath(import.meta.url));
-    const clientPath = path.join(__dirname, '..', 'client');
-    
-    if (fs.existsSync(path.join(clientPath, 'index.html'))) {
-      res.sendFile(path.join(clientPath, 'index.html'));
-    } else {
-      res.status(404).send('Client build not found');
-    }
+    import('url').then(({ fileURLToPath }) => {
+      import('path').then((path) => {
+        import('fs').then((fs) => {
+          const __dirname = path.dirname(fileURLToPath(import.meta.url));
+          const clientPath = path.join(__dirname, '..', 'client');
+          
+          if (fs.existsSync(path.join(clientPath, 'index.html'))) {
+            res.sendFile(path.join(clientPath, 'index.html'));
+          } else {
+            res.status(404).send('Client build not found');
+          }
+        }).catch(next);
+      }).catch(next);
+    }).catch(next);
   });
 
   const httpServer = createServer(app);

@@ -47,7 +47,7 @@ function CommunitiesPage() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,192,203,0.1),transparent_50%)]"></div>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(255,235,59,0.05),transparent_50%)]"></div>
       </div>
-      
+
       <div className="relative container mx-auto px-4 py-8 z-10">
         <div className="mb-8">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 via-rose-500 to-purple-600 dark:from-pink-400 dark:via-rose-400 dark:to-purple-400 bg-clip-text text-transparent drop-shadow-sm mb-2">
@@ -73,7 +73,7 @@ function GalleryPage() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,192,203,0.1),transparent_50%)]"></div>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(255,235,59,0.05),transparent_50%)]"></div>
       </div>
-      
+
       <div className="relative container mx-auto px-4 py-8 z-10">
         <div className="mb-8">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 via-rose-500 to-purple-600 dark:from-pink-400 dark:via-rose-400 dark:to-purple-400 bg-clip-text text-transparent drop-shadow-sm mb-2">
@@ -201,7 +201,7 @@ function Router() {
           {isAuthenticated ? <AuthenticatedRoutes /> : <UnauthenticatedRoutes />}
         </Suspense>
       </main>
-      
+
       {/* Onboarding Walkthrough */}
       <OnboardingWalkthrough
         isOpen={shouldShowOnboarding}

@@ -11,4 +11,20 @@ const rootElement = document.getElementById("root");
 if (!rootElement) {
   throw new Error('Root element not found');
 }
-createRoot(rootElement).render(<App />);
+
+try {
+  createRoot(rootElement).render(
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
+  );
+} catch (error) {
+  console.error('Failed to render app:', error);
+  rootElement.innerHTML = `
+    <div style="padding: 20px; text-align: center;">
+      <h1>Loading Error</h1>
+      <p>There was an error loading the application. Please refresh the page.</p>
+      <button onclick="window.location.reload()">Refresh</button>
+    </div>
+  `;
+}
