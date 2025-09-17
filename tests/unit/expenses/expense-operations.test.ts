@@ -4,27 +4,53 @@ import { InsertExpense } from '../../../shared/schema.js';
 
 // Mock database with proper Drizzle ORM entry points and chaining
 vi.mock('../../../server/db.js', () => {
-  // Create chainable query builder mock
+  // Create chainable query builder mock that supports awaiting
   const createChainableMock = () => {
     const chainable: any = {};
+    
+    // Make the chainable object itself awaitable (thenable)
+    chainable.then = vi.fn((onResolve: any) => {
+      const defaultResult = [];
+      return Promise.resolve(onResolve ? onResolve(defaultResult) : defaultResult);
+    });
+    
+    // Standard chain methods that return the chainable
     chainable.values = vi.fn().mockReturnValue(chainable);
     chainable.returning = vi.fn().mockReturnValue(chainable);
     chainable.from = vi.fn().mockReturnValue(chainable);
     chainable.where = vi.fn().mockReturnValue(chainable);
     chainable.leftJoin = vi.fn().mockReturnValue(chainable);
-    chainable.orderBy = vi.fn().mockReturnValue(chainable);
     chainable.set = vi.fn().mockReturnValue(chainable);
     chainable.limit = vi.fn().mockReturnValue(chainable);
     chainable.execute = vi.fn().mockResolvedValue([]);
+    
+    // OrderBy method that returns an awaitable promise
+    chainable.orderBy = vi.fn().mockImplementation(() => {
+      return Promise.resolve([]);
+    });
+    
     return chainable;
   };
 
+  // Create chainable mocks
+  const insertChain = createChainableMock();
+  const selectChain = createChainableMock();
+  const updateChain = createChainableMock();
+  const deleteChain = createChainableMock();
+
   // Create main db mock with proper entry points
   const mockDb = {
-    insert: vi.fn(() => createChainableMock()),
-    select: vi.fn(() => createChainableMock()),
-    update: vi.fn(() => createChainableMock()),
-    delete: vi.fn(() => createChainableMock())
+    insert: vi.fn(() => insertChain),
+    select: vi.fn(() => selectChain),
+    update: vi.fn(() => updateChain),
+    delete: vi.fn(() => deleteChain),
+    // Expose chains for test access
+    _chains: {
+      insert: insertChain,
+      select: selectChain,
+      update: updateChain,
+      delete: deleteChain
+    }
   };
   
   return { db: mockDb };
@@ -103,13 +129,13 @@ describe('Expense Operations Unit Tests', () => {
         updatedAt: new Date()
       };
 
-      (db.returning as ReturnType<typeof vi.fn>).mockResolvedValueOnce([expectedExpense]);
+      (db as any)._chains.insert.returning.mockResolvedValueOnce([expectedExpense]);
 
       const result = await storage.createExpense(expenseData);
 
       expect(db.insert).toHaveBeenCalledWith(expect.anything());
-      expect(db.values).toHaveBeenCalledWith(expenseData);
-      expect(db.returning).toHaveBeenCalled();
+      expect((db as any)._chains.insert.values).toHaveBeenCalledWith(expenseData);
+      expect((db as any)._chains.insert.returning).toHaveBeenCalled();
       expect(result).toEqual(expectedExpense);
     });
 
@@ -124,7 +150,7 @@ describe('Expense Operations Unit Tests', () => {
         deductionPercentage: 100
       };
 
-      (db.returning as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Database error'));
+      (db as any)._chains.insert.returning.mockRejectedValueOnce(new Error('Database error'));
 
       await expect(storage.createExpense(expenseData)).rejects.toThrow('Database error');
     });
@@ -150,7 +176,7 @@ describe('Expense Operations Unit Tests', () => {
         updatedAt: new Date()
       };
 
-      (db.returning as ReturnType<typeof vi.fn>).mockResolvedValueOnce([expectedExpense]);
+      (db as any)._chains.insert.returning.mockResolvedValueOnce([expectedExpense]);
 
       const result = await storage.createExpense(minimalExpenseData);
 
@@ -163,18 +189,18 @@ describe('Expense Operations Unit Tests', () => {
     test('should delete expense with valid ID and userId', async () => {
       const expenseId = 5;
       
-      (db.where as ReturnType<typeof vi.fn>).mockResolvedValueOnce(undefined);
+      (db as any)._chains.delete.where.mockResolvedValueOnce(undefined);
 
       await storage.deleteExpense(expenseId, userId);
 
       expect(db.delete).toHaveBeenCalledWith(expect.anything());
-      expect(db.where).toHaveBeenCalled();
+      expect((db as any)._chains.delete.where).toHaveBeenCalled();
     });
 
     test('should handle deletion error', async () => {
       const expenseId = 5;
       
-      (db.where as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Expense not found'));
+      (db as any)._chains.delete.where.mockRejectedValueOnce(new Error('Expense not found'));
 
       await expect(storage.deleteExpense(expenseId, userId)).rejects.toThrow('Expense not found');
     });
@@ -186,7 +212,7 @@ describe('Expense Operations Unit Tests', () => {
       await storage.deleteExpense(expenseId, otherUserId);
 
       // Verify the where clause includes both expense ID and user ID
-      expect(db.where).toHaveBeenCalled();
+      expect((db as any)._chains.delete.where).toHaveBeenCalled();
     });
   });
 
@@ -198,7 +224,7 @@ describe('Expense Operations Unit Tests', () => {
         { categoryName: 'Travel', amount: 25000, deductionPercentage: 50 }
       ];
 
-      (db.where as ReturnType<typeof vi.fn>).mockResolvedValueOnce(mockExpenses);
+      (db as any)._chains.select.where.mockResolvedValueOnce(mockExpenses);
 
       const result = await storage.getExpenseTotals(userId, 2024);
 
@@ -214,7 +240,7 @@ describe('Expense Operations Unit Tests', () => {
     });
 
     test('should handle empty expense list', async () => {
-      (db.where as ReturnType<typeof vi.fn>).mockResolvedValueOnce([]);
+      (db as any)._chains.select.where.mockResolvedValueOnce([]);
 
       const result = await storage.getExpenseTotals(userId, 2024);
 
@@ -232,12 +258,12 @@ describe('Expense Operations Unit Tests', () => {
         { categoryName: 'Beauty & Wellness', amount: 5000, deductionPercentage: 100 }
       ];
 
-      (db.where as ReturnType<typeof vi.fn>).mockResolvedValueOnce(mockExpenses);
+      (db as any)._chains.select.where.mockResolvedValueOnce(mockExpenses);
 
       const result = await storage.getExpenseTotals(userId, taxYear);
 
       expect(result.total).toBe(5000);
-      expect(db.where).toHaveBeenCalled();
+      expect((db as any)._chains.select.where).toHaveBeenCalled();
     });
 
     test('should handle partial deduction percentages', async () => {
@@ -246,7 +272,7 @@ describe('Expense Operations Unit Tests', () => {
         { categoryName: 'Home Office', amount: 30000, deductionPercentage: 30 }
       ];
 
-      (db.where as ReturnType<typeof vi.fn>).mockResolvedValueOnce(mockExpenses);
+      (db as any)._chains.select.where.mockResolvedValueOnce(mockExpenses);
 
       const result = await storage.getExpenseTotals(userId);
 
@@ -261,7 +287,7 @@ describe('Expense Operations Unit Tests', () => {
     });
 
     test('should handle database error in totals calculation', async () => {
-      (db.where as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Database connection failed'));
+      (db as any)._chains.select.where.mockRejectedValueOnce(new Error('Database connection failed'));
 
       await expect(storage.getExpenseTotals(userId, 2024)).rejects.toThrow('Database connection failed');
     });
@@ -285,12 +311,12 @@ describe('Expense Operations Unit Tests', () => {
         updatedAt: new Date()
       };
 
-      (db.returning as ReturnType<typeof vi.fn>).mockResolvedValueOnce([updatedExpense]);
+      (db as any)._chains.update.returning.mockResolvedValueOnce([updatedExpense]);
 
       const result = await storage.updateExpense(expenseId, userId, updates);
 
       expect(db.update).toHaveBeenCalled();
-      expect(db.where).toHaveBeenCalled();
+      expect((db as any)._chains.update.where).toHaveBeenCalled();
       expect(result).toEqual(updatedExpense);
     });
 
@@ -308,7 +334,7 @@ describe('Expense Operations Unit Tests', () => {
         updatedAt: new Date()
       };
 
-      (db.returning as ReturnType<typeof vi.fn>).mockResolvedValueOnce([updatedExpense]);
+      (db as any)._chains.update.returning.mockResolvedValueOnce([updatedExpense]);
 
       const result = await storage.updateExpense(expenseId, userId, updates);
 
@@ -320,7 +346,7 @@ describe('Expense Operations Unit Tests', () => {
       const expenseId = 4;
       const updates = { amount: 15000 };
 
-      (db.returning as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Update failed'));
+      (db as any)._chains.update.returning.mockRejectedValueOnce(new Error('Update failed'));
 
       await expect(storage.updateExpense(expenseId, userId, updates)).rejects.toThrow('Update failed');
     });
@@ -347,13 +373,13 @@ describe('Expense Operations Unit Tests', () => {
         }
       ];
 
-      (db.orderBy as ReturnType<typeof vi.fn>).mockResolvedValueOnce(mockExpensesWithCategories);
+      (db as any)._chains.select.orderBy.mockResolvedValueOnce(mockExpensesWithCategories);
 
       const result = await storage.getUserExpenses(userId, 2024);
 
       expect(db.select).toHaveBeenCalled();
-      expect(db.leftJoin).toHaveBeenCalled();
-      expect(db.where).toHaveBeenCalled();
+      expect((db as any)._chains.select.leftJoin).toHaveBeenCalled();
+      expect((db as any)._chains.select.where).toHaveBeenCalled();
       expect(result).toEqual(mockExpensesWithCategories);
     });
 
@@ -369,12 +395,12 @@ describe('Expense Operations Unit Tests', () => {
         }
       ];
 
-      (db.orderBy as ReturnType<typeof vi.fn>).mockResolvedValueOnce(mockAllExpenses);
+      (db as any)._chains.select.orderBy.mockResolvedValueOnce(mockAllExpenses);
 
       const result = await storage.getUserExpenses(userId);
 
       expect(result).toEqual(mockAllExpenses);
-      expect(db.where).toHaveBeenCalled();
+      expect((db as any)._chains.select.where).toHaveBeenCalled();
     });
   });
 });

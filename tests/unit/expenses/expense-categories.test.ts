@@ -2,25 +2,32 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { InsertExpenseCategory } from '../../../shared/schema.js';
 
-// Mock database with proper Drizzle ORM chaining and execute termination
+// Mock database with proper Drizzle ORM entry points and chaining
 vi.mock('../../../server/db.js', () => {
-  const mockQB: any = {};
+  // Create chainable query builder mock
+  const createChainableMock = () => {
+    const chainable: any = {};
+    chainable.values = vi.fn().mockReturnValue(chainable);
+    chainable.returning = vi.fn().mockReturnValue(chainable);
+    chainable.from = vi.fn().mockReturnValue(chainable);
+    chainable.where = vi.fn().mockReturnValue(chainable);
+    chainable.leftJoin = vi.fn().mockReturnValue(chainable);
+    chainable.orderBy = vi.fn().mockReturnValue(chainable);
+    chainable.set = vi.fn().mockReturnValue(chainable);
+    chainable.limit = vi.fn().mockReturnValue(chainable);
+    chainable.execute = vi.fn().mockResolvedValue([]);
+    return chainable;
+  };
+
+  // Create main db mock with proper entry points
+  const mockDb = {
+    insert: vi.fn(() => createChainableMock()),
+    select: vi.fn(() => createChainableMock()),
+    update: vi.fn(() => createChainableMock()),
+    delete: vi.fn(() => createChainableMock())
+  };
   
-  mockQB.insert = vi.fn().mockReturnValue(mockQB);
-  mockQB.select = vi.fn().mockReturnValue(mockQB);
-  mockQB.update = vi.fn().mockReturnValue(mockQB);
-  mockQB.delete = vi.fn().mockReturnValue(mockQB);
-  mockQB.values = vi.fn().mockReturnValue(mockQB);
-  mockQB.returning = vi.fn().mockReturnValue(mockQB);
-  mockQB.from = vi.fn().mockReturnValue(mockQB);
-  mockQB.where = vi.fn().mockReturnValue(mockQB);
-  mockQB.leftJoin = vi.fn().mockReturnValue(mockQB);
-  mockQB.orderBy = vi.fn().mockReturnValue(mockQB);
-  mockQB.set = vi.fn().mockReturnValue(mockQB);
-  mockQB.limit = vi.fn().mockReturnValue(mockQB);
-  mockQB.execute = vi.fn();
-  
-  return { db: mockQB };
+  return { db: mockDb };
 });
 
 // Mock drizzle-orm operators
