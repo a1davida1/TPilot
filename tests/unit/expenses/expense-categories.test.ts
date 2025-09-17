@@ -1,4 +1,3 @@
-import { storage } from "../../server/storage.ts";
 /* eslint-env node, jest */
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { InsertExpenseCategory } from '../../../shared/schema.js';
@@ -19,6 +18,7 @@ vi.mock('../../../server/db.js', () => ({
 }));
 
 import { db } from '../../../server/db.js';
+import { storage } from "../../../server/storage.ts";
 
 describe('Expense Categories Unit Tests', () => {
 

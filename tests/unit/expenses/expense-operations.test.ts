@@ -1,4 +1,3 @@
-import { storage } from "../../server/storage.ts";
 /* eslint-env node, jest */
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { InsertExpense } from '../../../shared/schema.js';
@@ -21,6 +20,7 @@ vi.mock('../../../server/db.js', () => ({
 }));
 
 import { db } from '../../../server/db.js';
+import { storage } from "../../../server/storage.ts";
 
 describe('Expense Operations Unit Tests', () => {
   const userId = 123;
