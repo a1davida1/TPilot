@@ -64,11 +64,7 @@ export async function apiRequest(
     body = JSON.stringify(data);
   }
   
-  // Add Authorization header if token exists
-  const token = localStorage.getItem('authToken');
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
+  
 
   const res = await fetch(url, {
     method,
@@ -89,11 +85,7 @@ export const getQueryFn: <T = unknown>(options: {
   async ({ queryKey }) => {
     const headers: Record<string, string> = {};
     
-    // Add Authorization header if token exists
-    const token = localStorage.getItem("authToken");
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
+    
 
     const url = queryKey[0] as string;
     const res = await fetch(url, {
