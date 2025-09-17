@@ -110,40 +110,48 @@ async function configureStaticAssets(
   server: import('http').Server,
   enableVite: boolean,
 ): Promise<void> {
-  if (enableVite && app.get('env') === 'development') {
+  const path = await import('path');
+  const { fileURLToPath } = await import('url');
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  const fs = await import('fs');
+  
+  // CRITICAL FIX: Correct client path resolution
+  let clientPath: string;
+  if (process.env.NODE_ENV === 'production') {
+    // In production: server runs from dist/server
+    // So '../client' resolves to dist/client (where build script places files)
+    clientPath = path.resolve(__dirname, '..', 'client');
+  } else {
+    // In development: serve built files from client/dist directory
+    clientPath = path.resolve(__dirname, '..', 'client', 'dist');
+  }
+  
+  // Check if index.html exists in the client directory
+  const indexPath = path.join(clientPath, 'index.html');
+  if (!fs.existsSync(indexPath)) {
+    logger.warn(`Client build not found at ${indexPath}`);
+    if (process.env.NODE_ENV === 'production') {
+      logger.error('CRITICAL: Production build missing client files!');
+    }
+  } else {
+    logger.info(`Serving client from: ${clientPath}`);
+  }
+
+  // IMPORTANT: Serve static files BEFORE Vite setup to ensure they're accessible
+  // Set index: true to serve index.html for root path
+  app.use(express.static(clientPath, { index: 'index.html' }));
+  
+  // Skip Vite in development since it's not working properly
+  // and we're serving the built files instead
+  if (enableVite && app.get('env') === 'development' && false) {
     try {
       const { setupVite } = await import('./vite.js');
       await setupVite(app, server);
-
-      // Vite middleware should now be active
       logger.info('Vite development server configured');
     } catch (error) {
       logger.warn('Could not setup Vite in development mode:', error);
     }
   }
-
-  const path = await import('path');
-  const { fileURLToPath } = await import('url');
-  const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-  // Resolve client path correctly for production
-  // When server runs from dist/server, this resolves to dist/client
-  const clientPath = path.resolve(__dirname, '..', 'client');
-
-  const fs = await import('fs');
-  
-  // Check if index.html exists in the client directory
-  const indexPath = path.join(clientPath, 'index.html');
-  if (!fs.existsSync(indexPath)) {
-    logger.warn(`Client index.html not found at ${indexPath}`);
-    // In production, this is an error. In development, Vite handles it
-    if (process.env.NODE_ENV === 'production') {
-      logger.error('Production build missing client files!');
-    }
-  }
-
-  // Serve static files from client directory
-  app.use(express.static(clientPath));
   
   // SPA fallback - serve index.html for all non-API routes
   app.get('*', (req, res, next) => {
