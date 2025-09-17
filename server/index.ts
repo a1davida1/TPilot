@@ -42,12 +42,12 @@ app.use(cors({
     if (!origin) {
       return cb(null, true);
     }
-    
+
     // Check if origin is explicitly allowed
     if (allowedOrigins.length > 0 && allowedOrigins.includes(origin)) {
       return cb(null, true);
     }
-    
+
     // In development, allow common local origins and Replit domains
     if (process.env.NODE_ENV === 'development') {
       const devAllowedOrigins = [
@@ -56,23 +56,23 @@ app.use(cors({
         'http://127.0.0.1:5000',
         'http://127.0.0.1:3000'
       ];
-      
+
       if (devAllowedOrigins.includes(origin)) {
         return cb(null, true);
       }
-      
+
       // Allow any Replit domain
       if (origin.includes('.replit.dev') || origin.includes('.repl.co') || origin.includes('.replit.app')) {
         return cb(null, true);
       }
     }
-    
+
     // In production, be more restrictive but still allow configured origins
     if (process.env.NODE_ENV === 'production' && allowedOrigins.length === 0) {
       // If no origins configured in production, allow same-origin only
       return cb(null, false);
     }
-    
+
     // Reject if not allowed
     cb(null, false);
   },
@@ -129,16 +129,22 @@ app.use((req, res, next) => {
     app.use(`${API_PREFIX}/auth`, authLimiter);
     // Initialize queue system
     await startQueue();
-  
+
     // Setup auth routes BEFORE other routes
     setupAuth(app);
     setupSocialAuth(app);  // Register social auth routes including logout
-  
+
     // Mount Stripe webhook and billing routes
     mountStripeWebhook(app);
     mountBillingRoutes(app);
-  
-    const server = await registerRoutes(app, API_PREFIX);
+
+    const { server } = await createApp();
+
+    // ALWAYS serve the app on the port specified in the environment variable PORT
+    // Other ports are firewalled. Default to 5000 if not specified.
+    // this serves both the API and the client.
+    // It is the only port that is not firewalled.
+    const port = Number.parseInt(process.env.PORT ?? '5000', 10);
 
     // importantly only setup vite in development and after
     // setting up all the other routes so the catch-all route
@@ -147,14 +153,14 @@ app.use((req, res, next) => {
       try {
         const { setupVite } = await import("./vite");
         await setupVite(app, server);
-        
+
         // Since Vite setup is a stub, serve the built client files in development too
         const path = await import("path");
         const { fileURLToPath } = await import("url");
         const __dirname = path.dirname(fileURLToPath(import.meta.url));
         // Serve built files from dist/client
         const clientPath = path.join(__dirname, "..", "dist", "client");
-        
+
         // Check if build directory exists
         const fs = await import("fs");
         if (fs.existsSync(clientPath)) {
@@ -168,7 +174,7 @@ app.use((req, res, next) => {
             }
           });
         }
-        
+
         // Add 404 handler only for API routes in development (after Vite setup)
         app.use((req, res, next) => {
           // Only apply 404 handler to API routes, let Vite handle frontend routes
@@ -187,7 +193,7 @@ app.use((req, res, next) => {
       const __dirname = path.dirname(fileURLToPath(import.meta.url));
       // In production the server runs from dist/server, so client files are at ../client
       const clientPath = path.join(__dirname, "..", "client");
-      
+
       // Check if build directory exists
       const fs = await import("fs");
       if (!fs.existsSync(clientPath)) {
@@ -195,7 +201,7 @@ app.use((req, res, next) => {
         logger.error("Please run 'npm run build' to create the production build");
         process.exit(1);
       }
-      
+
       // Add 404 handler for API routes in production (before static serving)
       app.use((req, res, next) => {
         // Apply 404 handler only to API routes, let static serving handle frontend routes
@@ -204,7 +210,7 @@ app.use((req, res, next) => {
         }
         next();
       });
-      
+
       app.use(express.static(clientPath));
       app.get("*", (_req, res) => {
         res.type("html");
@@ -214,36 +220,32 @@ app.use((req, res, next) => {
 
     // Global error handler is applied within registerRoutes
 
-    // ALWAYS serve the app on the port specified in the environment variable PORT
-    // Other ports are firewalled. Default to 5000 if not specified.
-    // this serves both the API and the client.
-    // It is the only port that is not firewalled.
-    const port = parseInt(process.env.PORT || '5000', 10);
-  
     // Graceful port binding with EADDRINUSE error handling
     const startServer = (attemptPort: number, retryCount = 0): void => {
       const maxRetries = 3;
-    
+
       // Remove any existing error listeners to prevent memory leaks
       server.removeAllListeners('error');
-    
-      server.listen({
-        port: attemptPort,
-        host: "0.0.0.0",
-        reusePort: true,
-      }, () => {
-        logger.info(`serving on port ${attemptPort}`);
-        // Update environment variable if we used a fallback port
-        if (attemptPort !== port) {
-          logger.info(`Note: Using fallback port ${attemptPort} instead of ${port}`);
-        }
-      });
-    
+
+      server.listen(
+        {
+          port: attemptPort,
+          host: '0.0.0.0',
+          reusePort: true,
+        },
+        () => {
+          logger.info(`serving on port ${attemptPort}`);
+          if (attemptPort !== port) {
+            logger.info(`Note: Using fallback port ${attemptPort} instead of ${port}`);
+          }
+        },
+      );
+
       server.on('error', (err: unknown) => {
         const error = err as NodeJS.ErrnoException;
         if (error.code === 'EADDRINUSE') {
           logger.warn(`Port ${attemptPort} is in use`, { error: (error as Error).message });
-        
+
           if (retryCount < maxRetries) {
             // In Replit, we can only use the PORT environment variable
             // Try to kill any stray processes and retry the same port
@@ -262,7 +264,7 @@ app.use((req, res, next) => {
         }
       });
     };
-  
+
     startServer(port);
   } catch (error) {
     logger.error('Failed to start application:', error);
