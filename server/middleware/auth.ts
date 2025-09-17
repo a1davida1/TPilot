@@ -50,10 +50,34 @@ export const authenticateToken = async (req: AuthRequest, res: express.Response,
       return res.status(401).json({ message: 'Token revoked' });
     }
     try {
-      const decoded = jwt.verify(token, JWT_SECRET) as { userId: number; email: string; iat: number; exp: number };
+      const decoded = jwt.verify(token, JWT_SECRET) as { userId?: number; id?: number; email?: string; isAdmin?: boolean; username?: string; role?: string; tier?: string; iat: number; exp: number };
       
-      // Fetch the full user object from database
-      const [user] = await db.select().from(users).where(eq(users.id, decoded.userId));
+      // Handle admin tokens specially (they don't exist in the database)
+      if (decoded.id === 999 || decoded.isAdmin) {
+        req.user = {
+          id: 999,
+          username: 'admin',
+          email: ADMIN_EMAIL || 'admin@example.com',
+          tier: 'admin',
+          isAdmin: true,
+          role: 'admin',
+          emailVerified: true,
+          password: '', // Not needed for admin
+          isDeleted: false,
+          mustChangePassword: false,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        } as UserType;
+        return next();
+      }
+      
+      // For regular users, fetch from database
+      const userId = decoded.userId || decoded.id;
+      if (!userId) {
+        return res.status(401).json({ message: 'Invalid token: missing user ID' });
+      }
+      
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
       
       if (!user) {
         return res.status(401).json({ message: 'User not found' });
