@@ -115,17 +115,8 @@ async function configureStaticAssets(
       const { setupVite } = await import('./vite.js');
       await setupVite(app, server);
 
-      // In development, if Vite setup succeeds, we don't need additional static serving
-      // Vite handles everything including HMR
-      logger.info('Vite development server configured successfully');
-      
-      app.use((req, res, next) => {
-        if (req.path.startsWith('/api/') || req.path.startsWith('/auth/') || req.path.startsWith('/webhook/')) {
-          return notFoundHandler(req, res);
-        }
-        next();
-      });
-      return;
+      // Vite middleware should now be active
+      logger.info('Vite development server configured');
     } catch (error) {
       logger.warn('Could not setup Vite in development mode:', error);
     }
@@ -135,45 +126,42 @@ async function configureStaticAssets(
   const { fileURLToPath } = await import('url');
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-  // Try multiple possible client build locations
-  const possibleClientPaths = [
-    path.join(__dirname, '..', 'client'),          // Production build copies here (dist/client when server runs from dist/server)
-    path.join(__dirname, '..', 'dist', 'client'),  // Alternative production location
-    path.join(__dirname, '..', 'client', 'dist'),  // Vite builds here initially
-    path.join(__dirname, '..', 'dist')             // Sometimes builds directly here
-  ];
+  // Resolve client path correctly for production
+  // When server runs from dist/server, this resolves to dist/client
+  const clientPath = path.resolve(__dirname, '..', 'client');
 
   const fs = await import('fs');
-  let clientPath = null;
-
-  for (const testPath of possibleClientPaths) {
-    if (fs.existsSync(path.join(testPath, 'index.html'))) {
-      clientPath = testPath;
-      break;
+  
+  // Check if index.html exists in the client directory
+  const indexPath = path.join(clientPath, 'index.html');
+  if (!fs.existsSync(indexPath)) {
+    logger.warn(`Client index.html not found at ${indexPath}`);
+    // In production, this is an error. In development, Vite handles it
+    if (process.env.NODE_ENV === 'production') {
+      logger.error('Production build missing client files!');
     }
   }
 
-  if (!clientPath) {
-    logger.warn(`Client build directory not found in any of: ${possibleClientPaths.join(', ')}`);
-    logger.warn("Serving from client directory for development");
-    const devClientPath = path.join(__dirname, '..', 'client');
-    if (fs.existsSync(devClientPath)) {
-      app.use(express.static(devClientPath));
+  // Serve static files from client directory
+  app.use(express.static(clientPath));
+  
+  // SPA fallback - serve index.html for all non-API routes
+  app.get('*', (req, res, next) => {
+    // Let API/auth/webhook routes fall through to 404 handler
+    if (req.path.startsWith('/api/') || 
+        req.path.startsWith('/auth/') || 
+        req.path.startsWith('/webhook/')) {
+      return next();
     }
-    return;
-  }
-
-  app.use((req, res, next) => {
-    if (req.path.startsWith('/api/') || req.path.startsWith('/auth/') || req.path.startsWith('/webhook/')) {
-      return notFoundHandler(req, res);
+    
+    // Serve index.html for SPA routing
+    const indexFile = path.join(clientPath, 'index.html');
+    if (fs.existsSync(indexFile)) {
+      res.type('html');
+      res.sendFile(indexFile);
+    } else {
+      res.status(404).send('Client build not found');
     }
-    next();
-  });
-
-  app.use(express.static(clientPath!));
-  app.get('*', (_req, res) => {
-    res.type('html');
-    res.sendFile(path.join(clientPath!, 'index.html'));
   });
 }
 

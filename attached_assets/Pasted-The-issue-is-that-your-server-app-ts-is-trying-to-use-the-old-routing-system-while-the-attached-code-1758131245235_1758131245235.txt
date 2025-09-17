@@ -1,0 +1,115 @@
+The issue is that your server/app.ts is trying to use the old routing system while the attached code shows a completely different structure with proper API prefix handling. Let me apply the comprehensive fixes to get your app working:
+
+server/app.ts
+Now let's apply the type error fixes to clean up compilation issues:
+
+node fix-type-errors.cjs server/auth.ts server/social-auth.ts server/routes.ts server/config.ts
+server/config.ts
+Let's also make sure the environment variable is set with a default:
+
+Now let's try building and starting the app:
+
+npm run build:server
+The comprehensive changes in your attached file address several critical issues:
+
+API Prefix Normalization: Proper handling of configurable API prefixes
+Route Path Consistency: All auth routes now use the configurable prefix
+Type Safety: Better TypeScript error handling and type assertions
+Authentication Flow: Improved JWT token handling and validation
+After applying these fixes, your app should start properly. The main issues were:
+
+Missing API prefix configuration in server/config.ts
+Inconsistent route prefix usage in auth setup
+TypeScript compilation errors blocking the build
+Try running the app after these changes are applied.
+
+Checkpoint made
+Fix API prefix config and auth route setup
+5 minutes ago
+•
+server/app.ts:227:20 - error TS2554: Expected 1 arguments, but got 2.
+
+227 setupAuth(app, API_PREFIX);
+~~~~~~~~~~
+
+server/app.ts:228:26 - error TS2554: Expected 1 arguments, but got 2.
+
+228 setupSocialAuth(app, API_PREFIX); // Register social auth routes including logout
+~~~~~~~~~~
+
+Found 2 errors in the same file, starting at: server/app.ts:227
+
+DO
+
+davidolsondmo
+Assistant
+5 minutes ago
+I can see the issue. The setupAuth and setupSocialAuth functions in the current codebase only expect one parameter (the Express app), but you're trying to pass two parameters including the API_PREFIX. Looking at the current implementations, these functions don't support the API prefix parameter yet.
+
+Let me fix this by updating both functions to accept the API prefix parameter:
+
+server/auth.ts
+Update setupAuth function to accept API prefix parameter, Update auth routes to use API prefix, Update login route to use API prefix, Update forgot password route to use API prefix, Update email status route to use API prefix, Update user route to use API prefix, Update change password route to use API prefix, Update verify email route to use API prefix, Update reset password route to use API prefix, Update delete account route to use API prefix, Update admin metrics route to use API prefix, Update resend verification route to use API prefix
+Now let me update the social auth function:
+
+server/social-auth.ts
+Update setupSocialAuth function to accept API prefix parameter, Update Google OAuth callback URL to use API prefix, Update Facebook OAuth callback URL to use API prefix, Update Reddit OAuth callback URL to use API prefix, Update setupAuthRoutes to accept API prefix parameter, Update Google auth routes to use API prefix, Update Facebook auth routes to use API prefix, Update Reddit auth routes to use API prefix, Update logout route to use API prefix, Pass API prefix to setupAuthRoutes call
+Now try building the server again:
+
+npm run build:server
+Commit 71f491b rewired the production static-asset resolver in server/app.ts to target path.join(__dirname, '..', 'client', 'dist'). When the compiled server runs from dist/server, that resolves to dist/client/dist, a directory that does not exist in the build artifact, so the SPA can no longer be served in production.
+
+Prior to that commit, the server correctly pointed at path.join(__dirname, '..', 'client'), which maps to dist/client once the build script has copied the bundled files into place.
+
+The production build pipeline still copies the client bundle into dist/client, leaving the new client/dist lookup unsatisfied and triggering the “Client build directory not found” warning you observed at runtime.
+
+Issue
+The deployment regression stems from commit 71f491b, which changed the computed client build directory from dist/client to dist/client/dist. Because build-production.sh continues to deposit the compiled front-end into dist/client, the server falls back to the development assets and the deployed UI renders blank (or serves the fallback warning).
+
+DO
+
+davidolsondmo
+Assistant
+3 minutes ago
+You've correctly identified the issue! The problem is in the static asset path resolution in server/app.ts. The server is looking for client files in dist/client/dist when they're actually placed in dist/client by the build script.
+
+Looking at the current code, I can see the issue in the configureStaticAssets function. Let me fix this by correcting the client path resolution:
+
+server/app.ts
+The fix reorders the client path resolution to prioritize the correct production path. When the server runs from dist/server/, path.join(__dirname, '..', 'client') correctly resolves to dist/client, which is where the build script places the compiled frontend assets.
+
+This should restore proper static asset serving in production deployments.
+
+Checkpoint made
+Fix production client asset path resolution
+3 minutes ago
+•
+Still just getting a white screen in dev environment did we only fix producction?
+
+DO
+
+davidolsondmo
+Assistant
+1 minute ago
+Looking at the development setup, I can see the issue. The development server is running on port 5000 and serving Vite in development mode, but there's a problem with the client static asset serving logic.
+
+The issue is in the configureStaticAssets function - even in development with Vite enabled, it's still trying to serve static files from the wrong paths when Vite setup fails or as a fallback.
+
+Let me fix the development asset serving:
+
+server/app.ts
+The main issue is that in development mode, when Vite is working correctly, we shouldn't be trying to serve additional static files. Vite handles all the client-side routing and assets. The current code was trying to serve from dist/client even in development, which doesn't exist during development.
+
+Now the development server will:
+
+Try to set up Vite development server
+If successful, only handle API route 404s and let Vite handle everything else
+If Vite setup fails, fall back to the production static serving logic
+This should resolve the white screen issue in development. The server is already running on the correct port (5000) and Vite should be proxying API calls correctly.
+
+Assistant automatically restarted your App after applying file changes. You can disable this behavior in 
+.
+Checkpoint made
+Fix development client asset serving
+just now
+•
