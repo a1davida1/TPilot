@@ -1,3 +1,4 @@
+
 import { Pool as NeonPool, neonConfig } from '@neondatabase/serverless';
 import { drizzle as drizzleNeon } from 'drizzle-orm/neon-serverless';
 import { drizzle as drizzlePostgres } from 'drizzle-orm/node-postgres';
@@ -8,14 +9,29 @@ import * as schema from '../shared/schema.js';
 neonConfig.webSocketConstructor = ws;
 
 // Allow tests to use TEST_DATABASE_URL while still failing fast in production.
-const connectionString =
-  process.env.DATABASE_URL ?? process.env.TEST_DATABASE_URL;
+const preferTestConnection = process.env.NODE_ENV === 'test';
+const preferredConnectionString = preferTestConnection
+  ? process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL
+  : process.env.DATABASE_URL ?? process.env.TEST_DATABASE_URL;
 
-if (!connectionString) {
+if (!preferredConnectionString) {
   throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
+    'DATABASE_URL must be set. Did you forget to provision a database?',
   );
 }
 
-export const pool = new Pool({ connectionString });
-export const db = drizzle({ client: pool, schema });
+let poolInstance: NeonPool | PostgresPool;
+let dbInstance: ReturnType<typeof drizzleNeon> | ReturnType<typeof drizzlePostgres>;
+
+// Use Neon pool for serverless environment
+const connectionString = preferredConnectionString as string;
+const neonPool = new NeonPool({ connectionString });
+poolInstance = neonPool;
+dbInstance = drizzleNeon({ client: neonPool, schema });
+
+export const pool = poolInstance;
+export const db = dbInstance;
+
+export async function closeDatabaseConnections(): Promise<void> {
+  await (poolInstance as NeonPool).end();
+}
