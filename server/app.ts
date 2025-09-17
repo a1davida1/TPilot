@@ -147,7 +147,7 @@ async function configureStaticAssets(
   const path = await import('path');
   const { fileURLToPath } = await import('url');
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
-  
+
   // Try multiple possible client build locations
   const possibleClientPaths = [
     path.join(__dirname, '..', 'dist', 'client'),  // Production build copies here
@@ -155,10 +155,10 @@ async function configureStaticAssets(
     path.join(__dirname, '..', 'dist'),            // Sometimes builds directly here
     path.join(__dirname, '..', 'client')           // Development fallback
   ];
-  
+
   const fs = await import('fs');
   let clientPath = null;
-  
+
   for (const testPath of possibleClientPaths) {
     if (fs.existsSync(path.join(testPath, 'index.html'))) {
       clientPath = testPath;
@@ -224,8 +224,8 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
       logger.info('Queue startup disabled for current execution context.');
     }
 
-    setupAuth(app);
-    setupSocialAuth(app);
+    setupAuth(app, API_PREFIX);
+    setupSocialAuth(app, API_PREFIX);  // Register social auth routes including logout
     mountStripeWebhook(app);
     mountBillingRoutes(app);
 
