@@ -10,7 +10,8 @@ async function createAdmin() {
       return existingAdmin;
     }
 
-    const hashedPassword = await bcrypt.hash('admin123', 10);
+    // Hash the password
+    const hashedPassword = await bcrypt.hash('Admin123!*', 10);
 
     const adminUser = await storage.createUser({
       username: 'admin',
