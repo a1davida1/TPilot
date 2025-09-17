@@ -7,25 +7,7 @@ const mockEnv = {
   ANTHROPIC_API_KEY: 'test-anthropic-key'
 };
 
-// Mock AI providers
-const mockOpenAI = {
-  chat: {
-    completions: {
-      create: vi.fn()
-    }
-  }
-};
-
-const mockGemini = {
-  generateContent: vi.fn()
-};
-
-const mockAnthropic = {
-  messages: {
-    create: vi.fn()
-    }
-};
-
+// Mock AI providers using vi.hoisted for proper hoisting
 const mockOpenAI = vi.hoisted(() => ({ chat: { completions: { create: vi.fn() } } }));
 const mockGemini = vi.hoisted(() => ({ generateContent: vi.fn() }));
 const mockAnthropic = vi.hoisted(() => ({ messages: { create: vi.fn() } }));
@@ -79,7 +61,7 @@ describe('AI Service Unit Tests', () => {
       });
 
       const result = await generateWithMultiProvider({
-        user: { personalityProfile: { toneOfVoice: 'playful' } },
+        user: { id: 1 },
         platform: 'instagram',
         allowsPromotion: 'no'
       });
@@ -113,7 +95,7 @@ describe('AI Service Unit Tests', () => {
       });
 
       const result = await generateWithMultiProvider({
-        user: { personalityProfile: { toneOfVoice: 'professional' } },
+        user: { id: 1 },
         platform: 'twitter',
         allowsPromotion: 'yes'
       });
@@ -129,7 +111,7 @@ describe('AI Service Unit Tests', () => {
       delete process.env.ANTHROPIC_API_KEY;
 
       await expect(generateWithMultiProvider({
-        user: { personalityProfile: { toneOfVoice: 'playful' } },
+        user: { id: 1 },
         platform: 'instagram',
         allowsPromotion: 'no'
       })).rejects.toThrow();
@@ -164,7 +146,7 @@ describe('AI Service Unit Tests', () => {
       });
 
       const result = await generateWithMultiProvider({
-        user: { personalityProfile: { toneOfVoice: 'bold' } },
+        user: { id: 1 },
         platform: 'tiktok',
         allowsPromotion: 'no'
       });
@@ -191,7 +173,7 @@ describe('AI Service Unit Tests', () => {
       );
 
       await expect(generateWithMultiProvider({
-        user: { personalityProfile: { toneOfVoice: 'mysterious' } },
+        user: { id: 1 },
         platform: 'reddit',
         allowsPromotion: 'yes'
       })).rejects.toThrow();
@@ -230,7 +212,7 @@ describe('AI Service Unit Tests', () => {
       });
 
       const result = await generateWithMultiProvider({
-        user: { personalityProfile: { toneOfVoice: 'authentic' } },
+        user: { id: 1 },
         platform: 'instagram',
         allowsPromotion: 'no'
       });
@@ -264,7 +246,7 @@ describe('AI Service Unit Tests', () => {
       });
 
       const result = await generateWithMultiProvider({
-        user: { personalityProfile: { toneOfVoice: 'elegant' } },
+        user: { id: 1 },
         platform: 'onlyfans',
         allowsPromotion: 'yes'
       });
@@ -300,7 +282,7 @@ describe('AI Service Unit Tests', () => {
       });
 
       const result = await generateWithMultiProvider({
-        user: { personalityProfile: { toneOfVoice: 'confident' } },
+        user: { id: 1 },
         platform: 'twitter',
         allowsPromotion: 'yes'
       });
@@ -330,7 +312,7 @@ describe('AI Service Unit Tests', () => {
       });
 
       const result = await generateWithMultiProvider({
-        user: { personalityProfile: { toneOfVoice: 'casual' } },
+        user: { id: 1 },
         platform: 'reddit',
         allowsPromotion: 'no'
       });
@@ -369,7 +351,7 @@ describe('AI Service Unit Tests', () => {
       });
 
       const result = await generateWithMultiProvider({
-        user: { personalityProfile: { toneOfVoice: 'professional' } },
+        user: { id: 1 },
         platform: 'onlyfans',
         allowsPromotion: 'yes'
       });
@@ -402,7 +384,7 @@ describe('AI Service Unit Tests', () => {
       });
 
       const result = await generateWithMultiProvider({
-        user: { personalityProfile: { toneOfVoice: 'sassy' } },
+        user: { id: 1 },
         platform: 'instagram',
         allowsPromotion: 'yes'
       });
@@ -431,7 +413,7 @@ describe('AI Service Unit Tests', () => {
       });
 
       const result = await generateWithMultiProvider({
-        user: { personalityProfile: { toneOfVoice: 'authentic' } },
+        user: { id: 1 },
         platform: 'reddit',
         subreddit: 'selfie',
         allowsPromotion: 'no'

@@ -1,7 +1,8 @@
+import { describe, test, expect, beforeAll, afterAll } from 'vitest';
 import { eq } from "drizzle-orm";
 import { lintCaption } from '../../server/lib/policy-linter';
 import { db } from '../../server/db';
-import { subredditRules } from '@shared/schema.js';
+import { subredditRules } from '../../shared/schema';
 
 describe('Policy Linter', () => {
   beforeAll(async () => {
@@ -33,7 +34,7 @@ describe('Policy Linter', () => {
       });
 
       expect(result.state).toBe('block');
-      expect(result.warnings).toContain(expect.stringContaining('banned terms'));
+      expect(result.warnings).toContain(expect.stringContaining('Contains banned terms'));
     });
 
     test('blocks content matching title regex patterns', async () => {
@@ -45,7 +46,7 @@ describe('Policy Linter', () => {
       });
 
       expect(result.state).toBe('block');
-      expect(result.warnings).toContain(expect.stringContaining('pattern rules'));
+      expect(result.warnings).toContain(expect.stringContaining('Title violates pattern rules'));
     });
 
     test('blocks content with prohibited links', async () => {
@@ -57,7 +58,7 @@ describe('Policy Linter', () => {
       });
 
       expect(result.state).toBe('block');
-      expect(result.warnings).toContain(expect.stringContaining('formatting rules'));
+      expect(result.warnings).toContain(expect.stringContaining('Content violates formatting rules'));
     });
 
     test('blocks content exceeding length limits', async () => {
@@ -85,7 +86,7 @@ describe('Policy Linter', () => {
       });
 
       expect(result.state).toBe('warn');
-      expect(result.warnings).toContain(expect.stringContaining('required tags'));
+      expect(result.warnings).toContain(expect.stringContaining('Missing required tags'));
     });
 
     test('warns on short content', async () => {
@@ -137,7 +138,7 @@ describe('Policy Linter', () => {
       });
 
       // Should still return a result, not throw
-      expect(result.state).toBeOneOf(['ok', 'warn', 'block']);
+      expect(['ok', 'warn', 'block']).toContain(result.state);
     });
   });
 });

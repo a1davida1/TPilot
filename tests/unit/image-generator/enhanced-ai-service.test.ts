@@ -28,14 +28,14 @@ Object.defineProperty(process, 'env', {
 });
 
 // Import after mocking
-import { EnhancedAIService } from '../../../server/services/enhanced-ai-service';
+import { enhancedAIGenerator } from '../../../server/services/enhanced-ai-service';
 
 describe('Enhanced AI Service - Failure Scenarios', () => {
-  let service: EnhancedAIService;
+  let service: typeof enhancedAIGenerator;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    service = new EnhancedAIService();
+    service = enhancedAIGenerator;
     
     // Reset environment variables
     mockEnv.OPENAI_API_KEY = '';
@@ -57,7 +57,7 @@ describe('Enhanced AI Service - Failure Scenarios', () => {
         new Error('No AI providers available')
       );
 
-      const result = await service.generateContent(request);
+      const result = await service.generate(request);
       
       // Should fallback to template system
       expect(result).toBeDefined();
@@ -76,7 +76,7 @@ describe('Enhanced AI Service - Failure Scenarios', () => {
         new Error('API key not configured')
       );
 
-      await service.generateContent(request);
+      await service.generate(request);
       
       expect(mockMultiProvider.generateWithMultiProvider).toHaveBeenCalled();
     });
@@ -94,11 +94,11 @@ describe('Enhanced AI Service - Failure Scenarios', () => {
         new Error('Quota exceeded for current billing period')
       );
 
-      const result = await service.generateContent(request);
+      const result = await service.generate(request);
       
       // Should return template fallback
       expect(result).toBeDefined();
-      expect(['gemini-flash', 'template', 'template-fallback']).toContain(result.provider);
+      expect(['gemini-flash', 'template', 'template-fallback']).toContain(result.metadata?.provider);
     });
 
     test('should handle network timeout errors', async () => {
@@ -112,7 +112,7 @@ describe('Enhanced AI Service - Failure Scenarios', () => {
         new Error('Network timeout after 30s')
       );
 
-      const result = await service.generateContent(request);
+      const result = await service.generate(request);
       
       expect(result).toBeDefined();
       expect(result.titles.length).toBeGreaterThan(0);
@@ -129,7 +129,7 @@ describe('Enhanced AI Service - Failure Scenarios', () => {
         new Error('Invalid JSON in AI response')
       );
 
-      const result = await service.generateContent(request);
+      const result = await service.generate(request);
       
       expect(result).toBeDefined();
       expect(result.content).toBeTruthy();
@@ -161,7 +161,7 @@ describe('Enhanced AI Service - Failure Scenarios', () => {
 
       mockMultiProvider.generateWithMultiProvider.mockResolvedValue(mockResponse);
 
-      const result = await service.generateContent(request);
+      const result = await service.generate(request);
       
       expect(result).toEqual({
         ...mockResponse,
@@ -173,7 +173,7 @@ describe('Enhanced AI Service - Failure Scenarios', () => {
       // Set one API key
       mockEnv.GOOGLE_GENAI_API_KEY = 'test-key';
       
-      const newService = new EnhancedAIService();
+      const newService = enhancedAIGenerator;
       expect(newService).toBeDefined();
       
       // Should not throw even with missing keys due to graceful degradation
@@ -207,7 +207,7 @@ describe('Enhanced AI Service - Failure Scenarios', () => {
           estimatedCost: 0,
         });
 
-      const result = await service.generateContent(request);
+      const result = await service.generate(request);
       
       expect(result).toBeDefined();
       expect(result.titles).toContain('Fallback Title');
