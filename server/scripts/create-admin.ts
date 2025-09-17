@@ -1,5 +1,5 @@
 import { storage } from '../storage.js';
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 
 async function createAdmin() {
   try {
