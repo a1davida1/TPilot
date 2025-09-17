@@ -13,16 +13,16 @@ interface AIProvider {
   available: boolean;
 }
 
-const providers: AIProvider[] = [
+const getProviders = (): AIProvider[] => [
   { name: 'gemini-flash', inputCost: 0.075, outputCost: 0.30, available: !!process.env.GOOGLE_GENAI_API_KEY },
   { name: 'claude-haiku', inputCost: 0.80, outputCost: 4.00, available: !!process.env.ANTHROPIC_API_KEY },
   { name: 'openai-gpt4o', inputCost: 5.00, outputCost: 15.00, available: !!process.env.OPENAI_API_KEY }
 ];
 
-// Initialize clients only if API keys are available
-const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
-const anthropic = process.env.ANTHROPIC_API_KEY ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }) : null;
-const gemini = (process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY) ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY }) : null;
+// Dynamic client initialization functions
+const getOpenAI = () => process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
+const getAnthropic = () => process.env.ANTHROPIC_API_KEY ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }) : null;
+const getGemini = () => (process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY) ? new GoogleGenAI(process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY) : null;
 
 interface MultiAIRequest {
   user: { id: number; email?: string; tier?: string };
@@ -52,6 +52,7 @@ interface MultiAIResponse {
 
 export async function generateWithMultiProvider(request: MultiAIRequest): Promise<MultiAIResponse> {
   const prompt = buildPrompt(request);
+  const providers = getProviders();
   
   // Try providers in order of cost efficiency
   for (const provider of providers) {
@@ -97,50 +98,33 @@ export async function generateWithMultiProvider(request: MultiAIRequest): Promis
 }
 
 async function generateWithGemini(prompt: string) {
+  const gemini = getGemini();
   if (!gemini) return null;
   
   try {
-    // Use the generate method for @google/genai
-    const response = await (gemini as unknown as { generate: (params: { prompt: string; temperature: number; maxOutputTokens: number }) => Promise<{ text?: string }> }).generate({
-      prompt: prompt,
-      temperature: 0.8,
-      maxOutputTokens: 1500
-    });
+    // Use the correct GoogleGenAI API pattern
+    const model = gemini.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
     
-    if (!response || !response.text) {
-      safeLog('warn', 'Gemini provider returned empty response', {});
+    if (!text || text.trim().length === 0) {
+      safeLog('warn', 'Gemini provider returned empty text', {});
       return null;
     }
     
-    const text = response.text.trim();
-    if (text.length === 0) {
-      safeLog('warn', 'Gemini provider returned no text', {});
-      return null;
-    }
-    
-    // Try to parse as JSON, if it fails, create structured response
-    let result;
+    // Try to parse as JSON, if it fails, return null to trigger fallback
+    let parsedResult;
     try {
-      result = JSON.parse(text);
+      parsedResult = JSON.parse(text.trim());
     } catch (parseError) {
-      // If not JSON, create a structured response from the text
-      const lines = text.split('\n').filter(line => line.trim());
-      result = {
-        titles: [`${lines[0] || 'Generated content'} ✨`, 'Creative content generation 🚀', 'Authentic social media posts 💫'],
-        content: text,
-        photoInstructions: {
-          lighting: 'Natural lighting preferred',
-          cameraAngle: 'Eye level angle',
-          composition: 'Center composition', 
-          styling: 'Authentic styling',
-          mood: 'Confident and natural',
-          technicalSettings: 'Auto settings'
-        }
-      };
+      // If not JSON, return null to trigger fallback to next provider
+      safeLog('warn', 'Gemini returned malformed JSON, triggering fallback', { text: text.substring(0, 100) });
+      return null;
     }
     
     safeLog('info', 'Gemini generation completed successfully', {});
-    return validateAndFormatResponse(result);
+    return validateAndFormatResponse(parsedResult);
   } catch (error) {
     safeLog('warn', 'Gemini generation failed', { error: error instanceof Error ? error.message : String(error) });
     return null; // Don't throw, just return null to try next provider
@@ -148,6 +132,7 @@ async function generateWithGemini(prompt: string) {
 }
 
 async function generateWithClaude(prompt: string) {
+  const anthropic = getAnthropic();
   if (!anthropic) return null;
   
   const response = await anthropic.messages.create({
@@ -171,6 +156,7 @@ async function generateWithClaude(prompt: string) {
 }
 
 async function generateWithOpenAI(prompt: string) {
+  const openai = getOpenAI();
   if (!openai) return null;
   
   const response = await openai.chat.completions.create({
@@ -294,6 +280,7 @@ function calculateCost(prompt: string, content: string, provider: AIProvider): n
 
 
 export function getProviderStatus() {
+  const providers = getProviders();
   return providers.map(p => ({
     name: p.name,
     available: p.available,

@@ -9,7 +9,9 @@ const mockEnv = {
 
 // Mock AI providers using vi.hoisted for proper hoisting
 const mockOpenAI = vi.hoisted(() => ({ chat: { completions: { create: vi.fn() } } }));
-const mockGemini = vi.hoisted(() => ({ generateContent: vi.fn() }));
+const mockGenerateContent = vi.hoisted(() => vi.fn());
+const mockGetGenerativeModel = vi.hoisted(() => vi.fn(() => ({ generateContent: mockGenerateContent })));
+const mockGemini = vi.hoisted(() => ({ getGenerativeModel: mockGetGenerativeModel }));
 const mockAnthropic = vi.hoisted(() => ({ messages: { create: vi.fn() } }));
 const mockLogger = vi.hoisted(() => ({ log: vi.fn(), error: vi.fn(), warn: vi.fn() }));
 
@@ -29,6 +31,9 @@ describe('AI Service Unit Tests', () => {
     Object.keys(mockEnv).forEach(key => {
       process.env[key] = mockEnv[key];
     });
+    
+    // Reset mock implementations
+    mockGetGenerativeModel.mockReturnValue({ generateContent: mockGenerateContent });
   });
 
   afterEach(() => {
@@ -43,7 +48,7 @@ describe('AI Service Unit Tests', () => {
       delete process.env.OPENAI_API_KEY;
       
       // Should still try other providers (Gemini, Claude)
-      mockGemini.generateContent.mockResolvedValueOnce({
+      mockGenerateContent.mockResolvedValueOnce({
         response: {
           text: () => JSON.stringify({
             titles: ['Generated with Gemini'],
@@ -121,7 +126,7 @@ describe('AI Service Unit Tests', () => {
   describe('AI Provider Fallback Logic', () => {
     it('should fallback from Gemini to OpenAI on quota error', async () => {
       // Mock Gemini quota error
-      mockGemini.generateContent.mockRejectedValueOnce(
+      mockGenerateContent.mockRejectedValueOnce(
         new Error('Quota exceeded for this API')
       );
 
@@ -154,13 +159,13 @@ describe('AI Service Unit Tests', () => {
       expect(result).toBeDefined();
       expect(result.titles).toEqual(['Fallback from OpenAI']);
       expect(result.provider).toBeDefined();
-      expect(mockGemini.generateContent).toHaveBeenCalled();
+      expect(mockGenerateContent).toHaveBeenCalled();
       expect(mockOpenAI.chat.completions.create).toHaveBeenCalled();
     });
 
     it('should fallback through all providers on consecutive failures', async () => {
       // Mock failures for all providers
-      mockGemini.generateContent.mockRejectedValueOnce(
+      mockGenerateContent.mockRejectedValueOnce(
         new Error('Gemini service unavailable')
       );
       
@@ -178,14 +183,14 @@ describe('AI Service Unit Tests', () => {
         allowsPromotion: 'yes'
       })).rejects.toThrow();
 
-      expect(mockGemini.generateContent).toHaveBeenCalled();
+      expect(mockGenerateContent).toHaveBeenCalled();
       expect(mockOpenAI.chat.completions.create).toHaveBeenCalled();
     });
   });
 
   describe('Error Handling Edge Cases', () => {
     it('should handle malformed JSON responses', async () => {
-      mockGemini.generateContent.mockResolvedValueOnce({
+      mockGenerateContent.mockResolvedValueOnce({
         response: {
           text: () => 'This is not valid JSON'
         }
@@ -222,7 +227,7 @@ describe('AI Service Unit Tests', () => {
     });
 
     it('should handle network timeout errors', async () => {
-      mockGemini.generateContent.mockRejectedValueOnce(
+      mockGenerateContent.mockRejectedValueOnce(
         new Error('Network timeout after 30000ms')
       );
 
@@ -257,7 +262,7 @@ describe('AI Service Unit Tests', () => {
 
     it('should handle rate limit errors with exponential backoff simulation', async () => {
       // Mock rate limit error
-      mockGemini.generateContent.mockRejectedValueOnce(
+      mockGenerateContent.mockRejectedValueOnce(
         new Error('Rate limit exceeded. Please try again in 60 seconds.')
       );
 
@@ -294,7 +299,7 @@ describe('AI Service Unit Tests', () => {
 
   describe('Cost Optimization', () => {
     it('should prioritize cheapest provider (Gemini) when available', async () => {
-      mockGemini.generateContent.mockResolvedValueOnce({
+      mockGenerateContent.mockResolvedValueOnce({
         response: {
           text: () => JSON.stringify({
             titles: ['Gemini - cheapest option'],
@@ -365,7 +370,7 @@ describe('AI Service Unit Tests', () => {
 
   describe('Platform-Specific Optimizations', () => {
     it('should generate Instagram-optimized content', async () => {
-      mockGemini.generateContent.mockResolvedValueOnce({
+      mockGenerateContent.mockResolvedValueOnce({
         response: {
           text: () => JSON.stringify({
             titles: [],
@@ -395,7 +400,7 @@ describe('AI Service Unit Tests', () => {
     });
 
     it('should generate Reddit-appropriate content without hashtags', async () => {
-      mockGemini.generateContent.mockResolvedValueOnce({
+      mockGenerateContent.mockResolvedValueOnce({
         response: {
           text: () => JSON.stringify({
             titles: ['Reddit community discussion starter'],
