@@ -130,6 +130,7 @@ export function SimpleContentGenerator({ isGuestMode = false, onContentGenerated
           <div className="grid md:grid-cols-3 gap-4">
             <Select value={platform} onValueChange={setPlatform}>
               <SelectTrigger className="bg-gray-900/50 border-purple-500/20">
+                <SelectValue placeholder="Select platform" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="reddit">Reddit</SelectItem>
@@ -141,6 +142,7 @@ export function SimpleContentGenerator({ isGuestMode = false, onContentGenerated
 
             <Select value={style} onValueChange={setStyle}>
               <SelectTrigger className="bg-gray-900/50 border-purple-500/20">
+                <SelectValue placeholder="Select style" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="playful">Playful & Flirty</SelectItem>
@@ -152,6 +154,7 @@ export function SimpleContentGenerator({ isGuestMode = false, onContentGenerated
 
             <Select value={theme} onValueChange={setTheme}>
               <SelectTrigger className="bg-gray-900/50 border-purple-500/20">
+                <SelectValue placeholder="Select theme" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="teasing">Teasing</SelectItem>
