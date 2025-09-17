@@ -1185,18 +1185,19 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
   app.use(errorHandler);
 
   // Final catch-all for any remaining requests (ensures SPA routing works)
-  app.get('*', (req, res, next) => {
+  app.get('*', async (req, res, next) => {
     // Skip if it's an API or auth route
     if (req.path.startsWith('/api/') || req.path.startsWith('/auth/') || req.path.startsWith('/webhook/')) {
       return next();
     }
     
     // For SPA, always serve index.html for non-asset requests
-    const path = require('path');
-    const { fileURLToPath } = require('url');
+    const { fileURLToPath } = await import('url');
+    const path = await import('path');
+    const fs = await import('fs');
+    
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
     const clientPath = path.join(__dirname, '..', 'client');
-    const fs = require('fs');
     
     if (fs.existsSync(path.join(clientPath, 'index.html'))) {
       res.sendFile(path.join(clientPath, 'index.html'));
