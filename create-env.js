@@ -34,5 +34,8 @@ for (const key of secrets) {
 
 // Write to .env file
 fs.writeFileSync('.env', envContent);
-const variableCount = envContent.split('\n').filter((line) => line).length;
-console.log('.env file created with', variableCount, 'variables');
+console.log(
+  '.env file created with',
+  envContent.split('\n').filter(line => line).length,
+  'variables'
+);

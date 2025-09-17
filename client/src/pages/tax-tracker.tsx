@@ -60,7 +60,7 @@ interface Expense {
   receiptUrl?: string;
   receiptFileName?: string;
   notes?: string;
-  category?: string;
+  category: ExpenseCategory | null;
   date?: string;
 }
 
@@ -135,7 +135,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
 
   // Create expense mutation
   const createExpenseMutation = useMutation({
-    mutationFn: async (expenseData: Omit<Expense, 'id'>) => {
+    mutationFn: async (expenseData: Omit<Expense, 'id' | 'category'>) => {
       const response = await apiRequest('POST', '/api/expenses', expenseData);
       return response.json();
     },
@@ -367,7 +367,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                       >
                         <div>
                           <p className="font-medium text-gray-900">{expense.description}</p>
-                          <p className="text-sm text-gray-500">{expense.category} • {format(parseISO(expense.date || expense.expenseDate), 'MMM d, yyyy')}</p>
+                          <p className="text-sm text-gray-500">{expense.category?.name ?? 'Uncategorized'} • {format(parseISO(expense.date || expense.expenseDate), 'MMM d, yyyy')}</p>
                         </div>
                         <div className="text-right">
                           <p className="font-bold text-gray-900">${expense.amount}</p>

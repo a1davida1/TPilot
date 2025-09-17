@@ -1,0 +1,243 @@
+client/src/pages/tax-tracker.tsx
++3
+-3
+
+@@ -38,51 +38,51 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+
+interface TaxTrackerProps {
+  userTier?: 'guest' | 'free' | 'pro' | 'premium';
+}
+
+interface ExpenseCategory {
+  id: number;
+  name: string;
+  deductionPercentage: number;
+  icon: string;
+  color?: string;
+  description?: string;
+  examples: string[];
+  legalExplanation?: string;
+}
+
+interface Expense {
+  id: number;
+  description: string;
+  amount: number;
+  categoryId: number;
+  expenseDate: string;
+  receiptUrl?: string;
+  receiptFileName?: string;
+  notes?: string;
+  category?: string;
+  category: ExpenseCategory | null;
+  date?: string;
+}
+
+const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
+  const [selectedCategory, setSelectedCategory] = useState<ExpenseCategory | null>(null);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [calendarDate, setCalendarDate] = useState<Date>(new Date());
+  const [expenseForm, setExpenseForm] = useState({
+    description: '',
+    amount: '',
+    category: '',
+    date: format(new Date(), 'yyyy-MM-dd'),
+    notes: ''
+  });
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptExpenseId, setReceiptExpenseId] = useState('');
+  const [expenseError, setExpenseError] = useState<string | null>(null);
+  
+  const queryClient = useQueryClient();
+
+  const { data: expenseCategories = [], isLoading: categoriesLoading, error: categoriesError } = useQuery<ExpenseCategory[]>({
+    queryKey: ['/api/expense-categories'],
+    queryFn: async () => {
+@@ -113,51 +113,51 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
+  // Fetch recent expenses
+  const { data: recentExpenses = [], isLoading: recentLoading, error: recentError } = useQuery<Expense[]>({
+    queryKey: ['/api/expenses'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/expenses');
+      return res.json();
+    }
+  });
+
+  // Fetch calendar expenses
+  const { data: calendarExpenses = [], isLoading: calendarLoading, error: calendarError } = useQuery<Expense[]>({
+    queryKey: ['/api/expenses/range', format(startOfMonth(calendarDate), 'yyyy-MM-dd'), format(endOfMonth(calendarDate), 'yyyy-MM-dd')],
+    enabled: activeTab === 'calendar',
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        startDate: format(startOfMonth(calendarDate), 'yyyy-MM-dd'),
+        endDate: format(endOfMonth(calendarDate), 'yyyy-MM-dd')
+      });
+      const res = await apiRequest('GET', `/api/expenses/range?${params.toString()}`);
+      return res.json();
+    }
+  });
+
+  // Create expense mutation
+  const createExpenseMutation = useMutation({
+    mutationFn: async (expenseData: Omit<Expense, 'id'>) => {
+    mutationFn: async (expenseData: Omit<Expense, 'id' | 'category'>) => {
+      const response = await apiRequest('POST', '/api/expenses', expenseData);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/expenses/totals'] });
+      setShowExpenseModal(false);
+      setExpenseForm({ description: '', amount: '', category: '', date: format(new Date(), 'yyyy-MM-dd'), notes: '' });
+      setExpenseError(null);
+    },
+    onError: (error: unknown) => {
+      const apiError = error as ApiError;
+      setExpenseError(apiError.userMessage ?? apiError.message);
+    }
+  });
+
+  const uploadReceiptMutation = useMutation({
+    mutationFn: async ({ expenseId, file }: { expenseId: string; file: File }) => {
+      const formData = new FormData();
+      formData.append('receipt', file);
+      const res = await apiRequest('POST', `/api/expenses/${expenseId}/receipt`, formData);
+      return res.json();
+    },
+    onSuccess: (updatedExpense: Expense) => {
+      queryClient.setQueryData<Expense[]>(['/api/expenses'], (old = []) =>
+@@ -345,51 +345,51 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
+              <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
+                <CardHeader>
+                  <CardTitle>Recent Expenses</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {recentExpenses.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Receipt className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-500 mb-4">No expenses tracked yet</p>
+                      <Button 
+                        onClick={() => setShowExpenseModal(true)}
+                        size="sm"
+                        className="bg-gradient-to-r from-purple-500 to-pink-500"
+                      >
+                        Add Your First Expense
+                      </Button>
+                    </div>
+                  ) : (
+                    recentExpenses.slice(0, 3).map((expense, index) => (
+                      <div 
+                        key={expense.id}
+                        className="flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
+                      >
+                        <div>
+                          <p className="font-medium text-gray-900">{expense.description}</p>
+                          <p className="text-sm text-gray-500">{expense.category} • {format(parseISO(expense.date || expense.expenseDate), 'MMM d, yyyy')}</p>
+                          <p className="text-sm text-gray-500">{expense.category?.name ?? 'Uncategorized'} • {format(parseISO(expense.date || expense.expenseDate), 'MMM d, yyyy')}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-gray-900">${expense.amount}</p>
+                          <Badge variant="secondary" className="bg-green-100 text-green-700">
+                            100% Deductible
+                          </Badge>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="categories" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {categoriesLoading ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Loading categories...</p>
+                </div>
+              ) : (
+                expenseCategories.map((category, index) => {
+                  const IconComponent = iconMap[category.icon] || Sparkles;
+                  return (
+create-env.js
++9
+-4
+
+const fs = require('fs');
+import fs from 'node:fs';
+import process from 'node:process';
+
+// List the secrets you need for testing
+const secrets = [
+  'DATABASE_URL',
+  'APP_BASE_URL',
+  'JWT_SECRET',
+  'SESSION_SECRET',
+  'REDDIT_CLIENT_ID',
+  'REDDIT_CLIENT_SECRET',
+  'REDDIT_USERNAME',
+  'REDDIT_PASSWORD',
+  'REDDIT_USER_AGENT',
+  'GEMINI_API_KEY',
+  'OPENAI_API_KEY',
+  'STRIPE_SECRET_KEY',
+  'COINBASE_API_KEY',
+  'PAXUM_MERCHANT_EMAIL',
+  'FROM_EMAIL'
+];
+
+// Build .env content
+let envContent = '';
+secrets.forEach(key => {
+for (const key of secrets) {
+  if (process.env[key]) {
+    envContent += `${key}=${process.env[key]}\n`;
+  } else {
+    console.warn(`Warning: ${key} is not set in Replit Secrets`);
+  }
+});
+}
+
+// Write to .env file
+fs.writeFileSync('.env', envContent);
+console.log('.env file created with', envContent.split('\n').filter(l => l).length, 'variables');
+console.log(
+  '.env file created with',
+  envContent.split('\n').filter(line => line).length,
+  'variables'
+);
+fix-type-errors.cjs
++0
+-1
+
+#!/usr/bin/env node
+
+const fs = require('fs');
+const path = require('path');
+
+// Helper to fix common TypeScript errors
+function fixTypeErrors(filePath) {
+  if (!fs.existsSync(filePath)) return;
+  
+  let content = fs.readFileSync(filePath, 'utf8');
+  
+  // Fix error.message patterns
+  content = content.replace(/(\s)error\.message/g, '$1(error as Error).message');
+  content = content.replace(/(\s)error\.stack/g, '$1(error as Error).stack');
+  
+  // Fix implicit any in map functions
+  content = content.replace(/\.map\(\(([^,)]+),\s*([^)]+)\)/g, '.map(($1: any, $2: number)');
+  
+  // Fix implicit any in function parameters
+  content = content.replace(/function\s+(\w+)\(([^:)]+)\)/g, 'function $1($2: any)');
+  
+  fs.writeFileSync(filePath, content);
+}
+
+// Process all TypeScript files
+const files = process.argv.slice(2);
+files.forEach(fixTypeErrors);
+
+console.log('✅ Type errors fixed in', files.length, 'files');
