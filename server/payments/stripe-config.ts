@@ -1,6 +1,6 @@
 import type { Logger } from "winston";
 
-const STRIPE_VERSION_PATTERN = /^\d{4}-\d{2}-\d{2}$/u;
+const STRIPE_VERSION_PATTERN = /^\d{4}-\d{2}-\d{2}(\.[a-z]+)?$/u;
 
 export interface StripeEnvironment {
   STRIPE_SECRET_KEY?: string;
@@ -19,7 +19,7 @@ export interface StripeConfigOptions {
 }
 
 const missingVersionMessage =
-  "STRIPE_API_VERSION is required when STRIPE_SECRET_KEY is set. Provide a date in YYYY-MM-DD format (e.g. 2023-10-16).";
+  "STRIPE_API_VERSION is required when STRIPE_SECRET_KEY is set. Provide a date in YYYY-MM-DD format (e.g. 2023-10-16) or plant-release format (e.g. 2025-08-27.basil)."
 
 export function deriveStripeConfig({ env, logger }: StripeConfigOptions): StripeConfiguration | null {
   const secretKey = env.STRIPE_SECRET_KEY;
@@ -36,7 +36,7 @@ export function deriveStripeConfig({ env, logger }: StripeConfigOptions): Stripe
   }
 
   if (!STRIPE_VERSION_PATTERN.test(apiVersion)) {
-    const message = `STRIPE_API_VERSION "${apiVersion}" must match the YYYY-MM-DD format (e.g. 2023-10-16).`;
+    const message = `STRIPE_API_VERSION "${apiVersion}" must match the YYYY-MM-DD format (e.g. 2023-10-16) or plant-release format (e.g. 2025-08-27.basil).`;
     logger.error(message);
     throw new Error(message);
   }
