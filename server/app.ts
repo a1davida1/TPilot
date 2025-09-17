@@ -147,12 +147,27 @@ async function configureStaticAssets(
   const path = await import('path');
   const { fileURLToPath } = await import('url');
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
-  const clientPath = path.join(__dirname, '..', 'client', 'dist');
+  
+  // Try multiple possible client build locations
+  const possibleClientPaths = [
+    path.join(__dirname, '..', 'dist', 'client'),
+    path.join(__dirname, '..', 'client', 'dist'),
+    path.join(__dirname, '..', 'client')
+  ];
+  
   const fs = await import('fs');
+  let clientPath = null;
+  
+  for (const testPath of possibleClientPaths) {
+    if (fs.existsSync(path.join(testPath, 'index.html'))) {
+      clientPath = testPath;
+      break;
+    }
+  }
 
-  if (!fs.existsSync(clientPath)) {
-    logger.warn(`Client build directory not found: ${clientPath}`);
-    logger.warn("Serving from client/public directory for development");
+  if (!clientPath) {
+    logger.warn(`Client build directory not found in any of: ${possibleClientPaths.join(', ')}`);
+    logger.warn("Serving from client directory for development");
     const devClientPath = path.join(__dirname, '..', 'client');
     if (fs.existsSync(devClientPath)) {
       app.use(express.static(devClientPath));
@@ -167,10 +182,10 @@ async function configureStaticAssets(
     next();
   });
 
-  app.use(express.static(clientPath));
+  app.use(express.static(clientPath!));
   app.get('*', (_req, res) => {
     res.type('html');
-    res.sendFile(path.join(clientPath, 'index.html'));
+    res.sendFile(path.join(clientPath!, 'index.html'));
   });
 }
 
