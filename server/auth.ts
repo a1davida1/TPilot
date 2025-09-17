@@ -396,7 +396,7 @@ export function setupAuth(app: Express, apiPrefix: string = '/api') {
       }
         
       try {
-        const decoded = jwt.verify(token, JWT_SECRET_VALIDATED) as { userId?: number; id?: number; isAdmin?: boolean; };
+        const decoded = jwt.verify(token, JWT_SECRET_VALIDATED) as { userId?: number; id?: number; isAdmin?: boolean; email?: string; };
         
         // CHECK IF IT'S ADMIN TOKEN
         if (decoded.id === 999 || decoded.isAdmin) {
