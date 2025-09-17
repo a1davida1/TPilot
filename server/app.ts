@@ -150,9 +150,10 @@ async function configureStaticAssets(
   
   // Try multiple possible client build locations
   const possibleClientPaths = [
-    path.join(__dirname, '..', 'dist'),  // Vite builds to dist/ from project root
-    path.join(__dirname, '..', 'client', 'dist'),
-    path.join(__dirname, '..', 'client')
+    path.join(__dirname, '..', 'dist', 'client'),  // Production build copies here
+    path.join(__dirname, '..', 'client', 'dist'),  // Vite builds here initially
+    path.join(__dirname, '..', 'dist'),            // Sometimes builds directly here
+    path.join(__dirname, '..', 'client')           // Development fallback
   ];
   
   const fs = await import('fs');
