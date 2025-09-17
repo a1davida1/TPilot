@@ -75,6 +75,19 @@ describe('Storage Layer', () => {
     it('should create content generation record', async () => {
       const generationData = {
         userId: 1,
+        platform: 'reddit',
+        style: 'casual',
+        theme: 'selfie',
+        titles: ['Test title'],
+        content: 'Test content',
+        photoInstructions: {
+          lighting: 'soft',
+          cameraAngle: 'front',
+          composition: 'center',
+          styling: 'casual',
+          mood: 'happy',
+          technicalSettings: 'auto'
+        },
         type: 'image_to_content',
         prompt: 'Test prompt',
         result: { caption: 'Test caption' }

@@ -1,0 +1,137 @@
+
+ FAIL  tests/lib/storage.test.ts > Storage Layer > User Operations > should create a new user
+TypeError: Cannot convert undefined or null to object
+ ❯ tests/lib/storage.test.ts:48:22
+     46|       expect(mockDb.insert).toHaveBeenCalled();
+     47|       expect(mockDb.values).toHaveBeenCalledWith(userData);
+     48|       expect(result).toHaveProperty('id', 1);
+       |                      ^
+     49|     });
+     50| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/29]⎯
+
+ FAIL  tests/lib/storage.test.ts > Storage Layer > User Operations > should get user by email
+AssertionError: expected undefined to deeply equal { id: 1, …(2) }
+
+- Expected: 
+{
+  "email": "test@example.com",
+  "id": 1,
+  "username": "testuser",
+}
+
++ Received: 
+undefined
+
+ ❯ tests/lib/storage.test.ts:59:22
+     57|       expect(mockDb.select).toHaveBeenCalled();
+     58|       expect(mockDb.where).toHaveBeenCalled();
+     59|       expect(result).toEqual(mockUser);
+       |                      ^
+     60|     });
+     61| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/29]⎯
+
+ FAIL  tests/lib/storage.test.ts > Storage Layer > User Operations > should get user by username
+AssertionError: expected undefined to deeply equal { id: 1, …(2) }
+
+- Expected: 
+{
+  "email": "test@example.com",
+  "id": 1,
+  "username": "testuser",
+}
+
++ Received: 
+undefined
+
+ ❯ tests/lib/storage.test.ts:70:22
+     68|       expect(mockDb.select).toHaveBeenCalled();
+     69|       expect(mockDb.where).toHaveBeenCalled();
+     70|       expect(result).toEqual(mockUser);
+       |                      ^
+     71|     });
+     72|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/29]⎯
+
+ FAIL  tests/lib/storage.test.ts > Storage Layer > Content Generation Operations > should create content generation record
+TypeError: Cannot convert undefined or null to object
+ ❯ tests/lib/storage.test.ts:88:22
+     86| 
+     87|       expect(mockDb.insert).toHaveBeenCalled();
+     88|       expect(result).toHaveProperty('id', 1);
+       |                      ^
+     89|     });
+     90| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/29]⎯
+
+ FAIL  tests/lib/storage.test.ts > Storage Layer > Content Generation Operations > should get user content generations
+AssertionError: expected { select: [Function spy], …(13) } to have property 'length'
+ ❯ tests/lib/storage.test.ts:102:22
+    100|       expect(mockDb.select).toHaveBeenCalled();
+    101|       expect(mockDb.where).toHaveBeenCalled();
+    102|       expect(result).toHaveLength(2);
+       |                      ^
+    103|     });
+    104|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/29]⎯
+
+ FAIL  tests/lib/storage.test.ts > Storage Layer > Admin Operations > should get all users for admin
+AssertionError: expected { select: [Function spy], …(13) } to deeply equal [ …(2) ]
+
+- Expected: 
+[
+  {
+    "id": 1,
+    "tier": "free",
+    "username": "user1",
+  },
+  {
+    "id": 2,
+    "tier": "pro",
+    "username": "user2",
+  },
+]
+
++ Received: 
+{
+  "delete": [Function spy],
+  "execute": [Function spy],
+  "from": [Function spy],
+  "innerJoin": [Function spy],
+  "insert": [Function spy],
+  "leftJoin": [Function spy],
+  "limit": [Function spy],
+  "orderBy": [Function spy],
+  "returning": [Function spy],
+  "select": [Function spy],
+  "set": [Function spy],
+  "update": [Function spy],
+  "values": [Function spy],
+  "where": [Function spy],
+}
+
+ ❯ tests/lib/storage.test.ts:117:22
+    115| 
+    116|       expect(mockDb.select).toHaveBeenCalled();
+    117|       expect(result).toEqual(mockUsers);
+       |                      ^
+    118|     });
+    119| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/29]⎯
+
+ FAIL  tests/lib/storage.test.ts > Storage Layer > Admin Operations > should validate storage operations
+TypeError: storage.getUserById is not a function
+ ❯ tests/lib/storage.test.ts:125:36
+    123|       mockDb.execute.mockResolvedValueOnce([mockUser]);
+    124| 
+    125|       const result = await storage.getUserById(1);
+       |                                    ^
+    126|       expect(result).toEqual(mockUser);
+    127|     });

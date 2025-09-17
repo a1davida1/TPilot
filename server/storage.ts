@@ -46,6 +46,7 @@ import { safeLog } from './lib/logger-utils.js';
 export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
+  getUserById(id: number): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
   getUserByUsername(username: string, verified?: boolean): Promise<User | undefined>;
   getUserByEmail(email: string, verified?: boolean): Promise<User | undefined>;
@@ -143,7 +144,8 @@ export class DatabaseStorage implements IStorage {
   // User operations
   async getUser(id: number): Promise<User | undefined> {
     try {
-      const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
+      const result = await db.select().from(users).where(eq(users.id, id)).limit(1).execute();
+      const [user] = result;
       return user ?? undefined;
     } catch (error) {
       safeLog('error', 'Storage operation failed - getting user:', { error: (error as Error).message });
@@ -153,7 +155,15 @@ export class DatabaseStorage implements IStorage {
 
   async getAllUsers(): Promise<User[]> {
     try {
-      const allUsers = await db.select().from(users).where(eq(users.isDeleted, false)).orderBy(desc(users.createdAt));
+      // Guard optional schema fields - use any to avoid TypeScript issues with conditional schema fields
+      let query: any = db.select().from(users);
+      if ('isDeleted' in users) {
+        query = query.where(eq((users as any).isDeleted, false));
+      }
+      if ('createdAt' in users) {
+        query = query.orderBy(desc((users as any).createdAt));
+      }
+      const allUsers = await query.execute();
       return allUsers;
     } catch (error) {
       safeLog('error', 'Storage operation failed - getting all users:', { error: (error as Error).message });
@@ -173,7 +183,7 @@ export class DatabaseStorage implements IStorage {
         conditions.push(eq(users.emailVerified, verified));
       }
       
-      const result = await db.select().from(users).where(and(...conditions)).limit(1);
+      const result = await db.select().from(users).where(and(...conditions)).limit(1).execute();
       return result[0];
     } catch (error) {
       safeLog('error', 'Storage operation failed - getting user by username:', { error: (error as Error).message });
@@ -193,7 +203,7 @@ export class DatabaseStorage implements IStorage {
         conditions.push(eq(users.emailVerified, verified));
       }
       
-      const result = await db.select().from(users).where(and(...conditions)).limit(1);
+      const result = await db.select().from(users).where(and(...conditions)).limit(1).execute();
       return result[0];
     } catch (error) {
       safeLog('error', 'Storage operation failed - getting user by email:', { error: (error as Error).message });
@@ -206,7 +216,8 @@ export class DatabaseStorage implements IStorage {
       const result = await db
         .insert(users)
         .values(userData as typeof users.$inferInsert)
-        .returning();
+        .returning()
+        .execute();
       const user = result[0];
       return user;
     } catch (error) {
@@ -215,9 +226,13 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getUserById(id: number): Promise<User | undefined> {
+    return this.getUser(id);
+  }
+
   async updateUserTier(userId: number, tier: string): Promise<void> {
     try {
-      await db.update(users).set({ tier }).where(eq(users.id, userId));
+      await db.update(users).set({ tier }).where(eq(users.id, userId)).execute();
     } catch (error) {
       safeLog('error', 'Storage operation failed - updating user tier:', { error: (error as Error).message });
       throw error;
@@ -342,7 +357,8 @@ export class DatabaseStorage implements IStorage {
       const result = await db
         .insert(contentGenerations)
         .values([genData])
-        .returning();
+        .returning()
+        .execute();
       return result[0];
     } catch (error) {
       safeLog('error', 'Storage operation failed - creating generation:', { error: (error as Error).message });
@@ -354,7 +370,8 @@ export class DatabaseStorage implements IStorage {
     try {
       return await db.select().from(contentGenerations)
         .where(eq(contentGenerations.userId, userId))
-        .orderBy(desc(contentGenerations.createdAt));
+        .orderBy(desc(contentGenerations.createdAt))
+        .execute();
     } catch (error) {
       safeLog('error', 'Storage operation failed - getting generations by user ID:', { error: (error as Error).message });
       return [];
