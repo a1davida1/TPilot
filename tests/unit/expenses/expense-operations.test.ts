@@ -1,45 +1,47 @@
 /* eslint-env node, jest */
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
-import { InsertExpense } from '../../../shared/schema.js';
+import type { InsertExpense } from '../../../shared/schema.js';
 
-// Mock database with proper Drizzle ORM entry points and chaining
-vi.mock('../../../server/db.js', () => {
-  // Create chainable query builder mock that supports awaiting
-  const createChainableMock = () => {
-    const chainable: any = {};
-    
-    // Make the chainable object itself awaitable (thenable)
-    chainable.then = vi.fn((onResolve: any) => {
-      const defaultResult = [];
-      return Promise.resolve(onResolve ? onResolve(defaultResult) : defaultResult);
-    });
-    
-    // Standard chain methods that return the chainable
-    chainable.values = vi.fn().mockReturnValue(chainable);
-    chainable.returning = vi.fn().mockReturnValue(chainable);
-    chainable.from = vi.fn().mockReturnValue(chainable);
-    chainable.where = vi.fn().mockReturnValue(chainable);
-    chainable.leftJoin = vi.fn().mockReturnValue(chainable);
-    chainable.set = vi.fn().mockReturnValue(chainable);
-    chainable.limit = vi.fn().mockReturnValue(chainable);
-    chainable.execute = vi.fn().mockResolvedValue([]);
-    
-    // OrderBy method that returns an awaitable promise
-    chainable.orderBy = vi.fn().mockImplementation(() => {
-      return Promise.resolve([]);
-    });
-    
-    return chainable;
+// Use hoisted mocks to ensure proper mock setup
+const mockDb = vi.hoisted(() => {
+  // Mock insert chain: db.insert(table).values(data).returning()
+  const insertChain = {
+    values: vi.fn().mockImplementation(() => insertChain),
+    returning: vi.fn().mockImplementation(() => {
+      const res = Promise.resolve([{ id: 1 }]);
+      (res as any).execute = vi.fn().mockResolvedValue([{ id: 1 }]);
+      return res;
+    }),
+    execute: vi.fn().mockResolvedValue([{ id: 1 }])
   };
 
-  // Create chainable mocks
-  const insertChain = createChainableMock();
-  const selectChain = createChainableMock();
-  const updateChain = createChainableMock();
-  const deleteChain = createChainableMock();
+  // Mock select chain: db.select().from(table).where().leftJoin()
+  const selectChain = {
+    from: vi.fn().mockImplementation(() => selectChain),
+    where: vi.fn().mockImplementation(() => selectChain),
+    leftJoin: vi.fn().mockImplementation(() => selectChain),
+    orderBy: vi.fn().mockResolvedValue([]),
+    execute: vi.fn().mockResolvedValue([]),
+    limit: vi.fn().mockImplementation(() => selectChain),
+    // Make select queries awaitable
+    then: vi.fn((resolve: any) => Promise.resolve(resolve([])))
+  };
 
-  // Create main db mock with proper entry points
-  const mockDb = {
+  // Mock update chain: db.update(table).set(data).where().returning()
+  const updateChain = {
+    set: vi.fn().mockImplementation(() => updateChain),
+    where: vi.fn().mockImplementation(() => updateChain),
+    returning: vi.fn().mockResolvedValue([{ id: 1 }]),
+    execute: vi.fn().mockResolvedValue([{ id: 1 }])
+  };
+
+  // Mock delete chain: db.delete(table).where()
+  const deleteChain = {
+    where: vi.fn().mockResolvedValue([]),
+    execute: vi.fn().mockResolvedValue([])
+  };
+
+  return {
     insert: vi.fn(() => insertChain),
     select: vi.fn(() => selectChain),
     update: vi.fn(() => updateChain),
@@ -52,9 +54,9 @@ vi.mock('../../../server/db.js', () => {
       delete: deleteChain
     }
   };
-  
-  return { db: mockDb };
 });
+
+vi.mock('../../../server/db.js', () => ({ db: mockDb, pool: {} }));
 
 // Mock drizzle-orm operators
 vi.mock('drizzle-orm', async (importOriginal) => {
@@ -92,12 +94,19 @@ vi.mock('../../../shared/schema.js', async (importOriginal) => {
   };
 });
 
+// Don't import storage statically - import it dynamically after mocks
 import { db } from '../../../server/db.js';
-import { storage } from "../../../server/storage.ts";
 
 describe('Expense Operations Unit Tests', () => {
   const userId = 123;
   const categoryId = 1;
+  let storage: any;
+
+  beforeAll(async () => {
+    vi.resetModules();
+    const storageModule = await import('../../../server/storage.ts');
+    storage = storageModule.storage;
+  });
 
   beforeEach(() => {
     vi.clearAllMocks();
