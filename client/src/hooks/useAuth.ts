@@ -83,8 +83,16 @@ export function useAuth() {
       // Continue with logout even if server request fails
     }
     
-    // Force refetch to clear user state
-    refetch();
+    // Clear any local storage
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
+    }
+    
+    // Force page reload to clear any cached state
+    setTimeout(() => {
+      window.location.href = '/';
+    }, 100);
   };
 
   // Check for OAuth redirect tokens in URL or cookies

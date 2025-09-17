@@ -161,7 +161,7 @@ export function setupAuth(app: Express, apiPrefix: string = '/api') {
       const adminEmail = await verifyAdminCredentials(loginIdentifier, password);
 
       if (adminEmail) {
-        // Create admin token
+        // Create admin token with consistent structure
         const token = jwt.sign(
           {
             id: 999,
@@ -169,12 +169,15 @@ export function setupAuth(app: Express, apiPrefix: string = '/api') {
             username: 'admin',
             isAdmin: true,
             role: 'admin',
-            tier: 'admin'
+            tier: 'admin',
+            email: adminEmail,
+            emailVerified: true
           },
           JWT_SECRET_VALIDATED,
           { expiresIn: '24h' }
         );
 
+        // Set JWT in HttpOnly cookie
         res.cookie('authToken', token, {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
@@ -190,7 +193,8 @@ export function setupAuth(app: Express, apiPrefix: string = '/api') {
             email: adminEmail,
             tier: 'admin',
             isAdmin: true,
-            role: 'admin'
+            role: 'admin',
+            emailVerified: true
           }
         });
       }
@@ -399,7 +403,7 @@ export function setupAuth(app: Express, apiPrefix: string = '/api') {
           return res.json({
             id: 999,
             username: 'admin',
-            email: process.env.ADMIN_EMAIL,
+            email: decoded.email || process.env.ADMIN_EMAIL,
             tier: 'admin',
             isAdmin: true,
             role: 'admin',
@@ -865,12 +869,16 @@ export function setupAuth(app: Express, apiPrefix: string = '/api') {
   // Logout endpoint - handles both session and JWT logout
   app.post(`${apiPrefix}/auth/logout`, async (req: Request, res: Response) => {
     try {
-      // Clear JWT token from cookies
+      // Clear JWT token from cookies with all possible paths and domains
       res.clearCookie('authToken', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
+        sameSite: 'strict',
+        path: '/'
       });
+      
+      // Clear with alternative options
+      res.clearCookie('authToken');
       
       // Clear session cookie
       res.clearCookie('connect.sid', {
@@ -884,8 +892,13 @@ export function setupAuth(app: Express, apiPrefix: string = '/api') {
       res.clearCookie('thottopilot.sid', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
+        sameSite: 'strict',
+        path: '/'
       });
+      
+      // Clear any other auth-related cookies
+      res.clearCookie('session');
+      res.clearCookie('auth');
       
       // Destroy session if it exists
       if (req.session) {
@@ -895,6 +908,11 @@ export function setupAuth(app: Express, apiPrefix: string = '/api') {
           }
         });
       }
+      
+      // Set cache headers to prevent caching
+      res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.set('Pragma', 'no-cache');
+      res.set('Expires', '0');
       
       res.json({ message: 'Logged out successfully' });
     } catch (error) {
