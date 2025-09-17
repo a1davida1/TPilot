@@ -1176,8 +1176,34 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
   // ERROR HANDLER (MUST BE LAST)
   // ==========================================
   
+  // Handle 404s for API routes specifically
+  app.use('/api/*', (req, res) => {
+    res.status(404).json({ message: `API endpoint not found: ${req.path}` });
+  });
+
   // Apply error handling middleware last
   app.use(errorHandler);
+
+  // Final catch-all for any remaining requests (ensures SPA routing works)
+  app.get('*', (req, res, next) => {
+    // Skip if it's an API or auth route
+    if (req.path.startsWith('/api/') || req.path.startsWith('/auth/') || req.path.startsWith('/webhook/')) {
+      return next();
+    }
+    
+    // For SPA, always serve index.html for non-asset requests
+    const path = require('path');
+    const { fileURLToPath } = require('url');
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    const clientPath = path.join(__dirname, '..', 'client');
+    const fs = require('fs');
+    
+    if (fs.existsSync(path.join(clientPath, 'index.html'))) {
+      res.sendFile(path.join(clientPath, 'index.html'));
+    } else {
+      res.status(404).send('Client build not found');
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

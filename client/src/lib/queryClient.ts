@@ -8,16 +8,45 @@ export interface ApiError extends Error {
   userMessage?: string;
 }
 
+// Helper function to get an error message based on status and error data
+function getErrorMessage(status: number, errorData: any): string | undefined {
+  if (errorData.message) {
+    return errorData.message;
+  }
+  switch (status) {
+    case 401:
+      return "Authentication failed. Please log in again.";
+    case 403:
+      return "You do not have permission to access this resource.";
+    case 404:
+      return "The requested resource was not found.";
+    default:
+      return `An error occurred: ${status}`;
+  }
+}
+
+// Helper function to get the auth token from cookies
+function getAuthToken(): string | null {
+  const nameEQ = "authToken=";
+  const ca = document.cookie.split(';');
+  for (let i = 0; i < ca.length; i++) {
+    let c = ca[i];
+    while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+    if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+  }
+  return null;
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
     console.error(`❌ API Error: ${res.status} ${res.statusText} - ${text}`);
-    
+
     // Create enhanced error object
     const error = new Error(`${res.status}: ${text}`) as ApiError;
     error.status = res.status;
     error.statusText = res.statusText;
-    
+
     // Enhanced error messages for common auth scenarios
     if (res.status === 401) {
       error.isAuthError = true;
@@ -44,7 +73,7 @@ async function throwIfResNotOk(res: Response) {
     } else {
       error.userMessage = `Request failed: ${text}`;
     }
-    
+
     throw error;
   }
 }
@@ -63,7 +92,7 @@ export async function apiRequest(
     headers["Content-Type"] = "application/json";
     body = JSON.stringify(data);
   }
-  
+
   const res = await fetch(url, {
     method,
     headers,
@@ -80,19 +109,75 @@ export const getQueryFn: <T = unknown>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
-  async ({ queryKey }) => {
-    const url = queryKey[0] as string;
-    const res = await fetch(url, {
-      credentials: "include",
-    });
+  async ({ queryKey, signal }) => {
+    const url = Array.isArray(queryKey) ? queryKey[0] as string : queryKey as string;
 
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
+    if (!url || typeof url !== 'string') {
+      throw new Error('Invalid query key');
     }
 
-    await throwIfResNotOk(res);
-    return await res.json();
+    try {
+      // Get auth token from cookies
+      const authToken = getAuthToken();
+
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Include Authorization header if we have a token
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      }
+
+      const response = await fetch(url, {
+        signal,
+        credentials: 'include', // Always include cookies
+        headers
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const error: ApiError = new Error(errorData.message || response.statusText) as ApiError;
+        error.status = response.status;
+        error.statusText = response.statusText;
+        error.isAuthError = response.status === 401 || response.status === 403;
+        error.userMessage = getErrorMessage(response.status, errorData);
+
+        // If it's an auth error, clear any stale tokens and redirect to login
+        if (error.isAuthError) {
+          document.cookie = 'authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+          if (window.location.pathname !== '/' && window.location.pathname !== '/login') {
+            window.location.href = '/';
+          }
+        }
+
+        throw error;
+      }
+
+      const contentType = response.headers.get('content-type');
+      if (contentType?.includes('application/json')) {
+        return response.json();
+      }
+
+      return response.text();
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw error;
+      }
+
+      // Enhanced error handling for network issues
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        const networkError: ApiError = new Error('Network connection failed') as ApiError;
+        networkError.status = 0;
+        networkError.statusText = 'Network Error';
+        networkError.userMessage = 'Please check your internet connection and try again.';
+        throw networkError;
+      }
+
+      throw error;
+    }
   };
+
 
 export const queryClient = new QueryClient({
   defaultOptions: {

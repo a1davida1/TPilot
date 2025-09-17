@@ -51,7 +51,7 @@ export const authenticateToken = async (req: AuthRequest, res: express.Response,
     }
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as { userId?: number; id?: number; email?: string; isAdmin?: boolean; username?: string; role?: string; tier?: string; iat: number; exp: number };
-      
+
       // Handle admin tokens specially (they don't exist in the database)
       if (decoded.id === 999 || decoded.isAdmin) {
         req.user = {
@@ -70,19 +70,19 @@ export const authenticateToken = async (req: AuthRequest, res: express.Response,
         } as UserType;
         return next();
       }
-      
+
       // For regular users, fetch from database
       const userId = decoded.userId || decoded.id;
       if (!userId) {
         return res.status(401).json({ message: 'Invalid token: missing user ID' });
       }
-      
+
       const [user] = await db.select().from(users).where(eq(users.id, userId));
-      
+
       if (!user) {
         return res.status(401).json({ message: 'User not found' });
       }
-      
+
       req.user = user;
       return next();
     } catch (error) {
