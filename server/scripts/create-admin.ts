@@ -42,7 +42,8 @@ async function createAdmin() {
   }
 }
 
-if (require.main === module) {
+// Check if this script is being run directly (ES module equivalent of require.main === module)
+if (import.meta.url === `file://${process.argv[1]}`) {
   createAdmin().then(() => {
     console.log('Admin setup complete');
     process.exit(0);
