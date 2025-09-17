@@ -31,6 +31,7 @@ const RedditPostingPage = React.lazy(() => import("@/pages/reddit-posting"));
 const ImageShieldPage = React.lazy(() => import("@/pages/imageshield"));
 const TaxTracker = React.lazy(() => import("@/pages/tax-tracker"));
 const TermsOfService = React.lazy(() => import("@/pages/terms-of-service"));
+const PrivacyPolicy = React.lazy(() => import("@/pages/privacy-policy"));
 import { RedditCommunities } from "@/components/reddit-communities";
 import { ImageGallery } from "@/components/image-gallery";
 // Phase 1: Real Analytics Tracking
@@ -117,6 +118,7 @@ function AuthenticatedRoutes() {
       <Route path="/checkout" component={Checkout} />
       <Route path="/logout" component={LogoutPage} />
       <Route path="/terms" component={TermsOfService} />
+      <Route path="/privacy" component={PrivacyPolicy} />
       {/* Admin Routes - Only for authenticated admin users */}
       {isAdmin && (
         <>
@@ -152,6 +154,7 @@ function UnauthenticatedRoutes() {
         <UnifiedLanding />
       </Route>
       <Route path="/terms" component={TermsOfService} />
+      <Route path="/privacy" component={PrivacyPolicy} />
       <Route path="/">
         <SEOOptimization {...seoConfigs.landing} />
         <UnifiedLanding />
