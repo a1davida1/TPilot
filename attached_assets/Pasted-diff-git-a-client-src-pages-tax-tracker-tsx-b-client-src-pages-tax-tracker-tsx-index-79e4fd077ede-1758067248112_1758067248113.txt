@@ -1,0 +1,266 @@
+diff --git a/client/src/pages/tax-tracker.tsx b/client/src/pages/tax-tracker.tsx
+index 79e4fd077edee78a0a49b9e75b03eb9fff7c896b..dd396525c33f954822cdbf66390e251194d5420f 100644
+--- a/client/src/pages/tax-tracker.tsx
++++ b/client/src/pages/tax-tracker.tsx
+@@ -42,50 +42,60 @@ interface TaxTrackerProps {
+ 
+ interface ExpenseCategory {
+   id: number;
+   name: string;
+   deductionPercentage: number;
+   icon: string;
+   color?: string;
+   description?: string;
+   examples: string[];
+   legalExplanation?: string;
+ }
+ 
+ interface Expense {
+   id: number;
+   description: string;
+   amount: number;
+   categoryId: number;
+   expenseDate: string;
+   receiptUrl?: string;
+   receiptFileName?: string;
+   notes?: string;
+   category?: string;
+   date?: string;
+ }
+ 
++const usdFormatter = new Intl.NumberFormat('en-US', {
++  style: 'currency',
++  currency: 'USD',
++  minimumFractionDigits: 2,
++  maximumFractionDigits: 2
++});
++
++const formatCurrency = (amountInCents: number | null | undefined) =>
++  usdFormatter.format((amountInCents ?? 0) / 100);
++
+ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
+   const [selectedCategory, setSelectedCategory] = useState<ExpenseCategory | null>(null);
+   const [activeTab, setActiveTab] = useState('overview');
+   const [showExpenseModal, setShowExpenseModal] = useState(false);
+   const [showReceiptModal, setShowReceiptModal] = useState(false);
+   const [calendarDate, setCalendarDate] = useState<Date>(new Date());
+   const [expenseForm, setExpenseForm] = useState({
+     description: '',
+     amount: '',
+     category: '',
+     date: format(new Date(), 'yyyy-MM-dd'),
+     notes: ''
+   });
+   const [receiptFile, setReceiptFile] = useState<File | null>(null);
+   const [receiptExpenseId, setReceiptExpenseId] = useState('');
+   const [expenseError, setExpenseError] = useState<string | null>(null);
+   
+   const queryClient = useQueryClient();
+ 
+   const { data: expenseCategories = [], isLoading: categoriesLoading, error: categoriesError } = useQuery<ExpenseCategory[]>({
+     queryKey: ['/api/expense-categories'],
+     queryFn: async () => {
+       const res = await apiRequest('GET', '/api/expense-categories');
+       return res.json();
+     }
+diff --git a/client/src/pages/tax-tracker.tsx b/client/src/pages/tax-tracker.tsx
+index 79e4fd077edee78a0a49b9e75b03eb9fff7c896b..dd396525c33f954822cdbf66390e251194d5420f 100644
+--- a/client/src/pages/tax-tracker.tsx
++++ b/client/src/pages/tax-tracker.tsx
+@@ -225,79 +235,79 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
+         <div className="text-center space-y-4">
+           <div className="flex items-center justify-center space-x-3">
+             <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl shadow-lg">
+               <Calculator className="h-8 w-8 text-white" />
+             </div>
+             <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+               Tax Tracker
+             </h1>
+           </div>
+           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+             Almost everything in your life as a content creator is tax deductible. 
+             Track your expenses and maximize your savings with confidence.
+           </p>
+         </div>
+ 
+         {/* Quick Stats */}
+         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+           <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300">
+             <CardContent className="p-6">
+               <div className="flex items-center space-x-4">
+                 <div className="p-3 bg-blue-100 rounded-xl">
+                   <DollarSign className="h-6 w-6 text-blue-600" />
+                 </div>
+                 <div>
+                   <p className="text-sm font-medium text-gray-500">Total Expenses</p>
+-                  <p className="text-2xl font-bold text-gray-900">${((expenseTotals?.total || 0) / 100).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
++                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(expenseTotals?.total ?? 0)}</p>
+                 </div>
+               </div>
+             </CardContent>
+           </Card>
+ 
+           <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300">
+             <CardContent className="p-6">
+               <div className="flex items-center space-x-4">
+                 <div className="p-3 bg-green-100 rounded-xl">
+                   <FileText className="h-6 w-6 text-green-600" />
+                 </div>
+                 <div>
+                   <p className="text-sm font-medium text-gray-500">Tax Deductions</p>
+-                  <p className="text-2xl font-bold text-gray-900">${((expenseTotals?.deductible || 0) / 100).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
++                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(expenseTotals?.deductible ?? 0)}</p>
+                 </div>
+               </div>
+             </CardContent>
+           </Card>
+ 
+           <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300">
+             <CardContent className="p-6">
+               <div className="flex items-center space-x-4">
+                 <div className="p-3 bg-purple-100 rounded-xl">
+                   <TrendingUp className="h-6 w-6 text-purple-600" />
+                 </div>
+                 <div>
+                   <p className="text-sm font-medium text-gray-500">Estimated Savings</p>
+-                  <p className="text-2xl font-bold text-gray-900">${(estimatedSavings / 100).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
++                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(estimatedSavings)}</p>
+                 </div>
+               </div>
+             </CardContent>
+           </Card>
+         </div>
+ 
+         {/* Main Content */}
+         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+           <TabsList className="grid w-full grid-cols-4 bg-white/80 backdrop-blur-sm border-0 shadow-lg p-1">
+             <TabsTrigger value="overview" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white">
+               Overview
+             </TabsTrigger>
+             <TabsTrigger value="categories" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white">
+               Categories
+             </TabsTrigger>
+             <TabsTrigger value="calendar" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white">
+               Calendar
+             </TabsTrigger>
+             <TabsTrigger value="insights" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white">
+               Tax Tips
+             </TabsTrigger>
+           </TabsList>
+ 
+           <TabsContent value="overview" className="space-y-6">
+             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+diff --git a/client/src/pages/tax-tracker.tsx b/client/src/pages/tax-tracker.tsx
+index 79e4fd077edee78a0a49b9e75b03eb9fff7c896b..dd396525c33f954822cdbf66390e251194d5420f 100644
+--- a/client/src/pages/tax-tracker.tsx
++++ b/client/src/pages/tax-tracker.tsx
+@@ -348,51 +358,51 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
+                 </CardHeader>
+                 <CardContent className="space-y-3">
+                   {recentExpenses.length === 0 ? (
+                     <div className="text-center py-8">
+                       <Receipt className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                       <p className="text-gray-500 mb-4">No expenses tracked yet</p>
+                       <Button 
+                         onClick={() => setShowExpenseModal(true)}
+                         size="sm"
+                         className="bg-gradient-to-r from-purple-500 to-pink-500"
+                       >
+                         Add Your First Expense
+                       </Button>
+                     </div>
+                   ) : (
+                     recentExpenses.slice(0, 3).map((expense, index) => (
+                       <div 
+                         key={expense.id}
+                         className="flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
+                       >
+                         <div>
+                           <p className="font-medium text-gray-900">{expense.description}</p>
+                           <p className="text-sm text-gray-500">{expense.category} • {format(parseISO(expense.date || expense.expenseDate), 'MMM d, yyyy')}</p>
+                         </div>
+                         <div className="text-right">
+-                          <p className="font-bold text-gray-900">${expense.amount}</p>
++                          <p className="font-bold text-gray-900">{formatCurrency(expense.amount)}</p>
+                           <Badge variant="secondary" className="bg-green-100 text-green-700">
+                             100% Deductible
+                           </Badge>
+                         </div>
+                       </div>
+                     ))
+                   )}
+                 </CardContent>
+               </Card>
+             </div>
+           </TabsContent>
+ 
+           <TabsContent value="categories" className="space-y-6">
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+               {categoriesLoading ? (
+                 <div className="text-center py-8">
+                   <p className="text-gray-500">Loading categories...</p>
+                 </div>
+               ) : (
+                 expenseCategories.map((category, index) => {
+                   const IconComponent = iconMap[category.icon] || Sparkles;
+                   return (
+                     <div key={category.id}>
+                       <Card 
+                         className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300 cursor-pointer group"
+diff --git a/client/src/pages/tax-tracker.tsx b/client/src/pages/tax-tracker.tsx
+index 79e4fd077edee78a0a49b9e75b03eb9fff7c896b..dd396525c33f954822cdbf66390e251194d5420f 100644
+--- a/client/src/pages/tax-tracker.tsx
++++ b/client/src/pages/tax-tracker.tsx
+@@ -524,51 +534,51 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
+               </CardHeader>
+               <CardContent>
+                 <div className="grid grid-cols-7 gap-2 mb-4">
+                   {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                     <div key={day} className="text-center text-sm font-medium text-gray-500 py-2">
+                       {day}
+                     </div>
+                   ))}
+                 </div>
+                 <div className="grid grid-cols-7 gap-2">
+                   {getDaysWithExpenses().map((dayData, index) => (
+                     <div 
+                       key={index}
+                       className={`
+                         min-h-[80px] p-2 border border-gray-200 rounded-lg cursor-pointer
+                         hover:bg-gray-50 transition-colors
+                         ${isSameDay(dayData.date, new Date()) ? 'bg-purple-50 border-purple-200' : 'bg-white'}
+                       `}
+                     >
+                       <div className="text-sm font-medium text-gray-900 mb-1">
+                         {format(dayData.date, 'd')}
+                       </div>
+                       {dayData.totalAmount > 0 && (
+                         <div className="space-y-1">
+                           <div className="text-xs font-medium text-green-600">
+-                            ${dayData.totalAmount.toLocaleString()}
++                            {formatCurrency(dayData.totalAmount)}
+                           </div>
+                           <div className="text-xs text-gray-500">
+                             {dayData.expenses.length} {dayData.expenses.length === 1 ? 'expense' : 'expenses'}
+                           </div>
+                         </div>
+                       )}
+                     </div>
+                   ))}
+                 </div>
+               </CardContent>
+             </Card>
+           </TabsContent>
+ 
+           <TabsContent value="insights" className="space-y-6">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
+                 <CardHeader>
+                   <CardTitle className="text-green-700">✅ What's Deductible</CardTitle>
+                 </CardHeader>
+                 <CardContent className="space-y-3">
+                   {[
+                     'Beauty treatments & skincare',
+                     'Wardrobe & fashion pieces',
+                     'Technology & equipment',
+                     'Home office expenses',

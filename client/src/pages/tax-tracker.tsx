@@ -64,6 +64,16 @@ interface Expense {
   date?: string;
 }
 
+const usdFormatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2
+});
+
+const formatCurrency = (amountInCents: number | null | undefined) =>
+  usdFormatter.format((amountInCents ?? 0) / 100);
+
 const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
   const [selectedCategory, setSelectedCategory] = useState<ExpenseCategory | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
@@ -247,7 +257,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-500">Total Expenses</p>
-                  <p className="text-2xl font-bold text-gray-900">${((expenseTotals?.total || 0) / 100).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(expenseTotals?.total ?? 0)}</p>
                 </div>
               </div>
             </CardContent>
@@ -261,7 +271,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-500">Tax Deductions</p>
-                  <p className="text-2xl font-bold text-gray-900">${((expenseTotals?.deductible || 0) / 100).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(expenseTotals?.deductible ?? 0)}</p>
                 </div>
               </div>
             </CardContent>
@@ -275,7 +285,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-500">Estimated Savings</p>
-                  <p className="text-2xl font-bold text-gray-900">${(estimatedSavings / 100).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(estimatedSavings)}</p>
                 </div>
               </div>
             </CardContent>
@@ -370,7 +380,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                           <p className="text-sm text-gray-500">{expense.category?.name ?? 'Uncategorized'} • {format(parseISO(expense.date || expense.expenseDate), 'MMM d, yyyy')}</p>
                         </div>
                         <div className="text-right">
-                          <p className="font-bold text-gray-900">${expense.amount}</p>
+                          <p className="font-bold text-gray-900">{formatCurrency(expense.amount)}</p>
                           <Badge variant="secondary" className="bg-green-100 text-green-700">
                             100% Deductible
                           </Badge>
@@ -546,7 +556,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                       {dayData.totalAmount > 0 && (
                         <div className="space-y-1">
                           <div className="text-xs font-medium text-green-600">
-                            ${dayData.totalAmount.toLocaleString()}
+                            {formatCurrency(dayData.totalAmount)}
                           </div>
                           <div className="text-xs text-gray-500">
                             {dayData.expenses.length} {dayData.expenses.length === 1 ? 'expense' : 'expenses'}
