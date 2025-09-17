@@ -1,0 +1,155 @@
+fix-type-errors.cjs
++0
+-1
+
+#!/usr/bin/env node
+
+/* eslint-env node */
+const fs = require('fs');
+const path = require('path');
+
+// Helper to fix common TypeScript errors
+function fixTypeErrors(filePath) {
+  if (!fs.existsSync(filePath)) return;
+  
+  let content = fs.readFileSync(filePath, 'utf8');
+  
+  // Fix error.message patterns
+  content = content.replace(/(\s)error\.message/g, '$1(error as Error).message');
+  content = content.replace(/(\s)error\.stack/g, '$1(error as Error).stack');
+  
+  // Fix implicit any in map functions
+  content = content.replace(/\.map\(\(([^,)]+),\s*([^)]+)\)/g, '.map(($1: any, $2: number)');
+  
+  // Fix implicit any in function parameters
+  content = content.replace(/function\s+(\w+)\(([^:)]+)\)/g, 'function $1($2: any)');
+  
+  fs.writeFileSync(filePath, content);
+}
+
+// Process all TypeScript files
+const files = process.argv.slice(2);
+files.forEach(fixTypeErrors);
+
+console.log('✅ Type errors fixed in', files.length, 'files');
+server/expense-routes.ts
++24
+-3
+
+import express, { type Express } from 'express';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs/promises';
+import sharp from 'sharp';
+import crypto from 'crypto';
+import { authenticateToken } from './middleware/auth.js';
+import { storage } from './storage.js';
+import { MediaManager } from './lib/media.js';
+import { logger } from './bootstrap/logger.js';
+import { type InsertExpense, type User } from '@shared/schema';
+
+interface AuthRequest extends express.Request {
+  user?: User;
+}
+
+const knownImageExtensions = new Set([
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.gif',
+  '.bmp',
+  '.webp',
+  '.tiff'
+]);
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+    const hasImageMimeType = file.mimetype.startsWith('image/');
+    const fileExtension = path.extname(file.originalname).toLowerCase();
+    const hasKnownImageExtension = knownImageExtensions.has(fileExtension);
+
+    if (hasImageMimeType || hasKnownImageExtension) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed!'));
+    }
+  }
+});
+
+// ImageShield protection for receipt uploads
+interface ProtectionSettings {
+  level: string;
+  blur: number;
+  noise: number;
+  resize: number;
+  quality: number;
+}
+
+const protectionPresets: Record<string, ProtectionSettings> = {
+  light: { level: 'light', blur: 0.3, noise: 3, resize: 98, quality: 95 },
+  standard: { level: 'standard', blur: 0.5, noise: 5, resize: 95, quality: 92 },
+  heavy: { level: 'heavy', blur: 0.8, noise: 8, resize: 90, quality: 88 }
+};
+
+// Apply ImageShield protection server-side for receipts
+async function applyReceiptImageShieldProtection(
+  inputBuffer: Buffer, 
+  protectionLevel: 'light' | 'standard' | 'heavy' = 'light',
+  addWatermark: boolean = false
+): Promise<Buffer> {
+  try {
+    const settings = protectionPresets[protectionLevel];
+    let pipeline = sharp(inputBuffer);
+    let pipeline: sharp.Sharp;
+
+    try {
+      pipeline = sharp(inputBuffer);
+    } catch (sharpError) {
+      logger.warn('Unable to process receipt image buffer with Sharp:', sharpError);
+      return inputBuffer;
+    }
+
+    // Apply protection transformations
+    if (settings.blur > 0) {
+      pipeline = pipeline.blur(settings.blur);
+    }
+
+    if (settings.noise > 0) {
+      // Apply noise through modulation instead of deprecated noise() method
+      pipeline = pipeline.modulate({
+        brightness: 1 + (Math.random() - 0.5) * (settings.noise / 100),
+        saturation: 1 + (Math.random() - 0.5) * (settings.noise / 200)
+      });
+    }
+
+    if (settings.resize < 100) {
+      const metadata = await sharp(inputBuffer).metadata();
+      const metadata = await pipeline.metadata();
+      if (metadata.width && metadata.height) {
+        const newWidth = Math.round(metadata.width * (settings.resize / 100));
+        const newHeight = Math.round(metadata.height * (settings.resize / 100));
+        pipeline = pipeline.resize(newWidth, newHeight);
+      }
+    }
+
+    // Add watermark for free users
+    if (addWatermark) {
+      const metadata = await pipeline.metadata();
+      const watermarkText = Buffer.from(`
+        <svg width="${metadata.width || 800}" height="${metadata.height || 600}">
+          <text x="50%" y="95%" font-family="Arial" font-size="16" fill="rgba(255,255,255,0.6)" text-anchor="middle">
+            Protected by ThottoPilot™
+          </text>
+        </svg>
+      `);
+      
+      pipeline = pipeline.composite([{
+        input: watermarkText,
+        top: 0,
+        left: 0,
+      }]);
+    }
+
