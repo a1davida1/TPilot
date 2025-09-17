@@ -2,22 +2,27 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { InsertExpenseCategory } from '../../../shared/schema.js';
 
-// Mock database with proper hoisting
-vi.mock('../../../server/db.js', () => ({
-  db: {
-    insert: vi.fn().mockReturnThis(),
-    select: vi.fn().mockReturnThis(),
-    update: vi.fn().mockReturnThis(),
-    values: vi.fn().mockReturnThis(),
-    returning: vi.fn(),
-    from: vi.fn().mockReturnThis(),
-    where: vi.fn().mockReturnThis(),
-    limit: vi.fn().mockReturnThis(),
-    set: vi.fn().mockReturnThis()
-  }
-}));
+// Mock database with proper hoisting for Drizzle ORM method chaining
+vi.mock('../../../server/db.ts', () => {
+  const mockObj: any = {};
+  
+  mockObj.insert = vi.fn().mockReturnValue(mockObj);
+  mockObj.select = vi.fn().mockReturnValue(mockObj);
+  mockObj.update = vi.fn().mockReturnValue(mockObj);
+  mockObj.delete = vi.fn().mockReturnValue(mockObj);
+  mockObj.values = vi.fn().mockReturnValue(mockObj);
+  mockObj.returning = vi.fn();
+  mockObj.from = vi.fn().mockReturnValue(mockObj);
+  mockObj.where = vi.fn().mockReturnValue(mockObj);
+  mockObj.leftJoin = vi.fn().mockReturnValue(mockObj);
+  mockObj.orderBy = vi.fn().mockReturnValue(mockObj);
+  mockObj.limit = vi.fn().mockReturnValue(mockObj);
+  mockObj.set = vi.fn().mockReturnValue(mockObj);
+  
+  return { db: mockObj };
+});
 
-import { db } from '../../../server/db.js';
+import { db } from '../../../server/db.ts';
 import { storage } from "../../../server/storage.ts";
 
 describe('Expense Categories Unit Tests', () => {

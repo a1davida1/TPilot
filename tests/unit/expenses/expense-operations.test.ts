@@ -2,22 +2,62 @@
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { InsertExpense } from '../../../shared/schema.js';
 
-// Mock database with proper hoisting
-vi.mock('../../../server/db.js', () => ({
-  db: {
-    insert: vi.fn().mockReturnThis(),
-    select: vi.fn().mockReturnThis(),
-    update: vi.fn().mockReturnThis(),
-    delete: vi.fn().mockReturnThis(),
-    values: vi.fn().mockReturnThis(),
-    returning: vi.fn(),
-    from: vi.fn().mockReturnThis(),
-    where: vi.fn().mockReturnThis(),
-    leftJoin: vi.fn().mockReturnThis(),
-    orderBy: vi.fn().mockReturnThis(),
-    set: vi.fn().mockReturnThis()
-  }
-}));
+// Mock database with proper Drizzle ORM chaining and execute termination
+vi.mock('../../../server/db.js', () => {
+  const mockQB: any = {};
+  
+  mockQB.insert = vi.fn().mockReturnValue(mockQB);
+  mockQB.select = vi.fn().mockReturnValue(mockQB);
+  mockQB.update = vi.fn().mockReturnValue(mockQB);
+  mockQB.delete = vi.fn().mockReturnValue(mockQB);
+  mockQB.values = vi.fn().mockReturnValue(mockQB);
+  mockQB.returning = vi.fn().mockReturnValue(mockQB);
+  mockQB.from = vi.fn().mockReturnValue(mockQB);
+  mockQB.where = vi.fn().mockReturnValue(mockQB);
+  mockQB.leftJoin = vi.fn().mockReturnValue(mockQB);
+  mockQB.orderBy = vi.fn().mockReturnValue(mockQB);
+  mockQB.set = vi.fn().mockReturnValue(mockQB);
+  mockQB.limit = vi.fn().mockReturnValue(mockQB);
+  mockQB.execute = vi.fn();
+  
+  return { db: mockQB };
+});
+
+// Mock drizzle-orm operators
+vi.mock('drizzle-orm', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    eq: vi.fn((...args) => ({ type: 'eq', args })),
+    and: vi.fn((...args) => ({ type: 'and', args })),
+    gte: vi.fn((...args) => ({ type: 'gte', args })),
+    desc: vi.fn((...args) => ({ type: 'desc', args })),
+    sql: vi.fn(),
+    count: vi.fn(),
+    isNull: vi.fn()
+  };
+});
+
+// Mock schema tables
+vi.mock('../../../shared/schema.js', async (importOriginal) => {
+  const actual = await importOriginal();
+  
+  const makeTable = (tableName: string, columns: string[]) => {
+    const table: any = { _: { name: tableName } };
+    columns.forEach(col => {
+      table[col] = { name: col, table: tableName };
+    });
+    table.$inferInsert = {} as any;
+    table.$inferSelect = {} as any;
+    return table;
+  };
+  
+  return {
+    ...actual,
+    expenses: makeTable('expenses', ['id', 'userId', 'categoryId', 'description', 'amount', 'expenseDate', 'taxYear', 'deductionPercentage', 'receiptUrl', 'receiptFileName', 'notes', 'createdAt', 'updatedAt']),
+    expenseCategories: makeTable('expense_categories', ['id', 'name', 'description', 'deductionPercentage', 'isActive', 'createdAt', 'updatedAt'])
+  };
+});
 
 import { db } from '../../../server/db.js';
 import { storage } from "../../../server/storage.ts";
