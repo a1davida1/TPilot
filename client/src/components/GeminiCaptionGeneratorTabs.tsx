@@ -222,6 +222,7 @@ export function GeminiCaptionGeneratorTabs() {
           <Label htmlFor="platform">Platform</Label>
           <Select value={platform} onValueChange={setPlatform}>
             <SelectTrigger id="platform">
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {PLATFORMS.map(p => (
@@ -237,6 +238,7 @@ export function GeminiCaptionGeneratorTabs() {
           <Label htmlFor="voice">Content Voice</Label>
           <Select value={voice} onValueChange={setVoice}>
             <SelectTrigger id="voice">
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {VOICES.map(v => (
@@ -252,6 +254,7 @@ export function GeminiCaptionGeneratorTabs() {
           <Label htmlFor="style">Content Style</Label>
           <Select value={style} onValueChange={setStyle}>
             <SelectTrigger id="style">
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {STYLES.map(s => (
@@ -267,6 +270,7 @@ export function GeminiCaptionGeneratorTabs() {
           <Label htmlFor="mood">Content Mood</Label>
           <Select value={mood} onValueChange={setMood}>
             <SelectTrigger id="mood">
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {MOODS.map(m => (
@@ -326,6 +330,7 @@ export function GeminiCaptionGeneratorTabs() {
                 <div className="space-y-2">
                   <Input
                     type="url"
+                    placeholder="Enter image URL..."
                     value={imageFile ? "" : imageUrl}
                     onChange={(e) => setImageUrl(e.target.value)}
                     disabled={!!imageFile}
@@ -350,6 +355,18 @@ export function GeminiCaptionGeneratorTabs() {
                           <p className="text-sm text-muted-foreground">
                             {imageFile?.name}
                           </p>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => {
+                              setImageFile(null);
+                              setImagePreview(null);
+                            }}
+                            data-testid="button-clear-image"
+                            className="mt-2"
+                          >
+                            Clear Image
+                          </Button>
                         </div>
                       ) : (
                         <div className="flex flex-col items-center gap-2">

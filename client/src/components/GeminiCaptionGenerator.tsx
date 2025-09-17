@@ -179,6 +179,7 @@ export function GeminiCaptionGenerator() {
             <Label htmlFor="platform">Platform</Label>
             <Select value={platform} onValueChange={setPlatform}>
               <SelectTrigger id="platform">
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {PLATFORMS.map(p => (
@@ -195,6 +196,7 @@ export function GeminiCaptionGenerator() {
             <Label htmlFor="voice">Content Voice</Label>
             <Select value={voice} onValueChange={setVoice}>
               <SelectTrigger id="voice">
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {VOICES.map(v => (
