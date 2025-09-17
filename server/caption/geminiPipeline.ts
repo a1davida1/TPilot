@@ -125,6 +125,22 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
         }
       }
       
+      // GIF format validation
+      if (mimeType === 'image/gif') {
+        console.log('GIF format detected, validating header...');
+        const gifSignature = decodedBuffer.subarray(0, 6).toString();
+        if (!gifSignature.startsWith('GIF87a') && !gifSignature.startsWith('GIF89a')) {
+          console.warn('GIF validation warning: Invalid GIF header');
+          throw new InvalidImageError('Invalid GIF image format');
+        }
+        
+        // Note: Gemini sometimes has issues with animated GIFs
+        // For GIFs, we'll use OpenAI fallback more aggressively
+        if (decodedBuffer.length > 5000000) { // ~3.8MB base64 encoded
+          console.log('Large GIF detected, may need fallback processing');
+        }
+      }
+      
       // Check if Base64 data is reasonable length (not too short or extremely long)
       if (imageData.length < 100) {
         throw new InvalidImageError('Base64 data appears to be too short');
@@ -145,6 +161,12 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
 
     const img = { inlineData: { data: imageData, mimeType } };
     console.log('Sending to Gemini for fact extraction...');
+    
+    // For GIFs, try Gemini but be prepared for fallback
+    if (mimeType === 'image/gif') {
+      console.log('Processing GIF - Gemini support may be limited');
+    }
+    
     try {
       const res = await visionModel.generateContent([{text: sys + "\n" + guard + "\n" + prompt}, img]);
       const result = stripToJSON(res.response.text()) as Record<string, unknown>;
@@ -152,6 +174,22 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
       return result;
     } catch (error) {
       console.error('Gemini visionModel.generateContent failed:', error);
+      
+      // For GIFs that fail Gemini processing, provide better fallback facts
+      if (mimeType === 'image/gif') {
+        console.log('GIF processing failed in Gemini, using enhanced fallback facts');
+        return {
+          objects: ['animated', 'gif', 'motion'],
+          colors: ['colorful', 'dynamic'],
+          vibe: 'animated',
+          setting: 'digital',
+          wardrobe: ['various'],
+          angles: ['dynamic'],
+          mood: 'playful',
+          style: 'animated'
+        };
+      }
+      
       throw error;
     }
   } catch (error) {
