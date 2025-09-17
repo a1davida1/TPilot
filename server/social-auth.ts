@@ -10,7 +10,7 @@ import jwt from 'jsonwebtoken';
 import { blacklistToken } from './lib/tokenBlacklist';
 import { logger } from './bootstrap/logger';
 
-export function setupSocialAuth(app: Express) {
+export function setupSocialAuth(app: Express, apiPrefix: string = '/api') {
   // Note: passport.initialize() and passport.session() are now called from routes.ts
   // after session middleware is initialized
   // Serialization/deserialization is also handled in routes.ts
@@ -20,7 +20,7 @@ export function setupSocialAuth(app: Express) {
     passport.use(new GoogleStrategy({
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: "/api/auth/google/callback"
+      callbackURL: `${apiPrefix}/auth/google/callback`
     }, async (accessToken, refreshToken, profile, done) => {
       try {
         // Check if user exists by email OR username
@@ -56,7 +56,7 @@ export function setupSocialAuth(app: Express) {
     passport.use(new FacebookStrategy({
       clientID: process.env.FACEBOOK_APP_ID,
       clientSecret: process.env.FACEBOOK_APP_SECRET,
-      callbackURL: "/api/auth/facebook/callback",
+      callbackURL: `${apiPrefix}/auth/facebook/callback`,
       profileFields: ['id', 'emails', 'name', 'picture']
     }, async (accessToken, refreshToken, profile, done) => {
       try {
@@ -98,7 +98,7 @@ export function setupSocialAuth(app: Express) {
     passport.use(new RedditStrategy({
       clientID: process.env.REDDIT_CLIENT_ID,
       clientSecret: process.env.REDDIT_CLIENT_SECRET,
-      callbackURL: "/api/auth/reddit/callback",
+      callbackURL: `${apiPrefix}/auth/reddit/callback`,
       scope: ['identity']
     }, async (
       accessToken: string,
@@ -129,16 +129,16 @@ export function setupSocialAuth(app: Express) {
   }
 
   // Auth routes
-  setupAuthRoutes(app);
+  setupAuthRoutes(app, apiPrefix);
 }
 
-function setupAuthRoutes(app: Express) {
+function setupAuthRoutes(app: Express, apiPrefix: string) {
   // Google routes
-  app.get('/api/auth/google',
+  app.get(`${apiPrefix}/auth/google`,
     passport.authenticate('google', { scope: ['profile', 'email'] })
   );
 
-  app.get('/api/auth/google/callback',
+  app.get(`${apiPrefix}/auth/google/callback`,
     passport.authenticate('google', { failureRedirect: '/login?error=google_failed' }),
     (req, res) => {
       res.redirect('/dashboard');
@@ -146,11 +146,11 @@ function setupAuthRoutes(app: Express) {
   );
 
   // Facebook routes
-  app.get('/api/auth/facebook',
+  app.get(`${apiPrefix}/auth/facebook`,
     passport.authenticate('facebook', { scope: ['email'] })
   );
 
-  app.get('/api/auth/facebook/callback',
+  app.get(`${apiPrefix}/auth/facebook/callback`,
     passport.authenticate('facebook', { failureRedirect: '/login?error=facebook_failed' }),
     (req, res) => {
       res.redirect('/dashboard');
@@ -158,13 +158,13 @@ function setupAuthRoutes(app: Express) {
   );
 
   // Reddit routes
-  app.get('/api/auth/reddit',
+  app.get(`${apiPrefix}/auth/reddit`,
     passport.authenticate('reddit', { 
       state: Math.random().toString(36).substring(7)
     } as (AuthenticateOptions & { state: string }))
   );
 
-  app.get('/api/auth/reddit/callback',
+  app.get(`${apiPrefix}/auth/reddit/callback`,
     passport.authenticate('reddit', { failureRedirect: '/login?error=reddit_failed' }),
     (req, res) => {
       res.redirect('/dashboard?connected=reddit');
@@ -172,7 +172,7 @@ function setupAuthRoutes(app: Express) {
   );
 
   // Logout with comprehensive error handling
-  app.post('/api/auth/logout', async (req: Request, res: Response) => {
+  app.post(`${apiPrefix}/auth/logout`, async (req: Request, res: Response) => {
     const r = req as Request & {
       session?: { destroy?: (cb: (err?: unknown) => void) => void };
       logout?: (cb: (err?: unknown) => void) => void;
