@@ -19,9 +19,13 @@ vi.mock('../../../server/storage.ts', () => ({ storage: mockStorage }));
 vi.mock('../../../server/lib/media.js', () => ({ MediaManager: mockMediaManager }));
 vi.mock('../../../server/middleware/auth.js', () => ({ authenticateToken: mockAuthenticateToken }));
 vi.mock('fs/promises', () => ({
+  default: {
+    mkdir: vi.fn(),
+    writeFile: vi.fn(),
+  },
   mkdir: vi.fn(),
   writeFile: vi.fn(),
-}));
+}))
 
 // Import after mocking
 import { registerExpenseRoutes } from '../../../server/expense-routes';
@@ -53,8 +57,11 @@ describe('Receipt Upload with ImageShield Protection', () => {
 
       mockStorage.updateExpense.mockResolvedValue(mockExpense);
 
-      // Create a mock image buffer
-      const testImageBuffer = Buffer.from('fake-image-data');
+      // Create a valid 1x1 PNG image buffer (smallest valid PNG)
+      const testImageBuffer = Buffer.from(
+        '89504e470d0a1a0a0000000d494844520000000100000001080600000001f15c48950000000d49444154789c626001000000050001180dd4010000000049454e44ae426082',
+        'hex'
+      );
 
       const response = await request(app)
         .post('/api/expenses/1/receipt')
@@ -86,7 +93,11 @@ describe('Receipt Upload with ImageShield Protection', () => {
 
       mockStorage.updateExpense.mockResolvedValue(mockExpense);
 
-      const testImageBuffer = Buffer.from('fake-image-data');
+      // Create a valid 1x1 PNG image buffer
+      const testImageBuffer = Buffer.from(
+        '89504e470d0a1a0a0000000d494844520000000100000001080600000001f15c48950000000d49444154789c626001000000050001180dd4010000000049454e44ae426082',
+        'hex'
+      );
 
       await request(app)
         .post('/api/expenses/2/receipt')
@@ -111,7 +122,11 @@ describe('Receipt Upload with ImageShield Protection', () => {
 
       mockStorage.updateExpense.mockResolvedValue(mockExpense);
 
-      const testImageBuffer = Buffer.from('fake-image-data');
+      // Create a valid 1x1 PNG image buffer
+      const testImageBuffer = Buffer.from(
+        '89504e470d0a1a0a0000000d494844520000000100000001080600000001f15c48950000000d49444154789c626001000000050001180dd4010000000049454e44ae426082',
+        'hex'
+      );
 
       await request(app)
         .post('/api/expenses/3/receipt')
@@ -136,11 +151,16 @@ describe('Receipt Upload with ImageShield Protection', () => {
 
     test('should handle missing authentication', async () => {
       mockAuthenticateToken.mockImplementation((req: express.Request & { user?: { id: number; tier: string } }, res: express.Response, next: express.NextFunction) => {
-        req.user = null;
+        // Set req.user to undefined (not null) to simulate no auth
+        req.user = undefined;
         next();
       });
 
-      const testImageBuffer = Buffer.from('fake-image-data');
+      // Create a valid 1x1 PNG image buffer
+      const testImageBuffer = Buffer.from(
+        '89504e470d0a1a0a0000000d494844520000000100000001080600000001f15c48950000000d49444154789c626001000000050001180dd4010000000049454e44ae426082',
+        'hex'
+      );
 
       await request(app)
         .post('/api/expenses/1/receipt')
@@ -177,7 +197,11 @@ describe('Receipt Upload with ImageShield Protection', () => {
         receiptFileName: mockAsset.filename,
       });
 
-      const testImageBuffer = Buffer.from('fake-image-data');
+      // Create a valid 1x1 PNG image buffer
+      const testImageBuffer = Buffer.from(
+        '89504e470d0a1a0a0000000d494844520000000100000001080600000001f15c48950000000d49444154789c626001000000050001180dd4010000000049454e44ae426082',
+        'hex'
+      );
 
       const response = await request(app)
         .post('/api/expenses/1/receipt')
@@ -207,7 +231,11 @@ describe('Receipt Upload with ImageShield Protection', () => {
         receiptFileName: 'protected_test.jpg',
       });
 
-      const testImageBuffer = Buffer.from('fake-image-data');
+      // Create a valid 1x1 PNG image buffer
+      const testImageBuffer = Buffer.from(
+        '89504e470d0a1a0a0000000d494844520000000100000001080600000001f15c48950000000d49444154789c626001000000050001180dd4010000000049454e44ae426082',
+        'hex'
+      );
 
       await request(app)
         .post('/api/expenses/1/receipt')
@@ -223,7 +251,11 @@ describe('Receipt Upload with ImageShield Protection', () => {
     test('should handle storage errors gracefully', async () => {
       mockStorage.updateExpense.mockRejectedValue(new Error('Database error'));
 
-      const testImageBuffer = Buffer.from('fake-image-data');
+      // Create a valid 1x1 PNG image buffer
+      const testImageBuffer = Buffer.from(
+        '89504e470d0a1a0a0000000d494844520000000100000001080600000001f15c48950000000d49444154789c626001000000050001180dd4010000000049454e44ae426082',
+        'hex'
+      );
 
       await request(app)
         .post('/api/expenses/1/receipt')
