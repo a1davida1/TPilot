@@ -502,26 +502,26 @@ export function setupAuth(app: Express) {
     try {
       const { token } = req.query;
       
-      // Determine response mode: JSON for tests/API, redirect for browser
-      const acceptsJSON = req.headers.accept?.includes('application/json') || 
-                          req.query.format === 'json' ||
-                          req.headers['user-agent']?.includes('superagent') || // supertest uses superagent
-                          req.headers['user-agent']?.includes('node-fetch') ||
-                          req.headers['user-agent']?.includes('node') || // Node.js test runner
-                          !req.headers['user-agent'] || // No user agent usually means API/test
-                          process.env.NODE_ENV === 'test'; // Explicitly check for test environment
+      // Determine preferred response type: prioritize HTML for browsers, JSON for APIs
+      const preferredType = req.accepts(['html', 'json']);
+      const isJsonResponse = preferredType === 'json' || 
+                            req.query.format === 'json' ||
+                            req.headers['user-agent']?.includes('superagent') || // supertest uses superagent
+                            req.headers['user-agent']?.includes('node-fetch') ||
+                            req.headers['user-agent']?.includes('node'); // Node.js test runner
       
       logger.info('📧 EMAIL VERIFICATION WORKFLOW STARTED', {
         token: token ? `${String(token).substring(0, 8)}...` : 'No token',
         origin: req.headers.origin || 'Unknown',
-        responseMode: acceptsJSON ? 'JSON' : 'REDIRECT',
+        responseMode: isJsonResponse ? 'JSON' : 'REDIRECT',
+        preferredType: preferredType,
         timestamp: new Date().toISOString()
       });
       
       // Check for missing or empty token
       if (!token || token === '') {
         logger.warn('❌ EMAIL VERIFICATION FAILED: No token provided');
-        if (acceptsJSON) {
+        if (isJsonResponse) {
           return res.status(400).json({ message: 'Token is required' });
         }
         return res.redirect(`${FRONTEND_URL}/email-verification?error=token_required`);
@@ -535,7 +535,7 @@ export function setupAuth(app: Express) {
         logger.warn('❌ EMAIL VERIFICATION FAILED: Token not found in database', {
           token: `${String(token).substring(0, 8)}...`
         });
-        if (acceptsJSON) {
+        if (isJsonResponse) {
           return res.status(400).json({ message: 'Invalid or expired token' });
         }
         return res.redirect(`${FRONTEND_URL}/email-verification?error=invalid_token`);
@@ -554,7 +554,7 @@ export function setupAuth(app: Express) {
           currentTime: new Date().toISOString()
         });
         await storage.deleteVerificationToken(token as string);
-        if (acceptsJSON) {
+        if (isJsonResponse) {
           return res.status(400).json({ message: 'Invalid or expired token' });
         }
         return res.redirect(`${FRONTEND_URL}/email-verification?error=token_expired`);
@@ -573,6 +573,13 @@ export function setupAuth(app: Express) {
         email: user?.email ? user.email.replace(/(.{2})(.*)(@.*)/, '$1***$3') : 'No email'
       });
       
+      // Send welcome email
+      if (user?.email && user?.username) {
+        logger.debug('📧 Sending welcome email...');
+        await emailService.sendWelcomeEmail(user.email, user.username);
+        logger.debug('✅ Welcome email sent successfully');
+      }
+      
       // Delete the used token
       logger.debug('🗑️ Deleting used verification token...');
       await storage.deleteVerificationToken(token as string);
@@ -581,11 +588,11 @@ export function setupAuth(app: Express) {
       logger.info('✅ EMAIL VERIFICATION SUCCESSFUL', {
         user: user?.username || 'Unknown',
         email: user?.email ? user.email.replace(/(.{2})(.*)(@.*)/, '$1***$3') : 'No email',
-        responseMode: acceptsJSON ? 'JSON' : 'REDIRECT'
+        responseMode: isJsonResponse ? 'JSON' : 'REDIRECT'
       });
       
       // Return appropriate response based on mode
-      if (acceptsJSON) {
+      if (isJsonResponse) {
         return res.status(200).json({ message: 'Email verified successfully' });
       }
       
@@ -602,16 +609,15 @@ export function setupAuth(app: Express) {
       
       safeLog('error', 'Email verification error:', { error: (error as Error).message });
       
-      // Determine response mode from earlier in try block
-      const acceptsJSON = req.headers.accept?.includes('application/json') || 
-                          req.query.format === 'json' ||
-                          req.headers['user-agent']?.includes('superagent') ||
-                          req.headers['user-agent']?.includes('node-fetch') ||
-                          req.headers['user-agent']?.includes('node') ||
-                          !req.headers['user-agent'] ||
-                          process.env.NODE_ENV === 'test';
+      // Determine response mode from earlier logic
+      const preferredTypeError = req.accepts(['html', 'json']);
+      const isJsonResponseError = preferredTypeError === 'json' || 
+                                 req.query.format === 'json' ||
+                                 req.headers['user-agent']?.includes('superagent') ||
+                                 req.headers['user-agent']?.includes('node-fetch') ||
+                                 req.headers['user-agent']?.includes('node');
       
-      if (acceptsJSON) {
+      if (isJsonResponseError) {
         return res.status(500).json({ message: 'Error verifying email' });
       }
       res.redirect(`${FRONTEND_URL}/email-verification?error=verification_failed`);

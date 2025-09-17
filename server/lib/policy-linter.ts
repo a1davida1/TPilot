@@ -57,8 +57,8 @@ const DEFAULT_RULES: RuleSpec = {
 
 // Helper function to normalize subreddit names
 function normalizeSubredditName(name: string): string {
-  // Remove all non-alphanumeric characters and normalize
-  return name.replace(/[^a-z0-9]/gi, '').toLowerCase();
+  // Remove non-alphanumeric characters except underscores, then normalize
+  return name.replace(/[^a-z0-9_]/gi, '').toLowerCase();
 }
 
 export async function lintCaption(input: {

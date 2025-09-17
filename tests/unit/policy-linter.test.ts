@@ -6,9 +6,9 @@ import { subredditRules } from '../../shared/schema';
 
 describe('Policy Linter', () => {
   beforeAll(async () => {
-    // Setup test data
+    // Setup test data - using consistent subreddit name 'test_sub'
     await db.insert(subredditRules).values({
-      subreddit: 'testsub',
+      subreddit: 'test_sub',
       rulesJson: {
         bannedWords: ['banned terms'],
         titleRegex: ['pattern rules'],
@@ -20,8 +20,8 @@ describe('Policy Linter', () => {
   });
 
   afterAll(async () => {
-    // Cleanup test data
-    await db.delete(subredditRules).where(eq(subredditRules.subreddit, 'testsub'));
+    // Cleanup test data - using consistent subreddit name 'test_sub'
+    await db.delete(subredditRules).where(eq(subredditRules.subreddit, 'test_sub'));
   });
 
   describe('Blocked Content', () => {
