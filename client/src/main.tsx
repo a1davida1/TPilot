@@ -1,4 +1,5 @@
 import { createRoot } from "react-dom/client";
+import { ErrorBoundary } from "react-error-boundary";
 import App from "./App";
 import "./index.css";
 
@@ -12,9 +13,19 @@ if (!rootElement) {
   throw new Error('Root element not found');
 }
 
+function ErrorFallback({ error }: { error: Error }) {
+  return (
+    <div style={{ padding: "20px", textAlign: "center" }}>
+      <h1>Something went wrong:</h1>
+      <pre style={{ color: "red" }}>{error.message}</pre>
+      <button onClick={() => window.location.reload()}>Reload App</button>
+    </div>
+  );
+}
+
 try {
   createRoot(rootElement).render(
-    <ErrorBoundary>
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
       <App />
     </ErrorBoundary>
   );
