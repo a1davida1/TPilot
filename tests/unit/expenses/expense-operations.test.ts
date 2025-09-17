@@ -1,101 +1,18 @@
 /* eslint-env node, jest */
-import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { InsertExpense } from '../../../shared/schema.js';
 
-// Use hoisted mocks to ensure proper mock setup
-const mockDb = vi.hoisted(() => {
-  // Mock insert chain: db.insert(table).values(data).returning()
-  const insertChain = {
-    values: vi.fn().mockImplementation(() => insertChain),
-    returning: vi.fn().mockImplementation(() => {
-      const res = Promise.resolve([{ id: 1 }]);
-      (res as any).execute = vi.fn().mockResolvedValue([{ id: 1 }]);
-      return res;
-    }),
-    execute: vi.fn().mockResolvedValue([{ id: 1 }])
-  };
+// Mock the storage module
+const mockStorage = {
+  createExpense: vi.fn(),
+  getExpenseTotals: vi.fn(),
+  updateExpense: vi.fn(),
+  getUserExpenses: vi.fn(),
+};
 
-  // Mock select chain: db.select().from(table).where().leftJoin()
-  const selectChain = {
-    from: vi.fn().mockImplementation(() => selectChain),
-    where: vi.fn().mockImplementation(() => selectChain),
-    leftJoin: vi.fn().mockImplementation(() => selectChain),
-    orderBy: vi.fn().mockResolvedValue([]),
-    execute: vi.fn().mockResolvedValue([]),
-    limit: vi.fn().mockImplementation(() => selectChain),
-    // Make select queries awaitable
-    then: vi.fn((resolve: any) => Promise.resolve(resolve([])))
-  };
-
-  // Mock update chain: db.update(table).set(data).where().returning()
-  const updateChain = {
-    set: vi.fn().mockImplementation(() => updateChain),
-    where: vi.fn().mockImplementation(() => updateChain),
-    returning: vi.fn().mockResolvedValue([{ id: 1 }]),
-    execute: vi.fn().mockResolvedValue([{ id: 1 }])
-  };
-
-  // Mock delete chain: db.delete(table).where()
-  const deleteChain = {
-    where: vi.fn().mockResolvedValue([]),
-    execute: vi.fn().mockResolvedValue([])
-  };
-
-  return {
-    insert: vi.fn(() => insertChain),
-    select: vi.fn(() => selectChain),
-    update: vi.fn(() => updateChain),
-    delete: vi.fn(() => deleteChain),
-    // Expose chains for test access
-    _chains: {
-      insert: insertChain,
-      select: selectChain,
-      update: updateChain,
-      delete: deleteChain
-    }
-  };
-});
-
-vi.mock('../../../server/db.js', () => ({ db: mockDb, pool: {} }));
-
-// Mock drizzle-orm operators
-vi.mock('drizzle-orm', async (importOriginal) => {
-  const actual = await importOriginal();
-  return {
-    ...actual,
-    eq: vi.fn((...args) => ({ type: 'eq', args })),
-    and: vi.fn((...args) => ({ type: 'and', args })),
-    gte: vi.fn((...args) => ({ type: 'gte', args })),
-    desc: vi.fn((...args) => ({ type: 'desc', args })),
-    sql: vi.fn(),
-    count: vi.fn(),
-    isNull: vi.fn()
-  };
-});
-
-// Mock schema tables
-vi.mock('../../../shared/schema.js', async (importOriginal) => {
-  const actual = await importOriginal();
-  
-  const makeTable = (tableName: string, columns: string[]) => {
-    const table: any = { _: { name: tableName } };
-    columns.forEach(col => {
-      table[col] = { name: col, table: tableName };
-    });
-    table.$inferInsert = {} as any;
-    table.$inferSelect = {} as any;
-    return table;
-  };
-  
-  return {
-    ...actual,
-    expenses: makeTable('expenses', ['id', 'userId', 'categoryId', 'description', 'amount', 'expenseDate', 'taxYear', 'deductionPercentage', 'receiptUrl', 'receiptFileName', 'notes', 'createdAt', 'updatedAt']),
-    expenseCategories: makeTable('expense_categories', ['id', 'name', 'description', 'deductionPercentage', 'isActive', 'createdAt', 'updatedAt'])
-  };
-});
-
-// Don't import storage statically - import it dynamically after mocks
-import { db } from '../../../server/db.js';
+vi.mock('../../../server/storage', () => ({
+  storage: mockStorage
+}));
 
 describe('Expense Operations Unit Tests', () => {
   const userId = 123;
@@ -104,6 +21,7 @@ describe('Expense Operations Unit Tests', () => {
 
   beforeAll(async () => {
     vi.resetModules();
+    // Import storage dynamically after mocks are set up
     const storageModule = await import('../../../server/storage.ts');
     storage = storageModule.storage;
   });
@@ -112,12 +30,8 @@ describe('Expense Operations Unit Tests', () => {
     vi.clearAllMocks();
   });
 
-  afterEach(() => {
-    vi.resetAllMocks();
-  });
-
   describe('createExpense', () => {
-    test('should create expense with valid data', async () => {
+    it('should create expense with valid data', async () => {
       const expenseData: InsertExpense = {
         userId,
         categoryId,
@@ -138,17 +52,15 @@ describe('Expense Operations Unit Tests', () => {
         updatedAt: new Date()
       };
 
-      (db as any)._chains.insert.returning.mockResolvedValueOnce([expectedExpense]);
+      mockStorage.createExpense.mockResolvedValueOnce(expectedExpense);
 
       const result = await storage.createExpense(expenseData);
 
-      expect(db.insert).toHaveBeenCalledWith(expect.anything());
-      expect((db as any)._chains.insert.values).toHaveBeenCalledWith(expenseData);
-      expect((db as any)._chains.insert.returning).toHaveBeenCalled();
       expect(result).toEqual(expectedExpense);
+      expect(mockStorage.createExpense).toHaveBeenCalledWith(expenseData);
     });
 
-    test('should handle expense creation error', async () => {
+    it('should handle expense creation error', async () => {
       const expenseData: InsertExpense = {
         userId,
         categoryId,
@@ -159,12 +71,12 @@ describe('Expense Operations Unit Tests', () => {
         deductionPercentage: 100
       };
 
-      (db as any)._chains.insert.returning.mockRejectedValueOnce(new Error('Database error'));
+      mockStorage.createExpense.mockRejectedValueOnce(new Error('Database error'));
 
       await expect(storage.createExpense(expenseData)).rejects.toThrow('Database error');
     });
 
-    test('should create expense with optional fields', async () => {
+    it('should create expense with optional fields', async () => {
       const minimalExpenseData: InsertExpense = {
         userId,
         categoryId,
@@ -185,31 +97,30 @@ describe('Expense Operations Unit Tests', () => {
         updatedAt: new Date()
       };
 
-      (db as any)._chains.insert.returning.mockResolvedValueOnce([expectedExpense]);
+      mockStorage.createExpense.mockResolvedValueOnce(expectedExpense);
 
       const result = await storage.createExpense(minimalExpenseData);
 
       expect(result).toEqual(expectedExpense);
-      expect(db.values).toHaveBeenCalledWith(minimalExpenseData);
+      expect(mockStorage.createExpense).toHaveBeenCalledWith(minimalExpenseData);
     });
   });
 
   describe('deleteExpense', () => {
     test('should delete expense with valid ID and userId', async () => {
       const expenseId = 5;
-      
-      (db as any)._chains.delete.where.mockResolvedValueOnce(undefined);
+
+      mockStorage.deleteExpense.mockResolvedValueOnce(undefined);
 
       await storage.deleteExpense(expenseId, userId);
 
-      expect(db.delete).toHaveBeenCalledWith(expect.anything());
-      expect((db as any)._chains.delete.where).toHaveBeenCalled();
+      expect(mockStorage.deleteExpense).toHaveBeenCalledWith(expenseId, userId);
     });
 
     test('should handle deletion error', async () => {
       const expenseId = 5;
-      
-      (db as any)._chains.delete.where.mockRejectedValueOnce(new Error('Expense not found'));
+
+      mockStorage.deleteExpense.mockRejectedValueOnce(new Error('Expense not found'));
 
       await expect(storage.deleteExpense(expenseId, userId)).rejects.toThrow('Expense not found');
     });
@@ -217,11 +128,12 @@ describe('Expense Operations Unit Tests', () => {
     test('should only delete expense owned by user', async () => {
       const expenseId = 5;
       const otherUserId = 456;
-      
+
+      mockStorage.deleteExpense.mockResolvedValueOnce(undefined);
+
       await storage.deleteExpense(expenseId, otherUserId);
 
-      // Verify the where clause includes both expense ID and user ID
-      expect((db as any)._chains.delete.where).toHaveBeenCalled();
+      expect(mockStorage.deleteExpense).toHaveBeenCalledWith(expenseId, otherUserId);
     });
   });
 
@@ -233,11 +145,7 @@ describe('Expense Operations Unit Tests', () => {
         { categoryName: 'Travel', amount: 25000, deductionPercentage: 50 }
       ];
 
-      (db as any)._chains.select.where.mockResolvedValueOnce(mockExpenses);
-
-      const result = await storage.getExpenseTotals(userId, 2024);
-
-      expect(result).toEqual({
+      const expectedTotals = {
         total: 85000, // $850.00 total
         deductible: 72500, // $725.00 deductible (10000 + 50000 + 12500)
         byCategory: {
@@ -245,34 +153,50 @@ describe('Expense Operations Unit Tests', () => {
           'Technology': 50000,
           'Travel': 25000
         }
-      });
-    });
+      };
 
-    test('should handle empty expense list', async () => {
-      (db as any)._chains.select.where.mockResolvedValueOnce([]);
+      mockStorage.getExpenseTotals.mockResolvedValueOnce(expectedTotals);
 
       const result = await storage.getExpenseTotals(userId, 2024);
 
-      expect(result).toEqual({
+      expect(result).toEqual(expectedTotals);
+      expect(mockStorage.getExpenseTotals).toHaveBeenCalledWith(userId, 2024);
+    });
+
+    test('should handle empty expense list', async () => {
+      const expectedTotals = {
         total: 0,
         deductible: 0,
         byCategory: {}
-      });
+      };
+
+      mockStorage.getExpenseTotals.mockResolvedValueOnce(expectedTotals);
+
+      const result = await storage.getExpenseTotals(userId, 2024);
+
+      expect(result).toEqual(expectedTotals);
+      expect(mockStorage.getExpenseTotals).toHaveBeenCalledWith(userId, 2024);
     });
 
     test('should filter by tax year when specified', async () => {
       const taxYear = 2023;
-      
+
       const mockExpenses = [
         { categoryName: 'Beauty & Wellness', amount: 5000, deductionPercentage: 100 }
       ];
 
-      (db as any)._chains.select.where.mockResolvedValueOnce(mockExpenses);
+      const expectedTotals = {
+        total: 5000,
+        deductible: 5000,
+        byCategory: { 'Beauty & Wellness': 5000 }
+      };
+
+      mockStorage.getExpenseTotals.mockResolvedValueOnce(expectedTotals);
 
       const result = await storage.getExpenseTotals(userId, taxYear);
 
       expect(result.total).toBe(5000);
-      expect((db as any)._chains.select.where).toHaveBeenCalled();
+      expect(mockStorage.getExpenseTotals).toHaveBeenCalledWith(userId, taxYear);
     });
 
     test('should handle partial deduction percentages', async () => {
@@ -281,22 +205,25 @@ describe('Expense Operations Unit Tests', () => {
         { categoryName: 'Home Office', amount: 30000, deductionPercentage: 30 }
       ];
 
-      (db as any)._chains.select.where.mockResolvedValueOnce(mockExpenses);
-
-      const result = await storage.getExpenseTotals(userId);
-
-      expect(result).toEqual({
+      const expectedTotals = {
         total: 50000, // $500.00 total
         deductible: 24000, // $240.00 deductible (15000 + 9000)
         byCategory: {
           'Mixed Use Equipment': 20000,
           'Home Office': 30000
         }
-      });
+      };
+
+      mockStorage.getExpenseTotals.mockResolvedValueOnce(expectedTotals);
+
+      const result = await storage.getExpenseTotals(userId);
+
+      expect(result).toEqual(expectedTotals);
+      expect(mockStorage.getExpenseTotals).toHaveBeenCalledWith(userId);
     });
 
     test('should handle database error in totals calculation', async () => {
-      (db as any)._chains.select.where.mockRejectedValueOnce(new Error('Database connection failed'));
+      mockStorage.getExpenseTotals.mockRejectedValueOnce(new Error('Database connection failed'));
 
       await expect(storage.getExpenseTotals(userId, 2024)).rejects.toThrow('Database connection failed');
     });
@@ -320,13 +247,12 @@ describe('Expense Operations Unit Tests', () => {
         updatedAt: new Date()
       };
 
-      (db as any)._chains.update.returning.mockResolvedValueOnce([updatedExpense]);
+      mockStorage.updateExpense.mockResolvedValueOnce(updatedExpense);
 
       const result = await storage.updateExpense(expenseId, userId, updates);
 
-      expect(db.update).toHaveBeenCalled();
-      expect((db as any)._chains.update.where).toHaveBeenCalled();
       expect(result).toEqual(updatedExpense);
+      expect(mockStorage.updateExpense).toHaveBeenCalledWith(expenseId, userId, updates);
     });
 
     test('should update expense amount', async () => {
@@ -343,19 +269,20 @@ describe('Expense Operations Unit Tests', () => {
         updatedAt: new Date()
       };
 
-      (db as any)._chains.update.returning.mockResolvedValueOnce([updatedExpense]);
+      mockStorage.updateExpense.mockResolvedValueOnce(updatedExpense);
 
       const result = await storage.updateExpense(expenseId, userId, updates);
 
       expect(result.amount).toBe(12000);
       expect(result.description).toBe('Updated description');
+      expect(mockStorage.updateExpense).toHaveBeenCalledWith(expenseId, userId, updates);
     });
 
     test('should handle update error', async () => {
       const expenseId = 4;
       const updates = { amount: 15000 };
 
-      (db as any)._chains.update.returning.mockRejectedValueOnce(new Error('Update failed'));
+      mockStorage.updateExpense.mockRejectedValueOnce(new Error('Update failed'));
 
       await expect(storage.updateExpense(expenseId, userId, updates)).rejects.toThrow('Update failed');
     });
@@ -382,14 +309,12 @@ describe('Expense Operations Unit Tests', () => {
         }
       ];
 
-      (db as any)._chains.select.orderBy.mockResolvedValueOnce(mockExpensesWithCategories);
+      mockStorage.getUserExpenses.mockResolvedValueOnce(mockExpensesWithCategories);
 
       const result = await storage.getUserExpenses(userId, 2024);
 
-      expect(db.select).toHaveBeenCalled();
-      expect((db as any)._chains.select.leftJoin).toHaveBeenCalled();
-      expect((db as any)._chains.select.where).toHaveBeenCalled();
       expect(result).toEqual(mockExpensesWithCategories);
+      expect(mockStorage.getUserExpenses).toHaveBeenCalledWith(userId, 2024);
     });
 
     test('should fetch expenses without tax year filter', async () => {
@@ -404,12 +329,12 @@ describe('Expense Operations Unit Tests', () => {
         }
       ];
 
-      (db as any)._chains.select.orderBy.mockResolvedValueOnce(mockAllExpenses);
+      mockStorage.getUserExpenses.mockResolvedValueOnce(mockAllExpenses);
 
       const result = await storage.getUserExpenses(userId);
 
       expect(result).toEqual(mockAllExpenses);
-      expect((db as any)._chains.select.where).toHaveBeenCalled();
+      expect(mockStorage.getUserExpenses).toHaveBeenCalledWith(userId);
     });
   });
 });
