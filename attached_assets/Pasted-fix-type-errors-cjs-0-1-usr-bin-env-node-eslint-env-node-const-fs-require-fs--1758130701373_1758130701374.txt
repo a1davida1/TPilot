@@ -1,0 +1,1726 @@
+fix-type-errors.cjs
++0
+-1
+
+#!/usr/bin/env node
+
+/* eslint-env node */
+const fs = require('fs');
+const path = require('path');
+
+// Helper to fix common TypeScript errors
+function fixTypeErrors(filePath) {
+  if (!fs.existsSync(filePath)) return;
+  
+  let content = fs.readFileSync(filePath, 'utf8');
+  
+  // Fix error.message patterns
+  content = content.replace(/(\s)error\.message/g, '$1(error as Error).message');
+  content = content.replace(/(\s)error\.stack/g, '$1(error as Error).stack');
+  
+  // Fix implicit any in map functions
+  content = content.replace(/\.map\(\(([^,)]+),\s*([^)]+)\)/g, '.map(($1: any, $2: number)');
+  
+  // Fix implicit any in function parameters
+  content = content.replace(/function\s+(\w+)\(([^:)]+)\)/g, 'function $1($2: any)');
+  
+  fs.writeFileSync(filePath, content);
+}
+
+// Process all TypeScript files
+const files = process.argv.slice(2);
+files.forEach(fixTypeErrors);
+
+console.log('✅ Type errors fixed in', files.length, 'files');
+server/auth.ts
++20
+-17
+
+import { Express, Request, Response } from 'express';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import session from 'express-session';
+import { storage } from './storage';
+import { emailService } from './services/email-service';
+import crypto from 'crypto';
+import { z } from 'zod';
+import { authLimiter } from './middleware/security.js';
+import { safeLog } from './lib/logger-utils.js';
+import { FRONTEND_URL } from './config.js';
+import { FRONTEND_URL, API_PREFIX, normalizeApiPrefix, withApiPrefix } from './config.js';
+import { verificationLimiter, passwordResetLimiter, loginLimiter, signupLimiter, passwordChangeLimiter } from './middleware/simple-rate-limit.js';
+import { authMetrics } from './services/basic-metrics.js';
+import { logger } from './bootstrap/logger.js';
+import { verifyAdminCredentials } from './lib/admin-auth.js';
+import { validate, ValidationSource, loginValidationSchema, signupValidationSchema, passwordChangeValidationSchema, passwordResetValidationSchema } from './middleware/validation.js';
+import { extractAuthToken } from './middleware/extract-token.js';
+
+// Auth validation schemas removed - handled by middleware
+
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET || /changeme|placeholder/i.test(JWT_SECRET)) {
+  throw new Error('JWT_SECRET environment variable is required and must not be a placeholder');
+}
+// Type assertion after validation
+const JWT_SECRET_VALIDATED: string = JWT_SECRET;
+
+export function setupAuth(app: Express) {
+export function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
+  const normalizedPrefix = normalizeApiPrefix(apiPrefix);
+  const prefixed = (path: string) => withApiPrefix(path, normalizedPrefix);
+  const authPath = (path: string) => prefixed(`auth/${path}`);
+  const adminPath = (path: string) => prefixed(`admin/${path}`);
+
+  // Regular signup
+  app.post('/api/auth/signup', signupLimiter, validate(signupValidationSchema), async (req, res) => {
+  app.post(authPath('signup'), signupLimiter, validate(signupValidationSchema), async (req, res) => {
+    const startTime = Date.now();
+    try {
+      // Input already validated by middleware
+      const { username, password, email } = req.body;
+
+      // Check if user exists by username OR email
+      const existingUserByUsername = await storage.getUserByUsername(username);
+      if (existingUserByUsername) {
+        return res.status(400).json({ message: 'Username already exists' });
+      }
+      
+      const existingUserByEmail = await storage.getUserByEmail(email);
+      if (existingUserByEmail) {
+        return res.status(400).json({ message: 'Email already exists' });
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Create user
+      const user = await storage.createUser({
+        username,
+        password: hashedPassword,
+        email,
+        tier: 'free'
+@@ -128,51 +131,51 @@ export function setupAuth(app: Express) {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            tier: user.tier,
+            isAdmin: user.isAdmin,
+            role: user.role,
+            emailVerified: false
+          }
+        });
+      }
+      
+      // Track signup metrics
+      authMetrics.track('signup', true, Date.now() - startTime);
+      
+    } catch (error) {
+      safeLog('error', 'Authentication signup failed', { error: (error as Error).message });
+      
+      // Track failed signup
+      authMetrics.track('signup', false, Date.now() - startTime, (error as Error).message);
+      
+      res.status(500).json({ message: 'Error creating user' });
+    }
+  });
+
+  // Regular login
+  app.post('/api/auth/login', loginLimiter, validate(loginValidationSchema), async (req, res) => {
+  app.post(authPath('login'), loginLimiter, validate(loginValidationSchema), async (req, res) => {
+    const startTime = Date.now();
+    try {
+      // Input already validated by middleware
+      const { username, password, email } = req.body;
+      const loginIdentifier = email || username;
+
+      const adminEmail = await verifyAdminCredentials(loginIdentifier, password);
+
+      if (adminEmail) {
+        
+        // Create admin token
+        const token = jwt.sign(
+          {
+            id: 999,
+            userId: 999,
+            username: 'admin',
+            isAdmin: true,
+            role: 'admin',
+            tier: 'admin'
+          },
+          JWT_SECRET_VALIDATED,
+          { expiresIn: '24h' }
+        );
+
+        res.cookie('authToken', token, {
+@@ -262,51 +265,51 @@ export function setupAuth(app: Express) {
+          email: user.email,
+          tier: user.tier,
+          isAdmin: user.isAdmin,
+          role: user.role
+        }
+      });
+      
+      // Track successful login metrics
+      authMetrics.track('login', true, Date.now() - startTime);
+      
+    } catch (error) {
+      safeLog('error', 'Authentication login failed', { error: (error as Error).message });
+      
+      // Track failed login metrics
+      authMetrics.track('login', false, Date.now() - startTime, (error as Error).message);
+      
+      res.status(500).json({ message: 'Error logging in' });
+    }
+  });
+
+  // When ready to implement, use proper OAuth libraries and security practices
+  
+  // Note: Resend verification email route is defined at line 812 with proper rate limiting
+
+  // Password reset request
+  app.post('/api/auth/forgot-password', passwordResetLimiter, async (req, res) => {
+  app.post(authPath('forgot-password'), passwordResetLimiter, async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      logger.info('Password reset workflow started', {
+        email: email ? email.replace(/(.{2})(.*)(@.*)/, '$1***$3') : 'No email',
+        requestIP: req.ip || 'Unknown',
+        sendGridConfigured: !!process.env.SENDGRID_API_KEY,
+        emailServiceReady: emailService.isEmailServiceConfigured,
+        timestamp: new Date().toISOString()
+      });
+      
+      if (!email) {
+        logger.warn('Password reset failed: No email provided');
+        return res.status(400).json({ message: 'Email is required' });
+      }
+
+      // Find user by email
+      logger.debug('Looking up user by email');
+      const user = await storage.getUserByEmail(email);
+      
+      if (!user) {
+        logger.warn('User not found for password reset (returning generic message for security)', {
+          email: email.replace(/(.{2})(.*)(@.*)/, '$1***$3')
+        });
+        // Don't reveal if email exists for security
+@@ -335,67 +338,67 @@ export function setupAuth(app: Express) {
+        
+        // Send password reset email with JWT token
+        await emailService.sendPasswordResetEmail(user.email, user.username, resetToken);
+        
+        logger.info('Password reset email sent successfully - check email service logs for delivery status');
+      }
+
+      logger.info('Password reset request completed - returning generic success message for security');
+      
+      res.json({ message: 'If the email exists, a reset link has been sent' });
+    } catch (error) {
+      logger.error('Password reset error', {
+        error: (error as Error).message,
+        stack: (error as Error).stack?.split('\n')[1]?.trim() || 'No stack trace',
+        email: req.body?.email ? req.body.email.replace(/(.{2})(.*)(@.*)/, '$1***$3') : 'No email',
+        timestamp: new Date().toISOString()
+      });
+      
+      safeLog('error', 'Password reset request failed', { error: (error as Error).message });
+      res.status(500).json({ message: 'Error processing password reset' });
+    }
+  });
+
+
+  // Email service health check endpoint
+  app.get('/api/auth/email-status', (req, res) => {
+  app.get(authPath('email-status'), (req, res) => {
+    const status = {
+      configured: emailService.isEmailServiceConfigured,
+      sendgrid_key_exists: !!process.env.SENDGRID_API_KEY,
+      from_email: process.env.FROM_EMAIL || 'not set',
+      frontend_url: process.env.FRONTEND_URL || 'not set',
+      jwt_secret_exists: !!process.env.JWT_SECRET,
+      node_env: process.env.NODE_ENV || 'not set',
+      deployment: process.env.REPLIT_DEPLOYMENT || 'not set'
+    };
+    
+    logger.info('Email service status check', status);
+    res.json(status);
+  });
+
+  // Get current user endpoint (CRITICAL - this was missing!)
+  app.get('/api/auth/user', async (req: Request, res: Response) => {
+  app.get(authPath('user'), async (req: Request, res: Response) => {
+    try {
+      let token: string | null = null;
+
+      // Extract token using the utility function
+      token = extractAuthToken(req);
+
+      if (!token) {
+        return res.status(401).json({ message: 'Access token required' });
+      }
+        
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET_VALIDATED) as { userId?: number; id?: number; isAdmin?: boolean; };
+        
+        // CHECK IF IT'S ADMIN TOKEN
+        if (decoded.id === 999 || decoded.isAdmin) {
+          return res.json({
+            id: 999,
+            username: 'admin',
+            email: process.env.ADMIN_EMAIL,
+            tier: 'admin',
+            isAdmin: true,
+            role: 'admin',
+            emailVerified: true
+          });
+        }
+@@ -404,51 +407,51 @@ export function setupAuth(app: Express) {
+        const userId = decoded.userId || decoded.id;
+        if (!userId) {
+          return res.status(401).json({ message: 'Invalid token: missing user ID' });
+        }
+        const user = await storage.getUser(userId);
+        if (user) {
+          const { password: _, ...userResponse } = user;
+          return res.json({
+            ...userResponse,
+            tier: userResponse.tier || 'free'
+          });
+        }
+
+        return res.status(404).json({ message: 'User not found' });
+      } catch (jwtError) {
+        safeLog('error', 'JWT verification failed', { error: (jwtError as Error).message });
+        return res.status(401).json({ message: 'Invalid token' });
+      }
+    } catch (error) {
+      safeLog('error', 'Get user failed', { error: (error as Error).message });
+      res.status(500).json({ message: 'Error fetching user data' });
+    }
+  });
+
+  // Force password change endpoint (for temporary passwords)
+  app.post('/api/auth/change-password', passwordChangeLimiter, validate(passwordChangeValidationSchema), async (req, res) => {
+  app.post(authPath('change-password'), passwordChangeLimiter, validate(passwordChangeValidationSchema), async (req, res) => {
+    try {
+      const { userId, currentPassword, newPassword } = req.body;
+
+      if (!userId || !currentPassword || !newPassword) {
+        return res.status(400).json({ message: 'Missing required fields' });
+      }
+
+      if (newPassword.length < 6) {
+        return res.status(400).json({ message: 'New password must be at least 6 characters long' });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Verify current password
+      const validPassword = await bcrypt.compare(currentPassword, user.password);
+      if (!validPassword) {
+        return res.status(401).json({ message: 'Current password is incorrect' });
+      }
+
+      // Hash new password
+      const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+@@ -476,51 +479,51 @@ export function setupAuth(app: Express) {
+      res.cookie('authToken', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 24 * 60 * 60 * 1000
+      });
+
+      res.json({
+        message: 'Password changed successfully',
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          tier: user.tier,
+          isAdmin: user.isAdmin,
+          role: user.role
+        }
+      });
+    } catch (error) {
+      safeLog('error', 'Password change failed', { error: (error as Error).message });
+      res.status(500).json({ message: 'Error changing password' });
+    }
+  });
+
+  // Email verification route
+  app.get('/api/auth/verify-email', async (req, res) => {
+  app.get(authPath('verify-email'), async (req, res) => {
+    try {
+      const { token } = req.query;
+      
+      // Determine preferred response type: prioritize HTML for browsers, JSON for APIs
+      const preferredType = req.accepts(['html', 'json']);
+      const isJsonResponse = preferredType === 'json' || 
+                            req.query.format === 'json' ||
+                            req.headers['user-agent']?.includes('superagent') || // supertest uses superagent
+                            req.headers['user-agent']?.includes('node-fetch') ||
+                            req.headers['user-agent']?.includes('node'); // Node.js test runner
+      
+      logger.info('📧 EMAIL VERIFICATION WORKFLOW STARTED', {
+        token: token ? `${String(token).substring(0, 8)}...` : 'No token',
+        origin: req.headers.origin || 'Unknown',
+        responseMode: isJsonResponse ? 'JSON' : 'REDIRECT',
+        preferredType: preferredType,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Check for missing or empty token
+      if (!token || token === '') {
+        logger.warn('❌ EMAIL VERIFICATION FAILED: No token provided');
+        if (isJsonResponse) {
+          return res.status(400).json({ message: 'Token is required' });
+        }
+@@ -603,153 +606,153 @@ export function setupAuth(app: Express) {
+    } catch (error) {
+      logger.error('❌ EMAIL VERIFICATION ERROR', {
+        error: (error as Error).message,
+        stack: (error as Error).stack?.split('\n')[1]?.trim() || 'No stack trace',
+        time: new Date().toISOString()
+      });
+      
+      safeLog('error', 'Email verification error:', { error: (error as Error).message });
+      
+      // Determine response mode from earlier logic
+      const preferredTypeError = req.accepts(['html', 'json']);
+      const isJsonResponseError = preferredTypeError === 'json' || 
+                                 req.query.format === 'json' ||
+                                 req.headers['user-agent']?.includes('superagent') ||
+                                 req.headers['user-agent']?.includes('node-fetch') ||
+                                 req.headers['user-agent']?.includes('node');
+      
+      if (isJsonResponseError) {
+        return res.status(500).json({ message: 'Error verifying email' });
+      }
+      res.redirect(`${FRONTEND_URL}/email-verification?error=verification_failed`);
+    }
+  });
+
+  // Password reset token verification route
+  app.post('/api/auth/reset-password', passwordResetLimiter, validate(passwordResetValidationSchema), async (req, res) => {
+  app.post(authPath('reset-password'), passwordResetLimiter, validate(passwordResetValidationSchema), async (req, res) => {
+    try {
+      const { token, newPassword } = req.body;
+
+      // Decode and verify JWT token (generated by forgot-password endpoint)
+      let decoded: { email?: string };
+      try {
+        decoded = jwt.verify(token, JWT_SECRET_VALIDATED) as { email?: string };
+      } catch (jwtError) {
+        safeLog('warn', 'Invalid JWT token in password reset', {
+          error: (jwtError as Error).message,
+          tokenLength: token.length
+        });
+        return res.status(400).json({ message: 'Invalid or expired reset token' });
+      }
+      
+      // Extract email from JWT payload
+      const { email } = decoded;
+      if (!email) {
+        return res.status(400).json({ message: 'Invalid token format' });
+      }
+
+      // Find user by email
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(400).json({ message: 'User not found' });
+      }
+
+      // Hash the new password
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      
+      // Update password, mark email as verified, and clear temporary password flag
+      await storage.updateUserPassword(user.id, hashedPassword);
+      await storage.updateUserEmailVerified(user.id, true);
+      await storage.updateUser(user.id, { mustChangePassword: false });
+      
+      logger.info('Password reset successful', {
+        userId: user.id,
+        username: user.username,
+        email: email.replace(/(.{2})(.*)(@.*)/, '$1***$3')
+      });
+      
+      res.json({ message: 'Password reset successful' });
+      
+    } catch (error) {
+      safeLog('error', 'Password reset error:', { error: (error as Error).message });
+      res.status(400).json({ message: 'Invalid or expired token' });
+    }
+  });
+
+  // DEPRECATED ROUTE - REMOVED (use POST /api/auth/reset-password instead)
+  // DEPRECATED ROUTE - REMOVED (use the reset-password endpoint above instead)
+  /*
+  app.post('/api/auth/verify-reset-token', passwordResetLimiter, async (req, res) => {
+  app.post(authPath('verify-reset-token'), passwordResetLimiter, async (req, res) => {
+    try {
+      const { token } = req.body;
+      
+      if (!token) {
+        return res.status(400).json({ message: 'Token required' });
+      }
+      
+      // Decode the token (it might be URL encoded from the frontend)
+      const decodedToken = decodeURIComponent(token);
+      
+      // Check if it's a JWT token or database token
+      try {
+        // Try JWT first (from forgot-password flow)
+        const decoded = jwt.verify(decodedToken, JWT_SECRET_VALIDATED) as any;
+        
+        if (decoded.type !== 'password-reset') {
+          return res.status(400).json({ message: 'Invalid token type' });
+        }
+        
+        res.json({ valid: true, email: decoded.email });
+      } catch (jwtError) {
+        // If JWT fails, try database token (from verification flow)
+        const resetToken = await storage.getVerificationToken(decodedToken);
+        
+        if (!resetToken) {
+          return res.status(400).json({ message: 'Invalid token' });
+        }
+        
+        // Check if token is expired
+        if (new Date(resetToken.expiresAt) < new Date()) {
+          return res.status(400).json({ message: 'Token has expired' });
+        }
+        
+        // Get user email for response
+        const user = await storage.getUser(resetToken.userId);
+        if (!user) {
+          return res.status(400).json({ message: 'Invalid token' });
+        }
+        
+        res.json({ valid: true, email: user.email });
+      }
+    } catch (error) {
+      safeLog('error', 'Token verification error:', { error: (error as Error).message });
+      res.status(400).json({ message: 'Invalid or expired token' });
+    }
+  });
+  */
+
+  // Delete account route
+  app.delete('/api/auth/delete-account', async (req: Request, res: Response) => {
+  app.delete(authPath('delete-account'), async (req: Request, res: Response) => {
+    try {
+      // Check authentication from JWT cookie or token
+      const token = extractAuthToken(req);
+      
+      if (!token) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+      
+      let userId: number;
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET_VALIDATED) as { userId?: number; id?: number; isAdmin?: boolean; };
+        const decodedUserId = decoded.userId || decoded.id;
+        if (!decodedUserId) {
+          return res.status(401).json({ message: 'Invalid token: missing user ID' });
+        }
+        userId = decodedUserId;
+      } catch (jwtError) {
+        return res.status(401).json({ message: 'Invalid authentication token' });
+      }
+      
+      const { password } = req.body;
+      
+      if (!password) {
+        return res.status(400).json({ message: 'Password verification required' });
+      }
+@@ -757,85 +760,85 @@ export function setupAuth(app: Express) {
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Verify password before deletion
+      const validPassword = await bcrypt.compare(password, user.password);
+      if (!validPassword) {
+        return res.status(400).json({ message: 'Password verification failed' });
+      }
+      
+      // Hard delete for now (soft delete requires schema changes)
+      await storage.deleteUser(userId);
+      
+      // Clear auth cookie
+      res.clearCookie('authToken');
+      
+      res.json({ message: 'Account deleted successfully' });
+    } catch (error) {
+      safeLog('error', 'Delete account error:', { error: (error as Error).message });
+      res.status(500).json({ message: 'Error deleting account' });
+    }
+  });
+
+  // Admin metrics endpoint
+  app.get('/api/admin/auth-metrics', async (req: Request, res: Response) => {
+  app.get(adminPath('auth-metrics'), async (req: Request, res: Response) => {
+    try {
+      // Check if user is authenticated
+      const token = extractAuthToken(req);
+      
+      if (!token) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      // Verify token and check admin status
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET_VALIDATED) as { userId?: number; id?: number; isAdmin?: boolean; role?: string; };
+        if (!decoded.isAdmin && decoded.role !== 'admin') {
+          return res.status(403).json({ error: 'Admin access required' });
+        }
+      } catch {
+        return res.status(401).json({ error: 'Invalid authentication token' });
+      }
+      
+      // Get metrics summary
+      const metrics = authMetrics.getSummary(24);
+      const recentEvents = authMetrics.getRecentEvents(20);
+      
+      res.json({
+        summary: metrics,
+        recentEvents
+      });
+    } catch (error) {
+      safeLog('error', 'Admin metrics error:', { error: (error as Error).message });
+      res.status(500).json({ error: 'Error fetching metrics' });
+    }
+  });
+
+  // Resend verification email route
+  app.post('/api/auth/resend-verification', verificationLimiter, async (req, res) => {
+  app.post(authPath('resend-verification'), verificationLimiter, async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: 'Email required' });
+      }
+
+      // Find user
+      const user = await storage.getUserByEmail(email);
+      
+      if (!user) {
+        // Don't reveal if email exists or not for security
+        return res.json({ message: 'If that email exists, we sent a verification link' });
+      }
+
+      // Check if already verified
+      if (user.emailVerified) {
+        return res.status(400).json({ message: 'Email already verified' });
+      }
+
+      // Generate new verification token
+      const verificationToken = crypto.randomBytes(32).toString('hex');
+      await storage.createVerificationToken({
+        userId: user.id,
+        token: verificationToken,
+server/config.ts
++32
+-0
+
+const DEFAULT_API_PREFIX = '/api';
+
+const ensureLeadingSlash = (value: string): string =>
+  value.startsWith('/') ? value : `/${value}`;
+
+const stripTrailingSlash = (value: string): string =>
+  value.length > 1 && value.endsWith('/') ? value.slice(0, -1) : value;
+
+export const normalizeApiPrefix = (prefix: string | undefined): string => {
+  const trimmed = prefix?.trim();
+  if (!trimmed) {
+    return DEFAULT_API_PREFIX;
+  }
+
+  const withLeading = ensureLeadingSlash(trimmed);
+  const normalized = stripTrailingSlash(withLeading);
+  return normalized || DEFAULT_API_PREFIX;
+};
+
+export const API_PREFIX = normalizeApiPrefix(process.env.API_PREFIX);
+
+export const withApiPrefix = (path: string, prefix: string = API_PREFIX): string => {
+  const base = normalizeApiPrefix(prefix);
+  const trimmedPath = path.startsWith('/') ? path.slice(1) : path;
+
+  if (!trimmedPath) {
+    return base;
+  }
+
+  return `${base}/${trimmedPath}`;
+};
+
+export const FRONTEND_URL =
+  process.env.FRONTEND_URL ||
+  (process.env.NODE_ENV === 'production'
+    ? 'https://thottopilot.com'
+    : 'http://localhost:5000');
+
+export const STRIPE_KEYS = {
+  secretKey: process.env.STRIPE_SECRET_KEY,
+  publishableKey: process.env.VITE_STRIPE_PUBLIC_KEY,
+};
+server/index.ts
++17
+-8
+
+import express, { type Request, Response, NextFunction, type RequestHandler } from "express";
+import cors from "cors";
+import cookieParser from "cookie-parser";
+import { registerRoutes } from "./routes";
+import { authLimiter, generalLimiter, sanitize } from "./middleware/security";
+import { setupAuth } from "./auth";
+import { setupSocialAuth } from "./social-auth";
+import { API_PREFIX } from "./config.js";
+import { mountStripeWebhook } from "./routes/webhooks.stripe";
+import { mountBillingRoutes } from "./routes/billing";
+import { v4 as uuidv4 } from "uuid";
+import { logger } from "./bootstrap/logger";
+import { startQueue } from "./bootstrap/queue";
+import { notFoundHandler } from "./middleware/security";
+
+process.on('unhandledRejection', (err: unknown) => {
+  const message = err instanceof Error ? err.message : String(err);
+  logger.error('Unhandled rejection', { error: message });
+  process.exit(1);
+});
+
+const API_PREFIX = '/api/v1';
+
+declare global {
+  namespace Express {
+    interface Request {
+      id: string;
+    }
+  }
+}
+
+const app = express();
+
+const API_PREFIX_WITH_SLASH = `${API_PREFIX}/`;
+const WEBHOOK_PREFIX = `${API_PREFIX_WITH_SLASH}webhook`;
+const WEBHOOKS_PREFIX = `${API_PREFIX_WITH_SLASH}webhooks`;
+
+const isApiPath = (path: string): boolean =>
+  path === API_PREFIX || path.startsWith(API_PREFIX_WITH_SLASH);
+
+const isWebhookPath = (path: string): boolean =>
+  path.startsWith(WEBHOOK_PREFIX) || path.startsWith(WEBHOOKS_PREFIX);
+
+app.set('trust proxy', 1);
+app.use(generalLimiter);
+app.use(sanitize);
+
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",").map(o => o.trim()) ?? [];
+
+app.use(cors({
+  origin(origin, cb) {
+    // Allow requests with no origin (like Postman, server-side requests, or same-origin)
+    if (!origin) {
+      return cb(null, true);
+    }
+    
+    // Check if origin is explicitly allowed
+    if (allowedOrigins.length > 0 && allowedOrigins.includes(origin)) {
+      return cb(null, true);
+    }
+    
+    // In development, allow common local origins and Replit domains
+    if (process.env.NODE_ENV === 'development') {
+      const devAllowedOrigins = [
+        'http://localhost:5000',
+        'http://localhost:3000',
+        'http://127.0.0.1:5000',
+        'http://127.0.0.1:3000'
+@@ -84,144 +93,144 @@ app.use(cors({
+app.use((req, res, next) => {
+  req.id = uuidv4();
+  res.setHeader('X-Request-ID', req.id);
+  next();
+});
+
+// Raw body for Stripe webhook signature verification
+app.post(`${API_PREFIX}/webhooks/stripe`, express.raw({ type: "application/json" }), (_req,_res,next)=>next());
+app.use(cookieParser()); // Parse cookies for authentication
+app.use(express.json({ limit: '50mb' })); // Increase for image uploads
+app.use(express.urlencoded({ extended: false, limit: '50mb' })); // Increase for image uploads
+
+app.use((req, res, next) => {
+  const start = Date.now();
+  const path = req.path;
+  let capturedJsonResponse: Record<string, unknown> | undefined = undefined;
+
+  const originalResJson = res.json;
+  res.json = function (bodyJson, ...args) {
+    capturedJsonResponse = bodyJson;
+    return originalResJson.apply(res, [bodyJson, ...args]);
+  };
+
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+    if (path.startsWith("/api")) {
+    if (isApiPath(path)) {
+      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+      if (capturedJsonResponse) {
+        const safe = (({ token, email, ...rest }) => rest)(capturedJsonResponse as Record<string, unknown>);
+        logLine += ` :: ${JSON.stringify(safe)}`;
+      }
+
+      if (logLine.length > 80) {
+        logLine = logLine.slice(0, 79) + "…";
+      }
+
+      logger.info(logLine, { requestId: req.id });
+    }
+  });
+
+  next();
+});
+
+(async () => {
+  try {
+    app.use(`${API_PREFIX}/auth`, authLimiter);
+    // Initialize queue system
+    await startQueue();
+  
+    // Setup auth routes BEFORE other routes
+    setupAuth(app);
+    setupSocialAuth(app);  // Register social auth routes including logout
+    setupAuth(app, API_PREFIX);
+    setupSocialAuth(app, API_PREFIX);  // Register social auth routes including logout
+  
+    // Mount Stripe webhook and billing routes
+    mountStripeWebhook(app);
+    mountBillingRoutes(app);
+  
+    const server = await registerRoutes(app, API_PREFIX);
+
+    // importantly only setup vite in development and after
+    // setting up all the other routes so the catch-all route
+    // doesn't interfere with the other routes
+    if (app.get("env") === "development") {
+      try {
+        const { setupVite } = await import("./vite");
+        await setupVite(app, server);
+        
+        // Since Vite setup is a stub, serve the built client files in development too
+        const path = await import("path");
+        const { fileURLToPath } = await import("url");
+        const __dirname = path.dirname(fileURLToPath(import.meta.url));
+        // Serve built files from dist/client
+        const clientPath = path.join(__dirname, "..", "dist", "client");
+        
+        // Check if build directory exists
+        const fs = await import("fs");
+        if (fs.existsSync(clientPath)) {
+          app.use(express.static(clientPath));
+          app.get("*", (req, res, next) => {
+            // Only serve index.html for non-API routes
+            if (!req.path.startsWith('/api/') && !req.path.startsWith('/auth/') && !req.path.startsWith('/webhook/')) {
+            if (!isApiPath(req.path) && !isWebhookPath(req.path)) {
+              res.sendFile(path.join(clientPath, "index.html"));
+            } else {
+              next();
+            }
+          });
+        }
+        
+        // Add 404 handler only for API routes in development (after Vite setup)
+        app.use((req, res, next) => {
+          // Only apply 404 handler to API routes, let Vite handle frontend routes
+          if (req.path.startsWith('/api/') || req.path.startsWith('/auth/') || req.path.startsWith('/webhook/')) {
+          if (isApiPath(req.path) || isWebhookPath(req.path)) {
+            return notFoundHandler(req, res);
+          }
+          next();
+        });
+      } catch (error) {
+        logger.warn("Could not setup Vite in development mode:", error);
+      }
+    } else {
+      // Serve static files in production
+      const path = await import("path");
+      const { fileURLToPath } = await import("url");
+      const __dirname = path.dirname(fileURLToPath(import.meta.url));
+      // In production the server runs from dist/server, so client files are at ../client
+      const clientPath = path.join(__dirname, "..", "client");
+      
+      // Check if build directory exists
+      const fs = await import("fs");
+      if (!fs.existsSync(clientPath)) {
+        logger.error(`Production build directory not found: ${clientPath}`);
+        logger.error("Please run 'npm run build' to create the production build");
+        process.exit(1);
+      }
+      
+      // Add 404 handler for API routes in production (before static serving)
+      app.use((req, res, next) => {
+        // Apply 404 handler only to API routes, let static serving handle frontend routes
+        if (req.path.startsWith('/api/') || req.path.startsWith('/auth/') || req.path.startsWith('/webhook/')) {
+        if (isApiPath(req.path) || isWebhookPath(req.path)) {
+          return notFoundHandler(req, res);
+        }
+        next();
+      });
+      
+      app.use(express.static(clientPath));
+      app.get("*", (_req, res) => {
+        res.type("html");
+        res.sendFile(path.join(clientPath, "index.html"));
+      });
+    }
+
+    // Global error handler is applied within registerRoutes
+
+    // ALWAYS serve the app on the port specified in the environment variable PORT
+    // Other ports are firewalled. Default to 5000 if not specified.
+    // this serves both the API and the client.
+    // It is the only port that is not firewalled.
+    const port = parseInt(process.env.PORT || '5000', 10);
+  
+    // Graceful port binding with EADDRINUSE error handling
+    const startServer = (attemptPort: number, retryCount = 0): void => {
+      const maxRetries = 3;
+    
+      // Remove any existing error listeners to prevent memory leaks
+server/routes.ts
++23
+-19
+
+@@ -59,50 +59,51 @@ declare module 'express-session' {
+  interface SessionData extends RedditSessionData {}
+}
+
+// Service imports
+import { generateContent } from "./services/content-generator.js";
+import { generateAIContent, analyzeImageForContent } from "./services/ai-generator.js";
+import { generateWithMultiProvider, getProviderStatus } from "./services/multi-ai-provider.js";
+import { generateUnifiedAIContent, analyzeImage } from "./services/unified-ai-service.js";
+import { generateImageCaption, imageToBase64, validateImageFormat } from "./image-caption-generator.js";
+import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage.js";
+import { getRandomTemplates, addWatermark, getTemplateByMood } from "./content-templates.js";
+import { generateAdvancedContent, type ContentParameters } from "./advanced-content-generator.js";
+// Reddit communities now handled in reddit-routes.ts
+import { getAvailablePerks, getPerksByCategory, generateReferralCode, getSignupInstructions } from "./pro-perks.js";
+
+// API route modules
+import { registerApiRoutes } from "./api-routes.js";
+import { registerPolicyRoutes } from "./policy-routes.js";
+import { registerRedditRoutes } from "./reddit-routes.js";
+import { registerAnalyticsRoutes } from "./analytics-routes.js";
+import { createLead, confirmLead } from "./api/leads.js";
+import { getLeads } from "./api/admin-leads.js";
+import { captionRouter } from "./routes/caption.js";
+import { contentGenerationLimiter } from "./middleware/tiered-rate-limit.js";
+import { registerSocialMediaRoutes } from "./social-media-routes.js";
+import { normalizeApiPrefix, withApiPrefix } from "./config.js";
+
+// Schema imports
+import { insertContentGenerationSchema, insertUserImageSchema } from "@shared/schema";
+
+// Core dependencies
+import multer from 'multer';
+import fs from 'fs/promises';
+import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
+import csrf from 'csurf';
+
+// Get secure environment variables (no fallbacks)
+const rawSessionSecret = process.env.SESSION_SECRET;
+if (!rawSessionSecret) {
+  throw new Error('SESSION_SECRET missing');
+}
+const SESSION_SECRET: string = rawSessionSecret;
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+const DATABASE_URL = process.env.DATABASE_URL;
+const REDIS_URL = process.env.REDIS_URL;
+const stripeConfig = deriveStripeConfig({
+  env: process.env,
+  logger,
+});
+@@ -130,50 +131,53 @@ interface AuthRequest extends express.Request {
+  user?: typeof users.$inferSelect;
+}
+
+interface GenerationRequestBody {
+  mode?: string;
+  prompt?: string;
+  platform?: string;
+  style?: string;
+  theme?: string;
+  includePromotion?: boolean | string;
+  customInstructions?: string;
+}
+
+interface PhotoInstructionsResult {
+  lighting?: string | string[];
+  angles?: string | string[];
+  cameraAngle?: string;
+  composition?: string | string[];
+  styling?: string | string[];
+  mood?: string;
+  technical?: string | string[];
+  technicalSettings?: string;
+}
+
+export async function registerRoutes(app: Express, apiPrefix: string = '/api'): Promise<Server> {
+  const normalizedPrefix = normalizeApiPrefix(apiPrefix);
+  const prefixed = (path: string) => withApiPrefix(path, normalizedPrefix);
+  const authRoute = (path: string) => withApiPrefix(`auth/${path}`, normalizedPrefix);
+  // ==========================================
+  // VALIDATE ENVIRONMENT & APPLY SECURITY
+  // ==========================================
+  
+  // Set trust proxy securely for rate limiters
+  app.set('trust proxy', (ip: string) => {
+    // Trust localhost and private network ranges
+    return ['127.0.0.1', '::1'].includes(ip) || ip.startsWith('10.') || ip.startsWith('192.168.');
+  });
+  
+  // Validate required environment variables first
+  validateEnvironment();
+  
+  // Log IPs first so downstream middleware can use req.userIP
+  app.use(ipLoggingMiddleware);
+  app.use(securityMiddleware);
+
+  // Session configuration (MUST BE BEFORE AUTH ROUTES)
+  let store: session.Store | undefined;
+
+  if (IS_PRODUCTION) {
+    if (REDIS_URL) {
+      const { RedisStore } = connectRedis as any;
+      const redisClient = new Redis(REDIS_URL);
+      store = new RedisStore({ client: redisClient, prefix: 'sess:' });
+@@ -233,112 +237,112 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'):
+  }) as unknown as express.RequestHandler;
+  
+  // CSRF error handling middleware
+  app.use((err: unknown, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (err instanceof Error && (err as { code?: string }).code === 'EBADCSRFTOKEN') {
+      logger.warn('CSRF token validation failed', {
+        ip: req.ip,
+        userAgent: req.get('User-Agent'),
+        path: req.path,
+        method: req.method,
+        hasSession: !!req.session
+      });
+      return res.status(403).json({
+        message: 'Invalid CSRF token',
+        code: 'CSRF_TOKEN_INVALID'
+      });
+    }
+    next(err);
+  });
+  
+  // Apply CSRF protection to sensitive state-changing routes
+  // Note: JWT-based routes rely on token authentication instead of CSRF
+  
+  // CSRF-protected routes (session-based and sensitive operations)
+  const csrfProtectedRoutes = [
+    '/api/auth/verify-email',
+    '/api/auth/change-password',
+    '/api/auth/forgot-password',
+    '/api/auth/reset-password',
+    '/api/upload/image',
+    '/api/content/generate',
+    '/api/reddit/connect',
+    '/api/reddit/post',
+    '/api/admin/*', // All admin routes
+    '/api/billing/*', // All billing operations
+    '/api/account/delete',
+    '/api/account/update-preferences'
+    authRoute('verify-email'),
+    authRoute('change-password'),
+    authRoute('forgot-password'),
+    authRoute('reset-password'),
+    prefixed('upload/image'),
+    prefixed('content/generate'),
+    prefixed('reddit/connect'),
+    prefixed('reddit/post'),
+    prefixed('admin/*'), // All admin routes
+    prefixed('billing/*'), // All billing operations
+    prefixed('account/delete'),
+    prefixed('account/update-preferences')
+  ];
+  
+  // Apply CSRF protection to sensitive routes
+  csrfProtectedRoutes.forEach(route => {
+    if (route.includes('*')) {
+      // Handle wildcard routes
+      const baseRoute = route.replace('/*', '');
+      app.use(baseRoute, csrfProtection);
+      app.use(baseRoute + '/*', csrfProtection);
+    } else {
+      app.use(route, csrfProtection);
+    }
+  });
+  
+  // CSRF token endpoint
+  app.get('/api/csrf-token', csrfProtection, (req, res) => {
+    res.json({ csrfToken: req.csrfToken() });
+  });
+
+  // ==========================================
+  // AUTHENTICATION SETUP
+  // ==========================================
+  
+  // Setup authentication
+  setupAuth(app);
+  setupAdminRoutes(app);
+  
+  // Configure social authentication
+  configureSocialAuth();
+  configureSocialAuth(normalizedPrefix);
+
+  // ==========================================
+  // ROUTE REGISTRATION
+  // ==========================================
+  
+  // Authentication routes - handled by setupAuth() in server/auth.ts
+  // app.use('/api/auth', authRoutes); // Removed - duplicate auth system
+  
+  // Upload routes
+  app.use('/api/upload', uploadRoutes);
+  
+  // Media routes
+  app.use('/api/media', mediaRoutes);
+  
+  // Social auth routes
+  app.get('/api/auth/google', socialAuthRoutes.googleAuth);
+  app.get('/api/auth/google/callback', socialAuthRoutes.googleCallback);
+  app.get('/api/auth/facebook', socialAuthRoutes.facebookAuth);
+  app.get('/api/auth/facebook/callback', socialAuthRoutes.facebookCallback);
+  app.get('/api/auth/reddit', socialAuthRoutes.redditAuth);
+  app.get('/api/auth/reddit/callback', socialAuthRoutes.redditCallback);
+  app.get(authRoute('google'), socialAuthRoutes.googleAuth);
+  app.get(authRoute('google/callback'), socialAuthRoutes.googleCallback);
+  app.get(authRoute('facebook'), socialAuthRoutes.facebookAuth);
+  app.get(authRoute('facebook/callback'), socialAuthRoutes.facebookCallback);
+  app.get(authRoute('reddit'), socialAuthRoutes.redditAuth);
+  app.get(authRoute('reddit/callback'), socialAuthRoutes.redditCallback);
+
+  // Serve uploaded files securely
+  app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
+  // ==========================================
+  // STRIPE PAYMENT ENDPOINTS
+  // ==========================================
+  
+  // Create subscription payment intent
+  app.post("/api/create-subscription", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      if (!stripe) {
+        return res.status(503).json({ 
+          message: "Payment system is not configured. Please try again later." 
+        });
+      }
+
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const { plan, amount } = req.body;
+      
+      // Validate plan and amount
+      if (!plan || !amount) {
+server/social-auth-config.ts
++8
+-4
+
+import passport from 'passport';
+import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+import { Strategy as FacebookStrategy } from 'passport-facebook';
+// Explicitly import compiled entry to avoid Node's extensionless main deprecation
+import * as redditStrategyPkg from 'passport-reddit/lib/passport-reddit/index.js';
+const RedditStrategy = (
+  redditStrategyPkg as unknown as { Strategy: typeof import('passport-reddit').Strategy }
+).Strategy;
+import { storage } from './storage';
+import type { User } from '@shared/schema';
+import { API_PREFIX, normalizeApiPrefix, withApiPrefix } from './config.js';
+
+// Helper function to handle social auth user creation/update
+async function handleSocialAuth(
+  provider: string,
+  profile: { id: string; emails?: { value: string }[]; username?: string; displayName?: string; photos?: { value: string }[]; },
+  done: (error: Error | null, user?: User) => void
+) {
+  try {
+    const email = profile.emails?.[0]?.value || `${profile.id}@${provider}.social`;
+    const username = profile.username || profile.displayName || `${provider}_${profile.id}`;
+    
+    // Check if user exists by email or social provider ID
+    let user = await storage.getUserByEmail(email);
+    
+    if (!user) {
+      // Create new user with social provider info
+      user = await storage.createUser({
+        email,
+        username,
+        password: '', // No password for social login
+        tier: 'free',
+        provider: provider,
+        providerId: profile.id,
+        avatar: profile.photos?.[0]?.value,
+        emailVerified: true // Auto-verify social accounts
+      });
+    } else {
+      // Update existing user with social provider info if needed
+      if (!user.provider) {
+        await storage.updateUser(user.id, {
+          provider: provider,
+          providerId: profile.id,
+          avatar: user.avatar || profile.photos?.[0]?.value
+        });
+      }
+    }
+    
+    done(null, user);
+  } catch (error) {
+    done(error as Error);
+  }
+}
+
+export function configureSocialAuth() {
+export function configureSocialAuth(prefix: string = API_PREFIX) {
+  const normalizedPrefix = normalizeApiPrefix(prefix);
+  const authPath = (path: string) => withApiPrefix(`auth/${path}`, normalizedPrefix);
+
+  // Google OAuth Strategy
+  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    passport.use(new GoogleStrategy({
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: '/api/auth/google/callback',
+      callbackURL: authPath('google/callback'),
+      scope: ['profile', 'email']
+    }, async (accessToken, refreshToken, profile, done) => {
+      await handleSocialAuth('google', profile, done);
+    }));
+  }
+
+  // Facebook OAuth Strategy
+  if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
+    passport.use(new FacebookStrategy({
+      clientID: process.env.FACEBOOK_APP_ID,
+      clientSecret: process.env.FACEBOOK_APP_SECRET,
+      callbackURL: '/api/auth/facebook/callback',
+      callbackURL: authPath('facebook/callback'),
+      profileFields: ['id', 'emails', 'displayName', 'photos']
+    }, async (accessToken, refreshToken, profile, done) => {
+      await handleSocialAuth('facebook', profile, done);
+    }));
+  }
+
+  // Reddit OAuth Strategy
+  if (process.env.REDDIT_CLIENT_ID && process.env.REDDIT_CLIENT_SECRET) {
+    passport.use(
+      new RedditStrategy(
+        {
+          clientID: process.env.REDDIT_CLIENT_ID,
+          clientSecret: process.env.REDDIT_CLIENT_SECRET,
+          callbackURL: '/api/reddit/callback',
+          callbackURL: authPath('reddit/callback'),
+          scope: ['identity'],
+          state: true,
+        } as any,
+        async (accessToken, refreshToken, profile, done) => {
+          await handleSocialAuth(
+            'reddit',
+            {
+              id: profile.id,
+              username: profile.name,
+              emails: [],
+              photos: [{ value: (profile as any).icon_img }],
+            },
+            done,
+          );
+        },
+      ),
+    );
+  }
+
+  // Serialize and deserialize user
+  passport.serializeUser((user: unknown, done) => {
+    done(null, (user as User).id);
+  });
+
+  passport.deserializeUser(async (id: number, done) => {
+server/social-auth.ts
++21
+-15
+
+import passport from 'passport';
+import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+import { Strategy as FacebookStrategy } from 'passport-facebook';
+import { Strategy as RedditStrategy } from 'passport-reddit';
+import type { Express, Request, Response } from 'express';
+import type { AuthenticateOptions } from 'passport';
+import type { User } from '@shared/schema';
+import { storage } from './storage';
+import jwt from 'jsonwebtoken';
+import { blacklistToken } from './lib/tokenBlacklist';
+import { logger } from './bootstrap/logger';
+import { API_PREFIX, normalizeApiPrefix, withApiPrefix } from './config.js';
+
+export function setupSocialAuth(app: Express, apiPrefix: string = API_PREFIX) {
+  const normalizedPrefix = normalizeApiPrefix(apiPrefix);
+  const authPath = (path: string) => withApiPrefix(`auth/${path}`, normalizedPrefix);
+
+export function setupSocialAuth(app: Express) {
+  // Note: passport.initialize() and passport.session() are now called from routes.ts
+  // after session middleware is initialized
+  // Serialization/deserialization is also handled in routes.ts
+
+  // Google OAuth Strategy
+  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    passport.use(new GoogleStrategy({
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: "/api/auth/google/callback"
+      callbackURL: authPath('google/callback')
+    }, async (accessToken, refreshToken, profile, done) => {
+      try {
+        // Check if user exists by email OR username
+        const email = profile.emails?.[0]?.value || '';
+        const username = profile.displayName || email || '';
+        
+        let user = await storage.getUserByEmail(email);
+        if (!user) {
+          user = await storage.getUserByUsername(username);
+        }
+        
+        if (!user) {
+          // Create new user only if not found by email OR username
+          user = await storage.createUser({
+            email,
+            username,
+            password: '', // No password for social auth
+            provider: 'google',
+            providerId: profile.id,
+            avatar: profile.photos?.[0]?.value
+          });
+        }
+        
+        return done(null, user);
+      } catch (error) {
+        return done(error as Error, false);
+      }
+    }));
+  }
+
+  // Facebook OAuth Strategy
+  if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
+    passport.use(new FacebookStrategy({
+      clientID: process.env.FACEBOOK_APP_ID,
+      clientSecret: process.env.FACEBOOK_APP_SECRET,
+      callbackURL: "/api/auth/facebook/callback",
+      callbackURL: authPath('facebook/callback'),
+      profileFields: ['id', 'emails', 'name', 'picture']
+    }, async (accessToken, refreshToken, profile, done) => {
+      try {
+        // Check if user exists by email OR username  
+        const email = profile.emails?.[0]?.value || '';
+        const username = `${profile.name?.givenName || ''} ${profile.name?.familyName || ''}`.trim() || email || '';
+        
+        let user = await storage.getUserByEmail(email);
+        if (!user) {
+          user = await storage.getUserByUsername(username);
+        }
+        
+        if (!user) {
+          // Create new user only if not found by email OR username
+          user = await storage.createUser({
+            email,
+            username,
+            password: '',
+            provider: 'facebook',
+            providerId: profile.id,
+            avatar: profile.photos?.[0]?.value
+          });
+        }
+        
+        return done(null, user);
+      } catch (error) {
+        return done(error as Error, false);
+      }
+    }));
+  }
+
+  // Reddit OAuth Strategy
+  if (process.env.REDDIT_CLIENT_ID && process.env.REDDIT_CLIENT_SECRET) {
+    interface RedditProfile {
+      id: string;
+      name?: string;
+      icon_img?: string;
+    }
+    passport.use(new RedditStrategy({
+      clientID: process.env.REDDIT_CLIENT_ID,
+      clientSecret: process.env.REDDIT_CLIENT_SECRET,
+      callbackURL: "/api/auth/reddit/callback",
+      callbackURL: authPath('reddit/callback'),
+      scope: ['identity']
+    }, async (
+      accessToken: string,
+      refreshToken: string,
+      profile: RedditProfile,
+      done: (error: Error | null, user?: User | false) => void
+    ) => {
+      try {
+        // Reddit doesn't provide email, use username
+        let user = await storage.getUserByUsername(profile.name ?? profile.id);
+        
+        if (!user) {
+          user = await storage.createUser({
+            email: '', // Reddit doesn't provide email
+            username: profile.name || `reddit_${profile.id}`,
+            password: '',
+            provider: 'reddit',
+            providerId: profile.id,
+            avatar: profile.icon_img ?? ''
+          });
+        }
+        
+        return done(null, user);
+      } catch (error) {
+        return done(error as Error, false);
+      }
+    }));
+  }
+
+  // Auth routes
+  setupAuthRoutes(app);
+  setupAuthRoutes(app, normalizedPrefix);
+}
+
+function setupAuthRoutes(app: Express) {
+function setupAuthRoutes(app: Express, apiPrefix: string) {
+  const authPath = (path: string) => withApiPrefix(`auth/${path}`, apiPrefix);
+
+  // Google routes
+  app.get('/api/auth/google',
+  app.get(authPath('google'),
+    passport.authenticate('google', { scope: ['profile', 'email'] })
+  );
+
+  app.get('/api/auth/google/callback',
+  app.get(authPath('google/callback'),
+    passport.authenticate('google', { failureRedirect: '/login?error=google_failed' }),
+    (req, res) => {
+      res.redirect('/dashboard');
+    }
+  );
+
+  // Facebook routes
+  app.get('/api/auth/facebook',
+  app.get(authPath('facebook'),
+    passport.authenticate('facebook', { scope: ['email'] })
+  );
+
+  app.get('/api/auth/facebook/callback',
+  app.get(authPath('facebook/callback'),
+    passport.authenticate('facebook', { failureRedirect: '/login?error=facebook_failed' }),
+    (req, res) => {
+      res.redirect('/dashboard');
+    }
+  );
+
+  // Reddit routes
+  app.get('/api/auth/reddit',
+    passport.authenticate('reddit', { 
+  app.get(authPath('reddit'),
+    passport.authenticate('reddit', {
+      state: Math.random().toString(36).substring(7)
+    } as (AuthenticateOptions & { state: string }))
+  );
+
+  app.get('/api/auth/reddit/callback',
+  app.get(authPath('reddit/callback'),
+    passport.authenticate('reddit', { failureRedirect: '/login?error=reddit_failed' }),
+    (req, res) => {
+      res.redirect('/dashboard?connected=reddit');
+    }
+  );
+
+  // Logout with comprehensive error handling
+  app.post('/api/auth/logout', async (req: Request, res: Response) => {
+  app.post(authPath('logout'), async (req: Request, res: Response) => {
+    const r = req as Request & {
+      session?: { destroy?: (cb: (err?: unknown) => void) => void };
+      logout?: (cb: (err?: unknown) => void) => void;
+    };
+    try {
+      // Check if session exists first
+      if (!r.session) {
+        // No session, just clear cookies and return success
+        res.clearCookie('connect.sid', {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict'
+        });
+        res.clearCookie('authToken', {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict'
+        });
+        res.clearCookie('thottopilot.sid', {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict'
+        });
+        const authHeader = req.headers['authorization'];
+        const token = authHeader?.split(' ')[1] || req.cookies?.authToken;
+@@ -331,27 +337,27 @@ function setupAuthRoutes(app: Express) {
+        }
+      }
+    } catch (error) {
+      logger.error('Logout error', { error: error instanceof Error ? (error as Error).message : String(error) });
+      // Even on error, clear cookies to help user
+      res.clearCookie('connect.sid', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      });
+      res.clearCookie('authToken', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      });
+      res.clearCookie('thottopilot.sid', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      });
+      res.json({ message: 'Logged out (with errors)' });
+    }
+  });
+
+  // Get current user - REMOVED: Duplicate endpoint
+  // The main /api/auth/user endpoint is handled in server/auth.ts with JWT support
+  // The main auth/user endpoint is handled in server/auth.ts with JWT support
+}
+tests/integration/auth-rate-limit.test.ts
+New
++149
+-0
+
+import express from 'express';
+import request from 'supertest';
+import bcrypt from 'bcrypt';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
+interface MockUser {
+  id: number;
+  email: string;
+  username: string;
+  password: string;
+  emailVerified: boolean;
+  tier?: string;
+  isAdmin?: boolean;
+}
+
+const users: MockUser[] = [];
+
+vi.mock('../../server/storage', () => ({
+  storage: {
+    getUser: vi.fn(async (id: number) => users.find(user => user.id === id)),
+    getUserByUsername: vi.fn(async (username: string) => users.find(user => user.username === username)),
+    getUserByEmail: vi.fn(async (email: string) => users.find(user => user.email === email)),
+    createUser: vi.fn(async (data: Partial<MockUser>) => {
+      const user: MockUser = {
+        id: users.length + 1,
+        email: String(data.email ?? ''),
+        username: String(data.username ?? ''),
+        password: String(data.password ?? ''),
+        emailVerified: Boolean(data.emailVerified),
+        tier: data.tier ?? 'free',
+        isAdmin: Boolean(data.isAdmin)
+      };
+      users.push(user);
+      return user;
+    }),
+    updateUser: vi.fn(async (id: number, updates: Partial<MockUser>) => {
+      const user = users.find(record => record.id === id);
+      if (user) {
+        Object.assign(user, updates);
+      }
+      return user;
+    }),
+    updateUserEmailVerified: vi.fn(async (id: number, verified: boolean) => {
+      const user = users.find(record => record.id === id);
+      if (user) {
+        user.emailVerified = verified;
+      }
+    }),
+    createVerificationToken: vi.fn(),
+    getVerificationToken: vi.fn(),
+    deleteVerificationToken: vi.fn(),
+    updateUserPassword: vi.fn(),
+    deleteUser: vi.fn()
+  }
+}));
+
+vi.mock('../../server/services/email-service', () => ({
+  emailService: {
+    isEmailServiceConfigured: false,
+    sendPasswordResetEmail: vi.fn(),
+    sendVerificationEmail: vi.fn(),
+    sendWelcomeEmail: vi.fn(),
+    sendUpgradeEmail: vi.fn(),
+    sendAdminWaitlistNotification: vi.fn()
+  }
+}));
+
+vi.mock('../../server/services/basic-metrics.js', () => ({
+  authMetrics: {
+    track: vi.fn(),
+    getSummary: vi.fn().mockReturnValue({ totalLogins: 0 }),
+    getRecentEvents: vi.fn().mockReturnValue([])
+  }
+}));
+
+vi.mock('../../server/lib/admin-auth.js', () => ({
+  verifyAdminCredentials: vi.fn().mockResolvedValue(null)
+}));
+
+vi.mock('../../server/middleware/simple-rate-limit.js', () => {
+  const passthrough = (_req: express.Request, _res: express.Response, next: express.NextFunction) => {
+    next();
+  };
+
+  return {
+    verificationLimiter: passthrough,
+    passwordResetLimiter: passthrough,
+    loginLimiter: passthrough,
+    signupLimiter: passthrough,
+    passwordChangeLimiter: passthrough,
+    emailChangeLimiter: passthrough,
+    accountDeletionLimiter: passthrough,
+    twoFactorLimiter: passthrough,
+    refreshTokenLimiter: passthrough
+  };
+});
+
+import { setupAuth } from '../../server/auth';
+import { authLimiter } from '../../server/middleware/security';
+
+describe('authentication rate limiting', () => {
+  const prefix = '/api/v1';
+  const clientIp = '203.0.113.5';
+  let app: express.Express;
+
+  beforeEach(async () => {
+    users.length = 0;
+    authLimiter.resetKey?.(clientIp);
+
+    const hashed = await bcrypt.hash('Password123!', 10);
+    users.push({
+      id: 1,
+      email: 'user@example.com',
+      username: 'user',
+      password: hashed,
+      emailVerified: true,
+      tier: 'free'
+    });
+
+    app = express();
+    app.set('trust proxy', 1);
+    app.use(express.json());
+    app.use(`${prefix}/auth`, authLimiter);
+    setupAuth(app, prefix);
+  });
+
+  afterEach(() => {
+    authLimiter.resetKey?.(clientIp);
+  });
+
+  it('enforces the auth limiter when a custom API prefix is used', async () => {
+    for (let attempt = 0; attempt < 15; attempt++) {
+      const response = await request(app)
+        .post(`${prefix}/auth/login`)
+        .set('X-Forwarded-For', clientIp)
+        .send({ email: 'user@example.com', password: 'Password123!' });
+
+      expect(response.status).toBe(200);
+    }
+
+    const limited = await request(app)
+      .post(`${prefix}/auth/login`)
+      .set('X-Forwarded-For', clientIp)
+      .send({ email: 'user@example.com', password: 'Password123!' });
+
+    expect(limited.status).toBe(429);
+    expect(limited.body.message ?? limited.body.error).toMatch(/rate/i);
+  });
+});
+tests/integration/content-generation.test.ts
++1
+-1
+
+@@ -130,51 +130,51 @@ describe('Content Generation Integration Tests', () => {
+          user: { id: user.id, email: user.email || undefined, tier: user.tier },
+          platform: req.body.platform,
+          imageDescription: req.body.imageDescription,
+          customPrompt: req.body.customPrompt,
+          subreddit: req.body.subreddit,
+          allowsPromotion: req.body.allowsPromotion || 'no',
+          baseImageUrl: req.body.imageUrl
+        });
+        
+        // Save to database
+        const [generation] = await db.insert(contentGenerations).values({
+          userId: user.id,
+          platform: req.body.platform || 'reddit',
+          style: 'default',
+          theme: 'default',
+          content: result.content,
+          titles: result.titles,
+          photoInstructions: result.photoInstructions,
+          prompt: req.body.customPrompt || '',
+          subreddit: req.body.subreddit || null,
+          allowsPromotion: req.body.allowsPromotion === 'yes',
+          generationType: 'ai'
+        }).returning();
+        
+        // Handle special cases for testing
+        let response: any = {
+        const response: any = {
+          ...result,
+          platform: req.body.platform || result.platform,
+          imageAnalyzed: !!req.body.imageDescription
+        };
+        
+        // Add fallback indicators for testing
+        if (req.body.templateId === 'missing_template') {
+          response.fallbackUsed = true;
+        }
+        
+        if (req.body.imageUrl?.endsWith('.bmp')) {
+          response.imageError = 'unsupported_format';
+          response.fallbackUsed = true;
+        }
+        
+        // Cache the response
+        cache.set(cacheKey, response);
+        
+        res.json(response);
+      } catch (error) {
+        const errorMessage = (error as Error).message;
+        safeLog('error', 'Caption generation failed in test', { error: errorMessage });
+        
+        // Check if it's a database error
