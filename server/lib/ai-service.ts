@@ -3,7 +3,7 @@ import OpenAI from "openai";
 import crypto from "crypto";
 import { env } from "./config.js";
 import { db } from "../db.js";
-import { aiGenerations } from "@shared/schema";
+import { aiGenerations, users } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
 // AI service initialization
@@ -316,12 +316,13 @@ Return ONLY the JSON object above with actual content. No other text.`;
       }
 
       // Check if user exists before trying to cache
-      const userExists = await db.query.users.findFirst({
-        where: (users, { eq }) => eq(users.id, userId),
-        columns: { id: true }
-      });
+      const userExists = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
 
-      if (!userExists) {
+      if (userExists.length === 0) {
         console.warn(`User ID ${userId} not found in database, skipping cache`);
         return;
       }

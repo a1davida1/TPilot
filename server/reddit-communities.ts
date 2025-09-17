@@ -47,7 +47,11 @@ export async function getCommunityInsights(communityId: string): Promise<{
   successTips: string[];
   warnings: string[];
 }> {
-  const community = await db.query.redditCommunities.findFirst({ where: eq(redditCommunities.id, communityId) });
+  const [community] = await db
+    .select()
+    .from(redditCommunities)
+    .where(eq(redditCommunities.id, communityId))
+    .limit(1);
   if (!community) return { bestTimes: [], successTips: [], warnings: [] };
 
   const successTips: string[] = [];
