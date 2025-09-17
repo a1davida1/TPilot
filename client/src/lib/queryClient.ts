@@ -64,7 +64,7 @@ export async function apiRequest(
     body = JSON.stringify(data);
   }
   
-  
+  // No Authorization header - using cookies
 
   const res = await fetch(url, {
     method,
@@ -85,7 +85,7 @@ export const getQueryFn: <T = unknown>(options: {
   async ({ queryKey }) => {
     const headers: Record<string, string> = {};
     
-    
+    // No Authorization header - using cookies
 
     const url = queryKey[0] as string;
     const res = await fetch(url, {
