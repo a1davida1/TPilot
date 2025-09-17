@@ -26,12 +26,12 @@ export function setupSocialAuth(app: Express, apiPrefix: string = '/api') {
         // Check if user exists by email OR username
         const email = profile.emails?.[0]?.value || '';
         const username = profile.displayName || email || '';
-        
+
         let user = await storage.getUserByEmail(email);
         if (!user) {
           user = await storage.getUserByUsername(username);
         }
-        
+
         if (!user) {
           // Create new user only if not found by email OR username
           user = await storage.createUser({
@@ -43,7 +43,7 @@ export function setupSocialAuth(app: Express, apiPrefix: string = '/api') {
             avatar: profile.photos?.[0]?.value
           });
         }
-        
+
         return done(null, user);
       } catch (error) {
         return done(error as Error, false);
@@ -63,12 +63,12 @@ export function setupSocialAuth(app: Express, apiPrefix: string = '/api') {
         // Check if user exists by email OR username  
         const email = profile.emails?.[0]?.value || '';
         const username = `${profile.name?.givenName || ''} ${profile.name?.familyName || ''}`.trim() || email || '';
-        
+
         let user = await storage.getUserByEmail(email);
         if (!user) {
           user = await storage.getUserByUsername(username);
         }
-        
+
         if (!user) {
           // Create new user only if not found by email OR username
           user = await storage.createUser({
@@ -80,7 +80,7 @@ export function setupSocialAuth(app: Express, apiPrefix: string = '/api') {
             avatar: profile.photos?.[0]?.value
           });
         }
-        
+
         return done(null, user);
       } catch (error) {
         return done(error as Error, false);
@@ -109,7 +109,7 @@ export function setupSocialAuth(app: Express, apiPrefix: string = '/api') {
       try {
         // Reddit doesn't provide email, use username
         let user = await storage.getUserByUsername(profile.name ?? profile.id);
-        
+
         if (!user) {
           user = await storage.createUser({
             email: '', // Reddit doesn't provide email
@@ -120,7 +120,7 @@ export function setupSocialAuth(app: Express, apiPrefix: string = '/api') {
             avatar: profile.icon_img ?? ''
           });
         }
-        
+
         return done(null, user);
       } catch (error) {
         return done(error as Error, false);
@@ -170,187 +170,6 @@ function setupAuthRoutes(app: Express, apiPrefix: string) {
       res.redirect('/dashboard?connected=reddit');
     }
   );
-
-  // Logout with comprehensive error handling
-  app.post(`${apiPrefix}/auth/logout`, async (req: Request, res: Response) => {
-    const r = req as Request & {
-      session?: { destroy?: (cb: (err?: unknown) => void) => void };
-      logout?: (cb: (err?: unknown) => void) => void;
-    };
-    try {
-      // Check if session exists first
-      if (!r.session) {
-        // No session, just clear cookies and return success
-        res.clearCookie('connect.sid', {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict'
-        });
-        res.clearCookie('authToken', {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict'
-        });
-        res.clearCookie('thottopilot.sid', {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict'
-        });
-        const authHeader = req.headers['authorization'];
-        const token = authHeader?.split(' ')[1] || req.cookies?.authToken;
-        if (token) {
-          const decoded = jwt.decode(token) as { exp?: number } | null;
-          const ttl = decoded?.exp ? decoded.exp - Math.floor(Date.now() / 1000) : 86400;
-          await blacklistToken(token, ttl);
-        }
-        return res.json({ message: 'Logged out successfully' });
-      }
-
-      // If using Passport and session exists
-      if (r.logout) {
-        r.logout(async (err) => {
-          if (err) {
-            logger.error('Passport logout error', { error: err instanceof Error ? err.message : String(err) });
-            // Continue with logout anyway
-          }
-          
-          // Destroy session if it exists
-          if (r.session && r.session.destroy) {
-            r.session.destroy(async (destroyErr) => {
-              if (destroyErr) {
-                logger.error('Session destroy error', { error: destroyErr instanceof Error ? destroyErr.message : String(destroyErr) });
-              }
-              // Clear cookies regardless
-              res.clearCookie('connect.sid', {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'strict'
-              });
-              res.clearCookie('authToken', {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'strict'
-              });
-              res.clearCookie('thottopilot.sid', {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'strict'
-              });
-              const authHeader = req.headers['authorization'];
-              const token = authHeader?.split(' ')[1] || req.cookies?.authToken;
-              if (token) {
-                const decoded = jwt.decode(token) as { exp?: number } | null;
-                const ttl = decoded?.exp ? decoded.exp - Math.floor(Date.now() / 1000) : 86400;
-                await blacklistToken(token, ttl);
-              }
-              res.json({ message: 'Logged out successfully' });
-            });
-          } else {
-            // No session.destroy, just clear cookies
-            res.clearCookie('connect.sid', {
-              httpOnly: true,
-              secure: process.env.NODE_ENV === 'production',
-              sameSite: 'strict'
-            });
-            res.clearCookie('authToken', {
-              httpOnly: true,
-              secure: process.env.NODE_ENV === 'production',
-              sameSite: 'strict'
-            });
-            res.clearCookie('thottopilot.sid', {
-              httpOnly: true,
-              secure: process.env.NODE_ENV === 'production',
-              sameSite: 'strict'
-            });
-            const authHeader = req.headers['authorization'];
-            const token = authHeader?.split(' ')[1] || req.cookies?.authToken;
-            if (token) {
-              const decoded = jwt.decode(token) as { exp?: number } | null;
-              const ttl = decoded?.exp ? decoded.exp - Math.floor(Date.now() / 1000) : 86400;
-              await blacklistToken(token, ttl);
-            }
-            res.json({ message: 'Logged out successfully' });
-          }
-        });
-      } else {
-        // No passport logout, destroy session directly
-        if (r.session && r.session.destroy) {
-          r.session.destroy(async (err) => {
-            if (err) {
-              logger.error('Session destroy error', { error: err instanceof Error ? err.message : String(err) });
-            }
-            res.clearCookie('connect.sid', {
-              httpOnly: true,
-              secure: process.env.NODE_ENV === 'production',
-              sameSite: 'strict'
-            });
-            res.clearCookie('authToken', {
-              httpOnly: true,
-              secure: process.env.NODE_ENV === 'production',
-              sameSite: 'strict'
-            });
-            res.clearCookie('thottopilot.sid', {
-              httpOnly: true,
-              secure: process.env.NODE_ENV === 'production',
-              sameSite: 'strict'
-            });
-            const authHeader = req.headers['authorization'];
-            const token = authHeader?.split(' ')[1] || req.cookies?.authToken;
-            if (token) {
-              const decoded = jwt.decode(token) as { exp?: number } | null;
-              const ttl = decoded?.exp ? decoded.exp - Math.floor(Date.now() / 1000) : 86400;
-              await blacklistToken(token, ttl);
-            }
-            res.json({ message: 'Logged out successfully' });
-          });
-        } else {
-          // Just clear cookies
-          res.clearCookie('connect.sid', {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict'
-          });
-          res.clearCookie('authToken', {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict'
-          });
-          res.clearCookie('thottopilot.sid', {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict'
-          });
-          const authHeader = req.headers['authorization'];
-          const token = authHeader?.split(' ')[1] || req.cookies?.authToken;
-          if (token) {
-            const decoded = jwt.decode(token) as { exp?: number } | null;
-            const ttl = decoded?.exp ? decoded.exp - Math.floor(Date.now() / 1000) : 86400;
-            await blacklistToken(token, ttl);
-          }
-          res.json({ message: 'Logged out successfully' });
-        }
-      }
-    } catch (error) {
-      logger.error('Logout error', { error: error instanceof Error ? (error as Error).message : String(error) });
-      // Even on error, clear cookies to help user
-      res.clearCookie('connect.sid', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
-      });
-      res.clearCookie('authToken', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
-      });
-      res.clearCookie('thottopilot.sid', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
-      });
-      res.json({ message: 'Logged out (with errors)' });
-    }
-  });
 
   // Get current user - REMOVED: Duplicate endpoint
   // The main /api/auth/user endpoint is handled in server/auth.ts with JWT support

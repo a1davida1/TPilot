@@ -862,17 +862,15 @@ export function setupAuth(app: Express, apiPrefix: string = '/api') {
     }
   });
 
-  // Logout endpoint
+  // Logout endpoint - handles both session and JWT logout
   app.post(`${apiPrefix}/auth/logout`, async (req: Request, res: Response) => {
     try {
-      // Destroy session
-      if (req.session) {
-        req.session.destroy((err) => {
-          if (err) {
-            safeLog('error', 'Session destroy error:', { error: err.message });
-          }
-        });
-      }
+      // Clear JWT token from cookies
+      res.clearCookie('authToken', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      });
       
       // Clear session cookie
       res.clearCookie('connect.sid', {
@@ -881,6 +879,22 @@ export function setupAuth(app: Express, apiPrefix: string = '/api') {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax'
       });
+      
+      // Clear custom session cookie if exists
+      res.clearCookie('thottopilot.sid', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      });
+      
+      // Destroy session if it exists
+      if (req.session) {
+        req.session.destroy((err) => {
+          if (err) {
+            safeLog('error', 'Session destroy error:', { error: err.message });
+          }
+        });
+      }
       
       res.json({ message: 'Logged out successfully' });
     } catch (error) {

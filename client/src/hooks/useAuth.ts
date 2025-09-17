@@ -75,10 +75,12 @@ export function useAuth() {
       });
       
       if (!response.ok) {
-        console.error('Session logout failed:', response.status);
+        console.warn('Session logout failed:', response.status);
+        // Continue with logout even if server request fails
       }
     } catch (error) {
-      console.error('Session logout error:', error);
+      console.warn('Session logout error:', error);
+      // Continue with logout even if server request fails
     }
     
     // Force refetch to clear user state
