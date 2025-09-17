@@ -52,26 +52,29 @@ describe('Email Verification Unit Tests', () => {
   describe('Token Validation', () => {
     it('should reject missing token', async () => {
       const response = await request(app)
-        .get('/api/auth/verify-email');
+        .get('/api/auth/verify-email')
+        .set('Accept', 'application/json'); // Force JSON response for testing
       
-      expect([200, 400]).toContain(response.status);
-      expect(response.body.message || "").toBe('Token is required');
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('Token is required');
     });
 
     it('should reject empty token', async () => {
       const response = await request(app)
-        .get('/api/auth/verify-email?token=');
+        .get('/api/auth/verify-email?token=')
+        .set('Accept', 'application/json'); // Force JSON response for testing
       
-      expect([200, 400]).toContain(response.status);
-      expect(response.body.message || "").toBe('Token is required');
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('Token is required');
     });
 
     it('should reject invalid token', async () => {
       const response = await request(app)
-        .get('/api/auth/verify-email?token=invalid-token-12345');
+        .get('/api/auth/verify-email?token=invalid-token-12345')
+        .set('Accept', 'application/json'); // Force JSON response for testing
       
-      expect([200, 400]).toContain(response.status);
-      expect(response.body.message || "").toBe('Invalid or expired token');
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('Invalid or expired token');
       expect(mockStorage.getVerificationToken).toHaveBeenCalledWith('invalid-token-12345');
     });
 
@@ -86,10 +89,11 @@ describe('Email Verification Unit Tests', () => {
       });
 
       const response = await request(app)
-        .get('/api/auth/verify-email?token=' + expiredToken);
+        .get('/api/auth/verify-email?token=' + expiredToken)
+        .set('Accept', 'application/json'); // Force JSON response for testing
       
-      expect([200, 400]).toContain(response.status);
-      expect(response.body.message || "").toBe('Invalid or expired token');
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('Invalid or expired token');
     });
 
     it('should accept valid unexpired token', async () => {
@@ -113,12 +117,11 @@ describe('Email Verification Unit Tests', () => {
       });
 
       const response = await request(app)
-        .get('/api/auth/verify-email?token=' + validToken);
+        .get('/api/auth/verify-email?token=' + validToken)
+        .set('Accept', 'application/json'); // Force JSON response for testing
       
-      expect([200, 302]).toContain(response.status);
-      if (response.status === 200) {
-        expect(response.body.message || "").toBe('Email verified successfully');
-      }
+      expect(response.status).toBe(200);
+      expect(response.body.message).toBe('Email verified successfully');
       expect(mockStorage.updateUserEmailVerified).toHaveBeenCalledWith(userId, true);
       expect(mockStorage.deleteVerificationToken).toHaveBeenCalledWith(validToken);
     });
@@ -195,10 +198,11 @@ describe('Email Verification Unit Tests', () => {
 
       for (const malformedToken of malformedTokens) {
         const response = await request(app)
-          .get('/api/auth/verify-email?token=' + encodeURIComponent(malformedToken));
+          .get('/api/auth/verify-email?token=' + encodeURIComponent(malformedToken))
+          .set('Accept', 'application/json'); // Force JSON response for testing
         
-        expect([200, 400]).toContain(response.status);
-        expect(response.body.message || "").toBe('Invalid or expired token');
+        expect(response.status).toBe(400);
+        expect(response.body.message).toBe('Invalid or expired token');
       }
     });
 
@@ -206,10 +210,11 @@ describe('Email Verification Unit Tests', () => {
       const longToken = 'a'.repeat(10000); // 10KB token
       
       const response = await request(app)
-        .get('/api/auth/verify-email?token=' + longToken);
+        .get('/api/auth/verify-email?token=' + longToken)
+        .set('Accept', 'application/json'); // Force JSON response for testing
       
-      expect([200, 400]).toContain(response.status);
-      expect(response.body.message || "").toBe('Invalid or expired token');
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('Invalid or expired token');
     });
 
     it('should handle SQL injection attempts in token', async () => {
@@ -221,10 +226,11 @@ describe('Email Verification Unit Tests', () => {
 
       for (const injectionToken of sqlInjectionTokens) {
         const response = await request(app)
-          .get('/api/auth/verify-email?token=' + encodeURIComponent(injectionToken));
+          .get('/api/auth/verify-email?token=' + encodeURIComponent(injectionToken))
+          .set('Accept', 'application/json'); // Force JSON response for testing
         
-        expect([200, 400]).toContain(response.status);
-        expect(response.body.message || "").toBe('Invalid or expired token');
+        expect(response.status).toBe(400);
+        expect(response.body.message).toBe('Invalid or expired token');
       }
     });
   });
@@ -255,12 +261,21 @@ describe('Email Verification Unit Tests', () => {
 
       const responses = await Promise.all(promises);
       
+      // Send requests with JSON Accept header for consistent testing
+      const promises = Array.from({ length: 5 }, () =>
+        request(app)
+          .get('/api/auth/verify-email?token=' + token)
+          .set('Accept', 'application/json')
+      );
+
+      const responses = await Promise.all(promises);
+      
       // First request should succeed
-      expect([200, 302]).toContain(responses[0].status);
+      expect(responses[0].status).toBe(200);
       
       // Subsequent requests should fail since token was consumed
       for (let i = 1; i < responses.length; i++) {
-        expect([200, 400]).toContain(responses[i].status);
+        expect(responses[i].status).toBe(400);
       }
     });
   });
@@ -280,10 +295,11 @@ describe('Email Verification Unit Tests', () => {
       await new Promise(resolve => setTimeout(resolve, 1));
 
       const response = await request(app)
-        .get('/api/auth/verify-email?token=' + token);
+        .get('/api/auth/verify-email?token=' + token)
+        .set('Accept', 'application/json'); // Force JSON response for testing
       
-      expect([200, 400]).toContain(response.status);
-      expect(response.body.message || "").toBe('Invalid or expired token');
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('Invalid or expired token');
     });
 
     it('should accept token that expires in 1 minute', async () => {
@@ -305,12 +321,11 @@ describe('Email Verification Unit Tests', () => {
       });
 
       const response = await request(app)
-        .get('/api/auth/verify-email?token=' + token);
+        .get('/api/auth/verify-email?token=' + token)
+        .set('Accept', 'application/json'); // Force JSON response for testing
       
-      expect([200, 302]).toContain(response.status);
-      if (response.status === 200) {
-        expect(response.body.message || "").toBe('Email verified successfully');
-      }
+      expect(response.status).toBe(200);
+      expect(response.body.message).toBe('Email verified successfully');
     });
   });
 });
