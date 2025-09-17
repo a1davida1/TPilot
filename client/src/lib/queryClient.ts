@@ -68,7 +68,7 @@ export async function apiRequest(
     method,
     headers,
     body,
-    credentials: "include",
+    credentials: "include", // Cookie-based auth only
   });
 
   await throwIfResNotOk(res);
