@@ -115,23 +115,10 @@ async function configureStaticAssets(
       const { setupVite } = await import('./vite.js');
       await setupVite(app, server);
 
-      const path = await import('path');
-      const { fileURLToPath } = await import('url');
-      const __dirname = path.dirname(fileURLToPath(import.meta.url));
-      const clientPath = path.join(__dirname, '..', 'dist', 'client');
-      const fs = await import('fs');
-
-      if (fs.existsSync(clientPath)) {
-        app.use(express.static(clientPath));
-        app.get('*', (req, res, next) => {
-          if (!req.path.startsWith('/api/') && !req.path.startsWith('/auth/') && !req.path.startsWith('/webhook/')) {
-            res.sendFile(path.join(clientPath, 'index.html'));
-          } else {
-            next();
-          }
-        });
-      }
-
+      // In development, if Vite setup succeeds, we don't need additional static serving
+      // Vite handles everything including HMR
+      logger.info('Vite development server configured successfully');
+      
       app.use((req, res, next) => {
         if (req.path.startsWith('/api/') || req.path.startsWith('/auth/') || req.path.startsWith('/webhook/')) {
           return notFoundHandler(req, res);
