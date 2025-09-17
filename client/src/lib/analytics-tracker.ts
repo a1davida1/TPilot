@@ -48,7 +48,7 @@ class AnalyticsTracker {
       pageCount: 0,
       events: []
     };
-    
+
     this.initializeTracking();
   }
 
@@ -119,7 +119,7 @@ class AnalyticsTracker {
     if (!this.currentPage || !this.pageStartTime) return;
 
     const timeOnPage = Math.floor((Date.now() - this.pageStartTime) / 1000);
-    
+
     const pageEndData: PageViewData = {
       path: this.currentPage,
       timeOnPage,
@@ -141,7 +141,7 @@ class AnalyticsTracker {
 
     if (scrollPercent > this.maxScrollDepth) {
       this.maxScrollDepth = Math.min(scrollPercent, 100);
-      
+
       // Track milestone scroll depths
       if (this.maxScrollDepth >= 75 && this.maxScrollDepth % 25 === 0) {
         this.trackEvent('scroll_depth', { depth: this.maxScrollDepth });
@@ -279,7 +279,7 @@ class AnalyticsTracker {
   private endSession() {
     this.trackPageEnd();
     this.flushEvents();
-    
+
     if (this.heartbeatInterval) {
       clearInterval(this.heartbeatInterval);
     }
@@ -297,7 +297,7 @@ class AnalyticsTracker {
     let lastExecTime = 0;
     return function (this: unknown, ...args: unknown[]) {
       const currentTime = Date.now();
-      
+
       if (currentTime - lastExecTime > delay) {
         func.apply(this, args);
         lastExecTime = currentTime;
@@ -328,9 +328,31 @@ class AnalyticsTracker {
 export const analytics = new AnalyticsTracker();
 
 // Convenience methods for common tracking
-export const trackPageView = (path: string, title?: string) => analytics.trackPageView(path, title);
+export const trackPageView = (path: string, title?: string): void => {
+  try {
+    analytics.trackPageView(path, title);
+  } catch (error) {
+    // Silently fail to prevent app crashes
+    console.warn('Analytics tracking failed:', error);
+  }
+};
+
 export const trackEvent = (type: string, metadata?: Record<string, any>, value?: number) => analytics.trackEvent(type, metadata, value);
 export const trackContentView = (contentId: number, platform: string, subreddit?: string) => analytics.trackContentView(contentId, platform, subreddit);
 export const trackContentGeneration = (success: boolean, platform: string, metadata?: Record<string, any>) => analytics.trackContentGeneration(success, platform, metadata);
-export const trackFeatureUsage = (feature: string, action: string, metadata?: Record<string, any>) => analytics.trackFeatureUsage(feature, action, metadata);
-export const setUserId = (userId: string) => analytics.setUserId(userId);
+export const trackFeatureUsage = (feature: string, action: string, metadata?: Record<string, any>): void => {
+  try {
+    analytics.trackFeatureUsage(feature, action, metadata);
+  } catch (error) {
+    // Silently fail to prevent app crashes
+    console.warn('Analytics tracking failed:', error);
+  }
+};
+export const setUserId = (userId: string): void => {
+  try {
+    analytics.setUserId(userId);
+  } catch (error) {
+    // Silently fail to prevent app crashes
+    console.warn('Analytics user ID setting failed:', error);
+  }
+};
