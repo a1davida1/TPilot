@@ -14,9 +14,9 @@ interface AIProvider {
 }
 
 const providers: AIProvider[] = [
-  { name: 'openai-gpt4o', inputCost: 5.00, outputCost: 15.00, available: !!process.env.OPENAI_API_KEY },
+  { name: 'gemini-flash', inputCost: 0.075, outputCost: 0.30, available: !!process.env.GOOGLE_GENAI_API_KEY },
   { name: 'claude-haiku', inputCost: 0.80, outputCost: 4.00, available: !!process.env.ANTHROPIC_API_KEY },
-  { name: 'gemini-flash', inputCost: 0.075, outputCost: 0.30, available: !!process.env.GOOGLE_GENAI_API_KEY }
+  { name: 'openai-gpt4o', inputCost: 5.00, outputCost: 15.00, available: !!process.env.OPENAI_API_KEY }
 ];
 
 // Initialize clients only if API keys are available
