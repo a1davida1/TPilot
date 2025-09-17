@@ -231,8 +231,9 @@ export function setupAuth(app: Express) {
         });
       }
 
-      // Update last login time
-      await storage.updateUser(user.id, { lastLogin: new Date() });
+      // Update last login time - temporarily disabled due to schema export issue
+      // TODO: Fix lastLogin column export in schema
+      // await storage.updateUser(user.id, { lastLogin: new Date() });
 
       const token = jwt.sign(
         {
@@ -454,8 +455,9 @@ export function setupAuth(app: Express) {
       // Update password and clear mustChangePassword flag
       await storage.updateUserPassword(userId, hashedNewPassword);
       await storage.updateUser(userId, { 
-        mustChangePassword: false,
-        lastLogin: new Date()
+        mustChangePassword: false
+        // TODO: Fix lastLogin column export in schema
+        // lastLogin: new Date()
       });
 
       // Create token for immediate login

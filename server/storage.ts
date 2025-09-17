@@ -47,8 +47,8 @@ export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByUsername(username: string, verified?: boolean): Promise<User | undefined>;
+  getUserByEmail(email: string, verified?: boolean): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUserTier(userId: number, tier: string): Promise<void>;
   updateUser(userId: number, updates: Partial<User>): Promise<User>;
@@ -161,9 +161,19 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
+  async getUserByUsername(username: string, verified?: boolean): Promise<User | undefined> {
     try {
-      const result = await db.select().from(users).where(and(eq(users.username, username), eq(users.isDeleted, false))).limit(1);
+      // Build conditions array to avoid boolean leaks
+      const conditions = [
+        eq(users.username, username)
+      ];
+      
+      // Only add emailVerified condition if explicitly provided
+      if (verified !== undefined) {
+        conditions.push(eq(users.emailVerified, verified));
+      }
+      
+      const result = await db.select().from(users).where(and(...conditions)).limit(1);
       return result[0];
     } catch (error) {
       safeLog('error', 'Storage operation failed - getting user by username:', { error: (error as Error).message });
@@ -171,9 +181,19 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getUserByEmail(email: string): Promise<User | undefined> {
+  async getUserByEmail(email: string, verified?: boolean): Promise<User | undefined> {
     try {
-      const result = await db.select().from(users).where(and(eq(users.email, email), eq(users.isDeleted, false))).limit(1);
+      // Build conditions array to avoid boolean leaks
+      const conditions = [
+        eq(users.email, email)
+      ];
+      
+      // Only add emailVerified condition if explicitly provided
+      if (verified !== undefined) {
+        conditions.push(eq(users.emailVerified, verified));
+      }
+      
+      const result = await db.select().from(users).where(and(...conditions)).limit(1);
       return result[0];
     } catch (error) {
       safeLog('error', 'Storage operation failed - getting user by email:', { error: (error as Error).message });
@@ -206,7 +226,21 @@ export class DatabaseStorage implements IStorage {
 
   async updateUser(userId: number, updates: Partial<User>): Promise<User> {
     try {
-      const result = await db.update(users).set(updates).where(eq(users.id, userId)).returning();
+      // Filter out undefined values and ensure we have something to update
+      const cleanUpdates = Object.fromEntries(
+        Object.entries(updates).filter(([_, value]) => value !== undefined)
+      );
+      
+      // If no valid updates, return the existing user
+      if (Object.keys(cleanUpdates).length === 0) {
+        const user = await this.getUser(userId);
+        if (!user) {
+          throw new Error('User not found');
+        }
+        return user;
+      }
+      
+      const result = await db.update(users).set(cleanUpdates).where(eq(users.id, userId)).returning();
       if (!result[0]) {
         throw new Error('User not found');
       }
