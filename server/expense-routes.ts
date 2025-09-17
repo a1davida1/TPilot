@@ -157,11 +157,24 @@ export function registerExpenseRoutes(app: Express) {
         return res.status(401).json({ message: 'Authentication required' });
       }
 
+      // Validate user exists in database
+      const userExists = await storage.getUser(req.user.id);
+      if (!userExists) {
+        console.error(`User ${req.user.id} not found in database during expense creation`);
+        return res.status(401).json({ message: 'User account not found' });
+      }
+
       const currentYear = new Date().getFullYear();
       const expenseDate = new Date(req.body.expenseDate);
       if (Number.isNaN(expenseDate.getTime())) {
         return res.status(400).json({ message: 'Invalid expense date' });
       }
+
+      // Validate required fields
+      if (!req.body.description || !req.body.amount || !req.body.categoryId) {
+        return res.status(400).json({ message: 'Description, amount, and category are required' });
+      }
+
       const expenseData = {
         ...req.body,
         userId: req.user.id,
@@ -174,6 +187,17 @@ export function registerExpenseRoutes(app: Express) {
       res.status(201).json(expense);
     } catch (error) {
       console.error('Error creating expense:', error);
+      
+      // Provide more specific error messages
+      if (error instanceof Error) {
+        if (error.message.includes('foreign key constraint')) {
+          return res.status(400).json({ message: 'Invalid user or category reference' });
+        }
+        if (error.message.includes('not null')) {
+          return res.status(400).json({ message: 'Missing required fields' });
+        }
+      }
+      
       res.status(500).json({ message: 'Failed to create expense' });
     }
   });

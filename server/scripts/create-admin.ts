@@ -1,37 +1,52 @@
-import bcrypt from 'bcrypt';
-import { db } from '../db.js';
-import { users } from '@shared/schema';
-import { eq } from 'drizzle-orm';
+import { storage } from '../storage.js';
+import bcrypt from 'bcryptjs';
 
 async function createAdmin() {
-  const email = process.env.ADMIN_EMAIL || 'admin@thottopilot.com';
-  const username = process.env.ADMIN_USERNAME || 'admin';
-  const password = process.env.ADMIN_PASSWORD || 'changeme';
+  try {
+    // Check if admin already exists
+    const existingAdmin = await storage.getUserByUsername('admin');
+    if (existingAdmin) {
+      console.log('Admin user already exists with ID:', existingAdmin.id);
+      return existingAdmin;
+    }
 
-  const existing = await db.select().from(users).where(eq(users.email, email)).limit(1);
-  if (existing.length > 0) {
-    console.log('✅ Admin user already exists');
-    return;
+    const hashedPassword = await bcrypt.hash('admin123', 10);
+
+    const adminUser = await storage.createUser({
+      username: 'admin',
+      email: 'admin@thottopilot.com',
+      password: hashedPassword,
+      tier: 'admin',
+      role: 'admin',
+      isAdmin: true,
+      emailVerified: true
+    });
+
+    console.log('Admin user created successfully:', adminUser);
+    return adminUser;
+  } catch (error) {
+    console.error('Failed to create admin user:', error);
+
+    // Try to find existing admin by email as fallback
+    try {
+      const existingByEmail = await storage.getUserByEmail('admin@thottopilot.com');
+      if (existingByEmail) {
+        console.log('Found existing admin by email:', existingByEmail.id);
+        return existingByEmail;
+      }
+    } catch (e) {
+      // Ignore fallback error
+    }
+
+    process.exit(1);
   }
-
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  await db.insert(users).values({
-    email,
-    username,
-    password: hashedPassword,
-    isAdmin: true,
-    role: 'admin',
-    emailVerified: true,
-    tier: 'admin'
-  });
-
-  console.log(`✅ Admin user created with email ${email}`);
 }
 
-createAdmin()
-  .then(() => process.exit(0))
-  .catch((err) => {
-    console.error('Failed to create admin user:', err);
-    process.exit(1);
+if (require.main === module) {
+  createAdmin().then(() => {
+    console.log('Admin setup complete');
+    process.exit(0);
   });
+}
+
+export { createAdmin };
