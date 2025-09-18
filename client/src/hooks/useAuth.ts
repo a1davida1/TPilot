@@ -32,9 +32,9 @@ export function useAuth() {
   const { data: user, isLoading, error, refetch } = useQuery<User>({
     queryKey: ['/api/auth/user'],
     queryFn: async () => {
-      // Use cookie-based authentication only
+      // Cookie-only authentication - no tokens
       const response = await fetch('/api/auth/user', {
-        credentials: 'include' // Include cookies for session-based auth
+        credentials: 'include'
       });
       
       if (response.ok) {
@@ -42,7 +42,6 @@ export function useAuth() {
         return userData;
       }
       
-      // Return null instead of throwing error to allow guest mode
       return null;
     },
     retry: false,
@@ -53,8 +52,8 @@ export function useAuth() {
   });
 
   const login = () => {
-    // Cookie-based auth - just refetch user data
-    setTimeout(() => refetch(), 100); // Small delay to ensure cookie is set
+    // Cookie-only auth - just refetch user data  
+    refetch();
   };
 
   const logout = async () => {

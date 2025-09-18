@@ -36,12 +36,11 @@ if (!ADMIN_EMAIL) {
 }
 
 export const authenticateToken = async (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
-  const authHeader = req.headers['authorization'];
-  let token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+  // Cookie-only authentication - no Bearer tokens
+  const token = req.cookies?.authToken;
 
-  // Fall back to JWT stored in httpOnly cookie
-  if (!token && req.cookies?.authToken) {
-    token = req.cookies.authToken;
+  if (!token) {
+    return res.status(401).json({ message: 'Authentication required' });
   }
 
   // Try JWT token first

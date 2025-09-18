@@ -127,7 +127,7 @@ export const usernameSchema = z.string()
   .regex(/^[a-zA-Z0-9_-]+$/, 'Username can only contain letters, numbers, underscores and hyphens')
   .trim();
 
-// Password validation with strength requirements
+// Password validation with strength requirements (8 characters minimum)
 export const passwordSchema = z.string()
   .min(8, 'Password must be at least 8 characters')
   .max(128, 'Password must be less than 128 characters')
