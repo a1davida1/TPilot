@@ -445,8 +445,8 @@ export function setupAuth(app: Express, apiPrefix: string = '/api') {
         return res.status(400).json({ message: 'Missing required fields' });
       }
 
-      if (newPassword.length < 6) {
-        return res.status(400).json({ message: 'New password must be at least 6 characters long' });
+      if (newPassword.length < 8) {
+        return res.status(400).json({ message: 'New password must be at least 8 characters long' });
       }
 
       const user = await storage.getUser(userId);
