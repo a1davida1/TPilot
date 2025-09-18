@@ -2,11 +2,11 @@ import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll } from
 import request from 'supertest';
 import express from 'express';
 import cookieParser from 'cookie-parser';
-import { setupAuth } from '../../../server/auth.js';
+import { setupAuth } from '../../../server/auth';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { db } from '../../../server/db';
-import { users } from '../../../shared/schema.js';
+import { users } from '../../../shared/schema';
 import { eq } from 'drizzle-orm';
 
 const app = express();

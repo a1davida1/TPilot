@@ -102,6 +102,7 @@ describe('Expense Categories Unit Tests', () => {
       const mockSelect = vi.fn().mockReturnValue({ where: mockWhere });
       vi.mocked(db.select).mockReturnValue(mockSelect as any);
 
+      const { storage } = await import('../../../server/storage.js');
       const result = await storage.getExpenseCategories();
     });
   });
