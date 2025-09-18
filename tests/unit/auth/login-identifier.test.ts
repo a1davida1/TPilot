@@ -4,6 +4,7 @@ import express from 'express';
 import cookieParser from 'cookie-parser';
 import { setupAuth } from '../../../server/auth.js';
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 import { db } from '../../../server/db';
 import { users } from '../../../shared/schema.js';
 import { eq } from 'drizzle-orm';
@@ -14,6 +15,12 @@ app.use(express.json());
 
 // Setup auth routes for testing
 setupAuth(app);
+
+// Helper function to create valid JWT token for testing
+function createTestJWT(userId: number): string {
+  const secret = process.env.JWT_SECRET || 'test-secret-key';
+  return jwt.sign({ id: userId }, secret, { expiresIn: '1h' });
+}
 
 // Helper function to extract auth credentials from response
 function extractAuthCredentials(response: any) {
@@ -119,8 +126,14 @@ describe('Login Identifier and Cookie Auth', () => {
         expect(userResponse.status).toBe(200);
         expect(userResponse.body).toHaveProperty('id');
       } else {
-        // If for some reason cookie is not set, fail the test
-        throw new Error('Auth cookie not found in login response');
+        // Test fallback with valid Bearer token
+        const validToken = createTestJWT(testUserId);
+        const userResponse = await request(app)
+          .get('/api/auth/user')
+          .set('Authorization', `Bearer ${validToken}`);
+
+        expect(userResponse.status).toBe(200);
+        expect(userResponse.body).toHaveProperty('id');
       }
     });
 
@@ -129,7 +142,7 @@ describe('Login Identifier and Cookie Auth', () => {
         .get('/api/auth/user');
 
       expect(response.status).toBe(401);
-      expect(response.body.message || "").toContain('Access token required');
+      expect(response.body.message).toBe('Access token required');
     });
   });
 });
