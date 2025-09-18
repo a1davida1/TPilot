@@ -52,7 +52,7 @@ export function useAuth() {
   });
 
   const login = () => {
-    // Cookie-only auth - just refetch user data  
+    // Cookie-based auth - just refetch user data
     refetch();
   };
 
@@ -82,11 +82,7 @@ export function useAuth() {
       // Continue with logout even if server request fails
     }
     
-    // Clear any local storage
-    if (typeof localStorage !== 'undefined') {
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('user');
-    }
+    // Note: No localStorage tokens in cookie-based auth
     
     // Force page reload to clear any cached state
     setTimeout(() => {
