@@ -32,12 +32,12 @@ export type UploadRequest = z.infer<typeof uploadRequestSchema>;
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  username: varchar("username", { length: 255 }).unique().notNull(),
-  password: varchar("password", { length: 255 }).notNull().default(''),
+  username: varchar("username", { length: 255 }).notNull().unique(),
+  password: varchar("password", { length: 255 }).notNull().default(""),
   email: varchar("email", { length: 255 }).unique(),
   role: varchar("role", { length: 50 }).default("user"), // user, admin, moderator
   isAdmin: boolean("is_admin").default(false),
-  emailVerified: boolean("email_verified").default(false).notNull(),
+  emailVerified: boolean("email_verified").notNull().default(false),
   firstName: varchar("first_name", { length: 255 }),
   lastName: varchar("last_name", { length: 255 }),
   tier: varchar("tier", { length: 50 }).default("free").notNull(), // free, starter, pro
@@ -876,3 +876,10 @@ export type SystemLog = typeof systemLogs.$inferSelect;
 export type ContentFlag = typeof contentFlags.$inferSelect;
 export type UserAction = typeof userActions.$inferSelect;
 export type AdminAuditLog = typeof adminAuditLog.$inferSelect;
+
+// Express session table
+export const session = pgTable("session", {
+  sid: varchar("sid").primaryKey(),
+  sess: jsonb("sess").notNull(),
+  expire: timestamp("expire").notNull(),
+});
