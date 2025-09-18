@@ -1,14 +1,8 @@
 import type { Express, Response, NextFunction } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
-import session from 'express-session';
 import path from 'path';
-import connectPgSimple from 'connect-pg-simple';
-import * as connectRedis from 'connect-redis';
-import { Pool } from 'pg';
-import Redis from 'ioredis';
 import Stripe from 'stripe';
-import passport from 'passport';
 
 // Security and middleware
 import { validateEnvironment, securityMiddleware, ipLoggingMiddleware, errorHandler, logger, generationLimiter } from "./middleware/security.js";
@@ -37,26 +31,9 @@ interface AnalyticsRequest extends express.Request {
 // Import users table for type inference
 import { users, type ContentGeneration } from "@shared/schema";
 
-// AuthUser interface for passport serialization
-interface AuthUser {
-  id: number;
-  username?: string;
-  isAdmin?: boolean;
-}
-
 // Auth request interface that includes user  
 interface AuthenticatedRequest extends express.Request {
   user?: typeof users.$inferSelect;
-}
-
-// Session interface with Reddit OAuth properties
-interface RedditSessionData {
-  redditOAuthState?: string;
-  redditConnected?: boolean;
-}
-
-declare module 'express-session' {
-  interface SessionData extends RedditSessionData {}
 }
 
 // Service imports
@@ -169,59 +146,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
   app.use(ipLoggingMiddleware);
   app.use(securityMiddleware);
 
-  // Session configuration (MUST BE BEFORE AUTH ROUTES)
-  let store: session.Store | undefined;
-
-  if (IS_PRODUCTION) {
-    if (REDIS_URL) {
-      const { RedisStore } = connectRedis as any;
-      const redisClient = new Redis(REDIS_URL);
-      store = new RedisStore({ client: redisClient, prefix: 'sess:' });
-    } else if (DATABASE_URL) {
-      const PgStore = connectPgSimple(session);
-      store = new PgStore({
-        pool: new Pool({ connectionString: DATABASE_URL })
-      });
-    } else {
-      throw new Error('No REDIS_URL or DATABASE_URL set in production; persistent session store required.');
-    }
-  }
-
-  app.use(session({
-    store,
-    secret: SESSION_SECRET,
-    resave: false, // Prevent session fixation
-    saveUninitialized: false, // Only create sessions when needed
-    cookie: {
-      secure: IS_PRODUCTION, // HTTPS-only in production
-      httpOnly: true,
-      sameSite: 'lax', // Allows OAuth redirects
-      maxAge: 1000 * 60 * 60 * 24 * 7 // 1 week
-    },
-    name: 'thottopilot.sid', // Custom session name
-    rolling: true // Refresh session on activity
-  }));
-
-  // Initialize Passport after session middleware
-  app.use(passport.initialize());
-  app.use(passport.session());
-
-  // Configure Passport serialization for admin
-  passport.serializeUser((user: Express.User, done) => {
-    done(null, (user as AuthUser).id);
-  });
-
-  passport.deserializeUser(async (id: unknown, done) => {
-    try {
-      if (typeof id !== 'number') {
-        return done(new Error('Invalid user ID'), null);
-      }
-      const user = await storage.getUser(id);
-      done(null, user);
-    } catch (error) {
-      done(error instanceof Error ? error : new Error(String(error)), null);
-    }
-  });
+  // Pure JWT-based authentication - no sessions needed
 
   // CSRF protection for session-based routes
   const csrfProtection: express.RequestHandler = csrf({ 
@@ -310,13 +235,13 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
   // Media routes
   app.use('/api/media', mediaRoutes);
   
-  // Social auth routes
-  app.get('/api/auth/google', socialAuthRoutes.googleAuth);
-  app.get('/api/auth/google/callback', socialAuthRoutes.googleCallback);
-  app.get('/api/auth/facebook', socialAuthRoutes.facebookAuth);
-  app.get('/api/auth/facebook/callback', socialAuthRoutes.facebookCallback);
-  app.get('/api/auth/reddit', socialAuthRoutes.redditAuth);
-  app.get('/api/auth/reddit/callback', socialAuthRoutes.redditCallback);
+  // Social auth routes temporarily disabled - will implement JWT-based OAuth later
+  // app.get('/api/auth/google', socialAuthRoutes.googleAuth);
+  // app.get('/api/auth/google/callback', socialAuthRoutes.googleCallback);
+  // app.get('/api/auth/facebook', socialAuthRoutes.facebookAuth);
+  // app.get('/api/auth/facebook/callback', socialAuthRoutes.facebookCallback);
+  // app.get('/api/auth/reddit', socialAuthRoutes.redditAuth);
+  // app.get('/api/auth/reddit/callback', socialAuthRoutes.redditCallback);
 
   // Serve uploaded files securely
   app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
@@ -628,16 +553,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
   });
 
   // Get user stats
-  // Debug endpoint for Reddit OAuth troubleshooting (temporary)
-  app.get('/api/debug/session', (req: express.Request, res) => {
-    res.json({
-      sessionId: req.sessionID,
-      hasSession: !!req.session,
-      redditState: req.session?.redditOAuthState,
-      redditConnected: req.session?.redditConnected,
-      cookies: req.headers.cookie ? 'present' : 'missing'
-    });
-  });
+  // Pure JWT-based auth - no sessions to debug
 
   app.get("/api/user-stats", authenticateToken, async (req: AuthRequest, res) => {
     try {
@@ -792,16 +708,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
   app.get("/api/leads/confirm", confirmLead);
   app.get("/api/admin/leads", getLeads);
 
-  // Debug endpoint for Reddit OAuth session
-  app.get('/api/debug/reddit-session', (req, res) => {
-    res.json({
-      sessionID: req.sessionID,
-      redditState: (req.session as any).redditOAuthState,
-      hasSession: !!req.session,
-      cookies: req.headers.cookie,
-      sessionData: req.session
-    });
-  });
+  // Pure JWT-based auth - no sessions
 
   // ==========================================
   // PRODUCTION API ENDPOINTS - REAL IMPLEMENTATIONS

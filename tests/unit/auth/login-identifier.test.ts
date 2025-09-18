@@ -21,7 +21,7 @@ function extractAuthCredentials(response: any) {
   const authCookie = cookies.find((c: string) => 
     c.includes('authToken') || c.includes('session') || c.includes('auth')
   );
-  
+
   return {
     cookie: authCookie,
     token: response.body?.token || response.body?.accessToken,
@@ -66,16 +66,12 @@ describe('Login Identifier and Cookie Auth', () => {
         });
 
       expect(response.status).toBe(200);
-      
+
       const auth = extractAuthCredentials(response);
       expect(auth.hasAuth).toBeTruthy();
-      
-      // Optional: log what type of auth was used for debugging
-      if (auth.cookie) console.log('Using cookie authentication');
-      if (auth.token) console.log('Using token authentication');
-      
-      // If cookies are present, check their properties
-      if (auth.cookie && auth.cookie.includes('authToken')) {
+
+      // Pure JWT-in-cookie auth - should always have cookie
+      if (auth.cookie) {
         expect(auth.cookie).toContain('HttpOnly');
         expect(auth.cookie).toContain('SameSite=Strict');
       }
@@ -90,16 +86,12 @@ describe('Login Identifier and Cookie Auth', () => {
         });
 
       expect(response.status).toBe(200);
-      
+
       const auth = extractAuthCredentials(response);
       expect(auth.hasAuth).toBeTruthy();
-      
-      // Optional: log what type of auth was used for debugging
-      if (auth.cookie) console.log('Using cookie authentication');
-      if (auth.token) console.log('Using token authentication');
-      
-      // If cookies are present, check their properties
-      if (auth.cookie && auth.cookie.includes('authToken')) {
+
+      // Pure JWT-in-cookie auth - should always have cookie
+      if (auth.cookie) {
         expect(auth.cookie).toContain('HttpOnly');
       }
     });
@@ -118,19 +110,17 @@ describe('Login Identifier and Cookie Auth', () => {
       const auth = extractAuthCredentials(loginResponse);
       expect(auth.hasAuth).toBeTruthy();
 
-      if (auth.cookie || auth.token) {
-        // Use cookie or token for authenticated request
-        const userResponse = auth.cookie
-          ? await request(app)
+      if (auth.cookie) { // Only expect cookie for JWT-in-cookie auth
+        const userResponse = await request(app)
               .get('/api/auth/user')
-              .set('Cookie', auth.cookie)
-          : await request(app)
-              .get('/api/auth/user')
-              .set('Authorization', `Bearer ${auth.token}`);
+              .set('Cookie', auth.cookie);
 
         // Should accept cookie authentication
         expect(userResponse.status).toBe(200);
         expect(userResponse.body).toHaveProperty('id');
+      } else {
+        // If for some reason cookie is not set, fail the test
+        throw new Error('Auth cookie not found in login response');
       }
     });
 

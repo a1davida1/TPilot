@@ -1,7 +1,6 @@
 import { Express, Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import session from 'express-session';
 import { storage } from './storage';
 import { emailService } from './services/email-service';
 import crypto from 'crypto';
@@ -898,14 +897,7 @@ export function setupAuth(app: Express, apiPrefix: string = '/api') {
       res.clearCookie('session');
       res.clearCookie('auth');
       
-      // Destroy session if it exists
-      if (req.session) {
-        req.session.destroy((err) => {
-          if (err) {
-            safeLog('error', 'Session destroy error:', { error: err.message });
-          }
-        });
-      }
+      // Pure JWT-based auth - no sessions to destroy
       
       // Set cache headers to prevent caching
       res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');

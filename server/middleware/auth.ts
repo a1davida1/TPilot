@@ -1,3 +1,4 @@
+
 import jwt from 'jsonwebtoken';
 import express from 'express';
 import { logger } from './security.js';
@@ -36,67 +37,58 @@ if (!ADMIN_EMAIL) {
 }
 
 export const authenticateToken = async (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
-  // Cookie-only authentication - no Bearer tokens
+  // Pure JWT-in-cookie authentication - no session fallback
   const token = req.cookies?.authToken;
 
   if (!token) {
     return res.status(401).json({ message: 'Authentication required' });
   }
 
-  // Try JWT token first
-  if (token) {
-    if (await isTokenBlacklisted(token)) {
-      return res.status(401).json({ message: 'Token revoked' });
-    }
-    try {
-      const decoded = jwt.verify(token, JWT_SECRET) as { userId?: number; id?: number; email?: string; isAdmin?: boolean; username?: string; role?: string; tier?: string; iat: number; exp: number };
+  // Check if token is blacklisted
+  if (await isTokenBlacklisted(token)) {
+    return res.status(401).json({ message: 'Token revoked' });
+  }
 
-      // Handle admin tokens specially (they don't exist in the database)
-      if (decoded.id === 999 || decoded.isAdmin) {
-        req.user = {
-          id: 999,
-          username: 'admin',
-          email: ADMIN_EMAIL || 'admin@example.com',
-          tier: 'admin',
-          isAdmin: true,
-          role: 'admin',
-          emailVerified: true,
-          password: '', // Not needed for admin
-          isDeleted: false,
-          mustChangePassword: false,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        } as UserType;
-        return next();
-      }
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId?: number; id?: number; email?: string; isAdmin?: boolean; username?: string; role?: string; tier?: string; iat: number; exp: number };
 
-      // For regular users, fetch from database
-      const userId = decoded.userId || decoded.id;
-      if (!userId) {
-        return res.status(401).json({ message: 'Invalid token: missing user ID' });
-      }
-
-      const [user] = await db.select().from(users).where(eq(users.id, userId));
-
-      if (!user) {
-        return res.status(401).json({ message: 'User not found' });
-      }
-
-      req.user = user;
+    // Handle admin tokens specially (they don't exist in the database)
+    if (decoded.id === 999 || decoded.isAdmin) {
+      req.user = {
+        id: 999,
+        username: 'admin',
+        email: ADMIN_EMAIL || 'admin@example.com',
+        tier: 'admin',
+        isAdmin: true,
+        role: 'admin',
+        emailVerified: true,
+        password: '', // Not needed for admin
+        isDeleted: false,
+        mustChangePassword: false,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      } as UserType;
       return next();
-    } catch (error) {
-      logger.error('Auth error:', error);
-      return res.status(403).json({ message: 'Invalid token' });
     }
-  }
 
-  // Fallback to session-based auth
-  if (req.session && (req.session as { user?: UserType }).user) {
-    req.user = (req.session as any).user as UserType;
+    // For regular users, fetch from database
+    const userId = decoded.userId || decoded.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Invalid token: missing user ID' });
+    }
+
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+
+    if (!user) {
+      return res.status(401).json({ message: 'User not found' });
+    }
+
+    req.user = user;
     return next();
+  } catch (error) {
+    logger.error('Auth error:', error);
+    return res.status(403).json({ message: 'Invalid token' });
   }
-
-  return res.status(401).json({ message: 'Access token required' });
 };
 
 export const createToken = (user: UserType): string => {
