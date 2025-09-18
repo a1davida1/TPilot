@@ -1,4 +1,4 @@
-import React, { useEffect, Suspense } from "react";
+import React, { useEffect, Suspense, lazy } from "react";
 import { Switch, Route, Redirect, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -10,30 +10,32 @@ import { Header } from "@/components/header";
 import { useAuth } from "@/hooks/useAuth";
 import { SEOOptimization, seoConfigs } from "@/components/seo-optimization";
 import { UnifiedLanding } from "@/components/unified-landing";
-import Dashboard from "@/pages/dashboard";
 import { OnboardingWalkthrough } from "@/components/onboarding-walkthrough";
 import { useOnboarding } from "@/hooks/useOnboarding";
-import NotFound from "@/pages/not-found";
-import ResetPasswordPage from "@/pages/reset-password";
-import ForgotPasswordPage from "@/pages/forgot-password";
-import EmailVerificationPage from "@/pages/email-verification";
-import ChangePasswordPage from "@/pages/change-password";
-import LogoutPage from "@/pages/logout";
-import History from "@/pages/history";
-import Settings from "@/pages/settings";
-import Checkout from "@/pages/checkout";
-import Enterprise from "@/pages/enterprise";
-import Phase4Dashboard from "@/pages/phase4";
-import { AdminDashboard } from "@/pages/admin";
-import { AdminLeadsPage } from "@/pages/admin-leads";
-import CaptionGeneratorPage from "@/pages/caption-generator";
-import RedditPostingPage from "@/pages/reddit-posting";
-import ImageShieldPage from "@/pages/imageshield";
-import TaxTracker from "@/pages/tax-tracker";
-import TermsOfService from "@/pages/terms-of-service";
-import PrivacyPolicy from "@/pages/privacy-policy";
-import { RedditCommunities } from "@/components/reddit-communities";
-import { ImageGallery } from "@/components/image-gallery";
+
+// Lazy load pages for code splitting
+const Dashboard = lazy(() => import("@/pages/dashboard"));
+const NotFound = lazy(() => import("@/pages/not-found"));
+const ResetPasswordPage = lazy(() => import("@/pages/reset-password"));
+const ForgotPasswordPage = lazy(() => import("@/pages/forgot-password"));
+const EmailVerificationPage = lazy(() => import("@/pages/email-verification"));
+const ChangePasswordPage = lazy(() => import("@/pages/change-password"));
+const LogoutPage = lazy(() => import("@/pages/logout"));
+const History = lazy(() => import("@/pages/history"));
+const Settings = lazy(() => import("@/pages/settings"));
+const Checkout = lazy(() => import("@/pages/checkout"));
+const Enterprise = lazy(() => import("@/pages/enterprise"));
+const Phase4Dashboard = lazy(() => import("@/pages/phase4"));
+const AdminDashboard = lazy(() => import("@/pages/admin").then(m => ({ default: m.AdminDashboard })));
+const AdminLeadsPage = lazy(() => import("@/pages/admin-leads").then(m => ({ default: m.AdminLeadsPage })));
+const CaptionGeneratorPage = lazy(() => import("@/pages/caption-generator"));
+const RedditPostingPage = lazy(() => import("@/pages/reddit-posting"));
+const ImageShieldPage = lazy(() => import("@/pages/imageshield"));
+const TaxTracker = lazy(() => import("@/pages/tax-tracker"));
+const TermsOfService = lazy(() => import("@/pages/terms-of-service"));
+const PrivacyPolicy = lazy(() => import("@/pages/privacy-policy"));
+const RedditCommunities = lazy(() => import("@/components/reddit-communities").then(m => ({ default: m.RedditCommunities })));
+const ImageGallery = lazy(() => import("@/components/image-gallery").then(m => ({ default: m.ImageGallery })));
 // Phase 1: Real Analytics Tracking
 import { trackPageView, setUserId, trackFeatureUsage } from "@/lib/analytics-tracker";
 
@@ -197,7 +199,14 @@ function Router() {
     <div className="min-h-screen bg-background">
       <Header />
       <main>
-        <Suspense fallback={<div className="p-4">Loading...</div>}>
+        <Suspense fallback={
+          <div className="min-h-screen bg-white flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading page...</p>
+            </div>
+          </div>
+        }>
           {isAuthenticated ? <AuthenticatedRoutes /> : <UnauthenticatedRoutes />}
         </Suspense>
       </main>
