@@ -3,20 +3,39 @@ import { createInsertSchema } from "drizzle-zod";
 export const users = pgTable("users", {
     id: serial("id").primaryKey(),
     username: varchar("username", { length: 255 }).unique().notNull(),
-    password: varchar("password", { length: 255 }).notNull().default(''),
-    email: varchar("email", { length: 255 }),
+    password: varchar("password", { length: 255 }).notNull().default(""),
+    email: varchar("email", { length: 255 }).unique(),
+    role: varchar("role", { length: 50 }).default("user"),
+    isAdmin: boolean("is_admin").default(false),
     emailVerified: boolean("email_verified").default(false).notNull(),
     firstName: varchar("first_name", { length: 255 }), // Added missing column
     lastName: varchar("last_name", { length: 255 }), // Added missing column
     tier: varchar("tier", { length: 50 }).default("free").notNull(), // free, pro, premium, pro_plus
-    subscriptionStatus: varchar("subscription_status", { length: 50 }).default("free").notNull(), // Added missing column
+    mustChangePassword: boolean("must_change_password").default(false).notNull(),
+    subscriptionStatus: varchar("subscription_status", { length: 50 }).default("inactive").notNull(), // Added missing column
     trialEndsAt: timestamp("trial_ends_at"), // For trial management
     provider: varchar("provider", { length: 50 }), // google, facebook, reddit
     providerId: varchar("provider_id", { length: 255 }),
-    avatar: varchar("avatar", { length: 500 }),
+    avatar: text("avatar"),
+    bio: text("bio"),
     referralCodeId: integer("referral_code_id"), // Will reference referralCodes.id
     referredBy: integer("referred_by"), // Added missing column
+    redditUsername: varchar("reddit_username", { length: 255 }),
+    redditAccessToken: text("reddit_access_token"),
+    redditRefreshToken: text("reddit_refresh_token"),
+    redditId: varchar("reddit_id", { length: 255 }),
+    stripeCustomerId: varchar("stripe_customer_id", { length: 255 }),
+    stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
+    bannedAt: timestamp("banned_at"),
+    suspendedUntil: timestamp("suspended_until"),
+    banReason: text("ban_reason"),
+    suspensionReason: text("suspension_reason"),
     createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+    lastLogin: timestamp("last_login"),
+    passwordResetAt: timestamp("password_reset_at"),
+    deletedAt: timestamp("deleted_at"),
+    isDeleted: boolean("is_deleted").default(false),
 });
 export const contentGenerations = pgTable("content_generations", {
     id: serial("id").primaryKey(),
@@ -73,6 +92,12 @@ export const leads = pgTable("leads", {
     referrer: varchar("referrer", { length: 500 }),
     confirmedAt: timestamp("confirmed_at"),
     createdAt: timestamp("created_at").defaultNow(),
+});
+export const verificationTokens = pgTable("verification_tokens", {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").references(() => users.id).notNull(),
+    token: varchar("token", { length: 255 }).unique().notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
 });
 export const userImages = pgTable("user_images", {
     id: serial("id").primaryKey(),
@@ -143,6 +168,26 @@ export const postJobs = pgTable("post_jobs", {
     resultJson: jsonb("result_json"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+export const redditCommunities = pgTable("reddit_communities", {
+    id: varchar("id", { length: 100 }).primaryKey(),
+    name: varchar("name", { length: 255 }).notNull(),
+    displayName: varchar("display_name", { length: 255 }).notNull(),
+    members: integer("members").notNull(),
+    engagementRate: integer("engagement_rate").notNull(),
+    category: varchar("category", { length: 50 }).notNull(),
+    verificationRequired: boolean("verification_required").default(false).notNull(),
+    promotionAllowed: varchar("promotion_allowed", { length: 20 }).default("no").notNull(),
+    postingLimits: jsonb("posting_limits"),
+    rules: jsonb("rules"),
+    bestPostingTimes: jsonb("best_posting_times").$type(),
+    averageUpvotes: integer("average_upvotes"),
+    successProbability: integer("success_probability"),
+    growthTrend: varchar("growth_trend", { length: 20 }),
+    modActivity: varchar("mod_activity", { length: 20 }),
+    description: text("description"),
+    tags: jsonb("tags").$type(),
+    competitionLevel: varchar("competition_level", { length: 20 })
 });
 export const subscriptions = pgTable("subscriptions", {
     id: serial("id").primaryKey(),
@@ -270,6 +315,7 @@ export const insertSubredditRuleSchema = createInsertSchema(subredditRules);
 export const insertPostTemplateSchema = createInsertSchema(postTemplates);
 export const insertPostPreviewSchema = createInsertSchema(postPreviews);
 export const insertPostJobSchema = createInsertSchema(postJobs);
+export const insertRedditCommunitySchema = createInsertSchema(redditCommunities);
 export const insertSubscriptionSchema = createInsertSchema(subscriptions);
 export const insertInvoiceSchema = createInsertSchema(invoices);
 export const insertReferralCodeSchema = createInsertSchema(referralCodes);
@@ -290,3 +336,4 @@ export const insertUserSampleSchema = createInsertSchema(userSamples);
 export const insertUserPreferenceSchema = createInsertSchema(userPreferences);
 export const insertUserImageSchema = createInsertSchema(userImages);
 export const insertLeadSchema = createInsertSchema(leads);
+export const insertVerificationTokenSchema = createInsertSchema(verificationTokens);
