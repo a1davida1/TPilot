@@ -880,9 +880,13 @@ export type ContentFlag = typeof contentFlags.$inferSelect;
 export type UserAction = typeof userActions.$inferSelect;
 export type AdminAuditLog = typeof adminAuditLog.$inferSelect;
 
-// Express session table
+// Express session table for connect-pg-simple
 export const session = pgTable("session", {
   sid: varchar("sid").primaryKey(),
   sess: jsonb("sess").notNull(),
   expire: timestamp("expire").notNull(),
 });
+
+// Session table types
+export type Session = typeof session.$inferSelect;
+export type InsertSession = typeof session.$inferInsert;
