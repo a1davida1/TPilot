@@ -127,9 +127,32 @@ describe('Enhanced AI Service - Failure Scenarios', () => {
       );
 
       const result = await service.generate(request);
-      
+
       expect(result).toBeDefined();
       expect(result.titles.length).toBeGreaterThan(0);
+    });
+
+    test('template fallback should reflect request-specific context', async () => {
+      const request = {
+        mode: 'text' as const,
+        platform: 'reddit' as const,
+        style: 'playful' as const,
+        theme: 'Wellness',
+        prompt: 'Share a calming morning wellness routine update',
+        customInstructions: 'Highlight mindfulness and gentle self-care wins',
+        targetAudience: 'potential-subscribers' as const,
+      };
+
+      vi.mocked(generateWithMultiProvider).mockRejectedValue(
+        new Error('Template fallback engaged')
+      );
+
+      const result = await service.generate(request);
+
+      expect(result.content).toContain('Wellness');
+      expect(result.content).toContain('Highlight mindfulness');
+      expect(result.content).toContain('calming morning wellness routine');
+      expect(result.titles.some(title => title.includes('Wellness'))).toBe(true);
     });
 
     test('should handle malformed JSON responses', async () => {
