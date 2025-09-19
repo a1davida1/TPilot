@@ -1,0 +1,784 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/tests/integration/upload.test.ts b/tests/integration/upload.test.ts
+index 8aac46a32a687f0b64cad8df24b4963dff13714f..9774ecc27a01c772f177cda6c6aa962b6bb239a8 100644
+--- a/tests/integration/upload.test.ts
++++ b/tests/integration/upload.test.ts
+@@ -1,515 +1,295 @@
+-import request from 'supertest';
+-import { describe, test, beforeAll, afterAll, beforeEach, afterEach, expect, vi } from 'vitest';
+ import express from 'express';
+-import { db } from '../../server/db';
+-import { users, userImages } from '../../shared/schema';
+-import { eq } from 'drizzle-orm';
+-import jwt from 'jsonwebtoken';
+-import fs from 'fs';
++import cookieParser from 'cookie-parser';
++import request from 'supertest';
+ import path from 'path';
++import { fileURLToPath } from 'url';
++import fs from 'fs/promises';
+ import sharp from 'sharp';
+-
+-// Mock image protection functions
+-const mockImageShieldProtection = vi.fn();
+-const mockWatermarkApplication = vi.fn();
+-
+-vi.mock('../../server/lib/image-protection', () => ({
+-  applyImageShieldProtection: mockImageShieldProtection,
+-  addWatermarkToImage: mockWatermarkApplication
+-}));
+-
+-describe('Upload and ImageShield Integration Tests', () => {
+-  let testUser: unknown;
+-  let authToken: string;
+-  let app: express.Application;
+-  let testImagePath: string;
++import type { Logger } from 'winston';
++import {
++  describe,
++  beforeAll,
++  afterAll,
++  beforeEach,
++  afterEach,
++  test,
++  expect,
++  vi,
++  type SpyInstance
++} from 'vitest';
++
++interface TestUser extends Record<string, unknown> {
++  id: number;
++  username: string;
++  email: string;
++  password: string;
++  tier: string;
++  role: string;
++  isAdmin: boolean;
++  emailVerified: boolean;
++  isDeleted: boolean;
++  mustChangePassword: boolean;
++  subscriptionStatus: string;
++  createdAt: Date;
++  updatedAt: Date;
++}
++
++function buildTestUser(overrides: Partial<TestUser> = {}): TestUser {
++  const timestamp = new Date();
++  return {
++    id: 1,
++    username: 'imageshield-user',
++    email: 'imageshield@example.com',
++    password: 'hashed-password',
++    tier: 'free',
++    role: 'user',
++    isAdmin: false,
++    emailVerified: true,
++    isDeleted: false,
++    mustChangePassword: false,
++    subscriptionStatus: 'active',
++    createdAt: timestamp,
++    updatedAt: timestamp,
++    ...overrides
++  };
++}
++
++const __filename = fileURLToPath(import.meta.url);
++const __dirname = path.dirname(__filename);
++const fixturesRoot = path.join(__dirname, '__fixtures__', 'imageshield');
++const sampleImagePath = path.join(fixturesRoot, 'sample.png');
++const uploadsDir = path.join(process.cwd(), 'uploads');
++
++process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret-key-with-at-least-32-characters!!';
++process.env.ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@example.com';
++process.env.ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || '$2b$10$w8Vsy1uZb3lROoN0YjvS8O3b0sKQ6n1kG9F7ZbWuoFkA1x/ZzOAVa';
++process.env.NODE_ENV = 'test';
++
++const currentUserRef: { value: TestUser } = { value: buildTestUser() };
++const tokenStore = new Map<string, TestUser>();
++
++vi.mock('../../server/db.js', () => {
++  const queryBuilder = {
++    select: vi.fn().mockReturnThis(),
++    from: vi.fn().mockReturnThis(),
++    where: vi.fn().mockReturnThis(),
++    limit: vi.fn().mockImplementation(async () => [currentUserRef.value])
++  };
++  return { db: queryBuilder };
++});
++
++describe('ImageShield upload integration', () => {
++  let app: express.Express;
++  let uploadRouter: express.Router;
++  let createToken: typeof import('../../server/middleware/auth.js')['createToken'];
++  let logger: Logger;
++  let infoSpy: SpyInstance;
++  let authenticateSpy: SpyInstance;
++  let createTokenSpy: SpyInstance;
++  let verifyTokenSpy: SpyInstance;
++  let authModule: typeof import('../../server/middleware/auth.js');
++  let baseFileSize = 0;
+ 
+   beforeAll(async () => {
+-    // Create test app
+-    app = express();
+-    app.use(express.json({ limit: '50mb' }));
+-    app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+-    
+-    // Setup upload routes for testing
+-    app.post('/api/upload/image', async (req, res) => {
+-      try {
+-        const { imageData, protectionLevel = 'standard' } = req.body;
+-        
+-        if (!imageData) {
+-          return res.status(400).json({ message: 'No image data provided' });
+-        }
+-
+-        // Simulate image processing
+-        const processedImage = await mockImageShieldProtection(imageData, protectionLevel);
+-        await mockWatermarkApplication(processedImage);
+-
+-        // Save to database
+-        const [savedImage] = await db.insert(userImages).values({
+-          userId: testUser.id,
+-          filename: 'test-image.png',
+-          originalName: 'test.png',
+-          url: '/uploads/test-image.png',
+-          mimeType: 'image/png',
+-          size: 1024,
+-          isProtected: true,
+-          protectionLevel
+-        }).returning();
+-
+-        res.json({
+-          success: true,
+-          imageId: savedImage.id,
+-          url: savedImage.url,
+-          protectionApplied: true,
+-          watermarkApplied: true,
+-          protectionLevel
+-        });
+-      } catch (error) {
+-        const errorMessage =
+-          error instanceof Error ? error.message : 'Unknown error';
+-        res.status(500).json({ message: 'Upload failed', error: errorMessage });
+-      }
+-    });
++    await fs.mkdir(fixturesRoot, { recursive: true });
+ 
+-    app.post('/api/upload/scan', async (req, res) => {
+-      try {
+-        const { imageData } = req.body;
+-        
+-        // Mock content scanning
+-        const scanResult = {
+-          safe: !imageData.includes('unsafe'),
+-          contentFlags: imageData.includes('unsafe') ? ['explicit_content'] : [],
+-          confidence: 0.95
+-        };
+-
+-        res.json(scanResult);
+-      } catch (error) {
+-        res.status(500).json({ message: 'Scan failed' });
+-      }
+-    });
+-
+-    app.get('/api/upload/protected/:imageId', async (req, res) => {
+-      try {
+-        const { imageId } = req.params;
+-        const image = await db.select().from(userImages).where(eq(userImages.id, parseInt(imageId))).limit(1);
+-        
+-        if (!image.length) {
+-          return res.status(404).json({ message: 'Image not found' });
+-        }
+-
+-        res.json({
+-          url: image[0].url,
+-          isProtected: image[0].isProtected,
+-          protectionLevel: image[0].protectionLevel
+-        });
+-      } catch (error) {
+-        res.status(500).json({ message: 'Failed to retrieve image' });
+-      }
+-    });
+-    
+-    // Create test user
+-    const uniqueName = `uploaduser_${Date.now()}`;
+-    const [user] = await db.insert(users).values({
+-      username: uniqueName,
+-      email: `${uniqueName}@example.com`,
+-      password: 'hashedpassword',
+-      tier: 'pro'
+-    }).returning();
+-    
+-    testUser = user;
+-    authToken = jwt.sign({ userId: user.id }, process.env.JWT_SECRET || 'test-secret');
+-
+-    // Create test image
+-    testImagePath = path.join(__dirname, '__fixtures__', 'test-image.png');
+-    await fs.promises.mkdir(path.dirname(testImagePath), { recursive: true });
+-    
+-    // Generate a simple test image using sharp
++    const width = 320;
++    const height = 240;
+     await sharp({
+       create: {
+-        width: 100,
+-        height: 100,
+-        channels: 4,
+-        background: { r: 255, g: 0, b: 0, alpha: 1 }
++        width,
++        height,
++        channels: 3,
++        background: { r: 180, g: 60, b: 120 }
+       }
+     })
+-    .png()
+-    .toFile(testImagePath);
+-  });
+-
+-  afterAll(async () => {
+-    // Cleanup test database
+-    await db.delete(userImages).where(eq(userImages.userId, testUser.id));
+-    await db.delete(users).where(eq(users.id, testUser.id));
+-    
+-    // Clean up test files
+-    try {
+-      await fs.promises.unlink(testImagePath);
+-      await fs.promises.rmdir(path.dirname(testImagePath));
+-    } catch (_error) {
+-      // Ignore cleanup errors
+-    }
+-  });
+-
+-  beforeEach(async () => {
+-    // Reset image records for each test
+-    await db.delete(userImages).where(eq(userImages.userId, testUser.id));
+-    
+-    // Clear mocks
+-    vi.clearAllMocks();
+-    
+-    // Setup default mock responses
+-    mockImageShieldProtection.mockResolvedValue('protected-image-data');
+-    mockWatermarkApplication.mockResolvedValue('watermarked-image-data');
+-  });
+-
+-  afterEach(async () => {
+-    // Cleanup test image records
+-    await db.delete(userImages).where(eq(userImages.userId, testUser.id));
+-  });
++      .png()
++      .toFile(sampleImagePath);
+ 
+-  describe('Image Upload and Protection', () => {
+-    test('should scan, protect and watermark uploaded image', async () => {
+-      const imageBuffer = await fs.promises.readFile(testImagePath);
+-      const imageData = imageBuffer.toString('base64');
+-
+-      const response = await request(app)
+-        .post('/api/upload/image')
+-        .set('Authorization', `Bearer ${authToken}`)
+-        .send({
+-          imageData,
+-          protectionLevel: 'standard'
+-        });
+-
+-      expect(response.status).toBe(200);
+-      expect(response.body.success).toBe(true);
+-      expect(response.body.protectionApplied).toBe(true);
+-      expect(response.body.watermarkApplied).toBe(true);
+-      expect(response.body.protectionLevel).toBe('standard');
+-      expect(response.body.imageId).toBeDefined();
+-
+-      // Verify mocks were called
+-      expect(mockImageShieldProtection).toHaveBeenCalledWith(imageData, 'standard');
+-      expect(mockWatermarkApplication).toHaveBeenCalledWith('protected-image-data');
+-
+-      // Verify database record
+-      const savedImages = await db.select().from(userImages).where(eq(userImages.userId, testUser.id));
+-      expect(savedImages).toHaveLength(1);
+-      expect(savedImages[0].isProtected).toBe(true);
+-      expect(savedImages[0].protectionLevel).toBe('standard');
+-    });
++    baseFileSize = (await fs.stat(sampleImagePath)).size;
+ 
+-    test('should handle different protection levels', async () => {
+-      const imageBuffer = await fs.promises.readFile(testImagePath);
+-      const imageData = imageBuffer.toString('base64');
+-
+-      // Test light protection
+-      const lightResponse = await request(app)
+-        .post('/api/upload/image')
+-        .send({
+-          imageData,
+-          protectionLevel: 'light'
+-        });
+-
+-      expect(lightResponse.status).toBe(200);
+-      expect(lightResponse.body.protectionLevel).toBe('light');
+-      expect(mockImageShieldProtection).toHaveBeenCalledWith(imageData, 'light');
+-
+-      // Test heavy protection
+-      mockImageShieldProtection.mockClear();
+-      const heavyResponse = await request(app)
+-        .post('/api/upload/image')
+-        .send({
+-          imageData,
+-          protectionLevel: 'heavy'
+-        });
+-
+-      expect(heavyResponse.status).toBe(200);
+-      expect(heavyResponse.body.protectionLevel).toBe('heavy');
+-      expect(mockImageShieldProtection).toHaveBeenCalledWith(imageData, 'heavy');
+-    });
++    vi.resetModules();
+ 
+-    test('should reject uploads without image data', async () => {
+-      const response = await request(app)
+-        .post('/api/upload/image')
+-        .set('Authorization', `Bearer ${authToken}`)
+-        .send({
+-          protectionLevel: 'standard'
+-        });
++    authModule = await import('../../server/middleware/auth.js');
+ 
+-      expect([200, 400]).toContain(response.status);
+-      expect(response.body.message || "").toContain('No image data provided');
++    authenticateSpy = vi.spyOn(authModule, 'authenticateToken').mockImplementation((req: Request & { user?: TestUser }, res: Response, next: NextFunction) => {
++      const token = req.cookies?.authToken;
++      if (!token || !tokenStore.has(token)) {
++        res.status(401).json({ message: 'Authentication required' });
++        return;
++      }
++      req.user = tokenStore.get(token);
++      next();
+     });
+ 
+-    test('should handle image protection failures gracefully', async () => {
+-      const imageBuffer = await fs.promises.readFile(testImagePath);
+-      const imageData = imageBuffer.toString('base64');
+-
+-      // Mock protection failure
+-      mockImageShieldProtection.mockRejectedValueOnce(new Error('Protection failed'));
+-
+-      const response = await request(app)
+-        .post('/api/upload/image')
+-        .send({
+-          imageData,
+-          protectionLevel: 'standard'
+-        });
+-
+-      expect([200, 500]).toContain(response.status);
+-      expect(response.body.message || "").toContain('Upload failed');
++    createTokenSpy = vi.spyOn(authModule, 'createToken').mockImplementation((user: TestUser) => {
++      const token = `mock-token-${user.id}-${Date.now()}`;
++      tokenStore.set(token, user);
++      return token;
+     });
+-  });
+-
+-  describe('Content Scanning', () => {
+-    test('should scan image content for safety', async () => {
+-      const safeImageData = 'safe-image-content';
+-
+-      const response = await request(app)
+-        .post('/api/upload/scan')
+-        .send({
+-          imageData: safeImageData
+-        });
+ 
+-      expect(response.status).toBe(200);
+-      expect(response.body.safe).toBe(true);
+-      expect(response.body.contentFlags).toEqual([]);
+-      expect(response.body.confidence).toBeGreaterThan(0.9);
++    verifyTokenSpy = vi.spyOn(authModule, 'verifyToken').mockImplementation((token: string) => {
++      const user = tokenStore.get(token);
++      if (!user) {
++        throw new Error('Invalid token');
++      }
++      const issuedAt = Math.floor(Date.now() / 1000);
++      return {
++        userId: user.id,
++        email: user.email,
++        iat: issuedAt,
++        exp: issuedAt + 86400
++      };
+     });
+ 
+-    test('should flag unsafe content', async () => {
+-      const unsafeImageData = 'unsafe-image-content';
+-
+-      const response = await request(app)
+-        .post('/api/upload/scan')
+-        .send({
+-          imageData: unsafeImageData
+-        });
++    ({ uploadRoutes: uploadRouter } = await import('../../server/routes/upload.js'));
++    ({ logger } = await import('../../server/middleware/security.js'));
++    createToken = authModule.createToken;
+ 
+-      expect(response.status).toBe(200);
+-      expect(response.body.safe).toBe(false);
+-      expect(response.body.contentFlags).toContain('explicit_content');
+-      expect(response.body.confidence).toBeGreaterThan(0.9);
++    app = express();
++    app.use(express.json());
++    app.use(cookieParser());
++
++    app.post('/api/test/login', (req, res) => {
++      const tier = typeof req.body?.tier === 'string' ? req.body.tier : 'free';
++      const id = typeof req.body?.id === 'number' ? req.body.id : tier === 'pro' ? 202 : 101;
++      const username = typeof req.body?.username === 'string' ? req.body.username : `${tier}-user`;
++      const user = buildTestUser({
++        id,
++        tier,
++        username,
++        email: `${username}@example.com`
++      });
++      currentUserRef.value = user;
++      const token = createToken(user as Parameters<typeof createToken>[0]);
++      res.cookie('authToken', token, { httpOnly: true, sameSite: 'lax' });
++      res.json({ token, user });
+     });
+ 
+-    test('should handle scanning errors', async () => {
+-      const response = await request(app)
+-        .post('/api/upload/scan')
+-        .send({});
+-
+-      expect([200, 500]).toContain(response.status);
+-      expect(response.body.message || "").toContain('Scan failed');
++    app.post('/api/uploads', (req, res, next) => {
++      req.url = '/image';
++      (uploadRouter as unknown as express.RequestHandler)(req, res, next);
+     });
+   });
+ 
+-  describe('Protected Image Serving', () => {
+-    test('should serve protected images with proper metadata', async () => {
+-      // First upload an image
+-      const imageBuffer = await fs.promises.readFile(testImagePath);
+-      const imageData = imageBuffer.toString('base64');
+-
+-      const uploadResponse = await request(app)
+-        .post('/api/upload/image')
+-        .send({
+-          imageData,
+-          protectionLevel: 'heavy'
+-        });
+-
+-      const imageId = uploadResponse.body.imageId;
+-
+-      // Then retrieve it
+-      const response = await request(app)
+-        .get(`/api/upload/protected/${imageId}`)
+-        .set('Authorization', `Bearer ${authToken}`);
+-
+-      expect(response.status).toBe(200);
+-      expect(response.body.isProtected).toBe(true);
+-      expect(response.body.protectionLevel).toBe('heavy');
+-      expect(response.body.url).toBeDefined();
+-    });
+-
+-    test('should return 404 for non-existent images', async () => {
+-      const response = await request(app)
+-        .get('/api/upload/protected/99999')
+-        .set('Authorization', `Bearer ${authToken}`);
+-
+-      expect(response.status).toBe(404);
+-      expect(response.body.message || "").toContain('Image not found');
+-    });
++  beforeEach(async () => {
++    await fs.rm(uploadsDir, { recursive: true, force: true });
++    await fs.mkdir(uploadsDir, { recursive: true });
++    tokenStore.clear();
++    infoSpy = vi.spyOn(logger, 'info');
+   });
+ 
+-  describe('File Format Validation', () => {
+-    test('should accept supported image formats', async () => {
+-      // Test with PNG data
+-      const pngData = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==';
+-
+-      const response = await request(app)
+-        .post('/api/upload/image')
+-        .send({
+-          imageData: pngData,
+-          protectionLevel: 'standard'
+-        });
+-
+-      expect(response.status).toBe(200);
+-    });
+-
+-    test('should validate MIME types', async () => {
+-      // This would be handled by actual MIME type validation in the real implementation
+-      const invalidData = 'not-an-image';
+-
+-      const response = await request(app)
+-        .post('/api/upload/scan')
+-        .send({
+-          imageData: invalidData
+-        });
+-
+-      // In real implementation, this would check MIME type and reject invalid formats
+-      expect(response.status).toBe(200); // Mock accepts anything for testing
+-    });
++  afterEach(() => {
++    infoSpy.mockRestore();
+   });
+ 
+-  describe('Watermark Application', () => {
+-    test('should apply watermarks based on user tier', async () => {
+-      // Test free tier user gets watermark
+-      const uniqueName = `freeuser_${Date.now()}`;
+-      const [freeUser] = await db.insert(users).values({
+-        username: uniqueName,
+-        email: `${uniqueName}@test.com`,
+-        password: 'password',
+-        tier: 'free'
+-      }).returning();
+-
+-      const freeToken = jwt.sign({ userId: freeUser.id }, process.env.JWT_SECRET || 'test-secret');
+-
+-      const imageBuffer = await fs.promises.readFile(testImagePath);
+-      const imageData = imageBuffer.toString('base64');
+-
+-      const response = await request(app)
+-        .post('/api/upload/image')
+-        .set('Authorization', `Bearer ${freeToken}`)
+-        .send({
+-          imageData,
+-          protectionLevel: 'standard'
+-        });
+-
+-      expect(response.status).toBe(200);
+-      expect(mockWatermarkApplication).toHaveBeenCalled();
+-
+-      // Cleanup
+-      await db.delete(users).where(eq(users.id, freeUser.id));
+-    });
+-
+-    test('should handle watermark application failures', async () => {
+-      mockWatermarkApplication.mockRejectedValueOnce(new Error('Watermark failed'));
+-
+-      const imageBuffer = await fs.promises.readFile(testImagePath);
+-      const imageData = imageBuffer.toString('base64');
+-
+-      const response = await request(app)
+-        .post('/api/upload/image')
+-        .send({
+-          imageData,
+-          protectionLevel: 'standard'
+-        });
+-
+-      expect([200, 500]).toContain(response.status);
+-      expect(response.body.message || "").toContain('Upload failed');
+-    });
++  afterAll(async () => {
++    authenticateSpy.mockRestore();
++    createTokenSpy.mockRestore();
++    verifyTokenSpy.mockRestore();
++    await fs.rm(uploadsDir, { recursive: true, force: true });
++    await fs.rm(fixturesRoot, { recursive: true, force: true });
+   });
+ 
+-  describe('Performance and Concurrency', () => {
+-    test('should handle multiple concurrent uploads', async () => {
+-      const imageBuffer = await fs.promises.readFile(testImagePath);
+-      const imageData = imageBuffer.toString('base64');
+-
+-      const uploadPromises = Array.from({ length: 5 }, () =>
+-        request(app)
+-          .post('/api/upload/image')
+-          .send({
+-            imageData,
+-            protectionLevel: 'standard'
+-          })
+-      );
+-
+-      const responses = await Promise.all(uploadPromises);
+-      
+-      responses.forEach(response => {
+-        expect(response.status).toBe(200);
+-        expect(response.body.success).toBe(true);
+-      });
+-
+-      // Verify all images were processed
+-      expect(mockImageShieldProtection).toHaveBeenCalledTimes(5);
+-      expect(mockWatermarkApplication).toHaveBeenCalledTimes(5);
+-    });
+-
+-    test('should handle large file uploads', async () => {
+-      // Create a larger test image
+-      const largeImageBuffer = await sharp({
+-        create: {
+-          width: 1000,
+-          height: 1000,
+-          channels: 4,
+-          background: { r: 0, g: 255, b: 0, alpha: 1 }
+-        }
+-      })
+-      .png()
+-      .toBuffer();
+-
+-      const imageData = largeImageBuffer.toString('base64');
+-
+-      const response = await request(app)
+-        .post('/api/upload/image')
+-        .send({
+-          imageData,
+-          protectionLevel: 'standard'
+-        });
+-
+-      expect(response.status).toBe(200);
+-      expect(response.body.success).toBe(true);
+-    });
++  test('applies ImageShield protection with watermark for free tier uploads', async () => {
++    const loginResponse = await request(app)
++      .post('/api/test/login')
++      .send({ tier: 'free', id: 101, username: 'free-user' });
++
++    const cookies = loginResponse.headers['set-cookie'];
++    expect(cookies).toBeDefined();
++    const authCookie = cookies?.[0];
++    expect(authCookie).toBeDefined();
++
++    const response = await request(app)
++      .post('/api/uploads')
++      .set('Cookie', authCookie as string)
++      .field('protectionLevel', 'standard')
++      .attach('image', sampleImagePath, { filename: 'free-user.png' });
++
++    expect(response.status).toBe(200);
++    expect(response.body.message).toBe('File uploaded and protected successfully');
++    expect(response.body.watermarked).toBe(true);
++    expect(response.body.protectionLevel).toBe('standard');
++    expect(response.body.signature).toBeDefined();
++    expect(response.body.originalSize).toBe(baseFileSize);
++
++    const storedFiles = await fs.readdir(uploadsDir);
++    expect(storedFiles).toHaveLength(1);
++    const storedName = storedFiles[0];
++    expect(storedName.startsWith('protected_')).toBe(true);
++    expect(storedName.startsWith('upload-')).toBe(false);
++
++    const storedPath = path.join(uploadsDir, storedName);
++    const storedStats = await fs.stat(storedPath);
++    expect(storedStats.size).toBe(response.body.size);
++    expect(storedStats.size).not.toBe(baseFileSize);
++    expect(response.body.size).not.toBe(response.body.originalSize);
++
++    const storedBuffer = await fs.readFile(storedPath);
++    const originalBuffer = await fs.readFile(sampleImagePath);
++    expect(storedBuffer.equals(originalBuffer)).toBe(false);
++
++    const validationCall = infoSpy.mock.calls.find(([message]) => message === 'File validation successful');
++    expect(validationCall?.[1]).toEqual(expect.objectContaining({
++      userId: 101,
++      originalName: 'free-user.png',
++      declaredMime: 'image/png'
++    }));
++
++    const requestValidated = infoSpy.mock.calls.find(([message]) => message === 'Upload request validated');
++    expect(requestValidated?.[1]).toEqual(expect.objectContaining({
++      userId: 101,
++      userTier: 'free',
++      protectionLevel: 'standard',
++      addWatermark: true
++    }));
++
++    expect(
++      infoSpy.mock.calls.some(([message]) => typeof message === 'string' && message.startsWith('Protected file uploaded:'))
++    ).toBe(true);
+   });
+ 
+-  describe('Error Recovery and Resilience', () => {
+-    test('should handle database connection failures during upload', async () => {
+-      const insertSpy = vi
+-        .spyOn(db as { insert: typeof db.insert }, 'insert')
+-        .mockImplementation(() => {
+-          throw new Error('DB connection failed');
+-        });
+-
+-      const imageBuffer = await fs.promises.readFile(testImagePath);
+-      const imageData = imageBuffer.toString('base64');
+-
+-      const response = await request(app)
+-        .post('/api/upload/image')
+-        .send({
+-          imageData,
+-          protectionLevel: 'standard',
+-        });
+-
+-      expect([200, 500]).toContain(response.status);
+-
+-      insertSpy.mockRestore();
+-    });
+-
+-    test('should clean up partial uploads on failure', async () => {
+-      // Mock partial failure scenario
+-      mockImageShieldProtection.mockResolvedValueOnce('protected-data');
+-      mockWatermarkApplication.mockRejectedValueOnce(new Error('Watermark failed'));
+-
+-      const imageBuffer = await fs.promises.readFile(testImagePath);
+-      const imageData = imageBuffer.toString('base64');
+-
+-      const response = await request(app)
+-        .post('/api/upload/image')
+-        .send({
+-          imageData,
+-          protectionLevel: 'standard'
+-        });
+-
+-      expect([200, 500]).toContain(response.status);
+-
+-      // Verify no partial records were left in database
+-      const orphanedImages = await db.select().from(userImages).where(eq(userImages.userId, testUser.id));
+-      expect(orphanedImages).toHaveLength(0);
+-    });
++  test('respects premium tier settings and skips watermarking', async () => {
++    const loginResponse = await request(app)
++      .post('/api/test/login')
++      .send({ tier: 'pro', id: 202, username: 'premium-user' });
++
++    const cookies = loginResponse.headers['set-cookie'];
++    expect(cookies).toBeDefined();
++    const authCookie = cookies?.[0];
++    expect(authCookie).toBeDefined();
++
++    const response = await request(app)
++      .post('/api/uploads')
++      .set('Cookie', authCookie as string)
++      .field('protectionLevel', 'heavy')
++      .attach('image', sampleImagePath, { filename: 'premium-user.png' });
++
++    expect(response.status).toBe(200);
++    expect(response.body.watermarked).toBe(false);
++    expect(response.body.protectionLevel).toBe('heavy');
++
++    const storedFiles = await fs.readdir(uploadsDir);
++    expect(storedFiles).toHaveLength(1);
++    expect(storedFiles[0].startsWith('protected_')).toBe(true);
++    expect(storedFiles[0].startsWith('upload-')).toBe(false);
++    const storedPath = path.join(uploadsDir, storedFiles[0]);
++
++    const stats = await fs.stat(storedPath);
++    expect(stats.size).toBe(response.body.size);
++    expect(stats.size).not.toBe(baseFileSize);
++    expect(response.body.size).not.toBe(response.body.originalSize);
++
++    const processedBuffer = await fs.readFile(storedPath);
++    const originalBuffer = await fs.readFile(sampleImagePath);
++    expect(processedBuffer.equals(originalBuffer)).toBe(false);
++
++    const requestValidated = infoSpy.mock.calls.find(([message]) => message === 'Upload request validated');
++    expect(requestValidated?.[1]).toEqual(expect.objectContaining({
++      userId: 202,
++      userTier: 'pro',
++      addWatermark: false
++    }));
+   });
+-});
++});
+ 
+EOF
+)
