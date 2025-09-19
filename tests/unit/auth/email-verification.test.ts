@@ -260,22 +260,24 @@ describe('Email Verification Unit Tests', () => {
       );
 
       const responses = await Promise.all(promises);
-      
+
       // Send requests with JSON Accept header for consistent testing
-      const promises = Array.from({ length: 5 }, () =>
+      const jsonPromises = Array.from({ length: 5 }, () =>
         request(app)
           .get('/api/auth/verify-email?token=' + token)
           .set('Accept', 'application/json')
       );
 
-      const responses = await Promise.all(promises);
-      
+      const jsonResponses = await Promise.all(jsonPromises);
+
+      expect(responses).toHaveLength(5);
+
       // First request should succeed
-      expect(responses[0].status).toBe(200);
-      
+      expect(jsonResponses[0].status).toBe(200);
+
       // Subsequent requests should fail since token was consumed
-      for (let i = 1; i < responses.length; i++) {
-        expect(responses[i].status).toBe(400);
+      for (let i = 1; i < jsonResponses.length; i++) {
+        expect(jsonResponses[i].status).toBe(400);
       }
     });
   });
