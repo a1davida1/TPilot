@@ -1,5 +1,10 @@
 #!/bin/bash
-set -e
+set -euo pipefail
+
+LOG_DIR="logs"
+TS_SERVER_FILE_LOG="$LOG_DIR/tsc-server-files.log"
+
+mkdir -p "$LOG_DIR"
 
 echo "🔨 Building ThottoPilot for production..."
 
@@ -13,7 +18,20 @@ mkdir -p dist/server
 echo "⚙️ Compiling server TypeScript..."
 echo "Current directory: $(pwd)"
 echo "TSConfig file exists: $(test -f tsconfig.server.json && echo 'yes' || echo 'no')"
-npx tsc -p tsconfig.server.json --listFiles | head -3
+echo "📄 Saving TypeScript file list to $TS_SERVER_FILE_LOG"
+npx tsc -p tsconfig.server.json --listFiles > "$TS_SERVER_FILE_LOG"
+if [ -s "$TS_SERVER_FILE_LOG" ]; then
+  echo "First TypeScript files included in build:"
+  head -n 3 "$TS_SERVER_FILE_LOG" | sed 's/^/  /'
+  line_count=$(wc -l < "$TS_SERVER_FILE_LOG")
+  if [ "$line_count" -gt 3 ]; then
+    echo "  ... (full list written to $TS_SERVER_FILE_LOG)"
+  else
+    echo "  (complete list above)"
+  fi
+else
+  echo "⚠️ No TypeScript files listed; check $TS_SERVER_FILE_LOG for details."
+fi
 echo "Compilation finished, checking output..."
 
 # Check if the compiled server file exists
