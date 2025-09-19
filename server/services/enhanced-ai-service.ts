@@ -564,16 +564,106 @@ Create content that feels authentic, drives engagement, and perfectly matches th
   }
 
   private generateFromTemplates(request: EnhancedAIRequest): EnhancedAIResponse {
-    const templates = preGeneratedTemplates.filter(t => 
-      t.style === request.style && 
+    const templates = preGeneratedTemplates.filter(t =>
+      t.style === request.style &&
       t.category === (request.contentType || 'engagement')
     );
-    
+
     const template = templates[0] || preGeneratedTemplates[0];
-    
+
+    const toTitleCase = (value: string): string =>
+      value
+        .split(/\s+/)
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
+
+    const formatToken = (value: string): string => toTitleCase(value.replace(/[-_]/g, ' '));
+
+    const shorten = (value: string, maxLength: number): string => {
+      const normalized = value.replace(/\s+/g, ' ').trim();
+      if (normalized.length <= maxLength) {
+        return normalized;
+      }
+      return `${normalized.slice(0, maxLength - 3)}...`;
+    };
+
+    const personalizedInsights: string[] = [];
+
+    if (request.theme) {
+      personalizedInsights.push(`Theme focus: ${formatToken(request.theme)}.`);
+    }
+
+    if (request.prompt) {
+      personalizedInsights.push(
+        `Inspired by your prompt: "${shorten(request.prompt, 120)}".`
+      );
+    }
+
+    if (request.customInstructions) {
+      personalizedInsights.push(`Creator instructions: ${shorten(request.customInstructions, 160)}.`);
+    }
+
+    if (request.targetAudience) {
+      personalizedInsights.push(
+        `Crafted for a ${formatToken(request.targetAudience)} audience.`
+      );
+    }
+
+    if (request.niche) {
+      personalizedInsights.push(`Niche spotlight: ${formatToken(request.niche)}.`);
+    }
+
+    if (request.personalBrand) {
+      personalizedInsights.push(`Brand notes: ${shorten(request.personalBrand, 120)}.`);
+    }
+
+    if (request.subreddit) {
+      personalizedInsights.push(`Perfect for r/${request.subreddit}.`);
+    }
+
+    const fallbackContentSegments = [template.content];
+
+    if (personalizedInsights.length > 0) {
+      fallbackContentSegments.push(personalizedInsights.join(' '));
+    }
+
+    const fallbackContent = fallbackContentSegments.join('\n\n');
+
+    const highlightTokens: string[] = [];
+
+    if (request.theme) {
+      highlightTokens.push(formatToken(request.theme));
+    }
+
+    if (request.niche) {
+      highlightTokens.push(formatToken(request.niche));
+    }
+
+    if (request.targetAudience) {
+      highlightTokens.push(`For ${formatToken(request.targetAudience)}`);
+    }
+
+    const fallbackTitleSet = new Set<string>();
+
+    if (highlightTokens.length > 0) {
+      fallbackTitleSet.add(`${template.title} • ${highlightTokens.join(' • ')}`);
+    }
+
+    if (request.prompt) {
+      fallbackTitleSet.add(`Inspired by: ${shorten(request.prompt, 60)}`);
+    }
+
+    if (request.customInstructions) {
+      fallbackTitleSet.add(`Guided by: ${shorten(request.customInstructions, 60)}`);
+    }
+
+    fallbackTitleSet.add(template.title);
+
+    const fallbackTitles = Array.from(fallbackTitleSet);
+
     return this.enhanceResponse({
-      titles: [template.title],
-      content: template.content,
+      titles: fallbackTitles,
+      content: fallbackContent,
       photoInstructions: {
         lighting: template.photoInstructions || "Natural lighting",
         cameraAngle: "Eye level",
