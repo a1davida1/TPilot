@@ -13,11 +13,7 @@ if (!rootElement) {
 }
 
 try {
-  createRoot(rootElement).render(
-    <ErrorBoundary>
-      <App />
-    </ErrorBoundary>
-  );
+  createRoot(rootElement).render(<App />);
 } catch (error) {
   console.error('Failed to render app:', error);
   rootElement.innerHTML = `
