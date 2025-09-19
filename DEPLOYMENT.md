@@ -18,6 +18,8 @@ The deployment error **"Cannot find package '@shared/schema'"** has been success
 ./build-production.sh
 ```
 
+> **Tip:** `npm start` now runs this script automatically through the `prestart` hook, so a fresh `dist/` directory is always available before the server boots.
+
 ### Manual Build Steps
 ```bash
 # 1. Clean previous builds
@@ -42,6 +44,13 @@ cd client && npx vite build && cd ..
 
 ## 🚀 Running in Production
 
+### Recommended Command
+```bash
+npm start
+```
+
+This executes the full production build via `build-production.sh` and then launches `NODE_ENV=production node dist/server/index.js`, so you always run the compiled JavaScript without relying on `tsx`.
+
 ### Local Testing
 ```bash
 NODE_ENV=production node dist/server/index.js
@@ -51,6 +60,8 @@ NODE_ENV=production node dist/server/index.js
 ```bash
 PORT=3000 NODE_ENV=production node dist/server/index.js
 ```
+
+> If you start the server manually (without `npm start`), run `npm run build` or `./build-production.sh` beforehand to ensure `dist/` has been generated.
 
 ## 🌐 Deployment Files
 
