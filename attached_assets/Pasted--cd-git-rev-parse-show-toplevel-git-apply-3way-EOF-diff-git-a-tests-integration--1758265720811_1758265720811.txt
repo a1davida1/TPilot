@@ -1,0 +1,61 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/tests/integration/content-generation.test.ts b/tests/integration/content-generation.test.ts
+index 45d6c1ab5322c568a1155e85d5457eb3647e60ce..d835a9e9a2083a78f57b989c559202c4d82faf81 100644
+--- a/tests/integration/content-generation.test.ts
++++ b/tests/integration/content-generation.test.ts
+@@ -130,51 +130,51 @@ describe('Content Generation Integration Tests', () => {
+           user: { id: user.id, email: user.email || undefined, tier: user.tier },
+           platform: req.body.platform,
+           imageDescription: req.body.imageDescription,
+           customPrompt: req.body.customPrompt,
+           subreddit: req.body.subreddit,
+           allowsPromotion: req.body.allowsPromotion || 'no',
+           baseImageUrl: req.body.imageUrl
+         });
+         
+         // Save to database
+         const [generation] = await db.insert(contentGenerations).values({
+           userId: user.id,
+           platform: req.body.platform || 'reddit',
+           style: 'default',
+           theme: 'default',
+           content: result.content,
+           titles: result.titles,
+           photoInstructions: result.photoInstructions,
+           prompt: req.body.customPrompt || '',
+           subreddit: req.body.subreddit || null,
+           allowsPromotion: req.body.allowsPromotion === 'yes',
+           generationType: 'ai'
+         }).returning();
+         
+         // Handle special cases for testing
+-        let response: any = {
++        const response: any = {
+           ...result,
+           platform: req.body.platform || result.platform,
+           imageAnalyzed: !!req.body.imageDescription
+         };
+         
+         // Add fallback indicators for testing
+         if (req.body.templateId === 'missing_template') {
+           response.fallbackUsed = true;
+         }
+         
+         if (req.body.imageUrl?.endsWith('.bmp')) {
+           response.imageError = 'unsupported_format';
+           response.fallbackUsed = true;
+         }
+         
+         // Cache the response
+         cache.set(cacheKey, response);
+         
+         res.json(response);
+       } catch (error) {
+         const errorMessage = (error as Error).message;
+         safeLog('error', 'Caption generation failed in test', { error: errorMessage });
+         
+         // Check if it's a database error
+         if (errorMessage.includes('Failed query') || errorMessage.includes('database')) {
+ 
+EOF
+)
