@@ -71,6 +71,26 @@ echo "🔧 Fixing double extensions..."
 find dist -name '*.js' -exec sed -i 's/\.js\.js/\.js/g' {} + 2>/dev/null || true
 find dist -name '*.js' -exec sed -i 's/\.js\.js/\.js/g' {} + 2>/dev/null || true
 
+# Ensure client entry point exists
+echo "📋 Checking client entry point..."
+if [ ! -f client/index.html ]; then
+  echo "⚠️ client/index.html not found"
+  if [ -f client/index.html.dev ]; then
+    echo "📄 Creating client/index.html from client/index.html.dev..."
+    # Copy dev file to production and remove dev-only scripts
+    cp client/index.html.dev client/index.html
+    # Remove the dev-only Replit banner script line
+    sed -i '/load-replit-banner\.js/d' client/index.html 2>/dev/null || true
+    echo "✅ Created production client/index.html"
+  else
+    echo "❌ Neither client/index.html nor client/index.html.dev found!"
+    echo "❌ Cannot proceed with client build"
+    exit 1
+  fi
+else
+  echo "✅ client/index.html found"
+fi
+
 # Build client for production
 echo "🎨 Building client..."
 npm run build:client
