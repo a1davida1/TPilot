@@ -1,25 +1,52 @@
+
 import { pgTable, serial, varchar, text, integer, timestamp, jsonb, boolean, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
+import { relations } from "drizzle-orm";
+
+// ==========================================
+// PROTECTION LEVEL VALIDATION SCHEMAS
+// ==========================================
+
+export const protectionLevelEnum = z.enum(['light', 'standard', 'heavy'], {
+    errorMap: () => ({ message: 'Protection level must be light, standard, or heavy' })
+});
+
+export const imageProcessingOptionsSchema = z.object({
+    blurIntensity: z.number().min(0).max(5).optional().default(1),
+    noiseIntensity: z.number().min(0).max(50).optional().default(10),
+    resizePercent: z.number().min(50).max(100).optional().default(90),
+    cropPercent: z.number().min(0).max(15).optional().default(0),
+    quality: z.number().min(60).max(100).optional().default(88)
+});
+
+export const uploadRequestSchema = z.object({
+    protectionLevel: protectionLevelEnum.optional().default('standard'),
+    customSettings: imageProcessingOptionsSchema.optional(),
+    useCustom: z.boolean().optional().default(false),
+    addWatermark: z.boolean().optional()
+});
+
 export const users = pgTable("users", {
     id: serial("id").primaryKey(),
     username: varchar("username", { length: 255 }).unique().notNull(),
     password: varchar("password", { length: 255 }).notNull().default(""),
     email: varchar("email", { length: 255 }).unique(),
-    role: varchar("role", { length: 50 }).default("user"),
+    role: varchar("role", { length: 50 }).default("user"), // user, admin, moderator
     isAdmin: boolean("is_admin").default(false),
     emailVerified: boolean("email_verified").default(false).notNull(),
-    firstName: varchar("first_name", { length: 255 }), // Added missing column
-    lastName: varchar("last_name", { length: 255 }), // Added missing column
-    tier: varchar("tier", { length: 50 }).default("free").notNull(), // free, pro, premium, pro_plus
+    firstName: varchar("first_name", { length: 255 }),
+    lastName: varchar("last_name", { length: 255 }),
+    tier: varchar("tier", { length: 50 }).default("free").notNull(), // free, starter, pro
     mustChangePassword: boolean("must_change_password").default(false).notNull(),
-    subscriptionStatus: varchar("subscription_status", { length: 50 }).default("inactive").notNull(), // Added missing column
-    trialEndsAt: timestamp("trial_ends_at"), // For trial management
+    subscriptionStatus: varchar("subscription_status", { length: 50 }).default("inactive").notNull(), // active, inactive, cancelled, past_due, expired
+    trialEndsAt: timestamp("trial_ends_at"),
     provider: varchar("provider", { length: 50 }), // google, facebook, reddit
     providerId: varchar("provider_id", { length: 255 }),
     avatar: text("avatar"),
     bio: text("bio"),
-    referralCodeId: integer("referral_code_id"), // Will reference referralCodes.id
-    referredBy: integer("referred_by"), // Added missing column
+    referralCodeId: integer("referral_code_id"),
+    referredBy: integer("referred_by"),
     redditUsername: varchar("reddit_username", { length: 255 }),
     redditAccessToken: text("reddit_access_token"),
     redditRefreshToken: text("reddit_refresh_token"),
@@ -37,6 +64,7 @@ export const users = pgTable("users", {
     deletedAt: timestamp("deleted_at"),
     isDeleted: boolean("is_deleted").default(false),
 });
+
 export const contentGenerations = pgTable("content_generations", {
     id: serial("id").primaryKey(),
     userId: integer("user_id").references(() => users.id),
@@ -52,6 +80,7 @@ export const contentGenerations = pgTable("content_generations", {
     generationType: varchar("generation_type", { length: 50 }).default("ai").notNull(),
     createdAt: timestamp("created_at").defaultNow(),
 });
+
 export const userSamples = pgTable("user_samples", {
     id: serial("id").primaryKey(),
     userId: integer("user_id").references(() => users.id).notNull(),
@@ -66,6 +95,7 @@ export const userSamples = pgTable("user_samples", {
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow(),
 });
+
 export const userPreferences = pgTable("user_preferences", {
     id: serial("id").primaryKey(),
     userId: integer("user_id").references(() => users.id).unique().notNull(),
@@ -78,6 +108,7 @@ export const userPreferences = pgTable("user_preferences", {
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow(),
 });
+
 // Lead model for waitlist functionality
 export const leads = pgTable("leads", {
     id: varchar("id", { length: 25 }).primaryKey(),
@@ -93,12 +124,14 @@ export const leads = pgTable("leads", {
     confirmedAt: timestamp("confirmed_at"),
     createdAt: timestamp("created_at").defaultNow(),
 });
+
 export const verificationTokens = pgTable("verification_tokens", {
     id: serial("id").primaryKey(),
     userId: integer("user_id").references(() => users.id).notNull(),
     token: varchar("token", { length: 255 }).unique().notNull(),
     expiresAt: timestamp("expires_at").notNull(),
 });
+
 export const userImages = pgTable("user_images", {
     id: serial("id").primaryKey(),
     userId: integer("user_id").references(() => users.id).notNull(),
@@ -114,21 +147,25 @@ export const userImages = pgTable("user_images", {
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow(),
 });
+
 // New tables for Phase 1 expansion
 export const creatorAccounts = pgTable("creator_accounts", {
     id: serial("id").primaryKey(),
     userId: integer("user_id").references(() => users.id).notNull(),
-    platform: varchar("platform", { length: 50 }).notNull(), // "reddit"
+    platform: varchar("platform", { length: 50 }).notNull(),
     handle: varchar("handle", { length: 100 }).notNull(),
-    platformUsername: varchar("platform_username", { length: 255 }), // Added missing column
+    platformUsername: varchar("platform_username", { length: 255 }),
     oauthToken: text("oauth_token").notNull(),
     oauthRefresh: text("oauth_refresh").notNull(),
-    status: varchar("status", { length: 20 }).default("ok").notNull(), // "ok" | "limited" | "banned"
-    isActive: boolean("is_active").default(true).notNull(), // Added missing column
-    metadata: jsonb("metadata"), // Added missing column
+    status: varchar("status", { length: 20 }).default("ok").notNull(),
+    isActive: boolean("is_active").default(true).notNull(),
+    metadata: jsonb("metadata"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    userPlatformUnique: unique("creator_accounts_user_platform_idx").on(table.userId, table.platform),
+}));
+
 export const subredditRules = pgTable("subreddit_rules", {
     id: serial("id").primaryKey(),
     subreddit: varchar("subreddit", { length: 100 }).unique().notNull(),
@@ -136,6 +173,7 @@ export const subredditRules = pgTable("subreddit_rules", {
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
 export const postTemplates = pgTable("post_templates", {
     id: serial("id").primaryKey(),
     userId: integer("user_id").references(() => users.id).notNull(),
@@ -146,6 +184,7 @@ export const postTemplates = pgTable("post_templates", {
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
 export const postPreviews = pgTable("post_previews", {
     id: serial("id").primaryKey(),
     userId: integer("user_id").references(() => users.id).notNull(),
@@ -156,6 +195,7 @@ export const postPreviews = pgTable("post_previews", {
     warnings: jsonb("warnings").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
 export const postJobs = pgTable("post_jobs", {
     id: serial("id").primaryKey(),
     userId: integer("user_id").references(() => users.id).notNull(),
@@ -169,6 +209,7 @@ export const postJobs = pgTable("post_jobs", {
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
 export const redditCommunities = pgTable("reddit_communities", {
     id: varchar("id", { length: 100 }).primaryKey(),
     name: varchar("name", { length: 255 }).notNull(),
@@ -189,6 +230,9 @@ export const redditCommunities = pgTable("reddit_communities", {
     tags: jsonb("tags").$type(),
     competitionLevel: varchar("competition_level", { length: 20 })
 });
+
+export const insertRedditCommunitySchema = createInsertSchema(redditCommunities);
+
 export const subscriptions = pgTable("subscriptions", {
     id: serial("id").primaryKey(),
     userId: integer("user_id").references(() => users.id).unique().notNull(),
@@ -201,6 +245,7 @@ export const subscriptions = pgTable("subscriptions", {
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
 export const invoices = pgTable("invoices", {
     id: serial("id").primaryKey(),
     subscriptionId: integer("subscription_id").references(() => subscriptions.id).notNull(),
@@ -211,6 +256,7 @@ export const invoices = pgTable("invoices", {
     referralCodeId: integer("referral_code_id").references(() => referralCodes.id), // Phase 5: Referral simplification
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
 export const referralCodes = pgTable("referral_codes", {
     id: serial("id").primaryKey(),
     code: varchar("code", { length: 50 }).unique().notNull(),
@@ -218,6 +264,7 @@ export const referralCodes = pgTable("referral_codes", {
     sharePct: integer("share_pct").default(20).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
 export const referrals = pgTable("referrals", {
     id: serial("id").primaryKey(),
     codeId: integer("code_id").references(() => referralCodes.id).notNull(),
@@ -225,6 +272,7 @@ export const referrals = pgTable("referrals", {
     receiverId: integer("receiver_id").references(() => users.id),
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
 export const eventLogs = pgTable("event_logs", {
     id: serial("id").primaryKey(),
     userId: integer("user_id").references(() => users.id),
@@ -232,6 +280,7 @@ export const eventLogs = pgTable("event_logs", {
     meta: jsonb("meta").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
 export const featureFlags = pgTable("feature_flags", {
     key: varchar("key", { length: 100 }).primaryKey(),
     enabled: boolean("enabled").default(true).notNull(),
@@ -240,6 +289,7 @@ export const featureFlags = pgTable("feature_flags", {
     meta: jsonb("meta"),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
 export const mediaAssets = pgTable("media_assets", {
     id: serial("id").primaryKey(),
     userId: integer("user_id").references(() => users.id).notNull(),
@@ -254,6 +304,7 @@ export const mediaAssets = pgTable("media_assets", {
 }, (table) => ({
     sha256Idx: unique("media_sha256_idx").on(table.sha256), // Phase 5: Deduplication
 }));
+
 export const mediaUsages = pgTable("media_usages", {
     id: serial("id").primaryKey(),
     mediaId: integer("media_id").references(() => mediaAssets.id).notNull(),
@@ -261,6 +312,7 @@ export const mediaUsages = pgTable("media_usages", {
     usedInId: varchar("used_in_id", { length: 255 }).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
 export const aiGenerations = pgTable("ai_generations", {
     id: serial("id").primaryKey(),
     userId: integer("user_id").references(() => users.id).notNull(),
@@ -271,6 +323,7 @@ export const aiGenerations = pgTable("ai_generations", {
     outputJson: jsonb("output_json").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
 // Phase 5: Queue abstraction - PgQueue implementation
 export const queueJobs = pgTable("queue_jobs", {
     id: serial("id").primaryKey(),
@@ -287,6 +340,7 @@ export const queueJobs = pgTable("queue_jobs", {
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
 // Phase 5: Rate limiting per subreddit
 export const postRateLimits = pgTable("post_rate_limits", {
     id: serial("id").primaryKey(),
@@ -299,6 +353,7 @@ export const postRateLimits = pgTable("post_rate_limits", {
 }, (table) => ({
     userSubredditIdx: unique("post_rate_limits_user_subreddit_idx").on(table.userId, table.subreddit),
 }));
+
 // Phase 5: Near-duplicate detection
 export const postDuplicates = pgTable("post_duplicates", {
     id: serial("id").primaryKey(),
@@ -309,13 +364,13 @@ export const postDuplicates = pgTable("post_duplicates", {
     subreddit: varchar("subreddit", { length: 100 }).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
 // Insert schemas for new tables  
 export const insertCreatorAccountSchema = createInsertSchema(creatorAccounts);
 export const insertSubredditRuleSchema = createInsertSchema(subredditRules);
 export const insertPostTemplateSchema = createInsertSchema(postTemplates);
 export const insertPostPreviewSchema = createInsertSchema(postPreviews);
 export const insertPostJobSchema = createInsertSchema(postJobs);
-export const insertRedditCommunitySchema = createInsertSchema(redditCommunities);
 export const insertSubscriptionSchema = createInsertSchema(subscriptions);
 export const insertInvoiceSchema = createInsertSchema(invoices);
 export const insertReferralCodeSchema = createInsertSchema(referralCodes);
@@ -328,7 +383,9 @@ export const insertAiGenerationSchema = createInsertSchema(aiGenerations);
 export const insertQueueJobSchema = createInsertSchema(queueJobs);
 export const insertPostRateLimitSchema = createInsertSchema(postRateLimits);
 export const insertPostDuplicateSchema = createInsertSchema(postDuplicates);
+
 // Phase 5 schemas already included above
+
 // Insert schemas for existing tables
 export const insertUserSchema = createInsertSchema(users);
 export const insertContentGenerationSchema = createInsertSchema(contentGenerations);
@@ -337,3 +394,337 @@ export const insertUserPreferenceSchema = createInsertSchema(userPreferences);
 export const insertUserImageSchema = createInsertSchema(userImages);
 export const insertLeadSchema = createInsertSchema(leads);
 export const insertVerificationTokenSchema = createInsertSchema(verificationTokens);
+
+export const referralRewards = pgTable("referral_rewards", {
+    id: serial("id").primaryKey(),
+    referrerId: integer("referrer_id").references(() => users.id).notNull(),
+    referredId: integer("referred_id").references(() => users.id).notNull(),
+    amount: integer("amount").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Tax & Expense Tracking Tables
+export const expenseCategories = pgTable("expense_categories", {
+    id: serial("id").primaryKey(),
+    name: varchar("name", { length: 100 }).notNull(),
+    description: text("description").notNull(),
+    legalExplanation: text("legal_explanation").notNull(),
+    deductionPercentage: integer("deduction_percentage").default(100).notNull(), // 0-100
+    itsDeductionCode: varchar("its_deduction_code", { length: 50 }), // IRS code reference
+    examples: jsonb("examples").$type().notNull(),
+    icon: varchar("icon", { length: 50 }).notNull(),
+    color: varchar("color", { length: 20 }).notNull(),
+    isActive: boolean("is_active").default(true).notNull(),
+    sortOrder: integer("sort_order").default(0).notNull(),
+    createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const expenses = pgTable("expenses", {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").references(() => users.id).notNull(),
+    categoryId: integer("category_id").references(() => expenseCategories.id).notNull(),
+    amount: integer("amount").notNull(), // in cents
+    description: text("description").notNull(),
+    vendor: varchar("vendor", { length: 255 }),
+    expenseDate: timestamp("expense_date").notNull(),
+    receiptUrl: varchar("receipt_url", { length: 500 }),
+    receiptFileName: varchar("receipt_file_name", { length: 255 }),
+    businessPurpose: text("business_purpose"), // Required for deduction
+    deductionPercentage: integer("deduction_percentage").default(100).notNull(),
+    tags: jsonb("tags").$type(),
+    isRecurring: boolean("is_recurring").default(false),
+    recurringPeriod: varchar("recurring_period", { length: 20 }), // monthly, quarterly, yearly
+    taxYear: integer("tax_year").notNull(),
+    notes: text("notes"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const taxDeductionInfo = pgTable("tax_deduction_info", {
+    id: serial("id").primaryKey(),
+    title: varchar("title", { length: 200 }).notNull(),
+    category: varchar("category", { length: 100 }).notNull(),
+    description: text("description").notNull(),
+    legalBasis: text("legal_basis").notNull(),
+    requirements: jsonb("requirements").$type().notNull(),
+    limitations: text("limitations"),
+    examples: jsonb("examples").$type().notNull(),
+    itsReference: varchar("its_reference", { length: 100 }),
+    applicableFor: jsonb("applicable_for").$type().notNull(), // content creators, influencers, etc.
+    riskLevel: varchar("risk_level", { length: 20 }).default("low").notNull(), // low, medium, high
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// PHASE 2: Social Media Integration Tables
+export const socialMediaAccounts = pgTable("social_media_accounts", {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").references(() => users.id).notNull(),
+    platform: varchar("platform", { length: 50 }).notNull(), // instagram, twitter, tiktok, youtube
+    accountId: varchar("account_id", { length: 255 }).notNull(), // Platform account ID
+    username: varchar("username", { length: 255 }).notNull(),
+    displayName: varchar("display_name", { length: 255 }),
+    profilePicture: varchar("profile_picture", { length: 500 }),
+    accessToken: varchar("access_token", { length: 1000 }),
+    refreshToken: varchar("refresh_token", { length: 1000 }),
+    tokenExpiresAt: timestamp("token_expires_at"),
+    isActive: boolean("is_active").default(true).notNull(),
+    lastSyncAt: timestamp("last_sync_at"),
+    metadata: jsonb("metadata"), // Platform-specific data
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const socialMediaPosts = pgTable("social_media_posts", {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").references(() => users.id).notNull(),
+    accountId: integer("account_id").references(() => socialMediaAccounts.id).notNull(),
+    contentGenerationId: integer("content_generation_id").references(() => contentGenerations.id),
+    platform: varchar("platform", { length: 50 }).notNull(),
+    platformPostId: varchar("platform_post_id", { length: 255 }), // ID from the platform
+    content: text("content").notNull(),
+    mediaUrls: jsonb("media_urls").$type(), // Array of media URLs
+    hashtags: jsonb("hashtags").$type(), // Array of hashtags
+    status: varchar("status", { length: 50 }).default("draft").notNull(), // draft, scheduled, published, failed
+    scheduledAt: timestamp("scheduled_at"),
+    publishedAt: timestamp("published_at"),
+    errorMessage: text("error_message"),
+    engagement: jsonb("engagement").$type(),
+    lastEngagementSync: timestamp("last_engagement_sync"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const platformEngagement = pgTable("platform_engagement", {
+    id: serial("id").primaryKey(),
+    accountId: integer("account_id").references(() => socialMediaAccounts.id).notNull(),
+    platform: varchar("platform", { length: 50 }).notNull(),
+    date: timestamp("date").notNull(),
+    followers: integer("followers").default(0),
+    following: integer("following").default(0),
+    totalLikes: integer("total_likes").default(0),
+    totalComments: integer("total_comments").default(0),
+    totalShares: integer("total_shares").default(0),
+    totalViews: integer("total_views").default(0),
+    impressions: integer("impressions").default(0),
+    reach: integer("reach").default(0),
+    engagementRate: integer("engagement_rate").default(0), // Percentage * 100
+    profileViews: integer("profile_views").default(0),
+    metadata: jsonb("metadata"), // Platform-specific metrics
+    createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const postSchedule = pgTable("post_schedule", {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").references(() => users.id).notNull(),
+    contentGenerationId: integer("content_generation_id").references(() => contentGenerations.id),
+    platforms: jsonb("platforms").$type().notNull(), // Array of platform names
+    scheduledTime: timestamp("scheduled_time").notNull(),
+    timezone: varchar("timezone", { length: 100 }).default("UTC"),
+    recurrence: varchar("recurrence", { length: 50 }), // none, daily, weekly, monthly
+    status: varchar("status", { length: 50 }).default("pending").notNull(), // pending, processing, completed, failed
+    lastExecuted: timestamp("last_executed"),
+    nextExecution: timestamp("next_execution"),
+    metadata: jsonb("metadata"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// PHASE 1: Comprehensive Analytics & Tracking Tables
+
+export const userSessions = pgTable("user_sessions", {
+    id: serial("id").primaryKey(),
+    sessionId: varchar("session_id", { length: 255 }).unique().notNull(),
+    userId: integer("user_id").references(() => users.id),
+    ipAddress: varchar("ip_address", { length: 45 }),
+    userAgent: text("user_agent"),
+    referrer: varchar("referrer", { length: 500 }),
+    utmSource: varchar("utm_source", { length: 255 }),
+    utmMedium: varchar("utm_medium", { length: 255 }),
+    utmCampaign: varchar("utm_campaign", { length: 255 }),
+    deviceType: varchar("device_type", { length: 50 }), // mobile, desktop, tablet
+    browser: varchar("browser", { length: 100 }),
+    os: varchar("os", { length: 100 }),
+    country: varchar("country", { length: 100 }),
+    city: varchar("city", { length: 100 }),
+    startedAt: timestamp("started_at").defaultNow().notNull(),
+    endedAt: timestamp("ended_at"),
+    duration: integer("duration"), // seconds
+    pageCount: integer("page_count").default(0),
+    revokedAt: timestamp("revoked_at"),
+    createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const pageViews = pgTable("page_views", {
+    id: serial("id").primaryKey(),
+    sessionId: varchar("session_id", { length: 255 }).references(() => userSessions.sessionId).notNull(),
+    userId: integer("user_id").references(() => users.id),
+    path: varchar("path", { length: 500 }).notNull(),
+    title: varchar("title", { length: 500 }),
+    referrer: varchar("referrer", { length: 500 }),
+    timeOnPage: integer("time_on_page"), // seconds
+    scrollDepth: integer("scroll_depth"), // percentage 0-100
+    exitPage: boolean("exit_page").default(false),
+    createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const contentViews = pgTable("content_views", {
+    id: serial("id").primaryKey(),
+    contentId: integer("content_id").references(() => contentGenerations.id).notNull(),
+    sessionId: varchar("session_id", { length: 255 }).references(() => userSessions.sessionId),
+    userId: integer("user_id").references(() => users.id),
+    platform: varchar("platform", { length: 50 }).notNull(),
+    subreddit: varchar("subreddit", { length: 100 }),
+    viewType: varchar("view_type", { length: 50 }).notNull(), // internal, external, shared
+    ipAddress: varchar("ip_address", { length: 45 }),
+    userAgent: text("user_agent"),
+    referrer: varchar("referrer", { length: 500 }),
+    timeSpent: integer("time_spent"), // seconds viewing content
+    createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const engagementEvents = pgTable("engagement_events", {
+    id: serial("id").primaryKey(),
+    sessionId: varchar("session_id", { length: 255 }).references(() => userSessions.sessionId),
+    userId: integer("user_id").references(() => users.id),
+    eventType: varchar("event_type", { length: 100 }).notNull(), // click, hover, scroll, form_submit, etc.
+    element: varchar("element", { length: 255 }), // button ID, link text, etc.
+    page: varchar("page", { length: 500 }).notNull(),
+    metadata: jsonb("metadata"), // additional event data
+    value: integer("value"), // numeric value if applicable
+    createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const socialMetrics = pgTable("social_metrics", {
+    id: serial("id").primaryKey(),
+    contentId: integer("content_id").references(() => contentGenerations.id).notNull(),
+    platform: varchar("platform", { length: 50 }).notNull(),
+    platformPostId: varchar("platform_post_id", { length: 255 }),
+    views: integer("views").default(0),
+    likes: integer("likes").default(0),
+    comments: integer("comments").default(0),
+    shares: integer("shares").default(0),
+    saves: integer("saves").default(0),
+    clicks: integer("clicks").default(0),
+    engagementRate: integer("engagement_rate").default(0), // percentage * 100
+    reach: integer("reach").default(0),
+    impressions: integer("impressions").default(0),
+    lastUpdated: timestamp("last_updated").defaultNow(),
+    createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const analyticsMetrics = pgTable("analytics_metrics", {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").references(() => users.id).notNull(),
+    metricType: varchar("metric_type", { length: 100 }).notNull(), // daily, weekly, monthly
+    date: timestamp("date").notNull(),
+    totalViews: integer("total_views").default(0),
+    totalEngagement: integer("total_engagement").default(0),
+    contentGenerated: integer("content_generated").default(0),
+    platformViews: jsonb("platform_views"), // {reddit: 100, instagram: 50}
+    topContent: jsonb("top_content"), // [{id: 1, views: 100}]
+    engagementRate: integer("engagement_rate").default(0), // percentage * 100
+    growth: jsonb("growth"), // growth metrics compared to previous period
+    revenue: integer("revenue").default(0), // cents
+    createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+    userDateIdx: unique("analytics_metrics_user_date_idx").on(table.userId, table.date, table.metricType),
+}));
+
+// Relations
+export const expenseCategoriesRelations = relations(expenseCategories, ({ many }) => ({
+    expenses: many(expenses),
+}));
+
+export const expensesRelations = relations(expenses, ({ one }) => ({
+    user: one(users, { fields: [expenses.userId], references: [users.id] }),
+    category: one(expenseCategories, { fields: [expenses.categoryId], references: [expenseCategories.id] }),
+}));
+
+// PHASE 2: Social Media Schema Validation
+export const insertSocialMediaAccountSchema = createInsertSchema(socialMediaAccounts);
+export const insertSocialMediaPostSchema = createInsertSchema(socialMediaPosts);
+export const insertPlatformEngagementSchema = createInsertSchema(platformEngagement);
+export const insertPostScheduleSchema = createInsertSchema(postSchedule);
+
+// PHASE 1: Analytics Schema Validation
+export const insertUserSessionSchema = createInsertSchema(userSessions);
+export const insertPageViewSchema = createInsertSchema(pageViews);
+export const insertContentViewSchema = createInsertSchema(contentViews);
+export const insertEngagementEventSchema = createInsertSchema(engagementEvents);
+export const insertSocialMetricSchema = createInsertSchema(socialMetrics);
+export const insertAnalyticsMetricSchema = createInsertSchema(analyticsMetrics);
+
+// Schemas for validation
+export const insertExpenseCategorySchema = createInsertSchema(expenseCategories);
+export const insertExpenseSchema = createInsertSchema(expenses);
+export const insertTaxDeductionInfoSchema = createInsertSchema(taxDeductionInfo);
+
+// Admin Portal Enhancement Tables
+
+// System monitoring and health logs
+export const systemLogs = pgTable("system_logs", {
+    id: serial("id").primaryKey(),
+    level: varchar("level", { length: 20 }).notNull(), // info, warn, error, critical
+    service: varchar("service", { length: 100 }).notNull(), // api, database, queue, auth
+    message: text("message").notNull(),
+    metadata: jsonb("metadata"),
+    userId: integer("user_id").references(() => users.id),
+    ipAddress: varchar("ip_address", { length: 45 }),
+    resolved: boolean("resolved").default(false),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Content moderation and flags
+export const contentFlags = pgTable("content_flags", {
+    id: serial("id").primaryKey(),
+    contentId: integer("content_id").references(() => contentGenerations.id).notNull(),
+    reportedById: integer("reported_by_id").references(() => users.id),
+    reason: varchar("reason", { length: 100 }).notNull(), // spam, inappropriate, harmful
+    description: text("description"),
+    status: varchar("status", { length: 50 }).default("pending").notNull(), // pending, reviewed, approved, removed
+    reviewedById: integer("reviewed_by_id").references(() => users.id),
+    reviewedAt: timestamp("reviewed_at"),
+    actions: jsonb("actions").$type(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// User account actions (bans, suspensions, warnings)
+export const userActions = pgTable("user_actions", {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").references(() => users.id).notNull(),
+    adminId: integer("admin_id").references(() => users.id).notNull(),
+    action: varchar("action", { length: 50 }).notNull(), // ban, suspend, warn, unban, tier_change
+    reason: text("reason").notNull(),
+    duration: integer("duration_hours"), // null for permanent
+    metadata: jsonb("metadata").$type(),
+    isActive: boolean("is_active").default(true),
+    expiresAt: timestamp("expires_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Admin activity audit log
+export const adminAuditLog = pgTable("admin_audit_log", {
+    id: serial("id").primaryKey(),
+    adminId: integer("admin_id").references(() => users.id).notNull(),
+    action: varchar("action", { length: 100 }).notNull(),
+    targetType: varchar("target_type", { length: 50 }), // user, content, system
+    targetId: integer("target_id"),
+    description: text("description").notNull(),
+    ipAddress: varchar("ip_address", { length: 45 }),
+    metadata: jsonb("metadata"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Insert schemas for new admin tables
+export const insertSystemLogSchema = createInsertSchema(systemLogs);
+export const insertContentFlagSchema = createInsertSchema(contentFlags);
+export const insertUserActionSchema = createInsertSchema(userActions);
+export const insertAdminAuditLogSchema = createInsertSchema(adminAuditLog);
+
+// Express session table
+export const session = pgTable("session", {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+});
