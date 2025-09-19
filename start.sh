@@ -3,6 +3,10 @@
 # Production start script
 echo "Starting production server..."
 
+# Build the latest production bundle so dist/ is ready
+echo "Building production bundle..."
+bash build-production.sh
+
 # Ensure database is synced
 echo "Syncing database..."
 npx drizzle-kit push --force
