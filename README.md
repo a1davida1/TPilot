@@ -93,6 +93,12 @@ Run the full test suite:
 npm test
 ```
 
+Generate a coverage report to validate critical flows before shipping to production:
+
+```bash
+npm run test:coverage
+```
+
 Key test areas:
 - Authentication and authorization
 - Content generation pipelines  

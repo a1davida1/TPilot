@@ -24,7 +24,8 @@ if (!preferredConnectionString) {
 const connectionString = preferredConnectionString as string;
 const neonPool = new NeonPool({ connectionString });
 const poolInstance: NeonPool | PostgresPool = neonPool;
-const dbInstance: ReturnType<typeof drizzleNeon> | ReturnType<typeof drizzlePostgres> = drizzleNeon({ client: neonPool, schema });
+const dbInstance: ReturnType<typeof drizzleNeon> | ReturnType<typeof drizzlePostgres> =
+  drizzleNeon({ client: neonPool, schema });
 
 export const pool = poolInstance;
 export const db = dbInstance;

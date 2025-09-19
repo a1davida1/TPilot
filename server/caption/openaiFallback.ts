@@ -14,7 +14,6 @@ const CaptionItem = z.object({
   nsfw: z.boolean()
 });
 
-
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || '' });
 
 export interface FallbackParams {
