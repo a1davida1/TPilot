@@ -152,7 +152,7 @@ describe('Content Generation Integration Tests', () => {
         }).returning();
         
         // Handle special cases for testing
-        let response: any = {
+        const response: any = {
           ...result,
           platform: req.body.platform || result.platform,
           imageAnalyzed: !!req.body.imageDescription
