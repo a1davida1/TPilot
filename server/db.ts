@@ -20,14 +20,11 @@ if (!preferredConnectionString) {
   );
 }
 
-let poolInstance: NeonPool | PostgresPool;
-let dbInstance: ReturnType<typeof drizzleNeon> | ReturnType<typeof drizzlePostgres>;
-
 // Use Neon pool for serverless environment
 const connectionString = preferredConnectionString as string;
 const neonPool = new NeonPool({ connectionString });
-poolInstance = neonPool;
-dbInstance = drizzleNeon({ client: neonPool, schema });
+const poolInstance: NeonPool | PostgresPool = neonPool;
+const dbInstance: ReturnType<typeof drizzleNeon> | ReturnType<typeof drizzlePostgres> = drizzleNeon({ client: neonPool, schema });
 
 export const pool = poolInstance;
 export const db = dbInstance;

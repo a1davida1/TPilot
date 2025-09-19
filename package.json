@@ -15,7 +15,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "fix-imports": "bash fix-all-imports.sh",
     "lint": "eslint .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e": "tsx vendor/playwright-test/runner.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.37.0",

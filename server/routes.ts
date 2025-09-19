@@ -19,6 +19,7 @@ import { authenticateToken } from "./middleware/auth.js";
 // import { authRoutes } from "./routes/auth.js"; // Removed - using server/auth.ts instead
 import { uploadRoutes, applyImageShieldProtection, protectionPresets } from "./routes/upload.js";
 import { mediaRoutes } from "./routes/media.js";
+import { analyticsRouter } from "./routes/analytics.js";
 import { registerExpenseRoutes } from "./expense-routes.js";
 
 // Core imports
@@ -309,6 +310,9 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
   
   // Media routes
   app.use('/api/media', mediaRoutes);
+
+  // Analytics routes
+  app.use('/api', analyticsRouter);
   
   // Social auth routes
   app.get('/api/auth/google', socialAuthRoutes.googleAuth);
