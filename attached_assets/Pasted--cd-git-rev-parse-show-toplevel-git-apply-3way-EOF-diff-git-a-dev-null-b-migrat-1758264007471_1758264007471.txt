@@ -1,0 +1,4353 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a//dev/null b/migrations/meta/0008_snapshot.json
+index 0000000000000000000000000000000000000000..d0abcb4fcfa79f84bcba3003ca4bd7457ca8c687 100644
+--- a//dev/null
++++ b/migrations/meta/0008_snapshot.json
+@@ -0,0 +1,4344 @@
++{
++  "id": "34104502-3ca3-4a9c-9af4-aa82e2c8160b",
++  "prevId": "2c1bd8ce-e333-4526-abb5-bc6d546d6729",
++  "version": "7",
++  "dialect": "postgresql",
++  "tables": {
++    "public.admin_audit_log": {
++      "name": "admin_audit_log",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "admin_id": {
++          "name": "admin_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "action": {
++          "name": "action",
++          "type": "varchar(100)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "target_type": {
++          "name": "target_type",
++          "type": "varchar(50)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "target_id": {
++          "name": "target_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "description": {
++          "name": "description",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "ip_address": {
++          "name": "ip_address",
++          "type": "varchar(45)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "metadata": {
++          "name": "metadata",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {
++        "admin_audit_log_admin_id_users_id_fk": {
++          "name": "admin_audit_log_admin_id_users_id_fk",
++          "tableFrom": "admin_audit_log",
++          "tableTo": "users",
++          "columnsFrom": [
++            "admin_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.ai_generations": {
++      "name": "ai_generations",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "user_id": {
++          "name": "user_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "provider": {
++          "name": "provider",
++          "type": "varchar(20)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "model": {
++          "name": "model",
++          "type": "varchar(50)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "input_hash": {
++          "name": "input_hash",
++          "type": "varchar(64)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "input_json": {
++          "name": "input_json",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "output_json": {
++          "name": "output_json",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {
++        "ai_generations_user_id_users_id_fk": {
++          "name": "ai_generations_user_id_users_id_fk",
++          "tableFrom": "ai_generations",
++          "tableTo": "users",
++          "columnsFrom": [
++            "user_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.analytics_metrics": {
++      "name": "analytics_metrics",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "user_id": {
++          "name": "user_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "metric_type": {
++          "name": "metric_type",
++          "type": "varchar(100)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "date": {
++          "name": "date",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "total_views": {
++          "name": "total_views",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false,
++          "default": 0
++        },
++        "total_engagement": {
++          "name": "total_engagement",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false,
++          "default": 0
++        },
++        "content_generated": {
++          "name": "content_generated",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false,
++          "default": 0
++        },
++        "platform_views": {
++          "name": "platform_views",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "top_content": {
++          "name": "top_content",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "engagement_rate": {
++          "name": "engagement_rate",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false,
++          "default": 0
++        },
++        "growth": {
++          "name": "growth",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "revenue": {
++          "name": "revenue",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false,
++          "default": 0
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {
++        "analytics_metrics_user_id_users_id_fk": {
++          "name": "analytics_metrics_user_id_users_id_fk",
++          "tableFrom": "analytics_metrics",
++          "tableTo": "users",
++          "columnsFrom": [
++            "user_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {
++        "analytics_metrics_user_date_idx": {
++          "name": "analytics_metrics_user_date_idx",
++          "nullsNotDistinct": false,
++          "columns": [
++            "user_id",
++            "date",
++            "metric_type"
++          ]
++        }
++      },
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.content_flags": {
++      "name": "content_flags",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "content_id": {
++          "name": "content_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "reported_by_id": {
++          "name": "reported_by_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "reason": {
++          "name": "reason",
++          "type": "varchar(100)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "description": {
++          "name": "description",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "status": {
++          "name": "status",
++          "type": "varchar(50)",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "'pending'"
++        },
++        "reviewed_by_id": {
++          "name": "reviewed_by_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "reviewed_at": {
++          "name": "reviewed_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "actions": {
++          "name": "actions",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {
++        "content_flags_content_id_content_generations_id_fk": {
++          "name": "content_flags_content_id_content_generations_id_fk",
++          "tableFrom": "content_flags",
++          "tableTo": "content_generations",
++          "columnsFrom": [
++            "content_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        },
++        "content_flags_reported_by_id_users_id_fk": {
++          "name": "content_flags_reported_by_id_users_id_fk",
++          "tableFrom": "content_flags",
++          "tableTo": "users",
++          "columnsFrom": [
++            "reported_by_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        },
++        "content_flags_reviewed_by_id_users_id_fk": {
++          "name": "content_flags_reviewed_by_id_users_id_fk",
++          "tableFrom": "content_flags",
++          "tableTo": "users",
++          "columnsFrom": [
++            "reviewed_by_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.content_generations": {
++      "name": "content_generations",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "user_id": {
++          "name": "user_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "platform": {
++          "name": "platform",
++          "type": "varchar(50)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "style": {
++          "name": "style",
++          "type": "varchar(50)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "theme": {
++          "name": "theme",
++          "type": "varchar(50)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "titles": {
++          "name": "titles",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "content": {
++          "name": "content",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "photo_instructions": {
++          "name": "photo_instructions",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "prompt": {
++          "name": "prompt",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "subreddit": {
++          "name": "subreddit",
++          "type": "varchar(100)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "allows_promotion": {
++          "name": "allows_promotion",
++          "type": "boolean",
++          "primaryKey": false,
++          "notNull": false,
++          "default": false
++        },
++        "generation_type": {
++          "name": "generation_type",
++          "type": "varchar(50)",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "'ai'"
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {
++        "content_generations_user_id_users_id_fk": {
++          "name": "content_generations_user_id_users_id_fk",
++          "tableFrom": "content_generations",
++          "tableTo": "users",
++          "columnsFrom": [
++            "user_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.content_views": {
++      "name": "content_views",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "content_id": {
++          "name": "content_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "session_id": {
++          "name": "session_id",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "user_id": {
++          "name": "user_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "platform": {
++          "name": "platform",
++          "type": "varchar(50)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "subreddit": {
++          "name": "subreddit",
++          "type": "varchar(100)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "view_type": {
++          "name": "view_type",
++          "type": "varchar(50)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "ip_address": {
++          "name": "ip_address",
++          "type": "varchar(45)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "user_agent": {
++          "name": "user_agent",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "referrer": {
++          "name": "referrer",
++          "type": "varchar(500)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "time_spent": {
++          "name": "time_spent",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {
++        "content_views_content_id_content_generations_id_fk": {
++          "name": "content_views_content_id_content_generations_id_fk",
++          "tableFrom": "content_views",
++          "tableTo": "content_generations",
++          "columnsFrom": [
++            "content_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        },
++        "content_views_session_id_user_sessions_session_id_fk": {
++          "name": "content_views_session_id_user_sessions_session_id_fk",
++          "tableFrom": "content_views",
++          "tableTo": "user_sessions",
++          "columnsFrom": [
++            "session_id"
++          ],
++          "columnsTo": [
++            "session_id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        },
++        "content_views_user_id_users_id_fk": {
++          "name": "content_views_user_id_users_id_fk",
++          "tableFrom": "content_views",
++          "tableTo": "users",
++          "columnsFrom": [
++            "user_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.creator_accounts": {
++      "name": "creator_accounts",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "user_id": {
++          "name": "user_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "platform": {
++          "name": "platform",
++          "type": "varchar(50)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "handle": {
++          "name": "handle",
++          "type": "varchar(100)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "platform_username": {
++          "name": "platform_username",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "oauth_token": {
++          "name": "oauth_token",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "oauth_refresh": {
++          "name": "oauth_refresh",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "status": {
++          "name": "status",
++          "type": "varchar(20)",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "'ok'"
++        },
++        "is_active": {
++          "name": "is_active",
++          "type": "boolean",
++          "primaryKey": false,
++          "notNull": true,
++          "default": true
++        },
++        "metadata": {
++          "name": "metadata",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        },
++        "updated_at": {
++          "name": "updated_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {
++        "creator_accounts_user_id_users_id_fk": {
++          "name": "creator_accounts_user_id_users_id_fk",
++          "tableFrom": "creator_accounts",
++          "tableTo": "users",
++          "columnsFrom": [
++            "user_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {
++        "creator_accounts_user_platform_idx": {
++          "name": "creator_accounts_user_platform_idx",
++          "nullsNotDistinct": false,
++          "columns": [
++            "user_id",
++            "platform"
++          ]
++        }
++      },
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.engagement_events": {
++      "name": "engagement_events",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "session_id": {
++          "name": "session_id",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "user_id": {
++          "name": "user_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "event_type": {
++          "name": "event_type",
++          "type": "varchar(100)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "element": {
++          "name": "element",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "page": {
++          "name": "page",
++          "type": "varchar(500)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "metadata": {
++          "name": "metadata",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "value": {
++          "name": "value",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {
++        "engagement_events_session_id_user_sessions_session_id_fk": {
++          "name": "engagement_events_session_id_user_sessions_session_id_fk",
++          "tableFrom": "engagement_events",
++          "tableTo": "user_sessions",
++          "columnsFrom": [
++            "session_id"
++          ],
++          "columnsTo": [
++            "session_id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        },
++        "engagement_events_user_id_users_id_fk": {
++          "name": "engagement_events_user_id_users_id_fk",
++          "tableFrom": "engagement_events",
++          "tableTo": "users",
++          "columnsFrom": [
++            "user_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.event_logs": {
++      "name": "event_logs",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "user_id": {
++          "name": "user_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "type": {
++          "name": "type",
++          "type": "varchar(100)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "meta": {
++          "name": "meta",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {
++        "event_logs_user_id_users_id_fk": {
++          "name": "event_logs_user_id_users_id_fk",
++          "tableFrom": "event_logs",
++          "tableTo": "users",
++          "columnsFrom": [
++            "user_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.expense_categories": {
++      "name": "expense_categories",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "name": {
++          "name": "name",
++          "type": "varchar(100)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "description": {
++          "name": "description",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "legal_explanation": {
++          "name": "legal_explanation",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "deduction_percentage": {
++          "name": "deduction_percentage",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true,
++          "default": 100
++        },
++        "its_deduction_code": {
++          "name": "its_deduction_code",
++          "type": "varchar(50)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "examples": {
++          "name": "examples",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "icon": {
++          "name": "icon",
++          "type": "varchar(50)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "color": {
++          "name": "color",
++          "type": "varchar(20)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "is_active": {
++          "name": "is_active",
++          "type": "boolean",
++          "primaryKey": false,
++          "notNull": true,
++          "default": true
++        },
++        "sort_order": {
++          "name": "sort_order",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true,
++          "default": 0
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {},
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.expenses": {
++      "name": "expenses",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "user_id": {
++          "name": "user_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "category_id": {
++          "name": "category_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "amount": {
++          "name": "amount",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "description": {
++          "name": "description",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "vendor": {
++          "name": "vendor",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "expense_date": {
++          "name": "expense_date",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "receipt_url": {
++          "name": "receipt_url",
++          "type": "varchar(500)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "receipt_file_name": {
++          "name": "receipt_file_name",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "business_purpose": {
++          "name": "business_purpose",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "deduction_percentage": {
++          "name": "deduction_percentage",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true,
++          "default": 100
++        },
++        "tags": {
++          "name": "tags",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "is_recurring": {
++          "name": "is_recurring",
++          "type": "boolean",
++          "primaryKey": false,
++          "notNull": false,
++          "default": false
++        },
++        "recurring_period": {
++          "name": "recurring_period",
++          "type": "varchar(20)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "tax_year": {
++          "name": "tax_year",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "notes": {
++          "name": "notes",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false,
++          "default": "now()"
++        },
++        "updated_at": {
++          "name": "updated_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {
++        "expenses_user_id_users_id_fk": {
++          "name": "expenses_user_id_users_id_fk",
++          "tableFrom": "expenses",
++          "tableTo": "users",
++          "columnsFrom": [
++            "user_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        },
++        "expenses_category_id_expense_categories_id_fk": {
++          "name": "expenses_category_id_expense_categories_id_fk",
++          "tableFrom": "expenses",
++          "tableTo": "expense_categories",
++          "columnsFrom": [
++            "category_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.feature_flags": {
++      "name": "feature_flags",
++      "schema": "",
++      "columns": {
++        "key": {
++          "name": "key",
++          "type": "varchar(100)",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "enabled": {
++          "name": "enabled",
++          "type": "boolean",
++          "primaryKey": false,
++          "notNull": true,
++          "default": true
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp with time zone",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        },
++        "threshold": {
++          "name": "threshold",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "meta": {
++          "name": "meta",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "updated_at": {
++          "name": "updated_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {},
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.invoices": {
++      "name": "invoices",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "subscription_id": {
++          "name": "subscription_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "amount_cents": {
++          "name": "amount_cents",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "status": {
++          "name": "status",
++          "type": "varchar(20)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "processor": {
++          "name": "processor",
++          "type": "varchar(20)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "processor_ref": {
++          "name": "processor_ref",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "referral_code_id": {
++          "name": "referral_code_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {
++        "invoices_subscription_id_subscriptions_id_fk": {
++          "name": "invoices_subscription_id_subscriptions_id_fk",
++          "tableFrom": "invoices",
++          "tableTo": "subscriptions",
++          "columnsFrom": [
++            "subscription_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        },
++        "invoices_referral_code_id_referral_codes_id_fk": {
++          "name": "invoices_referral_code_id_referral_codes_id_fk",
++          "tableFrom": "invoices",
++          "tableTo": "referral_codes",
++          "columnsFrom": [
++            "referral_code_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.leads": {
++      "name": "leads",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "varchar(25)",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "email": {
++          "name": "email",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "platform_tags": {
++          "name": "platform_tags",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "pain_point": {
++          "name": "pain_point",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "utm_source": {
++          "name": "utm_source",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "utm_medium": {
++          "name": "utm_medium",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "utm_campaign": {
++          "name": "utm_campaign",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "utm_content": {
++          "name": "utm_content",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "utm_term": {
++          "name": "utm_term",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "referrer": {
++          "name": "referrer",
++          "type": "varchar(500)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "confirmed_at": {
++          "name": "confirmed_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {},
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {
++        "leads_email_unique": {
++          "name": "leads_email_unique",
++          "nullsNotDistinct": false,
++          "columns": [
++            "email"
++          ]
++        }
++      },
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.media_assets": {
++      "name": "media_assets",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "user_id": {
++          "name": "user_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "key": {
++          "name": "key",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "filename": {
++          "name": "filename",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "bytes": {
++          "name": "bytes",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "mime": {
++          "name": "mime",
++          "type": "varchar(100)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "sha256": {
++          "name": "sha256",
++          "type": "varchar(64)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "visibility": {
++          "name": "visibility",
++          "type": "varchar(30)",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "'private'"
++        },
++        "last_used_at": {
++          "name": "last_used_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false,
++          "default": "now()"
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {
++        "media_assets_user_id_users_id_fk": {
++          "name": "media_assets_user_id_users_id_fk",
++          "tableFrom": "media_assets",
++          "tableTo": "users",
++          "columnsFrom": [
++            "user_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {
++        "media_assets_key_unique": {
++          "name": "media_assets_key_unique",
++          "nullsNotDistinct": false,
++          "columns": [
++            "key"
++          ]
++        },
++        "media_sha256_idx": {
++          "name": "media_sha256_idx",
++          "nullsNotDistinct": false,
++          "columns": [
++            "sha256"
++          ]
++        }
++      },
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.media_usages": {
++      "name": "media_usages",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "media_id": {
++          "name": "media_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "used_in_type": {
++          "name": "used_in_type",
++          "type": "varchar(50)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "used_in_id": {
++          "name": "used_in_id",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {
++        "media_usages_media_id_media_assets_id_fk": {
++          "name": "media_usages_media_id_media_assets_id_fk",
++          "tableFrom": "media_usages",
++          "tableTo": "media_assets",
++          "columnsFrom": [
++            "media_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.page_views": {
++      "name": "page_views",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "session_id": {
++          "name": "session_id",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "user_id": {
++          "name": "user_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "path": {
++          "name": "path",
++          "type": "varchar(500)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "title": {
++          "name": "title",
++          "type": "varchar(500)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "referrer": {
++          "name": "referrer",
++          "type": "varchar(500)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "time_on_page": {
++          "name": "time_on_page",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "scroll_depth": {
++          "name": "scroll_depth",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "exit_page": {
++          "name": "exit_page",
++          "type": "boolean",
++          "primaryKey": false,
++          "notNull": false,
++          "default": false
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {
++        "page_views_session_id_user_sessions_session_id_fk": {
++          "name": "page_views_session_id_user_sessions_session_id_fk",
++          "tableFrom": "page_views",
++          "tableTo": "user_sessions",
++          "columnsFrom": [
++            "session_id"
++          ],
++          "columnsTo": [
++            "session_id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        },
++        "page_views_user_id_users_id_fk": {
++          "name": "page_views_user_id_users_id_fk",
++          "tableFrom": "page_views",
++          "tableTo": "users",
++          "columnsFrom": [
++            "user_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.platform_engagement": {
++      "name": "platform_engagement",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "account_id": {
++          "name": "account_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "platform": {
++          "name": "platform",
++          "type": "varchar(50)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "date": {
++          "name": "date",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "followers": {
++          "name": "followers",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false,
++          "default": 0
++        },
++        "following": {
++          "name": "following",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false,
++          "default": 0
++        },
++        "total_likes": {
++          "name": "total_likes",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false,
++          "default": 0
++        },
++        "total_comments": {
++          "name": "total_comments",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false,
++          "default": 0
++        },
++        "total_shares": {
++          "name": "total_shares",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false,
++          "default": 0
++        },
++        "total_views": {
++          "name": "total_views",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false,
++          "default": 0
++        },
++        "impressions": {
++          "name": "impressions",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false,
++          "default": 0
++        },
++        "reach": {
++          "name": "reach",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false,
++          "default": 0
++        },
++        "engagement_rate": {
++          "name": "engagement_rate",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false,
++          "default": 0
++        },
++        "profile_views": {
++          "name": "profile_views",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false,
++          "default": 0
++        },
++        "metadata": {
++          "name": "metadata",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {
++        "platform_engagement_account_id_social_media_accounts_id_fk": {
++          "name": "platform_engagement_account_id_social_media_accounts_id_fk",
++          "tableFrom": "platform_engagement",
++          "tableTo": "social_media_accounts",
++          "columnsFrom": [
++            "account_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.post_duplicates": {
++      "name": "post_duplicates",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "user_id": {
++          "name": "user_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "content_hash": {
++          "name": "content_hash",
++          "type": "varchar(64)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "title": {
++          "name": "title",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "body": {
++          "name": "body",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "subreddit": {
++          "name": "subreddit",
++          "type": "varchar(100)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {
++        "post_duplicates_user_id_users_id_fk": {
++          "name": "post_duplicates_user_id_users_id_fk",
++          "tableFrom": "post_duplicates",
++          "tableTo": "users",
++          "columnsFrom": [
++            "user_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.post_jobs": {
++      "name": "post_jobs",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "user_id": {
++          "name": "user_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "subreddit": {
++          "name": "subreddit",
++          "type": "varchar(100)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "title_final": {
++          "name": "title_final",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "body_final": {
++          "name": "body_final",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "media_key": {
++          "name": "media_key",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "scheduled_at": {
++          "name": "scheduled_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "status": {
++          "name": "status",
++          "type": "varchar(20)",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "'queued'"
++        },
++        "result_json": {
++          "name": "result_json",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        },
++        "updated_at": {
++          "name": "updated_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {
++        "post_jobs_user_id_users_id_fk": {
++          "name": "post_jobs_user_id_users_id_fk",
++          "tableFrom": "post_jobs",
++          "tableTo": "users",
++          "columnsFrom": [
++            "user_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.post_previews": {
++      "name": "post_previews",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "user_id": {
++          "name": "user_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "subreddit": {
++          "name": "subreddit",
++          "type": "varchar(100)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "title_preview": {
++          "name": "title_preview",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "body_preview": {
++          "name": "body_preview",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "policy_state": {
++          "name": "policy_state",
++          "type": "varchar(10)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "warnings": {
++          "name": "warnings",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {
++        "post_previews_user_id_users_id_fk": {
++          "name": "post_previews_user_id_users_id_fk",
++          "tableFrom": "post_previews",
++          "tableTo": "users",
++          "columnsFrom": [
++            "user_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.post_rate_limits": {
++      "name": "post_rate_limits",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "user_id": {
++          "name": "user_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "subreddit": {
++          "name": "subreddit",
++          "type": "varchar(100)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "last_post_at": {
++          "name": "last_post_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "post_count_24h": {
++          "name": "post_count_24h",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true,
++          "default": 0
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        },
++        "updated_at": {
++          "name": "updated_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {
++        "post_rate_limits_user_id_users_id_fk": {
++          "name": "post_rate_limits_user_id_users_id_fk",
++          "tableFrom": "post_rate_limits",
++          "tableTo": "users",
++          "columnsFrom": [
++            "user_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {
++        "post_rate_limits_user_subreddit_idx": {
++          "name": "post_rate_limits_user_subreddit_idx",
++          "nullsNotDistinct": false,
++          "columns": [
++            "user_id",
++            "subreddit"
++          ]
++        }
++      },
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.post_schedule": {
++      "name": "post_schedule",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "user_id": {
++          "name": "user_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "content_generation_id": {
++          "name": "content_generation_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "platforms": {
++          "name": "platforms",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "scheduled_time": {
++          "name": "scheduled_time",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "timezone": {
++          "name": "timezone",
++          "type": "varchar(100)",
++          "primaryKey": false,
++          "notNull": false,
++          "default": "'UTC'"
++        },
++        "recurrence": {
++          "name": "recurrence",
++          "type": "varchar(50)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "status": {
++          "name": "status",
++          "type": "varchar(50)",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "'pending'"
++        },
++        "last_executed": {
++          "name": "last_executed",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "next_execution": {
++          "name": "next_execution",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "metadata": {
++          "name": "metadata",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false,
++          "default": "now()"
++        },
++        "updated_at": {
++          "name": "updated_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {
++        "post_schedule_user_id_users_id_fk": {
++          "name": "post_schedule_user_id_users_id_fk",
++          "tableFrom": "post_schedule",
++          "tableTo": "users",
++          "columnsFrom": [
++            "user_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        },
++        "post_schedule_content_generation_id_content_generations_id_fk": {
++          "name": "post_schedule_content_generation_id_content_generations_id_fk",
++          "tableFrom": "post_schedule",
++          "tableTo": "content_generations",
++          "columnsFrom": [
++            "content_generation_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.post_templates": {
++      "name": "post_templates",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "user_id": {
++          "name": "user_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "name": {
++          "name": "name",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "title_tpl": {
++          "name": "title_tpl",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "body_tpl": {
++          "name": "body_tpl",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "variables": {
++          "name": "variables",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        },
++        "updated_at": {
++          "name": "updated_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {
++        "post_templates_user_id_users_id_fk": {
++          "name": "post_templates_user_id_users_id_fk",
++          "tableFrom": "post_templates",
++          "tableTo": "users",
++          "columnsFrom": [
++            "user_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.queue_jobs": {
++      "name": "queue_jobs",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "queue_name": {
++          "name": "queue_name",
++          "type": "varchar(100)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "payload": {
++          "name": "payload",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "status": {
++          "name": "status",
++          "type": "varchar(20)",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "'pending'"
++        },
++        "attempts": {
++          "name": "attempts",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true,
++          "default": 0
++        },
++        "max_attempts": {
++          "name": "max_attempts",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true,
++          "default": 3
++        },
++        "delay_until": {
++          "name": "delay_until",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "processed_at": {
++          "name": "processed_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "completed_at": {
++          "name": "completed_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "failed_at": {
++          "name": "failed_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "error": {
++          "name": "error",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        },
++        "updated_at": {
++          "name": "updated_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {},
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.reddit_communities": {
++      "name": "reddit_communities",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "varchar(100)",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "name": {
++          "name": "name",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "display_name": {
++          "name": "display_name",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "members": {
++          "name": "members",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "engagement_rate": {
++          "name": "engagement_rate",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "category": {
++          "name": "category",
++          "type": "varchar(50)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "verification_required": {
++          "name": "verification_required",
++          "type": "boolean",
++          "primaryKey": false,
++          "notNull": true,
++          "default": false
++        },
++        "promotion_allowed": {
++          "name": "promotion_allowed",
++          "type": "varchar(20)",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "'no'"
++        },
++        "posting_limits": {
++          "name": "posting_limits",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "rules": {
++          "name": "rules",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "best_posting_times": {
++          "name": "best_posting_times",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "average_upvotes": {
++          "name": "average_upvotes",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "success_probability": {
++          "name": "success_probability",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "growth_trend": {
++          "name": "growth_trend",
++          "type": "varchar(20)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "mod_activity": {
++          "name": "mod_activity",
++          "type": "varchar(20)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "description": {
++          "name": "description",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "tags": {
++          "name": "tags",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "competition_level": {
++          "name": "competition_level",
++          "type": "varchar(20)",
++          "primaryKey": false,
++          "notNull": false
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {},
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.referral_codes": {
++      "name": "referral_codes",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "code": {
++          "name": "code",
++          "type": "varchar(50)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "owner_id": {
++          "name": "owner_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "share_pct": {
++          "name": "share_pct",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true,
++          "default": 20
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {},
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {
++        "referral_codes_code_unique": {
++          "name": "referral_codes_code_unique",
++          "nullsNotDistinct": false,
++          "columns": [
++            "code"
++          ]
++        }
++      },
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.referral_rewards": {
++      "name": "referral_rewards",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "referrer_id": {
++          "name": "referrer_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "referred_id": {
++          "name": "referred_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "amount": {
++          "name": "amount",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {
++        "referral_rewards_referrer_id_users_id_fk": {
++          "name": "referral_rewards_referrer_id_users_id_fk",
++          "tableFrom": "referral_rewards",
++          "tableTo": "users",
++          "columnsFrom": [
++            "referrer_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        },
++        "referral_rewards_referred_id_users_id_fk": {
++          "name": "referral_rewards_referred_id_users_id_fk",
++          "tableFrom": "referral_rewards",
++          "tableTo": "users",
++          "columnsFrom": [
++            "referred_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.referrals": {
++      "name": "referrals",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "code_id": {
++          "name": "code_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "referrer_id": {
++          "name": "referrer_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "receiver_id": {
++          "name": "receiver_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {
++        "referrals_code_id_referral_codes_id_fk": {
++          "name": "referrals_code_id_referral_codes_id_fk",
++          "tableFrom": "referrals",
++          "tableTo": "referral_codes",
++          "columnsFrom": [
++            "code_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        },
++        "referrals_referrer_id_users_id_fk": {
++          "name": "referrals_referrer_id_users_id_fk",
++          "tableFrom": "referrals",
++          "tableTo": "users",
++          "columnsFrom": [
++            "referrer_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        },
++        "referrals_receiver_id_users_id_fk": {
++          "name": "referrals_receiver_id_users_id_fk",
++          "tableFrom": "referrals",
++          "tableTo": "users",
++          "columnsFrom": [
++            "receiver_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.social_media_accounts": {
++      "name": "social_media_accounts",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "user_id": {
++          "name": "user_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "platform": {
++          "name": "platform",
++          "type": "varchar(50)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "account_id": {
++          "name": "account_id",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "username": {
++          "name": "username",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "display_name": {
++          "name": "display_name",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "profile_picture": {
++          "name": "profile_picture",
++          "type": "varchar(500)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "access_token": {
++          "name": "access_token",
++          "type": "varchar(1000)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "refresh_token": {
++          "name": "refresh_token",
++          "type": "varchar(1000)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "token_expires_at": {
++          "name": "token_expires_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "is_active": {
++          "name": "is_active",
++          "type": "boolean",
++          "primaryKey": false,
++          "notNull": true,
++          "default": true
++        },
++        "last_sync_at": {
++          "name": "last_sync_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "metadata": {
++          "name": "metadata",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false,
++          "default": "now()"
++        },
++        "updated_at": {
++          "name": "updated_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {
++        "social_media_accounts_user_id_users_id_fk": {
++          "name": "social_media_accounts_user_id_users_id_fk",
++          "tableFrom": "social_media_accounts",
++          "tableTo": "users",
++          "columnsFrom": [
++            "user_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.social_media_posts": {
++      "name": "social_media_posts",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "user_id": {
++          "name": "user_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "account_id": {
++          "name": "account_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "content_generation_id": {
++          "name": "content_generation_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "platform": {
++          "name": "platform",
++          "type": "varchar(50)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "platform_post_id": {
++          "name": "platform_post_id",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "content": {
++          "name": "content",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "media_urls": {
++          "name": "media_urls",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "hashtags": {
++          "name": "hashtags",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "status": {
++          "name": "status",
++          "type": "varchar(50)",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "'draft'"
++        },
++        "scheduled_at": {
++          "name": "scheduled_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "published_at": {
++          "name": "published_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "error_message": {
++          "name": "error_message",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "engagement": {
++          "name": "engagement",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "last_engagement_sync": {
++          "name": "last_engagement_sync",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false,
++          "default": "now()"
++        },
++        "updated_at": {
++          "name": "updated_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {
++        "social_media_posts_user_id_users_id_fk": {
++          "name": "social_media_posts_user_id_users_id_fk",
++          "tableFrom": "social_media_posts",
++          "tableTo": "users",
++          "columnsFrom": [
++            "user_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        },
++        "social_media_posts_account_id_social_media_accounts_id_fk": {
++          "name": "social_media_posts_account_id_social_media_accounts_id_fk",
++          "tableFrom": "social_media_posts",
++          "tableTo": "social_media_accounts",
++          "columnsFrom": [
++            "account_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        },
++        "social_media_posts_content_generation_id_content_generations_id_fk": {
++          "name": "social_media_posts_content_generation_id_content_generations_id_fk",
++          "tableFrom": "social_media_posts",
++          "tableTo": "content_generations",
++          "columnsFrom": [
++            "content_generation_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.social_metrics": {
++      "name": "social_metrics",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "content_id": {
++          "name": "content_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "platform": {
++          "name": "platform",
++          "type": "varchar(50)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "platform_post_id": {
++          "name": "platform_post_id",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "views": {
++          "name": "views",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false,
++          "default": 0
++        },
++        "likes": {
++          "name": "likes",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false,
++          "default": 0
++        },
++        "comments": {
++          "name": "comments",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false,
++          "default": 0
++        },
++        "shares": {
++          "name": "shares",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false,
++          "default": 0
++        },
++        "saves": {
++          "name": "saves",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false,
++          "default": 0
++        },
++        "clicks": {
++          "name": "clicks",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false,
++          "default": 0
++        },
++        "engagement_rate": {
++          "name": "engagement_rate",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false,
++          "default": 0
++        },
++        "reach": {
++          "name": "reach",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false,
++          "default": 0
++        },
++        "impressions": {
++          "name": "impressions",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false,
++          "default": 0
++        },
++        "last_updated": {
++          "name": "last_updated",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false,
++          "default": "now()"
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {
++        "social_metrics_content_id_content_generations_id_fk": {
++          "name": "social_metrics_content_id_content_generations_id_fk",
++          "tableFrom": "social_metrics",
++          "tableTo": "content_generations",
++          "columnsFrom": [
++            "content_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.subreddit_rules": {
++      "name": "subreddit_rules",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "subreddit": {
++          "name": "subreddit",
++          "type": "varchar(100)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "rules_json": {
++          "name": "rules_json",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "updated_at": {
++          "name": "updated_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {},
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {
++        "subreddit_rules_subreddit_unique": {
++          "name": "subreddit_rules_subreddit_unique",
++          "nullsNotDistinct": false,
++          "columns": [
++            "subreddit"
++          ]
++        }
++      },
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.subscriptions": {
++      "name": "subscriptions",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "user_id": {
++          "name": "user_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "status": {
++          "name": "status",
++          "type": "varchar(20)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "plan": {
++          "name": "plan",
++          "type": "varchar(20)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "price_cents": {
++          "name": "price_cents",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "processor": {
++          "name": "processor",
++          "type": "varchar(20)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "processor_sub_id": {
++          "name": "processor_sub_id",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "current_period_end": {
++          "name": "current_period_end",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        },
++        "updated_at": {
++          "name": "updated_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {
++        "subscriptions_user_id_users_id_fk": {
++          "name": "subscriptions_user_id_users_id_fk",
++          "tableFrom": "subscriptions",
++          "tableTo": "users",
++          "columnsFrom": [
++            "user_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {
++        "subscriptions_user_id_unique": {
++          "name": "subscriptions_user_id_unique",
++          "nullsNotDistinct": false,
++          "columns": [
++            "user_id"
++          ]
++        }
++      },
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.system_logs": {
++      "name": "system_logs",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "level": {
++          "name": "level",
++          "type": "varchar(20)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "service": {
++          "name": "service",
++          "type": "varchar(100)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "message": {
++          "name": "message",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "metadata": {
++          "name": "metadata",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "user_id": {
++          "name": "user_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "ip_address": {
++          "name": "ip_address",
++          "type": "varchar(45)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "resolved": {
++          "name": "resolved",
++          "type": "boolean",
++          "primaryKey": false,
++          "notNull": false,
++          "default": false
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {
++        "system_logs_user_id_users_id_fk": {
++          "name": "system_logs_user_id_users_id_fk",
++          "tableFrom": "system_logs",
++          "tableTo": "users",
++          "columnsFrom": [
++            "user_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.tax_deduction_info": {
++      "name": "tax_deduction_info",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "title": {
++          "name": "title",
++          "type": "varchar(200)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "category": {
++          "name": "category",
++          "type": "varchar(100)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "description": {
++          "name": "description",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "legal_basis": {
++          "name": "legal_basis",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "requirements": {
++          "name": "requirements",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "limitations": {
++          "name": "limitations",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "examples": {
++          "name": "examples",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "its_reference": {
++          "name": "its_reference",
++          "type": "varchar(100)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "applicable_for": {
++          "name": "applicable_for",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "risk_level": {
++          "name": "risk_level",
++          "type": "varchar(20)",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "'low'"
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false,
++          "default": "now()"
++        },
++        "updated_at": {
++          "name": "updated_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {},
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.user_actions": {
++      "name": "user_actions",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "user_id": {
++          "name": "user_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "admin_id": {
++          "name": "admin_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "action": {
++          "name": "action",
++          "type": "varchar(50)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "reason": {
++          "name": "reason",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "duration_hours": {
++          "name": "duration_hours",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "metadata": {
++          "name": "metadata",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "is_active": {
++          "name": "is_active",
++          "type": "boolean",
++          "primaryKey": false,
++          "notNull": false,
++          "default": true
++        },
++        "expires_at": {
++          "name": "expires_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {
++        "user_actions_user_id_users_id_fk": {
++          "name": "user_actions_user_id_users_id_fk",
++          "tableFrom": "user_actions",
++          "tableTo": "users",
++          "columnsFrom": [
++            "user_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        },
++        "user_actions_admin_id_users_id_fk": {
++          "name": "user_actions_admin_id_users_id_fk",
++          "tableFrom": "user_actions",
++          "tableTo": "users",
++          "columnsFrom": [
++            "admin_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.user_images": {
++      "name": "user_images",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "user_id": {
++          "name": "user_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "filename": {
++          "name": "filename",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "original_name": {
++          "name": "original_name",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "url": {
++          "name": "url",
++          "type": "varchar(500)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "mime_type": {
++          "name": "mime_type",
++          "type": "varchar(100)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "size": {
++          "name": "size",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "is_protected": {
++          "name": "is_protected",
++          "type": "boolean",
++          "primaryKey": false,
++          "notNull": false,
++          "default": false
++        },
++        "protection_level": {
++          "name": "protection_level",
++          "type": "varchar(50)",
++          "primaryKey": false,
++          "notNull": false,
++          "default": "'none'"
++        },
++        "tags": {
++          "name": "tags",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "metadata": {
++          "name": "metadata",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false,
++          "default": "now()"
++        },
++        "updated_at": {
++          "name": "updated_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {
++        "user_images_user_id_users_id_fk": {
++          "name": "user_images_user_id_users_id_fk",
++          "tableFrom": "user_images",
++          "tableTo": "users",
++          "columnsFrom": [
++            "user_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.user_preferences": {
++      "name": "user_preferences",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "user_id": {
++          "name": "user_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "writing_style": {
++          "name": "writing_style",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "content_preferences": {
++          "name": "content_preferences",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "prohibited_words": {
++          "name": "prohibited_words",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "photo_style": {
++          "name": "photo_style",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "platform_settings": {
++          "name": "platform_settings",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "fine_tuning_enabled": {
++          "name": "fine_tuning_enabled",
++          "type": "boolean",
++          "primaryKey": false,
++          "notNull": false,
++          "default": false
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false,
++          "default": "now()"
++        },
++        "updated_at": {
++          "name": "updated_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {
++        "user_preferences_user_id_users_id_fk": {
++          "name": "user_preferences_user_id_users_id_fk",
++          "tableFrom": "user_preferences",
++          "tableTo": "users",
++          "columnsFrom": [
++            "user_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {
++        "user_preferences_user_id_unique": {
++          "name": "user_preferences_user_id_unique",
++          "nullsNotDistinct": false,
++          "columns": [
++            "user_id"
++          ]
++        }
++      },
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.user_samples": {
++      "name": "user_samples",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "user_id": {
++          "name": "user_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "title": {
++          "name": "title",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "content": {
++          "name": "content",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "platform": {
++          "name": "platform",
++          "type": "varchar(50)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "style": {
++          "name": "style",
++          "type": "varchar(50)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "performance_score": {
++          "name": "performance_score",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "tags": {
++          "name": "tags",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "image_urls": {
++          "name": "image_urls",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "metadata": {
++          "name": "metadata",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false,
++          "default": "now()"
++        },
++        "updated_at": {
++          "name": "updated_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {
++        "user_samples_user_id_users_id_fk": {
++          "name": "user_samples_user_id_users_id_fk",
++          "tableFrom": "user_samples",
++          "tableTo": "users",
++          "columnsFrom": [
++            "user_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.user_sessions": {
++      "name": "user_sessions",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "session_id": {
++          "name": "session_id",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "user_id": {
++          "name": "user_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "ip_address": {
++          "name": "ip_address",
++          "type": "varchar(45)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "user_agent": {
++          "name": "user_agent",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "referrer": {
++          "name": "referrer",
++          "type": "varchar(500)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "utm_source": {
++          "name": "utm_source",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "utm_medium": {
++          "name": "utm_medium",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "utm_campaign": {
++          "name": "utm_campaign",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "device_type": {
++          "name": "device_type",
++          "type": "varchar(50)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "browser": {
++          "name": "browser",
++          "type": "varchar(100)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "os": {
++          "name": "os",
++          "type": "varchar(100)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "country": {
++          "name": "country",
++          "type": "varchar(100)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "city": {
++          "name": "city",
++          "type": "varchar(100)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "started_at": {
++          "name": "started_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        },
++        "ended_at": {
++          "name": "ended_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "duration": {
++          "name": "duration",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "page_count": {
++          "name": "page_count",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false,
++          "default": 0
++        },
++        "revoked_at": {
++          "name": "revoked_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {
++        "user_sessions_user_id_users_id_fk": {
++          "name": "user_sessions_user_id_users_id_fk",
++          "tableFrom": "user_sessions",
++          "tableTo": "users",
++          "columnsFrom": [
++            "user_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {
++        "user_sessions_session_id_unique": {
++          "name": "user_sessions_session_id_unique",
++          "nullsNotDistinct": false,
++          "columns": [
++            "session_id"
++          ]
++        }
++      },
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.users": {
++      "name": "users",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "username": {
++          "name": "username",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "password": {
++          "name": "password",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "''"
++        },
++        "email": {
++          "name": "email",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "role": {
++          "name": "role",
++          "type": "varchar(50)",
++          "primaryKey": false,
++          "notNull": false,
++          "default": "'user'"
++        },
++        "is_admin": {
++          "name": "is_admin",
++          "type": "boolean",
++          "primaryKey": false,
++          "notNull": false,
++          "default": false
++        },
++        "email_verified": {
++          "name": "email_verified",
++          "type": "boolean",
++          "primaryKey": false,
++          "notNull": true,
++          "default": false
++        },
++        "first_name": {
++          "name": "first_name",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "last_name": {
++          "name": "last_name",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "tier": {
++          "name": "tier",
++          "type": "varchar(50)",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "'free'"
++        },
++        "must_change_password": {
++          "name": "must_change_password",
++          "type": "boolean",
++          "primaryKey": false,
++          "notNull": true,
++          "default": false
++        },
++        "subscription_status": {
++          "name": "subscription_status",
++          "type": "varchar(50)",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "'inactive'"
++        },
++        "trial_ends_at": {
++          "name": "trial_ends_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "provider": {
++          "name": "provider",
++          "type": "varchar(50)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "provider_id": {
++          "name": "provider_id",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "avatar": {
++          "name": "avatar",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "bio": {
++          "name": "bio",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "referral_code_id": {
++          "name": "referral_code_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "referred_by": {
++          "name": "referred_by",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "reddit_username": {
++          "name": "reddit_username",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "reddit_access_token": {
++          "name": "reddit_access_token",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "reddit_refresh_token": {
++          "name": "reddit_refresh_token",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "reddit_id": {
++          "name": "reddit_id",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "stripe_customer_id": {
++          "name": "stripe_customer_id",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "stripe_subscription_id": {
++          "name": "stripe_subscription_id",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "banned_at": {
++          "name": "banned_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "suspended_until": {
++          "name": "suspended_until",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "ban_reason": {
++          "name": "ban_reason",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "suspension_reason": {
++          "name": "suspension_reason",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false,
++          "default": "now()"
++        },
++        "updated_at": {
++          "name": "updated_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false,
++          "default": "now()"
++        },
++        "last_login": {
++          "name": "last_login",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "password_reset_at": {
++          "name": "password_reset_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "deleted_at": {
++          "name": "deleted_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "is_deleted": {
++          "name": "is_deleted",
++          "type": "boolean",
++          "primaryKey": false,
++          "notNull": false,
++          "default": false
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {},
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {
++        "users_username_unique": {
++          "name": "users_username_unique",
++          "nullsNotDistinct": false,
++          "columns": [
++            "username"
++          ]
++        },
++        "users_email_unique": {
++          "name": "users_email_unique",
++          "nullsNotDistinct": false,
++          "columns": [
++            "email"
++          ]
++        }
++      },
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.verification_tokens": {
++      "name": "verification_tokens",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "serial",
++          "primaryKey": true,
++          "notNull": true
++        },
++        "user_id": {
++          "name": "user_id",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "token": {
++          "name": "token",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "expires_at": {
++          "name": "expires_at",
++          "type": "timestamp",
++          "primaryKey": false,
++          "notNull": true
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {
++        "verification_tokens_user_id_users_id_fk": {
++          "name": "verification_tokens_user_id_users_id_fk",
++          "tableFrom": "verification_tokens",
++          "tableTo": "users",
++          "columnsFrom": [
++            "user_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "no action",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {
++        "verification_tokens_token_unique": {
++          "name": "verification_tokens_token_unique",
++          "nullsNotDistinct": false,
++          "columns": [
++            "token"
++          ]
++        }
++      },
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    }
++  },
++  "enums": {},
++  "schemas": {},
++  "sequences": {},
++  "roles": {},
++  "policies": {},
++  "views": {},
++  "_meta": {
++    "columns": {},
++    "schemas": {},
++    "tables": {}
++  }
++}
+ 
+EOF
+)
