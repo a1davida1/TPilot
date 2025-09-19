@@ -5,14 +5,22 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Shield, CheckCircle, Zap } from "lucide-react";
+import { ArrowLeft, Shield, CheckCircle, Zap, AlertTriangle } from "lucide-react";
 import { Link } from "wouter";
 
-// Load Stripe
-if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
-  throw new Error('Missing required Stripe key: VITE_STRIPE_PUBLIC_KEY');
-}
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY || '');
+// Lazy load Stripe only when needed
+let stripePromise: ReturnType<typeof loadStripe> | null = null;
+
+const getStripePromise = () => {
+  if (!stripePromise) {
+    const stripeKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+    if (!stripeKey) {
+      return null;
+    }
+    stripePromise = loadStripe(stripeKey);
+  }
+  return stripePromise;
+};
 
 interface CheckoutFormProps {
   plan: 'pro' | 'pro_plus';
@@ -71,7 +79,42 @@ const CheckoutForm = ({ plan }: CheckoutFormProps) => {
   );
 };
 
+// Stripe configuration missing component
+const StripeConfigMissing = () => (
+  <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-pink-900 flex items-center justify-center p-4">
+    <Card className="w-full max-w-md border-red-800/20 bg-gray-900/90 backdrop-blur-md">
+      <CardHeader className="text-center">
+        <div className="flex justify-center mb-4">
+          <AlertTriangle className="h-12 w-12 text-red-400" />
+        </div>
+        <CardTitle className="text-red-200">Payment System Unavailable</CardTitle>
+        <CardDescription className="text-gray-300">
+          The payment system is currently not configured for this environment.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-gray-400 text-center">
+          Please contact support or try again later. If you're a developer, ensure VITE_STRIPE_PUBLIC_KEY is configured.
+        </p>
+        <Button asChild className="w-full" variant="outline">
+          <Link href="/dashboard">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Dashboard
+          </Link>
+        </Button>
+      </CardContent>
+    </Card>
+  </div>
+);
+
 export default function Checkout() {
+  // Check if Stripe is available
+  const stripe = getStripePromise();
+  
+  if (!stripe) {
+    return <StripeConfigMissing />;
+  }
+  
   // Get plan from URL params or default to 'pro'
   const urlParams = new URLSearchParams(window.location.search);
   const plan = (urlParams.get('plan') as 'pro' | 'pro_plus') || 'pro';
@@ -142,24 +185,6 @@ export default function Checkout() {
     setupPayment();
   }, [plan, toast]);
 
-  if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center p-4">
-        <Card className="max-w-md w-full">
-          <CardContent className="pt-6">
-            <div className="text-center space-y-4">
-              <div className="text-red-600 text-lg font-semibold">
-                Payment System Not Configured
-              </div>
-              <p className="text-gray-600">
-                Please contact support to enable payments.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   if (loading) {
     return (
@@ -242,7 +267,7 @@ export default function Checkout() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Elements stripe={stripePromise} options={{ clientSecret }}>
+              <Elements stripe={stripe} options={{ clientSecret }}>
                 <CheckoutForm plan={plan} />
               </Elements>
               
