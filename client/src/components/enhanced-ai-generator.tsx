@@ -23,6 +23,33 @@ interface GeneratedContentType {
   photoInstructions?: string | object;
 }
 
+// Define types for mutation variables and response
+interface GenerateContentVariables {
+  platform?: string;
+  style?: string;
+  theme?: string;
+  prompt?: string;
+  customPrompt?: string;
+  subreddit?: string;
+  allowsPromotion?: string;
+  photoType?: string;
+  textTone?: string;
+  includePromotion?: boolean;
+  selectedHashtags?: string[];
+  includeHashtags?: boolean;
+  preferredProvider?: string;
+}
+
+interface GeneratedContent {
+  content?: string;
+  titles?: string[];
+  photoInstructions?: string | object;
+  upgradeMessage?: string;
+  aiProvider?: string;
+  contentSource?: string;
+}
+
+
 export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }: EnhancedAIGeneratorProps) {
   const [customPrompt, setCustomPrompt] = useState("");
   const [platform, setPlatform] = useState("reddit");
@@ -30,15 +57,15 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
   const [allowsPromotion, setAllowsPromotion] = useState("moderate");
   const [useAdvancedSettings, setUseAdvancedSettings] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState("auto");
-  
+
   // New categorization system
   const [photoType, setPhotoType] = useState("casual");
   const [textTone, setTextTone] = useState("confident");
   const [includePromotion, setIncludePromotion] = useState(true);
   const [includeHashtags, setIncludeHashtags] = useState(true);
   const [selectedHashtags, setSelectedHashtags] = useState<string[]>([]);
-  const [generatedContent, setGeneratedContent] = useState<any>(null);
-  
+  const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -134,42 +161,40 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
     }
   ];
 
-  interface GeneratedContentType {
-    titles?: string[];
-    content?: string;
-    photoInstructions?: string | object;
-  }
-
-  const generateContentMutation = useMutation({
-    mutationFn: async (data: unknown) => {
+  const generateContentMutation = useMutation<GeneratedContent, Error, GenerateContentVariables>({
+    mutationFn: async (data) => {
+      const effectivePrompt = data.customPrompt || data.prompt || "";
       const response = await apiRequest("POST", "/api/generate-unified", {
-        mode: 'text',
-        platform: (data as any).platform || 'reddit',
-        style: (data as any).style || 'confident',
-        theme: (data as any).theme || 'general',
-        prompt: (data as any).customPrompt || (data as any).prompt,
-        customInstructions: (data as any).customPrompt || (data as any).prompt,
-        includePromotion: (data as any).includePromotion || (data as any).allowsPromotion
+        mode: "text",
+        platform: data.platform || "reddit",
+        style: data.style || "confident",
+        theme: data.theme || "general",
+        prompt: effectivePrompt,
+        customInstructions: effectivePrompt,
+        includePromotion:
+          typeof data.includePromotion === "boolean"
+            ? data.includePromotion
+            : data.allowsPromotion !== "none"
       });
-      return await response.json();
+      return (await response.json()) as GeneratedContent;
     },
     onSuccess: (data) => {
       setGeneratedContent(data);
       onContentGenerated(data);
-      
+
       // Check if watermark was added (free tier)
-      const hasWatermark = data.content?.includes('[via ThottoPilot]') || 
+      const hasWatermark = data.content?.includes('[via ThottoPilot]') ||
                           data.titles?.[0]?.includes('[via ThottoPilot]');
-      
-      const description = data.contentSource === 'template' 
+
+      const description = data.contentSource === 'template'
         ? `Using pre-generated content${hasWatermark ? ' (with watermark)' : ''}`
         : `Generated with ${data.aiProvider || 'service'}`;
-      
+
       toast({
         title: "Content Generated Successfully!",
         description: description
       });
-      
+
       // Show upgrade prompt for free/basic users
       if (data.upgradeMessage) {
         setTimeout(() => {
@@ -179,7 +204,7 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
           });
         }, 2000);
       }
-      
+
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
     },
     onError: (error) => {
@@ -194,14 +219,14 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
   const handleGenerate = () => {
     if (!customPrompt.trim()) {
       toast({
-        title: "Prompt Required", 
+        title: "Prompt Required",
         description: "Please enter a prompt for content generation",
         variant: "destructive"
       });
       return;
     }
 
-    const hashtagText = includeHashtags && selectedHashtags.length > 0 
+    const hashtagText = includeHashtags && selectedHashtags.length > 0
       ? ` Include these hashtags: ${selectedHashtags.join(' ')}`
       : '';
 
@@ -219,7 +244,7 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
   };
 
   const handlePresetGenerate = (preset: typeof contentPresets[0]) => {
-    const hashtagText = includeHashtags && selectedHashtags.length > 0 
+    const hashtagText = includeHashtags && selectedHashtags.length > 0
       ? ` Include these hashtags: ${selectedHashtags.join(' ')}`
       : '';
 
@@ -239,8 +264,8 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
   };
 
   const toggleHashtag = (hashtag: string) => {
-    setSelectedHashtags(prev => 
-      prev.includes(hashtag) 
+    setSelectedHashtags(prev =>
+      prev.includes(hashtag)
         ? prev.filter(h => h !== hashtag)
         : [...prev, hashtag]
     );
@@ -296,7 +321,7 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
               Click any style below to instantly generate content for that theme
             </p>
           </div>
-          
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {contentPresets.map((preset) => (
               <Button
@@ -314,7 +339,7 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
               </Button>
             ))}
           </div>
-          
+
           {generateContentMutation.isPending && (
             <div className="flex items-center justify-center space-x-2 py-4">
               <RefreshCw className="h-4 w-4 animate-spin text-pink-600" />
@@ -519,7 +544,7 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
         {generatedContent && (
           <div className="space-y-4 p-4 bg-gradient-to-br from-pink-50 to-purple-50 rounded-lg border border-pink-200">
             <h4 className="font-semibold text-lg text-pink-800">Generated Content</h4>
-            
+
             {/* Titles */}
             {(generatedContent as GeneratedContentType).titles && (generatedContent as GeneratedContentType).titles!.length > 0 && (
               <div className="space-y-2">
@@ -564,17 +589,17 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
                 <Label className="text-sm font-medium text-blue-700">Photo Instructions:</Label>
                 <div className="relative p-3 bg-white rounded-lg border group">
                   <p className="text-sm whitespace-pre-wrap pr-8">
-                    {typeof (generatedContent as any).photoInstructions === 'string' 
-                      ? (generatedContent as any).photoInstructions 
+                    {typeof (generatedContent as any).photoInstructions === 'string'
+                      ? (generatedContent as any).photoInstructions
                       : JSON.stringify((generatedContent as any).photoInstructions, null, 2)}
                   </p>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => copyToClipboard(
-                      typeof (generatedContent as any).photoInstructions === 'string' 
-                        ? (generatedContent as any).photoInstructions 
-                        : JSON.stringify((generatedContent as any).photoInstructions, null, 2), 
+                      typeof (generatedContent as any).photoInstructions === 'string'
+                        ? (generatedContent as any).photoInstructions
+                        : JSON.stringify((generatedContent as any).photoInstructions, null, 2),
                       'Photo Instructions'
                     )}
                     className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"

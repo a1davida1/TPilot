@@ -109,10 +109,17 @@ export const getQueryFn: <T = unknown>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
-  async ({ queryKey, signal }) => {
-    const url = Array.isArray(queryKey) ? queryKey[0] as string : queryKey as string;
+  async ({ queryKey: key, signal }) => {
+    // Validate that the key is a string or array containing string
+    let queryKey: string;
+    if (Array.isArray(key)) {
+      queryKey = key[0] as string;
+    } else {
+      queryKey = key as string;
+    }
+    const url = queryKey.startsWith('/') ? queryKey : `/${queryKey}`;
 
-    if (!url || typeof url !== 'string') {
+    if (!queryKey || typeof queryKey !== 'string') {
       throw new Error('Invalid query key');
     }
 
