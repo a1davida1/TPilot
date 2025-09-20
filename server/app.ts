@@ -112,7 +112,7 @@ async function configureStaticAssets(
   const { fileURLToPath } = await import('url');
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
   const fs = await import('fs');
-  
+
   const candidateClientPaths = [
     path.resolve(__dirname, '..', 'client'),
     path.resolve(__dirname, '..', '..', 'dist', 'client'),
@@ -163,7 +163,7 @@ async function configureStaticAssets(
       }
     }
   }));
-  
+
   // Skip Vite in development unless explicitly enabled for diagnostics
   const shouldEnableVite =
     enableVite &&
@@ -181,18 +181,18 @@ async function configureStaticAssets(
   } else if (enableVite && app.get('env') === 'development') {
     logger.info('Vite development server disabled; set ENABLE_VITE_DEV=true to opt-in.');
   }
-  
+
   // SPA fallback - serve index.html for all non-API routes
   app.get('*', (req, res, next) => {
     // Let API/auth/webhook/assets routes fall through to 404 handler or static middleware
-    if (req.path.startsWith('/api/') || 
-        req.path.startsWith('/auth/') || 
+    if (req.path.startsWith('/api/') ||
+        req.path.startsWith('/auth/') ||
         req.path.startsWith('/webhook/') ||
         req.path.startsWith('/assets/')) {
       logger.debug(`Asset request bypassed SPA fallback: ${req.path}`);
       return next();
     }
-    
+
     // Serve index.html for SPA routing
     const indexFile = path.join(clientPath, 'index.html');
     if (fs.existsSync(indexFile)) {

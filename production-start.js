@@ -1,4 +1,3 @@
-
 #!/usr/bin/env node
 
 import { existsSync } from 'node:fs';

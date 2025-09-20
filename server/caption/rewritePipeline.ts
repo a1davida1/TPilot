@@ -1,3 +1,4 @@
+
 import fs from "node:fs/promises";
 import path from "node:path";
 import { textModel, visionModel } from "../lib/gemini";
@@ -19,6 +20,114 @@ async function b64(url:string){ const r=await fetch(url); if(!r.ok) throw new Er
 function stripToJSON(txt:string){ const i=Math.min(...[txt.indexOf("{"),txt.indexOf("[")].filter(x=>x>=0));
   const j=Math.max(txt.lastIndexOf("}"),txt.lastIndexOf("]")); return JSON.parse((i>=0&&j>=0)?txt.slice(i,j+1):txt); }
 
+const brandStopwords = new Set(["And", "For", "With", "Your", "This", "That", "The"]);
+
+interface EntityMatch {
+  token: string;
+  index: number;
+  length: number;
+  priority: number;
+}
+
+interface MatchOptions {
+  protect?: boolean;
+  filter?: (match: RegExpMatchArray) => boolean;
+  transform?: (match: RegExpMatchArray) => string;
+}
+
+const withinRange = (index: number, ranges: Array<{ start: number; end: number }>) =>
+  ranges.some((range) => index >= range.start && index < range.end);
+
+export function extractKeyEntities(existingCaption: string): string[] {
+  if (!existingCaption) {
+    return [];
+  }
+
+  const matches: EntityMatch[] = [];
+  const protectedRanges: Array<{ start: number; end: number }> = [];
+
+  const collectMatches = (regex: RegExp, priority: number, options?: MatchOptions) => {
+    for (const match of existingCaption.matchAll(regex)) {
+      if (!match[0]) {
+        continue;
+      }
+      if (options?.filter && !options.filter(match)) {
+        continue;
+      }
+      const index = match.index ?? existingCaption.indexOf(match[0]);
+      if (index < 0) {
+        continue;
+      }
+      const token = options?.transform ? options.transform(match) : match[0];
+      if (!token.trim()) {
+        continue;
+      }
+      matches.push({ token, index, length: token.length, priority });
+      if (options?.protect) {
+        protectedRanges.push({ start: index, end: index + token.length });
+      }
+    }
+  };
+
+  collectMatches(/https?:\/\/[^\s"']+|www\.[^\s"']+/gi, 0, { protect: true });
+  collectMatches(/@[A-Za-z0-9_.]+/g, 1, { protect: true });
+  collectMatches(/#[A-Za-z0-9_]+/g, 2, { protect: true });
+  collectMatches(/"[^"]+"|"[^"]+"|'[^']+'|'[^']+'/g, 3, { protect: true });
+  collectMatches(/\b\d{1,4}(?:[\/.-]\d{1,4})+\b/g, 4, { protect: true });
+  collectMatches(/\b\d+(?:[.,]\d+)?%?\b/g, 5, {
+    filter: (match) => {
+      const index = match.index ?? 0;
+      return !withinRange(index, protectedRanges);
+    }
+  });
+  collectMatches(/\b[\w&-]*(?:®|™|©)\b/g, 6, {
+    filter: (match) => {
+      const index = match.index ?? 0;
+      return !withinRange(index, protectedRanges);
+    }
+  });
+  collectMatches(/\b[A-Z][A-Za-z0-9]*(?:[A-Z][A-Za-z0-9]+)+\b/g, 7, {
+    filter: (match) => {
+      const index = match.index ?? 0;
+      if (index > 0) {
+        const prev = existingCaption[index - 1];
+        if (prev === '@' || prev === '#') {
+          return false;
+        }
+      }
+      return !withinRange(index, protectedRanges);
+    }
+  });
+  collectMatches(/\b(?:[A-Z][a-z0-9]+(?:\s+[A-Z][a-z0-9]+){1,2})\b/g, 8, {
+    filter: (match) => {
+      const index = match.index ?? 0;
+      if (withinRange(index, protectedRanges)) {
+        return false;
+      }
+      const words = match[0].split(/\s+/u);
+      return words.some((word) => word.length > 3 && !brandStopwords.has(word));
+    }
+  });
+
+  matches.sort((a, b) => (a.index - b.index) || (a.priority - b.priority));
+
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const match of matches) {
+    const normalized = match.token.trim();
+    if (!normalized) {
+      continue;
+    }
+    if (seen.has(normalized)) {
+      continue;
+    }
+    seen.add(normalized);
+    result.push(normalized);
+  }
+
+  return result;
+}
+
 export async function extractFacts(imageUrl:string){
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("extract.txt");
   const img={ inlineData:{ data: await b64(imageUrl), mimeType:"image/jpeg" } };
@@ -38,11 +147,15 @@ type RewriteVariantsParams = {
   facts?:Record<string, unknown>;
   hint?:string;
   nsfw?:boolean;
+  doNotDrop?: string[];
 } & ToneOptions;
 
 export async function variantsRewrite(params:RewriteVariantsParams){
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rewrite.txt");
-  const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\n${params.style ? `STYLE: ${params.style}\n` : ''}${params.mood ? `MOOD: ${params.mood}\n` : ''}EXISTING_CAPTION: "${params.existingCaption}"${params.facts?`\nIMAGE_FACTS: ${JSON.stringify(params.facts)}`:""}\nNSFW: ${params.nsfw || false}${params.hint?`\nHINT:${params.hint}`:""}`;
+  const tone = extractToneOptions(params);
+  const mandatory = params.doNotDrop && params.doNotDrop.length>0 ? `\nMANDATORY TOKENS: ${params.doNotDrop.join(' | ')}` : '';
+  const hint = params.hint ? `\nHINT: ${params.hint}` : '';
+  const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\n${params.style ? `STYLE: ${params.style}\n` : ''}${params.mood ? `MOOD: ${params.mood}\n` : ''}EXISTING_CAPTION: "${params.existingCaption}"${params.facts?`\nIMAGE_FACTS: ${JSON.stringify(params.facts)}`:""}\nNSFW: ${params.nsfw || false}${mandatory}${hint}`;
   let res;
   try {
     res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+user }]);
@@ -150,20 +263,78 @@ export async function pipelineRewrite({ platform, voice="flirty_playful", existi
   try {
     const tone = extractToneOptions(toneRest);
     const facts = imageUrl ? await extractFacts(imageUrl) : undefined;
-    let variants = await variantsRewrite({ platform, voice, existingCaption, facts, nsfw, ...tone });
+    const doNotDrop = extractKeyEntities(existingCaption);
+    let variants = await variantsRewrite({ platform, voice, existingCaption, facts, nsfw, doNotDrop, ...tone });
     let ranked = await rankAndSelect(variants);
     let out = ranked.final;
-    
-    // Ensure rewritten caption is longer and more engaging than original
-    if(out.caption.length <= existingCaption.length) {
-      out.caption = existingCaption + " ✨ Enhanced with engaging content and call-to-action that drives better engagement!";
-    }
+
+    const enforceMandatoryTokens = async (extraHint?: string) => {
+      if (doNotDrop.length === 0) {
+        return;
+      }
+      const missing = doNotDrop.filter((token) => !out.caption.includes(token));
+      if (missing.length === 0) {
+        return;
+      }
+      const messageParts = [
+        extraHint,
+        `ABSOLUTE RULE: Keep these tokens verbatim in the caption: ${doNotDrop.join(', ')}`,
+        `Previous attempt removed: ${missing.join(', ')}`
+      ].filter((part): part is string => Boolean(part && part.trim()));
+      variants = await variantsRewrite({
+        platform,
+        voice,
+        existingCaption,
+        facts,
+        nsfw,
+        doNotDrop,
+        hint: messageParts.join(' '),
+        ...tone
+      });
+      ranked = await rankAndSelect(variants);
+      out = ranked.final;
+      const retryMissing = doNotDrop.filter((token) => !out.caption.includes(token));
+      if (retryMissing.length > 0) {
+        throw new Error(`Missing mandatory tokens after retry: ${retryMissing.join(', ')}`);
+      }
+    };
+
+    await enforceMandatoryTokens();
+
+    const retryHints: string[] = [
+      "Make it 20% longer with a natural hook and CTA; keep it human, no sparkle clichés.",
+      facts
+        ? "Rewrite with concrete imagery from IMAGE_FACTS and stretch it another 20%; keep the CTA grounded and specific."
+        : "Rewrite with concrete sensory detail and extend it by roughly 20%; keep the CTA specific and natural."
+    ];
+
+    const runRewrite = async (hint?: string) => {
+      variants = await variantsRewrite({ platform, voice, existingCaption, facts, hint, nsfw, doNotDrop, ...tone });
+      ranked = await rankAndSelect(variants);
+      out = ranked.final;
+    };
+
+    const ensureLongerCaption = async (baseHint?: string) => {
+      if (out.caption.length > existingCaption.length) {
+        return;
+      }
+      for (const hint of retryHints) {
+        const combinedHint = baseHint ? `${baseHint} ${hint}` : hint;
+        await runRewrite(combinedHint);
+        if (out.caption.length > existingCaption.length) {
+          return;
+        }
+      }
+      throw new Error("rewrite-too-short");
+    };
+
+    await ensureLongerCaption();
 
     const err = platformChecks(platform, out);
     if (err) {
-      variants = await variantsRewrite({ platform, voice, existingCaption, facts, nsfw, ...tone, hint:`Fix: ${err}. Be specific and engaging.` });
-      ranked = await rankAndSelect(variants);
-      out = ranked.final;
+      await runRewrite(`Fix: ${err}. Be specific and engaging.`);
+      await ensureLongerCaption(`Fix: ${err}. Be specific and engaging.`);
+      await enforceMandatoryTokens(`Fix platform issue: ${err}.`);
     }
 
     return { provider: 'gemini', facts, variants, ranked, final: out };
