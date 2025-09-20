@@ -1,4 +1,3 @@
-
 import fs from "node:fs/promises";
 import path from "node:path";
 import { textModel, visionModel } from "../lib/gemini";
@@ -216,7 +215,7 @@ export async function rankAndSelect(variants: unknown[]){
     throw error;
   }
   let json=stripToJSON(res.response.text()) as unknown;
-  
+
   // Handle case where AI returns array instead of ranking object
   if(Array.isArray(json)) {
     const winner = json[0] || variants[0];
@@ -227,7 +226,7 @@ export async function rankAndSelect(variants: unknown[]){
       final: winner
     };
   }
-  
+
   if((json as Record<string, unknown>).final){
     const final = (json as { final: Record<string, unknown> }).final;
     final.safety_level = normalizeSafetyLevel(

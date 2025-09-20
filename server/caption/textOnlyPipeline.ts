@@ -9,7 +9,7 @@ async function load(p:string){ return fs.readFile(path.join(process.cwd(),"promp
 function stripToJSON(txt:string){ const i=Math.min(...[txt.indexOf("{"),txt.indexOf("[")].filter(x=>x>=0));
   const j=Math.max(txt.lastIndexOf("}"),txt.lastIndexOf("]")); return JSON.parse((i>=0&&j>=0)?txt.slice(i,j+1):txt); }
 
-type TextOnlyVariantsParams = {
+type TextOnlyVariantParams = {
   platform:"instagram"|"x"|"reddit"|"tiktok";
   voice:string;
   theme:string;
@@ -18,7 +18,7 @@ type TextOnlyVariantsParams = {
   nsfw?:boolean;
 } & ToneOptions;
 
-export async function generateVariantsTextOnly(params:TextOnlyVariantsParams){
+export async function generateVariantsTextOnly(params:TextOnlyVariantParams){
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("variants_textonly.txt");
   const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\n${params.style ? `STYLE: ${params.style}\n` : ''}${params.mood ? `MOOD: ${params.mood}\n` : ''}THEME: "${params.theme}"\nCONTEXT: "${params.context||''}"\nNSFW: ${params.nsfw || false}${params.hint?`\nHINT:${params.hint}`:""}`;
   const res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+user }]);
@@ -76,7 +76,7 @@ export async function rankAndSelect(variants: unknown[], params?: { platform?: s
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rank.txt");
   const res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+JSON.stringify(variants) }]);
   let json=stripToJSON(res.response.text()) as unknown;
-  
+
   // Handle case where AI returns array instead of ranking object
   if(Array.isArray(json)) {
     const winner = json[0] || variants[0];
@@ -87,7 +87,7 @@ export async function rankAndSelect(variants: unknown[], params?: { platform?: s
       final: winner
     };
   }
-  
+
   // Fix safety_level in final result
   if((json as Record<string, unknown>).final){
     const final = (json as { final: Record<string, unknown> }).final;
@@ -119,12 +119,11 @@ type TextOnlyPipelineArgs = {
 } & ToneOptions;
 
 /**
- * Text-only caption generation pipeline for content without images.
+ * Text-only caption pipeline for brainstorming without an image upload.
  *
  * @remarks
- * Persona controls such as `style`, `mood`, and future tone keys must persist through
- * retries. When platform validation fails we re-run Gemini with the exact same tone
- * payload so the caller's requested persona stays intact.
+ * Persona settings (`style`, `mood`, etc.) are forwarded to every Gemini retry so the
+ * voice remains consistent even when a platform validation retry is required.
  */
 export async function pipelineTextOnly({ platform, voice="flirty_playful", theme, context, nsfw=false, ...toneRest }:TextOnlyPipelineArgs){
   const tone = extractToneOptions(toneRest);

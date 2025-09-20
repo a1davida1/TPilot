@@ -58,37 +58,37 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
   try {
     console.log('Starting fact extraction for image:', imageUrl.substring(0, 100) + '...');
     const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("extract.txt");
-    
+
     // Handle data URLs differently from regular URLs
     let imageData: string;
     let mimeType = "image/jpeg";
-    
+
     if (imageUrl.startsWith('data:')) {
       // Extract base64 data from data URL - use indexOf to find first comma only
       const commaIndex = imageUrl.indexOf(',');
       if (commaIndex === -1) {
         throw new Error('Invalid data URL format - missing comma separator');
       }
-      
+
       const header = imageUrl.substring(0, commaIndex);
       imageData = imageUrl.substring(commaIndex + 1);
-      
+
       // Extract mime type from header
       const mimeMatch = header.match(/data:([^;]+)/);
       if (mimeMatch) {
         mimeType = mimeMatch[1];
       }
-      
+
       // Base64 data from data URLs should be used as-is
       // Note: decodeURIComponent can corrupt valid base64 strings
-      
+
       // Validate and clean Base64 data
       imageData = imageData.replace(/\s/g, ''); // Remove any whitespace
-      
+
       // Re-encode to ensure proper Base64 formatting and padding
       imageData = Buffer.from(imageData, 'base64').toString('base64');
       imageData += '='.repeat((4 - imageData.length % 4) % 4); // ensure padding
-      
+
       // Test Base64 validity by attempting to decode it
       let decodedBuffer: Buffer;
       try {
@@ -97,7 +97,7 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
         console.error('Base64 validation failed:', base64Error);
         throw new InvalidImageError(`Invalid Base64 data format: ${base64Error instanceof Error ? base64Error.message : String(base64Error)}`);
       }
-      
+
       // Validate image signatures for common formats
       if (mimeType === 'image/png') {
         // PNG signature: 89 50 4E 47 0D 0A 1A 0A
@@ -116,7 +116,7 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
           throw new InvalidImageError('Invalid JPEG image signature');
         }
       }
-      
+
       // Additional validation for WebP format
       if (mimeType === 'image/webp') {
         console.log('WebP format detected, validating header...');
@@ -125,7 +125,7 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
           console.warn('WebP validation warning: Missing RIFF header');
         }
       }
-      
+
       // GIF format validation
       if (mimeType === 'image/gif') {
         console.log('GIF format detected, validating header...');
@@ -134,23 +134,23 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
           console.warn('GIF validation warning: Invalid GIF header');
           throw new InvalidImageError('Invalid GIF image format');
         }
-        
+
         // Note: Gemini sometimes has issues with animated GIFs
         // For GIFs, we'll use OpenAI fallback more aggressively
         if (decodedBuffer.length > 5000000) { // ~3.8MB base64 encoded
           console.log('Large GIF detected, may need fallback processing');
         }
       }
-      
+
       // Check if Base64 data is reasonable length (not too short or extremely long)
       if (imageData.length < 100) {
         throw new InvalidImageError('Base64 data appears to be too short');
       }
-      
+
       if (imageData.length > 10000000) { // ~7.5MB base64 encoded
         throw new InvalidImageError('Image data too large for processing');
       }
-      
+
       console.log(`Processing data URL with mime type: ${mimeType}, data length: ${imageData.length}`);
       console.log(`Base64 starts with: ${imageData.substring(0, 50)}...`);
     } else {
@@ -162,12 +162,12 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
 
     const img = { inlineData: { data: imageData, mimeType } };
     console.log('Sending to Gemini for fact extraction...');
-    
+
     // For GIFs, try Gemini but be prepared for fallback
     if (mimeType === 'image/gif') {
       console.log('Processing GIF - Gemini support may be limited');
     }
-    
+
     try {
       const res = await visionModel.generateContent([{text: sys + "\n" + guard + "\n" + prompt}, img]);
       const result = stripToJSON(res.response.text()) as Record<string, unknown>;
@@ -175,7 +175,7 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
       return result;
     } catch (error) {
       console.error('Gemini visionModel.generateContent failed:', error);
-      
+
       // For GIFs that fail Gemini processing, provide better fallback facts
       if (mimeType === 'image/gif') {
         console.log('GIF processing failed in Gemini, using enhanced fallback facts');
@@ -190,7 +190,7 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
           style: 'animated'
         };
       }
-      
+
       throw error;
     }
   } catch (error) {
@@ -271,7 +271,7 @@ export async function rankAndSelect(variants: z.infer<typeof CaptionArray>): Pro
     throw error;
   }
   let json = stripToJSON(res.response.text()) as unknown;
-  
+
   // Handle case where AI returns array instead of ranking object
   if(Array.isArray(json)) {
     const winner = json[0] || variants[0];
@@ -282,7 +282,7 @@ export async function rankAndSelect(variants: z.infer<typeof CaptionArray>): Pro
       final: winner
     };
   }
-  
+
   // Accept any safety_level in final result
   if((json as Record<string, unknown>).final){
     const final = (json as { final: Record<string, unknown> }).final;
