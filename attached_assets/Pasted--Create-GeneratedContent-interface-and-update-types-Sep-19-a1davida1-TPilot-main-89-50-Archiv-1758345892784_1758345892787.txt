@@ -1,0 +1,604 @@
+
+Create GeneratedContent interface and update types
+Sep 19
+·
+a1davida1/TPilot
+·
+main
++89
+-50
+
+Archive
+
+Share
+
+Create PR
+
+
+1. Create a `GeneratedContent` interface (either in the same file or `client/src/components/enhanced-ai-generator.types.ts`) describing `titles`, `content`, `contentSource`, `aiProvider`, `upgradeMessage`, etc.
+2. Replace the `useState<any>` and `(data as any)` casts with the typed interface, ensuring optional chaining handles absent fields.
+3. Execute `npm run typecheck` followed by `npm test` to confirm the generator remains functional.
+Copy
+Summary
+
+Added GeneratedContent and GenerateContentVariables interfaces that capture generated titles, content, provider metadata, upgrade messaging, and request parameters for the enhanced AI generator workflow.
+
+Refactored EnhancedAIGenerator to rely on the new typings, remove any usage, normalize title handling, and strongly type the mutation flow and state updates while preserving existing UI behavior.
+
+Validated query keys inside the shared query client helper before coercing them to strings, preventing unsafe casts when building API requests.
+
+Testing
+
+✅ npm run typecheck
+
+❌ npm run lint (fails due to numerous pre-existing lint violations across the repository that are unrelated to this change)
+
+❌ npm test (fails because existing suites require missing services/configuration, resulting in widespread repository failures)
+
+
+Files (3)
+
+client/src/components/enhanced-ai-generator.tsx
++53
+-48
+
+client/src/components/enhanced-ai-generator.types.ts
+New
+
+client/src/lib/queryClient.ts
++4
+-2
+
+
+
+Ask
+
+Code
+Diff
+Logs
+
+client/src/components/enhanced-ai-generator.tsx
++53
+-48
+
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Sparkles, Brain, Zap, DollarSign, Clock, TrendingUp, RefreshCw, Settings, Copy, Check, Hash } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import type { ContentGeneration } from "@shared/schema.js";
+import type { GenerateContentVariables, GeneratedContent } from "./enhanced-ai-generator.types";
+
+interface EnhancedAIGeneratorProps {
+  onContentGenerated: (generation: ContentGeneration) => void;
+  onContentGenerated: (generation: GeneratedContent) => void;
+  isGuestMode?: boolean;
+}
+
+interface GeneratedContentType {
+  titles?: string[];
+  content?: string;
+  photoInstructions?: string | object;
+}
+
+export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }: EnhancedAIGeneratorProps) {
+  const [customPrompt, setCustomPrompt] = useState("");
+  const [platform, setPlatform] = useState("reddit");
+  const [subreddit, setSubreddit] = useState("");
+  const [allowsPromotion, setAllowsPromotion] = useState("moderate");
+  const [allowsPromotion, setAllowsPromotion] = useState<GenerateContentVariables["allowsPromotion"]>("moderate");
+  const [useAdvancedSettings, setUseAdvancedSettings] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState("auto");
+  
+  // New categorization system
+  const [photoType, setPhotoType] = useState("casual");
+  const [textTone, setTextTone] = useState("confident");
+  const [includePromotion, setIncludePromotion] = useState(true);
+  const [includeHashtags, setIncludeHashtags] = useState(true);
+  const [selectedHashtags, setSelectedHashtags] = useState<string[]>([]);
+  const [generatedContent, setGeneratedContent] = useState<any>(null);
+  const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
+  
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Photo type categories with humor
+  const photoTypes = [
+    { id: 'casual', label: 'Casual & Cute', icon: '😊' },
+    { id: 'workout', label: 'Workout Vibes', icon: '💪' },
+    { id: 'shower', label: 'Shower Fresh', icon: '🚿' },
+    { id: 'showing-skin', label: 'Showing a Lil Skin', icon: '😘' },
+    { id: 'spicy', label: 'XX Spicy', icon: '🌶️' },
+    { id: 'very-spicy', label: 'XXX Very Spicy', icon: '🔥' },
+    { id: 'all-xs', label: 'All the X\'s & Then Some!', icon: '🔥💥' }
+  ];
+
+  const textTones = [
+    { id: 'confident', label: 'Confident & Bold' },
+    { id: 'playful', label: 'Playful & Flirty' },
+    { id: 'mysterious', label: 'Mysterious & Alluring' },
+    { id: 'authentic', label: 'Authentic & Real' },
+    { id: 'sassy', label: 'Sassy & Fun' }
+  ];
+
+  const defaultHashtags = [
+    '#selfie', '#confidence', '#beautiful', '#mood', '#vibes',
+@@ -112,68 +106,66 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
+      id: 'bedroom-scene',
+      title: 'Cozy Bedroom',
+      icon: '🛏️',
+      prompt: 'Intimate bedroom content with cozy and inviting atmosphere',
+      description: 'Intimate, cozy bedroom vibes',
+      color: 'bg-gradient-to-br from-amber-50 to-orange-100 hover:from-amber-100 hover:to-orange-200 text-amber-900 border-2 border-amber-200 hover:border-amber-300 shadow-sm hover:shadow-md'
+    },
+    {
+      id: 'outdoor-adventure',
+      title: 'Nature Beauty',
+      icon: '🌸',
+      prompt: 'Adventurous outdoor content with natural beauty and freedom',
+      description: 'Beautiful outdoor & nature shots',
+      color: 'bg-gradient-to-br from-emerald-50 to-teal-100 hover:from-emerald-100 hover:to-teal-200 text-emerald-900 border-2 border-emerald-200 hover:border-emerald-300 shadow-sm hover:shadow-md'
+    },
+    {
+      id: 'professional-tease',
+      title: 'Office Chic',
+      icon: '💼',
+      prompt: 'Professional yet seductive content balancing sophistication with allure',
+      description: 'Sophisticated office/professional looks',
+      color: 'bg-gradient-to-br from-slate-50 to-gray-100 hover:from-slate-100 hover:to-gray-200 text-slate-900 border-2 border-slate-200 hover:border-slate-300 shadow-sm hover:shadow-md'
+    }
+  ];
+
+  interface GeneratedContentType {
+    titles?: string[];
+    content?: string;
+    photoInstructions?: string | object;
+  }
+
+  const generateContentMutation = useMutation({
+    mutationFn: async (data: unknown) => {
+  const generateContentMutation = useMutation<GeneratedContent, Error, GenerateContentVariables>({
+    mutationFn: async (data) => {
+      const effectivePrompt = data.customPrompt || data.prompt || "";
+      const response = await apiRequest("POST", "/api/generate-unified", {
+        mode: 'text',
+        platform: (data as any).platform || 'reddit',
+        style: (data as any).style || 'confident',
+        theme: (data as any).theme || 'general',
+        prompt: (data as any).customPrompt || (data as any).prompt,
+        customInstructions: (data as any).customPrompt || (data as any).prompt,
+        includePromotion: (data as any).includePromotion || (data as any).allowsPromotion
+        mode: "text",
+        platform: data.platform || "reddit",
+        style: data.style || "confident",
+        theme: data.theme || "general",
+        prompt: effectivePrompt,
+        customInstructions: effectivePrompt,
+        includePromotion:
+          typeof data.includePromotion === "boolean"
+            ? data.includePromotion
+            : data.allowsPromotion !== "none"
+      });
+      return await response.json();
+      return (await response.json()) as GeneratedContent;
+    },
+    onSuccess: (data) => {
+      setGeneratedContent(data);
+      onContentGenerated(data);
+      
+      // Check if watermark was added (free tier)
+      const hasWatermark = data.content?.includes('[via ThottoPilot]') || 
+                          data.titles?.[0]?.includes('[via ThottoPilot]');
+      
+      const description = data.contentSource === 'template' 
+        ? `Using pre-generated content${hasWatermark ? ' (with watermark)' : ''}`
+        : `Generated with ${data.aiProvider || 'service'}`;
+      
+      toast({
+        title: "Content Generated Successfully!",
+        description: description
+      });
+      
+      // Show upgrade prompt for free/basic users
+      if (data.upgradeMessage) {
+        setTimeout(() => {
+          toast({
+            title: "Want More?",
+            description: data.upgradeMessage
+          });
+@@ -187,104 +179,112 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
+        title: "Generation Failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleGenerate = () => {
+    if (!customPrompt.trim()) {
+      toast({
+        title: "Prompt Required", 
+        description: "Please enter a prompt for content generation",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const hashtagText = includeHashtags && selectedHashtags.length > 0 
+      ? ` Include these hashtags: ${selectedHashtags.join(' ')}`
+      : '';
+
+    generateContentMutation.mutate({
+      platform,
+      customPrompt: customPrompt + hashtagText,
+      subreddit: subreddit || undefined,
+      allowsPromotion: includePromotion ? allowsPromotion : 'none',
+      allowsPromotion: includePromotion ? allowsPromotion : "none",
+      photoType,
+      textTone,
+      includeHashtags,
+      selectedHashtags,
+      preferredProvider: selectedProvider !== "auto" ? selectedProvider : undefined
+      preferredProvider: selectedProvider !== "auto" ? selectedProvider : undefined,
+      includePromotion
+    });
+  };
+
+  const handlePresetGenerate = (preset: typeof contentPresets[0]) => {
+    const hashtagText = includeHashtags && selectedHashtags.length > 0 
+      ? ` Include these hashtags: ${selectedHashtags.join(' ')}`
+      : '';
+
+    generateContentMutation.mutate({
+      platform,
+      customPrompt: preset.prompt + hashtagText,
+      subreddit: subreddit || undefined,
+      allowsPromotion: includePromotion ? allowsPromotion : 'none',
+      allowsPromotion: includePromotion ? allowsPromotion : "none",
+      photoType,
+      textTone,
+      includeHashtags,
+      selectedHashtags,
+      style: preset.id,
+      theme: preset.title.toLowerCase(),
+      preferredProvider: selectedProvider !== "auto" ? selectedProvider : undefined
+      preferredProvider: selectedProvider !== "auto" ? selectedProvider : undefined,
+      includePromotion
+    });
+  };
+
+  const toggleHashtag = (hashtag: string) => {
+    setSelectedHashtags(prev => 
+      prev.includes(hashtag) 
+    setSelectedHashtags(prev =>
+      prev.includes(hashtag)
+        ? prev.filter(h => h !== hashtag)
+        : [...prev, hashtag]
+    );
+  };
+
+
+  const copyToClipboard = async (text: string, type: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({
+        title: "Copied!",
+        description: `${type} copied to clipboard`
+      });
+    } catch (err) {
+      toast({
+        title: "Copy Failed",
+        description: "Unable to copy to clipboard",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const normalizedTitles = generatedContent?.titles
+    ? Array.isArray(generatedContent.titles)
+      ? generatedContent.titles
+      : [generatedContent.titles]
+    : [];
+
+  // Cost information hidden from user interface - used internally for optimization
+
+  return (
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center">
+            <Brain className="mr-2 h-5 w-5 text-pink-600" />
+            <span className="bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
+              Enhanced Content Creator
+            </span>
+          </div>
+          {isGuestMode && (
+            <Badge variant="secondary" className="bg-pink-100 text-pink-800">
+              Guest Mode
+            </Badge>
+          )}
+        </CardTitle>
+        <CardDescription>
+          Generate engaging content optimized for women creators
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Quick Style Presets */}
+        <div className="space-y-4">
+@@ -458,146 +458,151 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
+                  <SelectContent>
+                    <SelectItem value="auto">Auto (Optimized)</SelectItem>
+                    <SelectItem value="gemini">Gemini Flash</SelectItem>
+                    <SelectItem value="claude">Claude Haiku</SelectItem>
+                    <SelectItem value="openai">OpenAI GPT-4o</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {platform === "reddit" && (
+              <div className="space-y-2">
+                <Label>Subreddit (optional)</Label>
+                <input
+                  type="text"
+                  value={subreddit}
+                  onChange={(e) => setSubreddit(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                />
+              </div>
+            )}
+
+            {includePromotion && (
+              <div className="space-y-2">
+                <Label>Promotion Style</Label>
+                <Select value={allowsPromotion} onValueChange={setAllowsPromotion}>
+                <Select
+                  value={allowsPromotion}
+                  onValueChange={(value) =>
+                    setAllowsPromotion(value as GenerateContentVariables["allowsPromotion"])
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="subtle">Subtle - Natural engagement</SelectItem>
+                    <SelectItem value="moderate">Moderate - Balanced approach</SelectItem>
+                    <SelectItem value="direct">Direct - Clear promotion</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Generate Button */}
+        <Button
+          onClick={handleGenerate}
+          disabled={generateContentMutation.isPending}
+          className="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white font-medium"
+          size="lg"
+        >
+          {generateContentMutation.isPending ? (
+            <>
+              <Brain className="mr-2 h-4 w-4 animate-spin" />
+              Generating Content...
+            </>
+          ) : (
+            <>
+              <Sparkles className="mr-2 h-4 w-4" />
+              Generate Content
+            </>
+          )}
+        </Button>
+
+        {/* Generated Content Output */}
+        {generatedContent && (
+          <div className="space-y-4 p-4 bg-gradient-to-br from-pink-50 to-purple-50 rounded-lg border border-pink-200">
+            <h4 className="font-semibold text-lg text-pink-800">Generated Content</h4>
+            
+
+            {/* Titles */}
+            {(generatedContent as GeneratedContentType).titles && (generatedContent as GeneratedContentType).titles!.length > 0 && (
+            {normalizedTitles.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-pink-700">Titles:</Label>
+                {(Array.isArray((generatedContent as GeneratedContentType).titles) ? (generatedContent as GeneratedContentType).titles! : [(generatedContent as GeneratedContentType).titles!]).map((title: any, index: number) => (
+                {normalizedTitles.map((title, index) => (
+                  <div key={index} className="relative p-3 bg-white rounded-lg border group">
+                    <p className="text-sm font-medium pr-8">{title}</p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => copyToClipboard(title, 'Title')}
+                      onClick={() => copyToClipboard(title, "Title")}
+                      className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Content */}
+            {(generatedContent as any).content && (
+            {generatedContent.content && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-purple-700">Content:</Label>
+                <div className="relative p-3 bg-white rounded-lg border group">
+                  <p className="text-sm whitespace-pre-wrap pr-8">{(generatedContent as any).content}</p>
+                  <p className="text-sm whitespace-pre-wrap pr-8">{generatedContent.content}</p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard((generatedContent as any).content, 'Content')}
+                    onClick={() => copyToClipboard(generatedContent.content ?? "", "Content")}
+                    className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Photo Instructions */}
+            {(generatedContent as any).photoInstructions && (
+            {generatedContent.photoInstructions && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-blue-700">Photo Instructions:</Label>
+                <div className="relative p-3 bg-white rounded-lg border group">
+                  <p className="text-sm whitespace-pre-wrap pr-8">
+                    {typeof (generatedContent as any).photoInstructions === 'string' 
+                      ? (generatedContent as any).photoInstructions 
+                      : JSON.stringify((generatedContent as any).photoInstructions, null, 2)}
+                    {typeof generatedContent.photoInstructions === "string"
+                      ? generatedContent.photoInstructions
+                      : JSON.stringify(generatedContent.photoInstructions, null, 2)}
+                  </p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard(
+                      typeof (generatedContent as any).photoInstructions === 'string' 
+                        ? (generatedContent as any).photoInstructions 
+                        : JSON.stringify((generatedContent as any).photoInstructions, null, 2), 
+                      'Photo Instructions'
+                      typeof generatedContent.photoInstructions === "string"
+                        ? generatedContent.photoInstructions
+                        : JSON.stringify(generatedContent.photoInstructions, null, 2),
+                      "Photo Instructions"
+                    )}
+                    className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Guest Mode Limitation */}
+        {isGuestMode && (
+          <div className="text-center p-4 bg-pink-50 border border-pink-200 rounded-lg">
+            <p className="text-sm text-pink-700">
+              <a href="/login" className="text-pink-800 underline ml-1 font-medium">
+                Sign up for full access
+              </a>
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+client/src/components/enhanced-ai-generator.types.ts
+New
++32
+-0
+
+import type { ContentGeneration } from "@shared/schema.js";
+
+export interface GeneratedContent
+  extends Partial<Omit<ContentGeneration, "titles" | "photoInstructions">> {
+  titles?: string[] | string;
+  content?: string;
+  photoInstructions?: string | Record<string, unknown>;
+  contentSource?: string;
+  aiProvider?: string;
+  upgradeMessage?: string;
+  estimatedCost?: number;
+  userTier?: string;
+  variationCount?: number;
+  apiStatus?: string;
+  quotaExceeded?: boolean;
+}
+
+export interface GenerateContentVariables {
+  platform: string;
+  customPrompt: string;
+  subreddit?: string;
+  allowsPromotion: "none" | "subtle" | "moderate" | "direct";
+  photoType: string;
+  textTone: string;
+  includeHashtags: boolean;
+  selectedHashtags: string[];
+  preferredProvider?: string;
+  style?: string;
+  theme?: string;
+  prompt?: string;
+  includePromotion?: boolean;
+}
+client/src/lib/queryClient.ts
++4
+-2
+
+@@ -88,56 +88,58 @@ export async function apiRequest(
+
+  if (data instanceof FormData) {
+    body = data;
+  } else if (data !== undefined) {
+    headers["Content-Type"] = "application/json";
+    body = JSON.stringify(data);
+  }
+
+  const res = await fetch(url, {
+    method,
+    headers,
+    body,
+    credentials: "include", // Cookie-based auth only
+  });
+
+  await throwIfResNotOk(res);
+  return res;
+}
+
+type UnauthorizedBehavior = "returnNull" | "throw";
+export const getQueryFn: <T = unknown>(options: {
+  on401: UnauthorizedBehavior;
+}) => QueryFunction<T> =
+  ({ on401: unauthorizedBehavior }) =>
+  async ({ queryKey, signal }) => {
+    const url = Array.isArray(queryKey) ? queryKey[0] as string : queryKey as string;
+    const maybeUrl = Array.isArray(queryKey) ? queryKey[0] : queryKey;
+
+    if (!url || typeof url !== 'string') {
+    if (!maybeUrl || typeof maybeUrl !== 'string') {
+      throw new Error('Invalid query key');
+    }
+
+    const url = maybeUrl;
+
+    try {
+      // Get auth token from cookies
+      const authToken = getAuthToken();
+
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Include Authorization header if we have a token
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      }
+
+      const response = await fetch(url, {
+        signal,
+        credentials: 'include', // Always include cookies
+        headers
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const error: ApiError = new Error(errorData.message || response.statusText) as ApiError;
+        error.status = response.status;
+        error.statusText = response.statusText;
+        error.isAuthError = response.status === 401 || response.status === 403;
