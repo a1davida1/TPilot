@@ -1,0 +1,82 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/server/app.ts b/server/app.ts
+index 053cc4b77cb17367b2ec822602309eb1a242ea36..7423055b39e434461d12109752e2e0bce24f2536 100644
+--- a/server/app.ts
++++ b/server/app.ts
+@@ -142,66 +142,66 @@ async function configureStaticAssets(
+     return;
+   }
+ 
+   // Debug middleware to trace all requests
+   app.use((req, res, next) => {
+     if (req.path.startsWith('/assets/')) {
+       logger.info(`Asset request received: ${req.method} ${req.path}`);
+     }
+     next();
+   });
+ 
+   // IMPORTANT: Serve static files BEFORE Vite setup to ensure they're accessible
+   // Set index: false to prevent serving index.html for directory requests to avoid conflicts
+   app.use(express.static(clientPath, {
+     index: false,
+     setHeaders: (res, path) => {
+       logger.info(`Static file served: ${path}`);
+       if (path.endsWith('.js')) {
+         res.setHeader('Content-Type', 'application/javascript');
+       } else if (path.endsWith('.css')) {
+         res.setHeader('Content-Type', 'text/css');
+       }
+     }
+   }));
+   
+-  // Skip Vite in development unless explicitly enabled for diagnostics
+-  const shouldEnableVite =
+-    enableVite &&
+-    app.get('env') === 'development' &&
+-    process.env.ENABLE_VITE_DEV === 'true';
++  // Enable Vite in development by default; allow opt-out via ENABLE_VITE_DEV
++  const isDevelopment = app.get('env') === 'development';
++  const viteDevFlag = process.env.ENABLE_VITE_DEV?.toLowerCase();
++  const isViteExplicitlyDisabled = viteDevFlag === 'false' || viteDevFlag === '0';
++  const shouldEnableVite = enableVite && isDevelopment && !isViteExplicitlyDisabled;
+ 
+   if (shouldEnableVite) {
+     try {
+       const { setupVite } = await import('./vite.js');
+       await setupVite(app, server);
+       logger.info('Vite development server configured');
+     } catch (error) {
+       logger.warn('Could not setup Vite in development mode:', error);
+     }
+-  } else if (enableVite && app.get('env') === 'development') {
+-    logger.info('Vite development server disabled; set ENABLE_VITE_DEV=true to opt-in.');
++  } else if (enableVite && isDevelopment) {
++    logger.info('Vite development server disabled via ENABLE_VITE_DEV flag. Remove or set to true to re-enable.');
+   }
+   
+   // SPA fallback - serve index.html for all non-API routes
+   app.get('*', (req, res, next) => {
+     // Let API/auth/webhook/assets routes fall through to 404 handler or static middleware
+     if (req.path.startsWith('/api/') || 
+         req.path.startsWith('/auth/') || 
+         req.path.startsWith('/webhook/') ||
+         req.path.startsWith('/assets/')) {
+       logger.debug(`Asset request bypassed SPA fallback: ${req.path}`);
+       return next();
+     }
+     
+     // Serve index.html for SPA routing
+     const indexFile = path.join(clientPath, 'index.html');
+     if (fs.existsSync(indexFile)) {
+       res.type('html');
+       res.sendFile(indexFile);
+     } else {
+       res.status(404).send('Client build not found');
+     }
+   });
+ }
+ 
+ export async function createApp(options: CreateAppOptions = {}): Promise<CreateAppResult> {
+ 
+EOF
+)
