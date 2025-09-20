@@ -210,7 +210,7 @@ function performBasicMalwareCheck(buffer: Buffer): boolean {
 // New streaming upload endpoint with enhanced progress tracking
 router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, cleanupUploadedFiles, imageStreamingUpload, async (req: Request, res: Response) => {
   const authReq = req as UploadAuthRequest;
-  let processedFilePath = '';
+  let processedFilePath: string | undefined;
   
   try {
     // Check if files were uploaded via streaming
@@ -282,13 +282,29 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, 
     }
 
     // Generate secure output filename
-    const outputFilename = `protected-${crypto.randomBytes(16).toString('hex')}.jpg`;
-    processedFilePath = path.join(process.cwd(), 'uploads', outputFilename);
+    let outputFilename: string | undefined;
+    try {
+      outputFilename = `protected-${crypto.randomBytes(16).toString('hex')}.jpg`;
+      processedFilePath = path.join(process.cwd(), 'uploads', outputFilename);
+    } catch (filenameError) {
+      logger.error('Failed to generate secure filename for streaming upload', {
+        userId: authReq.user?.id,
+        error: filenameError instanceof Error ? filenameError.message : String(filenameError)
+      });
+    }
+
+    if (!processedFilePath || !outputFilename) {
+      await fs.unlink(tempFilePath).catch(() => {});
+      logger.error('Processed file path missing after filename generation', {
+        userId: authReq.user?.id
+      });
+      return res.status(500).json({ message: 'Upload processing failed' });
+    }
     
     // Apply ImageShield protection with retry and timeout
     const protect = () => applyImageShieldProtection(
       tempFilePath,
-      processedFilePath!,
+      processedFilePath,
       validatedRequest.protectionLevel,
       validatedRequest.addWatermark,
       String(authReq.user?.id)
