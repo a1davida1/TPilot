@@ -206,7 +206,9 @@ type GeminiVariantParams = {
   facts: Record<string, unknown>;
   hint?: string;
   nsfw?: boolean;
-} & ToneOptions;
+  style?: string;
+  mood?: string;
+};
 
 export async function generateVariants(params: GeminiVariantParams): Promise<z.infer<typeof CaptionArray>> {
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("variants.txt");

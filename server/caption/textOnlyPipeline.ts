@@ -16,7 +16,9 @@ type TextOnlyVariantParams = {
   context?:string;
   hint?:string;
   nsfw?:boolean;
-} & ToneOptions;
+  style?: string;
+  mood?: string;
+};
 
 export async function generateVariantsTextOnly(params:TextOnlyVariantParams){
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("variants_textonly.txt");

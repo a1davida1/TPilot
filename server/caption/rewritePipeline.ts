@@ -147,7 +147,9 @@ type RewriteVariantsParams = {
   hint?:string;
   nsfw?:boolean;
   doNotDrop?: string[];
-} & ToneOptions;
+  style?: string;
+  mood?: string;
+};
 
 export async function variantsRewrite(params:RewriteVariantsParams){
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rewrite.txt");
