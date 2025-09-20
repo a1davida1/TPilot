@@ -10,6 +10,7 @@ import { mountStripeWebhook } from './routes/webhooks.stripe.js';
 import { mountBillingRoutes } from './routes/billing.js';
 import { logger } from './bootstrap/logger.js';
 import { startQueue } from './bootstrap/queue.js';
+import { prepareResponseLogPayload, truncateLogLine } from './lib/request-logger.js';
 
 export interface CreateAppOptions {
   startQueue?: boolean;
@@ -76,28 +77,25 @@ function applyRequestLogging(app: express.Express): void {
   app.use((req, res, next) => {
     const start = Date.now();
     const path = req.path;
-    let capturedJsonResponse: Record<string, unknown> | undefined;
+    let capturedJsonResponse: unknown;
 
-    const originalResJson = res.json;
-    res.json = function (bodyJson, ...args) {
-      capturedJsonResponse = bodyJson;
-      return originalResJson.apply(res, [bodyJson, ...args]);
+    const originalResJson = res.json.bind(res) as typeof res.json;
+    res.json = function jsonOverride(...args: Parameters<typeof originalResJson>) {
+      const [body] = args;
+      capturedJsonResponse = body;
+      return originalResJson(...args);
     };
 
     res.on('finish', () => {
       const duration = Date.now() - start;
       if (path.startsWith('/api')) {
         let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-        if (capturedJsonResponse) {
-          const safe = (({ token, email, ...rest }) => rest)(capturedJsonResponse as Record<string, unknown>);
-          logLine += ` :: ${JSON.stringify(safe)}`;
+        const payload = prepareResponseLogPayload(capturedJsonResponse);
+        if (payload) {
+          logLine += ` :: ${payload}`;
         }
 
-        if (logLine.length > 80) {
-          logLine = `${logLine.slice(0, 79)}…`;
-        }
-
-        logger.info(logLine, { requestId: req.id });
+        logger.info(truncateLogLine(logLine), { requestId: req.id });
       }
     });
 
