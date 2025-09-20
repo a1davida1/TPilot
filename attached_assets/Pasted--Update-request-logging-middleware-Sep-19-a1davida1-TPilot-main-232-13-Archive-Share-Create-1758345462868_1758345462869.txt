@@ -1,0 +1,414 @@
+
+Update request logging middleware
+Sep 19
+·
+a1davida1/TPilot
+·
+main
++232
+-13
+
+Archive
+
+Share
+
+Create PR
+
+
+1. Update `applyRequestLogging` in `server/app.ts` to deep-clone responses, redact common sensitive keys (e.g., `password`, `secret`, `apiKey`, `authorization`, nested `token`), and truncate oversized payloads.
+2. Add unit tests (e.g., under `tests/unit/server/logger.middleware.test.ts`) verifying nested redaction and truncation logic.
+3. Run `npm test` to ensure middleware tests pass.
+Copy
+Summary
+
+Centralized request-log sanitization in server/lib/request-logger.ts, adding deep cloning, sensitive-key redaction, and payload/log-line truncation utilities that prepare consistent, production-safe log output.
+
+Updated the Express middleware in server/app.ts to capture JSON responses, feed them through the new helper, and emit truncated payloads without leaking secrets while preserving request metadata for observability.
+
+Added unit coverage in tests/unit/server/logger.middleware.test.ts to assert nested redaction behavior and maximum-length truncation so the middleware remains hardening-ready for production deployments.
+
+Testing
+
+⚠️ npm run lint (fails due to numerous pre-existing repository lint violations unrelated to this change)
+
+⚠️ npm test (aborted because the full suite triggers unrelated environment failures; see log for details)
+
+✅ npx vitest run tests/unit/server/logger.middleware.test.ts
+
+
+Files (3)
+
+server/app.ts
++11
+-13
+
+server/lib/request-logger.ts
+New
+
+tests/unit/server/logger.middleware.test.ts
+New
+
+
+
+Ask
+
+Code
+Diff
+Logs
+
+server/app.ts
++11
+-13
+
+import express from 'express';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
+import { v4 as uuidv4 } from 'uuid';
+import { registerRoutes } from './routes.js';
+import { authLimiter, generalLimiter, sanitize, notFoundHandler } from './middleware/security.js';
+import { setupAuth } from './auth.js';
+import { setupSocialAuth } from './social-auth.js';
+import { mountStripeWebhook } from './routes/webhooks.stripe.js';
+import { mountBillingRoutes } from './routes/billing.js';
+import { logger } from './bootstrap/logger.js';
+import { startQueue } from './bootstrap/queue.js';
+import { prepareResponseLogPayload, truncateLogLine } from './lib/request-logger.js';
+
+export interface CreateAppOptions {
+  startQueue?: boolean;
+  configureStaticAssets?: boolean;
+  enableVite?: boolean;
+}
+
+export interface CreateAppResult {
+  app: express.Express;
+  server: import('http').Server;
+}
+
+export const API_PREFIX = '/api/v1';
+
+declare global {
+  namespace Express {
+    interface Request {
+      id: string;
+    }
+  }
+}
+
+function configureCors(app: express.Express): void {
+  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map((origin) => origin.trim()) ?? [];
+
+@@ -54,72 +55,69 @@ function configureCors(app: express.Express): void {
+        ];
+
+        if (devOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+
+        if (origin.includes('.replit.dev') || origin.includes('.repl.co') || origin.includes('.replit.app')) {
+          return callback(null, true);
+        }
+      }
+
+      if (process.env.NODE_ENV === 'production' && allowedOrigins.length === 0) {
+        return callback(null, false);
+      }
+
+      return callback(null, false);
+    },
+    credentials: true,
+  }));
+}
+
+function applyRequestLogging(app: express.Express): void {
+  app.use((req, res, next) => {
+    const start = Date.now();
+    const path = req.path;
+    let capturedJsonResponse: Record<string, unknown> | undefined;
+    let capturedJsonResponse: unknown;
+
+    const originalResJson = res.json;
+    res.json = function (bodyJson, ...args) {
+      capturedJsonResponse = bodyJson;
+      return originalResJson.apply(res, [bodyJson, ...args]);
+    const originalResJson = res.json.bind(res) as typeof res.json;
+    res.json = function jsonOverride(...args: Parameters<typeof originalResJson>) {
+      const [body] = args;
+      capturedJsonResponse = body;
+      return originalResJson(...args);
+    };
+
+    res.on('finish', () => {
+      const duration = Date.now() - start;
+      if (path.startsWith('/api')) {
+        let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+        if (capturedJsonResponse) {
+          const safe = (({ token, email, ...rest }) => rest)(capturedJsonResponse as Record<string, unknown>);
+          logLine += ` :: ${JSON.stringify(safe)}`;
+        const payload = prepareResponseLogPayload(capturedJsonResponse);
+        if (payload) {
+          logLine += ` :: ${payload}`;
+        }
+
+        if (logLine.length > 80) {
+          logLine = `${logLine.slice(0, 79)}…`;
+        }
+
+        logger.info(logLine, { requestId: req.id });
+        logger.info(truncateLogLine(logLine), { requestId: req.id });
+      }
+    });
+
+    next();
+  });
+}
+
+async function configureStaticAssets(
+  app: express.Express,
+  server: import('http').Server,
+  enableVite: boolean,
+): Promise<void> {
+  const path = await import('path');
+  const { fileURLToPath } = await import('url');
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  const fs = await import('fs');
+  
+  // Determine client path based on environment
+  let clientPath: string;
+  if (process.env.NODE_ENV === 'production') {
+    // In production: server runs from dist/server
+    // So '../client' resolves to dist/client (where build script places files)
+    clientPath = path.resolve(__dirname, '..', 'client');
+  } else {
+    // In development: serve built files from client/dist directory
+server/lib/request-logger.ts
+New
++159
+-0
+
+import { logger } from '../bootstrap/logger.js';
+
+const REDACTED_VALUE = '[REDACTED]';
+const TRUNCATION_SUFFIX = '… (truncated)';
+const LOG_LINE_SUFFIX = '…';
+const SENSITIVE_KEYWORDS = ['password', 'secret', 'apikey', 'authorization', 'token'];
+
+export const MAX_LOG_PAYLOAD_LENGTH = 1000;
+const MAX_LOG_LINE_LENGTH = 1200;
+
+function shouldRedactKey(key: string): boolean {
+  const lowercase = key.toLowerCase();
+  const collapsed = lowercase.replace(/[^a-z0-9]/g, '');
+
+  return SENSITIVE_KEYWORDS.some((keyword) => {
+    const normalizedKeyword = keyword.toLowerCase();
+    const normalized = normalizedKeyword.replace(/[^a-z0-9]/g, '');
+    return lowercase.includes(normalizedKeyword) || collapsed.includes(normalized);
+  });
+}
+
+function deepClone<T>(value: T, seen = new WeakMap<object, unknown>()): T {
+  if (typeof value !== 'object' || value === null) {
+    return value;
+  }
+
+  const existingClone = seen.get(value as object);
+  if (existingClone) {
+    return existingClone as T;
+  }
+
+  if (value instanceof Date) {
+    return new Date(value.getTime()) as T;
+  }
+
+  if (typeof Buffer !== 'undefined' && Buffer.isBuffer(value)) {
+    return Buffer.from(value) as T;
+  }
+
+  if (Array.isArray(value)) {
+    const clonedArray: unknown[] = [];
+    seen.set(value, clonedArray);
+    for (const item of value) {
+      clonedArray.push(deepClone(item, seen));
+    }
+    return clonedArray as T;
+  }
+
+  if (value instanceof Map) {
+    const clonedMap = new Map<unknown, unknown>();
+    seen.set(value, clonedMap);
+    for (const [mapKey, mapValue] of value.entries()) {
+      clonedMap.set(mapKey, deepClone(mapValue, seen));
+    }
+    return clonedMap as T;
+  }
+
+  if (value instanceof Set) {
+    const clonedSet = new Set<unknown>();
+    seen.set(value, clonedSet);
+    for (const setValue of value.values()) {
+      clonedSet.add(deepClone(setValue, seen));
+    }
+    return clonedSet as T;
+  }
+
+  const clonedObject: Record<string, unknown> = {};
+  seen.set(value as object, clonedObject);
+  for (const [entryKey, entryValue] of Object.entries(value as Record<string, unknown>)) {
+    clonedObject[entryKey] = deepClone(entryValue, seen);
+  }
+
+  return clonedObject as T;
+}
+
+function redactSensitiveValues(value: unknown, seen = new WeakSet<object>()): unknown {
+  if (typeof value !== 'object' || value === null) {
+    return value;
+  }
+
+  if (seen.has(value as object)) {
+    return value;
+  }
+
+  seen.add(value as object);
+
+  if (Array.isArray(value)) {
+    const arrayValue = value as unknown[];
+    for (let index = 0; index < arrayValue.length; index += 1) {
+      arrayValue[index] = redactSensitiveValues(arrayValue[index], seen);
+    }
+    return arrayValue;
+  }
+
+  if (value instanceof Map) {
+    for (const [mapKey, mapValue] of value.entries()) {
+      if (typeof mapKey === 'string' && shouldRedactKey(mapKey)) {
+        value.set(mapKey, REDACTED_VALUE);
+      } else {
+        value.set(mapKey, redactSensitiveValues(mapValue, seen));
+      }
+    }
+    return value;
+  }
+
+  const objectValue = value as Record<string, unknown>;
+  for (const [entryKey, entryValue] of Object.entries(objectValue)) {
+    if (shouldRedactKey(entryKey)) {
+      objectValue[entryKey] = REDACTED_VALUE;
+    } else {
+      objectValue[entryKey] = redactSensitiveValues(entryValue, seen);
+    }
+  }
+
+  return objectValue;
+}
+
+function truncatePayload(serialized: string): string {
+  if (serialized.length <= MAX_LOG_PAYLOAD_LENGTH) {
+    return serialized;
+  }
+
+  const keepLength = Math.max(0, MAX_LOG_PAYLOAD_LENGTH - TRUNCATION_SUFFIX.length);
+  return `${serialized.slice(0, keepLength)}${TRUNCATION_SUFFIX}`;
+}
+
+export function truncateLogLine(logLine: string): string {
+  if (logLine.length <= MAX_LOG_LINE_LENGTH) {
+    return logLine;
+  }
+
+  const keepLength = Math.max(0, MAX_LOG_LINE_LENGTH - LOG_LINE_SUFFIX.length);
+  return `${logLine.slice(0, keepLength)}${LOG_LINE_SUFFIX}`;
+}
+
+function safeSerialize(value: unknown): string | undefined {
+  try {
+    return JSON.stringify(value);
+  } catch (error) {
+    logger.debug('Failed to serialize response payload for logging', { error });
+    return undefined;
+  }
+}
+
+export function prepareResponseLogPayload(response: unknown): string | undefined {
+  if (typeof response === 'undefined') {
+    return undefined;
+  }
+
+  const cloned = deepClone(response);
+  const redacted = redactSensitiveValues(cloned);
+  const serialized = safeSerialize(redacted);
+
+  if (!serialized) {
+    return undefined;
+  }
+
+  return truncatePayload(serialized);
+}
+tests/unit/server/logger.middleware.test.ts
+New
++62
+-0
+
+import { describe, expect, it } from 'vitest';
+import { MAX_LOG_PAYLOAD_LENGTH, prepareResponseLogPayload } from '../../../server/lib/request-logger';
+
+const REDACTED_VALUE = '[REDACTED]';
+
+describe('prepareResponseLogPayload', () => {
+  it('redacts nested sensitive keys without mutating the original payload', () => {
+    const payload = {
+      user: {
+        id: 'user-123',
+        password: 'super-secret-value',
+        profile: {
+          accessToken: 'access-token',
+          nested: {
+            token: 'deep-token',
+            apiKey: 'api-key-value',
+            clientSecret: 'client-secret',
+            metadata: [
+              { secret: 'nested-secret', safe: 'visible' },
+              { Authorization: 'Bearer sensitive', safe: true },
+              { customToken: 'custom-token-value' }
+            ]
+          }
+        }
+      }
+    } as const;
+
+    const result = prepareResponseLogPayload(payload);
+
+    expect(result).toBeDefined();
+    expect(result).not.toContain('super-secret-value');
+    expect(result).not.toContain('access-token');
+    expect(result).not.toContain('deep-token');
+
+    const parsed = JSON.parse(result ?? '{}');
+
+    expect(parsed.user.password).toBe(REDACTED_VALUE);
+    expect(parsed.user.profile.nested.token).toBe(REDACTED_VALUE);
+    expect(parsed.user.profile.nested.apiKey).toBe(REDACTED_VALUE);
+    expect(parsed.user.profile.nested.clientSecret).toBe(REDACTED_VALUE);
+    expect(parsed.user.profile.nested.metadata[0].secret).toBe(REDACTED_VALUE);
+    expect(parsed.user.profile.nested.metadata[1].Authorization).toBe(REDACTED_VALUE);
+    expect(parsed.user.profile.nested.metadata[2].customToken).toBe(REDACTED_VALUE);
+    expect(parsed.user.profile.nested.metadata[0].safe).toBe('visible');
+
+    expect(payload.user.password).toBe('super-secret-value');
+    expect(payload.user.profile.nested.token).toBe('deep-token');
+    expect(payload.user.profile.nested.metadata[0].secret).toBe('nested-secret');
+  });
+
+  it('truncates oversized payloads for logging', () => {
+    const payload = {
+      message: 'a'.repeat(MAX_LOG_PAYLOAD_LENGTH * 2)
+    };
+
+    const result = prepareResponseLogPayload(payload);
+
+    expect(result).toBeDefined();
+    expect(result?.length).toBeLessThanOrEqual(MAX_LOG_PAYLOAD_LENGTH);
+    expect(result?.endsWith('… (truncated)')).toBe(true);
+  });
+});
