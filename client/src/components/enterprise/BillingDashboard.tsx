@@ -163,26 +163,60 @@ export default function BillingDashboard() {
           <CardContent className="space-y-4">
             {tier === 'free' && (
               <>
-                {/* Pro Plan */}
+                {/* Starter Plan */}
                 <div className="border rounded-lg p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-semibold">Pro Plan</h3>
-                      <p className="text-2xl font-bold">$19.99<span className="text-sm font-normal">/mo</span></p>
+                      <h3 className="font-semibold">Starter Plan</h3>
+                      <p className="text-2xl font-bold">$13.99<span className="text-sm font-normal">/mo</span></p>
                     </div>
-                    <Badge className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white">Popular</Badge>
+                    <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white">Popular</Badge>
                   </div>
                   
                   <ul className="text-sm space-y-1 text-gray-600">
-                    <li>• Unlimited AI content generation</li>
-                    <li>• Advanced post scheduling</li>
+                    <li>• 50 AI generations per day</li>
+                    <li>• Basic post scheduling</li>
                     <li>• 10GB media storage</li>
-                    <li>• Priority support</li>
+                    <li>• Email support</li>
                     <li>• Remove watermarks</li>
                   </ul>
                   
                   <Button 
                     className="w-full" 
+                    onClick={() => paymentLinkMutation.mutate('starter')}
+                    disabled={paymentLinkMutation.isPending}
+                    data-testid="button-upgrade-starter"
+                  >
+                    {paymentLinkMutation.isPending ? 'Loading...' : 'Upgrade to Starter'}
+                    <ExternalLink className="h-4 w-4 ml-2" />
+                  </Button>
+                </div>
+
+                {/* Pro Plan */}
+                <div className="border rounded-lg p-4 space-y-3 relative">
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                    <Badge className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white">Best Value</Badge>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-semibold">Pro Plan</h3>
+                      <p className="text-2xl font-bold">$24.99<span className="text-sm font-normal">/mo</span></p>
+                    </div>
+                  </div>
+                  
+                  <ul className="text-sm space-y-1 text-gray-600">
+                    <li>• Unlimited AI generations</li>
+                    <li>• 50GB media storage</li>
+                    <li>• Advanced image protection</li>
+                    <li>• Priority support</li>
+                    <li>• Unlimited Reddit accounts</li>
+                    <li>• Analytics dashboard</li>
+                    <li>• API access</li>
+                  </ul>
+                  
+                  <Button 
+                    className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600" 
                     onClick={() => paymentLinkMutation.mutate('pro')}
                     disabled={paymentLinkMutation.isPending}
                     data-testid="button-upgrade-pro"
@@ -191,48 +225,15 @@ export default function BillingDashboard() {
                     <ExternalLink className="h-4 w-4 ml-2" />
                   </Button>
                 </div>
-
-                {/* Premium Plan */}
-                <div className="border rounded-lg p-4 space-y-3 relative">
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">Best Value</Badge>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-semibold">Premium Plan</h3>
-                      <p className="text-2xl font-bold">$39.99<span className="text-sm font-normal">/mo</span></p>
-                    </div>
-                  </div>
-                  
-                  <ul className="text-sm space-y-1 text-gray-600">
-                    <li>• Everything in Pro</li>
-                    <li>• Advanced AI models</li>
-                    <li>• 100GB media storage</li>
-                    <li>• Reddit account management</li>
-                    <li>• Analytics & insights</li>
-                    <li>• White-label options</li>
-                  </ul>
-                  
-                  <Button 
-                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600" 
-                    onClick={() => paymentLinkMutation.mutate('premium')}
-                    disabled={paymentLinkMutation.isPending}
-                    data-testid="button-upgrade-premium"
-                  >
-                    {paymentLinkMutation.isPending ? 'Loading...' : 'Upgrade to Premium'}
-                    <ExternalLink className="h-4 w-4 ml-2" />
-                  </Button>
-                </div>
               </>
             )}
 
-            {(tier === 'pro' || tier === 'premium') && (
+            {(tier === 'starter' || tier === 'pro') && (
               <div className="text-center py-6">
                 <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-4" />
                 <p className="font-medium mb-2">You&apos;re on the {tier} plan!</p>
                 <p className="text-sm text-gray-500">
-                  Enjoying all the premium features. Thank you for your support!
+                  Enjoying all the features. Thank you for your support!
                 </p>
               </div>
             )}
@@ -252,27 +253,27 @@ export default function BillingDashboard() {
                 <tr className="border-b">
                   <th className="text-left py-2">Feature</th>
                   <th className="text-center py-2">Free</th>
+                  <th className="text-center py-2">Starter</th>
                   <th className="text-center py-2">Pro</th>
-                  <th className="text-center py-2">Premium</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 <tr>
                   <td className="py-2">AI Content Generation</td>
                   <td className="text-center">5/day</td>
-                  <td className="text-center">Unlimited</td>
+                  <td className="text-center">50/day</td>
                   <td className="text-center">Unlimited</td>
                 </tr>
                 <tr>
                   <td className="py-2">Media Storage</td>
-                  <td className="text-center">1GB</td>
+                  <td className="text-center">2GB</td>
                   <td className="text-center">10GB</td>
-                  <td className="text-center">100GB</td>
+                  <td className="text-center">50GB</td>
                 </tr>
                 <tr>
                   <td className="py-2">Post Scheduling</td>
                   <td className="text-center">Basic</td>
-                  <td className="text-center">Advanced</td>
+                  <td className="text-center">Basic</td>
                   <td className="text-center">Advanced</td>
                 </tr>
                 <tr>
@@ -290,8 +291,14 @@ export default function BillingDashboard() {
                 <tr>
                   <td className="py-2">Analytics</td>
                   <td className="text-center">Basic</td>
+                  <td className="text-center">Basic</td>
                   <td className="text-center">Advanced</td>
-                  <td className="text-center">Pro Analytics</td>
+                </tr>
+                <tr>
+                  <td className="py-2">API Access</td>
+                  <td className="text-center">❌</td>
+                  <td className="text-center">❌</td>
+                  <td className="text-center">✅</td>
                 </tr>
               </tbody>
             </table>

@@ -23,7 +23,7 @@ const getStripePromise = () => {
 };
 
 interface CheckoutFormProps {
-  plan: 'pro' | 'pro_plus';
+  plan: 'starter' | 'pro';
 }
 
 const CheckoutForm = ({ plan }: CheckoutFormProps) => {
@@ -71,7 +71,7 @@ const CheckoutForm = ({ plan }: CheckoutFormProps) => {
         ) : (
           <>
             <Shield className="mr-2 h-4 w-4" />
-            Subscribe to {plan === 'pro_plus' ? 'Pro Plus' : 'Pro'}
+            Subscribe to {plan === 'pro' ? 'Pro' : 'Starter'}
           </>
         )}
       </Button>
@@ -115,40 +115,40 @@ export default function Checkout() {
     return <StripeConfigMissing />;
   }
   
-  // Get plan from URL params or default to 'pro'
+  // Get plan from URL params or default to 'starter'
   const urlParams = new URLSearchParams(window.location.search);
-  const plan = (urlParams.get('plan') as 'pro' | 'pro_plus') || 'pro';
+  const plan = (urlParams.get('plan') as 'starter' | 'pro') || 'starter';
   const [clientSecret, setClientSecret] = useState("");
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   // Plan details
   const planDetails = {
-    pro: {
-      name: "Pro",
-      price: "$19.99",
+    starter: {
+      name: "Starter",
+      price: "$13.99",
       period: "month",
       features: [
-        "Unlimited AI captions",
-        "Advanced image protection",
-        "Priority support",
+        "50 AI generations per day",
+        "10GB media storage",
+        "Basic image protection",
         "Post scheduling",
-        "Analytics dashboard",
-        "Reddit & Twitter integration"
+        "3 Reddit accounts",
+        "Email support"
       ]
     },
-    pro_plus: {
-      name: "Pro Plus",
-      price: "$49.99",
+    pro: {
+      name: "Pro",
+      price: "$24.99",
       period: "month",
       features: [
-        "Everything in Pro",
-        "White-label options",
-        "API access",
-        "Custom branding",
-        "Team collaboration",
-        "Advanced analytics",
-        "Priority processing"
+        "Unlimited AI generations",
+        "50GB media storage",
+        "Advanced image protection",
+        "Priority support",
+        "Unlimited Reddit accounts",
+        "Analytics dashboard",
+        "API access"
       ]
     }
   };
@@ -161,7 +161,7 @@ export default function Checkout() {
       try {
         const response = await apiRequest("POST", "/api/create-subscription", { 
           plan,
-          amount: plan === 'pro_plus' ? 4999 : 1999 // in cents
+          amount: plan === 'pro' ? 2499 : 1399 // in cents
         });
         const data = await response.json();
         
