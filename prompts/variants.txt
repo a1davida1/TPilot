@@ -10,3 +10,4 @@ Rules:
 - 5 different angles; include 1 short/punchy, 1 CTA-forward, 1 aesthetic/poetic.
 - Use nouns/colors/setting from IMAGE_FACTS.
 - Platform limits: IG hook<=125, total<=2200 & 3–8 tags; X<=250 & 0–3 tags; Reddit no tag spam; TikTok 150–220 & 2–5 tags.
+- Follow VOICE_GUIDE details exactly; if anything conflicts, the VOICE_GUIDE overrides other instructions.

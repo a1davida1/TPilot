@@ -4,6 +4,7 @@ import { textModel, visionModel } from "../lib/gemini";
 import { CaptionArray, RankResult, platformChecks } from "./schema";
 import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
 import { extractToneOptions, ToneOptions } from "./toneOptions";
+import { buildVoiceGuideBlock } from "./stylePack";
 
 // CaptionResult interface for type safety
 interface CaptionResult {
@@ -156,9 +157,12 @@ export async function variantsRewrite(params:RewriteVariantsParams){
   const mandatory = params.doNotDrop && params.doNotDrop.length>0 ? `\nMANDATORY TOKENS: ${params.doNotDrop.join(' | ')}` : '';
   const hint = params.hint ? `\nHINT: ${params.hint}` : '';
   const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\n${params.style ? `STYLE: ${params.style}\n` : ''}${params.mood ? `MOOD: ${params.mood}\n` : ''}EXISTING_CAPTION: "${params.existingCaption}"${params.facts?`\nIMAGE_FACTS: ${JSON.stringify(params.facts)}`:""}\nNSFW: ${params.nsfw || false}${mandatory}${hint}`;
+  const voiceGuide = buildVoiceGuideBlock(params.voice);
+  const promptSections = [sys, guard, prompt, user];
+  if (voiceGuide) promptSections.push(voiceGuide);
   let res;
   try {
-    res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+user }]);
+    res=await textModel.generateContent([{ text: promptSections.join("\n") }]);
   } catch (error) {
     console.error('Gemini textModel.generateContent failed:', error);
     throw error;

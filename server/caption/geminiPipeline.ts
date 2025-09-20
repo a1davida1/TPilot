@@ -5,6 +5,7 @@ import { visionModel, textModel } from "../lib/gemini";
 import { CaptionArray, CaptionItem, RankResult, platformChecks } from "./schema";
 import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
 import { extractToneOptions, ToneOptions } from "./toneOptions";
+import { buildVoiceGuideBlock } from "./stylePack";
 
 // Custom error class for image validation failures
 export class InvalidImageError extends Error {
@@ -213,9 +214,12 @@ type GeminiVariantParams = {
 export async function generateVariants(params: GeminiVariantParams): Promise<z.infer<typeof CaptionArray>> {
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("variants.txt");
   const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\n${params.style ? `STYLE: ${params.style}\n` : ''}${params.mood ? `MOOD: ${params.mood}\n` : ''}IMAGE_FACTS: ${JSON.stringify(params.facts)}\nNSFW: ${params.nsfw || false}\n${params.hint?`HINT:${params.hint}`:""}`;
+  const voiceGuide = buildVoiceGuideBlock(params.voice);
+  const promptSections = [sys, guard, prompt, user];
+  if (voiceGuide) promptSections.push(voiceGuide);
   let res;
   try {
-    res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+user }]);
+    res=await textModel.generateContent([{ text: promptSections.join("\n") }]);
   } catch (error) {
     console.error('Gemini textModel.generateContent failed:', error);
     throw error;

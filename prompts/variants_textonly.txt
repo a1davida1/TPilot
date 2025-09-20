@@ -6,3 +6,4 @@ CONTEXT: "<optional notes>"
 Return JSON array of 5 objects ONLY using schema:
 {"caption":"","alt":"","hashtags":[],"cta":"","mood":"","style":"","safety_level":""}
 Rules are the same as variants.txt (platform limits, 5 distinct angles).
+- Follow VOICE_GUIDE details exactly; if anything conflicts, the VOICE_GUIDE overrides other instructions.

@@ -4,6 +4,7 @@ import { textModel } from "../lib/gemini";
 import { CaptionArray, RankResult, platformChecks } from "./schema";
 import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
 import { extractToneOptions, ToneOptions } from "./toneOptions";
+import { buildVoiceGuideBlock } from "./stylePack";
 
 async function load(p:string){ return fs.readFile(path.join(process.cwd(),"prompts",p),"utf8"); }
 function stripToJSON(txt:string){ const i=Math.min(...[txt.indexOf("{"),txt.indexOf("[")].filter(x=>x>=0));
@@ -23,7 +24,10 @@ type TextOnlyVariantParams = {
 export async function generateVariantsTextOnly(params:TextOnlyVariantParams){
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("variants_textonly.txt");
   const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\n${params.style ? `STYLE: ${params.style}\n` : ''}${params.mood ? `MOOD: ${params.mood}\n` : ''}THEME: "${params.theme}"\nCONTEXT: "${params.context||''}"\nNSFW: ${params.nsfw || false}${params.hint?`\nHINT:${params.hint}`:""}`;
-  const res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+user }]);
+  const voiceGuide = buildVoiceGuideBlock(params.voice);
+  const promptSections = [sys, guard, prompt, user];
+  if (voiceGuide) promptSections.push(voiceGuide);
+  const res=await textModel.generateContent([{ text: promptSections.join("\n") }]);
   const raw=stripToJSON(res.response.text());
   const json=Array.isArray(raw)?raw:[raw];
   // Fix common safety_level values and missing fields
