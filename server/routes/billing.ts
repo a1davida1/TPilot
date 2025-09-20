@@ -18,8 +18,8 @@ export function mountBillingRoutes(app: Express) {
     const bucket = bucketForUser(uid);
     const proPriceId = proPriceIdForBucket(bucket);
     res.json({
-      starter: { id: process.env.STRIPE_PRICE_STARTER || null, label: "$9.99" },
-      pro: { id: proPriceId, bucket, label: "Pro" }
+      starter: { id: process.env.STRIPE_PRICE_STARTER || null, label: "$13.99" },
+      pro: { id: proPriceId, bucket, label: "$24.99" }
     });
   });
 
