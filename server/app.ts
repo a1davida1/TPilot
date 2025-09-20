@@ -113,26 +113,33 @@ async function configureStaticAssets(
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
   const fs = await import('fs');
   
-  // Determine client path based on environment
-  let clientPath: string;
-  if (process.env.NODE_ENV === 'production') {
-    // In production: server runs from dist/server
-    // So '../client' resolves to dist/client (where build script places files)
-    clientPath = path.resolve(__dirname, '..', 'client');
-  } else {
-    // In development: serve built files from client/dist directory
-    clientPath = path.resolve(__dirname, '..', 'client', 'dist');
+  const candidateClientPaths = [
+    path.resolve(__dirname, '..', 'client'),
+    path.resolve(__dirname, '..', '..', 'dist', 'client'),
+    path.resolve(__dirname, '..', 'client', 'dist'),
+  ];
+
+  let clientPath: string | null = null;
+
+  for (const candidate of candidateClientPaths) {
+    const indexPath = path.join(candidate, 'index.html');
+    if (!fs.existsSync(indexPath)) {
+      logger.warn(`Client build not found at ${indexPath}`);
+      continue;
+    }
+
+    clientPath = candidate;
+    logger.info(`Serving client from: ${clientPath}`);
+    break;
   }
-  
-  // Check if index.html exists in the client directory
-  const indexPath = path.join(clientPath, 'index.html');
-  if (!fs.existsSync(indexPath)) {
-    logger.warn(`Client build not found at ${indexPath}`);
+
+  if (!clientPath) {
     if (process.env.NODE_ENV === 'production') {
       logger.error('CRITICAL: Production build missing client files!');
     }
-  } else {
-    logger.info(`Serving client from: ${clientPath}`);
+    logger.error('Unable to locate compiled client assets in any known directory.');
+    process.exit(1);
+    return;
   }
 
   // Debug middleware to trace all requests
@@ -145,7 +152,7 @@ async function configureStaticAssets(
 
   // IMPORTANT: Serve static files BEFORE Vite setup to ensure they're accessible
   // Set index: false to prevent serving index.html for directory requests to avoid conflicts
-  app.use(express.static(clientPath, { 
+  app.use(express.static(clientPath, {
     index: false,
     setHeaders: (res, path) => {
       logger.info(`Static file served: ${path}`);
