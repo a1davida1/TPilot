@@ -2,6 +2,15 @@
 
 ThottoPilot is a social media content creation platform for adult content creators, generating engaging Reddit posts with personalized titles, content, and photo instructions. It offers intelligent promotion features, image protection capabilities, and adapts content based on subreddit promotion rules. The platform aims to streamline content monetization and protection for creators.
 
+## Recent Changes (September 20, 2025)
+
+### Pricing Structure Updated
+- ✅ **Updated subscription tiers**: New pricing structure with Starter ($13.99/month) and Pro ($24.99/month) plans
+- ✅ **Removed Premium tier**: Simplified to two paid tiers, Enterprise/Agency tier planned for future
+- ✅ **Updated feature allocation**: Free (5 generations/day, 2GB storage), Starter (50 generations/day, 10GB storage), Pro (unlimited generations, 50GB storage, API access)
+- ✅ **Frontend pricing updates**: All checkout flows, billing dashboard, and feature comparison tables updated
+- ✅ **Backend billing configuration**: Updated Stripe price labels and billing API responses
+
 ## Recent Changes (September 17, 2025)
 
 ### Test Stabilization Completed
@@ -53,7 +62,7 @@ Compliance: Phased approach - base features without ID verification, gate advanc
 - **State Management**: TanStack Query (React Query).
 - **Routing**: Wouter.
 - **Form Handling**: React Hook Form with Zod validation.
-- **UI/UX Decisions**: Bubblegum color scheme (vibrant pink/rose with yellow accents), ultra-polished interface with guaranteed high-contrast text for permanent readability, glass morphism, dynamic gradients, premium CSS animations, and mobile-first design. Anti-hover visibility patterns implemented. Three-tier portal views (Guest, Free/Basic, Pro/Premium) with upgrade prompts.
+- **UI/UX Decisions**: Bubblegum color scheme (vibrant pink/rose with yellow accents), ultra-polished interface with guaranteed high-contrast text for permanent readability, glass morphism, dynamic gradients, premium CSS animations, and mobile-first design. Anti-hover visibility patterns implemented. Three-tier portal views (Guest, Free, Starter $13.99/mo, Pro $24.99/mo) with upgrade prompts.
 - **Accessibility**: WCAG AA compliance enforced via ESLint/Stylelint rules, comprehensive test suite, high contrast and reduced motion support.
 
 ## Backend Architecture
@@ -79,7 +88,7 @@ Compliance: Phased approach - base features without ID verification, gate advanc
 - **Photo Instructions**: Structured guidance for lighting, angles, composition, styling, and technical settings.
 - **Platform Optimization**: Content tailored for social media requirements and audience expectations.
 - **Promotion Intelligence**: Smart content adaptation based on subreddit rules.
-- **Advanced Features**: Fine-tuning with sample library and personalization settings. One-click style presets. Tiered content system with pre-generated templates for free/basic users and AI generation for Pro/Premium. Advanced content generation engine producing outputs based on photo type, text tone, promotion settings, and hashtag selection. Dual AI providers (Gemini + OpenAI) with response caching.
+- **Advanced Features**: Fine-tuning with sample library and personalization settings. One-click style presets. Tiered content system with pre-generated templates for free users (5 generations/day), enhanced capabilities for Starter users (50 generations/day), and unlimited AI generation for Pro users. Advanced content generation engine producing outputs based on photo type, text tone, promotion settings, and hashtag selection. Dual AI providers (Gemini + OpenAI) with response caching.
 
 ## Image Protection System
 - **Anti-Reverse Search**: Multi-layered image processing (Gaussian blur, subtle noise, intelligent resizing, metadata stripping).
