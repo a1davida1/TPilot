@@ -68,7 +68,7 @@ describe('Content Generation Integration Tests', () => {
   let testUser: { id: number; username: string; email: string | null };
   let authToken: string;
   let app: express.Application;
-  
+
   // Simple cache implementation for testing
   const cache = new Map<string, any>();
 
@@ -76,7 +76,7 @@ describe('Content Generation Integration Tests', () => {
     // Create test app
     app = express();
     app.use(express.json());
-    
+
     // Setup basic routes for testing (minimal setup)
     app.post('/api/caption/generate', async (req, res) => {
       try {
@@ -85,16 +85,16 @@ describe('Content Generation Integration Tests', () => {
         if (!authHeader) {
           return res.status(401).json({ message: 'Authorization required' });
         }
-        
+
         const token = authHeader.replace('Bearer ', '');
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'test-secret') as { userId: number };
-        
+
         // Get user for tier checking
         const [user] = await db.select().from(users).where(eq(users.id, decoded.userId));
         if (!user) {
           return res.status(404).json({ message: 'User not found' });
         }
-        
+
         // Check rate limits for free tier
         if (user.tier === 'free') {
           // For testing, always return rate limit error for free users
@@ -103,7 +103,7 @@ describe('Content Generation Integration Tests', () => {
             upgradePrompt: 'Upgrade to Pro for unlimited generations'
           });
         }
-        
+
         // Check for explicit content policy violations
         if (req.body.customPrompt?.includes('policy violations')) {
           return res.status(400).json({
@@ -111,7 +111,7 @@ describe('Content Generation Integration Tests', () => {
             flags: ['explicit_content']
           });
         }
-        
+
         // Check cache for identical requests
         const cacheKey = JSON.stringify({
           platform: req.body.platform,
@@ -119,12 +119,12 @@ describe('Content Generation Integration Tests', () => {
           subreddit: req.body.subreddit,
           userId: user.id
         });
-        
+
         if (cache.has(cacheKey)) {
           const cachedResult = cache.get(cacheKey);
           return res.json({ ...cachedResult, cached: true });
         }
-        
+
         // Use real provider orchestrator
         const result = await generateWithMultiProvider({
           user: { id: user.id, email: user.email || undefined, tier: user.tier },
@@ -135,7 +135,7 @@ describe('Content Generation Integration Tests', () => {
           allowsPromotion: req.body.allowsPromotion || 'no',
           baseImageUrl: req.body.imageUrl
         });
-        
+
         // Save to database
         const [generation] = await db.insert(contentGenerations).values({
           userId: user.id,
@@ -150,32 +150,32 @@ describe('Content Generation Integration Tests', () => {
           allowsPromotion: req.body.allowsPromotion === 'yes',
           generationType: 'ai'
         }).returning();
-        
+
         // Handle special cases for testing
         const response: any = {
           ...result,
           platform: req.body.platform || result.platform,
           imageAnalyzed: !!req.body.imageDescription
         };
-        
+
         // Add fallback indicators for testing
         if (req.body.templateId === 'missing_template') {
           response.fallbackUsed = true;
         }
-        
+
         if (req.body.imageUrl?.endsWith('.bmp')) {
           response.imageError = 'unsupported_format';
           response.fallbackUsed = true;
         }
-        
+
         // Cache the response
         cache.set(cacheKey, response);
-        
+
         res.json(response);
       } catch (error) {
         const errorMessage = (error as Error).message;
         safeLog('error', 'Caption generation failed in test', { error: errorMessage });
-        
+
         // Check if it's a database error
         if (errorMessage.includes('Failed query') || errorMessage.includes('database')) {
           res.status(500).json({ 
@@ -204,21 +204,21 @@ describe('Content Generation Integration Tests', () => {
         }
       }
     });
-    
+
     app.get('/api/content/history', async (req, res) => {
       // Extract auth token
       const authHeader = req.headers.authorization;
       if (!authHeader) {
         return res.status(401).json({ message: 'Authorization required' });
       }
-      
+
       const token = authHeader.replace('Bearer ', '');
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'test-secret') as { userId: number };
-      
+
       const generations = await db.select().from(contentGenerations).where(eq(contentGenerations.userId, decoded.userId));
       res.json({ generations });
     });
-    
+
     const unique = Date.now();
     const [user] = await db
       .insert(users)
@@ -248,10 +248,10 @@ describe('Content Generation Integration Tests', () => {
   beforeEach(async () => {
     // Reset generation history for each test
     await db.delete(contentGenerations).where(eq(contentGenerations.userId, testUser.id));
-    
+
     // Clear cache
     cache.clear();
-    
+
     // Clear AI provider usage tracking
     vi.clearAllMocks();
   });
@@ -629,7 +629,7 @@ describe('Content Generation Integration Tests', () => {
       );
 
       const responses = await Promise.all(promises);
-      
+
       responses.forEach(response => {
         expect(response.status).toBe(200);
         expect(response.body.content).toBeDefined();
