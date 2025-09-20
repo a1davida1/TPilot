@@ -13,11 +13,9 @@ let stripePromise: ReturnType<typeof loadStripe> | null = null;
 
 const getStripePromise = () => {
   if (!stripePromise) {
+    // Load Stripe
     const stripeKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
-    if (!stripeKey) {
-      return null;
-    }
-    stripePromise = loadStripe(stripeKey);
+    stripePromise = stripeKey ? loadStripe(stripeKey) : null;
   }
   return stripePromise;
 };
@@ -31,7 +29,7 @@ const CheckoutForm = ({ plan }: CheckoutFormProps) => {
   const elements = useElements();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -61,8 +59,8 @@ const CheckoutForm = ({ plan }: CheckoutFormProps) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <PaymentElement />
-      <Button 
-        type="submit" 
+      <Button
+        type="submit"
         disabled={!stripe || !elements || isProcessing}
         className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
       >
@@ -109,12 +107,27 @@ const StripeConfigMissing = () => (
 
 export default function Checkout() {
   // Check if Stripe is available
-  const stripe = getStripePromise();
-  
-  if (!stripe) {
-    return <StripeConfigMissing />;
+  const stripePromise = getStripePromise();
+
+  if (!stripePromise) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="pt-6">
+            <div className="text-center space-y-4">
+              <div className="text-red-600 text-lg font-semibold">
+                Payment System Not Configured
+              </div>
+              <p className="text-gray-600">
+                Please contact support to enable payments.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
-  
+
   // Get plan from URL params or default to 'starter'
   const urlParams = new URLSearchParams(window.location.search);
   const plan = (urlParams.get('plan') as 'starter' | 'pro') || 'starter';
@@ -156,15 +169,20 @@ export default function Checkout() {
   const currentPlan = planDetails[plan];
 
   useEffect(() => {
+    if (!stripePromise) {
+      setLoading(false);
+      return;
+    }
+
     // Create subscription payment intent
     const setupPayment = async () => {
       try {
-        const response = await apiRequest("POST", "/api/create-subscription", { 
+        const response = await apiRequest("POST", "/api/create-subscription", {
           plan,
           amount: plan === 'pro' ? 2499 : 1399 // in cents
         });
         const data = await response.json();
-        
+
         if (data.clientSecret) {
           setClientSecret(data.clientSecret);
         } else {
@@ -182,8 +200,8 @@ export default function Checkout() {
       }
     };
 
-    setupPayment();
-  }, [plan, toast]);
+    void setupPayment();
+  }, [plan, toast, stripePromise]);
 
 
   if (loading) {
@@ -248,7 +266,7 @@ export default function Checkout() {
                   </div>
                 ))}
               </div>
-              
+
               <div className="mt-6 p-4 bg-blue-50 rounded-lg">
                 <p className="text-sm text-blue-800">
                   <strong>30-day money-back guarantee</strong><br />
@@ -267,10 +285,12 @@ export default function Checkout() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Elements stripe={stripe} options={{ clientSecret }}>
-                <CheckoutForm plan={plan} />
-              </Elements>
-              
+              {stripePromise && (
+                <Elements stripe={stripePromise} options={{ clientSecret }}>
+                  <CheckoutForm plan={plan} />
+                </Elements>
+              )}
+
               <div className="mt-6 flex items-center justify-center text-sm text-gray-500">
                 <Shield className="h-4 w-4 mr-2" />
                 Secured by Stripe

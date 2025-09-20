@@ -37,7 +37,7 @@ export async function openAICaptionFallback({
   existingCaption?: string;
 }): Promise<z.infer<typeof CaptionItem>> {
   // Analyze image if provided
-  let imageAnalysis = '';
+  const imageAnalysis = '';
   let messages: any[] = [];
 
   if (imageUrl && openai) {
