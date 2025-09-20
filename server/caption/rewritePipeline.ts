@@ -3,6 +3,7 @@ import path from "node:path";
 import { textModel, visionModel } from "../lib/gemini";
 import { CaptionArray, RankResult, platformChecks } from "./schema";
 import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
+import { extractToneOptions, ToneOptions } from "./toneOptions";
 
 // CaptionResult interface for type safety
 interface CaptionResult {
@@ -30,7 +31,16 @@ export async function extractFacts(imageUrl:string){
   }
 }
 
-export async function variantsRewrite(params:{platform:"instagram"|"x"|"reddit"|"tiktok", voice:string, style?:string, mood?:string, existingCaption:string, facts?:Record<string, unknown>, hint?:string, nsfw?:boolean}){
+type RewriteVariantsParams = {
+  platform:"instagram"|"x"|"reddit"|"tiktok";
+  voice:string;
+  existingCaption:string;
+  facts?:Record<string, unknown>;
+  hint?:string;
+  nsfw?:boolean;
+} & ToneOptions;
+
+export async function variantsRewrite(params:RewriteVariantsParams){
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rewrite.txt");
   const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\n${params.style ? `STYLE: ${params.style}\n` : ''}${params.mood ? `MOOD: ${params.mood}\n` : ''}EXISTING_CAPTION: "${params.existingCaption}"${params.facts?`\nIMAGE_FACTS: ${JSON.stringify(params.facts)}`:""}\nNSFW: ${params.nsfw || false}${params.hint?`\nHINT:${params.hint}`:""}`;
   let res;
@@ -120,11 +130,27 @@ export async function rankAndSelect(variants: unknown[]){
   return RankResult.parse(json);
 }
 
-export async function pipelineRewrite({ platform, voice="flirty_playful", style, mood, existingCaption, imageUrl, nsfw=false }:{
-  platform:"instagram"|"x"|"reddit"|"tiktok", voice?:string, style?:string, mood?:string, existingCaption:string, imageUrl?:string, nsfw?:boolean }){
+type RewritePipelineArgs = {
+  platform:"instagram"|"x"|"reddit"|"tiktok";
+  voice?:string;
+  existingCaption:string;
+  imageUrl?:string;
+  nsfw?:boolean;
+} & ToneOptions;
+
+/**
+ * Caption rewriting pipeline that enhances existing captions while preserving tone.
+ *
+ * @remarks
+ * Persona controls such as `style`, `mood`, and future tone keys must persist through
+ * retries. When platform validation fails we re-run Gemini with the exact same tone
+ * payload so the caller's requested persona stays intact.
+ */
+export async function pipelineRewrite({ platform, voice="flirty_playful", existingCaption, imageUrl, nsfw=false, ...toneRest }:RewritePipelineArgs){
   try {
+    const tone = extractToneOptions(toneRest);
     const facts = imageUrl ? await extractFacts(imageUrl) : undefined;
-    let variants = await variantsRewrite({ platform, voice, style, mood, existingCaption, facts, nsfw });
+    let variants = await variantsRewrite({ platform, voice, existingCaption, facts, nsfw, ...tone });
     let ranked = await rankAndSelect(variants);
     let out = ranked.final;
     
@@ -135,7 +161,7 @@ export async function pipelineRewrite({ platform, voice="flirty_playful", style,
 
     const err = platformChecks(platform, out);
     if (err) {
-      variants = await variantsRewrite({ platform, voice, existingCaption, facts, hint:`Fix: ${err}. Be specific and engaging.`, nsfw });
+      variants = await variantsRewrite({ platform, voice, existingCaption, facts, nsfw, ...tone, hint:`Fix: ${err}. Be specific and engaging.` });
       ranked = await rankAndSelect(variants);
       out = ranked.final;
     }

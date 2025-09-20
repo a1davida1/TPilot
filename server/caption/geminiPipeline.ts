@@ -4,6 +4,7 @@ import { z } from "zod";
 import { visionModel, textModel } from "../lib/gemini";
 import { CaptionArray, CaptionItem, RankResult, platformChecks } from "./schema";
 import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
+import { extractToneOptions, ToneOptions } from "./toneOptions";
 
 // Custom error class for image validation failures
 export class InvalidImageError extends Error {
@@ -199,15 +200,15 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
   }
 }
 
-export async function generateVariants(params: {
+type GeminiVariantParams = {
   platform: "instagram" | "x" | "reddit" | "tiktok";
   voice: string;
-  style?: string;
-  mood?: string;
   facts: Record<string, unknown>;
   hint?: string;
   nsfw?: boolean;
-}): Promise<z.infer<typeof CaptionArray>> {
+} & ToneOptions;
+
+export async function generateVariants(params: GeminiVariantParams): Promise<z.infer<typeof CaptionArray>> {
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("variants.txt");
   const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\n${params.style ? `STYLE: ${params.style}\n` : ''}${params.mood ? `MOOD: ${params.mood}\n` : ''}IMAGE_FACTS: ${JSON.stringify(params.facts)}\nNSFW: ${params.nsfw || false}\n${params.hint?`HINT:${params.hint}`:""}`;
   let res;
@@ -298,23 +299,32 @@ export async function rankAndSelect(variants: z.infer<typeof CaptionArray>): Pro
   return RankResult.parse(json);
 }
 
-export async function pipeline({ imageUrl, platform, voice = "flirty_playful", style, mood, nsfw = false }: {
+type GeminiPipelineArgs = {
   imageUrl: string;
   platform: "instagram" | "x" | "reddit" | "tiktok";
   voice?: string;
-  style?: string;
-  mood?: string;
   nsfw?: boolean;
-}): Promise<CaptionResult> {
+} & ToneOptions;
+
+/**
+ * Primary image captioning pipeline backed by Gemini vision + text models.
+ *
+ * @remarks
+ * Persona controls such as `style`, `mood`, and future tone keys must persist through
+ * retries. When platform validation fails we re-run Gemini with the exact same tone
+ * payload so the caller's requested persona stays intact.
+ */
+export async function pipeline({ imageUrl, platform, voice = "flirty_playful", nsfw = false, ...toneRest }: GeminiPipelineArgs): Promise<CaptionResult> {
   try {
+    const tone = extractToneOptions(toneRest);
     const facts = await extractFacts(imageUrl);
-    let variants = await generateVariants({ platform, voice, style, mood, facts, nsfw });
+    let variants = await generateVariants({ platform, voice, facts, nsfw, ...tone });
     let ranked = await rankAndSelect(variants);
     let out = ranked.final;
 
     const err = platformChecks(platform, out);
     if (err) {
-      variants = await generateVariants({ platform, voice, facts, hint:`Fix: ${err}. Use IMAGE_FACTS nouns/colors/setting explicitly.`, nsfw });
+      variants = await generateVariants({ platform, voice, facts, nsfw, ...tone, hint:`Fix: ${err}. Use IMAGE_FACTS nouns/colors/setting explicitly.` });
       ranked = await rankAndSelect(variants);
       out = ranked.final;
     }

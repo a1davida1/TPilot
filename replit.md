@@ -4,6 +4,13 @@ ThottoPilot is a social media content creation platform for adult content creato
 
 ## Recent Changes (September 20, 2025)
 
+### Caption Pipeline Tone Parameter Forwarding
+- ✅ **Tone persistence across retries**: Implemented comprehensive tone parameter forwarding system for all caption generation pipelines
+- ✅ **ToneOptions helper created**: Centralized type-safe extraction of tone parameters (style, mood) from request parameters
+- ✅ **Pipeline consistency maintained**: All three pipelines (Gemini, rewrite, text-only) now preserve caller's tone preferences during platform validation retries
+- ✅ **Regression test coverage**: Added comprehensive unit tests verifying tone parameter extraction and preservation logic
+- ✅ **Type safety enhanced**: Updated pipeline type definitions to properly handle tone parameters with intersection types
+
 ### Pricing Structure Updated
 - ✅ **Updated subscription tiers**: New pricing structure with Starter ($13.99/month) and Pro ($24.99/month) plans
 - ✅ **Removed Premium tier**: Simplified to two paid tiers, Enterprise/Agency tier planned for future
