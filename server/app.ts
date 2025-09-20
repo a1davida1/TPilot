@@ -164,11 +164,11 @@ async function configureStaticAssets(
     }
   }));
 
-  // Skip Vite in development unless explicitly enabled for diagnostics
-  const shouldEnableVite =
-    enableVite &&
-    app.get('env') === 'development' &&
-    process.env.ENABLE_VITE_DEV === 'true';
+  // Enable Vite in development by default; allow opt-out via ENABLE_VITE_DEV
+  const isDevelopment = app.get('env') === 'development';
+  const viteDevFlag = process.env.ENABLE_VITE_DEV?.toLowerCase();
+  const isViteExplicitlyDisabled = viteDevFlag === 'false' || viteDevFlag === '0';
+  const shouldEnableVite = enableVite && isDevelopment && !isViteExplicitlyDisabled;
 
   if (shouldEnableVite) {
     try {
@@ -178,8 +178,8 @@ async function configureStaticAssets(
     } catch (error) {
       logger.warn('Could not setup Vite in development mode:', error);
     }
-  } else if (enableVite && app.get('env') === 'development') {
-    logger.info('Vite development server disabled; set ENABLE_VITE_DEV=true to opt-in.');
+  } else if (enableVite && isDevelopment) {
+    logger.info('Vite development server disabled via ENABLE_VITE_DEV flag. Remove or set to true to re-enable.');
   }
 
   // SPA fallback - serve index.html for all non-API routes
