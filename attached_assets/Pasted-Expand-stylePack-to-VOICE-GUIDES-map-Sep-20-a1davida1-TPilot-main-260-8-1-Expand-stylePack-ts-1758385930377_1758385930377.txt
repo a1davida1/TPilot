@@ -1,0 +1,509 @@
+Expand stylePack to VOICE_GUIDES map
+Sep 20 · a1davida1/TPilot · main
++260-8
+1. Expand `stylePack.ts` into a `VOICE_GUIDES` map containing per-voice tone bullets (persona, vocabulary, pacing, emoji policy, taboo phrases).
+2. In `geminiPipeline.generateVariants`, `textOnlyPipeline.generateVariantsTextOnly`, and `rewritePipeline.variantsRewrite`, look up the active voice and append a `VOICE_GUIDE:` block (JSON or bullet list) to the prompt string.
+3. Update the prompts to instruct Gemini to honour those guides explicitly (e.g., “Follow VOICE\_GUIDE details exactly”). Add unit tests asserting the helper passes the right guide text through, using spies on `textModel.generateContent`.
+
+Summary
+
+    Replaced the lightweight style token list with a typed VOICE_GUIDES registry that defines persona, vocabulary, pacing, emoji usage, and taboo phrases for every caption voice, plus helper utilities to surface those guides in prompts.
+
+Ensured the Gemini, text-only, and rewrite caption pipelines append the formatted VOICE_GUIDE block to every model request so the voice instructions are enforced during generation.
+
+Updated the shared prompt templates to explicitly command Gemini to follow the VOICE_GUIDE, and added focused unit tests that spy on textModel.generateContent to verify each pipeline forwards the correct guide text.
+
+Testing
+
+    ✅ npm run lint (completes with existing repository warnings about unused symbols and any usage)
+
+⚠️ npm test (fails because the wider suite depends on unavailable external services and seeded data; numerous pre-existing integration/unit cases error with 500 responses or missing database configuration)
+
+
+prompts/rewrite.txt
++3-1
+Given an EXISTING_CAPTION and (optional) IMAGE_FACTS, rewrite into 5 options that fix clarity, voice, platform limits, and add targeted hashtags. Return JSON array of 5 objects using the same schema.
+Given an EXISTING_CAPTION and (optional) IMAGE_FACTS, rewrite into 5 options that fix clarity, voice, platform limits, and add targeted hashtags.
+Return JSON array of 5 objects using the same schema.
+Follow VOICE_GUIDE details exactly; if anything conflicts, the VOICE_GUIDE overrides other instructions.
+prompts/variants.txt
++2-1
+Given:
+PLATFORM: <instagram|x|reddit|tiktok>
+VOICE: <flirty_playful|gamer_nerdy|luxury_minimal|arts_muse|gym_energy|cozy_girl>
+IMAGE_FACTS: <json>
+
+Write 5 options. Return JSON array of 5 objects ONLY:
+{"caption":"","alt":"","hashtags":[],"cta":"","mood":"","style":"","safety_level":""}
+
+Rules:
+- 5 different angles; include 1 short/punchy, 1 CTA-forward, 1 aesthetic/poetic.
+- Use nouns/colors/setting from IMAGE_FACTS.
+- Platform limits: IG hook<=125, total<=2200 & 3–8 tags; X<=250 & 0–3 tags; Reddit no tag spam; TikTok 150–220 & 2–5 tags.
+- Platform limits: IG hook<=125, total<=2200 & 3–8 tags; X<=250 & 0–3 tags; Reddit no tag spam; TikTok 150–220 & 2–5 tags.
+- Follow VOICE_GUIDE details exactly; if anything conflicts, the VOICE_GUIDE overrides other instructions.
+prompts/variants_textonly.txt
++2-1
+Given:
+PLATFORM: <instagram|x|reddit|tiktok>
+VOICE: <flirty_playful|gamer_nerdy|luxury_minimal|arts_muse|gym_energy|cozy_girl>
+THEME: "<short description of the post>"
+CONTEXT: "<optional notes>"
+Return JSON array of 5 objects ONLY using schema:
+{"caption":"","alt":"","hashtags":[],"cta":"","mood":"","style":"","safety_level":""}
+Rules are the same as variants.txt (platform limits, 5 distinct angles).
+Rules are the same as variants.txt (platform limits, 5 distinct angles).
+- Follow VOICE_GUIDE details exactly; if anything conflicts, the VOICE_GUIDE overrides other instructions.
+server/caption/geminiPipeline.ts
++5-1
+import fs from "node:fs/promises";
+import path from "node:path";
+import { z } from "zod";
+import { visionModel, textModel } from "../lib/gemini";
+import { CaptionArray, CaptionItem, RankResult, platformChecks } from "./schema";
+import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
+import { buildVoiceGuideBlock } from "./stylePack";
+
+// Custom error class for image validation failures
+export class InvalidImageError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'InvalidImageError';
+  }
+}
+
+// CaptionResult interface for type safety
+interface CaptionResult {
+  provider: string;
+  final: z.infer<typeof CaptionItem>;
+  facts?: Record<string, unknown>;
+  variants?: z.infer<typeof CaptionArray>;
+  ranked?: z.infer<typeof RankResult>;
+}
+
+async function load(p: string): Promise<string> {
+  return fs.readFile(path.join(process.cwd(), "prompts", p), "utf8");
+}
+async function b64(url: string): Promise<{ base64: string; mimeType: string }> {
+  try {
+    const r = await fetch(url);
+    if (!r.ok) throw new InvalidImageError(`fetch failed: ${r.status} ${r.statusText}`);
+@@ -188,53 +189,56 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
+          mood: 'playful',
+          style: 'animated'
+        };
+      }
+      
+      throw error;
+    }
+  } catch (error) {
+    console.error('Error in extractFacts:', error);
+    if (error instanceof InvalidImageError) throw error;
+    throw new Error(`Failed to extract facts: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+export async function generateVariants(params: {
+  platform: "instagram" | "x" | "reddit" | "tiktok";
+  voice: string;
+  style?: string;
+  mood?: string;
+  facts: Record<string, unknown>;
+  hint?: string;
+  nsfw?: boolean;
+}): Promise<z.infer<typeof CaptionArray>> {
+  const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("variants.txt");
+  const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\n${params.style ? `STYLE: ${params.style}\n` : ''}${params.mood ? `MOOD: ${params.mood}\n` : ''}IMAGE_FACTS: ${JSON.stringify(params.facts)}\nNSFW: ${params.nsfw || false}\n${params.hint?`HINT:${params.hint}`:""}`;
+  const voiceGuide = buildVoiceGuideBlock(params.voice);
+  const promptSections = [sys, guard, prompt, user];
+  if (voiceGuide) promptSections.push(voiceGuide);
+  let res;
+  try {
+    res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+user }]);
+    res=await textModel.generateContent([{ text: promptSections.join("\n") }]);
+  } catch (error) {
+    console.error('Gemini textModel.generateContent failed:', error);
+    throw error;
+  }
+  const json = stripToJSON(res.response.text()) as unknown[];
+  // Fix common safety_level values and missing fields
+  if(Array.isArray(json)){
+    json.forEach((item) => {
+      const variant = item as Record<string, unknown>;
+      variant.safety_level = normalizeSafetyLevel(
+        typeof variant.safety_level === 'string' ? variant.safety_level : 'normal'
+      );
+      // Fix other fields
+      if(typeof variant.mood !== 'string' || variant.mood.length < 2) variant.mood = "engaging";
+      if(typeof variant.style !== 'string' || variant.style.length < 2) variant.style = "authentic";
+      if(typeof variant.cta !== 'string' || variant.cta.length < 2) variant.cta = "Check it out";
+      if(typeof variant.alt !== 'string' || variant.alt.length < 20) variant.alt = "Engaging social media content";
+      if(!Array.isArray(variant.hashtags)) variant.hashtags = ["#content", "#creative", "#amazing"];
+      if(typeof variant.caption !== 'string' || variant.caption.length < 1) variant.caption = "Check out this amazing content!";
+    });
+
+    // Ensure exactly 5 variants by padding with variations if needed
+    while(json.length < 5) {
+      const template = (json[0] as Record<string, unknown>) || {
+        caption: "Check out this amazing content!",
+server/caption/rewritePipeline.ts
++5-1
+import fs from "node:fs/promises";
+import path from "node:path";
+import { textModel, visionModel } from "../lib/gemini";
+import { CaptionArray, RankResult, platformChecks } from "./schema";
+import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
+import { buildVoiceGuideBlock } from "./stylePack";
+
+// CaptionResult interface for type safety
+interface CaptionResult {
+  provider: string;
+  final: unknown;
+  facts?: unknown;
+  variants?: unknown;
+  ranked?: unknown;
+}
+
+async function load(p:string){ return fs.readFile(path.join(process.cwd(),"prompts",p),"utf8"); }
+async function b64(url:string){ const r=await fetch(url); if(!r.ok) throw new Error("fetch failed"); const b=Buffer.from(await r.arrayBuffer()); return b.toString("base64"); }
+function stripToJSON(txt:string){ const i=Math.min(...[txt.indexOf("{"),txt.indexOf("[")].filter(x=>x>=0));
+  const j=Math.max(txt.lastIndexOf("}"),txt.lastIndexOf("]")); return JSON.parse((i>=0&&j>=0)?txt.slice(i,j+1):txt); }
+
+export async function extractFacts(imageUrl:string){
+  const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("extract.txt");
+  const img={ inlineData:{ data: await b64(imageUrl), mimeType:"image/jpeg" } };
+  try {
+    const res=await visionModel.generateContent([{text:sys+"\n"+guard+"\n"+prompt}, img]);
+    return stripToJSON(res.response.text());
+  } catch (error) {
+    console.error('Gemini visionModel.generateContent failed:', error);
+    throw error;
+  }
+}
+
+export async function variantsRewrite(params:{platform:"instagram"|"x"|"reddit"|"tiktok", voice:string, style?:string, mood?:string, existingCaption:string, facts?:Record<string, unknown>, hint?:string, nsfw?:boolean}){
+  const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rewrite.txt");
+  const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\n${params.style ? `STYLE: ${params.style}\n` : ''}${params.mood ? `MOOD: ${params.mood}\n` : ''}EXISTING_CAPTION: "${params.existingCaption}"${params.facts?`\nIMAGE_FACTS: ${JSON.stringify(params.facts)}`:""}\nNSFW: ${params.nsfw || false}${params.hint?`\nHINT:${params.hint}`:""}`;
+  const voiceGuide = buildVoiceGuideBlock(params.voice);
+  const promptSections = [sys, guard, prompt, user];
+  if (voiceGuide) promptSections.push(voiceGuide);
+  let res;
+  try {
+    res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+user }]);
+    res=await textModel.generateContent([{ text: promptSections.join("\n") }]);
+  } catch (error) {
+    console.error('Gemini textModel.generateContent failed:', error);
+    throw error;
+  }
+  const json=stripToJSON(res.response.text()) as unknown;
+  // Fix common safety_level values and missing fields
+  if(Array.isArray(json)){
+    json.forEach((item) => {
+      const variant = item as Record<string, unknown>;
+      variant.safety_level = normalizeSafetyLevel(
+        typeof variant.safety_level === 'string' ? variant.safety_level : 'normal'
+      );
+      // Fix other fields
+      if(typeof variant.mood !== 'string' || variant.mood.length<2) variant.mood="engaging";
+      if(typeof variant.style !== 'string' || variant.style.length<2) variant.style="authentic";
+      if(typeof variant.cta !== 'string' || variant.cta.length<2) variant.cta="Check it out";
+      if(typeof variant.alt !== 'string' || variant.alt.length<20) variant.alt="Engaging social media content";
+      if(!Array.isArray(variant.hashtags)) variant.hashtags=["#content", "#creative", "#amazing"];
+      if(typeof variant.caption !== 'string' || variant.caption.length<1) variant.caption="Check out this amazing content, you'll love it and want more!";
+    });
+
+    // Ensure exactly 5 variants by padding with variations if needed
+    while(json.length < 5) {
+      const template = (json[0] as Record<string, unknown>) || {
+        caption: "Check out this amazing content, you'll love it and want more!",
+server/caption/stylePack.ts
++99-2
+export const STYLE_TOKENS = ["flirty_playful","gamer_nerdy","luxury_minimal","arts_muse","gym_energy","cozy_girl"] as const;
+export type StyleToken = typeof STYLE_TOKENS[number];
+export const STYLE_TOKENS = [
+  "flirty_playful",
+  "gamer_nerdy",
+  "luxury_minimal",
+  "arts_muse",
+  "gym_energy",
+  "cozy_girl"
+] as const;
+export type StyleToken = typeof STYLE_TOKENS[number];
+
+export interface VoiceGuide {
+  persona: string;
+  vocabulary: string;
+  pacing: string;
+  emojiPolicy: string;
+  tabooPhrases: string[];
+}
+
+export const VOICE_GUIDES = {
+  flirty_playful: {
+    persona: "Confident flirt with playful feminine charm who teases without crossing NSFW lines.",
+    vocabulary: "Uses cheeky compliments, double entendres, and modern slang sparingly for impact.",
+    pacing: "Short, punchy sentences with energetic rhythm; mix questions with exclamations.",
+    emojiPolicy: "Use 1-2 sparkle/heart emojis max to accent tone; never stack more than two per thought.",
+    tabooPhrases: [
+      "sugar daddy",
+      "OnlyFans",
+      "DM me baby",
+      "explicit sexual invites"
+    ]
+  },
+  gamer_nerdy: {
+    persona: "Hype gamer bestie who streams and lives for co-op adventures.",
+    vocabulary: "Leans on game references, patch note talk, meta jokes, and nerd slang without gatekeeping.",
+    pacing: "Conversational bursts with hype build-up; avoid long walls of text or rambling tangents.",
+    emojiPolicy: "Drop controller, sparkle, or pixel emojis occasionally; skip hearts and overused cry-laughs.",
+    tabooPhrases: [
+      "git gud",
+      "noob shaming",
+      "toxic trash talk",
+      "pay-to-win rant"
+    ]
+  },
+  luxury_minimal: {
+    persona: "High-fashion curator with calm, aspirational confidence and impeccable taste.",
+    vocabulary: "Crisp, precise descriptors, design terminology, and restrained brand references.",
+    pacing: "Measured lines with breathing room; prefer one to two sentences that feel curated.",
+    emojiPolicy: "Use minimalist symbols sparingly (single ✨ or 🕯) or omit emojis entirely.",
+    tabooPhrases: ["cheap", "basic", "OMG", "sales pitch"]
+  },
+  arts_muse: {
+    persona: "Poetic creative muse narrating artful, intimate moments.",
+    vocabulary: "Sensory imagery, metaphors, and art history nods with gentle encouragement.",
+    pacing: "Flowing cadence with soft pauses; welcome occasional line breaks for emphasis.",
+    emojiPolicy: "Accent with delicate emojis like 🎨 or 🌙 only when they deepen the mood.",
+    tabooPhrases: ["lol", "random hashtags", "self-deprecating jokes", "hard sells"]
+  },
+  gym_energy: {
+    persona: "Motivational trainer celebrating strength with upbeat intensity.",
+    vocabulary: "Fitness cues, muscle-group callouts, action verbs, and motivational mantras.",
+    pacing: "High-tempo bursts; pair short hype lines with one actionable coaching tip.",
+    emojiPolicy: "Use fire, flex, or lightning emojis to mark wins; cap total emoji count at three.",
+    tabooPhrases: ["no pain no gain", "shaming language", "diet scams", "lazy insults"]
+  },
+  cozy_girl: {
+    persona: "Warm lifestyle storyteller inviting friends into a comforting space.",
+    vocabulary: "Soft sensory adjectives, seasonal references, and gentle encouragement.",
+    pacing: "Slow, soothing cadence with cozy narrative beats and reassuring transitions.",
+    emojiPolicy: "Choose hearth, tea, or sparkle emojis occasionally; avoid loud party symbols.",
+    tabooPhrases: ["grindset talk", "harsh commands", "negativity", "excessive caps"]
+  }
+} satisfies Record<StyleToken, VoiceGuide>;
+
+const STYLE_TOKEN_SET = new Set<string>(STYLE_TOKENS);
+
+export function isStyleToken(value: string): value is StyleToken {
+  return STYLE_TOKEN_SET.has(value);
+}
+
+export function getVoiceGuide(voice: string): VoiceGuide | undefined {
+  if (!isStyleToken(voice)) return undefined;
+  return VOICE_GUIDES[voice];
+}
+
+export function buildVoiceGuideBlock(voice: string): string | undefined {
+  const guide = getVoiceGuide(voice);
+  if (!guide) return undefined;
+  const taboo = guide.tabooPhrases.length > 0
+    ? `[${guide.tabooPhrases.map(phrase => `"${phrase}"`).join(", ")}]`
+    : "[]";
+  return [
+    "VOICE_GUIDE:",
+    `- PERSONA: ${guide.persona}`,
+    `- VOCABULARY: ${guide.vocabulary}`,
+    `- PACING: ${guide.pacing}`,
+    `- EMOJI_POLICY: ${guide.emojiPolicy}`,
+    `- TABOO_PHRASES: ${taboo}`
+  ].join("\n");
+}
+server/caption/textOnlyPipeline.ts
++5-1
+import fs from "node:fs/promises";
+import path from "node:path";
+import { textModel } from "../lib/gemini";
+import { CaptionArray, RankResult, platformChecks } from "./schema";
+import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
+import { buildVoiceGuideBlock } from "./stylePack";
+
+async function load(p:string){ return fs.readFile(path.join(process.cwd(),"prompts",p),"utf8"); }
+function stripToJSON(txt:string){ const i=Math.min(...[txt.indexOf("{"),txt.indexOf("[")].filter(x=>x>=0));
+  const j=Math.max(txt.lastIndexOf("}"),txt.lastIndexOf("]")); return JSON.parse((i>=0&&j>=0)?txt.slice(i,j+1):txt); }
+
+export async function generateVariantsTextOnly(params:{platform:"instagram"|"x"|"reddit"|"tiktok", voice:string, style?:string, mood?:string, theme:string, context?:string, hint?:string, nsfw?:boolean}){
+  const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("variants_textonly.txt");
+  const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\n${params.style ? `STYLE: ${params.style}\n` : ''}${params.mood ? `MOOD: ${params.mood}\n` : ''}THEME: "${params.theme}"\nCONTEXT: "${params.context||''}"\nNSFW: ${params.nsfw || false}${params.hint?`\nHINT:${params.hint}`:""}`;
+  const res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+user }]);
+  const voiceGuide = buildVoiceGuideBlock(params.voice);
+  const promptSections = [sys, guard, prompt, user];
+  if (voiceGuide) promptSections.push(voiceGuide);
+  const res=await textModel.generateContent([{ text: promptSections.join("\n") }]);
+  const raw=stripToJSON(res.response.text());
+  const json=Array.isArray(raw)?raw:[raw];
+  // Fix common safety_level values and missing fields
+  if(Array.isArray(json)){
+    json.forEach((item) => {
+      const variant = item as Record<string, unknown>;
+      variant.safety_level = normalizeSafetyLevel(
+        typeof variant.safety_level === 'string' ? variant.safety_level : 'normal'
+      );
+      // Fix other fields
+      if(typeof variant.mood !== 'string' || variant.mood.length<2) variant.mood="engaging";
+      if(typeof variant.style !== 'string' || variant.style.length<2) variant.style="authentic";
+      if(typeof variant.cta !== 'string' || variant.cta.length<2) variant.cta="Check it out";
+      if(typeof variant.alt !== 'string' || variant.alt.length<20) variant.alt="Engaging social media content";
+      if(!Array.isArray(variant.hashtags) || variant.hashtags.length < 3) {
+        if(params.platform === 'instagram') {
+          variant.hashtags=["#content", "#creative", "#amazing", "#lifestyle"];
+        } else {
+          variant.hashtags=["#content", "#creative", "#amazing"];
+        }
+      }
+      if(typeof variant.caption !== 'string' || variant.caption.length<1) variant.caption="Check out this amazing content!";
+    });
+
+    // Ensure exactly 5 variants by padding with variations if needed
+tests/unit/server/caption/voice-guide-prompt.test.ts
+New
++139-0
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { buildVoiceGuideBlock } from '../../../../server/caption/stylePack.js';
+import { generateVariants } from '../../../../server/caption/geminiPipeline.js';
+import { generateVariantsTextOnly } from '../../../../server/caption/textOnlyPipeline.js';
+import { variantsRewrite } from '../../../../server/caption/rewritePipeline.js';
+
+const mockTextModel = vi.hoisted(() => ({
+  generateContent: vi.fn(),
+}));
+
+const mockVisionModel = vi.hoisted(() => ({
+  generateContent: vi.fn(),
+}));
+
+vi.mock('../../../../server/lib/gemini.js', () => ({
+  textModel: mockTextModel,
+  visionModel: mockVisionModel,
+}));
+
+type CaptionVariant = {
+  caption: string;
+  alt: string;
+  hashtags: string[];
+  cta: string;
+  mood: string;
+  style: string;
+  safety_level: string;
+  nsfw: boolean;
+};
+
+function makeVariants(): CaptionVariant[] {
+  return Array.from({ length: 5 }, (_, index) => ({
+    caption: `Caption ${index} that is lively and descriptive`,
+    alt: `Detailed alternative text ${index} describing the scene with plenty of texture.`,
+    hashtags: ['#tag1', '#tag2', '#tag3'],
+    cta: 'Learn more',
+    mood: 'joyful',
+    style: 'vibrant',
+    safety_level: 'normal',
+    nsfw: false,
+  }));
+}
+
+interface PromptPayload {
+  text: string;
+}
+
+function isPromptPayload(value: unknown): value is PromptPayload {
+  return typeof value === 'object' && value !== null && 'text' in value && typeof (value as { text: unknown }).text === 'string';
+}
+
+function extractPromptText(): string {
+  const firstCall = mockTextModel.generateContent.mock.calls[0];
+  if (!firstCall) {
+    throw new Error('textModel.generateContent was not called');
+  }
+  const [firstArg] = firstCall;
+  if (!Array.isArray(firstArg)) {
+    throw new Error('Expected prompt argument array for textModel.generateContent');
+  }
+  const [payload] = firstArg;
+  if (!isPromptPayload(payload)) {
+    throw new Error('Prompt payload is missing expected text field');
+  }
+  return payload.text;
+}
+
+describe('Voice guide prompt forwarding', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockTextModel.generateContent.mockReset();
+    mockVisionModel.generateContent.mockReset();
+  });
+
+  it('includes the voice guide when generating image-based variants', async () => {
+    mockTextModel.generateContent.mockResolvedValueOnce({
+      response: { text: () => JSON.stringify(makeVariants()) },
+    });
+
+    await generateVariants({
+      platform: 'instagram',
+      voice: 'flirty_playful',
+      style: 'bold',
+      mood: 'playful',
+      facts: { objects: ['sunset'] },
+      nsfw: false,
+    });
+
+    expect(mockTextModel.generateContent).toHaveBeenCalledTimes(1);
+    const promptText = extractPromptText();
+    const guide = buildVoiceGuideBlock('flirty_playful');
+    if (!guide) throw new Error('Voice guide missing for flirty_playful');
+    expect(promptText).toContain(guide);
+  });
+
+  it('includes the voice guide for text-only variant generation', async () => {
+    mockTextModel.generateContent.mockResolvedValueOnce({
+      response: { text: () => JSON.stringify(makeVariants()) },
+    });
+
+    await generateVariantsTextOnly({
+      platform: 'x',
+      voice: 'flirty_playful',
+      style: 'bold',
+      mood: 'playful',
+      theme: 'Sunset gaming session',
+      context: 'Highlight the vibrant sky and friendly banter',
+      nsfw: false,
+    });
+
+    expect(mockTextModel.generateContent).toHaveBeenCalledTimes(1);
+    const promptText = extractPromptText();
+    const guide = buildVoiceGuideBlock('flirty_playful');
+    if (!guide) throw new Error('Voice guide missing for flirty_playful');
+    expect(promptText).toContain(guide);
+  });
+
+  it('includes the voice guide when rewriting captions', async () => {
+    mockTextModel.generateContent.mockResolvedValueOnce({
+      response: { text: () => JSON.stringify(makeVariants()) },
+    });
+
+    await variantsRewrite({
+      platform: 'reddit',
+      voice: 'flirty_playful',
+      style: 'bold',
+      mood: 'playful',
+      existingCaption: 'Original caption that needs polish',
+      facts: { setting: 'beach at dusk' },
+      nsfw: false,
+    });
+
+    expect(mockTextModel.generateContent).toHaveBeenCalledTimes(1);
+    const promptText = extractPromptText();
+    const guide = buildVoiceGuideBlock('flirty_playful');
+    if (!guide) throw new Error('Voice guide missing for flirty_playful');
+    expect(promptText).toContain(guide);
+  });
+});

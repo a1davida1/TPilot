@@ -118,7 +118,9 @@ type TextOnlyPipelineArgs = {
   theme:string;
   context?:string;
   nsfw?:boolean;
-} & ToneOptions;
+  style?: string;
+  mood?: string;
+};
 
 /**
  * Text-only caption pipeline for brainstorming without an image upload.

@@ -306,7 +306,9 @@ type GeminiPipelineArgs = {
   platform: "instagram" | "x" | "reddit" | "tiktok";
   voice?: string;
   nsfw?: boolean;
-} & ToneOptions;
+  style?: string;
+  mood?: string;
+};
 
 /**
  * Primary image captioning pipeline backed by Gemini vision + text models.

@@ -153,7 +153,6 @@ type RewriteVariantsParams = {
 
 export async function variantsRewrite(params:RewriteVariantsParams){
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rewrite.txt");
-  const tone = extractToneOptions(params);
   const mandatory = params.doNotDrop && params.doNotDrop.length>0 ? `\nMANDATORY TOKENS: ${params.doNotDrop.join(' | ')}` : '';
   const hint = params.hint ? `\nHINT: ${params.hint}` : '';
   const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\n${params.style ? `STYLE: ${params.style}\n` : ''}${params.mood ? `MOOD: ${params.mood}\n` : ''}EXISTING_CAPTION: "${params.existingCaption}"${params.facts?`\nIMAGE_FACTS: ${JSON.stringify(params.facts)}`:""}\nNSFW: ${params.nsfw || false}${mandatory}${hint}`;
@@ -250,7 +249,9 @@ type RewritePipelineArgs = {
   existingCaption:string;
   imageUrl?:string;
   nsfw?:boolean;
-} & ToneOptions;
+  style?: string;
+  mood?: string;
+};
 
 /**
  * Caption rewriting pipeline that enhances existing captions while preserving tone.
