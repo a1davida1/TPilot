@@ -137,9 +137,27 @@ async function configureStaticAssets(
     logger.info(`Serving client from: ${clientPath}`);
   }
 
+  // Debug middleware to trace all requests
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/assets/')) {
+      logger.info(`Asset request received: ${req.method} ${req.path}`);
+    }
+    next();
+  });
+
   // IMPORTANT: Serve static files BEFORE Vite setup to ensure they're accessible
-  // Set index: true to serve index.html for root path
-  app.use(express.static(clientPath, { index: 'index.html' }));
+  // Set index: false to prevent serving index.html for directory requests to avoid conflicts
+  app.use(express.static(clientPath, { 
+    index: false,
+    setHeaders: (res, path) => {
+      logger.info(`Static file served: ${path}`);
+      if (path.endsWith('.js')) {
+        res.setHeader('Content-Type', 'application/javascript');
+      } else if (path.endsWith('.css')) {
+        res.setHeader('Content-Type', 'text/css');
+      }
+    }
+  }));
   
   // Skip Vite in development unless explicitly enabled for diagnostics
   const shouldEnableVite =
@@ -161,10 +179,12 @@ async function configureStaticAssets(
   
   // SPA fallback - serve index.html for all non-API routes
   app.get('*', (req, res, next) => {
-    // Let API/auth/webhook routes fall through to 404 handler
+    // Let API/auth/webhook/assets routes fall through to 404 handler or static middleware
     if (req.path.startsWith('/api/') || 
         req.path.startsWith('/auth/') || 
-        req.path.startsWith('/webhook/')) {
+        req.path.startsWith('/webhook/') ||
+        req.path.startsWith('/assets/')) {
+      logger.debug(`Asset request bypassed SPA fallback: ${req.path}`);
       return next();
     }
     

@@ -1190,8 +1190,8 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
 
   // Final catch-all for any remaining requests (ensures SPA routing works)
   app.get('*', (req, res, next) => {
-    // Skip if it's an API or auth route
-    if (req.path.startsWith('/api/') || req.path.startsWith('/auth/') || req.path.startsWith('/webhook/')) {
+    // Skip if it's an API, auth, webhook, or assets route
+    if (req.path.startsWith('/api/') || req.path.startsWith('/auth/') || req.path.startsWith('/webhook/') || req.path.startsWith('/assets/')) {
       return next();
     }
     
