@@ -5,6 +5,7 @@ import { CaptionArray, RankResult, platformChecks } from "./schema";
 import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
 import { extractToneOptions, ToneOptions } from "./toneOptions";
 import { buildVoiceGuideBlock } from "./stylePack";
+import { serializePromptField } from "./promptUtils";
 
 // CaptionResult interface for type safety
 interface CaptionResult {

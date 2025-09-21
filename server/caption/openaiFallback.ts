@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import * as z from 'zod';
+import { serializePromptField } from './promptUtils';
 
 // Assuming CaptionItem is defined elsewhere and imported
 // For the purpose of this example, let's define a placeholder if it's not provided
@@ -37,6 +38,7 @@ export async function openAICaptionFallback({
   existingCaption?: string;
 }): Promise<z.infer<typeof CaptionItem>> {
   let messages: any[] = [];
+  const sanitizedExistingCaption = existingCaption ? serializePromptField(existingCaption) : undefined;
 
   if (imageUrl && openai) {
     try {
@@ -66,8 +68,8 @@ Return ONLY a JSON object with this structure:
             content: [
               {
                 type: "text",
-                text: existingCaption
-                  ? `Analyze this image and rewrite this caption to better match what you see: "${existingCaption}"`
+                text: sanitizedExistingCaption
+                  ? `Analyze this image and rewrite this caption to better match what you see: ${sanitizedExistingCaption}`
                   : `Analyze this image and create a caption that describes what you actually see`
               },
               {
@@ -99,8 +101,8 @@ Return ONLY a JSON object with this structure:
         },
         {
           role: "user",
-          content: existingCaption
-            ? `Rewrite this caption: "${existingCaption}"`
+          content: sanitizedExistingCaption
+            ? `Rewrite this caption: ${sanitizedExistingCaption}`
             : `Create engaging ${voice} content for ${platform}`
         }
       ];
@@ -113,8 +115,8 @@ Return ONLY a JSON object with this structure:
       },
       {
         role: "user",
-        content: existingCaption
-          ? `Rewrite this caption: "${existingCaption}"`
+        content: sanitizedExistingCaption
+          ? `Rewrite this caption: ${sanitizedExistingCaption}`
           : `Create engaging ${voice} content for ${platform}`
       }
     ];
@@ -153,7 +155,7 @@ Return ONLY a JSON object with this structure:
     console.error("Error calling OpenAI API:", error);
     // Provide a more robust fallback if the API call itself fails
     return {
-      caption: existingCaption ? `Could not generate new caption. Original: ${existingCaption}` : 'Error generating caption.',
+      caption: sanitizedExistingCaption ? `Could not generate new caption. Original: ${sanitizedExistingCaption}` : 'Error generating caption.',
       hashtags: [],
       safety_level: 'normal',
       mood: 'neutral',
