@@ -7,6 +7,7 @@ import { extractToneOptions, ToneOptions } from "./toneOptions";
 import { buildVoiceGuideBlock } from "./stylePack";
 import { serializePromptField } from "./promptUtils";
 import { formatVoiceContext } from "./voiceTraits";
+import { ensureFactCoverage } from "./ensureFactCoverage";
 
 // CaptionResult interface for type safety
 interface CaptionResult {
@@ -292,6 +293,19 @@ export async function pipelineRewrite({ platform, voice="flirty_playful", style,
       'Add personality and character-specific phrasing while being more descriptive.'
     ];
 
+    const enforceCoverage = async () => {
+      if (!facts) return;
+      let attempts = 0;
+      let coverage = ensureFactCoverage({ facts, caption: out.caption, alt: out.alt });
+      while (!coverage.ok && coverage.hint && attempts < 2) {
+        attempts += 1;
+        variants = await variantsRewrite({ platform, voice, ...tone, existingCaption, facts, hint: coverage.hint, nsfw, doNotDrop });
+        ranked = await rankAndSelect(variants);
+        out = ranked.final;
+        coverage = ensureFactCoverage({ facts, caption: out.caption, alt: out.alt });
+      }
+    };
+
     const enforceMandatoryTokens = async (extraHint?: string) => {
       if (doNotDrop.length === 0) {
         return;
@@ -344,12 +358,14 @@ export async function pipelineRewrite({ platform, voice="flirty_playful", style,
     };
 
     await ensureLongerCaption();
+    await enforceCoverage();
 
     const err = platformChecks(platform, out);
     if (err) {
       await runRewrite(`Fix: ${err}. Be specific and engaging.`);
       await ensureLongerCaption(`Fix: ${err}. Be specific and engaging.`);
       await enforceMandatoryTokens(`Fix platform issue: ${err}.`);
+      await enforceCoverage();
     }
 
     return { provider: 'gemini', facts, variants, ranked, final: out };

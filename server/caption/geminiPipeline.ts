@@ -8,6 +8,7 @@ import { extractToneOptions, ToneOptions } from "./toneOptions";
 import { buildVoiceGuideBlock } from "./stylePack";
 import { serializePromptField } from "./promptUtils";
 import { formatVoiceContext } from "./voiceTraits";
+import { ensureFactCoverage } from "./ensureFactCoverage";
 
 // Custom error class for image validation failures
 export class InvalidImageError extends Error {
@@ -343,11 +344,26 @@ export async function pipeline({ imageUrl, platform, voice = "flirty_playful", n
     let ranked = await rankAndSelect(variants);
     let out = ranked.final;
 
+    const enforceCoverage = async () => {
+      let attempts = 0;
+      let coverage = ensureFactCoverage({ facts, caption: out.caption, alt: out.alt });
+      while (!coverage.ok && coverage.hint && attempts < 2) {
+        attempts += 1;
+        variants = await generateVariants({ platform, voice, facts, hint: coverage.hint, nsfw, ...tone });
+        ranked = await rankAndSelect(variants);
+        out = ranked.final;
+        coverage = ensureFactCoverage({ facts, caption: out.caption, alt: out.alt });
+      }
+    };
+
+    await enforceCoverage();
+
     const err = platformChecks(platform, out);
     if (err) {
       variants = await generateVariants({ platform, voice, facts, nsfw, ...tone, hint:`Fix: ${err}. Use IMAGE_FACTS nouns/colors/setting explicitly.` });
       ranked = await rankAndSelect(variants);
       out = ranked.final;
+      await enforceCoverage();
     }
 
     return { provider: 'gemini', facts, variants, ranked, final: out };
