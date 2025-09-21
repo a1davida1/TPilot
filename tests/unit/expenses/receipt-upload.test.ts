@@ -1,5 +1,5 @@
 /* eslint-env node, jest */
-import { describe, test, expect, vi, beforeEach } from 'vitest';
+import { describe, test, expect, vi, beforeEach, type MockInstance } from 'vitest';
 import request from 'supertest';
 import express from 'express';
 import fs from 'fs/promises';
@@ -138,12 +138,12 @@ describe('Receipt Upload with ImageShield Protection', () => {
   });
 
   describe('File Upload Security', () => {
-    test('should reject non-image files', async () => {
+    test('should reject unsupported files', async () => {
       const textFileBuffer = Buffer.from('This is not an image file');
 
       await request(app)
         .post('/api/expenses/1/receipt')
-        .attach('receipt', textFileBuffer, 'test-file.txt')
+        .attach('receipt', textFileBuffer, { filename: 'test-file.txt', contentType: 'text/plain' })
         .expect(500); // multer should reject the file
 
       expect(mockStorage.updateExpense).not.toHaveBeenCalled();
@@ -176,6 +176,89 @@ describe('Receipt Upload with ImageShield Protection', () => {
         .expect(400);
 
       expect(mockStorage.updateExpense).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('PDF receipt handling', () => {
+    test('should accept PDF receipts without applying protection', async () => {
+      delete process.env.S3_BUCKET_MEDIA;
+
+      const mockExpense = {
+        id: 4,
+        receiptUrl: '/uploads/receipts/invoice.pdf',
+        receiptFileName: 'invoice.pdf',
+      };
+
+      mockStorage.updateExpense.mockResolvedValue(mockExpense);
+
+      const pdfBuffer = Buffer.from('%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF');
+
+      const response = await request(app)
+        .post('/api/expenses/4/receipt')
+        .attach('receipt', pdfBuffer, { filename: 'invoice.pdf', contentType: 'application/pdf' })
+        .expect(200);
+
+      expect(response.body).toEqual(mockExpense);
+      expect(mockMediaManager.uploadFile).not.toHaveBeenCalled();
+      expect(mockStorage.updateExpense).toHaveBeenCalledWith(
+        4,
+        1,
+        expect.objectContaining({
+          receiptUrl: '/uploads/receipts/invoice.pdf',
+          receiptFileName: 'invoice.pdf',
+        })
+      );
+
+      const writeMock = fs.writeFile as unknown as MockInstance<[string, Buffer], unknown>;
+      expect(writeMock).toHaveBeenCalledWith(expect.stringContaining('invoice.pdf'), expect.any(Buffer));
+      const firstCall = writeMock.mock.calls[0];
+      expect(firstCall).toBeDefined();
+      const [, storedBuffer] = firstCall;
+      expect(Buffer.isBuffer(storedBuffer)).toBe(true);
+      expect(storedBuffer.equals(pdfBuffer)).toBe(true);
+    });
+
+    test('should retain original filename when uploading to S3', async () => {
+      process.env.S3_BUCKET_MEDIA = 'test-bucket';
+
+      const mockAsset = {
+        downloadUrl: 'https://s3.amazonaws.com/test-bucket/invoice.pdf',
+        filename: 'invoice.pdf',
+        key: 'receipts/invoice.pdf',
+      };
+
+      mockMediaManager.uploadFile.mockResolvedValue(mockAsset);
+      mockStorage.updateExpense.mockResolvedValue({
+        id: 5,
+        receiptUrl: mockAsset.downloadUrl,
+        receiptFileName: mockAsset.filename,
+      });
+
+      const pdfBuffer = Buffer.from('%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF');
+
+      const response = await request(app)
+        .post('/api/expenses/5/receipt')
+        .attach('receipt', pdfBuffer, { filename: 'invoice.pdf', contentType: 'application/pdf' })
+        .expect(200);
+
+      expect(response.body.receiptFileName).toBe('invoice.pdf');
+      expect(mockMediaManager.uploadFile).toHaveBeenCalledWith(
+        expect.any(Buffer),
+        expect.objectContaining({
+          userId: 1,
+          filename: 'invoice.pdf',
+        })
+      );
+      expect(mockStorage.updateExpense).toHaveBeenCalledWith(
+        5,
+        1,
+        expect.objectContaining({
+          receiptFileName: 'invoice.pdf',
+          receiptUrl: mockAsset.downloadUrl,
+        })
+      );
+
+      delete process.env.S3_BUCKET_MEDIA;
     });
   });
 

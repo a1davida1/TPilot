@@ -21,7 +21,8 @@ const knownImageExtensions = new Set([
   '.gif',
   '.bmp',
   '.webp',
-  '.tiff'
+  '.tiff',
+  '.pdf'
 ]);
 
 const upload = multer({
@@ -31,8 +32,9 @@ const upload = multer({
     const hasImageMimeType = file.mimetype.startsWith('image/');
     const fileExtension = path.extname(file.originalname).toLowerCase();
     const hasKnownImageExtension = knownImageExtensions.has(fileExtension);
+    const isPdfMimeType = file.mimetype === 'application/pdf';
 
-    if (hasImageMimeType || hasKnownImageExtension) {
+    if (hasImageMimeType || hasKnownImageExtension || isPdfMimeType) {
       cb(null, true);
     } else {
       cb(new Error('Only image files are allowed!'));
@@ -263,36 +265,49 @@ export function registerExpenseRoutes(app: Express) {
         return res.status(400).json({ message: 'No file uploaded' });
       }
 
-      // Determine protection level based on user tier (conservative for receipts)
-      const userTier = req.user.tier || 'free';
-      const protectionLevel = req.body.protectionLevel || 'light';
-      const addWatermark = ['free', 'starter'].includes(userTier);
-      
-      // Apply ImageShield protection to receipt
-      logger.info(
-        `Applying ImageShield protection (${protectionLevel}) to receipt for user ${req.user.id}, tier: ${userTier}`
-      );
-      const protectedBuffer = await applyReceiptImageShieldProtection(
-        req.file.buffer,
-        protectionLevel as 'light' | 'standard' | 'heavy',
-        addWatermark
-      );
+      const safeOriginalName = path.basename(req.file.originalname);
+      const fileExtension = path.extname(safeOriginalName).toLowerCase();
+      const isPdf = req.file.mimetype === 'application/pdf' || fileExtension === '.pdf';
+
+      let receiptBuffer: Buffer;
+      let desiredFileName: string;
+
+      if (isPdf) {
+        receiptBuffer = req.file.buffer;
+        desiredFileName = safeOriginalName;
+        logger.info(`Storing PDF receipt for user ${req.user.id} without ImageShield processing.`);
+      } else {
+        const userTier = req.user.tier || 'free';
+        const protectionLevel = req.body.protectionLevel || 'light';
+        const addWatermark = ['free', 'starter'].includes(userTier);
+
+        // Apply ImageShield protection to receipt
+        logger.info(
+          `Applying ImageShield protection (${protectionLevel}) to receipt for user ${req.user.id}, tier: ${userTier}`
+        );
+        receiptBuffer = await applyReceiptImageShieldProtection(
+          req.file.buffer,
+          protectionLevel as 'light' | 'standard' | 'heavy',
+          addWatermark
+        );
+        desiredFileName = `protected_${safeOriginalName}`;
+      }
 
       let receiptUrl: string;
-      let receiptFileName = `protected_${req.file.originalname}`;
+      let receiptFileName = desiredFileName;
 
       if (process.env.S3_BUCKET_MEDIA) {
-        const asset = await MediaManager.uploadFile(protectedBuffer, {
+        const asset = await MediaManager.uploadFile(receiptBuffer, {
           userId: req.user.id,
-          filename: receiptFileName,
+          filename: desiredFileName,
         });
         receiptUrl = asset.downloadUrl || asset.signedUrl || asset.key;
         receiptFileName = asset.filename;
       } else {
         const uploadDir = path.join(process.cwd(), 'uploads', 'receipts');
         await fs.mkdir(uploadDir, { recursive: true });
-        const fileName = `protected_${Date.now()}-${req.file.originalname}`;
-        await fs.writeFile(path.join(uploadDir, fileName), protectedBuffer);
+        const fileName = isPdf ? safeOriginalName : `protected_${Date.now()}-${safeOriginalName}`;
+        await fs.writeFile(path.join(uploadDir, fileName), receiptBuffer);
         receiptUrl = `/uploads/receipts/${fileName}`;
         receiptFileName = fileName;
       }
@@ -302,7 +317,8 @@ export function registerExpenseRoutes(app: Express) {
         receiptFileName,
       });
 
-      logger.info(`Protected receipt uploaded: ${receiptFileName} for expense ${expenseId}`);
+      const uploadDescriptor = isPdf ? 'PDF receipt stored' : 'Protected receipt uploaded';
+      logger.info(`${uploadDescriptor}: ${receiptFileName} for expense ${expenseId}`);
       res.json(expense);
     } catch (error) {
       console.error('Error uploading receipt:', error);
