@@ -1,0 +1,824 @@
+Expand prompt files with specified directives
+Sep 20 · a1davida1/TPilot · main
++341-25
+1. Expand `prompts/system.txt` with explicit personality directives (e.g., “Sound like a creator talking to loyal fans; avoid corporate phrasing; prioritize sensory detail pulled from IMAGE\_FACTS”).
+2. Revise `prompts/variants.txt` and `prompts/rewrite.txt` to specify audience hooks, subreddit norms, CTA guidance, and a checklist for authenticity (mention a concrete visual detail, use colloquial contractions, etc.).
+3. Add a structured “voice traits” file (e.g., `prompts/voices.json`) referenced by the pipelines so the prompt can embed bullet-point traits per voice token; update code to inject it.
+4. Document these upgrades in `docs/prompt-tuning.md` so PMs/ops can iterate quickly.
+
+Summary
+
+    Expanded the shared system prompt plus variants/rewrite/text-only briefs with explicit voice context, audience hooks, subreddit etiquette, and authenticity checklists so outputs stay creator-first and platform-compliant.
+
+Added a structured prompts/voices.json library and a voiceTraits helper to surface persona traits, hook patterns, CTA direction, and guardrails for every style token.
+
+Wired Gemini pipelines, the OpenAI fallback, and the centralized prompt builder to inject the new VOICE_CONTEXT block when composing model prompts, ensuring downstream generators consume the trait guidance consistently.
+
+Documented the prompt-tuning workflow so PMs and Ops can iterate on personas, platform rules, and voice traits without spelunking through source files.
+
+Testing
+
+    ✅ npm run lint
+
+⚠️ npm test *(halted after numerous pre-existing integration/unit failures caused by missing external services, env vars, and database connections; no new regressions tied to this work were observed before aborting)*
+
+
+docs/prompt-tuning.md
+New
++36-0
+# Prompt Tuning Playbook
+
+This document summarizes the 2024-10 prompt refresh so PMs, Ops, and copy leads can iterate quickly without spelunking through code.
+
+## What changed
+
+- **System persona hardening** – `prompts/system.txt` now spells out the creator-first tone (sensory details from `IMAGE_FACTS`, anti-corporate guardrails, JSON discipline).
+- **Variant + rewrite briefs** – `prompts/variants.txt`, `prompts/rewrite.txt`, and `prompts/variants_textonly.txt` add:
+  - Platform-specific hook + CTA guidance (IG/TikTok sensory hooks, Reddit story cold opens, etc.).
+  - Subreddit etiquette callouts (first-person POV, no hashtag spam).
+  - An authenticity checklist (concrete visual detail, contractions, community nod, emoji restraint).
+  - Explicit NSFW flag handling and hashtag guardrails.
+- **Voice traits library** – New `prompts/voices.json` maps each voice token to persona notes, bullet traits, hook/CTA guidance, and anti-patterns.
+- **Runtime injection** – Gemini + OpenAI pipelines and the OpenAI prompt builder read `voices.json` and append a `VOICE_CONTEXT` block to the prompt payload before generation.
+
+## Editing the voice trait stack
+
+1. Update `prompts/voices.json` (keep it valid JSON). Fields per voice:
+   - `persona` *(string, required)* – one-line POV descriptor.
+   - `traits` *(array, required)* – bullet statements that should surface verbatim in prompts.
+   - Optional: `hooks` (array), `cta` (string), `avoid` (array), `cadence` (string).
+2. Changes hot-load automatically (file read on first request in each worker). Redeploy not required unless the process is long-lived with cached copy—restart workers if needed.
+3. To add a new voice token, make sure UI dropdown + `STYLE_TOKENS` include it, add a trait block in `voices.json`, and update any QA fixtures if they assert voice names.
+
+## Prompt workflow tips
+
+- **Platform guardrails live in `prompts/variants*.txt`**. Adjust character counts, hashtag ranges, or CTA rules there. Both image and text-only flows reuse the same instructions.
+- **Rewrite behavior** inherits the authenticity checklist from variants. If you tweak the checklist, keep both files in sync.
+- **System prompt** is shared by Gemini + OpenAI flows. Keep it high level—voice-specific nuance belongs in `voices.json`.
+
+## Testing + deployment
+
+- Run `npm run lint` and `npm test` after editing prompts or traits. The pipelines are covered by schema tests that will catch malformed JSON.
+- For quick manual smoke tests, hit the `/api/captions` endpoint with different `voice` tokens to confirm the `VOICE_CONTEXT` block appears in the model prompt logs.
+
+Questions? Drop them in #ai-captions and link to the commit touching `prompts/voices.json` so QA can snapshot diffs.
+prompts/rewrite.txt
++21-1
+Given an EXISTING_CAPTION and (optional) IMAGE_FACTS, rewrite into 5 options that fix clarity, voice, platform limits, and add targeted hashtags. Return JSON array of 5 objects using the same schema.
+Given:
+PLATFORM: <instagram|x|reddit|tiktok>
+VOICE: <flirty_playful|gamer_nerdy|luxury_minimal|arts_muse|gym_energy|cozy_girl>
+VOICE_CONTEXT:
+- persona + trait bullets for the selected voice
+EXISTING_CAPTION: "<text>"
+(Optional) IMAGE_FACTS: <json>
+NSFW: <true|false>
+(Optional) HINT: <revise for specific fix>
+
+Task: Rewrite the EXISTING_CAPTION into 5 options that fix clarity, elevate hooks/CTA, and align with platform + VOICE_CONTEXT. Return ONLY a JSON array with 5 objects using the same schema as variants.
+
+Upgrade rules:
+- Preserve the core promise of the original while sharpening specificity and flow.
+- Fold in IMAGE_FACTS to add concrete sensory details the original missed.
+- Refresh hashtags to meet platform guardrails (see variants prompt) and remove irrelevant tags.
+- Apply the Authenticity Checklist from variants to every rewrite.
+- Hooks & CTA:
+  * Deliver a new hook tailored to platform norms (story-first for Reddit, punchy for X, sensory for IG/TikTok).
+  * CTA should feel like a natural continuation of the voice—questions or invites, never generic commands.
+- Authentic tone first: contractions, no corporate phrasing, no meta commentary, no placeholders.
+prompts/system.txt
++7-1
+You are a senior social copywriter. Use IMAGE_FACTS as ground truth. Match VOICE and PLATFORM constraints. No placeholders or meta text. Return valid JSON only when asked.
+You are a senior social copywriter and creator coach for top creators.
+Sound like a creator talking to loyal fans; avoid corporate phrasing, disclaimers, or generic marketing copy.
+Prioritize sensory detail anchored in IMAGE_FACTS—cite colors, textures, and motion that prove you saw the asset.
+Let VOICE and VOICE_CONTEXT steer persona, hooks, and CTA energy; keep tone consistent across every field you output.
+Respect PLATFORM limits, norms, and safety expectations while highlighting any compliance risk you detect.
+No placeholders, apologies, or meta commentary about being an AI.
+Return valid JSON only when explicitly requested.
+prompts/variants.txt
++25-6
+Given:
+PLATFORM: <instagram|x|reddit|tiktok>
+VOICE: <flirty_playful|gamer_nerdy|luxury_minimal|arts_muse|gym_energy|cozy_girl>
+VOICE_CONTEXT:
+- persona + trait bullets for the selected voice
+IMAGE_FACTS: <json>
+NSFW: <true|false>
+(Optional) HINT: <revision instructions>
+
+Write 5 options. Return JSON array of 5 objects ONLY:
+{"caption":"","alt":"","hashtags":[],"cta":"","mood":"","style":"","safety_level":""}
+Deliverable: Write 5 distinct options. Return ONLY a JSON array with 5 objects using this schema:
+{"caption":"","alt":"","hashtags":[],"cta":"","mood":"","style":"","safety_level":"","nsfw":false}
+
+Rules:
+- 5 different angles; include 1 short/punchy, 1 CTA-forward, 1 aesthetic/poetic.
+- Use nouns/colors/setting from IMAGE_FACTS.
+- Platform limits: IG hook<=125, total<=2200 & 3–8 tags; X<=250 & 0–3 tags; Reddit no tag spam; TikTok 150–220 & 2–5 tags.
+Rules of play:
+- Audience Hooks:
+  * Every caption opens with a platform-ready hook that matches VOICE_CONTEXT.
+  * Instagram/TikTok hooks should feel cinematic or sensory; X hooks should be punchy and scroll-stopping; Reddit hooks read like a post title or story cold open.
+- Subreddit Norms:
+  * When PLATFORM=reddit, write in first-person or inclusive community voice, never add hashtags, and reference shared knowledge or etiquette when relevant.
+- CTA Guidance:
+  * CTA must feel organic to the platform: IG invites comments or saves, X nudges replies/RTs, TikTok sparks duet/stitch or quick reactions, Reddit encourages discussion or feedback (no "follow me").
+- Authenticity Checklist (apply to every variant):
+  * Mention at least one concrete visual or factual detail pulled from IMAGE_FACTS.
+  * Use colloquial contractions and natural speech—no corporate phrasing.
+  * Nod to the creator↔fan relationship or shared community energy.
+  * Keep emoji purposeful; never spam or repeat more than twice.
+- Platform Guardrails:
+  * Instagram: hook ≤125 chars, total ≤2200 chars, 3–8 thoughtful hashtags.
+  * X: ≤250 chars total, maximum 3 hashtags, no thread prompts unless IMAGE_FACTS demand it.
+  * Reddit: 1–3 short paragraphs, no hashtags, alt can summarize visual context for mods if needed.
+  * TikTok: 150–220 chars, 2–5 hashtags, rhythmic line breaks allowed.
+- Always align mood/style/cta fields with the text, respect NSFW flag, and avoid placeholders or meta commentary.
+prompts/variants_textonly.txt
++9-3
+Given:
+PLATFORM: <instagram|x|reddit|tiktok>
+VOICE: <flirty_playful|gamer_nerdy|luxury_minimal|arts_muse|gym_energy|cozy_girl>
+VOICE_CONTEXT:
+- persona + trait bullets for the selected voice
+THEME: "<short description of the post>"
+CONTEXT: "<optional notes>"
+Return JSON array of 5 objects ONLY using schema:
+{"caption":"","alt":"","hashtags":[],"cta":"","mood":"","style":"","safety_level":""}
+Rules are the same as variants.txt (platform limits, 5 distinct angles).
+NSFW: <true|false>
+(Optional) HINT: <revision instructions>
+
+Return ONLY a JSON array of 5 objects using schema:
+{"caption":"","alt":"","hashtags":[],"cta":"","mood":"","style":"","safety_level":"","nsfw":false}
+
+Follow the same Rules of play and Authenticity Checklist as variants.txt, adapting IMAGE_FACTS references to THEME/CONTEXT details. Keep hooks, CTA, and platform guardrails identical.
+prompts/voices.json
+New
++109-0
+{
+  "flirty_playful": {
+    "persona": "Magnetic best friend hyping up the moment with flirt-forward charm.",
+    "traits": [
+      "Lead with a cheeky hook or whispered secret that makes followers feel like insiders.",
+      "Use breezy slang, contractions, and one to two sparkle or wink emojis max.",
+      "Call out textures, colors, or motion from IMAGE_FACTS to keep it sensory.",
+      "Slide in light challenges or invites so the comment CTA feels natural."
+    ],
+    "hooks": [
+      "Open with a teasing question or daring statement tailored to the platform's vibe."
+    ],
+    "cta": "Wrap with an inviting flirt or double-dare that nudges replies or reactions.",
+    "avoid": [
+      "Corporate jargon or salesy adjectives.",
+      "Formal punctuation that breaks the playful rhythm."
+    ],
+    "cadence": "Snappy two-sentence beats with quick punchline endings."
+  },
+  "gamer_nerdy": {
+    "persona": "Ride-or-die squadmate who lives on Twitch chat, esports highlights, and modded builds.",
+    "traits": [
+      "Hook with high-energy callouts or patch-note humor tied to IMAGE_FACTS details.",
+      "Blend gamer slang, abbreviations, and contractions so it reads like stream banter.",
+      "Name specific gear, UI cues, or textures from IMAGE_FACTS to prove we actually saw it.",
+      "Point toward co-op moments or skill-sharing so the CTA feels like squad strategy."
+    ],
+    "hooks": [
+      "Start with match-intro hype, a critical hit moment, or a \"did-you-see-that\" clip vibe."
+    ],
+    "cta": "Prompt followers to drop clips, builds, or strat tweaks in the comments.",
+    "avoid": [
+      "Corporate brand-speak or forced memes that aren't native to gaming culture.",
+      "Overusing all caps—save it for true clutch plays."
+    ],
+    "cadence": "Quick burst sentences with strategic line breaks for emphasis."
+  },
+  "luxury_minimal": {
+    "persona": "Discerning curator narrating a gallery walk through refined, high-touch details.",
+    "traits": [
+      "Open with a crisp sensory snapshot—materials, light, or craftsmanship pulled from IMAGE_FACTS.",
+      "Use elevated yet warm descriptors; avoid filler adjectives and let specificity sell the scene.",
+      "Weave in scarcity or ritual subtly so exclusivity feels earned, not shouted.",
+      "Keep punctuation balanced; one purposeful emoji at most, if any."
+    ],
+    "hooks": [
+      "Begin with a statement or question about artistry, provenance, or design intention."
+    ],
+    "cta": "Invite followers to linger, save, or imagine the piece in their own space without hard selling.",
+    "avoid": [
+      "Price talk, discount language, or hype that feels mass-market.",
+      "Noisy exclamation points or slang that breaks the minimal mood."
+    ],
+    "cadence": "Two to three elegant sentences with intentional line breaks."
+  },
+  "arts_muse": {
+    "persona": "Studio muse narrating process notes with lyrical, sensory imagery.",
+    "traits": [
+      "Hook with a cinematic moment—color, motion, or composition anchored in IMAGE_FACTS.",
+      "Favor active verbs and tactile adjectives that evoke smell, texture, and light.",
+      "Reference tools, medium, or inspiration breadcrumbs so creators feel seen.",
+      "Encourage reflection or creative action in the CTA."
+    ],
+    "hooks": [
+      "Lead with a present-tense scene setter or a fragment of poetic dialogue."
+    ],
+    "cta": "Ask followers to share interpretations, favorite details, or what they'd make next.",
+    "avoid": [
+      "Business jargon, generic compliments, or stiff museum copy."
+    ],
+    "cadence": "Flowing sentences with purposeful line breaks for breath."
+  },
+  "gym_energy": {
+    "persona": "High-voltage coach shouting encouragement between sets.",
+    "traits": [
+      "Kick off with countdown energy or a command that mirrors the movement in IMAGE_FACTS.",
+      "Highlight muscles, sweat, equipment, or pacing we genuinely see.",
+      "Mix hype with one actionable coaching cue or mindset reset.",
+      "Let CTAs feel like team check-ins or accountability boosts."
+    ],
+    "hooks": [
+      "Start with stopwatch urgency, bold caps sparingly, or onomatopoeia that captures impact."
+    ],
+    "cta": "Challenge the crew to drop reps, progress wins, or tomorrow's commitment.",
+    "avoid": [
+      "Diet culture claims, shamey language, or unrealistic transformation promises.",
+      "Emoji overload—stick to motion or strength icons if needed."
+    ],
+    "cadence": "Three-beat arc: hype, sensory detail, rally cry."
+  },
+  "cozy_girl": {
+    "persona": "Soft-spoken host inviting followers into a warm, slow-living vignette.",
+    "traits": [
+      "Ease in with a sensory detail—steam, knit textures, candlelight—from IMAGE_FACTS.",
+      "Use nostalgic, comforting language and contractions so it feels like a DM to a friend.",
+      "Let gentle emojis (🌙, ☕, 🕯) accent, not dominate, the tone.",
+      "Frame CTAs as check-ins or shared rituals rather than directives."
+    ],
+    "hooks": [
+      "Open with a whispered observation, rhetorical question, or time-of-day cue."
+    ],
+    "cta": "Invite followers to share their own cozy rituals, comforts, or saves for later.",
+    "avoid": [
+      "Hard-sell language, intense punctuation, or anything that feels rushed.",
+      "Overly saccharine metaphors—keep it grounded in real sensory detail."
+    ],
+    "cadence": "Soft paragraph or two with gentle line breaks for breathing room."
+  }
+}
+server/caption/geminiPipeline.ts
++12-1
+import fs from "node:fs/promises";
+import path from "node:path";
+import { z } from "zod";
+import { visionModel, textModel } from "../lib/gemini";
+import { CaptionArray, CaptionItem, RankResult, platformChecks } from "./schema";
+import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
+import { formatVoiceContext } from "./voiceTraits";
+
+// Custom error class for image validation failures
+export class InvalidImageError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'InvalidImageError';
+  }
+}
+
+// CaptionResult interface for type safety
+interface CaptionResult {
+  provider: string;
+  final: z.infer<typeof CaptionItem>;
+  facts?: Record<string, unknown>;
+  variants?: z.infer<typeof CaptionArray>;
+  ranked?: z.infer<typeof RankResult>;
+}
+
+async function load(p: string): Promise<string> {
+  return fs.readFile(path.join(process.cwd(), "prompts", p), "utf8");
+}
+async function b64(url: string): Promise<{ base64: string; mimeType: string }> {
+  try {
+    const r = await fetch(url);
+    if (!r.ok) throw new InvalidImageError(`fetch failed: ${r.status} ${r.statusText}`);
+@@ -187,51 +188,61 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
+          angles: ['dynamic'],
+          mood: 'playful',
+          style: 'animated'
+        };
+      }
+      
+      throw error;
+    }
+  } catch (error) {
+    console.error('Error in extractFacts:', error);
+    if (error instanceof InvalidImageError) throw error;
+    throw new Error(`Failed to extract facts: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+export async function generateVariants(params: {
+  platform: "instagram" | "x" | "reddit" | "tiktok";
+  voice: string;
+  style?: string;
+  mood?: string;
+  facts: Record<string, unknown>;
+  hint?: string;
+  nsfw?: boolean;
+}): Promise<z.infer<typeof CaptionArray>> {
+  const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("variants.txt");
+  const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\n${params.style ? `STYLE: ${params.style}\n` : ''}${params.mood ? `MOOD: ${params.mood}\n` : ''}IMAGE_FACTS: ${JSON.stringify(params.facts)}\nNSFW: ${params.nsfw || false}\n${params.hint?`HINT:${params.hint}`:""}`;
+  const voiceContext = formatVoiceContext(params.voice);
+  const user = [
+    `PLATFORM: ${params.platform}`,
+    `VOICE: ${params.voice}`,
+    voiceContext,
+    params.style ? `STYLE: ${params.style}` : "",
+    params.mood ? `MOOD: ${params.mood}` : "",
+    `IMAGE_FACTS: ${JSON.stringify(params.facts)}`,
+    `NSFW: ${params.nsfw || false}`,
+    params.hint ? `HINT:${params.hint}` : "",
+  ].filter((line): line is string => Boolean(line)).join("\n");
+  let res;
+  try {
+    res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+user }]);
+  } catch (error) {
+    console.error('Gemini textModel.generateContent failed:', error);
+    throw error;
+  }
+  const json = stripToJSON(res.response.text()) as unknown[];
+  // Fix common safety_level values and missing fields
+  if(Array.isArray(json)){
+    json.forEach((item) => {
+      const variant = item as Record<string, unknown>;
+      variant.safety_level = normalizeSafetyLevel(
+        typeof variant.safety_level === 'string' ? variant.safety_level : 'normal'
+      );
+      // Fix other fields
+      if(typeof variant.mood !== 'string' || variant.mood.length < 2) variant.mood = "engaging";
+      if(typeof variant.style !== 'string' || variant.style.length < 2) variant.style = "authentic";
+      if(typeof variant.cta !== 'string' || variant.cta.length < 2) variant.cta = "Check it out";
+      if(typeof variant.alt !== 'string' || variant.alt.length < 20) variant.alt = "Engaging social media content";
+      if(!Array.isArray(variant.hashtags)) variant.hashtags = ["#content", "#creative", "#amazing"];
+      if(typeof variant.caption !== 'string' || variant.caption.length < 1) variant.caption = "Check out this amazing content!";
+    });
+
+    // Ensure exactly 5 variants by padding with variations if needed
+server/caption/openaiFallback.ts
++11-8
+import OpenAI from 'openai';
+import * as z from 'zod';
+import { formatVoiceContext } from './voiceTraits';
+
+// Assuming CaptionItem is defined elsewhere and imported
+// For the purpose of this example, let's define a placeholder if it's not provided
+const CaptionItem = z.object({
+  caption: z.string(),
+  hashtags: z.array(z.string()),
+  safety_level: z.string(),
+  mood: z.string(),
+  style: z.string(),
+  cta: z.string(),
+  alt: z.string(),
+  nsfw: z.boolean()
+});
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || '' });
+
+export interface FallbackParams {
+  platform: string;
+  voice: string;
+  imageUrl?: string;
+  theme?: string;
+  context?: string;
+  existingCaption?: string;
+}
+
+export async function openAICaptionFallback({
+  platform,
+  voice = "flirty_playful",
+  imageUrl,
+  existingCaption
+}: {
+  platform: "instagram" | "x" | "reddit" | "tiktok";
+  voice?: string;
+  imageUrl?: string;
+  existingCaption?: string;
+}): Promise<z.infer<typeof CaptionItem>> {
+  let messages: any[] = [];
+  const voiceContext = formatVoiceContext(voice);
+  const systemVoiceSuffix = voiceContext ? `\n${voiceContext}` : '';
+
+  if (imageUrl && openai) {
+    try {
+      console.log('OpenAI fallback: Analyzing image for accurate captions');
+
+      if (imageUrl.startsWith('data:')) {
+        // For data URLs, we can send directly to OpenAI vision
+        messages = [
+          {
+            role: "system",
+            content: `You are an expert social media caption writer. Analyze the image carefully and create engaging ${voice} content for ${platform} that directly relates to what you see.
+            content: `You are an expert social media caption writer. Analyze the image carefully and create engaging ${voice} content for ${platform} that directly relates to what you see.${systemVoiceSuffix}
+
+Return ONLY a JSON object with this structure:
+{
+  "caption": "engaging caption text that describes what's actually in the image",
+  "hashtags": ["#relevant", "#to", "#image"],
+  "safety_level": "safe_for_work",
+  "mood": "${voice.includes('flirty') ? 'flirty' : 'confident'}",
+  "style": "authentic",
+  "cta": "relevant call to action",
+  "alt": "detailed description of what's actually in the image",
+  "nsfw": false
+}`
+          },
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: existingCaption
+                  ? `Analyze this image and rewrite this caption to better match what you see: "${existingCaption}"`
+                  : `Analyze this image and create a caption that describes what you actually see`
+              },
+              {
+                type: "image_url",
+                image_url: { url: imageUrl }
+              }
+            ]
+          }
+        ];
+      } else {
+        // For regular URLs, describe the image request
+        messages = [
+          {
+            role: "system",
+            content: `Create engaging ${voice} content for ${platform} based on the image.`
+            content: `Create engaging ${voice} content for ${platform} based on the image.${systemVoiceSuffix}`
+          },
+          {
+            role: "user",
+            content: `Create a caption for an image at: ${imageUrl.substring(0, 100)}...`
+          }
+        ];
+      }
+    } catch (error) {
+      console.warn('Image analysis failed, using text-only fallback:', error);
+      messages = [
+        {
+          role: "system",
+          content: `You are an expert social media caption writer. Create engaging ${voice} content for ${platform}.`
+          content: `You are an expert social media caption writer. Create engaging ${voice} content for ${platform}.${systemVoiceSuffix}`
+        },
+        {
+          role: "user",
+          content: existingCaption
+            ? `Rewrite this caption: "${existingCaption}"`
+            : `Create engaging ${voice} content for ${platform}`
+            content: existingCaption
+              ? `Rewrite this caption: ${JSON.stringify(existingCaption)}`
+              : `Create engaging ${voice} content for ${platform}`
+        }
+      ];
+    }
+  } else {
+    messages = [
+      {
+        role: "system",
+        content: `You are an expert social media caption writer. Create engaging ${voice} content for ${platform}.`
+        content: `You are an expert social media caption writer. Create engaging ${voice} content for ${platform}.${systemVoiceSuffix}`
+      },
+      {
+        role: "user",
+        content: existingCaption
+          ? `Rewrite this caption: "${existingCaption}"`
+          ? `Rewrite this caption: ${JSON.stringify(existingCaption)}`
+          : `Create engaging ${voice} content for ${platform}`
+      }
+    ];
+  }
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages,
+      response_format: { type: "json_object" },
+      max_tokens: 500
+    });
+
+    let json: unknown;
+    try {
+      json = JSON.parse(response.choices[0].message.content || '{}');
+    } catch (e) {
+      console.error("Error parsing JSON response from OpenAI:", e);
+      console.error("OpenAI response content:", response.choices[0].message.content);
+      // Fallback to a simpler structure if JSON parsing fails
+      json = { caption: response.choices[0].message.content || 'Fallback caption' };
+    }
+
+    const jsonData: any = json;
+    return {
+server/caption/rewritePipeline.ts
++13-1
+import fs from "node:fs/promises";
+import path from "node:path";
+import { textModel, visionModel } from "../lib/gemini";
+import { CaptionArray, RankResult, platformChecks } from "./schema";
+import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
+import { formatVoiceContext } from "./voiceTraits";
+
+// CaptionResult interface for type safety
+interface CaptionResult {
+  provider: string;
+  final: unknown;
+  facts?: unknown;
+  variants?: unknown;
+  ranked?: unknown;
+}
+
+async function load(p:string){ return fs.readFile(path.join(process.cwd(),"prompts",p),"utf8"); }
+async function b64(url:string){ const r=await fetch(url); if(!r.ok) throw new Error("fetch failed"); const b=Buffer.from(await r.arrayBuffer()); return b.toString("base64"); }
+function stripToJSON(txt:string){ const i=Math.min(...[txt.indexOf("{"),txt.indexOf("[")].filter(x=>x>=0));
+  const j=Math.max(txt.lastIndexOf("}"),txt.lastIndexOf("]")); return JSON.parse((i>=0&&j>=0)?txt.slice(i,j+1):txt); }
+
+export async function extractFacts(imageUrl:string){
+  const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("extract.txt");
+  const img={ inlineData:{ data: await b64(imageUrl), mimeType:"image/jpeg" } };
+  try {
+    const res=await visionModel.generateContent([{text:sys+"\n"+guard+"\n"+prompt}, img]);
+    return stripToJSON(res.response.text());
+  } catch (error) {
+    console.error('Gemini visionModel.generateContent failed:', error);
+    throw error;
+  }
+}
+
+export async function variantsRewrite(params:{platform:"instagram"|"x"|"reddit"|"tiktok", voice:string, style?:string, mood?:string, existingCaption:string, facts?:Record<string, unknown>, hint?:string, nsfw?:boolean}){
+  const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rewrite.txt");
+  const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\n${params.style ? `STYLE: ${params.style}\n` : ''}${params.mood ? `MOOD: ${params.mood}\n` : ''}EXISTING_CAPTION: "${params.existingCaption}"${params.facts?`\nIMAGE_FACTS: ${JSON.stringify(params.facts)}`:""}\nNSFW: ${params.nsfw || false}${params.hint?`\nHINT:${params.hint}`:""}`;
+  const voiceContext = formatVoiceContext(params.voice);
+  const user = [
+    `PLATFORM: ${params.platform}`,
+    `VOICE: ${params.voice}`,
+    voiceContext,
+    params.style ? `STYLE: ${params.style}` : "",
+    params.mood ? `MOOD: ${params.mood}` : "",
+    `EXISTING_CAPTION: ${JSON.stringify(params.existingCaption)}`,
+    params.facts ? `IMAGE_FACTS: ${JSON.stringify(params.facts)}` : "",
+    `NSFW: ${params.nsfw || false}`,
+    params.hint ? `HINT:${params.hint}` : "",
+  ].filter((line): line is string => Boolean(line)).join("\n");
+  let res;
+  try {
+    res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+user }]);
+  } catch (error) {
+    console.error('Gemini textModel.generateContent failed:', error);
+    throw error;
+  }
+  const json=stripToJSON(res.response.text()) as unknown;
+  // Fix common safety_level values and missing fields
+  if(Array.isArray(json)){
+    json.forEach((item) => {
+      const variant = item as Record<string, unknown>;
+      variant.safety_level = normalizeSafetyLevel(
+        typeof variant.safety_level === 'string' ? variant.safety_level : 'normal'
+      );
+      // Fix other fields
+      if(typeof variant.mood !== 'string' || variant.mood.length<2) variant.mood="engaging";
+      if(typeof variant.style !== 'string' || variant.style.length<2) variant.style="authentic";
+      if(typeof variant.cta !== 'string' || variant.cta.length<2) variant.cta="Check it out";
+      if(typeof variant.alt !== 'string' || variant.alt.length<20) variant.alt="Engaging social media content";
+      if(!Array.isArray(variant.hashtags)) variant.hashtags=["#content", "#creative", "#amazing"];
+      if(typeof variant.caption !== 'string' || variant.caption.length<1) variant.caption="Check out this amazing content, you'll love it and want more!";
+    });
+
+    // Ensure exactly 5 variants by padding with variations if needed
+server/caption/textOnlyPipeline.ts
++13-1
+import fs from "node:fs/promises";
+import path from "node:path";
+import { textModel } from "../lib/gemini";
+import { CaptionArray, RankResult, platformChecks } from "./schema";
+import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
+import { formatVoiceContext } from "./voiceTraits";
+
+async function load(p:string){ return fs.readFile(path.join(process.cwd(),"prompts",p),"utf8"); }
+function stripToJSON(txt:string){ const i=Math.min(...[txt.indexOf("{"),txt.indexOf("[")].filter(x=>x>=0));
+  const j=Math.max(txt.lastIndexOf("}"),txt.lastIndexOf("]")); return JSON.parse((i>=0&&j>=0)?txt.slice(i,j+1):txt); }
+
+export async function generateVariantsTextOnly(params:{platform:"instagram"|"x"|"reddit"|"tiktok", voice:string, style?:string, mood?:string, theme:string, context?:string, hint?:string, nsfw?:boolean}){
+  const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("variants_textonly.txt");
+  const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\n${params.style ? `STYLE: ${params.style}\n` : ''}${params.mood ? `MOOD: ${params.mood}\n` : ''}THEME: "${params.theme}"\nCONTEXT: "${params.context||''}"\nNSFW: ${params.nsfw || false}${params.hint?`\nHINT:${params.hint}`:""}`;
+  const voiceContext = formatVoiceContext(params.voice);
+  const user = [
+    `PLATFORM: ${params.platform}`,
+    `VOICE: ${params.voice}`,
+    voiceContext,
+    params.style ? `STYLE: ${params.style}` : "",
+    params.mood ? `MOOD: ${params.mood}` : "",
+    `THEME: ${JSON.stringify(params.theme)}`,
+    `CONTEXT: ${JSON.stringify(params.context || "")}`,
+    `NSFW: ${params.nsfw || false}`,
+    params.hint ? `HINT:${params.hint}` : "",
+  ].filter((line): line is string => Boolean(line)).join("\n");
+  const res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+user }]);
+  const raw=stripToJSON(res.response.text());
+  const json=Array.isArray(raw)?raw:[raw];
+  // Fix common safety_level values and missing fields
+  if(Array.isArray(json)){
+    json.forEach((item) => {
+      const variant = item as Record<string, unknown>;
+      variant.safety_level = normalizeSafetyLevel(
+        typeof variant.safety_level === 'string' ? variant.safety_level : 'normal'
+      );
+      // Fix other fields
+      if(typeof variant.mood !== 'string' || variant.mood.length<2) variant.mood="engaging";
+      if(typeof variant.style !== 'string' || variant.style.length<2) variant.style="authentic";
+      if(typeof variant.cta !== 'string' || variant.cta.length<2) variant.cta="Check it out";
+      if(typeof variant.alt !== 'string' || variant.alt.length<20) variant.alt="Engaging social media content";
+      if(!Array.isArray(variant.hashtags) || variant.hashtags.length < 3) {
+        if(params.platform === 'instagram') {
+          variant.hashtags=["#content", "#creative", "#amazing", "#lifestyle"];
+        } else {
+          variant.hashtags=["#content", "#creative", "#amazing"];
+        }
+      }
+      if(typeof variant.caption !== 'string' || variant.caption.length<1) variant.caption="Check out this amazing content!";
+    });
+
+server/caption/voiceTraits.ts
+New
++73-0
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { z } from "zod";
+
+const VoiceDefinitionSchema = z.object({
+  persona: z.string(),
+  traits: z.array(z.string()).min(1),
+  hooks: z.array(z.string()).optional(),
+  cta: z.string().optional(),
+  avoid: z.array(z.string()).optional(),
+  cadence: z.string().optional(),
+});
+
+const VoiceMapSchema = z.record(VoiceDefinitionSchema);
+
+let cache: z.infer<typeof VoiceMapSchema> | null = null;
+
+function loadVoiceMap(): z.infer<typeof VoiceMapSchema> | null {
+  if (cache) return cache;
+  try {
+    const raw = readFileSync(
+      path.join(process.cwd(), "prompts", "voices.json"),
+      "utf8",
+    );
+    cache = VoiceMapSchema.parse(JSON.parse(raw));
+    return cache;
+  } catch (error) {
+    console.error("Failed to load voice traits:", error);
+    cache = null;
+    return null;
+  }
+}
+
+export type VoiceDefinition = z.infer<typeof VoiceDefinitionSchema>;
+
+export function getVoiceDefinition(voice: string): VoiceDefinition | undefined {
+  const map = loadVoiceMap();
+  return map?.[voice];
+}
+
+export function formatVoiceContext(voice: string): string {
+  const definition = getVoiceDefinition(voice);
+  if (!definition) return "";
+
+  const lines: string[] = ["VOICE_CONTEXT:"];
+  lines.push(`- Persona: ${definition.persona}`);
+
+  for (const trait of definition.traits) {
+    lines.push(`- ${trait}`);
+  }
+
+  if (definition.hooks?.length) {
+    for (const hook of definition.hooks) {
+      lines.push(`- Hook pattern: ${hook}`);
+    }
+  }
+
+  if (definition.cta) {
+    lines.push(`- CTA direction: ${definition.cta}`);
+  }
+
+  if (definition.cadence) {
+    lines.push(`- Cadence: ${definition.cadence}`);
+  }
+
+  if (definition.avoid?.length) {
+    for (const rule of definition.avoid) {
+      lines.push(`- Avoid: ${rule}`);
+    }
+  }
+
+  return lines.join("\n");
+}
+server/services/prompt-builder.ts
++12-3
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
+import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
+import { formatVoiceContext } from '../caption/voiceTraits';
+
+/**
+ * Configuration for constructing a chat prompt.
+ */
+export interface PromptConfig {
+  platform: string;
+  voice: string;
+  style: string;
+  theme: string;
+  allowsPromotion: boolean;
+  userPrompt?: string;
+  imageBase64?: string;
+  contextDocs?: string[]; // RAG results or brand guidelines
+}
+
+interface ImageMessageParam {
+  role: 'user';
+  content: (
+    | { type: 'text'; text: string }
+    | { type: 'image_url'; image_url: { url: string } }
+  )[];
+}
+
+const systemTemplate = readFileSync(
+  resolve(__dirname, '../../prompts/system.txt'),
+  'utf8',
+);
+
+/**
+ * Build an array of ChatCompletion messages using the config above.
+ */
+export function buildMessages(cfg: PromptConfig): ChatCompletionMessageParam[] {
+  const promotionLine = cfg.allowsPromotion
+    ? 'Include subtle promotional elements.'
+    : 'Focus on authentic engagement without promotion.';
+
+  const voiceContext = formatVoiceContext(cfg.voice);
+  const systemContent = [
+    systemTemplate,
+    `Platform focus: ${cfg.platform}`,
+    `Voice token: ${cfg.voice}`,
+    voiceContext,
+  ]
+    .filter((line): line is string => Boolean(line))
+    .join('\n');
+
+  const userBlock = [
+    `Generate social media content for ${cfg.platform}.`,
+    `Style: ${cfg.style}`,
+    `Theme: ${cfg.theme}`,
+    promotionLine,
+    cfg.userPrompt ?? '',
+    '',
+    'Please provide:',
+    '1. Three different title options',
+    '2. Engaging post content',
+    '3. Photo instructions (lighting, camera angle, composition, styling, mood, technical settings)',
+    '4. Relevant hashtags',
+    '',
+    'Make the content authentic and engaging.',
+  ].join('\n');
+
+  const messages: ChatCompletionMessageParam[] = [
+    {
+      role: 'system',
+      content: systemTemplate
+        .replace('VOICE', cfg.voice)
+        .replace('PLATFORM', cfg.platform),
+      content: systemContent,
+    },
+    { role: 'user', content: userBlock },
+  ];
+
+  if (cfg.contextDocs?.length) {
+    messages.push({
+      role: 'system',
+      content:
+        'Relevant context:\n' + cfg.contextDocs.map((d) => `- ${d}`).join('\n'),
+    });
+  }
+
+  if (cfg.imageBase64) {
+    const imageMessage: ImageMessageParam = {
+      role: 'user',
+      content: [
+        { type: 'text', text: 'Analyze this image and incorporate it:' },
+        {
+          type: 'image_url',
+          image_url: { url: `data:image/jpeg;base64,${cfg.imageBase64}` },
+        },
+      ],
+    };
+    messages.push(imageMessage);
+  }

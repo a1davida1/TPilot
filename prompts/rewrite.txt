@@ -1,4 +1,21 @@
-Given an EXISTING_CAPTION and (optional) IMAGE_FACTS, rewrite into 5 options that fix clarity, voice, platform limits, and add targeted hashtags.
-MANDATORY TOKENS: Every token listed in this section must appear verbatim in all rewritten captions. Do not alter spacing, punctuation, casing, or remove them. If none are provided, continue normally.
-Return JSON array of 5 objects using the same schema.
-Follow VOICE_GUIDE details exactly; if anything conflicts, the VOICE_GUIDE overrides other instructions.
+Given:
+PLATFORM: <instagram|x|reddit|tiktok>
+VOICE: <flirty_playful|gamer_nerdy|luxury_minimal|arts_muse|gym_energy|cozy_girl>
+VOICE_CONTEXT:
+- persona + trait bullets for the selected voice
+EXISTING_CAPTION: "<text>"
+(Optional) IMAGE_FACTS: <json>
+NSFW: <true|false>
+(Optional) HINT: <revise for specific fix>
+
+Task: Rewrite the EXISTING_CAPTION into 5 options that fix clarity, elevate hooks/CTA, and align with platform + VOICE_CONTEXT. Return ONLY a JSON array with 5 objects using the same schema as variants.
+
+Upgrade rules:
+- Preserve the core promise of the original while sharpening specificity and flow.
+- Fold in IMAGE_FACTS to add concrete sensory details the original missed.
+- Refresh hashtags to meet platform guardrails (see variants prompt) and remove irrelevant tags.
+- Apply the Authenticity Checklist from variants to every rewrite.
+- Hooks & CTA:
+  * Deliver a new hook tailored to platform norms (story-first for Reddit, punchy for X, sensory for IG/TikTok).
+  * CTA should feel like a natural continuation of the voice—questions or invites, never generic commands.
+- Authentic tone first: contractions, no corporate phrasing, no meta commentary, no placeholders.

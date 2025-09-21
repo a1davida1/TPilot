@@ -1,0 +1,647 @@
+Add ensureFactCoverage helper and tests
+Sep 20 · a1davida1/TPilot · main
++351-18
+1. Create a helper in `server/caption` (e.g., `ensureFactCoverage`) that flattens `facts` into a keyword set (objects, colors, setting, wardrobe) and checks that the caption/alt text contain at least one keyword per category (case-insensitive, allowing synonyms via a small map).
+2. Call the helper right after ranking in `geminiPipeline.pipeline` and `pipelineRewrite`; if coverage fails, either filter the offending variant out and re-rank or re-prompt Gemini with a `hint` like “Work in IMAGE\_FACTS nouns: …”.
+3. Extend the unit tests to simulate facts (`objects: ['boardwalk']`, etc.) and assert the final caption includes them; also add a negative case where a generic caption gets rejected and a second pass succeeds.
+
+Summary
+
+    Added a dedicated ensureFactCoverage helper that flattens Gemini image facts, supports a curated synonym map, and produces hint strings whenever any fact category is missing from the caption or alt text.
+
+Wired the new coverage enforcement into both Gemini caption pipelines so they re-rank or re-prompt with fact-based hints after ranking and again after any platform-specific fixups.
+
+Expanded the caption generation tests to assert fact coverage on the happy path and to exercise the retry flow when the first set of variants is too generic, ensuring Gemini incorporates the extracted nouns, colors, settings, and wardrobe details.
+
+Testing
+
+    ✅ npm run lint
+
+⚠️ npm test *(aborted after numerous pre-existing environment/configuration failures outside the caption pipeline scope)*
+
+✅ npm test -- tests/routes/caption-generation.test.ts
+
+
+server/caption/ensureFactCoverage.ts
+New
++176-0
+import { z } from "zod";
+
+type FactCategory = "objects" | "colors" | "setting" | "wardrobe";
+
+const FACT_CATEGORIES: ReadonlyArray<FactCategory> = [
+  "objects",
+  "colors",
+  "setting",
+  "wardrobe",
+];
+
+const SYNONYM_GROUPS: ReadonlyArray<ReadonlyArray<string>> = [
+  ["boardwalk", "pier", "dock", "promenade"],
+  ["ocean", "sea", "seaside"],
+  ["beach", "shore", "coast"],
+  ["sunset", "twilight", "dusk"],
+  ["sunrise", "dawn", "daybreak"],
+  ["dress", "gown"],
+  ["shirt", "top", "tee"],
+  ["pants", "trousers", "slacks"],
+  ["jacket", "coat", "blazer"],
+  ["swimsuit", "bikini"],
+  ["casual", "laid-back"],
+  ["colorful", "vibrant"],
+  ["blue", "azure", "navy", "cerulean"],
+  ["red", "crimson", "scarlet"],
+  ["green", "emerald", "verdant"],
+  ["yellow", "golden", "sunny"],
+  ["black", "ebony", "onyx"],
+  ["white", "ivory", "pearl"],
+];
+
+const SYNONYM_LOOKUP: ReadonlyMap<string, ReadonlySet<string>> = (() => {
+  const map = new Map<string, Set<string>>();
+  for (const group of SYNONYM_GROUPS) {
+    const normalizedGroup = group.map(term => term.toLowerCase());
+    for (const term of normalizedGroup) {
+      const entry = map.get(term) ?? new Set<string>();
+      for (const candidate of normalizedGroup) {
+        if (candidate !== term) {
+          entry.add(candidate);
+        }
+      }
+      map.set(term, entry);
+    }
+  }
+  return map;
+})();
+
+const captionSchema = z.object({
+  caption: z.string(),
+  alt: z.string(),
+});
+
+export interface EnsureFactCoverageResult {
+  ok: boolean;
+  missing: FactCategory[];
+  keywords: Record<FactCategory, string[]>;
+  hint?: string;
+}
+
+function collectStrings(value: unknown): string[] {
+  if (typeof value === "string") {
+    return [value];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(item => collectStrings(item));
+  }
+  if (value && typeof value === "object") {
+    return Object.values(value as Record<string, unknown>).flatMap(item => collectStrings(item));
+  }
+  return [];
+}
+
+function uniqueNormalizedKeywords(values: Iterable<string>): string[] {
+  const out = new Set<string>();
+  for (const value of values) {
+    const normalized = value.trim().toLowerCase();
+    if (normalized.length > 0) {
+      out.add(normalized);
+    }
+  }
+  return Array.from(out);
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function includesTerm(text: string, lowerText: string, term: string): boolean {
+  const normalized = term.trim().toLowerCase();
+  if (normalized.length === 0) {
+    return false;
+  }
+  if (normalized.includes(" ")) {
+    return lowerText.includes(normalized);
+  }
+  const regex = new RegExp(`\\b${escapeRegExp(normalized)}\\b`, "i");
+  return regex.test(text);
+}
+
+function keywordMatches(text: string, lowerText: string, keyword: string): boolean {
+  if (includesTerm(text, lowerText, keyword)) {
+    return true;
+  }
+  const synonyms = SYNONYM_LOOKUP.get(keyword) ?? new Set<string>();
+  for (const candidate of synonyms) {
+    if (includesTerm(text, lowerText, candidate)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function buildHint(keywords: Record<FactCategory, string[]>, missing: FactCategory[]): string | undefined {
+  if (missing.length === 0) {
+    return undefined;
+  }
+  const segments: string[] = [];
+  for (const category of missing) {
+    const terms = keywords[category];
+    if (terms.length === 0) {
+      continue;
+    }
+    const label = category === "objects" ? "nouns" : category;
+    segments.push(`${label}: ${terms.join(", ")}`);
+  }
+  if (segments.length === 0) {
+    return undefined;
+  }
+  return `Work in IMAGE_FACTS ${segments.join("; ")}`;
+}
+
+export function ensureFactCoverage(params: {
+  facts?: Record<string, unknown>;
+  caption: string;
+  alt: string;
+}): EnsureFactCoverageResult {
+  const { caption, alt } = captionSchema.parse({ caption: params.caption, alt: params.alt });
+  const facts = params.facts ?? {};
+  const keywords = FACT_CATEGORIES.reduce<Record<FactCategory, string[]>>((acc, category) => {
+    const raw = collectStrings((facts as Record<string, unknown>)[category]);
+    acc[category] = uniqueNormalizedKeywords(raw);
+    return acc;
+  }, {
+    objects: [],
+    colors: [],
+    setting: [],
+    wardrobe: [],
+  });
+
+  const combinedText = `${caption} ${alt}`;
+  const lowerText = combinedText.toLowerCase();
+
+  const missing: FactCategory[] = [];
+
+  for (const category of FACT_CATEGORIES) {
+    const terms = keywords[category];
+    if (terms.length === 0) {
+      continue;
+    }
+    const matchesCategory = terms.some(term => keywordMatches(combinedText, lowerText, term));
+    if (!matchesCategory) {
+      missing.push(category);
+    }
+  }
+
+  const ok = missing.length === 0;
+
+  return {
+    ok,
+    missing,
+    keywords,
+    hint: ok ? undefined : buildHint(keywords, missing),
+  };
+}
+server/caption/geminiPipeline.ts
++17-1
+import fs from "node:fs/promises";
+import path from "node:path";
+import { z } from "zod";
+import { visionModel, textModel } from "../lib/gemini";
+import { CaptionArray, CaptionItem, RankResult, platformChecks } from "./schema";
+import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
+import { ensureFactCoverage } from "./ensureFactCoverage";
+
+// Custom error class for image validation failures
+export class InvalidImageError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'InvalidImageError';
+  }
+}
+
+// CaptionResult interface for type safety
+interface CaptionResult {
+  provider: string;
+  final: z.infer<typeof CaptionItem>;
+  facts?: Record<string, unknown>;
+  variants?: z.infer<typeof CaptionArray>;
+  ranked?: z.infer<typeof RankResult>;
+}
+
+async function load(p: string): Promise<string> {
+  return fs.readFile(path.join(process.cwd(), "prompts", p), "utf8");
+}
+async function b64(url: string): Promise<{ base64: string; mimeType: string }> {
+  try {
+    const r = await fetch(url);
+    if (!r.ok) throw new InvalidImageError(`fetch failed: ${r.status} ${r.statusText}`);
+@@ -290,39 +291,54 @@ export async function rankAndSelect(variants: z.infer<typeof CaptionArray>): Pro
+    );
+    if(typeof final.mood !== 'string' || final.mood.length<2) final.mood="engaging";
+    if(typeof final.style !== 'string' || final.style.length<2) final.style="authentic";
+    if(typeof final.cta !== 'string' || final.cta.length<2) final.cta="Check it out";
+    if(typeof final.alt !== 'string' || final.alt.length<20) final.alt="Engaging social media content";
+    if(!Array.isArray(final.hashtags)) final.hashtags=["#content", "#creative", "#amazing"];
+    if(typeof final.caption !== 'string' || final.caption.length<1) final.caption="Check out this amazing content!";
+  }
+  return RankResult.parse(json);
+}
+
+export async function pipeline({ imageUrl, platform, voice = "flirty_playful", style, mood, nsfw = false }: {
+  imageUrl: string;
+  platform: "instagram" | "x" | "reddit" | "tiktok";
+  voice?: string;
+  style?: string;
+  mood?: string;
+  nsfw?: boolean;
+}): Promise<CaptionResult> {
+  try {
+    const facts = await extractFacts(imageUrl);
+    let variants = await generateVariants({ platform, voice, style, mood, facts, nsfw });
+    let ranked = await rankAndSelect(variants);
+    let out = ranked.final;
+
+    const enforceCoverage = async () => {
+      let attempts = 0;
+      let coverage = ensureFactCoverage({ facts, caption: out.caption, alt: out.alt });
+      while (!coverage.ok && coverage.hint && attempts < 2) {
+        attempts += 1;
+        variants = await generateVariants({ platform, voice, style, mood, facts, hint: coverage.hint, nsfw });
+        ranked = await rankAndSelect(variants);
+        out = ranked.final;
+        coverage = ensureFactCoverage({ facts, caption: out.caption, alt: out.alt });
+      }
+    };
+
+    await enforceCoverage();
+
+    const err = platformChecks(platform, out);
+    if (err) {
+      variants = await generateVariants({ platform, voice, facts, hint:`Fix: ${err}. Use IMAGE_FACTS nouns/colors/setting explicitly.`, nsfw });
+      variants = await generateVariants({ platform, voice, style, mood, facts, hint:`Fix: ${err}. Use IMAGE_FACTS nouns/colors/setting explicitly.`, nsfw });
+      ranked = await rankAndSelect(variants);
+      out = ranked.final;
+      await enforceCoverage();
+    }
+
+    return { provider: 'gemini', facts, variants, ranked, final: out };
+  } catch (error) {
+    const { openAICaptionFallback } = await import('./openaiFallback');
+    const final = await openAICaptionFallback({ platform, voice, imageUrl });
+    return { provider: 'openai', final } as CaptionResult;
+  }
+}
+server/caption/rewritePipeline.ts
++17-1
+import fs from "node:fs/promises";
+import path from "node:path";
+import { textModel, visionModel } from "../lib/gemini";
+import { CaptionArray, RankResult, platformChecks } from "./schema";
+import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
+import { ensureFactCoverage } from "./ensureFactCoverage";
+
+// CaptionResult interface for type safety
+interface CaptionResult {
+  provider: string;
+  final: unknown;
+  facts?: unknown;
+  variants?: unknown;
+  ranked?: unknown;
+}
+
+async function load(p:string){ return fs.readFile(path.join(process.cwd(),"prompts",p),"utf8"); }
+async function b64(url:string){ const r=await fetch(url); if(!r.ok) throw new Error("fetch failed"); const b=Buffer.from(await r.arrayBuffer()); return b.toString("base64"); }
+function stripToJSON(txt:string){ const i=Math.min(...[txt.indexOf("{"),txt.indexOf("[")].filter(x=>x>=0));
+  const j=Math.max(txt.lastIndexOf("}"),txt.lastIndexOf("]")); return JSON.parse((i>=0&&j>=0)?txt.slice(i,j+1):txt); }
+
+export async function extractFacts(imageUrl:string){
+  const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("extract.txt");
+  const img={ inlineData:{ data: await b64(imageUrl), mimeType:"image/jpeg" } };
+  try {
+    const res=await visionModel.generateContent([{text:sys+"\n"+guard+"\n"+prompt}, img]);
+    return stripToJSON(res.response.text());
+  } catch (error) {
+    console.error('Gemini visionModel.generateContent failed:', error);
+    throw error;
+  }
+@@ -105,45 +106,60 @@ export async function rankAndSelect(variants: unknown[]){
+    };
+  }
+  
+  if((json as Record<string, unknown>).final){
+    const final = (json as { final: Record<string, unknown> }).final;
+    final.safety_level = normalizeSafetyLevel(
+      typeof final.safety_level === 'string' ? final.safety_level : 'normal'
+    );
+    if(typeof final.mood !== 'string' || final.mood.length<2) final.mood="engaging";
+    if(typeof final.style !== 'string' || final.style.length<2) final.style="authentic";
+    if(typeof final.cta !== 'string' || final.cta.length<2) final.cta="Check it out";
+    if(typeof final.alt !== 'string' || final.alt.length<20) final.alt="Engaging social media content";
+    if(!Array.isArray(final.hashtags)) final.hashtags=["#content", "#creative", "#amazing"];
+    if(typeof final.caption !== 'string' || final.caption.length<1) final.caption="Check out this amazing content!";
+  }
+  return RankResult.parse(json);
+}
+
+export async function pipelineRewrite({ platform, voice="flirty_playful", style, mood, existingCaption, imageUrl, nsfw=false }:{
+  platform:"instagram"|"x"|"reddit"|"tiktok", voice?:string, style?:string, mood?:string, existingCaption:string, imageUrl?:string, nsfw?:boolean }){
+  try {
+    const facts = imageUrl ? await extractFacts(imageUrl) : undefined;
+    let variants = await variantsRewrite({ platform, voice, style, mood, existingCaption, facts, nsfw });
+    let ranked = await rankAndSelect(variants);
+    let out = ranked.final;
+
+    const enforceCoverage = async () => {
+      let attempts = 0;
+      let coverage = ensureFactCoverage({ facts, caption: out.caption, alt: out.alt });
+      while (!coverage.ok && coverage.hint && attempts < 2) {
+        attempts += 1;
+        variants = await variantsRewrite({ platform, voice, style, mood, existingCaption, facts, hint: coverage.hint, nsfw });
+        ranked = await rankAndSelect(variants);
+        out = ranked.final;
+        coverage = ensureFactCoverage({ facts, caption: out.caption, alt: out.alt });
+      }
+    };
+
+    await enforceCoverage();
+    
+    // Ensure rewritten caption is longer and more engaging than original
+    if(out.caption.length <= existingCaption.length) {
+      out.caption = existingCaption + " ✨ Enhanced with engaging content and call-to-action that drives better engagement!";
+    }
+
+    const err = platformChecks(platform, out);
+    if (err) {
+      variants = await variantsRewrite({ platform, voice, existingCaption, facts, hint:`Fix: ${err}. Be specific and engaging.`, nsfw });
+      variants = await variantsRewrite({ platform, voice, style, mood, existingCaption, facts, hint:`Fix: ${err}. Be specific and engaging.`, nsfw });
+      ranked = await rankAndSelect(variants);
+      out = ranked.final;
+      await enforceCoverage();
+    }
+
+    return { provider: 'gemini', facts, variants, ranked, final: out };
+  } catch (error) {
+    const { openAICaptionFallback } = await import('./openaiFallback');
+    const final = await openAICaptionFallback({ platform, voice, existingCaption, imageUrl });
+    return { provider: 'openai', final } as CaptionResult;
+  }
+}
+tests/routes/caption-generation.test.ts
++141-16
+@@ -29,115 +29,240 @@ vi.mock('../../server/caption/openaiFallback.js', () => ({
+vi.mock('../../server/storage.ts', () => ({
+  storage: {
+    getUserById: vi.fn(),
+    createContentGeneration: vi.fn(),
+    updateContentGeneration: vi.fn(),
+  },
+}));
+
+describe('Caption Generation', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('Gemini Pipeline', () => {
+    it('should handle image-based caption generation', async () => {
+      const mockImageUrl =
+        'data:image/jpeg;base64,' +
+        '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP///////////////wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACP/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8Af//Z';
+      const mockPlatform = 'instagram';
+      const mockVoice = 'flirty_playful';
+
+      // Mock successful responses
+      const mockFactsResponse = {
+        response: {
+          text: () => JSON.stringify({
+            objects: ['woman', 'lingerie'],
+            setting: 'bedroom',
+            mood: 'seductive',
+            objects: ['boardwalk'],
+            colors: ['golden sunset'],
+            setting: ['coastal boardwalk'],
+            wardrobe: ['flowy dress'],
+          }),
+        },
+      };
+
+      const mockVariantsResponse = {
+        response: {
+          text: () =>
+            JSON.stringify([
+              {
+                caption: 'Feeling gorgeous tonight ✨',
+                hashtags: ['#lingerie', '#confidence', '#style'],
+                caption: 'Golden sunset stroll on the boardwalk in a flowy dress ✨',
+                hashtags: ['#boardwalk', '#sunset', '#style'],
+                safety_level: 'spicy_safe',
+                mood: 'confident',
+                style: 'authentic',
+                cta: 'What do you think?',
+                alt: 'A glamorous example alt text to satisfy schema',
+                alt: 'A flowy dress outfit on a coastal boardwalk during a golden sunset',
+                nsfw: false,
+              },
+            ]),
+        },
+      };
+
+      const mockRankResponse = {
+        response: {
+          text: () =>
+            JSON.stringify({
+              winner_index: 0,
+              scores: [5, 4, 3, 2, 1],
+              reason: 'Selected based on engagement potential',
+              final: {
+                caption: 'Feeling gorgeous tonight ✨',
+                hashtags: ['#lingerie', '#confidence', '#style'],
+                caption: 'Golden sunset stroll on the boardwalk in a flowy dress ✨',
+                hashtags: ['#boardwalk', '#sunset', '#style'],
+                safety_level: 'spicy_safe',
+                mood: 'confident',
+                style: 'authentic',
+                cta: 'What do you think?',
+                alt: 'A glamorous example alt text to satisfy schema',
+                alt: 'A flowy dress outfit on a coastal boardwalk during a golden sunset',
+                nsfw: false,
+              },
+            }),
+        },
+      };
+
+      const { textModel, visionModel } = await import('../../server/lib/gemini.js');
+      (visionModel.generateContent as any).mockResolvedValueOnce(mockFactsResponse);
+      (textModel.generateContent as any)
+        .mockResolvedValueOnce(mockVariantsResponse)
+        .mockResolvedValueOnce(mockRankResponse);
+      const visionModelGenerate = vi.mocked(visionModel.generateContent);
+      visionModelGenerate.mockResolvedValueOnce(mockFactsResponse as never);
+      const textModelGenerate = vi.mocked(textModel.generateContent);
+      textModelGenerate
+        .mockResolvedValueOnce(mockVariantsResponse as never)
+        .mockResolvedValueOnce(mockRankResponse as never);
+
+      const result = await pipeline({
+        imageUrl: mockImageUrl,
+        platform: mockPlatform,
+        voice: mockVoice,
+      });
+
+      const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.js');
+
+      expect(openAICaptionFallback).not.toHaveBeenCalled();
+      expect(result.final).toMatchObject({
+        caption: expect.any(String),
+        safety_level: expect.stringMatching(/safe|low|spicy_safe/),
+      expect(result.final.caption).toContain('boardwalk');
+      expect(result.final.alt).toContain('golden sunset');
+    });
+
+    it('retries variants when captions miss image fact coverage', async () => {
+      const mockImageUrl =
+        'data:image/jpeg;base64,' +
+        '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP///////////////wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACP/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8Af//Z';
+
+      const mockFactsResponse = {
+        response: {
+          text: () => JSON.stringify({
+            objects: ['boardwalk'],
+            colors: ['golden'],
+            setting: ['coastal'],
+            wardrobe: ['casual jacket'],
+          }),
+        },
+      };
+
+      const genericVariantsResponse = {
+        response: {
+          text: () =>
+            JSON.stringify([
+              {
+                caption: 'What a beautiful evening out here ✨',
+                hashtags: ['#vibes', '#mood', '#style'],
+                safety_level: 'normal',
+                mood: 'calm',
+                style: 'authentic',
+                cta: 'What do you think?',
+                alt: 'A generic description without any of the specific image facts but long enough for validation',
+                nsfw: false,
+              },
+            ]),
+        },
+      };
+
+      const genericRankResponse = {
+        response: {
+          text: () =>
+            JSON.stringify({
+              winner_index: 0,
+              scores: [5, 4, 3, 2, 1],
+              reason: 'Selected based on engagement potential',
+              final: {
+                caption: 'What a beautiful evening out here ✨',
+                hashtags: ['#vibes', '#mood', '#style'],
+                safety_level: 'normal',
+                mood: 'calm',
+                style: 'authentic',
+                cta: 'What do you think?',
+                alt: 'A generic description without any of the specific image facts but long enough for validation',
+                nsfw: false,
+              },
+            }),
+        },
+      };
+
+      const factAwareVariantsResponse = {
+        response: {
+          text: () =>
+            JSON.stringify([
+              {
+                caption: 'Golden glow on the seaside promenade in a casual jacket',
+                hashtags: ['#boardwalk', '#sunset', '#style'],
+                safety_level: 'normal',
+                mood: 'warm',
+                style: 'authentic',
+                cta: 'What do you think?',
+                alt: 'A casual jacket outfit on the coastal promenade under a golden sky',
+                nsfw: false,
+              },
+            ]),
+        },
+      };
+
+      const factAwareRankResponse = {
+        response: {
+          text: () =>
+            JSON.stringify({
+              winner_index: 0,
+              scores: [5, 4, 3, 2, 1],
+              reason: 'Selected based on engagement potential',
+              final: {
+                caption: 'Golden glow on the seaside promenade in a casual jacket',
+                hashtags: ['#boardwalk', '#sunset', '#style'],
+                safety_level: 'normal',
+                mood: 'warm',
+                style: 'authentic',
+                cta: 'What do you think?',
+                alt: 'A casual jacket outfit on the coastal promenade under a golden sky',
+                nsfw: false,
+              },
+            }),
+        },
+      };
+
+      const { textModel, visionModel } = await import('../../server/lib/gemini.js');
+      const visionModelGenerate = vi.mocked(visionModel.generateContent);
+      visionModelGenerate.mockResolvedValueOnce(mockFactsResponse as never);
+
+      const textModelGenerate = vi.mocked(textModel.generateContent);
+      textModelGenerate
+        .mockResolvedValueOnce(genericVariantsResponse as never)
+        .mockResolvedValueOnce(genericRankResponse as never)
+        .mockResolvedValueOnce(factAwareVariantsResponse as never)
+        .mockResolvedValueOnce(factAwareRankResponse as never);
+
+      const result = await pipeline({
+        imageUrl: mockImageUrl,
+        platform: 'instagram',
+        voice: 'flirty_playful',
+      });
+
+      expect(result.final.caption).toContain('promenade');
+      expect(result.final.caption.toLowerCase()).toContain('golden');
+      expect(result.final.alt).toContain('casual jacket');
+      expect(textModelGenerate).toHaveBeenCalledTimes(4);
+
+      const secondPassArgs = textModelGenerate.mock.calls[2];
+      const promptText = Array.isArray(secondPassArgs?.[0])
+        ? (secondPassArgs[0][0] as { text: string }).text
+        : '';
+      expect(promptText).toContain('Work in IMAGE_FACTS');
+      expect(promptText).toContain('nouns: boardwalk');
+    });
+
+    it('should handle safety level normalization', async () => {
+      const mockResponse = {
+        response: {
+          text: () => JSON.stringify([
+            {
+              caption: 'Test caption',
+              hashtags: ['#test'],
+              safety_level: 'spicy_safe', // Should be normalized to spicy_safe
+              mood: 'confident',
+              style: 'authentic',
+              cta: 'Check it out',
+            },
+          ]),
+        },
+      };
+
+      const { textModel } = await import('../../server/lib/gemini.js');
+      (textModel.generateContent as any).mockResolvedValue(mockResponse);
+
+      // This would normally be called as part of the pipeline
+      const { generateVariants } = await import('../../server/caption/geminiPipeline.js');
+      const result = await generateVariants({
+        platform: 'instagram',

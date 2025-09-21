@@ -6,6 +6,7 @@ import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
 import { extractToneOptions, ToneOptions } from "./toneOptions";
 import { buildVoiceGuideBlock } from "./stylePack";
 import { serializePromptField } from "./promptUtils";
+import { formatVoiceContext } from "./voiceTraits";
 
 // CaptionResult interface for type safety
 interface CaptionResult {
@@ -155,9 +156,18 @@ type RewriteVariantsParams = {
 
 export async function variantsRewrite(params:RewriteVariantsParams){
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rewrite.txt");
-  const mandatory = params.doNotDrop && params.doNotDrop.length>0 ? `\nMANDATORY TOKENS: ${params.doNotDrop.join(' | ')}` : '';
-  const hint = params.hint ? `\nHINT: ${params.hint}` : '';
-  const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\n${params.style ? `STYLE: ${params.style}\n` : ''}${params.mood ? `MOOD: ${params.mood}\n` : ''}EXISTING_CAPTION: "${params.existingCaption}"${params.facts?`\nIMAGE_FACTS: ${JSON.stringify(params.facts)}`:""}\nNSFW: ${params.nsfw || false}${mandatory}${hint}`;
+  const voiceContext = formatVoiceContext(params.voice);
+  const user = [
+    `PLATFORM: ${params.platform}`,
+    `VOICE: ${params.voice}`,
+    voiceContext,
+    params.style ? `STYLE: ${params.style}` : "",
+    params.mood ? `MOOD: ${params.mood}` : "",
+    `EXISTING_CAPTION: ${serializePromptField(params.existingCaption)}`,
+    params.facts ? `IMAGE_FACTS: ${JSON.stringify(params.facts)}` : "",
+    `NSFW: ${params.nsfw || false}`,
+    params.hint ? `HINT:${serializePromptField(params.hint, { block: true })}` : "",
+  ].filter((line): line is string => Boolean(line)).join("\n");
   const voiceGuide = buildVoiceGuideBlock(params.voice);
   const promptSections = [sys, guard, prompt, user];
   if (voiceGuide) promptSections.push(voiceGuide);

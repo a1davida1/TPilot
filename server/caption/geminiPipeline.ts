@@ -7,6 +7,7 @@ import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
 import { extractToneOptions, ToneOptions } from "./toneOptions";
 import { buildVoiceGuideBlock } from "./stylePack";
 import { serializePromptField } from "./promptUtils";
+import { formatVoiceContext } from "./voiceTraits";
 
 // Custom error class for image validation failures
 export class InvalidImageError extends Error {
@@ -215,7 +216,17 @@ type GeminiVariantParams = {
 export async function generateVariants(params: GeminiVariantParams): Promise<z.infer<typeof CaptionArray>> {
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("variants.txt");
   const hint = params.hint ? `HINT:${serializePromptField(params.hint, { block: true })}` : "";
-  const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\n${params.style ? `STYLE: ${params.style}\n` : ''}${params.mood ? `MOOD: ${params.mood}\n` : ''}IMAGE_FACTS: ${JSON.stringify(params.facts)}\nNSFW: ${params.nsfw || false}\n${hint}`;
+  const voiceContext = formatVoiceContext(params.voice);
+  const user = [
+    `PLATFORM: ${params.platform}`,
+    `VOICE: ${params.voice}`,
+    voiceContext,
+    params.style ? `STYLE: ${params.style}` : "",
+    params.mood ? `MOOD: ${params.mood}` : "",
+    `IMAGE_FACTS: ${JSON.stringify(params.facts)}`,
+    `NSFW: ${params.nsfw || false}`,
+    hint,
+  ].filter((line): line is string => Boolean(line)).join("\n");
   const voiceGuide = buildVoiceGuideBlock(params.voice);
   const promptSections = [sys, guard, prompt, user];
   if (voiceGuide) promptSections.push(voiceGuide);

@@ -5,6 +5,8 @@ import { CaptionArray, RankResult, platformChecks } from "./schema";
 import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
 import { extractToneOptions, ToneOptions } from "./toneOptions";
 import { buildVoiceGuideBlock } from "./stylePack";
+import { formatVoiceContext } from "./voiceTraits";
+import { serializePromptField } from "./promptUtils";
 
 async function load(p:string){ return fs.readFile(path.join(process.cwd(),"prompts",p),"utf8"); }
 function stripToJSON(txt:string){ const i=Math.min(...[txt.indexOf("{"),txt.indexOf("[")].filter(x=>x>=0));
@@ -23,7 +25,18 @@ type TextOnlyVariantParams = {
 
 export async function generateVariantsTextOnly(params:TextOnlyVariantParams){
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("variants_textonly.txt");
-  const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\n${params.style ? `STYLE: ${params.style}\n` : ''}${params.mood ? `MOOD: ${params.mood}\n` : ''}THEME: "${params.theme}"\nCONTEXT: "${params.context||''}"\nNSFW: ${params.nsfw || false}${params.hint?`\nHINT:${params.hint}`:""}`;
+  const voiceContext = formatVoiceContext(params.voice);
+  const user = [
+    `PLATFORM: ${params.platform}`,
+    `VOICE: ${params.voice}`,
+    voiceContext,
+    params.style ? `STYLE: ${params.style}` : "",
+    params.mood ? `MOOD: ${params.mood}` : "",
+    `THEME: ${serializePromptField(params.theme)}`,
+    `CONTEXT: ${serializePromptField(params.context || "")}`,
+    `NSFW: ${params.nsfw || false}`,
+    params.hint ? `HINT:${serializePromptField(params.hint, { block: true })}` : "",
+  ].filter((line): line is string => Boolean(line)).join("\n");
   const voiceGuide = buildVoiceGuideBlock(params.voice);
   const promptSections = [sys, guard, prompt, user];
   if (voiceGuide) promptSections.push(voiceGuide);

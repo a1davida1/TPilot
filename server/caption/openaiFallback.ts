@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import * as z from 'zod';
 import { serializePromptField } from './promptUtils';
+import { formatVoiceContext } from './voiceTraits';
 
 // Assuming CaptionItem is defined elsewhere and imported
 // For the purpose of this example, let's define a placeholder if it's not provided
@@ -39,6 +40,8 @@ export async function openAICaptionFallback({
 }): Promise<z.infer<typeof CaptionItem>> {
   let messages: any[] = [];
   const sanitizedExistingCaption = existingCaption ? serializePromptField(existingCaption) : undefined;
+  const voiceContext = formatVoiceContext(voice);
+  const systemVoiceSuffix = voiceContext ? `\n${voiceContext}` : '';
 
   if (imageUrl && openai) {
     try {
@@ -49,7 +52,7 @@ export async function openAICaptionFallback({
         messages = [
           {
             role: "system",
-            content: `You are an expert social media caption writer. Analyze the image carefully and create engaging ${voice} content for ${platform} that directly relates to what you see.
+            content: `You are an expert social media caption writer. Analyze the image carefully and create engaging ${voice} content for ${platform} that directly relates to what you see.${systemVoiceSuffix}
 
 Return ONLY a JSON object with this structure:
 {
@@ -84,7 +87,7 @@ Return ONLY a JSON object with this structure:
         messages = [
           {
             role: "system",
-            content: `Create engaging ${voice} content for ${platform} based on the image.`
+            content: `Create engaging ${voice} content for ${platform} based on the image.${systemVoiceSuffix}`
           },
           {
             role: "user",
@@ -97,7 +100,7 @@ Return ONLY a JSON object with this structure:
       messages = [
         {
           role: "system",
-          content: `You are an expert social media caption writer. Create engaging ${voice} content for ${platform}.`
+          content: `You are an expert social media caption writer. Create engaging ${voice} content for ${platform}.${systemVoiceSuffix}`
         },
         {
           role: "user",
@@ -111,7 +114,7 @@ Return ONLY a JSON object with this structure:
     messages = [
       {
         role: "system",
-        content: `You are an expert social media caption writer. Create engaging ${voice} content for ${platform}.`
+        content: `You are an expert social media caption writer. Create engaging ${voice} content for ${platform}.${systemVoiceSuffix}`
       },
       {
         role: "user",
