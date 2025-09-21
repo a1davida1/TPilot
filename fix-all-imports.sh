@@ -16,6 +16,14 @@ find dist -name '*.js' -exec sed -i -E "s/from \"(\\.\\/.+)\"/from \"\\1.js\"/g"
 find dist -name '*.js' -exec sed -i -E "s/from '(\\.\\.\/.+)'/from '\\1.js'/g" {} + 2>/dev/null
 find dist -name '*.js' -exec sed -i -E "s/from \"(\\.\\.\/.+)\"/from \"\\1.js\"/g" {} + 2>/dev/null
 
+# Add .js to dynamic imports
+find dist -name '*.js' -exec sed -i -E "s/import\\('(\\.\\/.+)'\\)/import('\\1.js')/g" {} + 2>/dev/null
+find dist -name '*.js' -exec sed -i -E "s/import\\(\"(\\.\\/.+)\"\\)/import(\"\\1.js\")/g" {} + 2>/dev/null
+
+# Add .js to parent directory dynamic imports
+find dist -name '*.js' -exec sed -i -E "s/import\\('(\\.\\.\/.+)'\\)/import('\\1.js')/g" {} + 2>/dev/null
+find dist -name '*.js' -exec sed -i -E "s/import\\(\"(\\.\\.\/.+)\"\\)/import(\"\\1.js\")/g" {} + 2>/dev/null
+
 # Fix any double .js extensions
 find dist -name '*.js' -exec sed -i 's/\.js\.js/\.js/g' {} + 2>/dev/null
 

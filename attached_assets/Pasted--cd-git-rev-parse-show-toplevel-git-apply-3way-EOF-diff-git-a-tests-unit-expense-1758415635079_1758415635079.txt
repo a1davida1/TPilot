@@ -1,0 +1,218 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/tests/unit/expenses/receipt-upload.test.ts b/tests/unit/expenses/receipt-upload.test.ts
+index 25f089f375affcd8733565156e59de112685e622..29471a833ca9e481e6b2c6034af98647ef088a94 100644
+--- a/tests/unit/expenses/receipt-upload.test.ts
++++ b/tests/unit/expenses/receipt-upload.test.ts
+@@ -1,27 +1,27 @@
+ /* eslint-env node, jest */
+-import { describe, test, expect, vi, beforeEach } from 'vitest';
++import { describe, test, expect, vi, beforeEach, type MockInstance } from 'vitest';
+ import request from 'supertest';
+ import express from 'express';
+ import fs from 'fs/promises';
+ 
+ // Mock dependencies
+ const mockStorage = vi.hoisted(() => ({
+   updateExpense: vi.fn(),
+ }));
+ 
+ const mockMediaManager = vi.hoisted(() => ({
+   uploadFile: vi.fn(),
+ }));
+ 
+ const mockAuthenticateToken = vi.hoisted(() => vi.fn());
+ 
+ vi.mock('../../../server/storage.ts', () => ({ storage: mockStorage }));
+ vi.mock('../../../server/lib/media.js', () => ({ MediaManager: mockMediaManager }));
+ vi.mock('../../../server/middleware/auth.js', () => ({ authenticateToken: mockAuthenticateToken }));
+ vi.mock('fs/promises', () => ({
+   default: {
+     mkdir: vi.fn(),
+     writeFile: vi.fn(),
+   },
+   mkdir: vi.fn(),
+   writeFile: vi.fn(),
+diff --git a/tests/unit/expenses/receipt-upload.test.ts b/tests/unit/expenses/receipt-upload.test.ts
+index 25f089f375affcd8733565156e59de112685e622..29471a833ca9e481e6b2c6034af98647ef088a94 100644
+--- a/tests/unit/expenses/receipt-upload.test.ts
++++ b/tests/unit/expenses/receipt-upload.test.ts
+@@ -116,91 +116,174 @@ describe('Receipt Upload with ImageShield Protection', () => {
+ 
+       const mockExpense = {
+         id: 3,
+         receiptUrl: '/uploads/receipts/protected_test.jpg',
+         receiptFileName: 'protected_test.jpg',
+       };
+ 
+       mockStorage.updateExpense.mockResolvedValue(mockExpense);
+ 
+       // Create a valid 1x1 PNG image buffer
+       const testImageBuffer = Buffer.from(
+         '89504e470d0a1a0a0000000d494844520000000100000001080600000001f15c48950000000d49444154789c626001000000050001180dd4010000000049454e44ae426082',
+         'hex'
+       );
+ 
+       await request(app)
+         .post('/api/expenses/3/receipt')
+         .attach('receipt', testImageBuffer, 'test-receipt.jpg')
+         .expect(200);
+ 
+       expect(mockStorage.updateExpense).toHaveBeenCalled();
+     });
+   });
+ 
+   describe('File Upload Security', () => {
+-    test('should reject non-image files', async () => {
++    test('should reject unsupported files', async () => {
+       const textFileBuffer = Buffer.from('This is not an image file');
+ 
+       await request(app)
+         .post('/api/expenses/1/receipt')
+-        .attach('receipt', textFileBuffer, 'test-file.txt')
++        .attach('receipt', textFileBuffer, { filename: 'test-file.txt', contentType: 'text/plain' })
+         .expect(500); // multer should reject the file
+ 
+       expect(mockStorage.updateExpense).not.toHaveBeenCalled();
+     });
+ 
+     test('should handle missing authentication', async () => {
+       mockAuthenticateToken.mockImplementation((req: express.Request & { user?: { id: number; tier: string } }, res: express.Response, next: express.NextFunction) => {
+         // Set req.user to undefined (not null) to simulate no auth
+         req.user = undefined;
+         next();
+       });
+ 
+       // Create a valid 1x1 PNG image buffer
+       const testImageBuffer = Buffer.from(
+         '89504e470d0a1a0a0000000d494844520000000100000001080600000001f15c48950000000d49444154789c626001000000050001180dd4010000000049454e44ae426082',
+         'hex'
+       );
+ 
+       await request(app)
+         .post('/api/expenses/1/receipt')
+         .attach('receipt', testImageBuffer, 'test-receipt.jpg')
+         .expect(401);
+ 
+       expect(mockStorage.updateExpense).not.toHaveBeenCalled();
+     });
+ 
+     test('should handle missing file upload', async () => {
+       await request(app)
+         .post('/api/expenses/1/receipt')
+         .expect(400);
+ 
+       expect(mockStorage.updateExpense).not.toHaveBeenCalled();
+     });
+   });
+ 
++  describe('PDF receipt handling', () => {
++    test('should accept PDF receipts without applying protection', async () => {
++      delete process.env.S3_BUCKET_MEDIA;
++
++      const mockExpense = {
++        id: 4,
++        receiptUrl: '/uploads/receipts/invoice.pdf',
++        receiptFileName: 'invoice.pdf',
++      };
++
++      mockStorage.updateExpense.mockResolvedValue(mockExpense);
++
++      const pdfBuffer = Buffer.from('%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF');
++
++      const response = await request(app)
++        .post('/api/expenses/4/receipt')
++        .attach('receipt', pdfBuffer, { filename: 'invoice.pdf', contentType: 'application/pdf' })
++        .expect(200);
++
++      expect(response.body).toEqual(mockExpense);
++      expect(mockMediaManager.uploadFile).not.toHaveBeenCalled();
++      expect(mockStorage.updateExpense).toHaveBeenCalledWith(
++        4,
++        1,
++        expect.objectContaining({
++          receiptUrl: '/uploads/receipts/invoice.pdf',
++          receiptFileName: 'invoice.pdf',
++        })
++      );
++
++      const writeMock = fs.writeFile as unknown as MockInstance<[string, Buffer], unknown>;
++      expect(writeMock).toHaveBeenCalledWith(expect.stringContaining('invoice.pdf'), expect.any(Buffer));
++      const firstCall = writeMock.mock.calls[0];
++      expect(firstCall).toBeDefined();
++      const [, storedBuffer] = firstCall;
++      expect(Buffer.isBuffer(storedBuffer)).toBe(true);
++      expect(storedBuffer.equals(pdfBuffer)).toBe(true);
++    });
++
++    test('should retain original filename when uploading to S3', async () => {
++      process.env.S3_BUCKET_MEDIA = 'test-bucket';
++
++      const mockAsset = {
++        downloadUrl: 'https://s3.amazonaws.com/test-bucket/invoice.pdf',
++        filename: 'invoice.pdf',
++        key: 'receipts/invoice.pdf',
++      };
++
++      mockMediaManager.uploadFile.mockResolvedValue(mockAsset);
++      mockStorage.updateExpense.mockResolvedValue({
++        id: 5,
++        receiptUrl: mockAsset.downloadUrl,
++        receiptFileName: mockAsset.filename,
++      });
++
++      const pdfBuffer = Buffer.from('%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF');
++
++      const response = await request(app)
++        .post('/api/expenses/5/receipt')
++        .attach('receipt', pdfBuffer, { filename: 'invoice.pdf', contentType: 'application/pdf' })
++        .expect(200);
++
++      expect(response.body.receiptFileName).toBe('invoice.pdf');
++      expect(mockMediaManager.uploadFile).toHaveBeenCalledWith(
++        expect.any(Buffer),
++        expect.objectContaining({
++          userId: 1,
++          filename: 'invoice.pdf',
++        })
++      );
++      expect(mockStorage.updateExpense).toHaveBeenCalledWith(
++        5,
++        1,
++        expect.objectContaining({
++          receiptFileName: 'invoice.pdf',
++          receiptUrl: mockAsset.downloadUrl,
++        })
++      );
++
++      delete process.env.S3_BUCKET_MEDIA;
++    });
++  });
++
+   describe('S3 Upload Integration', () => {
+     test('should use S3 when configured', async () => {
+       // Mock S3 environment
+       process.env.S3_BUCKET_MEDIA = 'test-bucket';
+       
+       const mockAsset = {
+         downloadUrl: 'https://s3.amazonaws.com/test-bucket/protected_test.jpg',
+         filename: 'protected_test.jpg',
+         key: 'receipts/protected_test.jpg',
+       };
+ 
+       mockMediaManager.uploadFile.mockResolvedValue(mockAsset);
+       mockStorage.updateExpense.mockResolvedValue({
+         id: 1,
+         receiptUrl: mockAsset.downloadUrl,
+         receiptFileName: mockAsset.filename,
+       });
+ 
+       // Create a valid 1x1 PNG image buffer
+       const testImageBuffer = Buffer.from(
+         '89504e470d0a1a0a0000000d494844520000000100000001080600000001f15c48950000000d49444154789c626001000000050001180dd4010000000049454e44ae426082',
+         'hex'
+       );
+ 
+       const response = await request(app)
+ 
+EOF
+)
