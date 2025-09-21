@@ -1,4 +1,3 @@
-
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
 import { pipeline } from '../../server/caption/geminiPipeline.js';
 import { pipelineRewrite, extractKeyEntities } from '../../server/caption/rewritePipeline.js';
@@ -420,6 +419,89 @@ describe('Caption Generation', () => {
       );
 
       generateContentMock.mockRestore();
+    });
+
+    it('retries when mandatory tokens are dropped', async () => {
+      const existingCaption = 'Launch day! RSVP at https://example.com/launch with @LaunchHQ on 12/25 for the "Mega Launch" by MegaCorp™ #LaunchDay';
+      const variantFactory = (caption: string) => ({
+        caption,
+        hashtags: ['#LaunchDay', '#EventTime', '#RSVPNow'],
+        safety_level: 'normal',
+        mood: 'excited',
+        style: 'authentic',
+        cta: 'Reserve your spot',
+        alt: 'Detailed alt text describing the MegaCorp launch announcement in a complete sentence.',
+        nsfw: false,
+      });
+
+      const missingVariants = {
+        response: {
+          text: () => JSON.stringify(
+            Array.from({ length: 5 }, (_, index) =>
+              variantFactory(`Variant ${index + 1} without mandatory tokens`)
+            )
+          ),
+        },
+      };
+
+      const missingRank = {
+        response: {
+          text: () => JSON.stringify({
+            winner_index: 0,
+            scores: [5, 4, 3, 2, 1],
+            reason: 'Initial selection missing mandatory tokens',
+            final: variantFactory('Variant 1 without mandatory tokens'),
+          }),
+        },
+      };
+
+      const enforcedCaption = 'Launch day! RSVP at https://example.com/launch with @LaunchHQ on 12/25 for the "Mega Launch" by MegaCorp™ #LaunchDay — limited seats!';
+      const enforcedVariants = {
+        response: {
+          text: () => JSON.stringify(
+            Array.from({ length: 5 }, (_, index) =>
+              variantFactory(`${enforcedCaption} Option ${index + 1}`)
+            )
+          ),
+        },
+      };
+
+      const enforcedRank = {
+        response: {
+          text: () => JSON.stringify({
+            winner_index: 0,
+            scores: [5, 4, 3, 2, 1],
+            reason: 'Retry keeps mandatory tokens',
+            final: variantFactory(enforcedCaption),
+          }),
+        },
+      };
+
+      const { textModel } = await import('../../server/lib/gemini.js');
+      const textGenerateMock = asMock(textModel.generateContent);
+      textGenerateMock
+        .mockResolvedValueOnce(missingVariants)
+        .mockResolvedValueOnce(missingRank)
+        .mockResolvedValueOnce(enforcedVariants)
+        .mockResolvedValueOnce(enforcedRank);
+
+      const result = await pipelineRewrite({
+        platform: 'instagram',
+        voice: 'engaging',
+        existingCaption,
+      });
+
+      const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.js');
+      expect(openAICaptionFallback).not.toHaveBeenCalled();
+      expect(textGenerateMock).toHaveBeenCalledTimes(4);
+      expect(result.final.caption).toContain('https://example.com/launch');
+      expect(result.final.caption).toContain('@LaunchHQ');
+      expect(result.final.caption).toContain('#LaunchDay');
+      expect(result.final.caption).toContain('12/25');
+      expect(result.final.caption).toContain('"Mega Launch"');
+      expect(result.final.caption).toContain('MegaCorp™');
+
+      textGenerateMock.mockReset();
     });
   });
 });

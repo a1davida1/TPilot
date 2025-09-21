@@ -149,7 +149,7 @@ type RewriteVariantsParams = {
   nsfw?:boolean;
   doNotDrop?: string[];
   style?: string;
-  mood?: string;
+  mood?: string
 };
 
 export async function variantsRewrite(params:RewriteVariantsParams){
@@ -265,14 +265,21 @@ type RewritePipelineArgs = {
  * retries. When platform validation fails we re-run Gemini with the exact same tone
  * payload so the caller's requested persona stays intact.
  */
-export async function pipelineRewrite({ platform, voice="flirty_playful", existingCaption, imageUrl, nsfw=false, ...toneRest }:RewritePipelineArgs){
+export async function pipelineRewrite({ platform, voice="flirty_playful", style, mood, existingCaption, imageUrl, nsfw=false }:{
+  platform:"instagram"|"x"|"reddit"|"tiktok", voice?:string, style?:string, mood?:string, existingCaption:string, imageUrl?:string, nsfw?:boolean }){
   try {
-    const tone = extractToneOptions(toneRest);
     const facts = imageUrl ? await extractFacts(imageUrl) : undefined;
     const doNotDrop = extractKeyEntities(existingCaption);
-    let variants = await variantsRewrite({ platform, voice, existingCaption, facts, nsfw, doNotDrop, ...tone });
+    const tone = { style, mood };
+    let variants = await variantsRewrite({ platform, voice, ...tone, existingCaption, facts, nsfw, doNotDrop });
     let ranked = await rankAndSelect(variants);
     let out = ranked.final;
+
+    const retryHints = [
+      'Make it 20% longer with a natural hook and CTA; keep it human, no sparkle clichés.',
+      'Focus on expanding the middle section with vivid details or specific context.',
+      'Add personality and character-specific phrasing while being more descriptive.'
+    ];
 
     const enforceMandatoryTokens = async (extraHint?: string) => {
       if (doNotDrop.length === 0) {
@@ -290,12 +297,12 @@ export async function pipelineRewrite({ platform, voice="flirty_playful", existi
       variants = await variantsRewrite({
         platform,
         voice,
+        ...tone,
         existingCaption,
         facts,
         nsfw,
         doNotDrop,
-        hint: messageParts.join(' '),
-        ...tone
+        hint: messageParts.join(' ')
       });
       ranked = await rankAndSelect(variants);
       out = ranked.final;
@@ -304,15 +311,6 @@ export async function pipelineRewrite({ platform, voice="flirty_playful", existi
         throw new Error(`Missing mandatory tokens after retry: ${retryMissing.join(', ')}`);
       }
     };
-
-    await enforceMandatoryTokens();
-
-    const retryHints: string[] = [
-      "Make it 20% longer with a natural hook and CTA; keep it human, no sparkle clichés.",
-      facts
-        ? "Rewrite with concrete imagery from IMAGE_FACTS and stretch it another 20%; keep the CTA grounded and specific."
-        : "Rewrite with concrete sensory detail and extend it by roughly 20%; keep the CTA specific and natural."
-    ];
 
     const runRewrite = async (hint?: string) => {
       variants = await variantsRewrite({ platform, voice, existingCaption, facts, hint, nsfw, doNotDrop, ...tone });
