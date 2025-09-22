@@ -884,6 +884,13 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
   // Register Caption Routes (2-pass Gemini pipeline) - MOVED UP to get routing priority
   app.use('/api/caption', captionRouter);
 
+  // Register Dashboard Routes
+  import('./routes/dashboard.js').then(({ dashboardRouter }) => {
+    app.use('/api/dashboard', dashboardRouter);
+  }).catch(err => {
+    logger.error('Failed to load dashboard routes:', err);
+  });
+
   // ==========================================
   // CONTENT GENERATIONS HISTORY API
   // ==========================================
