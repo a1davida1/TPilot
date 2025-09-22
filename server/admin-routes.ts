@@ -7,12 +7,22 @@ import { storage } from './storage';
 import { emailService } from './services/email-service';
 import { type User } from '@shared/schema';
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  throw new Error('JWT_SECRET environment variable is required for secure token operations');
+const JWT_SECRET_TEST_FALLBACK = 'test-jwt-secret';
+const MISSING_JWT_SECRET_MESSAGE = 'JWT secret not configured';
+
+function resolveJwtSecret(): string | undefined {
+  const envSecret = process.env.JWT_SECRET;
+
+  if (typeof envSecret === 'string' && envSecret.length > 0) {
+    return envSecret;
+  }
+
+  if (process.env.NODE_ENV === 'test') {
+    return JWT_SECRET_TEST_FALLBACK;
+  }
+
+  return undefined;
 }
-// Type assertion after validation
-const JWT_SECRET_VALIDATED: string = JWT_SECRET;
 
 interface AdminRequest extends express.Request {
   user?: User;
@@ -30,6 +40,12 @@ function ensureAdminId(req: AdminRequest, res: express.Response): number | undef
 export function setupAdminRoutes(app: Express) {
   // Admin middleware to check if user is admin
   const requireAdmin = (req: AdminRequest & { isAuthenticated?: () => boolean }, res: express.Response, next: express.NextFunction) => {
+    const jwtSecret = resolveJwtSecret();
+
+    if (!jwtSecret) {
+      return res.status(500).json({ message: MISSING_JWT_SECRET_MESSAGE });
+    }
+
     // Check if user is authenticated via session OR JWT
     let user: unknown = null;
     let token: string | null = null;
@@ -50,7 +66,7 @@ export function setupAdminRoutes(app: Express) {
     // If we have a token, verify it
     if (token) {
       try {
-        const decoded = jwt.verify(token, JWT_SECRET_VALIDATED) as { id: number; username?: string; isAdmin?: boolean; iat: number; exp: number };
+        const decoded = jwt.verify(token, jwtSecret) as { id: number; username?: string; isAdmin?: boolean; iat: number; exp: number };
         user = decoded;
       } catch (error) {
         // JWT is invalid, user remains null

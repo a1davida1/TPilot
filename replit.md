@@ -2,6 +2,21 @@
 
 ThottoPilot is a social media content creation platform for adult content creators, generating engaging Reddit posts with personalized titles, content, and photo instructions. It offers intelligent promotion features, image protection capabilities, and adapts content based on subreddit promotion rules. The platform aims to streamline content monetization and protection for creators.
 
+## Recent Changes (September 22, 2025)
+
+### JWT_SECRET Handling Fixed in Admin Routes
+- ✅ **Lazy JWT secret resolution**: Admin routes now load without throwing when JWT_SECRET is undefined, resolving the secret lazily inside middleware
+- ✅ **Test environment support**: Deterministic fallback ('test-jwt-secret') provided when NODE_ENV === 'test'
+- ✅ **Production safeguards maintained**: Middleware returns HTTP 500 error when secret is missing in non-test environments instead of throwing
+- ✅ **Module import safety**: Express app can now initialize for test doubles without crashes
+- ✅ **Unit test coverage**: Added comprehensive tests verifying admin routes setup works without JWT_SECRET in test mode and properly rejects requests in production
+
+### RewritePipeline Refactoring Completed  
+- ✅ **Removed sparkle fallback**: Eliminated length-check branch that concatenated generic sparkle sentences
+- ✅ **Progressive retry system**: Implemented 3-tier escalating hints system for better caption generation
+- ✅ **Enhanced type safety**: Added proper TypeScript types and improved error handling
+- ✅ **Comprehensive test coverage**: Added unit tests verifying no filler strings and proper hint forwarding
+
 ## Recent Changes (September 20, 2025)
 
 ### Caption Pipeline Tone Parameter Forwarding
