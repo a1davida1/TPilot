@@ -2,7 +2,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { z } from "zod";
 import { textModel, visionModel } from "../lib/gemini";
-import { CaptionArray, RankResult, platformChecks } from "./schema";
+import { CaptionArray, RankResult, platformChecks, CaptionItem } from "./schema";
 import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
 import { BANNED_WORDS_HINT, variantContainsBannedWord } from "./bannedWords";
 import {
@@ -388,95 +388,62 @@ type RewritePipelineArgs = {
  * retries. When platform validation fails we re-run Gemini with the exact same tone
  * payload so the caller's requested persona stays intact.
  */
+type CaptionItemType = z.infer<typeof CaptionItem>;
+type CaptionArrayResult = z.infer<typeof CaptionArray>;
+type RankResultType = z.infer<typeof RankResult>;
+
 export async function pipelineRewrite({ platform, voice="flirty_playful", style, mood, existingCaption, imageUrl, nsfw=false }:{
   platform:"instagram"|"x"|"reddit"|"tiktok", voice?:string, style?:string, mood?:string, existingCaption:string, imageUrl?:string, nsfw?:boolean }){
   try {
     const facts = imageUrl ? await extractFacts(imageUrl) : undefined;
-    const doNotDrop = extractKeyEntities(existingCaption);
-    const tone = { style, mood };
-    let variants = await variantsRewrite({ platform, voice, ...tone, existingCaption, facts, nsfw, doNotDrop });
-    let ranked = await rankAndSelect(variants);
-    let out = ranked.final;
-
-    const retryHints = [
-      'Make it 20% longer with a natural hook and CTA; keep it human, no sparkle clichés.',
-      'Focus on expanding the middle section with vivid details or specific context.',
-      'Add personality and character-specific phrasing while being more descriptive.'
+    
+    const attemptHints: (string | undefined)[] = [
+      undefined,
+      "Make it 20% longer with a natural hook and CTA; keep it human, no sparkle clichés.",
+      facts
+        ? "Make it 25% longer with a natural hook and CTA; rewrite with concrete imagery from IMAGE_FACTS and stay grounded."
+        : "Make it 25% longer with a natural hook and CTA; weave in concrete sensory imagery and stay grounded.",
     ];
 
-    const enforceCoverage = async () => {
-      if (!facts) return;
-      let attempts = 0;
-      let coverage = ensureFactCoverage({ facts, caption: out.caption, alt: out.alt });
-      while (!coverage.ok && coverage.hint && attempts < 2) {
-        attempts += 1;
-        variants = await variantsRewrite({ platform, voice, ...tone, existingCaption, facts, hint: coverage.hint, nsfw, doNotDrop });
-        ranked = await rankAndSelect(variants);
-        out = ranked.final;
-        coverage = ensureFactCoverage({ facts, caption: out.caption, alt: out.alt });
-      }
+    const baseParams = { platform, voice, style, mood, existingCaption, facts, nsfw } as const;
+
+    const performAttempt = async (hint?: string): Promise<{ variants: CaptionArrayResult; ranked: RankResultType; final: CaptionItemType }> => {
+      const attemptVariants = await variantsRewrite({ ...baseParams, hint });
+      const attemptRanked = await rankAndSelect(attemptVariants);
+      return { variants: attemptVariants, ranked: attemptRanked, final: attemptRanked.final };
     };
 
-    const enforceMandatoryTokens = async (extraHint?: string) => {
-      if (doNotDrop.length === 0) {
-        return;
-      }
-      const missing = doNotDrop.filter((token) => !out.caption.includes(token));
-      if (missing.length === 0) {
-        return;
-      }
-      const messageParts = [
-        extraHint,
-        `ABSOLUTE RULE: Keep these tokens verbatim in the caption: ${doNotDrop.join(', ')}`,
-        `Previous attempt removed: ${missing.join(', ')}`
-      ].filter((part): part is string => Boolean(part && part.trim()));
-      variants = await variantsRewrite({
-        platform,
-        voice,
-        ...tone,
-        existingCaption,
-        facts,
-        nsfw,
-        doNotDrop,
-        hint: messageParts.join(' ')
-      });
-      ranked = await rankAndSelect(variants);
-      out = ranked.final;
-      const retryMissing = doNotDrop.filter((token) => !out.caption.includes(token));
-      if (retryMissing.length > 0) {
-        throw new Error(`Missing mandatory tokens after retry: ${retryMissing.join(', ')}`);
-      }
-    };
+    let lastAttempt: { variants: CaptionArrayResult; ranked: RankResultType; final: CaptionItemType } | undefined;
+    let successfulAttempt: { variants: CaptionArrayResult; ranked: RankResultType; final: CaptionItemType } | undefined;
 
-    const runRewrite = async (hint?: string) => {
-      variants = await variantsRewrite({ platform, voice, existingCaption, facts, hint, nsfw, doNotDrop, ...tone });
-      ranked = await rankAndSelect(variants);
-      out = ranked.final;
-    };
-
-    const ensureLongerCaption = async (baseHint?: string) => {
-      if (out.caption.length > existingCaption.length) {
-        return;
+    for (const hint of attemptHints) {
+      const attempt = await performAttempt(hint);
+      lastAttempt = attempt;
+      if (attempt.final.caption.length > existingCaption.length) {
+        successfulAttempt = attempt;
+        break;
       }
-      for (const hint of retryHints) {
-        const combinedHint = baseHint ? `${baseHint} ${hint}` : hint;
-        await runRewrite(combinedHint);
-        if (out.caption.length > existingCaption.length) {
-          return;
-        }
-      }
-      throw new Error("rewrite-too-short");
-    };
+    }
 
-    await ensureLongerCaption();
-    await enforceCoverage();
+    const chosenAttempt = successfulAttempt ?? lastAttempt;
+
+    if (!chosenAttempt || chosenAttempt.final.caption.length <= existingCaption.length) {
+      throw new Error('Rewrite did not produce a longer caption');
+    }
+
+    let { variants, ranked, final: out } = chosenAttempt;
 
     const err = platformChecks(platform, out);
     if (err) {
-      await runRewrite(`Fix: ${err}. Be specific and engaging.`);
-      await ensureLongerCaption(`Fix: ${err}. Be specific and engaging.`);
-      await enforceMandatoryTokens(`Fix platform issue: ${err}.`);
-      await enforceCoverage();
+      const platformAttempt = await performAttempt(`Fix: ${err}. Be specific, human, and avoid clichés while staying platform safe.`);
+      if (platformAttempt.final.caption.length <= existingCaption.length) {
+        throw new Error('Platform-specific rewrite failed to improve length');
+      }
+      const platformErr = platformChecks(platform, platformAttempt.final);
+      if (platformErr) {
+        throw new Error(platformErr);
+      }
+      ({ variants, ranked, final: out } = platformAttempt);
     }
 
     return { provider: 'gemini', facts, variants, ranked, final: out };

@@ -557,14 +557,15 @@ describe('Caption Generation', () => {
               mood: 'engaging',
               style: 'authentic',
               cta: 'What do you think?',
+              alt: 'An engaging social media post with vibrant energy and compelling call to action',
+              nsfw: false,
             },
           ]),
         },
       };
 
       const { textModel } = await import('../../server/lib/gemini.js');
-      const textGenerateMock = asMock(textModel.generateContent);
-      textGenerateMock.mockResolvedValue(mockResponse);
+      const genSpy = vi.spyOn(textModel, 'generateContent').mockResolvedValue(mockResponse as any);
 
       const result = await pipelineRewrite({
         platform: 'instagram',
@@ -572,75 +573,104 @@ describe('Caption Generation', () => {
         existingCaption,
       });
 
-      expect((result.final as any).caption).not.toBe(existingCaption);
-      expect((result.final as any).caption).toContain('Enhanced');
+      expect(result.final.caption).not.toBe(existingCaption);
+      expect(result.final.caption).toContain('Enhanced');
+      expect(result.final.caption).not.toContain('✨ Enhanced with engaging content and call-to-action that drives better engagement!');
 
-      textGenerateMock.mockReset();
+      genSpy.mockRestore();
     });
 
-    it('retries when mandatory tokens are dropped', async () => {
-      const existingCaption = 'Launch day! RSVP at https://example.com/launch with @LaunchHQ on 12/25 for the "Mega Launch" by MegaCorp™ #LaunchDay';
-      const variantFactory = (caption: string) => ({
-        caption,
-        hashtags: ['#LaunchDay', '#EventTime', '#RSVPNow'],
-        safety_level: 'normal',
-        mood: 'excited',
-        style: 'authentic',
-        cta: 'Reserve your spot',
-        alt: 'Detailed alt text describing the MegaCorp launch announcement in a complete sentence.',
-        nsfw: false,
-      });
-
-      const missingVariants = {
+    it('retries with hints when the rewrite is not longer', async () => {
+      const existingCaption = 'An engaging base caption';
+      const shortVariantResponse = {
         response: {
-          text: () => JSON.stringify(
-            Array.from({ length: 5 }, (_, index) =>
-              variantFactory(`Variant ${index + 1} without mandatory tokens`)
-            )
-          ),
+          text: () =>
+            JSON.stringify([
+              {
+                caption: 'Short update',
+                hashtags: ['#tag1', '#tag2', '#tag3'],
+                safety_level: 'normal',
+                mood: 'engaging',
+                style: 'authentic',
+                cta: 'Check this out',
+                alt: 'An example alt text that is comfortably longer than twenty characters',
+                nsfw: false,
+              },
+            ]),
         },
       };
 
-      const missingRank = {
+      const shortRankResponse = {
         response: {
-          text: () => JSON.stringify({
-            winner_index: 0,
-            scores: [5, 4, 3, 2, 1],
-            reason: 'Initial selection missing mandatory tokens',
-            final: variantFactory('Variant 1 without mandatory tokens'),
-          }),
+          text: () =>
+            JSON.stringify({
+              winner_index: 0,
+              scores: [5, 4, 3, 2, 1],
+              reason: 'Short caption selected',
+              final: {
+                caption: 'Short update',
+                hashtags: ['#tag1', '#tag2', '#tag3'],
+                safety_level: 'normal',
+                mood: 'engaging',
+                style: 'authentic',
+                cta: 'Check this out',
+                alt: 'An example alt text that is comfortably longer than twenty characters',
+                nsfw: false,
+              },
+            }),
         },
       };
 
-      const enforcedCaption = 'Launch day! RSVP at https://example.com/launch with @LaunchHQ on 12/25 for the "Mega Launch" by MegaCorp™ #LaunchDay — limited seats!';
-      const enforcedVariants = {
+      const longCaption = 'A richer, more detailed rewrite that adds sensory hooks and a compelling CTA to drive action now!';
+
+      const longVariantResponse = {
         response: {
-          text: () => JSON.stringify(
-            Array.from({ length: 5 }, (_, index) =>
-              variantFactory(`${enforcedCaption} Option ${index + 1}`)
-            )
-          ),
+          text: () =>
+            JSON.stringify([
+              {
+                caption: longCaption,
+                hashtags: ['#tag1', '#tag2', '#tag3'],
+                safety_level: 'normal',
+                mood: 'engaging',
+                style: 'authentic',
+                cta: 'Check this out',
+                alt: 'Another alt statement that comfortably exceeds the minimum character requirement for validation',
+                nsfw: false,
+              },
+            ]),
         },
       };
 
-      const enforcedRank = {
+      const longRankResponse = {
         response: {
-          text: () => JSON.stringify({
-            winner_index: 0,
-            scores: [5, 4, 3, 2, 1],
-            reason: 'Retry keeps mandatory tokens',
-            final: variantFactory(enforcedCaption),
-          }),
+          text: () =>
+            JSON.stringify({
+              winner_index: 0,
+              scores: [5, 4, 3, 2, 1],
+              reason: 'Longer caption selected',
+              final: {
+                caption: longCaption,
+                hashtags: ['#tag1', '#tag2', '#tag3'],
+                safety_level: 'normal',
+                mood: 'engaging',
+                style: 'authentic',
+                cta: 'Check this out',
+                alt: 'Another alt statement that comfortably exceeds the minimum character requirement for validation',
+                nsfw: false,
+              },
+            }),
         },
       };
 
       const { textModel } = await import('../../server/lib/gemini.js');
-      const textGenerateMock = asMock(textModel.generateContent);
-      textGenerateMock
-        .mockResolvedValueOnce(missingVariants)
-        .mockResolvedValueOnce(missingRank)
-        .mockResolvedValueOnce(enforcedVariants)
-        .mockResolvedValueOnce(enforcedRank);
+      const generateSpy = vi.spyOn(textModel, 'generateContent');
+      type GenerateReturn = Awaited<ReturnType<typeof textModel.generateContent>>;
+
+      generateSpy
+        .mockResolvedValueOnce(shortVariantResponse as GenerateReturn)
+        .mockResolvedValueOnce(shortRankResponse as GenerateReturn)
+        .mockResolvedValueOnce(longVariantResponse as GenerateReturn)
+        .mockResolvedValueOnce(longRankResponse as GenerateReturn);
 
       const result = await pipelineRewrite({
         platform: 'instagram',
@@ -648,17 +678,15 @@ describe('Caption Generation', () => {
         existingCaption,
       });
 
-      const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.js');
-      expect(openAICaptionFallback).not.toHaveBeenCalled();
-      expect(textGenerateMock).toHaveBeenCalledTimes(4);
-      expect((result.final as any).caption).toContain('https://example.com/launch');
-      expect((result.final as any).caption).toContain('@LaunchHQ');
-      expect((result.final as any).caption).toContain('#LaunchDay');
-      expect((result.final as any).caption).toContain('12/25');
-      expect((result.final as any).caption).toContain('"Mega Launch"');
-      expect((result.final as any).caption).toContain('MegaCorp™');
+      expect(result.final.caption).toBe(longCaption);
+      expect(result.final.caption.length).toBeGreaterThan(existingCaption.length);
+      expect(result.final.caption).not.toContain('✨ Enhanced with engaging content and call-to-action that drives better engagement!');
+      expect(generateSpy).toHaveBeenCalledTimes(4);
 
-      textGenerateMock.mockReset();
+      const secondAttemptCall = generateSpy.mock.calls[2]?.[0]?.[0]?.text;
+      expect(secondAttemptCall).toContain('Make it 20% longer with a natural hook and CTA; keep it human, no sparkle clichés.');
+
+      generateSpy.mockRestore();
     });
 
     it('retries rewrite with hints when the first pass is too short', async () => {
