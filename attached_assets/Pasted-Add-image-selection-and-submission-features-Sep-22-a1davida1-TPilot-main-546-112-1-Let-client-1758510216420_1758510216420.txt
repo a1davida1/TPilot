@@ -1,0 +1,1483 @@
+Add image selection and submission features
+Sep 22 · a1davida1/TPilot · main
++546-112
+1. Let `client/src/components/reddit-quick-post.tsx` load the user’s `/api/media` assets and add UI for selecting one or more images; when images are chosen, submit `postType: 'image' | 'gallery'` along with `{ url: asset.downloadUrl, caption }` so the backend receives concrete URLs.
+2. Update the gallery branch in `client/src/pages/reddit-posting.tsx` to transform selections into the `{ url, caption }` structure (using `signedUrl`/`downloadUrl` from the gallery) instead of Base64 blobs before calling `/api/reddit/submit`.
+3. If any gallery URLs are private, extend the submit handler or `MediaManager` to mint temporary public URLs (e.g., reuse the existing `signedUrl`) so Reddit can reach the media when the worker posts it.
+
+Summary
+
+    Extended the quick post flow to load /api/media assets, manage selection captions, and emit either postType: 'image' or 'gallery' with concrete download URLs for the worker to consume.
+
+Replaced file uploads on the Reddit posting page with media-library selections, transforming chosen items into { url, caption } payloads before submission and resetting selections after publish.
+
+Ensured every asset response exposes an accessible URL, added a secure /uploads/:token resolver for local storage, and refreshed submit handling to mint publicly reachable links for gallery items.
+
+Testing
+
+    ✅ npm run lint *(warns about pre-existing unused code across the repo)*
+
+❌ npm test *(terminated after numerous long-standing failures in unrelated suites; no new regressions identified before abort)*
+
+
+client/src/components/reddit-quick-post.tsx
++155-4
+@@ -5,171 +5,247 @@ import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
+import { 
+  Send, 
+  Globe,
+  Link as LinkIcon,
+  Zap,
+  CheckCircle,
+  AlertCircle,
+  Sparkles
+} from 'lucide-react';
+
+interface QuickPostTemplate {
+  subreddit: string;
+  titlePrefix: string;
+  titleSuffix?: string;
+  contentTemplate?: string;
+  isNsfw: boolean;
+}
+
+interface MediaAsset {
+  id: number;
+  filename: string;
+  signedUrl?: string;
+  downloadUrl?: string;
+  createdAt: string;
+}
+
+interface QuickPostPayload {
+  subreddit: string;
+  title: string;
+  nsfw: boolean;
+  body?: string;
+  postType?: 'text' | 'link' | 'image' | 'gallery';
+  url?: string;
+  images?: Array<{ url: string; caption?: string }>;
+}
+
+const QUICK_TEMPLATES: QuickPostTemplate[] = [
+  {
+    subreddit: 'gonewild',
+    titlePrefix: 'Feeling cute today',
+    titleSuffix: '[F]',
+    contentTemplate: 'Hope you enjoy! More content on my profile 💕',
+    isNsfw: true
+  },
+  {
+    subreddit: 'onlyfans101',
+    titlePrefix: 'New content just dropped!',
+    titleSuffix: '🔥',
+    contentTemplate: 'Check out my latest photos and videos! Link in bio 💋',
+    isNsfw: true
+  },
+  {
+    subreddit: 'selfie',
+    titlePrefix: 'Good vibes only',
+    titleSuffix: '✨',
+    contentTemplate: 'Having a great day! How is everyone doing?',
+    isNsfw: false
+  }
+];
+
+export function RedditQuickPost() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('');
+  const [customTitle, setCustomTitle] = useState('');
+  const [customContent, setCustomContent] = useState('');
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [selectedMediaIds, setSelectedMediaIds] = useState<number[]>([]);
+  const [mediaCaptions, setMediaCaptions] = useState<Record<number, string>>({});
+
+  // Fetch Reddit accounts
+  const { data: accounts = [], isLoading: accountsLoading } = useQuery({
+    queryKey: ['/api/reddit/accounts'],
+    retry: false,
+  });
+
+  const { data: mediaAssets = [], isLoading: mediaLoading } = useQuery<MediaAsset[]>({
+    queryKey: ['/api/media'],
+    retry: false,
+  });
+
+  const selectedAssets = mediaAssets.filter((asset) => selectedMediaIds.includes(asset.id));
+
+  const toggleMediaSelection = (assetId: number) => {
+    setSelectedMediaIds((prev) => {
+      if (prev.includes(assetId)) {
+        return prev.filter((id) => id !== assetId);
+      }
+      return [...prev, assetId];
+    });
+  };
+
+  const handleCaptionChange = (assetId: number, caption: string) => {
+    setMediaCaptions((prev) => ({ ...prev, [assetId]: caption }));
+  };
+
+  // Connect Reddit account
+  const connectReddit = async () => {
+    setIsConnecting(true);
+    try {
+      const response = await apiRequest('GET', '/api/reddit/connect');
+      const data = await response.json();
+      
+      if (data.authUrl) {
+        window.open(data.authUrl, '_blank');
+        toast({
+          title: "🔗 Reddit Authorization",
+          description: "Complete the authorization in the popup window, then refresh this page"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "❌ Connection Failed",
+        description: (error as Error).message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  // Submit post
+  const { mutate: submitPost, isPending: submitting } = useMutation({
+    mutationFn: async (data: { subreddit: string; title: string; body: string; nsfw: boolean }) => {
+    mutationFn: async (data: QuickPostPayload) => {
+      const response = await apiRequest('POST', '/api/reddit/submit', data);
+      return response.json();
+    },
+    onSuccess: (data: unknown) => {
+      if ((data as any).success) {
+        toast({
+          title: "🎉 Posted Successfully!",
+          description: `Your post is now live on Reddit`,
+          variant: "default"
+        });
+        // Reset form
+        setCustomTitle('');
+        setCustomContent('');
+        setSelectedTemplate('');
+        setSelectedMediaIds([]);
+        setMediaCaptions({});
+        queryClient.invalidateQueries({ queryKey: ['/api/reddit/posts'] });
+      } else {
+        toast({
+          title: "❌ Posting Failed",
+          description: (data as any).error || "Unable to post to Reddit",
+          variant: "destructive"
+        });
+      }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "❌ Error",
+        description: (error as Error).message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleQuickPost = () => {
+    if (!selectedTemplate) {
+      toast({
+        title: "⚠️ Select a Template",
+        description: "Please choose a posting template first",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const template = QUICK_TEMPLATES.find(t => `${t.subreddit}-${t.titlePrefix}` === selectedTemplate);
+    if (!template) return;
+
+    const title = customTitle || `${template.titlePrefix} ${template.titleSuffix || ''}`.trim();
+    const body = customContent || template.contentTemplate || '';
+
+    submitPost({
+    const assetsWithUrls = selectedAssets
+      .map((asset) => {
+        const url = asset.downloadUrl ?? asset.signedUrl;
+        if (!url) {
+          return null;
+        }
+        return {
+          asset,
+          url,
+          caption: mediaCaptions[asset.id]?.trim() || asset.filename
+        };
+      })
+      .filter((value): value is { asset: MediaAsset; url: string; caption: string } => value !== null);
+
+    if (selectedAssets.length > 0 && assetsWithUrls.length !== selectedAssets.length) {
+      toast({
+        title: "⚠️ Media unavailable",
+        description: "One or more selected media files could not be resolved. Please refresh your media library and try again.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const payload: QuickPostPayload = {
+      subreddit: template.subreddit,
+      title,
+      body,
+      nsfw: template.isNsfw
+    });
+    };
+
+    if (assetsWithUrls.length > 1) {
+      payload.postType = 'gallery';
+      payload.images = assetsWithUrls.map(({ url, caption }) => ({ url, caption }));
+    } else if (assetsWithUrls.length === 1) {
+      payload.postType = 'image';
+      payload.url = assetsWithUrls[0].url;
+    } else {
+      payload.body = body;
+    }
+
+    submitPost(payload);
+  };
+
+  const hasRedditAccount = accounts && Array.isArray(accounts) && accounts.length > 0;
+
+  return (
+    <Card className="bg-gradient-to-br from-orange-50 to-red-50 border-orange-200">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg">
+              <Zap className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <CardTitle className="text-lg">One-Click Reddit Posting</CardTitle>
+              <CardDescription>Quick post to your favorite subreddits</CardDescription>
+            </div>
+          </div>
+          <Badge variant="secondary" className="bg-orange-100 text-orange-700">
+            <Sparkles className="h-3 w-3 mr-1" />
+            Quick Post
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {accountsLoading ? (
+@@ -213,50 +289,125 @@ export function RedditQuickPost() {
+            </div>
+
+            {/* Custom Title (Optional) */}
+            <div className="space-y-2">
+              <Label htmlFor="quick-title">Custom Title (optional)</Label>
+              <Input
+                id="quick-title"
+                value={customTitle}
+                onChange={(e) => setCustomTitle(e.target.value)}
+                data-testid="input-quick-title"
+              />
+            </div>
+
+            {/* Custom Content (Optional) */}
+            <div className="space-y-2">
+              <Label htmlFor="quick-content">Custom Content (optional)</Label>
+              <Textarea
+                id="quick-content"
+                value={customContent}
+                onChange={(e) => setCustomContent(e.target.value)}
+                rows={3}
+                data-testid="textarea-quick-content"
+              />
+            </div>
+
+            {/* Media Selection */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label>Attach Media (optional)</Label>
+                {selectedAssets.length > 0 && (
+                  <Badge variant="outline" className="text-xs">
+                    {selectedAssets.length === 1 ? 'Posting as image' : 'Posting as gallery'}
+                  </Badge>
+                )}
+              </div>
+              {mediaLoading ? (
+                <div className="flex items-center justify-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-2 border-orange-500 border-t-transparent" />
+                </div>
+              ) : mediaAssets.length === 0 ? (
+                <p className="text-sm text-gray-500">
+                  Upload photos in your media library to enable image or gallery quick posts.
+                </p>
+              ) : (
+                <>
+                  <div className="grid grid-cols-3 gap-2">
+                    {mediaAssets.map((asset) => {
+                      const previewUrl = asset.signedUrl || asset.downloadUrl || '';
+                      const isSelected = selectedMediaIds.includes(asset.id);
+                      return (
+                        <button
+                          type="button"
+                          key={asset.id}
+                          onClick={() => toggleMediaSelection(asset.id)}
+                          className={`group relative overflow-hidden rounded-lg border bg-white shadow-sm transition focus:outline-none focus:ring-2 focus:ring-orange-500 ${
+                            isSelected ? 'ring-2 ring-orange-500 border-orange-400' : 'hover:border-orange-300'
+                          }`}
+                          data-testid={`button-select-media-${asset.id}`}
+                        >
+                          {previewUrl ? (
+                            <img
+                              src={previewUrl}
+                              alt={asset.filename}
+                              className="h-24 w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-24 items-center justify-center bg-orange-50 text-sm text-orange-600">
+                              No preview
+                            </div>
+                          )}
+                          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-black/0 p-2">
+                            <p className="truncate text-xs text-white">{asset.filename}</p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {selectedAssets.length > 0 && (
+                    <div className="space-y-2">
+                      <Label className="text-sm text-gray-600">Captions</Label>
+                      <div className="space-y-3">
+                        {selectedAssets.map((asset) => (
+                          <div key={asset.id} className="space-y-1">
+                            <span className="text-xs font-medium text-gray-500">{asset.filename}</span>
+                            <Input
+                              id={`caption-${asset.id}`}
+                              value={mediaCaptions[asset.id] ?? asset.filename}
+                              onChange={(event) => handleCaptionChange(asset.id, event.target.value)}
+                              placeholder="Add optional caption"
+                              data-testid={`input-media-caption-${asset.id}`}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              <Button
+                onClick={handleQuickPost}
+                disabled={submitting || !selectedTemplate}
+                className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
+                data-testid="button-quick-post"
+              >
+                {submitting ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
+                ) : (
+                  <Send className="h-4 w-4 mr-2" />
+                )}
+                Post Now
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => window.location.href = '/reddit'}
+                className="border-orange-300 text-orange-700 hover:bg-orange-50"
+                data-testid="button-advanced-posting"
+              >
+                <Globe className="h-4 w-4 mr-2" />
+                Advanced
+              </Button>
+            </div>
+client/src/pages/reddit-posting.tsx
++278-95
+import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { apiRequest } from '@/lib/queryClient';
+import { AuthModal } from '@/components/auth-modal';
+import { 
+  Send, 
+  Calendar,
+  User,
+  Eye,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  Link as LinkIcon,
+  Globe,
+@@ -75,104 +75,133 @@ interface SubredditCommunity {
+interface ConnectionTestResponse {
+  connected: boolean;
+  profile?: {
+    username: string;
+    karma: number;
+  };
+}
+
+interface ConnectRedditResponse {
+  authUrl: string;
+}
+
+interface ContentValidationResponse {
+  policyState: 'allow' | 'warn' | 'block';
+}
+
+interface PostSubmissionResponse {
+  success: boolean;
+  error?: string;
+}
+
+interface SchedulePostResponse {
+  scheduledAt: string;
+}
+
+interface MediaAsset {
+  id: number;
+  filename: string;
+  signedUrl?: string;
+  downloadUrl?: string;
+  createdAt: string;
+}
+
+interface PostData {
+  subreddit: string;
+  title: string;
+  nsfw: boolean;
+  spoiler: boolean;
+  postType: 'text' | 'link' | 'image' | 'gallery';
+  body?: string;
+  url?: string;
+  imageData?: string;
+  images?: Array<{
+    data: string | ArrayBuffer | null;
+    caption: string;
+    url: string;
+    caption?: string;
+  }>;
+}
+
+export default function RedditPostingPage() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { isAuthenticated, user } = useAuth();
+  
+  // Form state
+  const [subreddit, setSubreddit] = useState('');
+  const [title, setTitle] = useState('');
+  const [body, setBody] = useState('');
+  const [url, setUrl] = useState('');
+  const [nsfw, setNsfw] = useState(false);
+  const [spoiler, setSpoiler] = useState(false);
+  const [postType, setPostType] = useState<'text' | 'link' | 'image' | 'gallery'>('image');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
+  const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
+  const [selectedImageId, setSelectedImageId] = useState<number | null>(null);
+  const [selectedGalleryIds, setSelectedGalleryIds] = useState<number[]>([]);
+  const [galleryCaptions, setGalleryCaptions] = useState<Record<number, string>>({});
+  const [scheduledAt, setScheduledAt] = useState('');
+  
+  // UI state
+  const [selectedAccount, setSelectedAccount] = useState<string>('');
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  // Add image handling functions
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  const { data: mediaAssets = [], isLoading: mediaLoading } = useQuery<MediaAsset[]>({
+    queryKey: ['/api/media'],
+    retry: false,
+  });
+
+  const selectedImageAsset = selectedImageId
+    ? mediaAssets.find((asset) => asset.id === selectedImageId)
+    : undefined;
+
+  const selectedGalleryAssets = mediaAssets.filter((asset) => selectedGalleryIds.includes(asset.id));
+
+  const imagePreview = selectedImageAsset
+    ? selectedImageAsset.signedUrl || selectedImageAsset.downloadUrl || ''
+    : '';
+
+  const handleImageSelect = (assetId: number) => {
+    setSelectedImageId((prev) => (prev === assetId ? null : assetId));
+  };
+
+  const handleGallerySelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []).slice(0, 20); // Max 20 images
+    setGalleryFiles(files);
+  const toggleGalleryAsset = (assetId: number) => {
+    setSelectedGalleryIds((prev) => {
+      if (prev.includes(assetId)) {
+        return prev.filter((id) => id !== assetId);
+      }
+      if (prev.length >= 20) {
+        toast({
+          title: "⚠️ Gallery limit reached",
+          description: "Reddit galleries support up to 20 images.",
+          variant: "destructive"
+        });
+        return prev;
+      }
+      return [...prev, assetId];
+    });
+  };
+
+  const handleGalleryCaptionChange = (assetId: number, caption: string) => {
+    setGalleryCaptions((prev) => ({ ...prev, [assetId]: caption }));
+  };
+
+  // Fetch Reddit accounts
+  const { data: accounts = [], isLoading: accountsLoading } = useQuery<RedditAccount[]>({
+    queryKey: ['/api/reddit/accounts'],
+    retry: false,
+  });
+
+  // Fetch subreddit communities data
+  const { data: communities = [] } = useQuery<SubredditCommunity[]>({
+    queryKey: ['/api/reddit/communities'],
+    retry: false,
+  });
+
+  // Test Reddit connection
+  const { mutate: testConnection, isPending: testingConnection } = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/reddit/test');
+      return response.json();
+    },
+    onSuccess: (data: ConnectionTestResponse) => {
+      toast({
+        title: "✅ Connection Test",
+        description: data.connected ? 
+          `Connected as ${data.profile?.username} (${data.profile?.karma} karma)` : 
+@@ -224,50 +253,53 @@ export default function RedditPostingPage() {
+        title: "🔍 Content Validated",
+        description: `Policy check: ${data.policyState}`,
+        variant: data.policyState === 'block' ? 'destructive' : 'default'
+      });
+    }
+  });
+
+  // Submit post
+  const { mutate: submitPost, isPending: submitting } = useMutation({
+    mutationFn: async (data: PostData) => {
+      const response = await apiRequest('POST', '/api/reddit/submit', data);
+      return response.json();
+    },
+    onSuccess: (data: PostSubmissionResponse) => {
+      if (data.success) {
+        toast({
+          title: "🎉 Post Published!",
+          description: `Successfully posted to r/${subreddit}`,
+          variant: "default"
+        });
+        // Reset form
+        setTitle('');
+        setBody('');
+        setUrl('');
+        setSubreddit('');
+        setSelectedImageId(null);
+        setSelectedGalleryIds([]);
+        setGalleryCaptions({});
+        queryClient.invalidateQueries({ queryKey: ['/api/reddit/posts'] });
+      } else {
+        toast({
+          title: "❌ Posting Failed",
+          description: data.error || 'Unknown error occurred',
+          variant: "destructive"
+        });
+      }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "❌ Posting Failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Schedule post
+  const { mutate: schedulePost, isPending: scheduling } = useMutation({
+    mutationFn: async (data: { subreddit: string; title: string; body: string; scheduledAt?: string }) => {
+      const response = await apiRequest('POST', '/api/posts/schedule', data);
+      return response.json();
+    },
+    onSuccess: (data: SchedulePostResponse) => {
+@@ -282,101 +314,146 @@ export default function RedditPostingPage() {
+      setSubreddit('');
+      setScheduledAt('');
+    }
+  });
+
+  // Handle content validation
+  const handleValidateContent = () => {
+    if (!subreddit || !title) {
+      toast({
+        title: "⚠️ Missing Required Fields",
+        description: "Please enter subreddit and title",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    validateContent({
+      subreddit,
+      title,
+      body,
+      hasLink: postType === 'link' && !!url
+    });
+  };
+
+  // Handle post submission - Enhanced for multiple post types
+  const handleSubmitPost = async () => {
+  const handleSubmitPost = () => {
+    if (!subreddit || !title) {
+      toast({
+        title: "⚠️ Missing Required Fields",
+        description: "Please enter subreddit and title",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const postData: PostData = {
+    const basePost: PostData = {
+      subreddit,
+      title,
+      nsfw,
+      spoiler,
+      postType
+    };
+
+    // Handle different post types
+    if (postType === 'image' && imageFile) {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        postData.imageData = reader.result as string | undefined;
+        submitPost(postData);
+      };
+      reader.readAsDataURL(imageFile);
+    } else if (postType === 'gallery' && galleryFiles.length > 0) {
+      // For gallery, we'll send URLs or process files
+      const images = await Promise.all(
+        galleryFiles.map(async (file) => {
+          return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              resolve({
+                data: reader.result as string | ArrayBuffer | null,
+                caption: file.name
+              });
+            };
+            reader.readAsDataURL(file);
+          });
+    if (postType === 'image') {
+      if (!selectedImageAsset) {
+        toast({
+          title: "⚠️ Select an image",
+          description: "Choose an image from your media library for this post.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const mediaUrl = selectedImageAsset.downloadUrl ?? selectedImageAsset.signedUrl;
+      if (!mediaUrl) {
+        toast({
+          title: "⚠️ Media unavailable",
+          description: "The selected image could not be resolved. Please refresh your media library and try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      submitPost({
+        ...basePost,
+        url: mediaUrl
+      });
+      return;
+    }
+
+    if (postType === 'gallery') {
+      if (selectedGalleryAssets.length === 0) {
+        toast({
+          title: "⚠️ Select gallery images",
+          description: "Pick one or more images from your media library for the gallery.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const galleryMedia = selectedGalleryAssets
+        .map((asset) => {
+          const mediaUrl = asset.downloadUrl ?? asset.signedUrl;
+          if (!mediaUrl) {
+            return null;
+          }
+          return {
+            url: mediaUrl,
+            caption: galleryCaptions[asset.id]?.trim() || asset.filename
+          };
+        })
+      );
+      postData.images = images as Array<{ data: string | ArrayBuffer | null; caption: string }>;
+      submitPost(postData);
+    } else if (postType === 'link') {
+      postData.url = url;
+      submitPost(postData);
+    } else {
+      postData.body = body;
+      submitPost(postData);
+        .filter((value): value is { url: string; caption: string } => value !== null);
+
+      if (galleryMedia.length !== selectedGalleryAssets.length) {
+        toast({
+          title: "⚠️ Media unavailable",
+          description: "One or more gallery items could not be resolved. Please refresh your media library and try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      submitPost({
+        ...basePost,
+        images: galleryMedia
+      });
+      return;
+    }
+
+    if (postType === 'link') {
+      submitPost({
+        ...basePost,
+        url
+      });
+      return;
+    }
+
+    submitPost({
+      ...basePost,
+      body
+    });
+  };
+
+  // Handle post scheduling
+  const handleSchedulePost = () => {
+    if (!subreddit || !title) {
+      toast({
+        title: "⚠️ Missing Required Fields",
+        description: "Please enter subreddit and title",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    schedulePost({
+      subreddit,
+      title,
+      body,
+      scheduledAt: scheduledAt || undefined
+    });
+  };
+
+  // Find community data for selected subreddit
+  const selectedCommunity = communities.find((c) => 
+    c.name.toLowerCase() === `r/${subreddit.toLowerCase()}` || c.id === subreddit.toLowerCase()
+  );
+@@ -551,110 +628,216 @@ export default function RedditPostingPage() {
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>Success Rate: <span className="font-medium text-green-600">{selectedCommunity.successProbability}%</span></div>
+                        <div>Avg Upvotes: <span className="font-medium text-blue-600">{selectedCommunity.averageUpvotes}</span></div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Title Input */}
+                <div className="space-y-2">
+                  <Label htmlFor="title">Title</Label>
+                  <Input
+                    id="title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    maxLength={300}
+                    data-testid="input-title"
+                  />
+                  <div className="text-xs text-gray-500 text-right">{title.length}/300</div>
+                </div>
+
+                {/* Content Input */}
+                {postType === 'image' && (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="image">Select Image</Label>
+                      <Input
+                        id="image"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageSelect}
+                        className="cursor-pointer"
+                        data-testid="input-image-upload"
+                      />
+                      <Label>Select Image</Label>
+                      {mediaLoading ? (
+                        <div className="flex items-center justify-center py-6">
+                          <div className="h-8 w-8 animate-spin rounded-full border-2 border-pink-400 border-t-transparent" />
+                        </div>
+                      ) : mediaAssets.length === 0 ? (
+                        <p className="text-sm text-gray-500">
+                          Upload images to your media library to enable image posts.
+                        </p>
+                      ) : (
+                        <div
+                          className="grid grid-cols-3 gap-3"
+                          data-testid="input-image-upload"
+                        >
+                          {mediaAssets.map((asset) => {
+                            const previewUrl = asset.signedUrl || asset.downloadUrl || '';
+                            const isSelected = selectedImageId === asset.id;
+                            return (
+                              <button
+                                key={asset.id}
+                                type="button"
+                                onClick={() => handleImageSelect(asset.id)}
+                                className={`relative overflow-hidden rounded-lg border bg-white shadow-sm transition focus:outline-none focus:ring-2 focus:ring-pink-500 ${
+                                  isSelected ? 'ring-2 ring-pink-500 border-pink-400' : 'hover:border-pink-300'
+                                }`}
+                                data-testid={`button-image-asset-${asset.id}`}
+                              >
+                                {previewUrl ? (
+                                  <img
+                                    src={previewUrl}
+                                    alt={asset.filename}
+                                    className="h-28 w-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="flex h-28 items-center justify-center bg-pink-50 text-sm text-pink-600">
+                                    No preview
+                                  </div>
+                                )}
+                                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+                                  <p className="truncate text-xs text-white">{asset.filename}</p>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                    {imagePreview && (
+                      <div className="space-y-2">
+                        <Label>Preview</Label>
+                        <div className="border-2 border-dashed border-pink-300 rounded-lg p-4">
+                          <img 
+                            src={imagePreview} 
+                            alt="Preview" 
+                            className="max-w-full h-auto max-h-64 mx-auto rounded" 
+                          <img
+                            src={imagePreview}
+                            alt="Preview"
+                            className="max-w-full h-auto max-h-64 mx-auto rounded"
+                            data-testid="img-preview"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {postType === 'gallery' && (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="gallery">Select Images (Max 20)</Label>
+                      <Input
+                        id="gallery"
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleGallerySelect}
+                        className="cursor-pointer"
+                        data-testid="input-gallery-upload"
+                      />
+                      <div className="flex items-center justify-between">
+                        <Label>Select Images (Max 20)</Label>
+                        {selectedGalleryAssets.length > 0 && (
+                          <Badge variant="outline" className="text-xs">
+                            {selectedGalleryAssets.length} selected
+                          </Badge>
+                        )}
+                      </div>
+                      {mediaLoading ? (
+                        <div className="flex items-center justify-center py-6">
+                          <div className="h-8 w-8 animate-spin rounded-full border-2 border-pink-400 border-t-transparent" />
+                        </div>
+                      ) : mediaAssets.length === 0 ? (
+                        <p className="text-sm text-gray-500">
+                          Upload images to your media library to build Reddit galleries.
+                        </p>
+                      ) : (
+                        <div
+                          className="grid grid-cols-3 gap-3"
+                          data-testid="input-gallery-upload"
+                        >
+                          {mediaAssets.map((asset) => {
+                            const previewUrl = asset.signedUrl || asset.downloadUrl || '';
+                            const isSelected = selectedGalleryIds.includes(asset.id);
+                            return (
+                              <button
+                                key={asset.id}
+                                type="button"
+                                onClick={() => toggleGalleryAsset(asset.id)}
+                                className={`relative overflow-hidden rounded-lg border bg-white shadow-sm transition focus:outline-none focus:ring-2 focus:ring-pink-500 ${
+                                  isSelected ? 'ring-2 ring-pink-500 border-pink-400' : 'hover:border-pink-300'
+                                }`}
+                                data-testid={`button-gallery-asset-${asset.id}`}
+                              >
+                                {previewUrl ? (
+                                  <img
+                                    src={previewUrl}
+                                    alt={asset.filename}
+                                    className="h-28 w-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="flex h-28 items-center justify-center bg-pink-50 text-sm text-pink-600">
+                                    No preview
+                                  </div>
+                                )}
+                                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+                                  <p className="truncate text-xs text-white">{asset.filename}</p>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                    {galleryFiles.length > 0 && (
+                      <div className="space-y-2">
+                        <Label>Preview ({galleryFiles.length} images)</Label>
+                        <div className="grid grid-cols-3 gap-2 p-4 border-2 border-dashed border-pink-300 rounded-lg">
+                          {galleryFiles.slice(0, 9).map((file, index) => (
+                            <div key={index} className="relative">
+                              <img
+                                src={URL.createObjectURL(file)}
+                                alt={`Gallery ${index + 1}`}
+                                className="w-full h-20 object-cover rounded"
+                                data-testid={`img-gallery-preview-${index}`}
+                              />
+                              {index === 8 && galleryFiles.length > 9 && (
+                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded text-white text-sm">
+                                  +{galleryFiles.length - 9} more
+                    {selectedGalleryAssets.length > 0 && (
+                      <>
+                        <div className="space-y-2">
+                          <Label>Preview ({selectedGalleryAssets.length} images)</Label>
+                          <div className="grid grid-cols-3 gap-2 p-4 border-2 border-dashed border-pink-300 rounded-lg">
+                            {selectedGalleryAssets.slice(0, 9).map((asset, index) => {
+                              const previewUrl = asset.signedUrl || asset.downloadUrl || '';
+                              return (
+                                <div key={`${asset.id}-${index}`} className="relative">
+                                  {previewUrl ? (
+                                    <img
+                                      src={previewUrl}
+                                      alt={`Gallery ${index + 1}`}
+                                      className="w-full h-20 object-cover rounded"
+                                      data-testid={`img-gallery-preview-${index}`}
+                                    />
+                                  ) : (
+                                    <div className="flex h-20 items-center justify-center rounded bg-pink-50 text-xs text-pink-600">
+                                      No preview
+                                    </div>
+                                  )}
+                                  {index === 8 && selectedGalleryAssets.length > 9 && (
+                                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded text-white text-sm">
+                                      +{selectedGalleryAssets.length - 9} more
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                              );
+                            })}
+                          </div>
+                        </div>
+                        <div className="space-y-3">
+                          <Label className="text-sm text-gray-600">Captions</Label>
+                          {selectedGalleryAssets.map((asset) => (
+                            <div key={asset.id} className="space-y-1">
+                              <span className="text-xs font-medium text-gray-500">{asset.filename}</span>
+                              <Input
+                                value={galleryCaptions[asset.id] ?? asset.filename}
+                                onChange={(event) => handleGalleryCaptionChange(asset.id, event.target.value)}
+                                placeholder="Add optional caption"
+                                data-testid={`input-gallery-caption-${asset.id}`}
+                              />
+                            </div>
+                          ))}\n                        </div>
+                      </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {postType === 'text' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="body">Content (Optional)</Label>
+                    <Textarea
+                      id="body"
+                      value={body}
+                      onChange={(e) => setBody(e.target.value)}
+                      rows={6}
+                      maxLength={10000}
+                      data-testid="textarea-body"
+                    />
+                    <div className="text-xs text-gray-500 text-right">{body.length}/10,000</div>
+                  </div>
+                )}
+
+                {postType === 'link' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="url">URL</Label>
+                    <Input
+                      id="url"
+                      value={url}
+server/lib/media.ts
++1-1
+@@ -140,51 +140,51 @@ export class MediaManager {
+    }, ttlSeconds * 1000);
+
+    if (typeof timeout.unref === 'function') {
+      timeout.unref();
+    }
+  }
+
+  private static async generateLocalDownloadToken(asset: MediaAssetRow): Promise<string> {
+    const token = crypto.randomUUID();
+    await this.persistDownloadToken(token, {
+      assetId: asset.id,
+      userId: asset.userId,
+      key: asset.key,
+    });
+    return token;
+  }
+
+  private static async buildAssetResponse(asset: MediaAssetRow): Promise<MediaAssetWithUrl> {
+    const response: MediaAssetWithUrl = { ...asset };
+
+    if (isS3Configured && s3Client) {
+      const signedUrl = await this.getSignedUrl(asset.key);
+      response.signedUrl = signedUrl;
+      response.downloadUrl = env.S3_PUBLIC_CDN_DOMAIN
+        ? `${env.S3_PUBLIC_CDN_DOMAIN}/${asset.key}`
+        : undefined;
+        : signedUrl;
+    } else {
+      const token = await this.generateLocalDownloadToken(asset);
+      const downloadPath = `/uploads/${token}`;
+      response.signedUrl = downloadPath;
+      response.downloadUrl = downloadPath;
+      response.downloadToken = token;
+    }
+
+    return response;
+  }
+
+  static async uploadFile(
+    buffer: Buffer,
+    options: MediaUploadOptions
+  ): Promise<MediaAssetWithUrl> {
+    const { userId, filename, visibility = 'private', applyWatermark = false } = options;
+    
+    // Check user quota
+    await this.checkUserQuota(userId, buffer.length);
+    
+    // Process image if needed
+    let finalBuffer = buffer;
+    let finalMime = this.getMimeType(filename);
+    
+    if (this.isImage(filename)) {
+server/reddit-routes.ts
++84-12
+import type { Express } from 'express';
+import crypto from 'crypto';
+import { RedditManager, getRedditAuthUrl, exchangeRedditCode } from './lib/reddit.js';
+import { db } from './db.js';
+import { creatorAccounts } from '@shared/schema';
+import { eq, and } from 'drizzle-orm';
+import { authenticateToken, type AuthRequest } from './middleware/auth.js';
+import { stateStore, encrypt, decrypt, rateLimit } from './services/state-store.js';
+import {
+  listCommunities,
+  searchCommunities,
+  getCommunityInsights,
+  createCommunity,
+  updateCommunity,
+  deleteCommunity
+} from './reddit-communities.js';
+import { logger } from './bootstrap/logger.js';
+import { MediaManager } from './lib/media.js';
+import { env } from './lib/config.js';
+
+interface RedditProfile {
+  username: string;
+  karma?: number;
+  verified?: boolean;
+}
+
+export function registerRedditRoutes(app: Express) {
+  
+  // Start Reddit OAuth flow - SECURE VERSION
+  app.get('/api/reddit/connect', rateLimit, authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      if (!process.env.REDDIT_CLIENT_ID) {
+        return res.status(503).json({ 
+          error: 'Reddit integration not configured. Please set REDDIT_CLIENT_ID and other Reddit environment variables.' 
+        });
+      }
+
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      // Generate cryptographically secure state
+      const state = crypto.randomBytes(32).toString('hex');
+@@ -362,90 +364,160 @@ export function registerRedditRoutes(app: Express) {
+    }
+  });
+
+  // Enhanced submit endpoint with image support
+  app.post('/api/reddit/submit', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      const { subreddit, title, body, url, nsfw, spoiler, postType, imageData } = req.body;
+
+      if (!subreddit || !title) {
+        return res.status(400).json({ error: 'Subreddit and title are required' });
+      }
+
+      // Get Reddit manager
+      const reddit = await RedditManager.forUser(userId);
+      if (!reddit) {
+        return res.status(404).json({ 
+          error: 'No active Reddit account found. Please connect your Reddit account first.' 
+        });
+      }
+
+      const baseUrl = env.APP_BASE_URL || `${req.protocol}://${req.get('host')}`;
+
+      const ensureAccessibleUrl = async (rawUrl?: string): Promise<string | undefined> => {
+        if (!rawUrl) {
+          return undefined;
+        }
+
+        let currentUrl = rawUrl;
+        const visited = new Set<string>();
+
+        const extractToken = (value: string): string | null => {
+          const tokenMatch = value.match(/\/uploads\/([^/?#]+)/);
+          return tokenMatch ? tokenMatch[1] : null;
+        };
+
+        while (currentUrl && !visited.has(currentUrl)) {
+          visited.add(currentUrl);
+          const token = extractToken(currentUrl);
+          if (!token) {
+            break;
+          }
+
+          const payload = await MediaManager.validateDownloadToken(token);
+          if (!payload) {
+            break;
+          }
+
+          const refreshedAsset = await MediaManager.getAsset(payload.assetId, req.user?.id);
+          const refreshedUrl = refreshedAsset?.downloadUrl ?? refreshedAsset?.signedUrl;
+
+          if (!refreshedUrl || visited.has(refreshedUrl)) {
+            break;
+          }
+
+          currentUrl = refreshedUrl;
+        }
+
+        if (!currentUrl) {
+          return undefined;
+        }
+
+        if (currentUrl.startsWith('http://') || currentUrl.startsWith('https://')) {
+          return currentUrl;
+        }
+
+        try {
+          return new URL(currentUrl, baseUrl).toString();
+        } catch (error) {
+          logger.error('Failed to resolve media URL', { error, currentUrl });
+          return undefined;
+        }
+      };
+
+      let result;
+      
+      // Handle different post types
+      switch (postType || 'text') {
+        case 'image':
+          // Single image post
+          if (!imageData && !url) {
+          const accessibleUrl = await ensureAccessibleUrl(url);
+
+          if (!imageData && !accessibleUrl) {
+            return res.status(400).json({ error: 'Image data or URL required for image post' });
+          }
+          
+
+          let imageBuffer;
+          if (imageData) {
+            // Convert base64 to buffer if needed
+            const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
+            imageBuffer = Buffer.from(base64Data, 'base64');
+          }
+          
+
+          result = await reddit.submitImagePost({
+            subreddit,
+            title,
+            imageBuffer,
+            imageUrl: url,
+            imageUrl: accessibleUrl,
+            nsfw: nsfw || false,
+            spoiler: spoiler || false
+          });
+          break;
+          
+
+        case 'gallery':
+          // Multiple images
+          if (!req.body.images || !Array.isArray(req.body.images)) {
+            return res.status(400).json({ error: 'Images array required for gallery post' });
+          }
+          
+
+          const typedImages =
+            req.body.images as Array<{ url: string; caption?: string }>;
+          const images = typedImages.map(img => ({
+            url: img.url,
+            caption: img.caption || ''
+          }));
+          
+            req.body.images as Array<{ url?: string; caption?: string }>;
+
+          let images;
+          try {
+            images = await Promise.all(typedImages.map(async (img, index) => {
+              const accessibleUrl = await ensureAccessibleUrl(img.url);
+
+              if (!accessibleUrl) {
+                throw new Error(`Image ${index + 1} is missing an accessible URL`);
+              }
+
+              return {
+                url: accessibleUrl,
+                caption: img.caption || ''
+              };
+            }));
+          } catch (error) {
+            const message = error instanceof Error ? error.message : 'Invalid gallery image URL';
+            return res.status(400).json({ error: message });
+          }
+
+          result = await reddit.submitGalleryPost({
+            subreddit,
+            title,
+            images,
+            nsfw: nsfw || false
+          });
+          break;
+          
+        case 'link':
+          // Link post
+          if (!url) {
+            return res.status(400).json({ error: 'URL required for link post' });
+          }
+          
+          result = await reddit.submitPost({
+            subreddit,
+            title,
+            url,
+            nsfw: nsfw || false,
+            spoiler: spoiler || false
+          });
+          break;
+          
+        case 'text':
+        default:
+server/routes.ts
++28-0
+@@ -56,50 +56,51 @@ interface RedditSessionData {
+  redditConnected?: boolean;
+}
+
+declare module 'express-session' {
+  interface SessionData extends RedditSessionData {}
+}
+
+// Service imports
+import { generateContent } from "./services/content-generator.js";
+import { generateAIContent, analyzeImageForContent } from "./services/ai-generator.js";
+import { generateWithMultiProvider, getProviderStatus } from "./services/multi-ai-provider.js";
+import { generateUnifiedAIContent, analyzeImage } from "./services/unified-ai-service.js";
+import { generateImageCaption, imageToBase64, validateImageFormat } from "./image-caption-generator.js";
+import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage.js";
+import { getRandomTemplates, addWatermark, getTemplateByMood } from "./content-templates.js";
+import { generateAdvancedContent, type ContentParameters } from "./advanced-content-generator.js";
+// Reddit communities now handled in reddit-routes.ts
+import { getAvailablePerks, getPerksByCategory, generateReferralCode, getSignupInstructions } from "./pro-perks.js";
+
+// API route modules
+import { registerApiRoutes } from "./api-routes.js";
+import { registerPolicyRoutes } from "./policy-routes.js";
+import { registerRedditRoutes } from "./reddit-routes.js";
+import { registerAnalyticsRoutes } from "./analytics-routes.js";
+import { createLead, confirmLead } from "./api/leads.js";
+import { MediaManager } from "./lib/media.js";
+import { getLeads } from "./api/admin-leads.js";
+import { captionRouter } from "./routes/caption.js";
+import { contentGenerationLimiter } from "./middleware/tiered-rate-limit.js";
+import { registerSocialMediaRoutes } from "./social-media-routes.js";
+
+// Schema imports
+import { insertContentGenerationSchema, insertUserImageSchema } from "@shared/schema";
+
+// Core dependencies
+import multer from 'multer';
+import fs from 'fs/promises';
+import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
+import csrf from 'csurf';
+
+// Get secure environment variables (no fallbacks)
+const rawSessionSecret = process.env.SESSION_SECRET;
+if (!rawSessionSecret) {
+  throw new Error('SESSION_SECRET missing');
+}
+const SESSION_SECRET: string = rawSessionSecret;
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+const DATABASE_URL = process.env.DATABASE_URL;
+const REDIS_URL = process.env.REDIS_URL;
+@@ -301,50 +302,77 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'):
+  // ==========================================
+  // ROUTE REGISTRATION
+  // ==========================================
+  
+  // Authentication routes - handled by setupAuth() in server/auth.ts
+  // app.use('/api/auth', authRoutes); // Removed - duplicate auth system
+  
+  // Upload routes
+  app.use('/api/upload', uploadRoutes);
+  
+  // Media routes
+  app.use('/api/media', mediaRoutes);
+
+  // Analytics routes
+  app.use('/api', analyticsRouter);
+  
+  // Social auth routes
+  app.get('/api/auth/google', socialAuthRoutes.googleAuth);
+  app.get('/api/auth/google/callback', socialAuthRoutes.googleCallback);
+  app.get('/api/auth/facebook', socialAuthRoutes.facebookAuth);
+  app.get('/api/auth/facebook/callback', socialAuthRoutes.facebookCallback);
+  app.get('/api/auth/reddit', socialAuthRoutes.redditAuth);
+  app.get('/api/auth/reddit/callback', socialAuthRoutes.redditCallback);
+
+  // Serve uploaded files securely
+  if (MediaManager.usesLocalStorage()) {
+    app.get('/uploads/:token', async (req, res, next) => {
+      try {
+        const token = req.params.token;
+        if (!token) {
+          res.status(404).end();
+          return;
+        }
+
+        const payload = await MediaManager.validateDownloadToken(token);
+        if (!payload) {
+          res.status(404).end();
+          return;
+        }
+
+        const filePath = MediaManager.getLocalAssetPath(payload.key);
+        res.sendFile(filePath, (error) => {
+          if (error) {
+            next(error);
+          }
+        });
+      } catch (error) {
+        next(error as Error);
+      }
+    });
+  }
+
+  app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
+  // ==========================================
+  // STRIPE PAYMENT ENDPOINTS
+  // ==========================================
+  
+  // Create subscription payment intent
+  app.post("/api/create-subscription", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      if (!stripe) {
+        return res.status(503).json({ 
+          message: "Payment system is not configured. Please try again later." 
+        });
+      }
+
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const { plan, amount } = req.body;
+      
+      // Validate plan and amount
+      if (!plan || !amount) {
+        return res.status(400).json({ message: "Plan and amount are required" });
+      }

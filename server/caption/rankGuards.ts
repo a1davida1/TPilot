@@ -13,7 +13,10 @@ const BANNED_PHRASES = [
   /You won't believe/i,
   /This is incredible/i,
   /Must see/i,
-  /Absolutely stunning/i
+  /Absolutely stunning/i,
+  /✨/,  // Any sparkle emojis
+  /🌟/,  // Star emojis
+  /⭐/   // Star emojis
 ];
 
 // Generic hashtags that indicate low-quality content
@@ -28,7 +31,10 @@ const GENERIC_HASHTAGS = new Set([
 const CANNED_CTAS = new Set([
   "Check it out", "Click the link", "Don't miss out",
   "Link in comments", "See more", "Find out more",
-  "Click here", "Tap the link", "Visit my page"
+  "Click here", "Tap the link", "Visit my page",
+  "Link in bio", "Link in bio for more!", "Link in bio for more",
+  "Learn more", "Follow for more", "Link in profile",
+  "Link in page", "Swipe up", "Check my bio"
 ]);
 
 export function fallbackHashtags(platform?: string): string[] {
