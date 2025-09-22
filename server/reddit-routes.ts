@@ -16,6 +16,7 @@ import {
 } from './reddit-communities.js';
 import { getUserRedditCommunityEligibility } from './lib/reddit.js';
 import { logger } from './bootstrap/logger.js';
+import { summarizeRemovalReasons } from './compliance/ruleViolationTracker.js';
 
 interface RedditProfile {
   username: string;
@@ -607,6 +608,38 @@ export function registerRedditRoutes(app: Express) {
           publicSubmissions: [],
           missingSubmissionIds: []
         }
+      });
+    }
+  });
+
+  // Get compliance removal summary for authenticated user
+  app.get('/api/reddit/compliance/removal-summary', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const summary = summarizeRemovalReasons(userId);
+      
+      logger.info('Compliance removal summary requested', {
+        userId,
+        totalRemovals: summary.total,
+        reasonCount: Object.keys(summary.byReason).length
+      });
+
+      res.json(summary);
+      
+    } catch (error) {
+      logger.error('Error fetching compliance removal summary', { 
+        userId: req.user?.id, 
+        error: error instanceof Error ? error.message : String(error)
+      });
+      
+      res.status(500).json({
+        total: 0,
+        byReason: {},
+        error: 'Failed to fetch removal summary'
       });
     }
   });
