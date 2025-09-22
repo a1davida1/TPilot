@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +10,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { AdminCommunitiesPanel } from '@/components/admin/admin-communities-panel';
+
+// Lazy load compliance dashboard
+const ComplianceStatusDashboard = lazy(() => 
+  import('@/components/compliance/ComplianceStatusDashboard').then(module => ({
+    default: module.ComplianceStatusDashboard
+  }))
+);
 import { 
   Users, 
   DollarSign, 
@@ -302,6 +309,7 @@ export function AdminDashboard() {
           <TabsTrigger value="users" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Users</TabsTrigger>
           <TabsTrigger value="providers" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Providers</TabsTrigger>
           <TabsTrigger value="communities" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Communities</TabsTrigger>
+          <TabsTrigger value="compliance" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Compliance</TabsTrigger>
           <TabsTrigger value="revenue" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Revenue</TabsTrigger>
           <TabsTrigger value="roadmap" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Roadmap</TabsTrigger>
           <TabsTrigger value="system" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">System</TabsTrigger>
@@ -575,6 +583,33 @@ export function AdminDashboard() {
         {/* Communities Tab */}
         <TabsContent value="communities" className="space-y-6">
           <AdminCommunitiesPanel canManage={user?.tier === 'admin'} />
+        </TabsContent>
+
+        {/* Compliance Tab */}
+        <TabsContent value="compliance" className="space-y-6">
+          <Card className="bg-white border-gray-200 shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5 text-purple-600" />
+                Compliance Dashboard
+              </CardTitle>
+              <CardDescription>
+                Monitor subreddit compliance, shadowban status, and content moderation patterns
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Suspense fallback={
+                <div className="flex items-center justify-center py-12">
+                  <div className="flex items-center gap-3 text-gray-500">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
+                    <span>Loading compliance dashboard...</span>
+                  </div>
+                </div>
+              }>
+                <ComplianceStatusDashboard />
+              </Suspense>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* System Tab */}
