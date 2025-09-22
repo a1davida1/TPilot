@@ -1,8 +1,31 @@
 import snoowrap from 'snoowrap';
 import { db } from '../db.js';
-import { creatorAccounts } from '@shared/schema';
-import { eq, and } from 'drizzle-orm';
+import { creatorAccounts, subredditRules, postRateLimits } from '@shared/schema';
+import { eq, and, gt } from 'drizzle-orm';
 import { decrypt } from '../services/state-store.js';
+
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+
+interface NormalizedSubredditRules {
+  linkPolicy?: 'no-link' | 'one-link' | 'ok';
+  cooldownMinutes?: number;
+  cooldownHours?: number;
+  postingCadence?: {
+    cooldownMinutes?: number;
+  };
+  postingLimits?: {
+    perDay?: number;
+    per24h?: number;
+    daily?: number;
+    cooldownMinutes?: number;
+    cooldownHours?: number;
+  };
+}
+
+export interface PostCheckContext {
+  hasLink?: boolean;
+  intendedAt?: Date;
+}
 
 function getEnvOrDefault(name: string, defaultValue?: string): string {
   const value = process.env[name];
@@ -32,12 +55,83 @@ export interface RedditPostResult {
   postId?: string;
   url?: string;
   error?: string;
+  decision?: PostingPermission;
 }
 
 export interface PostingPermission {
   canPost: boolean;
   reason?: string;
+  reasons: string[];
+  warnings: string[];
   nextAllowedPost?: Date;
+  evaluatedAt: Date;
+  postsInLast24h: number;
+  maxPostsPer24h: number;
+  ruleSummary?: {
+    linkPolicy?: NormalizedSubredditRules['linkPolicy'];
+    cooldownMinutes?: number;
+    dailyLimit?: number;
+  };
+}
+
+function normalizeSubredditName(subreddit: string): string {
+  return subreddit.replace(/^r\//i, '').trim().toLowerCase();
+}
+
+function toDate(value: unknown): Date | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? undefined : value;
+  }
+
+  const parsed = new Date(value as string | number);
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+}
+
+function deriveCooldownMinutes(rules?: NormalizedSubredditRules): number | null {
+  if (!rules) {
+    return null;
+  }
+
+  const values: Array<number | undefined> = [
+    rules.cooldownMinutes,
+    rules.cooldownHours ? rules.cooldownHours * 60 : undefined,
+    rules.postingCadence?.cooldownMinutes,
+    rules.postingLimits?.cooldownMinutes,
+    rules.postingLimits?.cooldownHours ? rules.postingLimits.cooldownHours * 60 : undefined,
+  ];
+
+  for (const value of values) {
+    if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+      return value;
+    }
+  }
+
+  return null;
+}
+
+function deriveDailyLimit(rules?: NormalizedSubredditRules): number | null {
+  if (!rules?.postingLimits) {
+    return null;
+  }
+
+  const { postingLimits } = rules;
+  const candidates: Array<number | undefined> = [
+    postingLimits.perDay,
+    postingLimits.per24h,
+    postingLimits.daily,
+  ];
+
+  for (const value of candidates) {
+    if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+      return value;
+    }
+  }
+
+  return null;
 }
 
 interface RedditSubmission {
@@ -100,15 +194,21 @@ export class RedditManager {
    * Submit a post to Reddit
    */
   async submitPost(options: RedditPostOptions): Promise<RedditPostResult> {
+    let permission: PostingPermission | undefined;
     try {
       console.log(`Submitting post to r/${options.subreddit}: "${options.title}"`);
 
       // Check if we can post to this subreddit
-      const permission = await RedditManager.canPostToSubreddit(this.userId, options.subreddit);
+      permission = await RedditManager.canPostToSubreddit(this.userId, options.subreddit, {
+        hasLink: Boolean(options.url),
+        intendedAt: new Date(),
+      });
+
       if (!permission.canPost) {
         return {
           success: false,
-          error: permission.reason || 'Cannot post to this subreddit'
+          error: permission.reason || 'Cannot post to this subreddit',
+          decision: permission,
         };
       }
 
@@ -157,7 +257,10 @@ export class RedditManager {
       }
 
       // Update rate limiting
-      await this.updateRateLimit(options.subreddit);
+      await this.updateRateLimit({
+        subreddit: options.subreddit,
+        postId: submission.id,
+      });
 
       console.log('Reddit submission succeeded:', {
         userId: this.userId,
@@ -169,6 +272,7 @@ export class RedditManager {
         success: true,
         postId: submission.id,
         url: `https://www.reddit.com${submission.permalink}`,
+        decision: permission,
       };
 
     } catch (error: unknown) {
@@ -193,7 +297,8 @@ export class RedditManager {
 
       return {
         success: false,
-        error: errorMessage
+        error: errorMessage,
+        decision: permission,
       };
     }
   }
@@ -210,8 +315,40 @@ export class RedditManager {
     nsfw?: boolean;
     spoiler?: boolean;
   }): Promise<RedditPostResult> {
+    let permission: PostingPermission | undefined;
     try {
+      // Check posting permission (image uploads are not link posts unless falling back to URL)
+      permission = await RedditManager.canPostToSubreddit(this.userId, options.subreddit, {
+        hasLink: false, // Direct image uploads are not link posts
+        intendedAt: new Date(),
+      });
+
+      if (!permission.canPost) {
+        return {
+          success: false,
+          error: permission.reason || 'Cannot post to this subreddit',
+          decision: permission,
+        };
+      }
+
       const reddit = await this.initReddit();
+      
+      // Security: Validate imageUrl to prevent SSRF
+      if (options.imageUrl) {
+        try {
+          const url = new URL(options.imageUrl);
+          if (!['http:', 'https:'].includes(url.protocol)) {
+            throw new Error('Invalid URL protocol');
+          }
+          // Additional validation could include hostname allowlisting
+        } catch (urlError) {
+          return {
+            success: false,
+            error: 'Invalid image URL provided',
+            decision: permission,
+          };
+        }
+      }
       
       // If we have a URL, download it to buffer
       if (options.imageUrl && !options.imageBuffer) {
@@ -251,10 +388,17 @@ export class RedditManager {
             sendReplies: true,
           });
 
+          // Update rate limiting after successful submission
+          await this.updateRateLimit({
+            subreddit: options.subreddit,
+            postId: submission.name || submission.id,
+          });
+
           return {
             success: true,
             postId: submission.name || submission.id,
             url: `https://www.reddit.com${submission.permalink}`,
+            decision: permission,
           };
         } catch (imgError: unknown) {
           console.error('Direct image upload failed, falling back to link post:', (imgError as { message?: string }).message);
@@ -275,14 +419,16 @@ export class RedditManager {
       // No image provided
       return {
         success: false,
-        error: 'No image provided for upload'
+        error: 'No image provided for upload',
+        decision: permission,
       };
 
     } catch (error: unknown) {
       console.error('Image submission failed:', error);
       return {
         success: false,
-        error: (error as { message?: string }).message ?? 'Failed to upload image'
+        error: (error as { message?: string }).message ?? 'Failed to upload image',
+        decision: permission,
       };
     }
   }
@@ -300,7 +446,22 @@ export class RedditManager {
     }>;
     nsfw?: boolean;
   }): Promise<RedditPostResult> {
+    let permission: PostingPermission | undefined;
     try {
+      // Check posting permission (gallery uploads are not link posts)
+      permission = await RedditManager.canPostToSubreddit(this.userId, options.subreddit, {
+        hasLink: false, // Gallery uploads are not link posts
+        intendedAt: new Date(),
+      });
+
+      if (!permission.canPost) {
+        return {
+          success: false,
+          error: permission.reason || 'Cannot post to this subreddit',
+          decision: permission,
+        };
+      }
+
       const reddit = await this.initReddit();
       const subreddit = (reddit as unknown as {
         getSubreddit(name: string): {
@@ -319,6 +480,17 @@ export class RedditManager {
           let imageBuffer = img.buffer;
           
           if (!imageBuffer && img.url) {
+            // Security: Validate URL to prevent SSRF
+            try {
+              const url = new URL(img.url);
+              if (!['http:', 'https:'].includes(url.protocol)) {
+                throw new Error('Invalid URL protocol');
+              }
+              // Additional validation could include hostname allowlisting
+            } catch (urlError) {
+              throw new Error('Invalid image URL provided in gallery');
+            }
+            
             const response = await fetch(img.url);
             const arrayBuffer = await response.arrayBuffer();
             imageBuffer = Buffer.from(arrayBuffer);
@@ -343,10 +515,17 @@ export class RedditManager {
         sendReplies: true
       });
 
+      // Update rate limiting after successful submission
+      await this.updateRateLimit({
+        subreddit: options.subreddit,
+        postId: submission.name || submission.id,
+      });
+
       return {
         success: true,
         postId: submission.name || submission.id,
-        url: `https://www.reddit.com${submission.permalink}`
+        url: `https://www.reddit.com${submission.permalink}`,
+        decision: permission,
       };
 
     } catch (error: unknown) {
@@ -365,7 +544,8 @@ export class RedditManager {
       
       return {
         success: false,
-        error: (error as { message?: string }).message ?? 'Failed to submit gallery'
+        error: (error as { message?: string }).message ?? 'Failed to submit gallery',
+        decision: permission,
       };
     }
   }
@@ -418,28 +598,144 @@ export class RedditManager {
   }
 
   /**
-   * Check if user can post to a specific subreddit (rate limiting)
+   * Check if we can post to a subreddit based on rules and rate limits
    */
-  static async canPostToSubreddit(userId: number, subreddit: string): Promise<PostingPermission> {
+  static async canPostToSubreddit(
+    userId: number,
+    subreddit: string,
+    context: PostCheckContext = {}
+  ): Promise<PostingPermission> {
+    const now = context.intendedAt || new Date();
+    const normalizedSubreddit = normalizeSubredditName(subreddit);
+    
     try {
-      // Check if user has exceeded posting limits for this subreddit
-      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      // Load normalized subreddit rules from database
+      const rulesResult = await db
+        .select()
+        .from(subredditRules)
+        .where(eq(subredditRules.subreddit, normalizedSubreddit))
+        .limit(1);
+
+      const rules: NormalizedSubredditRules | undefined = rulesResult[0]?.normalizedRules as NormalizedSubredditRules;
+
+      // Determine query window - max of 24h and cooldown period for long cooldowns
+      const cooldownMinutes = deriveCooldownMinutes(rules);
+      const queryWindow = Math.max(DAY_IN_MS, (cooldownMinutes || 0) * 60 * 1000);
+      const queryStartTime = new Date(now.getTime() - queryWindow);
       
-      // In a real implementation, you'd check:
-      // - Subreddit-specific post limits
-      // - User's posting history
-      // - Account age and karma requirements
-      // - Subreddit ban status
+      // Get post history for rate limiting
+      const recentPosts = await db
+        .select()
+        .from(postRateLimits)
+        .where(
+          and(
+            eq(postRateLimits.userId, userId),
+            eq(postRateLimits.subreddit, normalizedSubreddit),
+            gt(postRateLimits.postedAt, queryStartTime)
+          )
+        );
+
+      // For daily limits, only count posts in last 24h
+      const oneDayAgo = new Date(now.getTime() - DAY_IN_MS);
+      const postsInLast24h = recentPosts.filter(post => {
+        const postDate = toDate(post.postedAt);
+        return postDate && postDate > oneDayAgo;
+      }).length;
+
+      // Check link policy
+      const reasons: string[] = [];
+      const warnings: string[] = [];
+
+      if (context.hasLink && rules?.linkPolicy === 'no-link') {
+        reasons.push('This subreddit does not allow links');
+      } else if (context.hasLink && rules?.linkPolicy === 'one-link') {
+        // Count only link posts for one-link policy (need to track post types in future)
+        // For now, be conservative and assume all posts could be links
+        if (postsInLast24h > 0) {
+          reasons.push('This subreddit only allows one link per 24 hours');
+        }
+      }
+
+      // Check cooldown period
+      let nextAllowedPost: Date | undefined;
+
+      if (cooldownMinutes && recentPosts.length > 0) {
+        const mostRecentPost = recentPosts.reduce((latest, post) => {
+          const postDate = toDate(post.postedAt);
+          const latestDate = toDate(latest.postedAt);
+          return postDate && latestDate && postDate > latestDate ? post : latest;
+        });
+
+        const mostRecentPostTime = toDate(mostRecentPost.postedAt);
+        if (mostRecentPostTime) {
+          const cooldownEnd = new Date(mostRecentPostTime.getTime() + cooldownMinutes * 60 * 1000);
+          if (now < cooldownEnd) {
+            nextAllowedPost = cooldownEnd;
+            const remainingMinutes = Math.ceil((cooldownEnd.getTime() - now.getTime()) / (60 * 1000));
+            reasons.push(`Must wait ${remainingMinutes} minutes before posting again (cooldown period)`);
+          }
+        }
+      }
+
+      // Check daily limit
+      const dailyLimit = deriveDailyLimit(rules);
+      const maxPostsPer24h = dailyLimit || 3; // Conservative default to prevent shadowbans
+
+      if (postsInLast24h >= maxPostsPer24h) {
+        reasons.push(`Daily posting limit reached (${maxPostsPer24h} posts per 24 hours)`);
+        
+        // Calculate when daily limit resets (oldest post + 24h)
+        const postsInLast24hSorted = recentPosts
+          .filter(post => {
+            const postDate = toDate(post.postedAt);
+            return postDate && postDate > oneDayAgo;
+          })
+          .map(post => toDate(post.postedAt))
+          .filter((date): date is Date => !!date)
+          .sort((a, b) => a.getTime() - b.getTime());
+        
+        if (postsInLast24hSorted.length > 0) {
+          const oldestPostIn24h = postsInLast24hSorted[0];
+          const dailyLimitReset = new Date(oldestPostIn24h.getTime() + DAY_IN_MS);
+          
+          // nextAllowedPost is the earliest of cooldown end or daily limit reset
+          if (!nextAllowedPost || dailyLimitReset < nextAllowedPost) {
+            nextAllowedPost = dailyLimitReset;
+          }
+        }
+      } else if (postsInLast24h >= maxPostsPer24h - 1) {
+        warnings.push(`Approaching daily limit: ${postsInLast24h + 1}/${maxPostsPer24h} posts`);
+      }
+
+      const canPost = reasons.length === 0;
+      const primaryReason = reasons.length > 0 ? reasons[0] : undefined;
 
       return {
-        canPost: true
+        canPost,
+        reason: primaryReason,
+        reasons,
+        warnings,
+        nextAllowedPost,
+        evaluatedAt: now,
+        postsInLast24h,
+        maxPostsPer24h,
+        ruleSummary: rules ? {
+          linkPolicy: rules.linkPolicy,
+          cooldownMinutes,
+          dailyLimit,
+        } : undefined,
       };
-
     } catch (error) {
       console.error('Error checking posting permission:', error);
       return {
         canPost: false,
-        reason: 'Unable to verify posting permissions'
+        reason: 'Error checking posting permission',
+        reasons: ['Error checking posting permission'],
+        warnings: [],
+        nextAllowedPost: undefined,
+        evaluatedAt: now,
+        postsInLast24h: 0,
+        maxPostsPer24h: 3,
       };
     }
   }
@@ -447,14 +743,18 @@ export class RedditManager {
   /**
    * Update rate limiting after successful post
    */
-  private async updateRateLimit(subreddit: string): Promise<void> {
+  private async updateRateLimit(options: { subreddit: string; postId: string }): Promise<void> {
     try {
-      // In production, update rate limiting tables
-      console.log(`Updated rate limit for user ${this.userId} in r/${subreddit}`);
+      const normalizedSubreddit = normalizeSubredditName(options.subreddit);
       
-      // This would insert/update records in post_rate_limits table
-      // await db.insert(postRateLimits).values({...})
+      await db.insert(postRateLimits).values({
+        userId: this.userId,
+        subreddit: normalizedSubreddit,
+        postId: options.postId,
+        postedAt: new Date(),
+      });
       
+      console.log(`Updated rate limit for user ${this.userId} in r/${options.subreddit}`);
     } catch (error) {
       console.error('Failed to update rate limit:', error);
     }
