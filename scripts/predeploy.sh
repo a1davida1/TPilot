@@ -7,3 +7,6 @@ node scripts/resolve-legacy-saved-content.js || true
 
 echo ">>> Running drizzle push..."
 npx drizzle-kit push --verbose || true
+
+echo ">>> Running post rate limits backfill..."
+npx tsx scripts/backfill-post-rate-limits.ts || true
