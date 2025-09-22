@@ -40,13 +40,45 @@ interface GenerateContentVariables {
   preferredProvider?: string;
 }
 
+// Match the actual API response from caption generation pipelines
 interface GeneratedContent {
-  content?: string;
-  titles?: string[];
-  photoInstructions?: string | object;
-  upgradeMessage?: string;
-  aiProvider?: string;
-  contentSource?: string;
+  provider: string;
+  final: {
+    caption: string;
+    alt: string;
+    hashtags: string[];
+    cta: string;
+    mood: string;
+    style: string;
+    safety_level: string;
+    nsfw: boolean;
+  };
+  facts?: Record<string, unknown>;
+  variants?: Array<{
+    caption: string;
+    alt: string;
+    hashtags: string[];
+    cta: string;
+    mood: string;
+    style: string;
+    safety_level: string;
+    nsfw: boolean;
+  }>;
+  ranked?: {
+    winner_index: number;
+    scores: number[];
+    reason: string;
+    final: {
+      caption: string;
+      alt: string;
+      hashtags: string[];
+      cta: string;
+      mood: string;
+      style: string;
+      safety_level: string;
+      nsfw: boolean;
+    };
+  };
 }
 
 
@@ -178,32 +210,39 @@ export function EnhancedAIGenerator({ onContentGenerated, isGuestMode = false }:
       });
       return (await response.json()) as GeneratedContent;
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       setGeneratedContent(data);
-      onContentGenerated(data);
-
-      // Check if watermark was added (free tier)
-      const hasWatermark = data.content?.includes('[via ThottoPilot]') ||
-                          data.titles?.[0]?.includes('[via ThottoPilot]');
-
-      const description = data.contentSource === 'template'
-        ? `Using pre-generated content${hasWatermark ? ' (with watermark)' : ''}`
-        : `Generated with ${data.aiProvider || 'service'}`;
+      
+      // Transform the API response to match ContentGeneration interface for the callback
+      const transformedContent: ContentGeneration = {
+        id: 0, // Will be set by database
+        userId: 0, // Will be set by database  
+        platform: variables.platform || "reddit",
+        style: variables.style || "confident",
+        theme: variables.theme || "general",
+        titles: [data.final.caption], // Use caption as title
+        content: data.final.caption,
+        photoInstructions: {
+          lighting: "Natural lighting recommended",
+          cameraAngle: "Eye level or slightly above",
+          composition: "Center subject with balanced background",
+          styling: "Match the content mood and style",
+          mood: data.final.mood || "confident",
+          technicalSettings: "Auto settings work well"
+        },
+        prompt: variables.customPrompt || variables.prompt || "",
+        subreddit: variables.subreddit,
+        allowsPromotion: variables.includePromotion || false,
+        generationType: "ai",
+        createdAt: new Date(),
+      };
+      
+      onContentGenerated(transformedContent);
 
       toast({
         title: "Content Generated Successfully!",
-        description: description
+        description: `Generated with ${data.provider || 'AI service'}`
       });
-
-      // Show upgrade prompt for free/basic users
-      if (data.upgradeMessage) {
-        setTimeout(() => {
-          toast({
-            title: "Want More?",
-            description: data.upgradeMessage
-          });
-        }, 2000);
-      }
 
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
     },

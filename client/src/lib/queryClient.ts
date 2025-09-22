@@ -113,9 +113,9 @@ export const getQueryFn: <T = unknown>(options: {
     // Validate that the key is a string or array containing string
     let queryKey: string;
     if (Array.isArray(key)) {
-      queryKey = key[0] as string;
+      queryKey = String(key[0]);
     } else {
-      queryKey = key as string;
+      queryKey = String(key);
     }
     const url = queryKey.startsWith('/') ? queryKey : `/${queryKey}`;
 
