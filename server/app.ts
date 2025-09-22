@@ -114,9 +114,9 @@ async function configureStaticAssets(
   const fs = await import('fs');
 
   const candidateClientPaths = [
-    path.resolve(__dirname, '..', 'client'),
     path.resolve(__dirname, '..', '..', 'dist', 'client'),
     path.resolve(__dirname, '..', 'client', 'dist'),
+    path.resolve(__dirname, '..', 'client'),
   ];
 
   let clientPath: string | null = null;
@@ -138,7 +138,11 @@ async function configureStaticAssets(
       logger.error('CRITICAL: Production build missing client files!');
     }
     logger.error('Unable to locate compiled client assets in any known directory.');
-    process.exit(1);
+    
+    // Return a 404 handler for all static file requests instead of crashing
+    app.get('*', (req, res) => {
+      res.status(404).send('Application build not found - static assets unavailable');
+    });
     return;
   }
 
