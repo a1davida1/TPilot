@@ -513,6 +513,7 @@ export const expenseCategories = pgTable("expense_categories", {
   color: varchar("color", { length: 20 }).notNull(),
   isActive: boolean("is_active").default(true).notNull(),
   sortOrder: integer("sort_order").default(0).notNull(),
+  defaultBusinessPurpose: text("default_business_purpose"), // Default business purpose for this category
   createdAt: timestamp("created_at").defaultNow(),
 });
 

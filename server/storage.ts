@@ -43,6 +43,40 @@ import { db } from "./db.js";
 import { eq, desc, and, gte, sql, count, isNull } from "drizzle-orm";
 import { safeLog } from './lib/logger-utils.js';
 
+type ExpenseCategoryWithDefaults = ExpenseCategory & {
+  defaultBusinessPurpose?: string | null;
+};
+
+export interface ExpenseTotalsRow {
+  categoryName: string | null;
+  amount: number;
+  deductionPercentage: number;
+}
+
+export interface ExpenseTotalsSummary {
+  total: number;
+  deductible: number;
+  byCategory: { [key: string]: number };
+}
+
+export function summarizeExpenseTotals(rows: ExpenseTotalsRow[]): ExpenseTotalsSummary {
+  let total = 0;
+  let deductible = 0;
+  const byCategory: { [key: string]: number } = {};
+
+  for (const row of rows) {
+    const amount = row.amount;
+    const deductionAmount = Math.round(amount * (row.deductionPercentage / 100));
+    const categoryName = row.categoryName ?? 'Other';
+
+    total += amount;
+    deductible += deductionAmount;
+    byCategory[categoryName] = (byCategory[categoryName] || 0) + deductionAmount;
+  }
+
+  return { total, deductible, byCategory };
+}
+
 export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
@@ -805,8 +839,39 @@ export class DatabaseStorage implements IStorage {
 
   async updateExpense(id: number, userId: number, updates: Partial<Expense>): Promise<Expense> {
     try {
+      let updatesToApply: Partial<Expense> = { ...updates };
+
+      if (updates.categoryId !== undefined) {
+        const existingExpense = await this.getExpense(id, userId);
+        const categoryChanged = existingExpense ? existingExpense.categoryId !== updates.categoryId : true;
+
+        if (categoryChanged) {
+          const category = await this.getExpenseCategory(updates.categoryId);
+          if (category) {
+            const categoryDefaults: ExpenseCategoryWithDefaults = category;
+            updatesToApply = {
+              ...updatesToApply,
+              deductionPercentage: category.deductionPercentage,
+            };
+
+            const businessPurposeValue = updates.businessPurpose;
+            const shouldApplyDefaultBusinessPurpose =
+              (businessPurposeValue === undefined ||
+                (typeof businessPurposeValue === 'string' && businessPurposeValue.trim().length === 0)) &&
+              businessPurposeValue !== null;
+
+            if (shouldApplyDefaultBusinessPurpose && categoryDefaults.defaultBusinessPurpose) {
+              updatesToApply = {
+                ...updatesToApply,
+                businessPurpose: categoryDefaults.defaultBusinessPurpose,
+              };
+            }
+          }
+        }
+      }
+
       const [result] = await db.update(expenses)
-        .set({ ...updates, updatedAt: new Date() })
+        .set({ ...updatesToApply, updatedAt: new Date() })
         .where(and(eq(expenses.id, id), eq(expenses.userId, userId)))
         .returning();
       return result;
@@ -878,21 +943,7 @@ export class DatabaseStorage implements IStorage {
 
       const results = await query;
       
-      let total = 0;
-      let deductible = 0;
-      const byCategory: { [key: string]: number } = {};
-
-      for (const result of results) {
-        const amount = result.amount;
-        const deductionAmount = Math.round(amount * (result.deductionPercentage / 100));
-        const categoryName = result.categoryName || 'Other';
-
-        total += amount;
-        deductible += deductionAmount;
-        byCategory[categoryName] = (byCategory[categoryName] || 0) + deductionAmount;
-      }
-
-      return { total, deductible, byCategory };
+      return summarizeExpenseTotals(results);
     } catch (error) {
       console.error('Error getting expense totals:', { error: (error as Error).message });
       return { total: 0, deductible: 0, byCategory: {} };

@@ -4,6 +4,13 @@ ThottoPilot is a social media content creation platform for adult content creato
 
 ## Recent Changes (September 22, 2025)
 
+### Enhanced Expense Management with Category Integration (September 22, 2025)
+- ✅ **defaultBusinessPurpose field added**: Extended expenseCategories schema with defaultBusinessPurpose field for automated business purpose assignment
+- ✅ **Enhanced validation and deduction logic**: Updated expense routes with comprehensive validation, automatic deduction percentage application from categories, and intelligent business purpose defaults
+- ✅ **Storage optimization**: Refactored updateExpense to recalculate deduction percentages when category changes, with exported summarizeExpenseTotals helper for consistent calculations
+- ✅ **Regression test coverage**: Added comprehensive unit tests verifying expense totals calculations with different deduction percentages and category-based logic
+- ✅ **Database migration applied**: Successfully added default_business_purpose column to expense_categories table with proper schema synchronization
+
 ### JWT_SECRET Handling Fixed in Admin Routes
 - ✅ **Lazy JWT secret resolution**: Admin routes now load without throwing when JWT_SECRET is undefined, resolving the secret lazily inside middleware
 - ✅ **Test environment support**: Deterministic fallback ('test-jwt-secret') provided when NODE_ENV === 'test'

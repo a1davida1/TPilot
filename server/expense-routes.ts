@@ -8,10 +8,18 @@ import { authenticateToken } from './middleware/auth.js';
 import { storage } from './storage.js';
 import { MediaManager } from './lib/media.js';
 import { logger } from './bootstrap/logger.js';
-import { type InsertExpense, type User } from '@shared/schema';
+import { type Expense, type ExpenseCategory, type InsertExpense, type User } from '@shared/schema';
 
 interface AuthRequest extends express.Request {
   user?: User;
+}
+
+type ExpenseCategoryWithDefaults = ExpenseCategory & {
+  defaultBusinessPurpose?: string | null;
+};
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === 'string');
 }
 
 const knownImageExtensions = new Set([
@@ -21,8 +29,7 @@ const knownImageExtensions = new Set([
   '.gif',
   '.bmp',
   '.webp',
-  '.tiff',
-  '.pdf'
+  '.tiff'
 ]);
 
 const upload = multer({
@@ -160,19 +167,70 @@ export function registerExpenseRoutes(app: Express) {
       }
 
       const currentYear = new Date().getFullYear();
-      const expenseDate = new Date(req.body.expenseDate);
+      const requestBody = req.body as Record<string, unknown>;
+      const expenseDate = new Date(String(requestBody.expenseDate));
       if (Number.isNaN(expenseDate.getTime())) {
         return res.status(400).json({ message: 'Invalid expense date' });
       }
-      const expenseData = {
-        ...req.body,
+
+      const rawAmount = Number.parseFloat(String(requestBody.amount));
+      if (Number.isNaN(rawAmount)) {
+        return res.status(400).json({ message: 'Invalid expense amount' });
+      }
+      const amountInCents = Math.round(rawAmount * 100);
+
+      const parsedCategoryId = Number.parseInt(String(requestBody.categoryId), 10);
+      if (!Number.isInteger(parsedCategoryId)) {
+        return res.status(400).json({ message: 'Invalid expense category' });
+      }
+
+      const category = await storage.getExpenseCategory(parsedCategoryId);
+      if (!category) {
+        return res.status(400).json({ message: 'Invalid expense category' });
+      }
+
+      const categoryDefaults: ExpenseCategoryWithDefaults = category;
+      const rawBusinessPurpose = requestBody.businessPurpose;
+      const trimmedBusinessPurpose =
+        typeof rawBusinessPurpose === 'string' ? rawBusinessPurpose.trim() : undefined;
+      const businessPurposeToApply =
+        trimmedBusinessPurpose && trimmedBusinessPurpose.length > 0
+          ? trimmedBusinessPurpose
+          : categoryDefaults.defaultBusinessPurpose ?? undefined;
+
+      const parsedTaxYear =
+        requestBody.taxYear !== undefined
+          ? Number.parseInt(String(requestBody.taxYear), 10)
+          : currentYear;
+
+      if (Number.isNaN(parsedTaxYear)) {
+        return res.status(400).json({ message: 'Invalid tax year' });
+      }
+
+      const descriptionValue = requestBody.description;
+      if (typeof descriptionValue !== 'string' || descriptionValue.trim().length === 0) {
+        return res.status(400).json({ message: 'Description is required' });
+      }
+
+      const expensePayload: InsertExpense = {
         userId: req.user.id,
-        taxYear: req.body.taxYear || currentYear,
-        amount: Math.round(parseFloat(req.body.amount) * 100),
+        categoryId: parsedCategoryId,
+        description: descriptionValue,
+        amount: amountInCents,
         expenseDate,
+        taxYear: parsedTaxYear,
+        deductionPercentage: category.deductionPercentage,
+        businessPurpose: businessPurposeToApply ?? null,
+        vendor: typeof requestBody.vendor === 'string' ? requestBody.vendor : null,
+        receiptUrl: typeof requestBody.receiptUrl === 'string' ? requestBody.receiptUrl : null,
+        receiptFileName: typeof requestBody.receiptFileName === 'string' ? requestBody.receiptFileName : null,
+        notes: typeof requestBody.notes === 'string' ? requestBody.notes : null,
+        tags: isStringArray(requestBody.tags) ? requestBody.tags : null,
+        isRecurring: typeof requestBody.isRecurring === 'boolean' ? requestBody.isRecurring : false,
+        recurringPeriod: typeof requestBody.recurringPeriod === 'string' ? requestBody.recurringPeriod : null,
       };
 
-      const expense = await storage.createExpense(expenseData as InsertExpense);
+      const expense = await storage.createExpense(expensePayload);
       res.status(201).json(expense);
     } catch (error) {
       console.error('Error creating expense:', error);
@@ -187,14 +245,98 @@ export function registerExpenseRoutes(app: Express) {
         return res.status(401).json({ message: 'Authentication required' });
       }
 
-      const expenseId = parseInt(req.params.id);
-      const updates = {
-        ...req.body,
-        amount: req.body.amount ? Math.round(parseFloat(req.body.amount) * 100) : undefined,
-        expenseDate: req.body.expenseDate ? new Date(req.body.expenseDate) : undefined,
-      };
-      if (updates.expenseDate && Number.isNaN(updates.expenseDate.getTime())) {
-        return res.status(400).json({ message: 'Invalid expense date' });
+      const expenseId = Number.parseInt(req.params.id, 10);
+      const requestBody = req.body as Record<string, unknown>;
+      const updates: Partial<Expense> = {};
+
+      if (typeof requestBody.description === 'string') {
+        updates.description = requestBody.description;
+      }
+
+      if (typeof requestBody.vendor === 'string') {
+        updates.vendor = requestBody.vendor;
+      }
+
+      if (typeof requestBody.receiptUrl === 'string') {
+        updates.receiptUrl = requestBody.receiptUrl;
+      }
+
+      if (typeof requestBody.receiptFileName === 'string') {
+        updates.receiptFileName = requestBody.receiptFileName;
+      }
+
+      if (typeof requestBody.notes === 'string') {
+        updates.notes = requestBody.notes;
+      }
+
+      if (isStringArray(requestBody.tags)) {
+        updates.tags = requestBody.tags;
+      }
+
+      if (typeof requestBody.isRecurring === 'boolean') {
+        updates.isRecurring = requestBody.isRecurring;
+      }
+
+      if (typeof requestBody.recurringPeriod === 'string') {
+        updates.recurringPeriod = requestBody.recurringPeriod;
+      }
+
+      if (requestBody.amount !== undefined) {
+        const parsedAmount = Number.parseFloat(String(requestBody.amount));
+        if (Number.isNaN(parsedAmount)) {
+          return res.status(400).json({ message: 'Invalid expense amount' });
+        }
+        updates.amount = Math.round(parsedAmount * 100);
+      }
+
+      if (requestBody.expenseDate !== undefined) {
+        const expenseDate = new Date(String(requestBody.expenseDate));
+        if (Number.isNaN(expenseDate.getTime())) {
+          return res.status(400).json({ message: 'Invalid expense date' });
+        }
+        updates.expenseDate = expenseDate;
+      }
+
+      if (requestBody.taxYear !== undefined) {
+        const parsedTaxYear = Number.parseInt(String(requestBody.taxYear), 10);
+        if (Number.isNaN(parsedTaxYear)) {
+          return res.status(400).json({ message: 'Invalid tax year' });
+        }
+        updates.taxYear = parsedTaxYear;
+      }
+
+      const rawBusinessPurpose = requestBody.businessPurpose;
+      const trimmedBusinessPurpose =
+        typeof rawBusinessPurpose === 'string' ? rawBusinessPurpose.trim() : undefined;
+      const shouldApplyDefaultBusinessPurpose =
+        (rawBusinessPurpose === undefined ||
+          (typeof rawBusinessPurpose === 'string' && (trimmedBusinessPurpose?.length ?? 0) === 0)) &&
+        rawBusinessPurpose !== null;
+
+      if (rawBusinessPurpose === null) {
+        updates.businessPurpose = null;
+      } else if (typeof trimmedBusinessPurpose === 'string' && trimmedBusinessPurpose.length > 0) {
+        updates.businessPurpose = trimmedBusinessPurpose;
+      }
+
+      if (requestBody.categoryId !== undefined) {
+        const parsedCategoryId = Number.parseInt(String(requestBody.categoryId), 10);
+        if (!Number.isInteger(parsedCategoryId)) {
+          return res.status(400).json({ message: 'Invalid expense category' });
+        }
+
+        const category = await storage.getExpenseCategory(parsedCategoryId);
+        if (!category) {
+          return res.status(400).json({ message: 'Invalid expense category' });
+        }
+
+        const categoryDefaults: ExpenseCategoryWithDefaults = category;
+        updates.categoryId = parsedCategoryId;
+        updates.deductionPercentage = category.deductionPercentage;
+
+        if (shouldApplyDefaultBusinessPurpose && categoryDefaults.defaultBusinessPurpose) {
+          updates.businessPurpose = categoryDefaults.defaultBusinessPurpose;
+        }
       }
 
       const expense = await storage.updateExpense(expenseId, req.user.id, updates);
