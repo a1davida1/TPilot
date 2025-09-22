@@ -100,6 +100,11 @@
     --sidebar-border: 271 25 85;
     --sidebar-ring: 271 70 50;
     
+    /* Overlay colors */
+    --overlay: 0 0 0;
+    --overlay-opacity: 0.8;
+    --backdrop-blur: 20px;
+    
     --radius: 1rem;
   }
 
@@ -185,12 +190,25 @@
     --sidebar-accent-foreground: 0 0 100;
     --sidebar-border: 271 30 22;
     --sidebar-ring: 271 80 70;
+    
+    /* Overlay colors for dark mode */
+    --overlay: 0 0 0;
+    --overlay-opacity: 0.9;
+    --backdrop-blur: 24px;
   }
 }
 
 @layer base {
   * {
     @apply border-border;
+    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 200ms;
+  }
+  
+  /* Smooth theme transitions */
+  html {
+    transition: background-color 300ms ease, color 300ms ease;
   }
   
   body {
@@ -201,6 +219,7 @@
     font-weight: 400;
     line-height: 1.6;
     letter-spacing: -0.01em;
+    transition: background-color 300ms ease, color 300ms ease;
   }
 
   /* Smooth scrolling */
@@ -310,10 +329,7 @@
   @apply shadow-lg hover:shadow-xl transition-all duration-200;
 }
 
-/* Smooth transitions - Venture Capital Polish */
-* {
-  @apply transition-all duration-200 ease-out;
-}
+/* Smooth transitions for interactive elements */
 
 /* Enhanced Premium Micro-Interactions */
 button, .btn, .button {
@@ -759,6 +775,43 @@ td {
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Enhanced overlay utilities */
+.overlay-blur-light {
+  background: hsl(var(--overlay) / 0.6);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+}
+
+.overlay-blur-heavy {
+  background: hsl(var(--overlay) / var(--overlay-opacity));
+  backdrop-filter: blur(var(--backdrop-blur)) saturate(200%);
+  -webkit-backdrop-filter: blur(var(--backdrop-blur)) saturate(200%);
+}
+
+/* Theme-aware component utilities */
+.theme-surface {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  border: 1px solid hsl(var(--border));
+  transition: all 300ms ease;
+}
+
+.theme-surface-elevated {
+  background: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  border: 1px solid hsl(var(--card-border));
+  box-shadow: 0 4px 20px hsl(var(--overlay) / 0.1);
+  transition: all 300ms ease;
+}
+
+.theme-overlay-content {
+  background: hsl(var(--popover));
+  color: hsl(var(--popover-foreground));
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 10px 40px hsl(var(--overlay) / 0.2);
+  transition: all 300ms ease;
 }
 
 /* Smooth scroll container */
