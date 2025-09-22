@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { 
@@ -41,7 +42,52 @@ interface ModernDashboardProps {
   isAdmin?: boolean;
 }
 
-export function ModernDashboard({ isRedditConnected = false, user, userTier = 'free', isAdmin = false }: ModernDashboardProps) {
+interface DashboardStatsResponse {
+  postsToday: number;
+  engagementRate: number;
+  takedownsFound: number;
+  estimatedTaxSavings: number;
+}
+
+interface DashboardActivityResponse {
+  recentMedia: Array<{
+    id: number;
+    url: string;
+    alt: string;
+    createdAt: string | null;
+  }>;
+}
+
+export type { DashboardStatsResponse, DashboardActivityResponse };
+
+const numberFormatter = new Intl.NumberFormat('en-US');
+
+function formatNumber(value: number): string {
+  return numberFormatter.format(value);
+}
+
+function formatPercentage(value: number): string {
+  if (!Number.isFinite(value)) {
+    return '0%';
+  }
+  const fractionDigits = Number.isInteger(value) ? 0 : 1;
+  return `${value.toFixed(fractionDigits)}%`;
+}
+
+function formatCurrency(value: number): string {
+  if (!Number.isFinite(value)) {
+    return '$0';
+  }
+  const minimumFractionDigits = Number.isInteger(value) ? 0 : 2;
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+export function ModernDashboard({ _isRedditConnected = false, user, userTier = 'free', isAdmin = false }: ModernDashboardProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
@@ -50,8 +96,50 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
   const [, setLocation] = useLocation();
   const { user: authUser } = useAuth();
   
-  // Determine premium status
-  const isPremium = isAdmin || userTier === 'premium' || userTier === 'pro' || userTier === 'admin';
+  const resolvedTier = (authUser?.tier as ModernDashboardProps['userTier'] | undefined) ?? userTier;
+  const resolvedUser = authUser ?? user;
+  const isAdminUser = Boolean(authUser?.isAdmin || authUser?.role === 'admin' || resolvedTier === 'admin' || isAdmin);
+  const isPremium = isAdminUser || resolvedTier === 'premium' || resolvedTier === 'pro';
+  const displayName = resolvedUser?.username ?? resolvedUser?.displayName ?? resolvedUser?.email ?? 'Creator';
+  const dashboardPrompt = isAdminUser
+    ? 'Review platform performance and respond to creator needs.'
+    : 'What would you like to do today?';
+
+  const {
+    data: statsData,
+    isLoading: statsLoading,
+    error: statsError,
+  } = useQuery<DashboardStatsResponse>({
+    queryKey: ['/api/dashboard/stats'],
+    enabled: Boolean(resolvedUser?.id),
+  });
+
+  const {
+    data: activityData,
+    isLoading: activityLoading,
+    error: activityError,
+  } = useQuery<DashboardActivityResponse>({
+    queryKey: ['/api/dashboard/activity'],
+    enabled: Boolean(resolvedUser?.id),
+  });
+
+  useEffect(() => {
+    if (statsError instanceof Error) {
+      toast({
+        title: "Unable to load dashboard stats",
+        description: statsError.message,
+      });
+    }
+  }, [statsError, toast]);
+
+  useEffect(() => {
+    if (activityError instanceof Error) {
+      toast({
+        title: "Unable to load media activity",
+        description: activityError.message,
+      });
+    }
+  }, [activityError, toast]);
   
   // Get current time greeting
   const getGreeting = () => {
@@ -71,32 +159,44 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  const stats = [
+  const statsLoadingWithoutData = statsLoading && !statsData;
+  const statsUnavailable = (!statsLoading && !statsData && statsError instanceof Error) || statsLoadingWithoutData;
+  const statsSummary = {
+    postsToday: statsData?.postsToday ?? 0,
+    engagementRate: statsData?.engagementRate ?? 0,
+    takedownsFound: statsData?.takedownsFound ?? 0,
+    estimatedTaxSavings: statsData?.estimatedTaxSavings ?? 0,
+  } satisfies DashboardStatsResponse;
+
+  const statsCards = [
     {
       label: "Posts Today",
-      value: "12",
+      value: statsUnavailable ? "--" : formatNumber(statsSummary.postsToday),
       icon: <Upload className="h-5 w-5" />,
       color: "text-purple-400"
     },
     {
       label: "Engagement Rate",
-      value: "94.2%",
+      value: statsUnavailable ? "--" : formatPercentage(statsSummary.engagementRate),
       icon: <Target className="h-5 w-5" />,
       color: "text-green-400"
     },
     {
       label: "Takedowns Found",
-      value: "3",
+      value: statsUnavailable ? "--" : formatNumber(statsSummary.takedownsFound),
       icon: <Shield className="h-5 w-5" />,
       color: "text-yellow-400"
     },
     {
-      label: "Tax Saved",
-      value: "$847",
+      label: "Estimated Tax Savings",
+      value: statsUnavailable ? "--" : formatCurrency(statsSummary.estimatedTaxSavings),
       icon: <Calculator className="h-5 w-5" />,
       color: "text-blue-400"
     }
   ];
+
+  const galleryItems = activityData?.recentMedia ?? [];
+  const showGalleryEmptyState = !activityLoading && galleryItems.length === 0;
 
   const actionCards = [
     {
@@ -202,13 +302,6 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
     });
   };
 
-  // Gallery items (mock data)
-  const galleryItems = [
-    { id: 1, url: "https://via.placeholder.com/150", alt: "Gallery item 1" },
-    { id: 2, url: "https://via.placeholder.com/150", alt: "Gallery item 2" },
-    { id: 3, url: "https://via.placeholder.com/150", alt: "Gallery item 3" },
-    { id: 4, url: "https://via.placeholder.com/150", alt: "Gallery item 4" },
-  ];
 
   return (
     <div className="min-h-screen bg-gradient-purple">
@@ -363,17 +456,17 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
         {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">
-            {getGreeting()}, {user?.username || 'Creator'}! 👋
+            {getGreeting()}, {displayName}! 👋
           </h1>
           <p className="text-xl text-gray-300">
-            What would you like to do today?
+            {dashboardPrompt}
           </p>
         </div>
 
         {/* Stats Row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          {stats.map((stat, index) => (
-            <Card key={index} className="bg-gray-800 border-gray-700">
+          {statsCards.map((stat) => (
+            <Card key={stat.label} className="bg-gray-800 border-gray-700">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-2">
                   <span className={stat.color}>{stat.icon}</span>
@@ -429,20 +522,34 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-4 gap-2">
-                {galleryItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="aspect-square bg-gray-700 rounded-lg overflow-hidden"
-                  >
-                    <img
-                      src={item.url}
-                      alt={item.alt}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ))}
-              </div>
+              {activityLoading ? (
+                <div className="grid grid-cols-4 gap-2">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="aspect-square bg-gray-700 rounded-lg animate-pulse" />
+                  ))}
+                </div>
+              ) : showGalleryEmptyState ? (
+                <div className="text-center py-8 text-gray-400">
+                  <ImageIcon className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>No recent media</p>
+                  <p className="text-sm">Upload some content to see it here</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-4 gap-2">
+                  {galleryItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="aspect-square bg-gray-700 rounded-lg overflow-hidden"
+                    >
+                      <img
+                        src={item.url}
+                        alt={item.alt}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
               <Button 
                 className="w-full mt-4 bg-purple-600 hover:bg-purple-700"
                 onClick={() => setLocation('/gallery')}
