@@ -21,8 +21,8 @@ interface MockMutationResult {
   reset: () => void;
 }
 
-const mockUseQuery = vi.fn<MockQueryResult, [MockQueryOptions]>();
-const mockUseMutation = vi.fn<MockMutationResult, [unknown]>();
+const mockUseQuery = vi.fn<[MockQueryOptions], MockQueryResult>();
+const mockUseMutation = vi.fn<[unknown], MockMutationResult>();
 const mockInvalidateQueries = vi.fn();
 const mockSetQueryData = vi.fn();
 
