@@ -1,0 +1,545 @@
+Refactor requestGeminiRanking to support multiple types
+Sep 22 · a1davida1/TPilot · main
++200-118
+1. In `requestGeminiRanking`, detect whether `textModel` exposes `.generateContent` or is itself a function; call whichever form exists.
+2. Add a narrow helper (e.g., `invokeTextModel(prompt)`) so the call site stays clean and reuse it for both the initial and rerank requests.
+3. Extend the ranking integration test to cover both object and function mocks to prevent regressions.
+
+Summary
+
+    Added invokeTextModel and related guards to detect callable versus generateContent-style Gemini clients and to normalize response extraction inside requestGeminiRanking, ensuring both initial and rerank requests share the same invocation flow.
+
+Rebuilt the ranking integration suite to dynamically mock both text-model shapes, reuse a consistent mock response helper, and assert identical sanitation behavior across scenarios.
+
+Testing
+
+    ✅ npm run lint
+
+❌ npm test *(aborted after numerous existing failures requiring external services, e.g., missing OPENAI_API_KEY, Sharp image assets, and email service hooks)*
+
+
+server/caption/__tests__/ranking-integration.test.ts
++140-109
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { rankAndSelect } from '../geminiPipeline';
+import { RankResult } from '../schema';
+import { CaptionItem } from '../schema';
+import { z } from 'zod';
+type CaptionItemType = z.infer<typeof CaptionItem>;
+
+// Mock the text model
+vi.mock('../../lib/gemini', () => ({
+  textModel: vi.fn()
+}));
+
+// Mock the file loading
+vi.mock('../../lib/prompts', () => ({
+  load: vi.fn().mockImplementation((filename: string) => {
+    if (filename === 'system.txt') return Promise.resolve('System prompt');
+    if (filename === 'guard.txt') return Promise.resolve('Guard prompt');
+    if (filename === 'rank.txt') return Promise.resolve('Ranking prompt with violation detection');
+    return Promise.resolve('Mock prompt');
+  })
+}));
+
+import { textModel } from '../../lib/gemini';
+
+describe('Ranking Integration Tests', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+type CaptionItemType = z.infer<typeof CaptionItem>;
+type GeminiContent = ReadonlyArray<{ text: string }>;
+type TextModelMock = ReturnType<typeof vi.fn<[GeminiContent], Promise<unknown>>>;
+
+const createMockResponse = (payload: unknown) => ({
+  response: {
+    text: () => (typeof payload === 'string' ? payload : JSON.stringify(payload))
+  }
+});
+
+type ScenarioConfig = {
+  label: string;
+  applyGeminiMock: () => { textModelMock: TextModelMock };
+};
+
+const scenarios: ScenarioConfig[] = [
+  {
+    label: 'function-based textModel mock',
+    applyGeminiMock: () => {
+      const textModelMock = vi.fn<[GeminiContent], Promise<unknown>>();
+
+      vi.doMock('../../lib/gemini', () => ({
+        textModel: textModelMock
+      }));
+
+      return { textModelMock };
+    }
+  },
+  {
+    label: 'object-based textModel mock',
+    applyGeminiMock: () => {
+      const generateContent = vi.fn<[GeminiContent], Promise<unknown>>();
+
+      vi.doMock('../../lib/gemini', () => ({
+        textModel: { generateContent }
+      }));
+
+      return { textModelMock: generateContent };
+    }
+  }
+];
+
+describe.each(scenarios)('Ranking Integration Tests ($label)', ({ applyGeminiMock }) => {
+  let rankAndSelect: (typeof import('../geminiPipeline'))['rankAndSelect'];
+  let textModelMock: TextModelMock;
+
+  beforeEach(async () => {
+    vi.resetModules();
+
+    vi.doMock('../../lib/prompts', () => ({
+      load: vi.fn().mockImplementation((filename: string) => {
+        if (filename === 'system.txt') return Promise.resolve('System prompt');
+        if (filename === 'guard.txt') return Promise.resolve('Guard prompt');
+        if (filename === 'rank.txt') return Promise.resolve('Ranking prompt with violation detection');
+        return Promise.resolve('Mock prompt');
+      })
+    }));
+
+    const { textModelMock: appliedMock } = applyGeminiMock();
+    textModelMock = appliedMock;
+
+    ({ rankAndSelect } = await import('../geminiPipeline'));
+  });
+
+  describe('rankAndSelect', () => {
+    it('should sanitize output when AI returns banned content', async () => {
+      // Mock AI returning banned content
+      const mockBannedResponse = JSON.stringify({
+      const mockBannedResponse = createMockResponse({
+        final: {
+          caption: "Check out this amazing content! ✨",
+          alt: "A photo",
+          hashtags: ["#content", "#creative", "#amazing"],
+          cta: "Link in bio for more!"
+          caption: 'Check out this amazing content! ✨',
+          alt: 'A photo',
+          hashtags: ['#content', '#creative', '#amazing'],
+          cta: 'Link in bio for more!'
+        },
+        reason: "Selected for engagement"
+        reason: 'Selected for engagement'
+      });
+
+      // Mock successful rerank attempt with clean content
+      const mockCleanResponse = JSON.stringify({
+      const mockCleanResponse = createMockResponse({
+        final: {
+          caption: "Enjoying the peaceful morning light",
+          alt: "Person in a sunlit room",
+          hashtags: ["#morninglight", "#peaceful"],
+          caption: 'Enjoying the peaceful morning light',
+          alt: 'Person in a sunlit room',
+          hashtags: ['#morninglight', '#peaceful'],
+          cta: "What's your favorite time of day?"
+        },
+        reason: "Clean, engaging content"
+        reason: 'Clean, engaging content'
+      });
+
+      (textModel as any)
+        .mockResolvedValueOnce(mockBannedResponse)  // First attempt returns banned content
+        .mockResolvedValueOnce(mockCleanResponse); // Rerank returns clean content
+      textModelMock
+        .mockResolvedValueOnce(mockBannedResponse)
+        .mockResolvedValueOnce(mockCleanResponse);
+
+      const variants: CaptionItem[] = [
+      const variants: CaptionItemType[] = [
+        {
+          caption: "Test caption",
+          alt: "Test alt",
+          hashtags: ["#test"],
+          cta: "Test CTA"
+          caption: 'Test caption',
+          alt: 'Test alt',
+          hashtags: ['#test'],
+          cta: 'Test CTA'
+        }
+      ];
+
+      const result = await rankAndSelect(variants, { platform: 'instagram' });
+
+      expect(result.final.caption).not.toContain('✨');
+      expect(result.final.caption).not.toContain('amazing content');
+      expect(result.final.cta).not.toContain('Link in bio');
+      expect(result.final.hashtags).not.toContain('#content');
+      expect(result.final.hashtags).not.toContain('#creative');
+      
+      // Should have called textModel twice (initial + rerank)
+      expect(textModel).toHaveBeenCalledTimes(2);
+      expect(textModelMock).toHaveBeenCalledTimes(2);
+    });
+
+    it('should sanitize final output when rerank also fails', async () => {
+      // Mock both attempts returning banned content
+      const mockBannedResponse = JSON.stringify({
+      const mockBannedResponse = createMockResponse({
+        final: {
+          caption: "✨ Amazing content! Check it out! ✨",
+          alt: "A photo",
+          hashtags: ["#content", "#viral"],
+          cta: "Link in bio!"
+          caption: '✨ Amazing content! Check it out! ✨',
+          alt: 'A photo',
+          hashtags: ['#content', '#viral'],
+          cta: 'Link in bio!'
+        },
+        reason: "Engaging content"
+        reason: 'Engaging content'
+      });
+
+      (textModel as any)
+        .mockResolvedValueOnce(mockBannedResponse)  // First attempt
+        .mockResolvedValueOnce(mockBannedResponse); // Rerank also fails
+      textModelMock
+        .mockResolvedValueOnce(mockBannedResponse)
+        .mockResolvedValueOnce(mockBannedResponse);
+
+      const variants: CaptionItem[] = [
+      const variants: CaptionItemType[] = [
+        {
+          caption: "Clean test caption",
+          alt: "Clean test alt",
+          hashtags: ["#photography"],
+          cta: "What do you think?"
+          caption: 'Clean test caption',
+          alt: 'Clean test alt',
+          hashtags: ['#photography'],
+          cta: 'What do you think?'
+        }
+      ];
+
+      const result = await rankAndSelect(variants, { platform: 'instagram' });
+
+      // Should be sanitized
+      expect(result.final.caption).not.toContain('✨');
+      expect(result.final.caption).not.toContain('Amazing content');
+      expect(result.final.cta).toBe("What do you think?");
+      expect(result.final.hashtags).toEqual(["#behindthescenes", "#handcrafted", "#maker", "#creator"]);
+      expect(result.final.cta).toBe('What do you think?');
+      expect(result.final.hashtags).toEqual(['#behindthescenes', '#handcrafted', '#maker', '#creator']);
+      expect(result.reason).toContain('Sanitized');
+    });
+
+    it('should preserve clean content without modification', async () => {
+      const mockCleanResponse = JSON.stringify({
+      const mockCleanResponse = createMockResponse({
+        final: {
+          caption: "Enjoying the peaceful morning in my garden",
+          alt: "Person tending to flowers in sunlit garden",
+          hashtags: ["#gardening", "#morninglight", "#peaceful"],
+          caption: 'Enjoying the peaceful morning in my garden',
+          alt: 'Person tending to flowers in sunlit garden',
+          hashtags: ['#gardening', '#morninglight', '#peaceful'],
+          cta: "What's your favorite flower?"
+        },
+        reason: "Clean, authentic content"
+        reason: 'Clean, authentic content'
+      });
+
+      (textModel as any).mockResolvedValueOnce(mockCleanResponse);
+      textModelMock.mockResolvedValueOnce(mockCleanResponse);
+
+      const variants: CaptionItem[] = [
+      const variants: CaptionItemType[] = [
+        {
+          caption: "Test caption",
+          alt: "Test alt", 
+          hashtags: ["#test"],
+          cta: "Test CTA"
+          caption: 'Test caption',
+          alt: 'Test alt',
+          hashtags: ['#test'],
+          cta: 'Test CTA'
+        }
+      ];
+
+      const result = await rankAndSelect(variants, { platform: 'instagram' });
+
+      expect(result.final.caption).toBe("Enjoying the peaceful morning in my garden");
+      expect(result.final.caption).toBe('Enjoying the peaceful morning in my garden');
+      expect(result.final.cta).toBe("What's your favorite flower?");
+      expect(result.final.hashtags).toEqual(["#gardening", "#morninglight", "#peaceful"]);
+      expect(result.reason).toBe("Clean, authentic content");
+      
+      // Should only call textModel once
+      expect(textModel).toHaveBeenCalledTimes(1);
+      expect(result.final.hashtags).toEqual(['#gardening', '#morninglight', '#peaceful']);
+      expect(result.reason).toBe('Clean, authentic content');
+      expect(textModelMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('should apply platform-specific hashtag limits', async () => {
+      const mockResponse = JSON.stringify({
+      const mockResponse = createMockResponse({
+        final: {
+          caption: "Clean content",
+          alt: "Clean alt",
+          hashtags: ["#one", "#two", "#three", "#four", "#five"], // Too many for X
+          cta: "What do you think?"
+          caption: 'Clean content',
+          alt: 'Clean alt',
+          hashtags: ['#one', '#two', '#three', '#four', '#five'],
+          cta: 'What do you think?'
+        },
+        reason: "Good content"
+        reason: 'Good content'
+      });
+
+      (textModel as any).mockResolvedValueOnce(mockResponse);
+      textModelMock.mockResolvedValueOnce(mockResponse);
+
+      const variants: CaptionItem[] = [
+      const variants: CaptionItemType[] = [
+        {
+          caption: "Test caption",
+          alt: "Test alt",
+          hashtags: ["#test"],
+          cta: "Test CTA"
+          caption: 'Test caption',
+          alt: 'Test alt',
+          hashtags: ['#test'],
+          cta: 'Test CTA'
+        }
+      ];
+
+      const result = await rankAndSelect(variants, { platform: 'x' });
+
+      expect(result.final.hashtags).toHaveLength(2); // X platform limit
+      expect(result.final.hashtags).toHaveLength(2);
+    });
+
+    it('should provide empty hashtags for Reddit platform', async () => {
+      const mockResponse = JSON.stringify({
+      const mockResponse = createMockResponse({
+        final: {
+          caption: "Clean content",
+          alt: "Clean alt",
+          hashtags: ["#test", "#reddit"],
+          cta: "What do you think?"
+          caption: 'Clean content',
+          alt: 'Clean alt',
+          hashtags: ['#test', '#reddit'],
+          cta: 'What do you think?'
+        },
+        reason: "Good content"
+        reason: 'Good content'
+      });
+
+      (textModel as any).mockResolvedValueOnce(mockResponse);
+      textModelMock.mockResolvedValueOnce(mockResponse);
+
+      const variants: CaptionItem[] = [
+      const variants: CaptionItemType[] = [
+        {
+          caption: "Test caption", 
+          alt: "Test alt",
+          hashtags: ["#test"],
+          cta: "Test CTA"
+          caption: 'Test caption',
+          alt: 'Test alt',
+          hashtags: ['#test'],
+          cta: 'Test CTA'
+        }
+      ];
+
+      const result = await rankAndSelect(variants, { platform: 'reddit' });
+
+      expect(result.final.hashtags).toEqual([]); // Reddit gets no hashtags
+      expect(result.final.hashtags).toEqual([]);
+    });
+  });
+});
+});
+server/caption/geminiPipeline.ts
++60-9
+@@ -507,51 +507,51 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
+    const baseVariant = uniqueVariants[0] || {
+      caption: "Engaging social media content",
+      alt: "Detailed alt text describing the scene",
+      hashtags: ["#social", "#content"],
+      cta: "Check it out",
+      mood: "engaging",
+      style: "authentic",
+      safety_level: "normal",
+      nsfw: false
+    };
+
+    // Create a slight variation by appending index
+    const paddedVariant = {
+      ...baseVariant,
+      caption: `${baseVariant.caption} v${uniqueVariants.length + 1}`,
+      alt: `${baseVariant.alt} (variation ${uniqueVariants.length + 1})`
+    };
+
+    uniqueVariants.push(paddedVariant as z.infer<typeof CaptionItem>);
+  }
+
+  return CaptionArray.parse(uniqueVariants);
+}
+
+function normalizeGeminiFinal(
+  final: Record<string, unknown>, 
+  final: Record<string, unknown>,
+  platform?: string,
+  facts?: Record<string, unknown>
+){
+  final.safety_level = normalizeSafetyLevel(
+    typeof final.safety_level === "string" ? final.safety_level : "normal"
+  );
+  final.mood = typeof final.mood === "string" && final.mood.trim().length >= 2 ? final.mood.trim() : "engaging";
+  final.style = typeof final.style === "string" && final.style.trim().length >= 2 ? final.style.trim() : "authentic";
+  
+  // Use helper for contextual fallbacks
+  if (platform) {
+    const fallback = ensureFallbackCompliance(
+      {
+        caption: typeof final.caption === 'string' ? final.caption : undefined,
+        hashtags: Array.isArray(final.hashtags) ? final.hashtags.filter((tag): tag is string => typeof tag === 'string') : undefined,
+        cta: typeof final.cta === 'string' ? final.cta : undefined,
+        alt: typeof final.alt === 'string' ? final.alt : undefined,
+      },
+      {
+        platform: platform as "instagram" | "x" | "reddit" | "tiktok",
+        facts,
+        existingCaption: typeof final.caption === 'string' ? final.caption : undefined,
+      }
+    );
+    
+@@ -561,67 +561,118 @@ function normalizeGeminiFinal(
+  } else {
+    // Fallback to original logic if no platform
+    const trimmedCta = typeof final.cta === "string" ? final.cta.trim() : "";
+    final.cta = trimmedCta.length >= 2 ? trimmedCta : HUMAN_CTA;
+    const trimmedAlt = typeof final.alt === "string" ? final.alt.trim() : "";
+    final.alt = trimmedAlt.length >= 20
+      ? trimmedAlt
+      : "Detailed social media alt text describing the scene.";
+    const fallback = fallbackHashtags(platform);
+    let hashtags: string[] = [];
+    if (Array.isArray(final.hashtags)) {
+      hashtags = (final.hashtags as unknown[])
+        .map((tag) => (typeof tag === "string" ? tag.trim() : ""))
+        .filter((tag) => tag.length > 0);
+    }
+    if (hashtags.length < fallback.length) {
+      hashtags = [...fallback];
+    }
+    final.hashtags = hashtags;
+  }
+  
+  const trimmedCaption = typeof final.caption === "string" ? final.caption.trim() : "";
+  final.caption = trimmedCaption.length > 0 ? trimmedCaption : "Sharing something I'm genuinely proud of.";
+}
+
+type GeminiContentPart = { text: string };
+type GeminiContentPayload = ReadonlyArray<GeminiContentPart>;
+type GeminiTextModelCallable = (content: GeminiContentPayload) => Promise<unknown>;
+type GeminiTextModelWithMethod = { generateContent: GeminiTextModelCallable };
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function hasGenerateContent(model: unknown): model is GeminiTextModelWithMethod {
+  return isObject(model) && typeof model.generateContent === "function";
+}
+
+function isCallableModel(model: unknown): model is GeminiTextModelCallable {
+  return typeof model === "function";
+}
+
+async function invokeTextModel(prompt: string): Promise<unknown> {
+  const contents: GeminiContentPayload = [{ text: prompt }];
+
+  try {
+    if (hasGenerateContent(textModel)) {
+      return await textModel.generateContent(contents);
+    }
+
+    if (isCallableModel(textModel)) {
+      return await textModel(contents);
+    }
+  } catch (error) {
+    console.error("Gemini text model invocation failed:", error);
+    throw error;
+  }
+
+  throw new Error("Gemini textModel is not callable");
+}
+
+function extractResponseText(result: unknown): string {
+  if (typeof result === "string") {
+    return result;
+  }
+
+  if (isObject(result)) {
+    const response = result.response;
+
+    if (isObject(response)) {
+      const textFn = response.text;
+
+      if (typeof textFn === "function") {
+        return textFn();
+      }
+    }
+  }
+
+  throw new Error("Gemini text model response missing response.text()");
+}
+
+async function requestGeminiRanking(
+  variantsInput: z.infer<typeof CaptionArray>,
+  serializedVariants: string,
+  promptBlock: string,
+  platform?: string,
+  extraHint?: string,
+  facts?: Record<string, unknown>
+): Promise<unknown> {
+  const hintBlock = extraHint && extraHint.trim().length > 0 ? `\nREMINDER: ${extraHint.trim()}` : "";
+  let res;
+  try {
+    res=await textModel.generateContent([{ text: `${promptBlock}${hintBlock}\n${serializedVariants}` }]);
+  } catch (error) {
+    console.error('Gemini textModel.generateContent failed:', error);
+    throw error;
+  }
+  let json = stripToJSON(res.response.text()) as unknown;
+  const prompt = `${promptBlock}${hintBlock}\n${serializedVariants}`;
+  const res = await invokeTextModel(prompt);
+  let json = stripToJSON(extractResponseText(res)) as unknown;
+  
+  if(Array.isArray(json)) {
+    const winner = json[0] as Record<string, unknown> | undefined;
+    json = {
+      winner_index: 0,
+      scores: [5, 4, 3, 2, 1],
+      reason: "Selected based on engagement potential",
+      final: winner ?? variantsInput[0]
+    };
+  }
+  
+  if((json as Record<string, unknown>).final){
+    const final = (json as { final: Record<string, unknown> }).final;
+    normalizeGeminiFinal(final, platform, facts);
+  }
+  return json;
+}
+
+export async function rankAndSelect(
+  variants: z.infer<typeof CaptionArray>,
+  params?: { platform?: string; facts?: Record<string, unknown> }
+): Promise<z.infer<typeof RankResult>> {
+  const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rank.txt");
+  const promptBlock = `${sys}\n${guard}\n${prompt}`;
+  const serializedVariants = JSON.stringify(variants);

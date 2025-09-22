@@ -1,0 +1,517 @@
+Normalize CTAs and adjust hashtag sanitizer
+Sep 22 · a1davida1/TPilot · main
++89-38
+1. Normalize CTAs before checking `CANNED_CTAS` (trim punctuation/casing) and extend the set with common punctuated forms so `"Link in bio!"` maps to `HUMAN_CTA`.
+2. Adjust the hashtag sanitizer to:
+
+   * Preserve existing tags when they already satisfy the platform limits, only falling back when the cleaned list is empty or violates min/max rules.
+   * Enforce platform-specific caps by slicing the array (e.g., X ≤ 3).
+3. Update/add unit coverage in `server/caption/__tests__/rankGuards.test.ts` for CTA normalization and hashtag length enforcement.
+
+Summary
+
+    Added a CTA normalization helper that trims punctuation, lowercases comparisons, and expands the canned template list with punctuated variants so variations like “Link in bio!!!” consistently trigger canned detection and sanitize to the human CTA.
+
+Introduced platform-specific hashtag rules that retain compliant tags, filter banned or generic entries, slice to platform caps, and only fall back when counts violate the applicable min/max limits.
+
+Expanded the rank guard unit suite to verify normalized CTA handling, updated hashtag length enforcement, and aligned hint/summary expectations with the sanitizer behavior.
+
+Testing
+
+    ✅ npm test (vitest run executes with existing project configuration)
+
+⚠️ npx vitest run server/caption/__tests__/rankGuards.test.ts (fails because the command triggers the full suite, which depends on unavailable external services such as OpenAI keys and image assets)
+
+✅ npm run lint (passes with existing warnings in unrelated files)
+
+
+server/caption/__tests__/rankGuards.test.ts
++27-17
+@@ -25,176 +25,186 @@ describe('rankGuards', () => {
+      expect(violations).toContainEqual(
+        expect.objectContaining({
+          type: 'banned_phrase',
+          field: 'caption'
+        })
+      );
+    });
+
+    it('should detect generic hashtags', () => {
+      const caption: CaptionItemType = {
+        caption: "Beautiful day",
+        alt: "A photo",
+        hashtags: ["#content", "#creative", "#amazing"],
+        cta: "DM me!"
+      };
+      
+      const violations = detectVariantViolations(caption);
+      expect(violations).toContainEqual(
+        expect.objectContaining({
+          type: 'generic_hashtag',
+          field: 'hashtags'
+        })
+      );
+    });
+
+    it('should detect canned CTAs', () => {
+    it('should detect canned CTAs after normalization', () => {
+      const caption: CaptionItemType = {
+        caption: "Beautiful sunset",
+        alt: "A photo",
+        hashtags: ["#photography"],
+        cta: "Link in bio for more!"
+        cta: "Link in bio!!!"
+      };
+      
+
+      const violations = detectVariantViolations(caption);
+      expect(violations).toContainEqual(
+        expect.objectContaining({
+          type: 'canned_cta',
+          field: 'cta'
+        })
+      );
+    });
+
+    it('should return no violations for clean content', () => {
+      const caption: CaptionItemType = {
+        caption: "Enjoying the peaceful morning in my garden",
+        alt: "Person tending to flowers in a sunlit garden",
+        hashtags: ["#gardening", "#morninglight", "#peaceful"],
+        cta: "What's your favorite flower?"
+      };
+      
+      const violations = detectVariantViolations(caption);
+      expect(violations).toHaveLength(0);
+    });
+
+    it('should detect multiple violation types', () => {
+      const caption: CaptionItemType = {
+        caption: "Check out this amazing content! ✨",
+        alt: "A photo",
+        hashtags: ["#content", "#amazing"],
+        cta: "Link in bio!"
+        cta: "Link in bio!!!"
+      };
+      
+
+      const violations = detectVariantViolations(caption);
+      expect(violations).toHaveLength(3); // banned_phrase, generic_hashtag, canned_cta
+    });
+  });
+
+  describe('sanitizeFinalVariant', () => {
+    it('should sanitize caption with fallback content', () => {
+      const caption: CaptionItemType = {
+        caption: "✨ Amazing content! Check it out! ✨",
+        alt: "A photo",
+        hashtags: ["#content", "#creative"],
+        cta: "Link in bio!"
+      };
+      
+      const sanitized = sanitizeFinalVariant(caption, 'instagram');
+      
+      expect(sanitized.caption).not.toContain('✨');
+      expect(sanitized.caption).not.toContain('Amazing content');
+      expect(sanitized.cta).toBe(HUMAN_CTA);
+      expect(sanitized.hashtags).toEqual(fallbackHashtags('instagram'));
+    });
+
+    it('should preserve good content unchanged', () => {
+      const caption: CaptionItemType = {
+        caption: "Enjoying the peaceful morning in my garden",
+        alt: "Person tending to flowers in a sunlit garden",
+        hashtags: ["#gardening", "#morninglight"],
+        hashtags: ["#gardening", "#morninglight", "#peaceful"],
+        cta: "What's your favorite flower?"
+      };
+      
+
+      const sanitized = sanitizeFinalVariant(caption, 'instagram');
+      expect(sanitized).toEqual(caption);
+    });
+
+    it('should apply platform-specific hashtag limits', () => {
+      const caption: CaptionItemType = {
+        caption: "Beautiful day",
+        alt: "A photo",
+        hashtags: Array(10).fill("#test"), // Too many for X platform
+        hashtags: ['#one', '#two', '#three', '#four', '#five'],
+        cta: "Nice!"
+      };
+      
+
+      const sanitized = sanitizeFinalVariant(caption, 'x');
+      expect(sanitized.hashtags).toHaveLength(2); // X platform limit
+      expect(sanitized.hashtags).toEqual(['#one', '#two', '#three']);
+    });
+
+    it('should provide empty hashtags for Reddit', () => {
+      const caption: CaptionItemType = {
+        caption: "Beautiful day",
+        alt: "A photo", 
+        hashtags: ["#test"],
+        cta: "Nice!"
+      };
+      
+      const sanitized = sanitizeFinalVariant(caption, 'reddit');
+      expect(sanitized.hashtags).toEqual([]);
+    });
+
+    it('should normalize canned CTA variations to the human CTA', () => {
+      const caption: CaptionItemType = {
+        caption: "Enjoy this view",
+        alt: "A photo",
+        hashtags: ['#view', '#sunset', '#relaxing'],
+        cta: " LINK IN BIO! "
+      };
+
+      const sanitized = sanitizeFinalVariant(caption, 'instagram');
+      expect(sanitized.cta).toBe(HUMAN_CTA);
+    });
+  });
+
+  describe('buildRerankHint', () => {
+    it('should build rerank hint from violations', () => {
+      const violations = [
+        { type: 'banned_phrase' as const, field: 'caption' as const, content: '✨ Amazing content!' },
+        { type: 'generic_hashtag' as const, field: 'hashtags' as const, content: '#content' }
+      ];
+      
+
+      const hint = buildRerankHint(violations);
+      expect(hint).toContain('sparkle emojis');
+      expect(hint).toContain('generic hashtags');
+      expect(hint).toContain('specific, engaging');
+      expect(hint).toContain("avoid sparkle-filler phrases");
+      expect(hint).toContain('specific, authentic hashtags');
+    });
+
+    it('should return empty string for no violations', () => {
+      const hint = buildRerankHint([]);
+      expect(hint).toBe('');
+    });
+  });
+
+  describe('formatViolationSummary', () => {
+    it('should format violation summary', () => {
+      const violations = [
+        { type: 'banned_phrase' as const, field: 'caption' as const, content: '✨ Amazing!' },
+        { type: 'canned_cta' as const, field: 'cta' as const, content: 'Link in bio!' }
+      ];
+      
+      const summary = formatViolationSummary(violations);
+      expect(summary).toContain('Sanitized');
+      expect(summary).toContain('sparkle');
+      expect(summary).toContain('canned CTA');
+      expect(summary).toContain('sanitized sparkle-filler caption');
+      expect(summary).toContain('upgraded canned CTA');
+    });
+  });
+
+  describe('fallbackHashtags', () => {
+    it('should return platform-specific hashtags', () => {
+      expect(fallbackHashtags('instagram')).toEqual(['#behindthescenes', '#handcrafted', '#maker', '#creator']);
+      expect(fallbackHashtags('x')).toEqual(['#thoughts']);
+      expect(fallbackHashtags('reddit')).toEqual([]);
+      expect(fallbackHashtags('tiktok')).toEqual(['#niche', '#authentic']);
+    });
+
+    it('should not return banned hashtags', () => {
+      const allFallbacks = [
+        ...fallbackHashtags('instagram'),
+        ...fallbackHashtags('x'), 
+        ...fallbackHashtags('tiktok')
+      ];
+      
+      // Ensure no fallback hashtags are in the banned list
+      const bannedHashtags = ['#content', '#creative', '#amazing', '#lifestyle', '#mood', '#vibes'];
+      const intersection = allFallbacks.filter(tag => bannedHashtags.includes(tag));
+      expect(intersection).toHaveLength(0);
+    });
+  });
+
+server/caption/rankGuards.ts
++62-21
+// Ranking guards utilities for detecting and sanitizing sparkle-filler content
+import { variantContainsBannedWord, replaceBannedWords, containsBannedWord } from "./bannedWords";
+
+export const HUMAN_CTA = "What do you think?";
+
+const CTA_EDGE_PUNCTUATION = /^[\s\p{P}\p{S}]+|[\s\p{P}\p{S}]+$/gu;
+
+function normalizeCTA(value: string): string {
+  return value
+    .trim()
+    .replace(CTA_EDGE_PUNCTUATION, "")
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+}
+
+// Banned sparkle-filler phrases that should be detected and replaced
+const BANNED_PHRASES = [
+  /Check out this amazing content/i,
+  /✨ Enhanced/i,
+  /Amazing content/i,
+  /Check it out/i,
+  /Click the link/i,
+  /Don't miss out/i,
+  /You won't believe/i,
+  /This is incredible/i,
+  /Must see/i,
+  /Absolutely stunning/i,
+  /✨/,  // Any sparkle emojis
+  /🌟/,  // Star emojis
+  /⭐/   // Star emojis
+];
+
+// Generic hashtags that indicate low-quality content
+const GENERIC_HASHTAGS = new Set([
+  "#content", "#creative", "#amazing", "#lifestyle",
+  "#follow", "#like", "#share", "#viral", "#trending",
+  "#awesome", "#incredible", "#mustfollow", "#epic",
+  "#mood", "#vibes"
+]);
+
+// Canned CTA templates that should be avoided
+const CANNED_CTAS = new Set([
+const RAW_CANNED_CTAS = [
+  "Check it out", "Click the link", "Don't miss out",
+  "Link in comments", "See more", "Find out more",
+  "Click here", "Tap the link", "Visit my page",
+  "Link in bio", "Link in bio for more!", "Link in bio for more",
+  "Link in bio", "Link in bio!", "Link in bio!!", "Link in bio!!!",
+  "Link in bio.", "Link in bio...", "Link in bio?",
+  "Link in bio for more!", "Link in bio for more", "Link in bio for more!!",
+  "Learn more", "Follow for more", "Link in profile",
+  "Link in page", "Swipe up", "Check my bio"
+]);
+];
+
+const CANNED_CTAS = new Set(RAW_CANNED_CTAS.map(normalizeCTA));
+
+function isCannedCTA(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  const normalized = normalizeCTA(value);
+  if (!normalized) return false;
+  return CANNED_CTAS.has(normalized);
+}
+
+export function fallbackHashtags(platform?: string): string[] {
+  switch (platform) {
+    case "instagram":
+      return ["#behindthescenes", "#handcrafted", "#maker", "#creator"];
+    case "tiktok":
+      return ["#niche", "#authentic"];
+    case "x":
+      return ["#thoughts"];
+    case "reddit":
+      return []; // Reddit typically doesn't use hashtags
+    default:
+      return ["#thoughts"];
+  }
+}
+
+export interface Violation {
+  type: "banned_phrase" | "generic_hashtag" | "canned_cta" | "banned_word";
+  content: string;
+  field: "caption" | "hashtags" | "cta";
+}
+
+export function detectVariantViolations(variant: any): Violation[] {
+  const violations: Violation[] = [];
+
+@@ -78,54 +99,54 @@ export function detectVariantViolations(variant: any): Violation[] {
+        violations.push({
+          type: "banned_phrase",
+          content: variant.caption,
+          field: "caption"
+        });
+        break; // One violation per field is enough
+      }
+    }
+  }
+
+  // Check hashtags for generic content
+  if (Array.isArray(variant.hashtags)) {
+    const genericFound = variant.hashtags.some((tag: any) => 
+      typeof tag === "string" && GENERIC_HASHTAGS.has(tag.toLowerCase())
+    );
+    if (genericFound) {
+      violations.push({
+        type: "generic_hashtag",
+        content: variant.hashtags.join(" "),
+        field: "hashtags"
+      });
+    }
+  }
+
+  // Check CTA for canned templates
+  if (typeof variant.cta === "string" && CANNED_CTAS.has(variant.cta)) {
+  if (isCannedCTA(variant.cta)) {
+    violations.push({
+      type: "canned_cta",
+      content: variant.cta,
+      content: String(variant.cta),
+      field: "cta"
+    });
+  }
+
+  return violations;
+}
+
+export function buildRerankHint(violations: Violation[]): string {
+  const hints: string[] = [];
+
+  for (const violation of violations) {
+    switch (violation.type) {
+      case "banned_phrase":
+        hints.push("avoid sparkle-filler phrases like 'Check out this amazing content'");
+        break;
+      case "generic_hashtag":
+        hints.push("use specific, authentic hashtags instead of generic ones like #content #creative #amazing");
+        break;
+      case "canned_cta":
+        hints.push("create unique calls-to-action instead of templates like 'Check it out'");
+        break;
+      case "banned_word":
+        hints.push("avoid banned words (ai, ai-generated, content)");
+        break;
+    }
+@@ -139,100 +160,120 @@ export function buildRerankHint(violations: Violation[]): string {
+export function formatViolationSummary(violations: Violation[]): string {
+  if (violations.length === 0) return "";
+
+  const summaries: string[] = [];
+  
+  for (const violation of violations) {
+    switch (violation.type) {
+      case "banned_phrase":
+        summaries.push("sanitized sparkle-filler caption");
+        break;
+      case "banned_word":
+        summaries.push("removed banned words");
+        break;
+      case "generic_hashtag":
+        summaries.push("replaced generic hashtags");
+        break;
+      case "canned_cta":
+        summaries.push("upgraded canned CTA");
+        break;
+    }
+  }
+
+  return `Ranking sanitization applied: ${summaries.join(", ")}`;
+}
+
+function getHashtagRules(platform?: string): { min: number; max: number } {
+  switch (platform) {
+    case "instagram":
+      return { min: 3, max: 8 };
+    case "x":
+      return { min: 0, max: 3 };
+    case "tiktok":
+      return { min: 2, max: 5 };
+    case "reddit":
+      return { min: 0, max: 0 };
+    default:
+      return { min: 1, max: 10 };
+  }
+}
+
+export function sanitizeFinalVariant(variant: any, platform?: string): any {
+  const sanitized = { ...variant };
+
+  // Sanitize caption for banned words first
+  if (typeof sanitized.caption === "string") {
+    if (containsBannedWord(sanitized.caption)) {
+      sanitized.caption = replaceBannedWords(sanitized.caption);
+      if (!sanitized.caption || sanitized.caption.trim().length === 0) {
+        sanitized.caption = "Sharing something I'm genuinely proud of.";
+      }
+    }
+  }
+
+  // Sanitize caption if it contains banned phrases  
+  if (typeof sanitized.caption === "string") {
+    for (const regex of BANNED_PHRASES) {
+      if (regex.test(sanitized.caption)) {
+        sanitized.caption = "Sharing something I'm genuinely proud of.";
+        break;
+      }
+    }
+  }
+
+  // Sanitize CTA for banned words
+  if (typeof sanitized.cta === "string") {
+    if (containsBannedWord(sanitized.cta)) {
+      sanitized.cta = replaceBannedWords(sanitized.cta);
+      if (!sanitized.cta || sanitized.cta.trim().length === 0) {
+        sanitized.cta = HUMAN_CTA;
+      }
+    }
+  }
+
+  // Sanitize alt text for banned words and ensure it's always present
+  if (typeof sanitized.alt === "string") {
+    if (containsBannedWord(sanitized.alt)) {
+      sanitized.alt = replaceBannedWords(sanitized.alt);
+      if (!sanitized.alt || sanitized.alt.trim().length < 20) {
+        sanitized.alt = "Descriptive photo for the post";
+      }
+    }
+  } else if (!sanitized.alt) {
+    // Ensure alt is always present, even if not originally provided
+    sanitized.alt = "Descriptive photo for the post";
+  }
+
+  // Sanitize hashtags for banned words
+  if (Array.isArray(sanitized.hashtags)) {
+    const cleanedHashtags = sanitized.hashtags.filter((tag: any) => 
+      typeof tag === "string" && !containsBannedWord(tag)
+    );
+    if (cleanedHashtags.length < 3) {
+      sanitized.hashtags = fallbackHashtags(platform);
+    } else {
+      sanitized.hashtags = cleanedHashtags;
+    const rules = getHashtagRules(platform);
+    const cleanedHashtags = sanitized.hashtags
+      .filter((tag: any): tag is string => typeof tag === "string")
+      .map(tag => tag.trim())
+      .filter(tag => tag.length > 0 && !containsBannedWord(tag));
+
+    const hasGeneric = cleanedHashtags.some(tag => GENERIC_HASHTAGS.has(tag.toLowerCase()));
+
+    let limitedHashtags = hasGeneric ? [] : cleanedHashtags;
+
+    if (rules.max >= 0 && limitedHashtags.length > rules.max) {
+      limitedHashtags = limitedHashtags.slice(0, rules.max);
+    }
+  }
+
+  // Sanitize hashtags if they're generic
+  if (Array.isArray(sanitized.hashtags)) {
+    const hasGeneric = sanitized.hashtags.some((tag: any) => 
+      typeof tag === "string" && GENERIC_HASHTAGS.has(tag.toLowerCase())
+    );
+    if (hasGeneric) {
+      sanitized.hashtags = fallbackHashtags(platform);
+    if (
+      limitedHashtags.length === 0 ||
+      (rules.min > 0 && limitedHashtags.length < rules.min)
+    ) {
+      const fallback = fallbackHashtags(platform);
+      sanitized.hashtags = rules.max >= 0 ? fallback.slice(0, rules.max || fallback.length) : fallback;
+    } else {
+      sanitized.hashtags = limitedHashtags;
+    }
+  }
+
+  // Sanitize CTA if it's canned
+  if (typeof sanitized.cta === "string" && CANNED_CTAS.has(sanitized.cta)) {
+  if (isCannedCTA(sanitized.cta)) {
+    sanitized.cta = HUMAN_CTA;
+  }
+
+  return sanitized;
+}

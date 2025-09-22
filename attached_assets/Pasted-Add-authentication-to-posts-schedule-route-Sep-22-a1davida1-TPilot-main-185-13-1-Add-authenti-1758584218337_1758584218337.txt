@@ -1,0 +1,450 @@
+Add authentication to posts schedule route
+Sep 22 · a1davida1/TPilot · main
++185-13
+1. Add `authenticateToken` to the `/api/posts/schedule` route in `server/api-routes.ts` so `req.user` is populated.
+2. Write an integration test that posts with a valid session and verifies the API enqueues a job instead of returning 401.
+3. Confirm the frontend mutation handles 401 vs. success states once the endpoint is functional.
+
+Summary
+
+    Guarded /api/posts/schedule with authenticateToken so scheduling requests always run with a populated req.user before creating jobs.
+
+Added an integration test that boots the app, seeds a user, stubs queue timing, and verifies authenticated calls enqueue a posting job while unauthenticated calls receive 401 responses.
+
+Refined the Reddit scheduling mutation to type the API response, surface 401s via a toast/login modal, and only celebrate success when the backend confirms the job.
+
+Testing
+
+    ✅ npm run lint
+
+❌ npm test (fails because the existing suite has numerous unrelated issues such as Sharp fixture checksum errors, Coinbase mock timeouts, and queue initialization env requirements; new scheduling coverage is included but the broader suite still breaks on those pre-existing problems)
+
+
+client/src/pages/reddit-posting.tsx
++48-12
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, type ApiError } from '@/lib/queryClient';
+import { AuthModal } from '@/components/auth-modal';
+import { 
+  Send, 
+  Calendar,
+  User,
+  Eye,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  Link as LinkIcon,
+  Globe,
+  Settings,
+  Clock,
+  BarChart3,
+  Users,
+  TrendingUp,
+  Zap,
+  Shield,
+  FileText,
+  TestTube,
+  ExternalLink,
+  ImageIcon,
+  Images,
+  LogIn,
+  UserCheck
+@@ -73,76 +73,82 @@ interface SubredditCommunity {
+}
+
+// API response interfaces
+interface ConnectionTestResponse {
+  connected: boolean;
+  profile?: {
+    username: string;
+    karma: number;
+  };
+}
+
+interface ConnectRedditResponse {
+  authUrl: string;
+}
+
+interface ContentValidationResponse {
+  policyState: 'allow' | 'warn' | 'block';
+}
+
+interface PostSubmissionResponse {
+  success: boolean;
+  error?: string;
+}
+
+interface SchedulePostResponse {
+  success: boolean;
+  postJobId: number;
+  scheduledAt: string;
+}
+
+interface MediaAsset {
+  id: number;
+  filename: string;
+  signedUrl?: string;
+  downloadUrl?: string;
+  createdAt: string;
+}
+
+interface PostData {
+  subreddit: string;
+  title: string;
+  nsfw: boolean;
+  spoiler: boolean;
+  postType: 'text' | 'link' | 'image' | 'gallery';
+  body?: string;
+  url?: string;
+  imageData?: string;
+  images?: Array<{
+    url: string;
+    caption?: string;
+  }>;
+}
+
+function isApiError(error: unknown): error is ApiError {
+  return error instanceof Error && 'status' in error && typeof (error as { status?: unknown }).status === 'number';
+}
+
+export default function RedditPostingPage() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { isAuthenticated, user } = useAuth();
+  
+  // Form state
+  const [subreddit, setSubreddit] = useState('');
+  const [title, setTitle] = useState('');
+  const [body, setBody] = useState('');
+  const [url, setUrl] = useState('');
+  const [nsfw, setNsfw] = useState(false);
+  const [spoiler, setSpoiler] = useState(false);
+  const [postType, setPostType] = useState<'text' | 'link' | 'image' | 'gallery'>('image');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
+  const [selectedMediaIds, setSelectedMediaIds] = useState<number[]>([]);
+  const [mediaCaptions, setMediaCaptions] = useState<Record<number, string>>({});
+  const [scheduledAt, setScheduledAt] = useState('');
+  const isGalleryFeatureEnabled = false;
+  
+  // UI state
+  const [selectedAccount, setSelectedAccount] = useState<string>('');
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+@@ -272,66 +278,96 @@ export default function RedditPostingPage() {
+        setTitle('');
+        setBody('');
+        setUrl('');
+        setSubreddit('');
+        setSelectedMediaIds([]);
+        setMediaCaptions({});
+        queryClient.invalidateQueries({ queryKey: ['/api/reddit/posts'] });
+      } else {
+        toast({
+          title: "❌ Posting Failed",
+          description: data.error || 'Unknown error occurred',
+          variant: "destructive"
+        });
+      }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "❌ Posting Failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Schedule post
+  const { mutate: schedulePost, isPending: scheduling } = useMutation({
+    mutationFn: async (data: { subreddit: string; title: string; body: string; scheduledAt?: string }) => {
+  const { mutate: schedulePost, isPending: scheduling } = useMutation<SchedulePostResponse, unknown, { subreddit: string; title: string; body: string; scheduledAt?: string }>({
+    mutationFn: async (data) => {
+      const response = await apiRequest('POST', '/api/posts/schedule', data);
+      return response.json();
+    },
+    onSuccess: (data: SchedulePostResponse) => {
+    onSuccess: (data) => {
+      if (data.success) {
+        toast({
+          title: "📅 Post Scheduled!",
+          description: `Post will be published at ${new Date(data.scheduledAt).toLocaleString()}`,
+          variant: "default"
+        });
+        // Reset form
+        setTitle('');
+        setBody('');
+        setSubreddit('');
+        setScheduledAt('');
+        return;
+      }
+
+      toast({
+        title: "Failed to schedule post",
+        description: "The scheduler did not confirm the job creation. Please try again.",
+        variant: "destructive",
+      });
+    },
+    onError: (error) => {
+      if (isApiError(error) && error.isAuthError) {
+        setShowAuthModal(true);
+        toast({
+          title: "Authentication required",
+          description: error.userMessage ?? "Please log in to schedule posts.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const fallbackMessage = error instanceof Error
+        ? error.message
+        : 'Failed to schedule post. Please try again later.';
+
+      toast({
+        title: "📅 Post Scheduled!",
+        description: `Post will be published at ${new Date(data.scheduledAt).toLocaleString()}`,
+        variant: "default"
+        title: "Failed to schedule post",
+        description: fallbackMessage,
+        variant: "destructive",
+      });
+      // Reset form
+      setTitle('');
+      setBody('');
+      setSubreddit('');
+      setScheduledAt('');
+    }
+  });
+
+  // Handle content validation
+  const handleValidateContent = () => {
+    if (!subreddit || !title) {
+      toast({
+        title: "⚠️ Missing Required Fields",
+        description: "Please enter subreddit and title",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    validateContent({
+      subreddit,
+      title,
+      body,
+      hasLink: postType === 'link' && !!url
+    });
+  };
+
+  // Handle post submission - Enhanced for multiple post types
+  const handleSubmitPost = async () => {
+    if (!subreddit || !title) {
+server/api-routes.ts
++1-1
+@@ -188,51 +188,51 @@ export function registerApiRoutes(app: Express) {
+    }
+  });
+
+  // Policy Linting
+  app.post('/api/content/lint', async (req, res) => {
+    try {
+      const schema = z.object({
+        subreddit: z.string(),
+        title: z.string(),
+        body: z.string(),
+        hasImage: z.boolean().default(false),
+      });
+
+      const data = schema.parse(req.body);
+      const linter = await PolicyLinter.forSubreddit(data.subreddit);
+      const result = await linter.lintPost(data.title, data.body, data.hasImage);
+
+      res.json(result);
+    } catch (error: unknown) {
+      console.error('Content linting failed:', error);
+      res.status(500).json({ error: getErrorMessage(error) });
+    }
+  });
+
+  // Schedule Post
+  app.post('/api/posts/schedule', async (req, res) => {
+  app.post('/api/posts/schedule', authenticateToken, async (req, res) => {
+    try {
+      const schema = z.object({
+        subreddit: z.string(),
+        title: z.string(),
+        body: z.string(),
+        mediaKey: z.string().optional(),
+        scheduledAt: z.string().datetime().optional(),
+      });
+
+      const data = schema.parse(req.body);
+      const user = req.user;
+      
+      if (!user?.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      const userId = user.id;
+
+      // Schedule the post
+      const scheduledAt = data.scheduledAt 
+        ? new Date(data.scheduledAt)
+        : await PostScheduler.chooseSendTime(data.subreddit);
+
+      // Create post job
+      const [postJob] = await db.insert(postJobs).values({
+tests/integration/post-scheduling.test.ts
+New
++136-0
+import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
+import request from 'supertest';
+import type { Express } from 'express';
+import jwt from 'jsonwebtoken';
+import { eq } from 'drizzle-orm';
+
+import { createApp } from '../../server/app.js';
+import { storage } from '../../server/storage.js';
+import { db } from '../../server/db.js';
+import { postJobs, type InsertUser } from '@shared/schema';
+import * as queueModule from '../../server/lib/queue/index.js';
+import { PostScheduler } from '../../server/lib/scheduling.js';
+
+interface PostingJobPayload {
+  userId: number;
+  postJobId: number;
+  subreddit: string;
+  titleFinal: string;
+  bodyFinal: string;
+  mediaKey?: string;
+}
+
+describe('POST /api/posts/schedule', () => {
+  let app: Express;
+  let userId: number;
+  let authToken: string;
+
+  beforeAll(async () => {
+    const result = await createApp({
+      startQueue: false,
+      configureStaticAssets: false,
+      enableVite: false,
+    });
+
+    app = result.app;
+
+    const uniqueSuffix = Date.now();
+    const newUser: InsertUser = {
+      username: `scheduler-user-${uniqueSuffix}`,
+      password: 'hashed-password',
+      email: `scheduler-${uniqueSuffix}@example.com`,
+      emailVerified: true,
+      tier: 'free',
+      subscriptionStatus: 'active',
+    };
+
+    const createdUser = await storage.createUser(newUser);
+    userId = createdUser.id;
+
+    authToken = jwt.sign(
+      {
+        userId,
+        username: createdUser.username,
+        email: createdUser.email,
+      },
+      process.env.JWT_SECRET || 'test-secret-key',
+    );
+  });
+
+  afterEach(async () => {
+    if (typeof userId === 'number') {
+      await db.delete(postJobs).where(eq(postJobs.userId, userId));
+    }
+    vi.restoreAllMocks();
+  });
+
+  afterAll(async () => {
+    if (typeof userId === 'number') {
+      await db.delete(postJobs).where(eq(postJobs.userId, userId));
+      await storage.deleteUser(userId).catch(() => {});
+    }
+  });
+
+  it('enqueues a posting job for authenticated users', async () => {
+    const fixedNow = 1_700_000_000_000;
+    const futureDate = new Date(fixedNow + 60_000);
+
+    vi.spyOn(Date, 'now').mockReturnValue(fixedNow);
+
+    const addJobSpy = vi
+      .spyOn(queueModule, 'addJob')
+      .mockResolvedValue(undefined);
+    const chooseSendTimeSpy = vi
+      .spyOn(PostScheduler, 'chooseSendTime')
+      .mockResolvedValue(futureDate);
+
+    const response = await request(app)
+      .post('/api/posts/schedule')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        subreddit: 'integrationtest',
+        title: 'Integration Test Title',
+        body: 'Integration test body',
+      })
+      .expect(200);
+
+    expect(chooseSendTimeSpy).toHaveBeenCalledWith('integrationtest');
+    expect(response.body).toMatchObject({
+      success: true,
+      postJobId: expect.any(Number),
+      scheduledAt: futureDate.toISOString(),
+    });
+
+    expect(addJobSpy).toHaveBeenCalledTimes(1);
+    const callArgs = addJobSpy.mock.calls[0] as [
+      queueModule.QueueNames | 'posting',
+      PostingJobPayload,
+      { delay?: number } | undefined,
+    ];
+
+    const [queueName, payload, options] = callArgs;
+
+    expect(queueName).toBe('posting');
+    expect(payload).toMatchObject({
+      userId,
+      postJobId: response.body.postJobId,
+      subreddit: 'integrationtest',
+      titleFinal: 'Integration Test Title',
+      bodyFinal: 'Integration test body',
+    });
+    expect(options?.delay).toBe(futureDate.getTime() - fixedNow);
+  });
+
+  it('returns 401 for unauthenticated requests', async () => {
+    const response = await request(app)
+      .post('/api/posts/schedule')
+      .send({
+        subreddit: 'integrationtest',
+        title: 'Missing auth should fail',
+        body: 'Body',
+      })
+      .expect(401);
+
+    expect(response.body).toHaveProperty('message');
+  });
+});

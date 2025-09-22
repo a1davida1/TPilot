@@ -1,0 +1,315 @@
+Create and configure server/database.ts
+Sep 22 · a1davida1/TPilot · main
++45-7
+1. Create `server/database.ts` (and ensure it’s emitted as `.js`) that re-exports `db`/`pool`/`closeDatabaseConnections` from `server/db`.
+2. Update `package.json` or build config if needed so the new file is compiled to `server/database.js` alongside the existing output.
+3. Confirm the dashboard service tests load the shim without throwing and continue using the same mocked interface.
+
+Summary
+
+    Added TypeScript and JavaScript shims in server/database.* to re-export db, pool, and closeDatabaseConnections, giving tests and runtime code a stable import surface.
+
+Checked in server/db.js mirroring the Neon-backed pool so the shim can resolve without depending on on-the-fly TypeScript transpilation during testing.
+
+Pointed the dashboard service at the new shim and updated its unit tests to dynamically import the mocked database module, keeping the mocked interface intact while avoiding module resolution failures.
+
+Testing
+
+    ✅ npm run lint
+
+✅ npm test -- tests/unit/dashboard/dashboard-service.test.ts
+
+
+server/database.js
+New
++4-0
+import { db, pool, closeDatabaseConnections } from './db.js';
+
+export { db, pool, closeDatabaseConnections };
+
+server/database.ts
+New
++4-0
+import { db, pool, closeDatabaseConnections } from './db.js';
+
+export { db, pool, closeDatabaseConnections };
+
+server/db.js
+New
++30-0
+import { Pool as NeonPool, neonConfig } from '@neondatabase/serverless';
+import { drizzle as drizzleNeon } from 'drizzle-orm/neon-serverless';
+import ws from 'ws';
+import * as schema from '../shared/schema.js';
+
+neonConfig.webSocketConstructor = ws;
+
+const preferTestConnection = process.env.NODE_ENV === 'test';
+const preferredConnectionString = preferTestConnection
+  ? process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL
+  : process.env.DATABASE_URL ?? process.env.TEST_DATABASE_URL;
+
+if (!preferredConnectionString) {
+  throw new Error(
+    'DATABASE_URL must be set. Did you forget to provision a database?',
+  );
+}
+
+const connectionString = preferredConnectionString;
+const neonPool = new NeonPool({ connectionString });
+const poolInstance = neonPool;
+const dbInstance = drizzleNeon({ client: neonPool, schema });
+
+export const pool = poolInstance;
+export const db = dbInstance;
+
+export async function closeDatabaseConnections() {
+  await poolInstance.end();
+}
+
+server/services/dashboard-service.ts
++1-1
+import { db } from '../db';
+import { db } from '../database.js';
+import { 
+  contentGenerations, 
+  expenses, 
+  contentFlags, 
+  mediaAssets, 
+  socialMetrics,
+  engagementEvents,
+  users
+} from '@shared/schema';
+import { eq, and, gte, sql, desc } from 'drizzle-orm';
+
+export interface DashboardStats {
+  postsToday: number;
+  engagementRate: number;
+  takedownsFound: number;
+  estimatedTaxSavings: number;
+}
+
+export interface DashboardActivity {
+  recentMedia: Array<{
+    id: number;
+    url: string;
+    alt: string;
+    createdAt: string | null;
+  }>;
+tests/unit/dashboard/dashboard-service.test.ts
++6-6
+@@ -39,208 +39,208 @@ vi.mock('../../../shared/schema.js', () => ({
+  mediaAssets: { 
+    id: 'id',
+    userId: 'userId',
+    filename: 'filename',
+    key: 'key',
+    createdAt: 'createdAt'
+  }
+}));
+
+// Mock drizzle-orm functions
+vi.mock('drizzle-orm', () => ({
+  eq: vi.fn((column, value) => ({ column, value, op: 'eq' })),
+  desc: vi.fn((column) => ({ column, order: 'desc' })),
+  gte: vi.fn((column, value) => ({ column, value, op: 'gte' })),
+  sql: vi.fn((template, ...values) => ({ template, values, type: 'sql' }))
+}));
+
+describe('DashboardService', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('getDashboardStats', () => {
+    it('should return dashboard stats for a user', async () => {
+      // Mock database responses
+      const mockDb = require('../../../server/database.js').db;
+      const { db: mockDb } = await import('../../../server/database.js');
+      
+      // Mock posts count query
+      mockDb.select.mockReturnValueOnce({
+        from: vi.fn().mockReturnValueOnce({
+          where: vi.fn().mockResolvedValueOnce([{ count: 5 }])
+        })
+      });
+      
+      // Mock social metrics query (for engagement rate)
+      mockDb.select.mockReturnValueOnce({
+        from: vi.fn().mockReturnValueOnce({
+          leftJoin: vi.fn().mockReturnValueOnce({
+            where: vi.fn().mockResolvedValueOnce([{ totalEngagement: 100, totalViews: 1000 }])
+          })
+        })
+      });
+      
+      // Mock content flags query (takedowns)
+      mockDb.select.mockReturnValueOnce({
+        from: vi.fn().mockReturnValueOnce({
+          where: vi.fn().mockResolvedValueOnce([{ count: 2 }])
+        })
+      });
+      
+      // Mock expenses query (tax savings)
+      mockDb.select.mockReturnValueOnce({
+        from: vi.fn().mockReturnValueOnce({
+          where: vi.fn().mockResolvedValueOnce([{ totalSavings: 1500 }])
+        })
+      });
+
+      const userId = 1;
+      const result = await dashboardService.getDashboardStats(userId);
+      
+      expect(result).toHaveProperty('postsToday');
+      expect(result).toHaveProperty('engagementRate');
+      expect(result).toHaveProperty('takedownsFound');
+      expect(result).toHaveProperty('estimatedTaxSavings');
+      
+      expect(typeof result.postsToday).toBe('number');
+      expect(typeof result.engagementRate).toBe('number');
+      expect(typeof result.takedownsFound).toBe('number');
+      expect(typeof result.estimatedTaxSavings).toBe('number');
+    });
+
+    it('should handle database errors gracefully', async () => {
+      const mockDb = require('../../../server/database.js').db;
+      const { db: mockDb } = await import('../../../server/database.js');
+      
+      // Mock database error
+      mockDb.select.mockReturnValueOnce({
+        from: vi.fn().mockReturnValueOnce({
+          where: vi.fn().mockRejectedValueOnce(new Error('Database connection error'))
+        })
+      });
+
+      const userId = 1;
+      const result = await dashboardService.getDashboardStats(userId);
+      
+      // Should return default values on error
+      expect(result).toEqual({
+        postsToday: 0,
+        engagementRate: 0,
+        takedownsFound: 0,
+        estimatedTaxSavings: 0
+      });
+    });
+  });
+
+  describe('getDashboardActivity', () => {
+    it('should return dashboard activity for a user', async () => {
+      const mockDb = require('../../../server/database.js').db;
+      const { db: mockDb } = await import('../../../server/database.js');
+      
+      // Mock media assets query
+      mockDb.select.mockReturnValueOnce({
+        from: vi.fn().mockReturnValueOnce({
+          where: vi.fn().mockReturnValueOnce({
+            orderBy: vi.fn().mockReturnValueOnce({
+              limit: vi.fn().mockResolvedValueOnce([
+                {
+                  id: 1,
+                  filename: 'test.jpg',
+                  key: 'test-key',
+                  createdAt: new Date('2025-09-22')
+                }
+              ])
+            })
+          })
+        })
+      });
+
+      const userId = 1;
+      const result = await dashboardService.getDashboardActivity(userId);
+      
+      expect(result).toHaveProperty('recentMedia');
+      expect(Array.isArray(result.recentMedia)).toBe(true);
+      
+      if (result.recentMedia.length > 0) {
+        const mediaItem = result.recentMedia[0];
+        expect(mediaItem).toHaveProperty('id');
+        expect(mediaItem).toHaveProperty('url');
+        expect(mediaItem).toHaveProperty('alt');
+        expect(mediaItem).toHaveProperty('createdAt');
+        
+        expect(mediaItem.url).toMatch(/^\/api\/media\/\d+$/);
+      }
+    });
+
+    it('should handle database errors gracefully', async () => {
+      const mockDb = require('../../../server/database.js').db;
+      const { db: mockDb } = await import('../../../server/database.js');
+      
+      // Mock database error
+      mockDb.select.mockReturnValueOnce({
+        from: vi.fn().mockReturnValueOnce({
+          where: vi.fn().mockReturnValueOnce({
+            orderBy: vi.fn().mockReturnValueOnce({
+              limit: vi.fn().mockRejectedValueOnce(new Error('Database connection error'))
+            })
+          })
+        })
+      });
+
+      const userId = 1;
+      const result = await dashboardService.getDashboardActivity(userId);
+      
+      // Should return empty array on error
+      expect(result).toEqual({ recentMedia: [] });
+    });
+  });
+
+  describe('getAdminDashboardStats', () => {
+    it('should return admin dashboard stats', async () => {
+      const mockDb = require('../../../server/database.js').db;
+      const { db: mockDb } = await import('../../../server/database.js');
+      
+      // Mock various queries for admin stats
+      mockDb.select.mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([{ count: 10 }])
+        })
+      });
+
+      const result = await dashboardService.getAdminDashboardStats();
+      
+      expect(result).toHaveProperty('postsToday');
+      expect(result).toHaveProperty('engagementRate');
+      expect(result).toHaveProperty('takedownsFound');
+      expect(result).toHaveProperty('estimatedTaxSavings');
+      
+      expect(typeof result.postsToday).toBe('number');
+      expect(typeof result.engagementRate).toBe('number');
+      expect(typeof result.takedownsFound).toBe('number');
+      expect(typeof result.estimatedTaxSavings).toBe('number');
+    });
+  });
+
+  describe('getAdminDashboardActivity', () => {
+    it('should return admin dashboard activity', async () => {
+      const mockDb = require('../../../server/database.js').db;
+      const { db: mockDb } = await import('../../../server/database.js');
+      
+      // Mock media assets query for admin
+      mockDb.select.mockReturnValueOnce({
+        from: vi.fn().mockReturnValueOnce({
+          orderBy: vi.fn().mockReturnValueOnce({
+            limit: vi.fn().mockResolvedValueOnce([
+              {
+                id: 1,
+                filename: 'admin-test.jpg',
+                key: 'admin-test-key',
+                createdAt: new Date('2025-09-22')
+              },
+              {
+                id: 2,
+                filename: 'admin-test2.jpg',
+                key: 'admin-test-key2',
+                createdAt: new Date('2025-09-21')
+              }
+            ])
+          })
+        })
+      });
+
+      const result = await dashboardService.getAdminDashboardActivity();
+      
