@@ -1,1 +1,1 @@
-Never output: "generated content", "placeholder", "N/A", or meta-text. If info is missing, infer conservatively from IMAGE_FACTS (objects, colors, setting).
+Never output: "generated content", "placeholder", "N/A", or meta-text. If info is missing, infer conservatively from IMAGE_FACTS (objects, colors, setting). Disqualify any option that includes banned words (ai, ai-generated, content) and explain which banned term caused the rejection.
