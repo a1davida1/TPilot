@@ -3,6 +3,16 @@ import { variantContainsBannedWord, replaceBannedWords, containsBannedWord } fro
 
 export const HUMAN_CTA = "What do you think?";
 
+const CTA_EDGE_PUNCTUATION = /^[\s\p{P}\p{S}]+|[\s\p{P}\p{S}]+$/gu;
+
+function normalizeCTA(value: string): string {
+  return value
+    .trim()
+    .replace(CTA_EDGE_PUNCTUATION, "")
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+}
+
 // Banned sparkle-filler phrases that should be detected and replaced
 const BANNED_PHRASES = [
   /Check out this amazing content/i,
@@ -29,14 +39,25 @@ const GENERIC_HASHTAGS = new Set([
 ]);
 
 // Canned CTA templates that should be avoided
-const CANNED_CTAS = new Set([
+const RAW_CANNED_CTAS = [
   "Check it out", "Click the link", "Don't miss out",
   "Link in comments", "See more", "Find out more",
   "Click here", "Tap the link", "Visit my page",
-  "Link in bio", "Link in bio for more!", "Link in bio for more",
+  "Link in bio", "Link in bio!", "Link in bio!!", "Link in bio!!!",
+  "Link in bio.", "Link in bio...", "Link in bio?",
+  "Link in bio for more!", "Link in bio for more", "Link in bio for more!!",
   "Learn more", "Follow for more", "Link in profile",
   "Link in page", "Swipe up", "Check my bio"
-]);
+];
+
+const CANNED_CTAS = new Set(RAW_CANNED_CTAS.map(normalizeCTA));
+
+function isCannedCTA(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  const normalized = normalizeCTA(value);
+  if (!normalized) return false;
+  return CANNED_CTAS.has(normalized);
+}
 
 export function fallbackHashtags(platform?: string): string[] {
   switch (platform) {
@@ -47,7 +68,7 @@ export function fallbackHashtags(platform?: string): string[] {
     case "x":
       return ["#thoughts"];
     case "reddit":
-      return []; // Reddit typically doesn't use hashtags
+      return ["community insights"]; // Reddit descriptive labels instead of hashtags
     default:
       return ["#thoughts"];
   }
@@ -100,10 +121,10 @@ export function detectVariantViolations(variant: any): Violation[] {
   }
 
   // Check CTA for canned templates
-  if (typeof variant.cta === "string" && CANNED_CTAS.has(variant.cta)) {
+  if (isCannedCTA(variant.cta)) {
     violations.push({
       type: "canned_cta",
-      content: variant.cta,
+      content: String(variant.cta),
       field: "cta"
     });
   }
@@ -184,6 +205,11 @@ export function sanitizeFinalVariant(variant: any, platform?: string): any {
     }
   }
 
+  // Sanitize CTA - check if it's canned after normalization
+  if (isCannedCTA(sanitized.cta)) {
+    sanitized.cta = HUMAN_CTA;
+  }
+  
   // Sanitize CTA for banned words
   if (typeof sanitized.cta === "string") {
     if (containsBannedWord(sanitized.cta)) {
@@ -207,31 +233,45 @@ export function sanitizeFinalVariant(variant: any, platform?: string): any {
     sanitized.alt = "Descriptive photo for the post";
   }
 
-  // Sanitize hashtags for banned words
+  // Enhanced hashtag sanitization with platform-specific rules
   if (Array.isArray(sanitized.hashtags)) {
-    const cleanedHashtags = sanitized.hashtags.filter((tag: any) => 
-      typeof tag === "string" && !containsBannedWord(tag)
-    );
-    if (cleanedHashtags.length < 3) {
-      sanitized.hashtags = fallbackHashtags(platform);
+    // Filter out banned words and generic hashtags
+    let cleanedHashtags = sanitized.hashtags
+      .filter((tag: any) => typeof tag === "string" && !containsBannedWord(tag))
+      .filter((tag: any) => !GENERIC_HASHTAGS.has(tag.toLowerCase()));
+    
+    // Apply platform-specific hashtag limits
+    const platformLimits: Record<string, number> = {
+      'x': 3,        // X (Twitter) platform limit to 3 hashtags
+      'instagram': Infinity,  // Instagram allows up to 30
+      'tiktok': Infinity,     // TikTok allows many
+      'reddit': 1             // Reddit uses descriptive labels
+    };
+    
+    const maxHashtags = platformLimits[platform || 'instagram'] || Infinity;
+    if (cleanedHashtags.length > maxHashtags && maxHashtags !== Infinity) {
+      cleanedHashtags = cleanedHashtags.slice(0, maxHashtags);
+    }
+    
+    // Reddit special case: strip leading # from descriptive labels
+    if (platform === 'reddit') {
+      cleanedHashtags = cleanedHashtags.map((tag: string) => 
+        tag.startsWith('#') ? tag.substring(1) : tag
+      );
+    }
+    
+    // Enforce minimum requirements or fall back
+    const fallback = fallbackHashtags(platform);
+    const minRequired = platform === 'reddit' ? 1 : 1; // At least 1 hashtag or label
+    
+    if (cleanedHashtags.length < minRequired) {
+      sanitized.hashtags = fallback;
     } else {
       sanitized.hashtags = cleanedHashtags;
     }
-  }
-
-  // Sanitize hashtags if they're generic
-  if (Array.isArray(sanitized.hashtags)) {
-    const hasGeneric = sanitized.hashtags.some((tag: any) => 
-      typeof tag === "string" && GENERIC_HASHTAGS.has(tag.toLowerCase())
-    );
-    if (hasGeneric) {
-      sanitized.hashtags = fallbackHashtags(platform);
-    }
-  }
-
-  // Sanitize CTA if it's canned
-  if (typeof sanitized.cta === "string" && CANNED_CTAS.has(sanitized.cta)) {
-    sanitized.cta = HUMAN_CTA;
+  } else {
+    // No hashtags provided, use fallback
+    sanitized.hashtags = fallbackHashtags(platform);
   }
 
   return sanitized;
