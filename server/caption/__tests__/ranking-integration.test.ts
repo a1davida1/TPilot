@@ -55,12 +55,16 @@ describe('Ranking Integration Tests', () => {
         .mockResolvedValueOnce(mockBannedResponse)  // First attempt returns banned content
         .mockResolvedValueOnce(mockCleanResponse); // Rerank returns clean content
 
-      const variants: CaptionItem[] = [
+      const variants: CaptionItemType[] = [
         {
           caption: "Test caption",
           alt: "Test alt",
           hashtags: ["#test"],
-          cta: "Test CTA"
+          cta: "Test CTA",
+          mood: "engaging",
+          style: "authentic",
+          safety_level: "normal",
+          nsfw: false
         }
       ];
 
@@ -92,12 +96,16 @@ describe('Ranking Integration Tests', () => {
         .mockResolvedValueOnce(mockBannedResponse)  // First attempt
         .mockResolvedValueOnce(mockBannedResponse); // Rerank also fails
 
-      const variants: CaptionItem[] = [
+      const variants: CaptionItemType[] = [
         {
           caption: "Clean test caption",
           alt: "Clean test alt",
           hashtags: ["#photography"],
-          cta: "What do you think?"
+          cta: "What do you think?",
+          mood: "engaging",
+          style: "authentic",
+          safety_level: "normal",
+          nsfw: false
         }
       ];
 
@@ -124,12 +132,16 @@ describe('Ranking Integration Tests', () => {
 
       (textModel as any).mockResolvedValueOnce(mockCleanResponse);
 
-      const variants: CaptionItem[] = [
+      const variants: CaptionItemType[] = [
         {
           caption: "Test caption",
           alt: "Test alt", 
           hashtags: ["#test"],
-          cta: "Test CTA"
+          cta: "Test CTA",
+          mood: "engaging",
+          style: "authentic",
+          safety_level: "normal",
+          nsfw: false
         }
       ];
 
@@ -157,12 +169,16 @@ describe('Ranking Integration Tests', () => {
 
       (textModel as any).mockResolvedValueOnce(mockResponse);
 
-      const variants: CaptionItem[] = [
+      const variants: CaptionItemType[] = [
         {
           caption: "Test caption",
           alt: "Test alt",
           hashtags: ["#test"],
-          cta: "Test CTA"
+          cta: "Test CTA",
+          mood: "engaging",
+          style: "authentic",
+          safety_level: "normal",
+          nsfw: false
         }
       ];
 
@@ -184,12 +200,16 @@ describe('Ranking Integration Tests', () => {
 
       (textModel as any).mockResolvedValueOnce(mockResponse);
 
-      const variants: CaptionItem[] = [
+      const variants: CaptionItemType[] = [
         {
           caption: "Test caption", 
           alt: "Test alt",
           hashtags: ["#test"],
-          cta: "Test CTA"
+          cta: "Test CTA",
+          mood: "engaging",
+          style: "authentic",
+          safety_level: "normal",
+          nsfw: false
         }
       ];
 

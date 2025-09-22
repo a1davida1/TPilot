@@ -303,7 +303,7 @@ describe("ensureFallbackCompliance", () => {
       const result = ensureFallbackCompliance(content, params);
       
       result.hashtags.forEach(tag => {
-        expect(tag).not.toStartWith("#");
+        expect(tag).not.toMatch(/^#/);
       });
     });
 
@@ -319,7 +319,7 @@ describe("ensureFallbackCompliance", () => {
       const result = ensureFallbackCompliance(content, params);
       
       result.hashtags.forEach(tag => {
-        expect(tag).not.toStartWith("#");
+        expect(tag).not.toMatch(/^#/);
       });
     });
   });
