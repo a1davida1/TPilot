@@ -1,36 +1,52 @@
-# Prompt Tuning Playbook
+# Prompt Tuning Upgrades
 
-This document summarizes the 2024-10 prompt refresh so PMs, Ops, and copy leads can iterate quickly without spelunking through code.
+This release wires structured voice guidance directly into every caption pipeline so PMs and ops can iterate without code changes.
 
-## What changed
+## Voice trait profiles
+- **Source file:** `prompts/voices.json`
+- **Schema:**
+  ```json
+  {
+    "voice_token": {
+      "persona": "string",
+      "traits": ["bullet"],
+      "hooks": ["bullet"],
+      "cta": ["bullet"],
+      "authenticity": ["bullet"],
+      "subredditNotes": ["optional bullet"]
+    }
+  }
+  ```
+- **Usage notes:**
+  - Each array renders as bullet points inside the prompt (`VOICE_TRAITS`, `AUDIENCE_HOOKS`, `CTA_PATTERNS`, `AUTHENTICITY_CHECKLIST`, `SUBREDDIT_NOTES`).
+  - Keep verbs vivid and actionable; they are injected verbatim, so avoid pronouns that depend on prior context.
+  - Add new voices by inserting another object with the same keys. No restart needed—the helper reads the JSON at runtime.
 
-- **System persona hardening** – `prompts/system.txt` now spells out the creator-first tone (sensory details from `IMAGE_FACTS`, anti-corporate guardrails, JSON discipline).
-- **Variant + rewrite briefs** – `prompts/variants.txt`, `prompts/rewrite.txt`, and `prompts/variants_textonly.txt` add:
-  - Platform-specific hook + CTA guidance (IG/TikTok sensory hooks, Reddit story cold opens, etc.).
-  - Subreddit etiquette callouts (first-person POV, no hashtag spam).
-  - An authenticity checklist (concrete visual detail, contractions, community nod, emoji restraint).
-  - Explicit NSFW flag handling and hashtag guardrails.
-- **Voice traits library** – New `prompts/voices.json` maps each voice token to persona notes, bullet traits, hook/CTA guidance, and anti-patterns.
-- **Runtime injection** – Gemini + OpenAI pipelines and the OpenAI prompt builder read `voices.json` and append a `VOICE_CONTEXT` block to the prompt payload before generation.
+## System + task prompt changes
+- `prompts/system.txt` now enforces creator-first tone, sensory detail, and authenticity checks.
+- `prompts/variants.txt` and `prompts/rewrite.txt` require:
+  - Audience hooks that spotlight the community.
+  - Platform-aware CTA wording (including Reddit thread norms).
+  - Explicit authenticity checklist compliance (sensory detail, contractions, emotional beat, anti-corporate language).
+- These prompts expect the bullet lists supplied from `voices.json`; missing data will simply be skipped.
 
-## Editing the voice trait stack
+## Runtime integration
+- New helper: `server/caption/voiceTraits.ts`
+  - `formatVoiceContext(voice)` returns the bullet list block ready to embed in any prompt.
+  - `getVoiceDefinition(voice)` exposes the raw profile for advanced customization if needed.
+- Pipelines updated to inject the block:
+  - `server/caption/geminiPipeline.ts`
+  - `server/caption/rewritePipeline.ts`
+  - `server/caption/textOnlyPipeline.ts`
+- Result: every model call now receives persona, hook, CTA, and authenticity bullets alongside platform + image facts.
 
-1. Update `prompts/voices.json` (keep it valid JSON). Fields per voice:
-   - `persona` *(string, required)* – one-line POV descriptor.
-   - `traits` *(array, required)* – bullet statements that should surface verbatim in prompts.
-   - Optional: `hooks` (array), `cta` (string), `avoid` (array), `cadence` (string).
-2. Changes hot-load automatically (file read on first request in each worker). Redeploy not required unless the process is long-lived with cached copy—restart workers if needed.
-3. To add a new voice token, make sure UI dropdown + `STYLE_TOKENS` include it, add a trait block in `voices.json`, and update any QA fixtures if they assert voice names.
+## How to iterate
+1. Edit `prompts/voices.json` with new bullets (keep arrays short—3 lines ideal).
+2. Adjust `prompts/variants.txt` or `prompts/rewrite.txt` if platform rules evolve.
+3. Run validation: `npm run lint` and `npm test`.
+4. Ship—no additional wiring required because the helper auto-loads the JSON.
 
-## Prompt workflow tips
-
-- **Platform guardrails live in `prompts/variants*.txt`**. Adjust character counts, hashtag ranges, or CTA rules there. Both image and text-only flows reuse the same instructions.
-- **Rewrite behavior** inherits the authenticity checklist from variants. If you tweak the checklist, keep both files in sync.
-- **System prompt** is shared by Gemini + OpenAI flows. Keep it high level—voice-specific nuance belongs in `voices.json`.
-
-## Testing + deployment
-
-- Run `npm run lint` and `npm test` after editing prompts or traits. The pipelines are covered by schema tests that will catch malformed JSON.
-- For quick manual smoke tests, hit the `/api/captions` endpoint with different `voice` tokens to confirm the `VOICE_CONTEXT` block appears in the model prompt logs.
-
-Questions? Drop them in #ai-captions and link to the commit touching `prompts/voices.json` so QA can snapshot diffs.
+## Gotchas
+- Do **not** remove the authenticity checklist; downstream QA relies on those bullet headings.
+- When adding CTA lines, stay platform-specific to keep ranking heuristics effective.
+- If a new voice lacks Reddit guidance, leave `subredditNotes` empty and the prompt will skip that section.
