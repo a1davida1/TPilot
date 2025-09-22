@@ -4,6 +4,8 @@ import { creatorAccounts, subredditRules, postRateLimits, redditCommunities, use
 import { eq, and, gt, or } from 'drizzle-orm';
 import { decrypt } from '../services/state-store.js';
 import { SafetyManager } from './safety-systems.js';
+import { getEligibleCommunitiesForUser, type CommunityEligibilityCriteria } from '../reddit-communities.js';
+import type { RedditCommunity } from '@shared/schema';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
@@ -77,6 +79,23 @@ export interface PostingPermission {
   };
 }
 
+export interface RedditProfileData {
+  username: string;
+  karma: number;
+  createdUtc: number;
+  verified: boolean;
+  goldStatus: boolean;
+  hasMail: boolean;
+}
+
+export interface RedditCommunityEligibility {
+  karma: number | null;
+  accountAgeDays: number | null;
+  verified: boolean;
+  communities: RedditCommunity[];
+  profileLoaded: boolean;
+}
+
 function normalizeSubredditName(subreddit: string): string {
   return subreddit.replace(/^r\//i, '').trim().toLowerCase();
 }
@@ -140,6 +159,52 @@ function deriveDailyLimit(rules?: NormalizedSubredditRules): number | null {
 interface RedditSubmission {
   id: string;
   permalink: string;
+}
+
+function normalizeSubredditNameForComparison(value: string | null | undefined): string | null {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  return trimmed.replace(/^r\//i, '').toLowerCase();
+}
+
+function extractVerifiedFromMetadata(metadata: unknown): boolean | undefined {
+  if (typeof metadata !== 'object' || metadata === null) {
+    return undefined;
+  }
+
+  const record = metadata as Record<string, unknown>;
+  const value = record.verified;
+
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  return undefined;
+}
+
+function calculateAccountAgeDays(createdUtc: number | null | undefined): number | null {
+  if (typeof createdUtc !== 'number' || !Number.isFinite(createdUtc) || createdUtc <= 0) {
+    return null;
+  }
+
+  const createdMs = createdUtc * 1000;
+  const now = Date.now();
+
+  if (!Number.isFinite(createdMs) || createdMs <= 0 || createdMs > now) {
+    return null;
+  }
+
+  const diffMs = now - createdMs;
+  const age = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  return age >= 0 ? age : 0;
 }
 
 export class RedditManager {
@@ -629,6 +694,20 @@ export class RedditManager {
     const normalizedSubreddit = normalizeSubredditName(subreddit);
     
     try {
+      // First check eligibility requirements
+      const eligibilityCheck = await RedditManager.checkSubredditEligibility(userId, subreddit);
+      if (!eligibilityCheck.canPost) {
+        return {
+          canPost: false,
+          reason: eligibilityCheck.reason || 'Eligibility requirements not met',
+          reasons: [eligibilityCheck.reason || 'Eligibility requirements not met'],
+          warnings: [],
+          nextAllowedPost: undefined,
+          evaluatedAt: now,
+          postsInLast24h: 0,
+          maxPostsPer24h: 3,
+        };
+      }
       // Load community metadata from redditCommunities table
       const [communityData] = await db
         .select()
@@ -852,6 +931,69 @@ export class RedditManager {
   }
 
   /**
+   * Check if user can post to specific subreddit based on eligibility requirements
+   */
+  static async checkSubredditEligibility(userId: number, subreddit: string): Promise<{ canPost: boolean; reason?: string }> {
+    try {
+      const eligibility = await getUserRedditCommunityEligibility(userId);
+
+      if (!eligibility) {
+        return {
+          canPost: false,
+          reason: 'No active Reddit account found for user'
+        };
+      }
+
+      if (!eligibility.profileLoaded) {
+        return {
+          canPost: false,
+          reason: 'Unable to verify Reddit profile information'
+        };
+      }
+
+      if (eligibility.karma === null || eligibility.accountAgeDays === null) {
+        return {
+          canPost: false,
+          reason: 'Missing Reddit profile data required for eligibility checks'
+        };
+      }
+
+      const normalizedTarget = normalizeSubredditNameForComparison(subreddit);
+      if (!normalizedTarget) {
+        return {
+          canPost: false,
+          reason: 'Invalid subreddit name'
+        };
+      }
+
+      const canPost = eligibility.communities.some((community) => {
+        const possibleMatches = [
+          normalizeSubredditNameForComparison(community.name),
+          normalizeSubredditNameForComparison(community.id)
+        ].filter((value): value is string => value !== null);
+
+        return possibleMatches.includes(normalizedTarget);
+      });
+
+      if (canPost) {
+        return { canPost: true };
+      }
+
+      return {
+        canPost: false,
+        reason: 'Subreddit requirements not met for current Reddit account'
+      };
+
+    } catch (error) {
+      console.error('Error checking subreddit eligibility:', error);
+      return {
+        canPost: false,
+        reason: 'Unable to verify posting permissions'
+      };
+    }
+  }
+
+  /**
    * Update rate limiting after successful post
    */
   private async updateRateLimit(options: { 
@@ -883,7 +1025,7 @@ export class RedditManager {
   /**
    * Get user's Reddit profile info
    */
-  async getProfile(): Promise<unknown> {
+  async getProfile(): Promise<RedditProfileData | null> {
     try {
       const user = await (this.reddit as unknown as {
         getMe(): Promise<{
@@ -896,13 +1038,16 @@ export class RedditManager {
           has_mail: boolean;
         }>;
       }).getMe();
+
+      const totalKarma = (user.link_karma ?? 0) + (user.comment_karma ?? 0);
+
       return {
         username: user.name,
-        karma: user.link_karma + user.comment_karma,
-        created: user.created_utc,
-        verified: user.verified,
-        goldStatus: user.is_gold,
-        hasMail: user.has_mail,
+        karma: Number.isFinite(totalKarma) ? totalKarma : 0,
+        createdUtc: typeof user.created_utc === 'number' ? user.created_utc : 0,
+        verified: user.verified ?? false,
+        goldStatus: user.is_gold ?? false,
+        hasMail: user.has_mail ?? false,
       };
     } catch (error) {
       console.error('Failed to get Reddit profile:', error);
@@ -939,6 +1084,63 @@ export class RedditManager {
       throw error;
     }
   }
+}
+
+/**
+ * Get user's Reddit community eligibility based on their profile and account settings
+ */
+export async function getUserRedditCommunityEligibility(
+  userId: number
+): Promise<RedditCommunityEligibility | null> {
+  const redditManager = await RedditManager.forUser(userId);
+
+  if (!redditManager) {
+    return null;
+  }
+
+  const [account] = await db
+    .select({ metadata: creatorAccounts.metadata })
+    .from(creatorAccounts)
+    .where(
+      and(
+        eq(creatorAccounts.userId, userId),
+        eq(creatorAccounts.platform, 'reddit'),
+        eq(creatorAccounts.isActive, true)
+      )
+    )
+    .limit(1);
+
+  const metadataVerified = extractVerifiedFromMetadata(account?.metadata);
+
+  const profile = await redditManager.getProfile();
+
+  if (!profile) {
+    return {
+      karma: null,
+      accountAgeDays: null,
+      verified: metadataVerified ?? false,
+      communities: [],
+      profileLoaded: false,
+    };
+  }
+
+  const karmaValue = Number.isFinite(profile.karma) ? profile.karma : null;
+  const accountAgeDays = calculateAccountAgeDays(profile.createdUtc);
+  const verified = metadataVerified ?? profile.verified;
+
+  const communities = await getEligibleCommunitiesForUser({
+    karma: karmaValue ?? undefined,
+    accountAgeDays: accountAgeDays ?? undefined,
+    verified,
+  });
+
+  return {
+    karma: karmaValue,
+    accountAgeDays,
+    verified,
+    communities,
+    profileLoaded: true,
+  };
 }
 
 /**
