@@ -7,7 +7,16 @@ export type PolicyResult = {
   warnings: string[];
 };
 
-export type RuleSpec = {
+// Manual rule flags for community-specific requirements
+export interface ManualRuleFlags {
+  minKarma?: number;
+  minAccountAgeDays?: number;
+  verificationRequired?: boolean;
+  notes?: string[];
+}
+
+// Base rule specification without metadata
+export interface RuleSpecBase {
   bannedWords?: string[];
   titleRegexes?: string[];   // strings of regex
   bodyRegexes?: string[];
@@ -16,7 +25,23 @@ export type RuleSpec = {
   requiredTags?: string[];   // e.g. "[F]" etc
   maxTitleLength?: number;
   maxBodyLength?: number;
-};
+  manualFlags?: ManualRuleFlags;
+  wikiNotes?: string[];
+}
+
+// Rule override type for manual adjustments
+export type RuleOverride = Partial<RuleSpecBase>;
+
+// Full rule specification with source metadata and overrides
+export interface RuleSpec extends RuleSpecBase {
+  source?: {
+    fetchedAt?: string;
+    aboutRulesUrl?: string;
+    wikiRulesUrl?: string;
+    automatedBase?: RuleSpecBase;
+  };
+  overrides?: RuleOverride;
+}
 
 // Test format compatibility  
 export type TestRuleSpec = {
