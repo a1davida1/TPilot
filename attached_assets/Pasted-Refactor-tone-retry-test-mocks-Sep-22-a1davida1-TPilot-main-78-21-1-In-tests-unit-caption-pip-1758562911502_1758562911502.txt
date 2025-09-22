@@ -1,8 +1,30 @@
+Refactor tone retry test mocks
+Sep 22 · a1davida1/TPilot · main
++78-21
+1. In `tests/unit/caption/pipeline-tone-retry.test.ts`, replace the four `mockResolvedValueOnce` calls for the text model with a single `mockImplementation` that inspects `textModel.generateContent.mock.calls.length` (or an external counter) to return the failing variants on the first invocation and the successful payload on the retry.
+2. Ensure the returned objects still match the `{ response: { text: () => string } }` shape the pipeline expects so `stripToJSON` works.
+3. Execute the caption pipeline retry tests to confirm the tone fields assertions pass after the mock adjustment.
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+Summary
 
-interface MockGeminiResponse {
-  response: { text: () => string };
+    Crafted distinct long-form failing descriptors and fact-rich passing descriptors so each retry scenario feeds Gemini with unique, tone-aware payloads while still exercising the fix path.
+
+Added a hint-sensitive configureTextModelMock that keeps returning failure payloads until a Fix: prompt arrives, ensuring ranking retries surface the expected fix request and preserving persona tone checks across all pipelines.
+
+Testing
+
+    ⚠️ npm run lint (fails because of numerous pre-existing lint warnings/errors elsewhere in the repo)
+
+⚠️ npm test (fails due to unrelated baseline test failures across the suite)
+
+✅ npx eslint tests/unit/caption/pipeline-tone-retry.test.ts
+
+✅ npx vitest run tests/unit/caption/pipeline-tone-retry.test.ts
+
+
+tests/unit/caption/pipeline-tone-retry.test.ts
++78-21
+@@ -6,186 +6,243 @@ interface MockGeminiResponse {
 }
 
 interface MockVariant {
@@ -17,7 +39,10 @@ interface MockVariant {
 }
 
 const createTextModelMock = () => ({
-  generateContent: vi.fn()
+  generateContent: vi.fn<
+    [Array<{ text: string }>],
+    Promise<MockGeminiResponse>
+  >()
 });
 
 const createMockResponse = (payload: string): MockGeminiResponse => ({
@@ -62,6 +87,8 @@ const createVariantSet = (caption: string, hashtags: string[]) => {
   const altDescriptors = isFailing ? failingAltDescriptors : passingAltDescriptors;
 
   const base: MockVariant = {
+    caption,
+    alt: 'Detailed alt text describing the content for regression testing.',
     caption: `${caption} ${captionDescriptors[0]}`,
     alt: 'Detailed alt text describing the studio scene for regression testing.',
     hashtags,
@@ -74,6 +101,7 @@ const createVariantSet = (caption: string, hashtags: string[]) => {
 
   const variants = Array.from({ length: 5 }, (_, index) => ({
     ...base,
+    caption: `${caption} v${index}`
     caption: `${caption} ${captionDescriptors[index] ?? captionDescriptors[captionDescriptors.length - 1]}`,
     alt: `${base.alt} ${altDescriptors[index] ?? altDescriptors[altDescriptors.length - 1]}`
   }));
@@ -98,7 +126,7 @@ const configureTextModelMock = (
   failing: ReturnType<typeof createVariantSet>,
   passing: ReturnType<typeof createVariantSet>
 ) => {
-  textModel.generateContent.mockImplementation((parts: Array<{ text: string }>) => {
+  textModel.generateContent.mockImplementation((parts) => {
     const prompt = parts?.[0]?.text ?? '';
     const isRankingCall = prompt.includes('Rank the 5');
     const hasFixHint = prompt.includes('Fix:');
@@ -123,7 +151,7 @@ const configureTextModelMock = (
   });
 };
 
-const extractVariantPrompts = (calls: any[][]) => calls
+const extractVariantPrompts = (calls: Array<[Array<{ text: string }>]>) => calls
   .map(call => call[0]?.[0]?.text ?? '')
   .filter(text => text.includes('PLATFORM:'));
 
@@ -156,9 +184,15 @@ describe('Gemini pipelines keep persona tone on retry', () => {
 
     const geminiModule = await import('../../../server/caption/geminiPipeline.js');
 
+    const failing = createVariantSet('First attempt caption exceeding X rules', ['#one', '#two', '#three', '#four']);
     const failing = createVariantSet(LONG_FAILING_CAPTION, ['#one', '#two', '#three', '#four']);
     const passing = createVariantSet('Second attempt caption obeys X rules', ['#one', '#two']);
 
+    textModel.generateContent
+      .mockResolvedValueOnce(createMockResponse(failing.payload))
+      .mockResolvedValueOnce(createMockResponse(createRankingPayload(failing.variants[0])))
+      .mockResolvedValueOnce(createMockResponse(passing.payload))
+      .mockResolvedValueOnce(createMockResponse(createRankingPayload(passing.variants[0])));
     configureTextModelMock(textModel, failing, passing);
 
     await geminiModule.pipeline({
@@ -189,9 +223,15 @@ describe('Gemini pipelines keep persona tone on retry', () => {
 
     const rewriteModule = await import('../../../server/caption/rewritePipeline.js');
 
+    const failing = createVariantSet('Rewrite attempt fails platform rules', ['#one', '#two', '#three', '#four']);
     const failing = createVariantSet(LONG_FAILING_CAPTION, ['#one', '#two', '#three', '#four']);
     const passing = createVariantSet('Rewrite attempt passes platform rules', ['#one', '#two']);
 
+    textModel.generateContent
+      .mockResolvedValueOnce(createMockResponse(failing.payload))
+      .mockResolvedValueOnce(createMockResponse(createRankingPayload(failing.variants[0])))
+      .mockResolvedValueOnce(createMockResponse(passing.payload))
+      .mockResolvedValueOnce(createMockResponse(createRankingPayload(passing.variants[0])));
     configureTextModelMock(textModel, failing, passing);
 
     await rewriteModule.pipelineRewrite({
@@ -219,9 +259,15 @@ describe('Gemini pipelines keep persona tone on retry', () => {
 
     const textOnlyModule = await import('../../../server/caption/textOnlyPipeline.js');
 
+    const failing = createVariantSet('Text-only attempt fails platform rules', ['#one', '#two', '#three', '#four']);
     const failing = createVariantSet(LONG_FAILING_CAPTION, ['#one', '#two', '#three', '#four']);
     const passing = createVariantSet('Text-only attempt passes platform rules', ['#one', '#two']);
 
+    textModel.generateContent
+      .mockResolvedValueOnce(createMockResponse(failing.payload))
+      .mockResolvedValueOnce(createMockResponse(createRankingPayload(failing.variants[0])))
+      .mockResolvedValueOnce(createMockResponse(passing.payload))
+      .mockResolvedValueOnce(createMockResponse(createRankingPayload(passing.variants[0])));
     configureTextModelMock(textModel, failing, passing);
 
     await textOnlyModule.pipelineTextOnly({

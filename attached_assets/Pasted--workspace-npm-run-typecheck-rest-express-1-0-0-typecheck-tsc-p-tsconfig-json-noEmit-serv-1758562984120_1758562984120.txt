@@ -1,0 +1,47 @@
+~/workspace$ npm run typecheck
+
+> rest-express@1.0.0 typecheck
+> tsc -p tsconfig.json --noEmit
+
+server/caption/__tests__/inferFallbackFromFacts.test.ts:306:25 - error TS2339: Property 'toStartWith' does not exist on type 'Assertion<string>'.
+
+306         expect(tag).not.toStartWith("#");
+                            ~~~~~~~~~~~
+
+server/caption/__tests__/inferFallbackFromFacts.test.ts:322:25 - error TS2339: Property 'toStartWith' does not exist on type 'Assertion<string>'.
+
+322         expect(tag).not.toStartWith("#");
+                            ~~~~~~~~~~~
+
+server/caption/__tests__/ranking-integration.test.ts:58:23 - error TS2749: 'CaptionItem' refers to a value, but is being used as a type here. Did you mean 'typeof CaptionItem'?
+
+58       const variants: CaptionItem[] = [
+                         ~~~~~~~~~~~
+
+server/caption/__tests__/ranking-integration.test.ts:95:23 - error TS2749: 'CaptionItem' refers to a value, but is being used as a type here. Did you mean 'typeof CaptionItem'?
+
+95       const variants: CaptionItem[] = [
+                         ~~~~~~~~~~~
+
+server/caption/__tests__/ranking-integration.test.ts:127:23 - error TS2749: 'CaptionItem' refers to a value, but is being used as a type here. Did you mean 'typeof CaptionItem'?
+
+127       const variants: CaptionItem[] = [
+                          ~~~~~~~~~~~
+
+server/caption/__tests__/ranking-integration.test.ts:160:23 - error TS2749: 'CaptionItem' refers to a value, but is being used as a type here. Did you mean 'typeof CaptionItem'?
+
+160       const variants: CaptionItem[] = [
+                          ~~~~~~~~~~~
+
+server/caption/__tests__/ranking-integration.test.ts:187:23 - error TS2749: 'CaptionItem' refers to a value, but is being used as a type here. Did you mean 'typeof CaptionItem'?
+
+187       const variants: CaptionItem[] = [
+                          ~~~~~~~~~~~
+
+
+Found 7 errors in 2 files.
+
+Errors  Files
+     2  server/caption/__tests__/inferFallbackFromFacts.test.ts:306
+     5  server/caption/__tests__/ranking-integration.test.ts:58
+~/workspace$ 
