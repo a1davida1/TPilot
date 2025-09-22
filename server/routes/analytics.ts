@@ -73,5 +73,6 @@ async function handleLandingMetrics(_req: Request, res: Response): Promise<void>
 
 analyticsRouter.get("/landing/summary", handleLandingMetrics);
 analyticsRouter.get("/metrics", handleLandingMetrics);
+analyticsRouter.get("/summary", handleLandingMetrics);
 
 export { analyticsRouter, loadLandingMetrics };
