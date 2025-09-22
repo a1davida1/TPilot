@@ -254,6 +254,25 @@ export function registerExpenseRoutes(app: Express) {
     }
   });
 
+  // Get tax deduction guidance with optional category filtering
+  app.get('/api/expenses/tax-guidance', async (req, res) => {
+    try {
+      const category = req.query.category as string;
+      
+      let guidance;
+      if (category && category !== 'all') {
+        guidance = await storage.getTaxDeductionInfoByCategory(category);
+      } else {
+        guidance = await storage.getTaxDeductionInfo();
+      }
+      
+      res.json(guidance);
+    } catch (error) {
+      console.error('Error fetching tax deduction guidance:', error);
+      res.status(500).json({ message: 'Failed to fetch tax deduction guidance' });
+    }
+  });
+
   // Upload receipt for an expense with ImageShield protection
   app.post('/api/expenses/:id/receipt', authenticateToken, upload.single('receipt'), async (req: AuthRequest, res) => {
     try {

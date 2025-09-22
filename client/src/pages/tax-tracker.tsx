@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Calendar,
   Plus,
@@ -10,7 +10,8 @@ import {
   Receipt,
   Sparkles,
   Upload,
-  X
+  X,
+  AlertCircle
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -64,6 +65,16 @@ interface Expense {
   date?: string;
 }
 
+interface TaxDeductionGuidance {
+  id: number;
+  title: string;
+  category: string;
+  description: string;
+  legalBasis: string;
+  requirements: string[];
+  riskLevel: string;
+}
+
 const usdFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
@@ -73,6 +84,24 @@ const usdFormatter = new Intl.NumberFormat('en-US', {
 
 const formatCurrency = (amountInCents: number | null | undefined) =>
   usdFormatter.format((amountInCents ?? 0) / 100);
+
+const riskLevelStyles: Record<string, string> = {
+  low: 'bg-green-100 text-green-700',
+  medium: 'bg-yellow-100 text-yellow-700',
+  high: 'bg-red-100 text-red-700'
+};
+
+const getRiskBadgeClassName = (riskLevel: string) => {
+  const normalizedRisk = riskLevel.toLowerCase();
+  return riskLevelStyles[normalizedRisk] ?? 'bg-gray-100 text-gray-700';
+};
+
+const formatRiskLabel = (riskLevel: string) => {
+  if (!riskLevel) {
+    return 'Unknown';
+  }
+  return riskLevel.charAt(0).toUpperCase() + riskLevel.slice(1);
+};
 
 const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
   const [selectedCategory, setSelectedCategory] = useState<ExpenseCategory | null>(null);
@@ -90,6 +119,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [receiptExpenseId, setReceiptExpenseId] = useState('');
   const [expenseError, setExpenseError] = useState<string | null>(null);
+  const [guidanceCategoryFilter, setGuidanceCategoryFilter] = useState<string>('all');
   
   const queryClient = useQueryClient();
 
@@ -106,6 +136,16 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
       setSelectedCategory(expenseCategories[0]);
     }
   }, [expenseCategories, selectedCategory]);
+
+  const guidanceCategoryOptions = useMemo(() => {
+    const uniqueCategories = new Set<string>();
+    expenseCategories.forEach((category) => {
+      if (category.name) {
+        uniqueCategories.add(category.name);
+      }
+    });
+    return Array.from(uniqueCategories);
+  }, [expenseCategories]);
 
 
   // Fetch expense totals
@@ -141,6 +181,29 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
       const res = await apiRequest('GET', `/api/expenses/range?${params.toString()}`);
       return res.json();
     }
+  });
+
+  const {
+    data: taxGuidance = [],
+    isLoading: guidanceLoading,
+    isError: guidanceHasError,
+    error: guidanceError,
+    refetch: refetchGuidance,
+    isFetching: guidanceFetching
+  } = useQuery<TaxDeductionGuidance[], ApiError>({
+    queryKey: ['/api/expenses/tax-guidance', guidanceCategoryFilter],
+    queryFn: async ({ queryKey }) => {
+      const [endpoint, category] = queryKey as [string, string];
+      const params = new URLSearchParams();
+      if (category && category !== 'all') {
+        params.set('category', category);
+      }
+      const url = params.size > 0 ? `${endpoint}?${params.toString()}` : endpoint;
+      const res = await apiRequest('GET', url);
+      return res.json();
+    },
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 15
   });
 
   // Create expense mutation
@@ -571,48 +634,107 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
           </TabsContent>
 
           <TabsContent value="insights" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
-                <CardHeader>
-                  <CardTitle className="text-green-700">✅ What's Deductible</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {[
-                    'Beauty treatments & skincare',
-                    'Wardrobe & fashion pieces',
-                    'Technology & equipment',
-                    'Home office expenses',
-                    'Travel for content creation',
-                    'Marketing & advertising'
-                  ].map((item, idx) => (
-                    <div key={idx} className="flex items-center space-x-2">
-                      <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                      <span className="text-sm text-gray-700">{item}</span>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
+            <div className="bg-white/80 backdrop-blur-sm border border-purple-100 shadow-xl rounded-2xl p-6 space-y-4">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-purple-600" />
+                    <h3 className="text-xl font-semibold text-gray-900">Tax Deduction Guidance</h3>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    These cards pull directly from our compliance knowledge base, giving you the latest deduction rules for content creators.
+                  </p>
+                </div>
+                <div className="w-full md:w-auto">
+                  <Select value={guidanceCategoryFilter} onValueChange={setGuidanceCategoryFilter}>
+                    <SelectTrigger className="w-full md:w-64 border-purple-200">
+                      <SelectValue placeholder="Filter by category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All categories</SelectItem>
+                      {guidanceCategoryOptions.map((categoryName) => (
+                        <SelectItem key={categoryName} value={categoryName}>
+                          {categoryName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
 
-              <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
-                <CardHeader>
-                  <CardTitle className="text-purple-700">💡 Pro Tips</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {[
-                    'Keep all receipts & documentation',
-                    'Track business purpose for each expense',
-                    'Separate business & personal expenses',
-                    'Consider quarterly tax payments',
-                    'Consult with a tax professional',
-                    'Use this app to stay organized!'
-                  ].map((tip, idx) => (
-                    <div key={idx} className="flex items-center space-x-2">
-                      <div className="w-2 h-2 rounded-full bg-purple-500"></div>
-                      <span className="text-sm text-gray-700">{tip}</span>
-                    </div>
+              {guidanceLoading || guidanceFetching ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                  <span className="ml-3 text-gray-600">Loading guidance...</span>
+                </div>
+              ) : guidanceHasError ? (
+                <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                  <AlertCircle className="h-12 w-12 text-red-500" />
+                  <div className="text-center">
+                    <h4 className="text-lg font-medium text-gray-900">Unable to load guidance</h4>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {guidanceError?.userMessage || guidanceError?.message || 'Something went wrong'}
+                    </p>
+                  </div>
+                  <Button onClick={() => refetchGuidance()} variant="outline" size="sm">
+                    Try again
+                  </Button>
+                </div>
+              ) : taxGuidance.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 space-y-2">
+                  <Info className="h-12 w-12 text-gray-400" />
+                  <h4 className="text-lg font-medium text-gray-900">No guidance found</h4>
+                  <p className="text-sm text-gray-600">
+                    {guidanceCategoryFilter === 'all' 
+                      ? 'No tax guidance is available at the moment.' 
+                      : `No guidance found for "${guidanceCategoryFilter}" category.`}
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {taxGuidance.map((guidance) => (
+                    <Card key={guidance.id} className="border border-gray-200 shadow-lg hover:shadow-xl transition-shadow">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <CardTitle className="text-lg font-semibold text-gray-900 leading-tight">
+                            {guidance.title}
+                          </CardTitle>
+                          <Badge 
+                            className={`ml-2 ${getRiskBadgeClassName(guidance.riskLevel)} border-0 text-xs font-medium px-2 py-1`}
+                          >
+                            {formatRiskLabel(guidance.riskLevel)} Risk
+                          </Badge>
+                        </div>
+                        <Badge variant="outline" className="text-xs w-fit">
+                          {guidance.category}
+                        </Badge>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <p className="text-sm text-gray-700">{guidance.description}</p>
+                        
+                        <div>
+                          <h5 className="text-sm font-medium text-gray-900 mb-2">Legal Basis</h5>
+                          <p className="text-xs text-gray-600 bg-gray-50 p-2 rounded border">
+                            {guidance.legalBasis}
+                          </p>
+                        </div>
+                        
+                        <div>
+                          <h5 className="text-sm font-medium text-gray-900 mb-2">Requirements</h5>
+                          <ul className="space-y-1">
+                            {guidance.requirements.map((req, idx) => (
+                              <li key={idx} className="text-xs text-gray-600 flex items-start">
+                                <span className="w-1 h-1 rounded-full bg-purple-400 mt-2 mr-2 flex-shrink-0"></span>
+                                {req}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </CardContent>
+                    </Card>
                   ))}
-                </CardContent>
-              </Card>
+                </div>
+              )}
             </div>
           </TabsContent>
         </Tabs>
