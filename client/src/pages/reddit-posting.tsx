@@ -12,7 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, type ApiError } from '@/lib/queryClient';
 import { AuthModal } from '@/components/auth-modal';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
@@ -48,9 +48,15 @@ import {
   Images,
   LogIn,
   UserCheck,
-  ChevronsUpDown
+  ChevronsUpDown,
+  RefreshCcw,
+  Loader2
 } from 'lucide-react';
 import { MediaLibrarySelector } from '@/components/MediaLibrarySelector';
+import type { 
+  ShadowbanStatusType, 
+  ShadowbanCheckApiResponse 
+} from '@shared/schema';
 
 interface RedditAccount {
   id: number;
@@ -281,6 +287,57 @@ export default function RedditPostingPage() {
     retry: false,
   });
 
+  const hasActiveAccount = accounts.length > 0;
+
+  // Fetch shadowban status for authenticated users with Reddit accounts
+  const {
+    data: shadowbanStatus,
+    isLoading: shadowbanLoading,
+    isFetching: shadowbanFetching,
+    error: shadowbanError,
+    refetch: refetchShadowban,
+  } = useQuery<ShadowbanCheckApiResponse>({
+    queryKey: ['/api/reddit/shadowban-status'],
+    enabled: isAuthenticated && hasActiveAccount,
+    retry: false,
+  });
+
+  const isShadowbanChecking = shadowbanLoading || shadowbanFetching;
+
+  const shadowbanErrorMessage = shadowbanError instanceof Error
+    ? ((shadowbanError as ApiError).userMessage ?? shadowbanError.message)
+    : undefined;
+
+  const shadowbanStatusLevel: ShadowbanStatusType | 'error' = shadowbanError
+    ? 'error'
+    : shadowbanStatus?.status ?? 'unknown';
+
+  const shadowbanCardStyles = shadowbanStatusLevel === 'suspected'
+    ? 'border-red-200 bg-red-50'
+    : shadowbanStatusLevel === 'clear'
+      ? 'border-green-200 bg-green-50'
+      : shadowbanStatusLevel === 'error'
+        ? 'border-red-200 bg-red-50'
+        : 'border-blue-200 bg-blue-50';
+
+  const shadowbanIcon = shadowbanStatusLevel === 'clear'
+    ? <CheckCircle className="h-4 w-4 text-green-600" />
+    : shadowbanStatusLevel === 'suspected'
+      ? <AlertTriangle className="h-4 w-4 text-red-600" />
+      : shadowbanStatusLevel === 'error'
+        ? <XCircle className="h-4 w-4 text-red-600" />
+        : <Eye className="h-4 w-4 text-blue-600" />;
+
+  const shadowbanButtonStyles = shadowbanStatusLevel === 'suspected' || shadowbanStatusLevel === 'error'
+    ? 'border-red-200 text-red-700 hover:bg-red-50'
+    : shadowbanStatusLevel === 'clear'
+      ? 'border-green-200 text-green-700 hover:bg-green-50'
+      : 'border-blue-200 text-blue-700 hover:bg-blue-50';
+
+  const lastShadowbanCheck = shadowbanStatus?.evidence.checkedAt
+    ? new Date(shadowbanStatus.evidence.checkedAt).toLocaleString()
+    : undefined;
+
   const selectedAssets = mediaAssets.filter((asset) => selectedMediaIds.includes(asset.id));
 
   // Get the active account (assuming first active account for eligibility checking)
@@ -324,6 +381,7 @@ export default function RedditPostingPage() {
       return response.json();
     },
     onSuccess: (data: ConnectionTestResponse) => {
+      void queryClient.invalidateQueries({ queryKey: ['/api/reddit/shadowban-status'] });
       toast({
         title: "✅ Connection Test",
         description: data.connected ? 
@@ -401,6 +459,7 @@ export default function RedditPostingPage() {
         setSelectedMediaIds([]);
         setMediaCaptions({});
         queryClient.invalidateQueries({ queryKey: ['/api/reddit/posts'] });
+        void queryClient.invalidateQueries({ queryKey: ['/api/reddit/shadowban-status'] });
       } else {
         toast({
           title: "❌ Posting Failed",
@@ -636,6 +695,95 @@ export default function RedditPostingPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Shadowban Status */}
+            {hasActiveAccount && (
+              <Card className={`bg-white/90 backdrop-blur-sm shadow-lg ${shadowbanCardStyles}`}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    {shadowbanIcon}
+                    Shadowban Detection
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {isShadowbanChecking ? (
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                        <span className="text-sm text-gray-600">Checking shadowban status...</span>
+                      </div>
+                    ) : shadowbanError ? (
+                      <div className="space-y-2">
+                        <p className="text-sm text-red-700 font-medium">Unable to check shadowban status</p>
+                        <p className="text-xs text-red-600">{shadowbanErrorMessage}</p>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => refetchShadowban()}
+                          className={shadowbanButtonStyles}
+                        >
+                          <RefreshCcw className="h-4 w-4 mr-1" />
+                          Retry Check
+                        </Button>
+                      </div>
+                    ) : shadowbanStatus ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium">
+                            Status: {shadowbanStatus.status === 'clear' 
+                              ? 'Account appears normal' 
+                              : shadowbanStatus.status === 'suspected'
+                                ? 'Possible shadowban detected'
+                                : 'Status unknown'}
+                          </p>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => refetchShadowban()}
+                            className={shadowbanButtonStyles}
+                          >
+                            <RefreshCcw className="h-4 w-4 mr-1" />
+                            Recheck
+                          </Button>
+                        </div>
+                        
+                        {shadowbanStatus.reason && (
+                          <p className="text-xs text-gray-600">{shadowbanStatus.reason}</p>
+                        )}
+                        
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="bg-gray-50 p-2 rounded">
+                            <p className="font-medium">Private submissions</p>
+                            <p className="text-gray-600">{shadowbanStatus.evidence.privateCount}</p>
+                          </div>
+                          <div className="bg-gray-50 p-2 rounded">
+                            <p className="font-medium">Public submissions</p>
+                            <p className="text-gray-600">{shadowbanStatus.evidence.publicCount}</p>
+                          </div>
+                        </div>
+                        
+                        {lastShadowbanCheck && (
+                          <p className="text-xs text-gray-500">Last checked: {lastShadowbanCheck}</p>
+                        )}
+                        
+                        {shadowbanStatus.status === 'suspected' && (
+                          <Alert className="border-red-200 bg-red-50">
+                            <AlertTriangle className="h-4 w-4" />
+                            <AlertDescription className="text-red-700 text-sm">
+                              Some of your posts may not be visible to other users. Consider contacting Reddit support or waiting before posting again.
+                            </AlertDescription>
+                          </Alert>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center text-sm text-gray-500">
+                        Shadowban status checking is available for connected Reddit accounts
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Post Creation */}
             <Card className="bg-white/90 backdrop-blur-sm border-pink-200 shadow-lg">
