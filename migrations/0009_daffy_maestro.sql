@@ -1,0 +1,1 @@
+CREATE INDEX "ai_generations_input_hash_idx" ON "ai_generations" USING btree ("input_hash");

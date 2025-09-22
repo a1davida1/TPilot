@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, text, integer, timestamp, jsonb, boolean, unique } from "drizzle-orm/pg-core";
+import { pgTable, serial, varchar, text, integer, timestamp, jsonb, boolean, unique, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
@@ -341,7 +341,9 @@ export const aiGenerations = pgTable("ai_generations", {
   inputJson: jsonb("input_json").notNull(),
   outputJson: jsonb("output_json").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  inputHashIdx: index("ai_generations_input_hash_idx").on(table.inputHash),
+}));
 
 // Phase 5: Queue abstraction - PgQueue implementation
 export const queueJobs = pgTable("queue_jobs", {

@@ -139,6 +139,7 @@ export default function RedditPostingPage() {
   const [selectedMediaIds, setSelectedMediaIds] = useState<number[]>([]);
   const [mediaCaptions, setMediaCaptions] = useState<Record<number, string>>({});
   const [scheduledAt, setScheduledAt] = useState('');
+  const isGalleryFeatureEnabled = false;
   
   // UI state
   const [selectedAccount, setSelectedAccount] = useState<string>('');
