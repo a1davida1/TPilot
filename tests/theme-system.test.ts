@@ -25,8 +25,8 @@ describe('Theme System', () => {
           '--foreground': '320 30 10',
           '--card': '330 50 97',
           '--card-foreground': '320 30 15',
-          '--primary': '320 85 60',
-          '--primary-foreground': '330 40 98',
+          '--primary': '271 82 58',
+          '--primary-foreground': '0 0 100',
           '--muted': '325 20 88',
           '--muted-foreground': '325 25 25',
         };
@@ -107,8 +107,7 @@ describe('Theme System', () => {
       // All critical combinations should pass WCAG AA
       expect(results['background-foreground']).toBe(true);
       expect(results['card-foreground']).toBe(true);
-      // Light primary color fails WCAG; update design or lower expectation
-      expect(results['primary-foreground']).toBe(false);
+      expect(results['primary-foreground']).toBe(true);
       expect(results['muted-foreground']).toBe(true);
     });
 
@@ -142,7 +141,7 @@ describe('Theme System', () => {
       // Light mode combinations
       { bg: [253, 242, 248], fg: [39, 16, 32], name: 'light-background-foreground' },
       { bg: [251, 229, 236], fg: [49, 16, 32], name: 'light-card-foreground' },
-      { bg: [236, 72, 153], fg: [253, 242, 248], name: 'light-primary-foreground' },
+      { bg: [151, 60, 236], fg: [255, 255, 255], name: 'light-primary-foreground' },
       { bg: [230, 185, 212], fg: [64, 39, 64], name: 'light-muted-foreground' },
       
       // Dark mode combinations (approximate RGB values)
@@ -154,12 +153,11 @@ describe('Theme System', () => {
 
     testColorCombinations.forEach(({ bg, fg, name }) => {
       it(`should meet WCAG AA for ${name}`, () => {
-        const contrastRatio = getContrastRatio(fg as [number, number, number], bg as [number, number, number]);
-        if (name === 'light-primary-foreground') {
-          expect(contrastRatio).toBeLessThan(4.5);
-        } else {
-          expect(contrastRatio).toBeGreaterThanOrEqual(4.5);
-        }
+        const contrastRatio = getContrastRatio(
+          fg as [number, number, number],
+          bg as [number, number, number]
+        );
+        expect(contrastRatio).toBeGreaterThanOrEqual(4.5);
       });
     });
   });
