@@ -96,7 +96,7 @@ describe('LandingPage', () => {
     expect(container.textContent ?? '').not.toContain('Loading metrics');
 
     expect(fetchMock).toHaveBeenCalled();
-    expect(fetchMock.mock.calls[0]?.[0]).toBe('/api/landing/summary');
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('/api/analytics/summary');
 
     queryClient.clear();
   });

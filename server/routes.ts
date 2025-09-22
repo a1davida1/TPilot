@@ -443,7 +443,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
   app.use('/api/media', mediaRoutes);
 
   // Analytics routes
-  app.use('/api', analyticsRouter);
+  app.use('/api/analytics', analyticsRouter);
   
   // Social auth routes
   app.get('/api/auth/google', socialAuthRoutes.googleAuth);
