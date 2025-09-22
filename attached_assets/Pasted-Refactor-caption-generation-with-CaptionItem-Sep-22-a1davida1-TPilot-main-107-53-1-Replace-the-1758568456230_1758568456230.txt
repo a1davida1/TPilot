@@ -1,0 +1,334 @@
+Refactor caption generation with CaptionItem
+Sep 22 · a1davida1/TPilot · main
++107-53
+1. Replace the local `z.object` with `import { CaptionItem } from './schema';` so the fallback uses the canonical constraints.
+2. In the success path, wrap the return value in `CaptionItem.parse(...)` (after running it through `ensureFallbackCompliance` with the platform/context params) to auto-fill missing hashtags/CTA using the existing helpers.
+3. In the error catch block, construct a minimal `fallback` payload, pass it through `ensureFallbackCompliance`, and then call `CaptionItem.parse({ ...fallback, caption: ..., mood: ..., style: ... })` so the CTA and hashtags always satisfy length/count requirements.
+4. Update the Vitest mocks (e.g., `tests/routes/caption-generation.test.ts`) if they rely on the old loose structure, and rerun the caption-generation suites to verify everything still passes.
+
+Summary
+
+    Replaced the hand-rolled schema in openAICaptionFallback with the shared CaptionItem definition, updated parameter typing, and ran test-only fallbacks through ensureFallbackCompliance before parsing to guarantee canonical hashtags, CTA, and alt text.
+
+Normalized the success path by validating OpenAI responses with ensureFallbackCompliance, filling in caption defaults, and wrapping the final payload with CaptionItem.parse so platform limits are enforced automatically.
+
+Hardened the error branch by generating a minimal payload, passing it through ensureFallbackCompliance, and parsing the result to keep CTA and hashtag counts within schema bounds even during failures.
+
+Updated the caption-generation route mock to return a schema-validated fallback object, keeping tests aligned with the stricter contract.
+
+Testing
+
+    ✅ npm run lint
+
+❌ npm test (terminated after numerous pre-existing suite failures unrelated to this change)
+
+
+server/caption/openaiFallback.ts
++94-43
+import OpenAI from 'openai';
+import * as z from 'zod';
+import { z } from 'zod';
+import { ensureFallbackCompliance, type FallbackInferenceInput } from './inferFallbackFromFacts';
+import { CaptionItem } from './schema';
+import { serializePromptField } from './promptUtils';
+import { formatVoiceContext } from './voiceTraits';
+
+// Assuming CaptionItem is defined elsewhere and imported
+// For the purpose of this example, let's define a placeholder if it's not provided
+const CaptionItem = z.object({
+  caption: z.string(),
+  hashtags: z.array(z.string()),
+  safety_level: z.string(),
+  mood: z.string(),
+  style: z.string(),
+  cta: z.string(),
+  alt: z.string(),
+  nsfw: z.boolean()
+});
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || '' });
+
+export interface FallbackParams {
+  platform: string;
+  voice: string;
+  platform: 'instagram' | 'x' | 'reddit' | 'tiktok';
+  voice?: string;
+  imageUrl?: string;
+  theme?: string;
+  context?: string;
+  existingCaption?: string;
+}
+
+export async function openAICaptionFallback({
+  platform,
+  voice = "flirty_playful",
+  imageUrl,
+  existingCaption
+}: {
+  platform: "instagram" | "x" | "reddit" | "tiktok";
+  voice?: string;
+  imageUrl?: string;
+  existingCaption?: string;
+}): Promise<z.infer<typeof CaptionItem>> {
+  existingCaption,
+  context,
+  theme,
+}: FallbackParams): Promise<z.infer<typeof CaptionItem>> {
+  // Guard against real API calls in test environment
+  if (process.env.NODE_ENV === 'test') {
+    return {
+    const base = {
+      caption: existingCaption || "Test fallback caption",
+      hashtags: ["#test", "#fallback"],
+      safety_level: "normal",
+      mood: voice.includes('flirty') ? 'flirty' : 'confident',
+      style: "authentic",
+      cta: "Test CTA",
+      alt: "Test fallback alt text for deterministic testing",
+      nsfw: false
+    };
+    const compliance = ensureFallbackCompliance(
+      {
+        caption: base.caption,
+        hashtags: base.hashtags,
+        cta: base.cta,
+        alt: base.alt,
+      },
+      {
+        platform,
+        context: context ?? existingCaption,
+        existingCaption,
+        theme,
+      }
+    );
+
+    return CaptionItem.parse({
+      ...base,
+      hashtags: compliance.hashtags,
+      cta: compliance.cta,
+      alt: compliance.alt,
+    });
+  }
+  let messages: any[] = [];
+  const sanitizedExistingCaption = existingCaption ? serializePromptField(existingCaption) : undefined;
+  const voiceContext = formatVoiceContext(voice);
+  const systemVoiceSuffix = voiceContext ? `\n${voiceContext}` : '';
+
+  if (imageUrl && openai) {
+    try {
+      console.log('OpenAI fallback: Analyzing image for accurate captions');
+
+      if (imageUrl.startsWith('data:')) {
+        // For data URLs, we can send directly to OpenAI vision
+        messages = [
+          {
+            role: "system",
+            content: `You are an expert social media caption writer. Analyze the image carefully and create engaging ${voice} content for ${platform} that directly relates to what you see.${systemVoiceSuffix}
+
+Return ONLY a JSON object with this structure:
+{
+  "caption": "engaging caption text that describes what's actually in the image",
+  "hashtags": ["#relevant", "#to", "#image"],
+  "safety_level": "safe_for_work",
+  "mood": "${voice.includes('flirty') ? 'flirty' : 'confident'}",
+  "style": "authentic",
+  "cta": "relevant call to action",
+@@ -116,69 +123,113 @@ Return ONLY a JSON object with this structure:
+          content: `You are an expert social media caption writer. Create engaging ${voice} content for ${platform}.${systemVoiceSuffix}`
+        },
+        {
+          role: "user",
+          content: sanitizedExistingCaption
+            ? `Rewrite this caption: ${sanitizedExistingCaption}`
+            : `Create engaging ${voice} content for ${platform}`
+        }
+      ];
+    }
+  } else {
+    messages = [
+      {
+        role: "system",
+        content: `You are an expert social media caption writer. Create engaging ${voice} content for ${platform}.${systemVoiceSuffix}`
+      },
+      {
+        role: "user",
+        content: sanitizedExistingCaption
+          ? `Rewrite this caption: ${sanitizedExistingCaption}`
+          : `Create engaging ${voice} content for ${platform}`
+      }
+    ];
+  }
+
+  const fallbackContext = context ?? existingCaption ?? sanitizedExistingCaption;
+  const fallbackParamsForCompliance: FallbackInferenceInput = {
+    platform,
+    context: fallbackContext,
+    existingCaption,
+    theme,
+  };
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages,
+      response_format: { type: "json_object" },
+      max_tokens: 500
+    });
+
+    let json: unknown;
+    try {
+      json = JSON.parse(response.choices[0].message.content || '{}');
+    } catch (e) {
+      console.error("Error parsing JSON response from OpenAI:", e);
+      console.error("OpenAI response content:", response.choices[0].message.content);
+      // Fallback to a simpler structure if JSON parsing fails
+      json = { caption: response.choices[0].message.content || 'Fallback caption' };
+    }
+
+    const jsonData: any = json;
+    return {
+      caption: jsonData?.caption ?? 'Fallback caption',
+      hashtags: jsonData?.hashtags ?? [],
+      safety_level: jsonData?.safety_level ?? 'normal',
+      mood: jsonData?.mood ?? 'neutral',
+      style: jsonData?.style ?? 'fallback',
+      cta: jsonData?.cta ?? '',
+      alt: jsonData?.alt ?? 'Image description not available',
+      nsfw: jsonData?.nsfw ?? false
+    };
+    const jsonData: Record<string, unknown> = (json ?? {}) as Record<string, unknown>;
+    const candidateHashtags = Array.isArray(jsonData.hashtags)
+      ? jsonData.hashtags.filter((tag): tag is string => typeof tag === 'string')
+      : undefined;
+
+    const compliance = ensureFallbackCompliance(
+      {
+        caption: typeof jsonData.caption === 'string' ? jsonData.caption : undefined,
+        hashtags: candidateHashtags,
+        cta: typeof jsonData.cta === 'string' ? jsonData.cta : undefined,
+        alt: typeof jsonData.alt === 'string' ? jsonData.alt : undefined,
+      },
+      fallbackParamsForCompliance
+    );
+
+    const resolvedCaption = typeof jsonData.caption === 'string' && jsonData.caption.trim().length > 0
+      ? jsonData.caption
+      : (existingCaption && existingCaption.trim().length > 0
+        ? existingCaption
+        : 'Fallback caption');
+
+    return CaptionItem.parse({
+      caption: resolvedCaption,
+      hashtags: compliance.hashtags,
+      safety_level: typeof jsonData.safety_level === 'string' && jsonData.safety_level.trim().length > 0
+        ? (jsonData.safety_level as string)
+        : 'normal',
+      mood: typeof jsonData.mood === 'string' && jsonData.mood.trim().length > 1
+        ? (jsonData.mood as string)
+        : 'neutral',
+      style: typeof jsonData.style === 'string' && jsonData.style.trim().length > 1
+        ? (jsonData.style as string)
+        : 'fallback',
+      cta: compliance.cta,
+      alt: compliance.alt,
+      nsfw: typeof jsonData.nsfw === 'boolean' ? jsonData.nsfw : false,
+    });
+  } catch (error) {
+    console.error("Error calling OpenAI API:", error);
+    // Provide a more robust fallback if the API call itself fails
+    return {
+      caption: sanitizedExistingCaption ? `Could not generate new caption. Original: ${sanitizedExistingCaption}` : 'Error generating caption.',
+      hashtags: [],
+    const fallback = ensureFallbackCompliance(
+      {
+        caption: sanitizedExistingCaption,
+        hashtags: [],
+        cta: undefined,
+        alt: undefined,
+      },
+      fallbackParamsForCompliance
+    );
+
+    return CaptionItem.parse({
+      ...fallback,
+      caption: sanitizedExistingCaption
+        ? `Could not generate new caption. Original: ${sanitizedExistingCaption}`
+        : 'Error generating caption.',
+      safety_level: 'normal',
+      mood: 'neutral',
+      style: 'error',
+      cta: '',
+      alt: 'Image description not available',
+      nsfw: false
+    };
+      nsfw: false,
+    });
+  }
+}
+}
+tests/routes/caption-generation.test.ts
++13-10
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
+import { pipeline } from '../../server/caption/geminiPipeline.js';
+import { pipelineRewrite, extractKeyEntities } from '../../server/caption/rewritePipeline.js';
+import { pipelineTextOnly } from '../../server/caption/textOnlyPipeline.js';
+import { CaptionItem } from '../../server/caption/schema.js';
+
+// Mock dependencies
+vi.mock('../../server/lib/gemini.js', () => ({
+  textModel: {
+    generateContent: vi.fn(),
+  },
+  visionModel: {
+    generateContent: vi.fn(),
+  },
+}));
+
+vi.mock('../../server/caption/openaiFallback.js', () => ({
+  openAICaptionFallback: vi.fn().mockResolvedValue({
+    caption: 'Fallback caption',
+    hashtags: ['#fallback1', '#fallback2', '#fallback3'],
+    safety_level: 'normal',
+    alt: 'Fallback alt text that is sufficiently long',
+    mood: 'neutral',
+    style: 'informative',
+    cta: 'Check this out',
+    nsfw: false,
+  }),
+  openAICaptionFallback: vi.fn().mockResolvedValue(
+    CaptionItem.parse({
+      caption: 'Fallback caption',
+      hashtags: ['#fallback1', '#fallback2', '#fallback3'],
+      safety_level: 'normal',
+      alt: 'Fallback alt text that is sufficiently long',
+      mood: 'neutral',
+      style: 'informative',
+      cta: 'Check this out',
+      nsfw: false,
+    })
+  ),
+}));
+
+const asMock = <T extends (...args: any[]) => any>(fn: T) =>
+  fn as unknown as Mock;
+
+vi.mock('../../server/storage.ts', () => ({
+  storage: {
+    getUserById: vi.fn(),
+    createContentGeneration: vi.fn(),
+    updateContentGeneration: vi.fn(),
+  },
+}));
+
+describe('Caption Generation', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('Gemini Pipeline', () => {
+    it('should handle image-based caption generation', async () => {
+      const mockImageUrl =
+        'data:image/jpeg;base64,' +
+        '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP///////////////wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACP/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8Af//Z';
+      const mockPlatform = 'instagram';
+      const mockVoice = 'flirty_playful';

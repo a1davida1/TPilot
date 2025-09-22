@@ -6,7 +6,8 @@ import {
   mediaAssets,
   socialMetrics,
   engagementEvents,
-  users
+  pageViews,
+  userSessions
 } from '@shared/schema';
 import { eq, and, gte, sql, desc } from 'drizzle-orm';
 import { MediaManager } from '../lib/media.js';
@@ -16,6 +17,11 @@ export interface DashboardStats {
   engagementRate: number;
   takedownsFound: number;
   estimatedTaxSavings: number;
+  // Enhanced analytics metrics
+  sessionCount?: number;
+  averageSessionDuration?: number;
+  pageViewsToday?: number;
+  interactionsToday?: number;
 }
 
 export interface DashboardMediaItem {
@@ -38,23 +44,21 @@ export class DashboardService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Posts created today
+    // Core metrics
     const postsToday = await this.getPostsToday(userId, today);
-    
-    // Engagement rate from social metrics or events
     const engagementRate = await this.getEngagementRate(userId);
-    
-    // Content flags/takedowns found
     const takedownsFound = await this.getTakedownsFound(userId);
-    
-    // Estimated tax savings from expenses
     const estimatedTaxSavings = await this.getEstimatedTaxSavings(userId);
+    
+    // Enhanced analytics metrics
+    const analyticsMetrics = await this.getAnalyticsMetrics(userId, today);
 
     return {
       postsToday,
       engagementRate,
       takedownsFound,
       estimatedTaxSavings,
+      ...analyticsMetrics,
     };
   }
 
@@ -107,15 +111,40 @@ export class DashboardService {
         return Math.round((engagement / views) * 100 * 10) / 10; // Round to 1 decimal place
       }
 
-      // Fallback to engagement events if no social metrics
-      const engagementResult = await db
-        .select({ count: sql<number>`count(*)` })
-        .from(engagementEvents)
-        .where(eq(engagementEvents.userId, userId));
+      // Enhanced fallback using real analytics data - get recent engagement events vs page views
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      
+      const [engagementResult, pageViewResult] = await Promise.all([
+        db
+          .select({ count: sql<number>`count(*)` })
+          .from(engagementEvents)
+          .where(
+            and(
+              eq(engagementEvents.userId, userId),
+              gte(engagementEvents.createdAt, sevenDaysAgo)
+            )
+          ),
+        db
+          .select({ count: sql<number>`count(*)` })
+          .from(pageViews)
+          .where(
+            and(
+              eq(pageViews.userId, userId),
+              gte(pageViews.createdAt, sevenDaysAgo)
+            )
+          )
+      ]);
 
       const eventCount = Number(engagementResult[0]?.count ?? 0);
+      const pageViewCount = Number(pageViewResult[0]?.count ?? 0);
       
-      // Return a calculated engagement rate based on content generations vs events
+      // Calculate engagement rate as (interactions / page views) * 100 for last 7 days
+      if (pageViewCount > 0) {
+        return Math.round((eventCount / pageViewCount) * 100 * 10) / 10;
+      }
+
+      // Final fallback to content generations vs events if no page views
       const contentCount = await db
         .select({ count: sql<number>`count(*)` })
         .from(contentGenerations)
@@ -172,6 +201,63 @@ export class DashboardService {
     } catch (error) {
       console.error('Error getting estimated tax savings:', error);
       return 0;
+    }
+  }
+
+  private async getAnalyticsMetrics(userId: number, today: Date) {
+    try {
+      const [sessionMetrics, pageViewMetrics, interactionMetrics] = await Promise.all([
+        // Session data for today
+        db
+          .select({ 
+            sessionCount: sql<number>`count(*)`,
+            avgDuration: sql<number>`avg(${userSessions.duration})`
+          })
+          .from(userSessions)
+          .where(
+            and(
+              eq(userSessions.userId, userId),
+              gte(userSessions.startedAt, today)
+            )
+          ),
+        
+        // Page views for today
+        db
+          .select({ count: sql<number>`count(*)` })
+          .from(pageViews)
+          .where(
+            and(
+              eq(pageViews.userId, userId),
+              gte(pageViews.createdAt, today)
+            )
+          ),
+        
+        // Total interactions/engagement events for today
+        db
+          .select({ count: sql<number>`count(*)` })
+          .from(engagementEvents)
+          .where(
+            and(
+              eq(engagementEvents.userId, userId),
+              gte(engagementEvents.createdAt, today)
+            )
+          )
+      ]);
+
+      return {
+        sessionCount: Number(sessionMetrics[0]?.sessionCount ?? 0),
+        averageSessionDuration: Math.round(Number(sessionMetrics[0]?.avgDuration ?? 0) / 60), // Convert seconds to minutes
+        pageViewsToday: Number(pageViewMetrics[0]?.count ?? 0),
+        interactionsToday: Number(interactionMetrics[0]?.count ?? 0),
+      };
+    } catch (error) {
+      console.error('Error getting analytics metrics:', error);
+      return {
+        sessionCount: 0,
+        averageSessionDuration: 0,
+        pageViewsToday: 0,
+        interactionsToday: 0,
+      };
     }
   }
 

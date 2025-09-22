@@ -1,0 +1,1178 @@
+Refactor subreddit input to searchable picker
+Sep 22 · a1davida1/TPilot · main
++735-43
+1. In `client/src/pages/reddit-posting.tsx`, replace the freeform subreddit `Input` with a searchable list or combobox that is backed by the `communities` query (e.g., a `<Command>` list, `Select`, or custom picker) and default it to communities the user qualifies for (karma/account-age rules).
+2. Surface eligibility badges (meets karma, selling allowed, etc.) directly in the picker and disable or explain communities where requirements are not met; set the form state when a community is chosen instead of relying on manual typing.
+3. Add unit or integration coverage (e.g., `client/src/pages/__tests__/reddit-posting.test.tsx`) to assert that eligible communities appear, ineligible ones are gated, and selecting a community pre-fills the post form.
+
+Summary
+
+    Replaced the subreddit text box with a Popover/Command combobox that ranks communities by karma and account-age eligibility, defaults to the first qualified option, and surfaces requirement badges directly in the picker for both selectable and disabled entries.
+
+    Augmented the community insights panel with badges that reflect whether karma, account age, watermark, and selling rules are met for the chosen subreddit, using the normalized rules metadata from the eligibility computation.
+
+    Added a focused vitest that mocks React Query data to confirm eligible communities render, ineligible options are disabled with explanations, and selecting a community updates the form state and preview badges.
+
+Testing
+
+    ✅ npm run lint
+
+    ✅ npm test -- reddit-posting
+
+
+client/src/pages/__tests__/reddit-posting.test.tsx
+New
++264-0
+import React from 'react';
+import { act } from 'react';
+import { createRoot } from 'react-dom/client';
+import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
+
+interface MockQueryOptions {
+  queryKey: unknown;
+}
+
+interface MockQueryResult {
+  data: unknown;
+  isLoading: boolean;
+  error: unknown;
+}
+
+interface MockMutationResult {
+  mutate: (variables?: unknown) => void;
+  mutateAsync: (variables?: unknown) => Promise<unknown>;
+  isPending: boolean;
+  reset: () => void;
+}
+
+const mockUseQuery = vi.fn<[_: MockQueryOptions], MockQueryResult>();
+const mockUseMutation = vi.fn<[], MockMutationResult>();
+const mockInvalidateQueries = vi.fn();
+const mockSetQueryData = vi.fn();
+const mockApiRequest = vi.fn(async () => ({ json: async () => ({}) }));
+
+vi.mock('@tanstack/react-query', async () => {
+  const actual = await vi.importActual<typeof import('@tanstack/react-query')>(
+    '@tanstack/react-query'
+  );
+
+  return {
+    ...actual,
+    useQuery: (options: MockQueryOptions) => mockUseQuery(options),
+    useMutation: () => mockUseMutation(),
+    useQueryClient: () => ({
+      invalidateQueries: mockInvalidateQueries,
+      setQueryData: mockSetQueryData,
+    }),
+  };
+});
+
+vi.mock('@/hooks/use-toast', () => ({
+  useToast: () => ({ toast: vi.fn() }),
+}));
+
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: () => ({ isAuthenticated: true, user: { id: 1 } }),
+}));
+
+vi.mock('@/components/MediaLibrarySelector', () => ({
+  MediaLibrarySelector: () => <div data-testid="media-selector-mock" />,
+}));
+
+vi.mock('@/components/auth-modal', () => ({
+  AuthModal: () => null,
+}));
+
+vi.mock('@/lib/queryClient', () => ({
+  apiRequest: (...args: Parameters<typeof mockApiRequest>) => mockApiRequest(...args),
+}));
+
+const globalScope = globalThis as typeof globalThis & {
+  React?: typeof React;
+  IS_REACT_ACT_ENVIRONMENT?: boolean;
+};
+
+globalScope.React = React;
+globalScope.IS_REACT_ACT_ENVIRONMENT = true;
+
+const flushPromises = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+if (!(globalThis as { ResizeObserver?: unknown }).ResizeObserver) {
+  class MockResizeObserver {
+    observe() {
+      return undefined;
+    }
+
+    unobserve() {
+      return undefined;
+    }
+
+    disconnect() {
+      return undefined;
+    }
+  }
+
+  (globalThis as { ResizeObserver: typeof MockResizeObserver }).ResizeObserver = MockResizeObserver;
+}
+
+if (!(HTMLElement.prototype as { scrollIntoView?: () => void }).scrollIntoView) {
+  HTMLElement.prototype.scrollIntoView = () => undefined;
+}
+
+describe('RedditPosting community picker', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    mockUseQuery.mockReset();
+    mockUseMutation.mockReset();
+    mockInvalidateQueries.mockReset();
+    mockSetQueryData.mockReset();
+    mockApiRequest.mockReset();
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  it('defaults to an eligible community, gates ineligible options, and updates the form when selecting', async () => {
+    const accounts = [
+      {
+        id: 1,
+        username: 'creator',
+        isActive: true,
+        connectedAt: '2023-01-01T00:00:00.000Z',
+        karma: 2400,
+        verified: true,
+        accountAgeDays: 400,
+      },
+    ];
+
+    const communities = [
+      {
+        id: 'creatorclub',
+        name: 'r/CreatorClub',
+        displayName: 'Creator Club',
+        members: 120000,
+        engagementRate: 12,
+        category: 'general',
+        promotionAllowed: 'yes',
+        bestPostingTimes: ['morning'],
+        averageUpvotes: 220,
+        successProbability: 78,
+        description: 'High-signal creator collabs.',
+        rules: {
+          minKarma: 500,
+          minAccountAge: 60,
+          sellingAllowed: true,
+          watermarksAllowed: true,
+        },
+      },
+      {
+        id: 'prohub',
+        name: 'r/ProHub',
+        displayName: 'Pro Hub',
+        members: 95000,
+        engagementRate: 10,
+        category: 'general',
+        promotionAllowed: 'limited',
+        bestPostingTimes: ['afternoon'],
+        averageUpvotes: 180,
+        successProbability: 70,
+        description: 'Advanced strategy discussions.',
+        rules: {
+          minKarma: 800,
+          minAccountAge: 90,
+          sellingAllowed: true,
+          watermarksAllowed: false,
+        },
+      },
+      {
+        id: 'gatedelite',
+        name: 'r/GatedElite',
+        displayName: 'Gated Elite',
+        members: 510000,
+        engagementRate: 15,
+        category: 'premium',
+        promotionAllowed: 'limited',
+        bestPostingTimes: ['evening'],
+        averageUpvotes: 410,
+        successProbability: 82,
+        description: 'Invitation-only audience.',
+        rules: {
+          minKarma: 5000,
+          minAccountAge: 365,
+          sellingAllowed: false,
+          watermarksAllowed: false,
+        },
+      },
+    ];
+
+    mockUseQuery.mockImplementation(({ queryKey }: MockQueryOptions): MockQueryResult => {
+      const key = Array.isArray(queryKey) ? queryKey[0] : queryKey;
+      switch (key) {
+        case '/api/reddit/accounts':
+          return { data: accounts, isLoading: false, error: null };
+        case '/api/reddit/communities':
+          return { data: communities, isLoading: false, error: null };
+        case '/api/media':
+          return { data: [], isLoading: false, error: null };
+        default:
+          return { data: undefined, isLoading: false, error: null };
+      }
+    });
+
+    mockUseMutation.mockImplementation(
+      (): MockMutationResult => ({
+        mutate: () => undefined,
+        mutateAsync: async () => undefined,
+        isPending: false,
+        reset: () => undefined,
+      })
+    );
+
+    const { default: RedditPostingPage } = await import('../reddit-posting');
+
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<RedditPostingPage />);
+    });
+
+    await act(async () => {
+      await flushPromises();
+    });
+
+    const trigger = container.querySelector<HTMLButtonElement>('[data-testid="community-picker-trigger"]');
+    expect(trigger).not.toBeNull();
+    expect(trigger?.textContent ?? '').toContain('Creator Club');
+
+    await act(async () => {
+      trigger?.click();
+      await flushPromises();
+    });
+
+    const eligibleOption = document.querySelector('[data-testid="community-option-creatorclub"]');
+    expect(eligibleOption).not.toBeNull();
+
+    const gatedOption = document.querySelector('[data-testid="community-option-gatedelite"]');
+    expect(gatedOption).not.toBeNull();
+    const gatedDisabled =
+      gatedOption?.getAttribute('aria-disabled') === 'true' ||
+      gatedOption?.getAttribute('data-disabled') === 'true';
+    expect(gatedDisabled).toBe(true);
+
+    const gatedReason = document.querySelector('[data-testid="community-option-gatedelite-reasons"]');
+    expect(gatedReason?.textContent ?? '').toContain('Requires 5000 karma');
+
+    const secondEligible = document.querySelector('[data-testid="community-option-prohub"]') as HTMLElement;
+    expect(secondEligible).not.toBeNull();
+
+    await act(async () => {
+      secondEligible.click();
+      await flushPromises();
+    });
+
+    expect(trigger?.textContent ?? '').toContain('Pro Hub');
+
+    const selectedName = container.querySelector('[data-testid="selected-community-name"]');
+    expect(selectedName?.textContent ?? '').toContain('Pro Hub');
+
+    const eligibilityBadges = container.querySelector('[data-testid="selected-community-eligibility"]');
+    expect(eligibilityBadges?.textContent ?? '').toContain('Karma OK');
+
+    await act(async () => {
+      root.unmount();
+    });
+    container.remove();
+  });
+});
+client/src/pages/reddit-posting.tsx
++471-43
+import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { apiRequest } from '@/lib/queryClient';
+import { AuthModal } from '@/components/auth-modal';
+import { 
+  Send, 
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator
+} from '@/components/ui/command';
+import {
+  Send,
+  Calendar,
+  User,
+  Eye,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  Link as LinkIcon,
+  Globe,
+  Settings,
+  Clock,
+  BarChart3,
+  Users,
+  TrendingUp,
+  Zap,
+  Shield,
+  FileText,
+  TestTube,
+  ExternalLink,
+  ImageIcon,
+  Images,
+  LogIn,
+  UserCheck
+  UserCheck,
+  ChevronsUpDown
+} from 'lucide-react';
+import { MediaLibrarySelector } from '@/components/MediaLibrarySelector';
+
+interface RedditAccount {
+  id: number;
+  username: string;
+  isActive: boolean;
+  connectedAt: string;
+  karma: number;
+  verified: boolean;
+  accountAgeDays?: number;
+}
+
+interface SubredditCommunity {
+  id: string;
+  name: string;
+  displayName: string;
+  members: number;
+  engagementRate: number;
+  category: string;
+  promotionAllowed: string;
+  bestPostingTimes: string[];
+  averageUpvotes: number;
+  successProbability: number;
+  description: string;
+  rules: {
+    minKarma: number;
+    minAccountAge: number;
+    watermarksAllowed: boolean;
+    sellingAllowed: boolean;
+    titleRules: string[];
+    contentRules: string[];
+  rules?: {
+    minKarma?: number;
+    minAccountAge?: number;
+    watermarksAllowed?: boolean;
+    sellingAllowed?: boolean;
+    titleRules?: string[];
+    contentRules?: string[];
+  };
+}
+
+// API response interfaces
+interface ConnectionTestResponse {
+  connected: boolean;
+  profile?: {
+    username: string;
+    karma: number;
+  };
+}
+
+interface ConnectRedditResponse {
+  authUrl: string;
+}
+
+interface ContentValidationResponse {
+  policyState: 'allow' | 'warn' | 'block';
+}
+
+interface PostSubmissionResponse {
+  success: boolean;
+  error?: string;
+}
+
+@@ -99,121 +111,379 @@ interface SchedulePostResponse {
+}
+
+interface MediaAsset {
+  id: number;
+  filename: string;
+  signedUrl?: string;
+  downloadUrl?: string;
+  createdAt: string;
+}
+
+interface PostData {
+  subreddit: string;
+  title: string;
+  nsfw: boolean;
+  spoiler: boolean;
+  postType: 'text' | 'link' | 'image' | 'gallery';
+  body?: string;
+  url?: string;
+  imageData?: string;
+  images?: Array<{
+    url: string;
+    caption?: string;
+  }>;
+}
+
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+const normalizeSubredditValue = (value: string): string =>
+  value.trim().toLowerCase().replace(/^r\//, '');
+
+const calculateAccountAgeDays = (dateString: string | undefined): number => {
+  if (!dateString) {
+    return 0;
+  }
+
+  const parsedDate = new Date(dateString);
+  const timestamp = parsedDate.getTime();
+
+  if (Number.isNaN(timestamp)) {
+    return 0;
+  }
+
+  const diff = Date.now() - timestamp;
+  if (diff <= 0) {
+    return 0;
+  }
+
+  return Math.floor(diff / MS_PER_DAY);
+};
+
+interface CommunityOption {
+  community: SubredditCommunity;
+  value: string;
+  label: string;
+  minKarma?: number;
+  minAccountAge?: number;
+  meetsKarma: boolean;
+  meetsAccountAge: boolean;
+  sellingAllowed?: boolean;
+  watermarksAllowed?: boolean;
+  promotionAllowed: string;
+  reasons: string[];
+  isEligible: boolean;
+}
+
+export default function RedditPostingPage() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { isAuthenticated, user } = useAuth();
+  
+  // Form state
+  const [subreddit, setSubreddit] = useState('');
+  const [title, setTitle] = useState('');
+  const [body, setBody] = useState('');
+  const [url, setUrl] = useState('');
+  const [nsfw, setNsfw] = useState(false);
+  const [spoiler, setSpoiler] = useState(false);
+  const [postType, setPostType] = useState<'text' | 'link' | 'image' | 'gallery'>('image');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
+  const [selectedMediaIds, setSelectedMediaIds] = useState<number[]>([]);
+  const [mediaCaptions, setMediaCaptions] = useState<Record<number, string>>({});
+  const [scheduledAt, setScheduledAt] = useState('');
+  const isGalleryFeatureEnabled = false;
+  
+  // UI state
+  const [selectedAccount, setSelectedAccount] = useState<string>('');
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isCommunityPickerOpen, setIsCommunityPickerOpen] = useState(false);
+
+  // Add image handling functions
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const toggleMediaSelection = (assetId: number) => {
+    setSelectedMediaIds((prev) => {
+      if (prev.includes(assetId)) {
+        return prev.filter((id) => id !== assetId);
+      }
+      return [...prev, assetId];
+    });
+  };
+
+  const handleCaptionChange = (assetId: number, caption: string) => {
+    setMediaCaptions((prev) => ({ ...prev, [assetId]: caption }));
+  };
+
+  // Fetch Reddit accounts
+  const { data: accounts = [], isLoading: accountsLoading } = useQuery<RedditAccount[]>({
+    queryKey: ['/api/reddit/accounts'],
+    retry: false,
+  });
+
+  // Fetch subreddit communities data
+  const { data: communities = [] } = useQuery<SubredditCommunity[]>({
+    queryKey: ['/api/reddit/communities'],
+    retry: false,
+  });
+
+  // Fetch media assets
+  const { data: mediaAssets = [], isLoading: mediaLoading } = useQuery<MediaAsset[]>({
+    queryKey: ['/api/media'],
+    retry: false,
+  });
+
+  const { highestKarma, highestAccountAge } = useMemo(() => {
+    if (!Array.isArray(accounts)) {
+      return { highestKarma: 0, highestAccountAge: 0 };
+    }
+
+    return accounts.reduce(
+      (stats, account) => {
+        const karma = typeof account.karma === 'number' ? account.karma : 0;
+        const explicitAge = typeof account.accountAgeDays === 'number' ? account.accountAgeDays : undefined;
+        const derivedAge = explicitAge && explicitAge > 0 ? explicitAge : calculateAccountAgeDays(account.connectedAt);
+
+        return {
+          highestKarma: Math.max(stats.highestKarma, karma),
+          highestAccountAge: Math.max(stats.highestAccountAge, derivedAge)
+        };
+      },
+      { highestKarma: 0, highestAccountAge: 0 }
+    );
+  }, [accounts]);
+
+  const communityOptions = useMemo<CommunityOption[]>(() => {
+    if (!Array.isArray(communities)) {
+      return [];
+    }
+
+    return communities.map((community) => {
+      const minKarma = typeof community.rules?.minKarma === 'number' ? community.rules.minKarma : undefined;
+      const minAccountAge = typeof community.rules?.minAccountAge === 'number' ? community.rules.minAccountAge : undefined;
+      const meetsKarma = minKarma === undefined || highestKarma >= minKarma;
+      const meetsAccountAge = minAccountAge === undefined || highestAccountAge >= minAccountAge;
+      const sellingAllowed = typeof community.rules?.sellingAllowed === 'boolean'
+        ? community.rules.sellingAllowed
+        : community.promotionAllowed !== 'no';
+      const watermarksAllowed = community.rules?.watermarksAllowed;
+      const reasons: string[] = [];
+
+      if (minKarma !== undefined && !meetsKarma) {
+        reasons.push(`Requires ${minKarma} karma`);
+      }
+
+      if (minAccountAge !== undefined && !meetsAccountAge) {
+        reasons.push(`Requires ${minAccountAge} days account age`);
+      }
+
+      const baseIdentifier = community.id || community.name;
+      const normalizedId = normalizeSubredditValue(baseIdentifier);
+      const value = normalizedId || baseIdentifier.toLowerCase();
+
+      return {
+        community,
+        value,
+        label: community.displayName,
+        minKarma,
+        minAccountAge,
+        meetsKarma,
+        meetsAccountAge,
+        sellingAllowed,
+        watermarksAllowed,
+        promotionAllowed: community.promotionAllowed,
+        reasons,
+        isEligible: meetsKarma && meetsAccountAge
+      } satisfies CommunityOption;
+    });
+  }, [communities, highestAccountAge, highestKarma]);
+
+  const eligibleCommunities = useMemo(
+    () => communityOptions.filter((option) => option.isEligible),
+    [communityOptions]
+  );
+
+  const ineligibleCommunities = useMemo(
+    () => communityOptions.filter((option) => !option.isEligible),
+    [communityOptions]
+  );
+
+  const normalizedSubreddit = useMemo(() => normalizeSubredditValue(subreddit), [subreddit]);
+
+  const selectedOption = useMemo(
+    () => communityOptions.find((option) => option.value === normalizedSubreddit),
+    [communityOptions, normalizedSubreddit]
+  );
+
+  const fallbackCommunity = useMemo(() => {
+    if (!normalizedSubreddit) {
+      return undefined;
+    }
+
+    return communities.find((community) => {
+      const normalizedId = normalizeSubredditValue(community.id || '');
+      const normalizedName = normalizeSubredditValue(community.name || '');
+      return normalizedId === normalizedSubreddit || normalizedName === normalizedSubreddit;
+    });
+  }, [communities, normalizedSubreddit]);
+
+  const selectedCommunity = selectedOption?.community ?? fallbackCommunity;
+  const communityRules = selectedCommunity?.rules;
+  const minKarmaRequirement = typeof communityRules?.minKarma === 'number' ? communityRules.minKarma : undefined;
+  const minAccountAgeRequirement = typeof communityRules?.minAccountAge === 'number' ? communityRules.minAccountAge : undefined;
+  const watermarksAllowed = typeof communityRules?.watermarksAllowed === 'boolean' ? communityRules.watermarksAllowed : undefined;
+  const sellingAllowed = typeof communityRules?.sellingAllowed === 'boolean' ? communityRules.sellingAllowed : undefined;
+
+  useEffect(() => {
+    if (!subreddit && eligibleCommunities.length > 0) {
+      setSubreddit(eligibleCommunities[0]?.value ?? '');
+    }
+  }, [eligibleCommunities, subreddit]);
+
+  const selectedAssets = mediaAssets.filter((asset) => selectedMediaIds.includes(asset.id));
+
+  const buildBadgeElements = (option: CommunityOption): React.ReactNode[] => {
+    const badges: React.ReactNode[] = [];
+    const karmaRequirement = option.minKarma ?? 0;
+    const accountAgeRequirement = option.minAccountAge ?? 0;
+    const karmaOwned = highestKarma.toLocaleString();
+    const accountAgeOwned = highestAccountAge.toLocaleString();
+
+    const karmaLabel = option.meetsKarma
+      ? karmaRequirement > 0
+        ? `Karma OK (${karmaRequirement}+ required)`
+        : 'No karma limit'
+      : `Needs ${karmaRequirement} karma (you have ${karmaOwned})`;
+
+    badges.push(
+      <Badge
+        key="karma"
+        variant="outline"
+        className={
+          option.meetsKarma
+            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+            : 'bg-red-50 text-red-700 border-red-200'
+        }
+      >
+        {karmaLabel}
+      </Badge>
+    );
+
+    const accountAgeLabel = option.meetsAccountAge
+      ? accountAgeRequirement > 0
+        ? `Account age OK (${accountAgeRequirement}+ days)`
+        : 'No age limit'
+      : `Needs ${accountAgeRequirement} days (you have ${accountAgeOwned})`;
+
+    badges.push(
+      <Badge
+        key="age"
+        variant="outline"
+        className={
+          option.meetsAccountAge
+            ? 'bg-sky-50 text-sky-700 border-sky-200'
+            : 'bg-orange-50 text-orange-700 border-orange-200'
+        }
+      >
+        {accountAgeLabel}
+      </Badge>
+    );
+
+    if (typeof option.sellingAllowed === 'boolean') {
+      badges.push(
+        <Badge
+          key="selling"
+          variant="outline"
+          className={
+            option.sellingAllowed
+              ? 'bg-purple-50 text-purple-700 border-purple-200'
+              : 'bg-amber-50 text-amber-700 border-amber-200'
+          }
+        >
+          {option.sellingAllowed ? 'Selling allowed' : 'No selling'}
+        </Badge>
+      );
+    }
+
+    if (typeof option.watermarksAllowed === 'boolean') {
+      badges.push(
+        <Badge
+          key="watermarks"
+          variant="outline"
+          className={
+            option.watermarksAllowed
+              ? 'bg-pink-50 text-pink-700 border-pink-200'
+              : 'bg-red-50 text-red-700 border-red-200'
+          }
+        >
+          {option.watermarksAllowed ? 'Watermarks OK' : 'No watermarks'}
+        </Badge>
+      );
+    }
+
+    const promotionLabel =
+      option.promotionAllowed === 'yes'
+        ? 'Promotion allowed'
+        : option.promotionAllowed === 'no'
+          ? 'Promotion banned'
+          : `Promotion: ${option.promotionAllowed}`;
+
+    const promotionClass =
+      option.promotionAllowed === 'yes'
+        ? 'bg-green-50 text-green-700 border-green-200'
+        : option.promotionAllowed === 'no'
+          ? 'bg-red-50 text-red-700 border-red-200'
+          : 'bg-blue-50 text-blue-700 border-blue-200';
+
+    badges.push(
+      <Badge key="promotion" variant="outline" className={`${promotionClass} capitalize`}>
+        {promotionLabel}
+      </Badge>
+    );
+
+    return badges;
+  };
+
+  const handleSelectCommunity = (value: string) => {
+    if (!value) {
+      return;
+    }
+    setSubreddit(value);
+    setIsCommunityPickerOpen(false);
+  };
+
+  // Test Reddit connection
+  const { mutate: testConnection, isPending: testingConnection } = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/reddit/test');
+      return response.json();
+    },
+    onSuccess: (data: ConnectionTestResponse) => {
+      toast({
+        title: "✅ Connection Test",
+        description: data.connected ? 
+          `Connected as ${data.profile?.username} (${data.profile?.karma} karma)` : 
+          "Connection failed",
+        variant: data.connected ? "default" : "destructive"
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "❌ Connection Failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Connect Reddit account
+@@ -390,55 +660,50 @@ export default function RedditPostingPage() {
+    } else {
+      postData.body = body;
+      submitPost(postData);
+    }
+  };
+
+  // Handle post scheduling
+  const handleSchedulePost = () => {
+    if (!subreddit || !title) {
+      toast({
+        title: "⚠️ Missing Required Fields",
+        description: "Please enter subreddit and title",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    schedulePost({
+      subreddit,
+      title,
+      body,
+      scheduledAt: scheduledAt || undefined
+    });
+  };
+
+  // Find community data for selected subreddit
+  const selectedCommunity = communities.find((c) => 
+    c.name.toLowerCase() === `r/${subreddit.toLowerCase()}` || c.id === subreddit.toLowerCase()
+  );
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-rose-50 to-pink-100 p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        
+        {/* Header */}
+        <Card className="bg-white/90 backdrop-blur-sm border-pink-200 shadow-xl">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-orange-500 rounded-lg">
+                <Globe className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-2xl bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                  Reddit Posting Hub
+                </CardTitle>
+                <CardDescription className="text-gray-600">
+                  Create, validate, and publish content to Reddit communities with intelligent optimization
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+
+        <div className="grid lg:grid-cols-3 gap-6">
+          
+@@ -543,72 +808,185 @@ export default function RedditPostingPage() {
+                    Gallery
+                  </Button>
+                  <Button
+                    variant={postType === 'text' ? 'default' : 'outline'}
+                    onClick={() => setPostType('text')}
+                    className="flex-1"
+                    data-testid="button-post-type-text"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Text
+                  </Button>
+                  <Button
+                    variant={postType === 'link' ? 'default' : 'outline'}
+                    onClick={() => setPostType('link')}
+                    className="flex-1"
+                    data-testid="button-post-type-link"
+                  >
+                    <LinkIcon className="h-4 w-4 mr-2" />
+                    Link
+                  </Button>
+                </div>
+
+                {/* Subreddit Input */}
+                <div className="space-y-2">
+                  <Label htmlFor="subreddit">Subreddit</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-3 text-gray-500 text-sm">r/</span>
+                    <Input
+                      id="subreddit"
+                      value={subreddit}
+                      onChange={(e) => setSubreddit(e.target.value)}
+                      className="pl-8"
+                      data-testid="input-subreddit"
+                    />
+                  </div>
+                  <Popover open={isCommunityPickerOpen} onOpenChange={setIsCommunityPickerOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        id="subreddit"
+                        type="button"
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={isCommunityPickerOpen}
+                        aria-label="Select subreddit"
+                        className="w-full justify-between"
+                        data-testid="community-picker-trigger"
+                      >
+                        {selectedOption ? (
+                          <div className="flex flex-col text-left">
+                            <span className="text-sm font-medium text-gray-900">{selectedOption.community.displayName}</span>
+                            <span className="text-xs text-gray-500">r/{selectedOption.value}</span>
+                          </div>
+                        ) : normalizedSubreddit ? (
+                          <div className="flex flex-col text-left">
+                            <span className="text-sm font-medium text-gray-900">r/{normalizedSubreddit}</span>
+                            <span className="text-xs text-gray-500">Community not in suggestions</span>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-500">Select a community</span>
+                        )}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[360px] p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search communities..." />
+                        <CommandList>
+                          <CommandEmpty>No communities found.</CommandEmpty>
+                          {eligibleCommunities.length > 0 && (
+                            <CommandGroup heading="Eligible communities">
+                              {eligibleCommunities.map((option) => (
+                                <CommandItem
+                                  key={option.community.id}
+                                  value={`${option.community.displayName} ${option.community.name}`}
+                                  onSelect={() => handleSelectCommunity(option.value)}
+                                  data-testid={`community-option-${option.value}`}
+                                >
+                                  <div className="flex w-full flex-col gap-1">
+                                    <div className="flex items-center justify-between gap-2">
+                                      <div>
+                                        <p className="text-sm font-medium text-gray-900">{option.community.displayName}</p>
+                                        <p className="text-xs text-gray-500">r/{option.value}</p>
+                                      </div>
+                                      {normalizedSubreddit === option.value ? (
+                                        <CheckCircle className="h-4 w-4 text-green-500" aria-hidden="true" />
+                                      ) : null}
+                                    </div>
+                                    <div className="flex flex-wrap gap-1">
+                                      {buildBadgeElements(option)}
+                                    </div>
+                                  </div>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          )}
+                          {eligibleCommunities.length > 0 && ineligibleCommunities.length > 0 && <CommandSeparator />}
+                          {ineligibleCommunities.length > 0 && (
+                            <CommandGroup heading="Requirements needed">
+                              {ineligibleCommunities.map((option) => (
+                                <CommandItem
+                                  key={option.community.id}
+                                  value={`${option.community.displayName} ${option.community.name}`}
+                                  disabled
+                                  data-testid={`community-option-${option.value}`}
+                                >
+                                  <div className="flex w-full flex-col gap-1 text-gray-500">
+                                    <div className="flex items-center justify-between gap-2">
+                                      <div>
+                                        <p className="text-sm font-medium">{option.community.displayName}</p>
+                                        <p className="text-xs text-gray-400">r/{option.value}</p>
+                                      </div>
+                                      <AlertTriangle className="h-4 w-4 text-amber-500" aria-hidden="true" />
+                                    </div>
+                                    {option.reasons.length > 0 && (
+                                      <p
+                                        className="text-xs text-red-600"
+                                        data-testid={`community-option-${option.value}-reasons`}
+                                      >
+                                        {option.reasons.join(' • ')}
+                                      </p>
+                                    )}
+                                    <div className="flex flex-wrap gap-1">
+                                      {buildBadgeElements(option)}
+                                    </div>
+                                  </div>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          )}
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  {(highestKarma > 0 || highestAccountAge > 0) && (
+                    <div className="flex flex-wrap gap-2 text-xs text-gray-600">
+                      <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
+                        You: {highestKarma.toLocaleString()} karma
+                      </Badge>
+                      <Badge variant="outline" className="bg-sky-50 text-sky-700 border-sky-200">
+                        Account age: {highestAccountAge.toLocaleString()} days
+                      </Badge>
+                    </div>
+                  )}
+                  {selectedCommunity && (
+                    <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg border border-blue-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium text-blue-800">{selectedCommunity.displayName}</span>
+                        <Badge variant="outline" className="text-blue-700 border-blue-300">
+                    <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-gray-600">
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className="font-medium text-blue-800" data-testid="selected-community-name">
+                          {selectedCommunity.displayName}
+                        </span>
+                        <Badge variant="outline" className="border-blue-300 text-blue-700">
+                          {selectedCommunity.members.toLocaleString()} members
+                        </Badge>
+                      </div>
+                      <p className="text-blue-700 mb-2">{selectedCommunity.description}</p>
+                      <p className="mb-2 text-blue-700">{selectedCommunity.description}</p>
+                      {selectedOption && (
+                        <div className="mb-2 flex flex-wrap gap-1" data-testid="selected-community-eligibility">
+                          {buildBadgeElements(selectedOption)}
+                        </div>
+                      )}
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>Success Rate: <span className="font-medium text-green-600">{selectedCommunity.successProbability}%</span></div>
+                        <div>Avg Upvotes: <span className="font-medium text-blue-600">{selectedCommunity.averageUpvotes}</span></div>
+                        <div>
+                          Success Rate:
+                          {' '}
+                          <span className="font-medium text-green-600">{selectedCommunity.successProbability}%</span>
+                        </div>
+                        <div>
+                          Avg Upvotes:
+                          {' '}
+                          <span className="font-medium text-blue-600">{selectedCommunity.averageUpvotes}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Title Input */}
+                <div className="space-y-2">
+                  <Label htmlFor="title">Title</Label>
+                  <Input
+                    id="title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    maxLength={300}
+                    data-testid="input-title"
+                  />
+                  <div className="text-xs text-gray-500 text-right">{title.length}/300</div>
+                </div>
+
+                {/* Content Input */}
+                {postType === 'image' && (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="image">Select Image</Label>
+                      <Input
+                        id="image"
+@@ -838,68 +1216,118 @@ export default function RedditPostingPage() {
+                      <Users className="h-4 w-4 text-blue-600 mb-1" />
+                      <p className="font-medium text-blue-800">{selectedCommunity.members.toLocaleString()}</p>
+                      <p className="text-blue-600">Members</p>
+                    </div>
+                    <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+                      <TrendingUp className="h-4 w-4 text-green-600 mb-1" />
+                      <p className="font-medium text-green-800">{selectedCommunity.engagementRate}%</p>
+                      <p className="text-green-600">Engagement</p>
+                    </div>
+                    <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
+                      <Zap className="h-4 w-4 text-purple-600 mb-1" />
+                      <p className="font-medium text-purple-800">{selectedCommunity.successProbability}%</p>
+                      <p className="text-purple-600">Success Rate</p>
+                    </div>
+                    <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
+                      <TrendingUp className="h-4 w-4 text-orange-600 mb-1" />
+                      <p className="font-medium text-orange-800">{selectedCommunity.averageUpvotes}</p>
+                      <p className="text-orange-600">Avg Upvotes</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <h4 className="font-medium text-gray-800 mb-2">Community Rules</h4>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-gray-600">Min Karma:</span>
+                          <span className="font-medium">{selectedCommunity.rules.minKarma}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">
+                              {minKarmaRequirement !== undefined ? minKarmaRequirement : '—'}
+                            </span>
+                            {minKarmaRequirement !== undefined && selectedOption && (
+                              <Badge
+                                variant={selectedOption.meetsKarma ? 'default' : 'destructive'}
+                                className="text-xs"
+                              >
+                                {selectedOption.meetsKarma ? 'Met' : 'Not met'}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex justify-between">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-gray-600">Min Account Age:</span>
+                          <span className="font-medium">{selectedCommunity.rules.minAccountAge} days</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">
+                              {minAccountAgeRequirement !== undefined ? `${minAccountAgeRequirement} days` : '—'}
+                            </span>
+                            {minAccountAgeRequirement !== undefined && selectedOption && (
+                              <Badge
+                                variant={selectedOption.meetsAccountAge ? 'default' : 'destructive'}
+                                className="text-xs"
+                              >
+                                {selectedOption.meetsAccountAge ? 'Met' : 'Not met'}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex justify-between">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-gray-600">Watermarks:</span>
+                          <Badge variant={selectedCommunity.rules.watermarksAllowed ? 'default' : 'destructive'} className="text-xs">
+                            {selectedCommunity.rules.watermarksAllowed ? 'Allowed' : 'Not Allowed'}
+                          <Badge
+                            variant={watermarksAllowed === false ? 'destructive' : 'outline'}
+                            className={`text-xs ${
+                              watermarksAllowed === undefined
+                                ? 'bg-gray-50 text-gray-600 border-gray-200'
+                                : watermarksAllowed
+                                  ? 'bg-pink-50 text-pink-700 border-pink-200'
+                                  : 'bg-red-50 text-red-700 border-red-200'
+                            }`}
+                          >
+                            {watermarksAllowed === undefined
+                              ? 'Not specified'
+                              : watermarksAllowed
+                                ? 'Allowed'
+                                : 'Not allowed'}
+                          </Badge>
+                        </div>
+                        <div className="flex justify-between">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-gray-600">Selling:</span>
+                          <Badge variant={selectedCommunity.rules.sellingAllowed ? 'default' : 'destructive'} className="text-xs">
+                            {selectedCommunity.rules.sellingAllowed ? 'Allowed' : 'Not Allowed'}
+                          <Badge
+                            variant={sellingAllowed === false ? 'destructive' : 'outline'}
+                            className={`text-xs ${
+                              sellingAllowed === undefined
+                                ? 'bg-gray-50 text-gray-600 border-gray-200'
+                                : sellingAllowed
+                                  ? 'bg-purple-50 text-purple-700 border-purple-200'
+                                  : 'bg-amber-50 text-amber-700 border-amber-200'
+                            }`}
+                          >
+                            {sellingAllowed === undefined
+                              ? 'Not specified'
+                              : sellingAllowed
+                                ? 'Allowed'
+                                : 'Not allowed'}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Quick Tips */}
+            <Card className="bg-white/90 backdrop-blur-sm border-pink-200 shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Eye className="h-5 w-5" />
+                  Quick Tips
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="font-medium text-blue-800 mb-1">📝 Title Optimization</p>
+                  <p className="text-blue-700">Include your age/gender and be descriptive but not clickbait-y</p>
+                </div>
+                <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                  <p className="font-medium text-green-800 mb-1">⏰ Timing Matters</p>
+                  <p className="text-green-700">Post during peak hours for maximum engagement</p>

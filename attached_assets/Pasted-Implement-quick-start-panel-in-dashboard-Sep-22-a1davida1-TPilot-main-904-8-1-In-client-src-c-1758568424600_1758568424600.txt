@@ -1,0 +1,1123 @@
+Implement quick-start panel in dashboard
+Sep 22 · a1davida1/TPilot · main
++904-8
+1. In `client/src/components/modern-dashboard.tsx`, replace the toast-only implementations of `handleQuickAction` and `handleTaskFlow` with state that opens a new quick-start panel or modal, and render that component alongside the main dashboard surface.
+2. Build the modal/panel to walk through the desired sequence (connect Reddit if needed, choose subreddit, generate copy, confirm post) by reusing existing primitives such as `RedditQuickPost` or by composing smaller steps (account status, content generator, scheduler).
+3. Update or add unit/component tests under `client/src/components/__tests__` or `client/src/components/onboarding` to cover the new state transitions and ensure the quick-start modal appears and submits as expected.
+
+Summary
+
+    Added a reusable QuickStartModal that guides creators through connecting Reddit, choosing a community, generating copy, and confirming a post in one flow, including API interactions and error handling.
+
+Updated the modern dashboard to track quick-start state, determine connection readiness, and surface the new modal from the Quick Action and Task Flow buttons.
+
+Introduced vitest coverage that exercises the modal launch and submission path with lightweight DOM utilities and mocked dependencies.
+
+Testing
+
+    ✅ npm run lint (passes with existing warnings in unrelated files)
+
+    ❌ npm test (fails due to numerous pre-existing suite errors such as ImageShield receipt protection, Coinbase provider handling, and content workflow specs)
+
+
+client/src/components/__tests__/modern-dashboard.test.tsx
+New
++264-0
+import React from "react";
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  afterAll,
+  vi,
+} from "vitest";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
+import { act } from "react-dom/test-utils";
+
+import { ModernDashboard } from "@/components/modern-dashboard";
+import { QuickStartModal } from "@/components/dashboard-quick-start";
+
+const mockUseQuery = vi.fn();
+const apiRequestMock = vi.fn();
+const toastMock = vi.fn();
+const setLocationMock = vi.fn();
+let mockedAuthUser: { id: number; username: string; tier?: string; isAdmin?: boolean; role?: string } | null = {
+  id: 1,
+  username: "Creator",
+  tier: "pro",
+};
+
+vi.mock("@tanstack/react-query", () => ({
+  useQuery: (options: { queryKey: unknown }) => mockUseQuery(options),
+}));
+
+vi.mock("@/hooks/useAuth", () => ({
+  useAuth: () => ({
+    user: mockedAuthUser,
+  }),
+}));
+
+vi.mock("@/hooks/use-toast", () => ({
+  useToast: () => ({ toast: toastMock }),
+}));
+
+vi.mock("wouter", () => ({
+  useLocation: () => ["/dashboard", setLocationMock] as const,
+}));
+
+vi.mock("@/lib/queryClient", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/queryClient")>("@/lib/queryClient");
+  return {
+    ...actual,
+    apiRequest: apiRequestMock,
+  };
+});
+
+const originalWindowOpen = window.open;
+
+interface RenderResult {
+  container: HTMLElement;
+}
+
+const mountedRoots: Array<{ root: Root; container: HTMLElement }> = [];
+
+function render(ui: React.ReactElement): RenderResult {
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+  const root = createRoot(container);
+  act(() => {
+    root.render(ui);
+  });
+  mountedRoots.push({ root, container });
+  return { container };
+}
+
+function cleanup() {
+  while (mountedRoots.length > 0) {
+    const { root, container } = mountedRoots.pop()!;
+    act(() => {
+      root.unmount();
+    });
+    container.remove();
+  }
+}
+
+function textMatches(text: string, matcher: string | RegExp): boolean {
+  if (typeof matcher === "string") {
+    return text.includes(matcher);
+  }
+  return matcher.test(text);
+}
+
+function queryByText(matcher: string | RegExp): HTMLElement | null {
+  const elements = Array.from(document.body.querySelectorAll("*") as NodeListOf<HTMLElement>);
+  for (const element of elements) {
+    const content = element.textContent?.trim() ?? "";
+    if (content && textMatches(content, matcher)) {
+      return element;
+    }
+  }
+  return null;
+}
+
+function queryByTestId(testId: string): HTMLElement | null {
+  return document.body.querySelector(`[data-testid="${testId}"]`) as HTMLElement | null;
+}
+
+async function waitFor<T>(callback: () => T, options: { timeout?: number; interval?: number } = {}): Promise<T> {
+  const { timeout = 2000, interval = 20 } = options;
+  const start = Date.now();
+  let lastError: unknown;
+  while (Date.now() - start < timeout) {
+    try {
+      return await callback();
+    } catch (error) {
+      lastError = error;
+      await new Promise((resolve) => setTimeout(resolve, interval));
+    }
+  }
+  throw lastError ?? new Error("waitFor timeout");
+}
+
+async function findByText(matcher: string | RegExp): Promise<HTMLElement> {
+  return waitFor(() => {
+    const element = queryByText(matcher);
+    if (!element) {
+      throw new Error("Text not found");
+    }
+    return element;
+  });
+}
+
+async function findByTestId(testId: string): Promise<HTMLElement> {
+  return waitFor(() => {
+    const element = queryByTestId(testId);
+    if (!element) {
+      throw new Error("Test id not found");
+    }
+    return element;
+  });
+}
+
+function getButtonByText(matcher: string | RegExp): HTMLButtonElement {
+  const button = Array.from(document.body.querySelectorAll("button") as NodeListOf<HTMLButtonElement>).find((element) =>
+    textMatches(element.textContent?.trim() ?? "", matcher),
+  );
+  if (!button) {
+    throw new Error(`Button with text ${String(matcher)} not found`);
+  }
+  return button;
+}
+
+function click(element: HTMLElement) {
+  act(() => {
+    element.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+  });
+}
+
+describe("ModernDashboard quick start", () => {
+  beforeEach(() => {
+    cleanup();
+    mockUseQuery.mockReset();
+    mockUseQuery.mockImplementation(({ queryKey }) => {
+      const key = Array.isArray(queryKey) ? queryKey[0] : queryKey;
+      if (key === "/api/dashboard/stats") {
+        return {
+          data: {
+            postsToday: 2,
+            engagementRate: 3.4,
+            takedownsFound: 1,
+            estimatedTaxSavings: 1250,
+          },
+          isLoading: false,
+          error: null,
+        };
+      }
+      if (key === "/api/dashboard/activity") {
+        return {
+          data: { recentMedia: [] },
+          isLoading: false,
+          error: null,
+        };
+      }
+      return { data: undefined, isLoading: false, error: null };
+    });
+
+    apiRequestMock.mockReset();
+    toastMock.mockReset();
+    setLocationMock.mockReset();
+    mockedAuthUser = {
+      id: 11,
+      username: "Test Creator",
+      tier: "pro",
+    };
+    window.open = vi.fn() as unknown as typeof window.open;
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  afterAll(() => {
+    window.open = originalWindowOpen;
+  });
+
+  it("opens the quick start modal when Quick Action is clicked", async () => {
+    render(<ModernDashboard isRedditConnected user={{ id: 2, username: "Beta" }} />);
+
+    const quickActionButton = getButtonByText(/Quick Action/i);
+    click(quickActionButton);
+
+    const dialog = await findByTestId("quick-start-dialog");
+    expect(dialog).toBeTruthy();
+    expect(await findByText(/Choose a subreddit/i)).toBeTruthy();
+  });
+
+  it("walks through the quick start flow and submits a Reddit post", async () => {
+    mockedAuthUser = null;
+    apiRequestMock.mockResolvedValueOnce({
+      json: async () => ({ authUrl: "https://reddit.com/auth" }),
+    } as Response);
+
+    const onOpenChange = vi.fn();
+    render(
+      <QuickStartModal
+        open
+        onOpenChange={onOpenChange}
+        initialStep="connect"
+        isRedditConnected={false}
+        onNavigate={setLocationMock}
+      />,
+    );
+
+    click(getButtonByText(/Connect Reddit/i));
+
+    await waitFor(() => {
+      expect(apiRequestMock).toHaveBeenCalledWith("GET", "/api/reddit/connect");
+      return true;
+    });
+
+    apiRequestMock.mockResolvedValueOnce({
+      json: async () => ({ success: true }),
+    } as Response);
+
+    click(getButtonByText(/^Continue$/i));
+    expect(await findByText(/Choose a subreddit/i)).toBeTruthy();
+
+    click(getButtonByText(/^Continue$/i));
+    expect(await findByText(/Generate your copy/i)).toBeTruthy();
+
+    click(getButtonByText(/Review post/i));
+    expect(await findByText(/Confirm your Reddit post/i)).toBeTruthy();
+
+    click(getButtonByText(/Confirm & post/i));
+
+    await waitFor(() => {
+      expect(apiRequestMock).toHaveBeenLastCalledWith(
+        "POST",
+        "/api/reddit/submit",
+        expect.objectContaining({ subreddit: "gonewild" }),
+      );
+      return true;
+    });
+
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+});
+client/src/components/dashboard-quick-start.tsx
+New
++604-0
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { cn } from "@/lib/utils";
+import {
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle2,
+  ExternalLink,
+  Loader2,
+  Sparkles,
+} from "lucide-react";
+
+type QuickStartStep = "connect" | "subreddit" | "copy" | "confirm";
+
+interface QuickStartTemplate {
+  id: string;
+  subreddit: string;
+  title: string;
+  body: string;
+  isNsfw: boolean;
+  description: string;
+}
+
+interface RedditConnectResponse {
+  authUrl?: string;
+  message?: string;
+}
+
+interface RedditSubmitResponse {
+  success?: boolean;
+  error?: string;
+}
+
+interface QuickStartModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  initialStep: QuickStartStep;
+  isRedditConnected?: boolean;
+  onNavigate?: (path: string) => void;
+}
+
+const QUICK_START_TEMPLATES: QuickStartTemplate[] = [
+  {
+    id: "gonewild",
+    subreddit: "gonewild",
+    title: "Feeling cute today [F]",
+    body: "Hope you enjoy! More content on my profile 💕",
+    isNsfw: true,
+    description: "High engagement NSFW community for confident self portraits.",
+  },
+  {
+    id: "onlyfans101",
+    subreddit: "onlyfans101",
+    title: "New content just dropped! 🔥",
+    body: "Check out my latest photos and videos! Link in bio 💋",
+    isNsfw: true,
+    description: "Promote new drops and drive traffic back to your subscription links.",
+  },
+  {
+    id: "selfie",
+    subreddit: "selfie",
+    title: "Good vibes only ✨",
+    body: "Having a great day! How is everyone doing?",
+    isNsfw: false,
+    description: "Safe-for-work audience with consistent daily engagement.",
+  },
+];
+
+const QUICK_START_STEPS: QuickStartStep[] = [
+  "connect",
+  "subreddit",
+  "copy",
+  "confirm",
+];
+
+const STEP_DETAILS: Record<QuickStartStep, { title: string; description: string }> = {
+  connect: {
+    title: "Connect Reddit",
+    description: "Authorize posting access",
+  },
+  subreddit: {
+    title: "Choose subreddit",
+    description: "Match the right community",
+  },
+  copy: {
+    title: "Generate copy",
+    description: "Craft an engaging story",
+  },
+  confirm: {
+    title: "Confirm & schedule",
+    description: "Review before publishing",
+  },
+};
+
+function getTemplateById(id: string | undefined): QuickStartTemplate | undefined {
+  return QUICK_START_TEMPLATES.find((template) => template.id === id);
+}
+
+export function QuickStartModal({
+  open,
+  onOpenChange,
+  initialStep,
+  isRedditConnected = false,
+  onNavigate,
+}: QuickStartModalProps) {
+  const { toast } = useToast();
+  const [currentStep, setCurrentStep] = useState<QuickStartStep>(initialStep);
+  const [connected, setConnected] = useState<boolean>(isRedditConnected);
+  const [connectionInitiated, setConnectionInitiated] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  const [postTitle, setPostTitle] = useState("");
+  const [postBody, setPostBody] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isConnecting, setIsConnecting] = useState(false);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    setCurrentStep(initialStep);
+    setConnected(isRedditConnected);
+    setConnectionInitiated(false);
+    setSubmitError(null);
+    setIsSubmitting(false);
+
+    if (initialStep === "subreddit" || initialStep === "copy" || initialStep === "confirm") {
+      const defaultTemplate = QUICK_START_TEMPLATES[0];
+      if (defaultTemplate) {
+        setSelectedTemplateId(defaultTemplate.id);
+        setPostTitle(defaultTemplate.title);
+        setPostBody(defaultTemplate.body);
+      }
+    } else {
+      setSelectedTemplateId("");
+      setPostTitle("");
+      setPostBody("");
+    }
+  }, [open, initialStep, isRedditConnected]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    if (currentStep === "subreddit" || currentStep === "copy" || currentStep === "confirm") {
+      if (!selectedTemplateId) {
+        const defaultTemplate = QUICK_START_TEMPLATES[0];
+        if (defaultTemplate) {
+          setSelectedTemplateId(defaultTemplate.id);
+          setPostTitle(defaultTemplate.title);
+          setPostBody(defaultTemplate.body);
+        }
+      }
+    }
+  }, [currentStep, open, selectedTemplateId]);
+
+  const selectedTemplate = useMemo(
+    () => getTemplateById(selectedTemplateId),
+    [selectedTemplateId],
+  );
+
+  const currentStepIndex = useMemo(
+    () => QUICK_START_STEPS.indexOf(currentStep),
+    [currentStep],
+  );
+
+  const goToStep = (step: QuickStartStep) => {
+    setSubmitError(null);
+    setCurrentStep(step);
+  };
+
+  const handleConnect = async () => {
+    setIsConnecting(true);
+    try {
+      const response = await apiRequest("GET", "/api/reddit/connect");
+      const data: RedditConnectResponse = await response.json();
+      if (data.authUrl) {
+        window.open(data.authUrl, "_blank", "noopener,noreferrer");
+        toast({
+          title: "Authorize Reddit",
+          description: "Complete the Reddit authorization in the new tab, then return here to continue.",
+        });
+      }
+      setConnectionInitiated(true);
+      setConnected(true);
+    } catch (error) {
+      const description = error instanceof Error ? error.message : "Unable to start Reddit connection.";
+      toast({
+        title: "Connection failed",
+        description,
+        variant: "destructive",
+      });
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const resetTemplateCopy = () => {
+    if (!selectedTemplate) {
+      return;
+    }
+    setPostTitle(selectedTemplate.title);
+    setPostBody(selectedTemplate.body);
+  };
+
+  const handleSubmit = async () => {
+    if (!selectedTemplate) {
+      setSubmitError("Choose a subreddit to continue.");
+      goToStep("subreddit");
+      return;
+    }
+    if (!postTitle.trim()) {
+      setSubmitError("Add a post title before publishing.");
+      goToStep("copy");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+    try {
+      const payload: {
+        subreddit: string;
+        title: string;
+        nsfw: boolean;
+        body?: string;
+      } = {
+        subreddit: selectedTemplate.subreddit,
+        title: postTitle.trim(),
+        nsfw: selectedTemplate.isNsfw,
+      };
+
+      const trimmedBody = postBody.trim();
+      if (trimmedBody) {
+        payload.body = trimmedBody;
+      }
+
+      const response = await apiRequest("POST", "/api/reddit/submit", payload);
+      const result: RedditSubmitResponse = await response.json();
+
+      if (!result.success) {
+        const errorMessage = result.error ?? "Unable to submit Reddit post.";
+        setSubmitError(errorMessage);
+        toast({
+          title: "Submission failed",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Post scheduled",
+        description: `Your Reddit post for r/${selectedTemplate.subreddit} is queued.`,
+      });
+
+      onOpenChange(false);
+      setCurrentStep("connect");
+      setSelectedTemplateId("");
+      setPostTitle("");
+      setPostBody("");
+      setConnected(isRedditConnected);
+      setConnectionInitiated(false);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unexpected error while posting.";
+      setSubmitError(message);
+      toast({
+        title: "Submission failed",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const renderConnectStep = () => (
+    <Card className="bg-gray-900 border-gray-800">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-white">
+          <Sparkles className="h-5 w-5 text-purple-400" />
+          Connect your Reddit account
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4 text-gray-300">
+        {connected ? (
+          <div className="flex items-center gap-2 rounded-lg border border-green-500/40 bg-green-500/10 p-3 text-sm text-green-200">
+            <CheckCircle2 className="h-4 w-4" />
+            <span>Reddit is connected and ready for posting.</span>
+          </div>
+        ) : connectionInitiated ? (
+          <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-200">
+            Check the popup window to finish connecting Reddit. Once you authorize, return here and continue.
+          </div>
+        ) : (
+          <p>
+            Kick off your automation by linking your Reddit account. We only request the scopes required to draft and submit
+            posts on your behalf.
+          </p>
+        )}
+
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <Badge
+            variant="outline"
+            className={cn(
+              "border",
+              connected ? "border-green-500/60 text-green-200" : "border-gray-700 text-gray-400",
+            )}
+          >
+            {connected ? "Connected" : "Not connected"}
+          </Badge>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onNavigate?.("/reddit")}
+            className="text-purple-200 hover:text-white"
+          >
+            Open Reddit hub
+            <ExternalLink className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="flex flex-wrap justify-between gap-3">
+          <Button
+            type="button"
+            onClick={handleConnect}
+            disabled={isConnecting || connected}
+            className="bg-purple-600 text-white hover:bg-purple-700"
+          >
+            {isConnecting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Connecting...
+              </>
+            ) : (
+              "Connect Reddit"
+            )}
+          </Button>
+          <Button
+            type="button"
+            onClick={() => goToStep("subreddit")}
+            disabled={!connected && !connectionInitiated}
+            variant="secondary"
+          >
+            Continue
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const renderSubredditStep = () => (
+    <Card className="bg-gray-900 border-gray-800">
+      <CardHeader>
+        <CardTitle className="text-white">Choose a subreddit</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4 text-gray-300">
+        <div className="space-y-2">
+          <Label>Select a launch community</Label>
+          <Select
+            value={selectedTemplateId}
+            onValueChange={(value) => {
+              setSelectedTemplateId(value);
+              if (submitError) {
+                setSubmitError(null);
+              }
+            }}
+          >
+            <SelectTrigger data-testid="quick-start-subreddit-select">
+              <SelectValue placeholder="Pick a subreddit" />
+            </SelectTrigger>
+            <SelectContent>
+              {QUICK_START_TEMPLATES.map((template) => (
+                <SelectItem key={template.id} value={template.id}>
+                  <div className="flex flex-col">
+                    <span className="font-medium text-white">r/{template.subreddit}</span>
+                    <span className="text-xs text-gray-400">{template.description}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        {selectedTemplate && (
+          <div className="rounded-lg border border-purple-500/40 bg-purple-500/10 p-3 text-sm text-purple-100">
+            <p className="font-semibold">Why it works</p>
+            <p>{selectedTemplate.description}</p>
+          </div>
+        )}
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Button type="button" variant="ghost" onClick={() => goToStep("connect")}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back
+          </Button>
+          <Button
+            type="button"
+            className="bg-purple-600 text-white hover:bg-purple-700"
+            onClick={() => goToStep("copy")}
+            disabled={!selectedTemplateId}
+          >
+            Continue
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const renderCopyStep = () => (
+    <Card className="bg-gray-900 border-gray-800">
+      <CardHeader>
+        <CardTitle className="text-white">Generate your copy</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4 text-gray-300">
+        <div className="space-y-2">
+          <Label htmlFor="quick-start-title">Post title</Label>
+          <Input
+            id="quick-start-title"
+            value={postTitle}
+            onChange={(event) => setPostTitle(event.target.value)}
+            placeholder="What headline should we lead with?"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="quick-start-body">Body copy (optional)</Label>
+          <Textarea
+            id="quick-start-body"
+            value={postBody}
+            onChange={(event) => setPostBody(event.target.value)}
+            rows={4}
+            placeholder="Add supporting details, call to action, or post guidelines."
+          />
+          <p className="text-xs text-gray-500">Use this space for promo codes, engagement prompts, or scheduling notes.</p>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Button type="button" variant="outline" size="sm" onClick={resetTemplateCopy} disabled={!selectedTemplate}>
+            Reset to template copy
+          </Button>
+          {selectedTemplate?.isNsfw ? (
+            <Badge variant="destructive">NSFW community</Badge>
+          ) : (
+            <Badge variant="secondary">SFW community</Badge>
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Button type="button" variant="ghost" onClick={() => goToStep("subreddit")}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back
+          </Button>
+          <Button
+            type="button"
+            className="bg-purple-600 text-white hover:bg-purple-700"
+            onClick={() => goToStep("confirm")}
+            disabled={!postTitle.trim()}
+          >
+            Review post
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const renderConfirmStep = () => (
+    <Card className="bg-gray-900 border-gray-800">
+      <CardHeader>
+        <CardTitle className="text-white">Confirm your Reddit post</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4 text-gray-300">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-gray-500">Subreddit</p>
+            <p className="text-lg font-semibold text-white">r/{selectedTemplate?.subreddit}</p>
+          </div>
+          {selectedTemplate?.isNsfw ? (
+            <Badge variant="destructive">NSFW</Badge>
+          ) : (
+            <Badge variant="secondary">SFW</Badge>
+          )}
+        </div>
+        <div>
+          <p className="text-xs uppercase tracking-wide text-gray-500">Title</p>
+          <p className="text-base text-white" data-testid="quick-start-review-title">{postTitle}</p>
+        </div>
+        <div>
+          <p className="text-xs uppercase tracking-wide text-gray-500">Body</p>
+          <p className="whitespace-pre-line text-sm text-gray-300" data-testid="quick-start-review-body">
+            {postBody.trim() ? postBody : "No body content included."}
+          </p>
+        </div>
+        {submitError && (
+          <div className="rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-200">
+            {submitError}
+          </div>
+        )}
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Button type="button" variant="ghost" onClick={() => goToStep("copy")}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back
+          </Button>
+          <Button
+            type="button"
+            className="bg-purple-600 text-white hover:bg-purple-700"
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Posting...
+              </>
+            ) : (
+              "Confirm & post"
+            )}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl border border-purple-500/20 bg-gray-950 text-white" data-testid="quick-start-dialog">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-bold text-white">Reddit quick start</DialogTitle>
+          <DialogDescription className="text-gray-300">
+            Walk through connection, community targeting, and post confirmation without leaving your dashboard.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-6">
+          <ol className="grid gap-3 sm:grid-cols-2" data-testid="quick-start-steps">
+            {QUICK_START_STEPS.map((step, index) => {
+              const isActive = index === currentStepIndex;
+              const isComplete = index < currentStepIndex;
+              return (
+                <li
+                  key={step}
+                  className={cn(
+                    "rounded-lg border p-3 transition",
+                    isActive
+                      ? "border-purple-500/60 bg-purple-500/10 shadow-lg"
+                      : isComplete
+                        ? "border-green-500/40 bg-green-500/10"
+                        : "border-gray-800 bg-gray-900",
+                  )}
+                >
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={cn(
+                        "flex h-8 w-8 items-center justify-center rounded-full border text-sm font-semibold",
+                        isActive || isComplete
+                          ? "border-purple-400 bg-purple-500/20 text-purple-200"
+                          : "border-gray-700 text-gray-400",
+                      )}
+                    >
+                      {index + 1}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-white">{STEP_DETAILS[step].title}</p>
+                      <p className="text-xs text-gray-400">{STEP_DETAILS[step].description}</p>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+
+          {currentStep === "connect" && renderConnectStep()}
+          {currentStep === "subreddit" && renderSubredditStep()}
+          {currentStep === "copy" && renderCopyStep()}
+          {currentStep === "confirm" && renderConfirmStep()}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export type { QuickStartStep };
+export { QUICK_START_TEMPLATES };
+client/src/components/modern-dashboard.tsx
++36-8
+@@ -12,117 +12,135 @@ import {
+  Calculator,
+  Gift,
+  Menu,
+  X,
+  Clock,
+  Bell,
+  Settings,
+  ChevronRight,
+  Home,
+  Brain,
+  Users,
+  Hash,
+  History,
+  ImageIcon,
+  Wand2,
+  Zap,
+  ListChecks,
+  Command
+} from "lucide-react";
+import { FaReddit } from "react-icons/fa";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { QuickStartModal, QuickStartStep } from "@/components/dashboard-quick-start";
+
+interface ModernDashboardProps {
+  isRedditConnected?: boolean;
+  user?: { id: number; username: string; email?: string; tier?: string; isVerified?: boolean };
+  userTier?: 'guest' | 'free' | 'basic' | 'starter' | 'pro' | 'premium' | 'admin';
+  isAdmin?: boolean;
+}
+
+interface DashboardStatsResponse {
+  postsToday: number;
+  engagementRate: number;
+  takedownsFound: number;
+  estimatedTaxSavings: number;
+}
+
+interface DashboardActivityResponse {
+  recentMedia: Array<{
+    id: number;
+    url: string;
+    alt: string;
+    createdAt: string | null;
+  }>;
+}
+
+export type { DashboardStatsResponse, DashboardActivityResponse };
+
+type RedditConnectionDetails = {
+  reddit_username?: string | null;
+  redditUsername?: string | null;
+  provider?: string | null;
+  redditProvider?: string | null;
+};
+
+const numberFormatter = new Intl.NumberFormat('en-US');
+
+function formatNumber(value: number): string {
+  return numberFormatter.format(value);
+}
+
+function formatPercentage(value: number): string {
+  if (!Number.isFinite(value)) {
+    return '0%';
+  }
+  const fractionDigits = Number.isInteger(value) ? 0 : 1;
+  return `${value.toFixed(fractionDigits)}%`;
+}
+
+function formatCurrency(value: number): string {
+  if (!Number.isFinite(value)) {
+    return '$0';
+  }
+  const minimumFractionDigits = Number.isInteger(value) ? 0 : 2;
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+export function ModernDashboard({ isRedditConnected = false, user, userTier = 'free', isAdmin = false }: ModernDashboardProps) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [selectedCard, setSelectedCard] = useState<string | null>(null);
+  const [quickStartOpen, setQuickStartOpen] = useState(false);
+  const [quickStartStep, setQuickStartStep] = useState<QuickStartStep>("connect");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+  const [, setLocation] = useLocation();
+  const { user: authUser } = useAuth();
+  
+  const resolvedTier = (authUser?.tier as ModernDashboardProps['userTier'] | undefined) ?? userTier;
+  const resolvedUser = authUser ?? user;
+  const isAdminUser = Boolean(authUser?.isAdmin || authUser?.role === 'admin' || resolvedTier === 'admin' || isAdmin);
+  const isPremium = isAdminUser || resolvedTier === 'premium' || resolvedTier === 'pro';
+  const displayName = resolvedUser?.username ?? resolvedUser?.email ?? 'Creator';
+  const redditConnection = resolvedUser as RedditConnectionDetails | undefined;
+  const quickStartConnected = Boolean(
+    isRedditConnected ||
+      redditConnection?.reddit_username ||
+      redditConnection?.redditUsername ||
+      redditConnection?.provider ||
+      redditConnection?.redditProvider,
+  );
+  const dashboardPrompt = isAdminUser
+    ? 'Review platform performance and respond to creator needs.'
+    : 'What would you like to do today?';
+
+  const {
+    data: statsData,
+    isLoading: statsLoading,
+    error: statsError,
+  } = useQuery<DashboardStatsResponse>({
+    queryKey: ['/api/dashboard/stats'],
+    enabled: Boolean(resolvedUser?.id),
+  });
+
+  const {
+    data: activityData,
+    isLoading: activityLoading,
+    error: activityError,
+  } = useQuery<DashboardActivityResponse>({
+    queryKey: ['/api/dashboard/activity'],
+    enabled: Boolean(resolvedUser?.id),
+  });
+
+  useEffect(() => {
+    if (statsError instanceof Error) {
+      toast({
+@@ -263,70 +281,80 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
+      description: "Exclusive deals",
+      icon: <Gift className="h-6 w-6" />,
+      color: "from-pink-500 to-pink-600",
+      route: null,
+      premium: true
+    }
+  ];
+
+  const handleCardClick = (card: typeof actionCards[0]) => {
+    if (card.route) {
+      setLocation(card.route);
+    } else if (card.comingSoon) {
+      toast({
+        title: "Coming Soon",
+        description: `${card.title} feature is being developed.`,
+      });
+    } else if (card.premium && !isPremium) {
+      toast({
+        title: "Premium Feature",
+        description: "Upgrade to Pro to access this feature.",
+      });
+    }
+  };
+
+  const handleQuickAction = () => {
+    toast({
+      title: "Quick Actions",
+      description: "Quick action menu opening...",
+    });
+    setQuickStartStep(quickStartConnected ? "subreddit" : "connect");
+    setQuickStartOpen(true);
+  };
+
+  const handleCommandCenter = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
+  const handleTaskFlow = () => {
+    toast({
+      title: "Task Flow",
+      description: "Guided workflow starting...",
+    });
+    setQuickStartStep("connect");
+    setQuickStartOpen(true);
+  };
+
+  const handleQuickStartOpenChange = (openState: boolean) => {
+    setQuickStartOpen(openState);
+    if (!openState) {
+      setQuickStartStep("connect");
+    }
+  };
+
+
+  return (
+    <div className="min-h-screen bg-gradient-purple">
+      <QuickStartModal
+        open={quickStartOpen}
+        onOpenChange={handleQuickStartOpenChange}
+        initialStep={quickStartStep}
+        isRedditConnected={quickStartConnected}
+        onNavigate={setLocation}
+      />
+      {/* Sidebar Overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={cn(
+          "fixed left-0 top-0 h-full w-[280px] bg-gray-900 border-r border-gray-800 z-50 transform transition-transform duration-300",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
+                <img 
+                  src="/logo.png" 
+                  alt="ThottoPilot" 
+                  className="w-8 h-8 rounded-lg"
+                />
+              </div>
