@@ -53,6 +53,7 @@ interface DashboardActivityResponse {
   recentMedia: Array<{
     id: number;
     url: string;
+    signedUrl: string | null;
     alt: string;
     createdAt: string | null;
   }>;
@@ -542,7 +543,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                       className="aspect-square bg-gray-700 rounded-lg overflow-hidden"
                     >
                       <img
-                        src={item.url}
+                        src={item.signedUrl ?? item.url}
                         alt={item.alt}
                         className="w-full h-full object-cover"
                       />

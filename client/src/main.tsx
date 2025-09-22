@@ -2,10 +2,46 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
 
-// Apply dark theme by default, but allow theme toggle to override
-const savedTheme = localStorage.getItem('theme');
-const prefersDark = savedTheme === 'dark' || (!savedTheme);
-document.documentElement.classList.add(prefersDark ? 'dark' : 'light');
+const themeStorageKey = "thottopilot-ui-theme"
+
+type StoredTheme = "dark" | "light" | "system"
+
+const isStoredTheme = (value: string | null): value is StoredTheme =>
+  value === "dark" || value === "light" || value === "system"
+
+const readStoredTheme = (): StoredTheme | null => {
+  if (typeof window === "undefined" || !("localStorage" in window)) {
+    return null
+  }
+
+  try {
+    const storedValue = window.localStorage.getItem(themeStorageKey)
+    return isStoredTheme(storedValue) ? storedValue : null
+  } catch {
+    return null
+  }
+}
+
+const resolveTheme = (): "dark" | "light" => {
+  const storedTheme = readStoredTheme()
+
+  if (storedTheme === "dark" || storedTheme === "light") {
+    return storedTheme
+  }
+
+  if (typeof window !== "undefined" && typeof window.matchMedia === "function") {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+  }
+
+  return "light"
+}
+
+if (typeof document !== "undefined") {
+  const resolvedTheme = resolveTheme()
+  const root = document.documentElement
+  root.classList.remove("light", "dark")
+  root.classList.add(resolvedTheme)
+}
 
 const rootElement = document.getElementById("root");
 if (!rootElement) {

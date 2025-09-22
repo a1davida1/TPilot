@@ -177,7 +177,7 @@ XOXO 💋`,
               <div className="space-y-4">
                 <div className="grid md:grid-cols-3 gap-4">
                   <Select value={platform} onValueChange={setPlatform}>
-                    <SelectTrigger className="bg-gray-900/50 border-purple-500/20">
+                    <SelectTrigger variant="overlay">
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="reddit">Reddit</SelectItem>
@@ -188,7 +188,7 @@ XOXO 💋`,
                   </Select>
 
                   <Select value={style} onValueChange={setStyle}>
-                    <SelectTrigger className="bg-gray-900/50 border-purple-500/20">
+                    <SelectTrigger variant="overlay">
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="playful">Playful & Flirty</SelectItem>
@@ -199,7 +199,7 @@ XOXO 💋`,
                   </Select>
 
                   <Select value={theme} onValueChange={setTheme}>
-                    <SelectTrigger className="bg-gray-900/50 border-purple-500/20">
+                    <SelectTrigger variant="overlay">
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="teasing">Teasing</SelectItem>
@@ -368,7 +368,7 @@ XOXO 💋`,
 
                     <div className="grid md:grid-cols-2 gap-4">
                       <Select value={platform} onValueChange={setPlatform}>
-                        <SelectTrigger className="bg-gray-900/50 border-purple-500/20">
+                        <SelectTrigger variant="overlay">
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="reddit">Reddit</SelectItem>
@@ -379,7 +379,7 @@ XOXO 💋`,
                       </Select>
 
                       <Select value={style} onValueChange={setStyle}>
-                        <SelectTrigger className="bg-gray-900/50 border-purple-500/20">
+                        <SelectTrigger variant="overlay">
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="playful">Playful & Flirty</SelectItem>

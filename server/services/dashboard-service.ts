@@ -1,14 +1,15 @@
 import { db } from '../db';
-import { 
-  contentGenerations, 
-  expenses, 
-  contentFlags, 
-  mediaAssets, 
+import {
+  contentGenerations,
+  expenses,
+  contentFlags,
+  mediaAssets,
   socialMetrics,
   engagementEvents,
   users
 } from '@shared/schema';
 import { eq, and, gte, sql, desc } from 'drizzle-orm';
+import { MediaManager } from '../lib/media.js';
 
 export interface DashboardStats {
   postsToday: number;
@@ -17,13 +18,16 @@ export interface DashboardStats {
   estimatedTaxSavings: number;
 }
 
+export interface DashboardMediaItem {
+  id: number;
+  url: string;
+  signedUrl: string | null;
+  alt: string;
+  createdAt: string | null;
+}
+
 export interface DashboardActivity {
-  recentMedia: Array<{
-    id: number;
-    url: string;
-    alt: string;
-    createdAt: string | null;
-  }>;
+  recentMedia: Array<DashboardMediaItem>;
 }
 
 export class DashboardService {
@@ -171,12 +175,7 @@ export class DashboardService {
     }
   }
 
-  private async getRecentMedia(userId: number): Promise<Array<{
-    id: number;
-    url: string;
-    alt: string;
-    createdAt: string | null;
-  }>> {
+  private async getRecentMedia(userId: number): Promise<Array<DashboardMediaItem>> {
     try {
       const result = await db
         .select({
@@ -190,16 +189,60 @@ export class DashboardService {
         .orderBy(desc(mediaAssets.createdAt))
         .limit(4);
 
-      return result.map(asset => ({
-        id: asset.id,
-        url: `/api/media/${asset.id}`, // Generate API URL for media access
-        alt: asset.filename || 'Media asset',
-        createdAt: asset.createdAt?.toISOString() || null,
-      }));
+      return this.buildActivityMediaItems(result, userId);
     } catch (error) {
       console.error('Error getting recent media:', error);
       return [];
     }
+  }
+
+  private async buildActivityMediaItems(
+    assets: Array<{
+      id: number;
+      filename: string | null;
+      createdAt: Date | string | null;
+    }>,
+    viewerUserId?: number
+  ): Promise<Array<DashboardMediaItem>> {
+    const items = await Promise.all(
+      assets.map(async (asset) => {
+        try {
+          const detailedAsset = await MediaManager.getAsset(asset.id, viewerUserId);
+          if (!detailedAsset) {
+            return null;
+          }
+
+          const directUrl =
+            detailedAsset.signedUrl ??
+            detailedAsset.downloadUrl ??
+            `/api/media/${detailedAsset.id}/download`;
+
+          const createdAtSource = detailedAsset.createdAt ?? asset.createdAt ?? null;
+          let createdAtIso: string | null = null;
+          if (createdAtSource instanceof Date) {
+            createdAtIso = createdAtSource.toISOString();
+          } else if (typeof createdAtSource === 'string') {
+            const parsedDate = new Date(createdAtSource);
+            if (!Number.isNaN(parsedDate.getTime())) {
+              createdAtIso = parsedDate.toISOString();
+            }
+          }
+
+          return {
+            id: detailedAsset.id,
+            url: directUrl,
+            signedUrl: detailedAsset.signedUrl ?? null,
+            alt: detailedAsset.filename || asset.filename || 'Media asset',
+            createdAt: createdAtIso,
+          } satisfies DashboardMediaItem;
+        } catch (error) {
+          console.error('Error building media preview item:', error);
+          return null;
+        }
+      })
+    );
+
+    return items.filter((item): item is DashboardMediaItem => Boolean(item));
   }
 
   /**
@@ -283,12 +326,7 @@ export class DashboardService {
         .limit(8); // Show more for admin view
 
       return {
-        recentMedia: result.map(asset => ({
-          id: asset.id,
-          url: `/api/media/${asset.id}`,
-          alt: asset.filename || 'Media asset',
-          createdAt: asset.createdAt?.toISOString() || null,
-        })),
+        recentMedia: await this.buildActivityMediaItems(result),
       };
     } catch (error) {
       console.error('Error getting admin dashboard activity:', error);

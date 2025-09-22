@@ -212,7 +212,7 @@ export function RedditCommunities() {
           </div>
           
           <Select value={filterCategory} onValueChange={setFilterCategory}>
-            <SelectTrigger className="w-[180px] bg-white/60 dark:bg-gray-800/60 border-pink-200 dark:border-pink-500/30">
+            <SelectTrigger variant="overlay" className="w-[180px]">
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Categories</SelectItem>
@@ -227,7 +227,7 @@ export function RedditCommunities() {
           </Select>
 
           <Select value={filterPromotion} onValueChange={setFilterPromotion}>
-            <SelectTrigger className="w-[180px] bg-white/60 dark:bg-gray-800/60 border-pink-200 dark:border-pink-500/30">
+            <SelectTrigger variant="overlay" className="w-[180px]">
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Promotion</SelectItem>
@@ -239,7 +239,7 @@ export function RedditCommunities() {
           </Select>
 
           <Select value={filterVerification} onValueChange={setFilterVerification}>
-            <SelectTrigger className="w-[180px] bg-white/60 dark:bg-gray-800/60 border-pink-200 dark:border-pink-500/30">
+            <SelectTrigger variant="overlay" className="w-[180px]">
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Verification</SelectItem>
@@ -249,7 +249,7 @@ export function RedditCommunities() {
           </Select>
 
           <Select value={sortBy} onValueChange={(v: 'success' | 'engagement' | 'members' | 'upvotes' | 'name') => setSortBy(v)}>
-            <SelectTrigger className="w-[150px] bg-white/60 dark:bg-gray-800/60 border-pink-200 dark:border-pink-500/30">
+            <SelectTrigger variant="overlay" className="w-[150px]">
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="success">Success Rate</SelectItem>

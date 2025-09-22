@@ -119,7 +119,7 @@ export function TrendingTags() {
           </div>
           
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-[180px] bg-gray-900/50 border-white/10">
+            <SelectTrigger variant="overlay" className="w-[180px]">
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Categories</SelectItem>
@@ -132,7 +132,7 @@ export function TrendingTags() {
           </Select>
 
           <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-[140px] bg-gray-900/50 border-white/10">
+            <SelectTrigger variant="overlay" className="w-[140px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
