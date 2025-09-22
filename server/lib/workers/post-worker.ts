@@ -8,6 +8,7 @@ import { MediaManager } from "../media.js";
 import { storage } from "../../storage.js";
 import { socialMediaManager, type Platform, type PostContent } from "../../social-media/social-media-manager.js";
 import { logger } from "../logger.js";
+import { recordPostOutcome } from "../../compliance/ruleViolationTracker.js";
 
 export class PostWorker {
   private initialized = false;
@@ -52,6 +53,10 @@ export class PostWorker {
       }
       const canPost = await RedditManager.canPostToSubreddit(userId, subreddit);
       if (!canPost.canPost) {
+        recordPostOutcome(userId, subreddit, {
+          status: 'removed',
+          reason: canPost.reason ?? 'Posting not permitted'
+        });
         throw new Error(`Cannot post: ${canPost.reason}`);
       }
 
@@ -91,6 +96,7 @@ export class PostWorker {
 
       // Update job status in database
       if (result.success) {
+        recordPostOutcome(userId, subreddit, { status: 'posted' });
         if (!postJobId) {
           throw new Error('postJobId is required');
         }
@@ -109,6 +115,10 @@ export class PostWorker {
 
         logger.info(`Post job ${postJobId} completed successfully`, { result });
       } else {
+        recordPostOutcome(userId, subreddit, {
+          status: 'removed',
+          reason: result.error ?? 'Reddit posting failed'
+        });
         throw new Error(result.error || 'Reddit posting failed');
       }
 

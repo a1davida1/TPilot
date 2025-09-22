@@ -5,6 +5,7 @@ import { postJobs, eventLogs } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { RedditManager, type RedditPostOptions } from "../reddit.js";
 import { logger } from "../logger.js";
+import { recordPostOutcome } from "../../compliance/ruleViolationTracker.js";
 
 export class BatchPostingWorker {
   private initialized = false;
@@ -49,12 +50,19 @@ export class BatchPostingWorker {
       for (let i = 0; i < subreddits.length; i++) {
         const subreddit = subreddits[i];
         
+        let outcomeTracked = false;
+
         try {
           logger.info(`Posting to r/${subreddit} (${i + 1}/${subreddits.length})`);
 
           // Check if we can post to this subreddit
           const canPost = await RedditManager.canPostToSubreddit(userId, subreddit);
           if (!canPost.canPost) {
+            recordPostOutcome(userId, subreddit, {
+              status: 'removed',
+              reason: canPost.reason ?? 'Posting not permitted'
+            });
+            outcomeTracked = true;
             results.push({
               subreddit,
               success: false,
@@ -107,6 +115,8 @@ export class BatchPostingWorker {
           const result = await reddit.submitPost(postOptions);
 
           if (result.success) {
+            recordPostOutcome(userId, subreddit, { status: 'posted' });
+            outcomeTracked = true;
             // Update post job status
             await db
               .update(postJobs)
@@ -135,6 +145,11 @@ export class BatchPostingWorker {
             successCount++;
 
           } else {
+            recordPostOutcome(userId, subreddit, {
+              status: 'removed',
+              reason: result.error ?? 'Reddit posting failed'
+            });
+            outcomeTracked = true;
             await db
               .update(postJobs)
               .set({
@@ -166,6 +181,15 @@ export class BatchPostingWorker {
             error: error instanceof Error ? error.message : String(error)
           });
           
+
+          if (!outcomeTracked) {
+            const reason = error instanceof Error ? error.message : 'Unknown error';
+            recordPostOutcome(userId, subreddit, {
+              status: 'removed',
+              reason,
+            });
+          }
+
           results.push({
             subreddit,
             success: false,
