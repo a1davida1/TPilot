@@ -4,6 +4,7 @@ import { z } from "zod";
 import { textModel, visionModel } from "../lib/gemini";
 import { CaptionArray, RankResult, platformChecks } from "./schema";
 import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
+import { BANNED_WORDS_HINT, variantContainsBannedWord } from "./bannedWords";
 import {
   HUMAN_CTA,
   buildRerankHint,
@@ -165,71 +166,114 @@ type RewriteVariantsParams = {
   mood?: string
 };
 
-export async function variantsRewrite(params:RewriteVariantsParams){
-  const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rewrite.txt");
-  const voiceContext = formatVoiceContext(params.voice);
-  const user = [
-    `PLATFORM: ${params.platform}`,
-    `VOICE: ${params.voice}`,
-    voiceContext,
-    params.style ? `STYLE: ${params.style}` : "",
-    params.mood ? `MOOD: ${params.mood}` : "",
-    `EXISTING_CAPTION: ${serializePromptField(params.existingCaption)}`,
-    params.facts ? `IMAGE_FACTS: ${JSON.stringify(params.facts)}` : "",
-    `NSFW: ${params.nsfw || false}`,
-    params.hint ? `HINT:${serializePromptField(params.hint, { block: true })}` : "",
-  ].filter((line): line is string => Boolean(line)).join("\n");
-  const voiceGuide = buildVoiceGuideBlock(params.voice);
-  const promptSections = [sys, guard, prompt, user];
-  if (voiceGuide) promptSections.push(voiceGuide);
-  let res;
-  try {
-    res=await textModel.generateContent([{ text: promptSections.join("\n") }]);
-  } catch (error) {
-    console.error('Gemini textModel.generateContent failed:', error);
-    throw error;
-  }
-  const json=stripToJSON(res.response.text()) as unknown;
-  // Fix common safety_level values and missing fields
-  if(Array.isArray(json)){
-    json.forEach((item) => {
-      const variant = item as Record<string, unknown>;
-      variant.safety_level = normalizeSafetyLevel(
-        typeof variant.safety_level === 'string' ? variant.safety_level : 'normal'
-      );
-      // Fix other fields
-      if(typeof variant.mood !== 'string' || variant.mood.length<2) variant.mood="engaging";
-      if(typeof variant.style !== 'string' || variant.style.length<2) variant.style="authentic";
-      if(typeof variant.cta !== 'string' || variant.cta.length<2) variant.cta="Check it out";
-      if(typeof variant.alt !== 'string' || variant.alt.length<20) variant.alt="Engaging social media content";
-      if(!Array.isArray(variant.hashtags)) variant.hashtags=["#content", "#creative", "#amazing"];
-      if(typeof variant.caption !== 'string' || variant.caption.length<1) variant.caption="Check out this amazing content, you'll love it and want more!";
-    });
+const VARIANT_TARGET = 5;
+const VARIANT_RETRY_LIMIT = 3;
 
-    // Ensure exactly 5 variants by padding with variations if needed
-    while(json.length < 5) {
-      const template = (json[0] as Record<string, unknown>) || {
-        caption: "Check out this amazing content, you'll love it and want more!",
-        alt: "Engaging social media content",
-        hashtags: ["#content", "#creative", "#amazing"],
-        cta: "Check it out",
-        mood: "engaging",
-        style: "authentic",
-        safety_level: normalizeSafetyLevel('normal'),
-        nsfw: false
-      };
-      json.push({
-        ...template,
-        caption: `${template.caption as string} This enhanced version provides much more engaging content and better call-to-action for your audience! (Variant ${json.length + 1})`
+export async function variantsRewrite(params: RewriteVariantsParams) {
+  const [sys, guard, prompt] = await Promise.all([
+    load("system.txt"),
+    load("guard.txt"),
+    load("rewrite.txt")
+  ]);
+
+  let attempts = 0;
+  let currentHint = params.hint;
+  let variants: any[] = [];
+
+  while (attempts < VARIANT_RETRY_LIMIT && variants.length < VARIANT_TARGET) {
+    attempts += 1;
+    
+    const voiceContext = formatVoiceContext(params.voice);
+    const user = [
+      `PLATFORM: ${params.platform}`,
+      `VOICE: ${params.voice}`,
+      voiceContext,
+      params.style ? `STYLE: ${params.style}` : "",
+      params.mood ? `MOOD: ${params.mood}` : "",
+      `EXISTING_CAPTION: ${serializePromptField(params.existingCaption)}`,
+      params.facts ? `IMAGE_FACTS: ${JSON.stringify(params.facts)}` : "",
+      `NSFW: ${params.nsfw || false}`,
+      currentHint ? `HINT:${serializePromptField(currentHint, { block: true })}` : "",
+    ].filter((line): line is string => Boolean(line)).join("\n");
+    
+    const voiceGuide = buildVoiceGuideBlock(params.voice);
+    const promptSections = [sys, guard, prompt, user];
+    if (voiceGuide) promptSections.push(voiceGuide);
+    
+    let res;
+    try {
+      res = await textModel.generateContent([{ text: promptSections.join("\n") }]);
+    } catch (error) {
+      console.error('Gemini textModel.generateContent failed:', error);
+      throw error;
+    }
+    
+    const json = stripToJSON(res.response.text()) as unknown;
+    let hasBannedWords = false;
+    
+    if (Array.isArray(json)) {
+      json.forEach((item) => {
+        const variant = item as Record<string, unknown>;
+        
+        // Check for banned words first
+        if (variantContainsBannedWord(variant)) {
+          hasBannedWords = true;
+          return; // Skip this variant
+        }
+        
+        // Normalize variant fields
+        variant.safety_level = normalizeSafetyLevel(
+          typeof variant.safety_level === 'string' ? variant.safety_level : 'normal'
+        );
+        if (typeof variant.mood !== 'string' || variant.mood.length < 2) variant.mood = "engaging";
+        if (typeof variant.style !== 'string' || variant.style.length < 2) variant.style = "authentic";
+        if (typeof variant.cta !== 'string' || variant.cta.length < 2) variant.cta = "Check it out";
+        if (typeof variant.alt !== 'string' || variant.alt.length < 20) variant.alt = "Engaging social media content";
+        if (!Array.isArray(variant.hashtags)) variant.hashtags = ["#content", "#creative", "#amazing"];
+        if (typeof variant.caption !== 'string' || variant.caption.length < 1) variant.caption = "Check out this amazing content, you'll love it and want more!";
+        
+        variants.push(variant);
       });
     }
-
-    // Trim to exactly 5 if more than 5
-    if(json.length > 5) {
-      json.splice(5);
+    
+    // If we don't have enough variants, build retry hint
+    if (variants.length < VARIANT_TARGET) {
+      const needed = VARIANT_TARGET - variants.length;
+      let retryHint = `Generate ${needed} more unique, distinct variants.`;
+      
+      // Add banned words hint if detected
+      if (hasBannedWords) {
+        retryHint = retryHint ? `${retryHint} ${BANNED_WORDS_HINT}` : BANNED_WORDS_HINT;
+      }
+      
+      currentHint = retryHint;
     }
   }
-  return CaptionArray.parse(json);
+  
+  // Ensure exactly 5 variants by padding with variations if needed
+  while (variants.length < VARIANT_TARGET) {
+    const template = variants[0] || {
+      caption: "Check out this amazing content, you'll love it and want more!",
+      alt: "Engaging social media content",
+      hashtags: ["#content", "#creative", "#amazing"],
+      cta: "Check it out",
+      mood: "engaging",
+      style: "authentic",
+      safety_level: normalizeSafetyLevel('normal'),
+      nsfw: false
+    };
+    variants.push({
+      ...template,
+      caption: `${template.caption} Enhanced version ${variants.length + 1}`
+    });
+  }
+  
+  // Trim to exactly 5 if more than 5
+  if (variants.length > VARIANT_TARGET) {
+    variants.splice(VARIANT_TARGET);
+  }
+  
+  return CaptionArray.parse(variants);
 }
 
 async function requestRewriteRanking(
@@ -273,6 +317,16 @@ export async function rankAndSelect(
   const first = await requestRewriteRanking(variants, serializedVariants, promptBlock, params?.platform);
   let parsed = RankResult.parse(first);
   const violations = detectVariantViolations(parsed.final);
+  
+  // Check for banned words in the final selection
+  if (variantContainsBannedWord(parsed.final)) {
+    violations.push({
+      type: "banned_word",
+      content: parsed.final.caption || "",
+      field: "caption"
+    });
+  }
+  
   if (violations.length === 0) {
     return parsed;
   }
@@ -286,6 +340,16 @@ export async function rankAndSelect(
   );
   parsed = RankResult.parse(rerank);
   const rerankViolations = detectVariantViolations(parsed.final);
+  
+  // Check for banned words in the reranked final selection
+  if (variantContainsBannedWord(parsed.final)) {
+    rerankViolations.push({
+      type: "banned_word",
+      content: parsed.final.caption || "",
+      field: "caption"
+    });
+  }
+  
   if (rerankViolations.length === 0) {
     return parsed;
   }
