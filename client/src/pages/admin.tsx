@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { AdminCommunitiesPanel } from '@/components/admin/admin-communities-panel';
 import { 
   Users, 
   DollarSign, 
@@ -107,6 +108,7 @@ interface Completeness {
 
 export function AdminDashboard() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [selectedPeriod, setSelectedPeriod] = useState('7d');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [actionType, setActionType] = useState<'ban' | 'suspend' | 'unban' | 'reset-password' | 'tier-management' | 'user-details' | null>(null);
@@ -299,6 +301,7 @@ export function AdminDashboard() {
           <TabsTrigger value="analytics" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Analytics</TabsTrigger>
           <TabsTrigger value="users" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Users</TabsTrigger>
           <TabsTrigger value="providers" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Providers</TabsTrigger>
+          <TabsTrigger value="communities" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Communities</TabsTrigger>
           <TabsTrigger value="revenue" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Revenue</TabsTrigger>
           <TabsTrigger value="roadmap" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Roadmap</TabsTrigger>
           <TabsTrigger value="system" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">System</TabsTrigger>
@@ -567,6 +570,11 @@ export function AdminDashboard() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* Communities Tab */}
+        <TabsContent value="communities" className="space-y-6">
+          <AdminCommunitiesPanel canManage={user?.tier === 'admin'} />
         </TabsContent>
 
         {/* System Tab */}

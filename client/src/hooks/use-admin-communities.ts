@@ -1,0 +1,141 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
+
+export type PromotionPolicy = 'yes' | 'no' | 'limited' | 'subtle' | 'strict' | 'unknown';
+export type GrowthTrend = 'growing' | 'stable' | 'declining' | 'unknown';
+export type ActivityLevel = 'low' | 'medium' | 'high' | 'unknown';
+export type CompetitionLevel = 'low' | 'medium' | 'high' | 'unknown';
+
+export interface CommunityRules {
+  minKarma?: number;
+  minAccountAge?: number;
+  watermarksAllowed?: boolean;
+  sellingAllowed?: boolean;
+  titleRules?: string[];
+  contentRules?: string[];
+  linkRestrictions?: string[];
+  verificationRequired?: boolean;
+  requiresApproval?: boolean;
+  nsfwRequired?: boolean;
+  maxPostsPerDay?: number;
+  cooldownHours?: number;
+}
+
+export interface PostingLimits {
+  perDay?: number;
+  perWeek?: number;
+  cooldownHours?: number;
+}
+
+export interface AdminCommunity {
+  id: string;
+  name: string;
+  displayName: string;
+  category: string;
+  members: number;
+  engagementRate: number;
+  verificationRequired: boolean;
+  promotionAllowed: PromotionPolicy;
+  postingLimits?: PostingLimits | null;
+  rules?: CommunityRules | null;
+  bestPostingTimes?: string[] | null;
+  averageUpvotes?: number | null;
+  successProbability?: number | null;
+  growthTrend?: GrowthTrend | null;
+  modActivity?: ActivityLevel | null;
+  description?: string | null;
+  tags?: string[] | null;
+  competitionLevel?: CompetitionLevel | null;
+}
+
+export interface CommunityPayload {
+  id?: string;
+  name: string;
+  displayName: string;
+  category: string;
+  members: number;
+  engagementRate: number;
+  verificationRequired: boolean;
+  promotionAllowed: PromotionPolicy;
+  postingLimits?: PostingLimits | null;
+  rules?: Partial<CommunityRules> | null;
+  bestPostingTimes?: string[] | null;
+  averageUpvotes?: number | null;
+  successProbability?: number | null;
+  growthTrend?: GrowthTrend;
+  modActivity?: ActivityLevel;
+  description?: string | null;
+  tags?: string[] | null;
+  competitionLevel?: CompetitionLevel;
+}
+
+export interface CommunityFilters {
+  search?: string;
+  category?: string;
+  promotionAllowed?: PromotionPolicy | 'all';
+  verificationRequired?: 'all' | 'required' | 'not-required';
+}
+
+export function useAdminCommunities(filters?: CommunityFilters) {
+  const queryParams = new URLSearchParams();
+  
+  if (filters?.search) {
+    queryParams.set('search', filters.search);
+  }
+  if (filters?.category && filters.category !== 'all') {
+    queryParams.set('category', filters.category);
+  }
+  if (filters?.promotionAllowed && filters.promotionAllowed !== 'all') {
+    queryParams.set('promotionAllowed', filters.promotionAllowed);
+  }
+  if (filters?.verificationRequired && filters.verificationRequired !== 'all') {
+    queryParams.set('verificationRequired', filters.verificationRequired === 'required' ? 'true' : 'false');
+  }
+
+  const queryString = queryParams.toString();
+  const url = `/api/admin/communities${queryString ? `?${queryString}` : ''}`;
+
+  return useQuery<AdminCommunity[]>({
+    queryKey: ['admin-communities', filters],
+    queryFn: () => fetch(url).then(res => {
+      if (!res.ok) throw new Error('Failed to fetch communities');
+      return res.json();
+    }),
+  });
+}
+
+export function useCreateCommunity() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (payload: CommunityPayload) => 
+      apiRequest('POST', '/api/admin/communities', payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-communities'] });
+    },
+  });
+}
+
+export function useUpdateCommunity() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: CommunityPayload }) => 
+      apiRequest('PUT', `/api/admin/communities/${id}`, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-communities'] });
+    },
+  });
+}
+
+export function useDeleteCommunity() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (id: string) => 
+      apiRequest('DELETE', `/api/admin/communities/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-communities'] });
+    },
+  });
+}
