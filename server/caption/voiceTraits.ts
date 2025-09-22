@@ -5,10 +5,10 @@ import { z } from "zod";
 const VoiceDefinitionSchema = z.object({
   persona: z.string(),
   traits: z.array(z.string()).min(1),
-  hooks: z.array(z.string()).optional(),
-  cta: z.string().optional(),
-  avoid: z.array(z.string()).optional(),
-  cadence: z.string().optional(),
+  hooks: z.array(z.string()).min(1),
+  cta: z.array(z.string()).min(1),
+  authenticity: z.array(z.string()).min(1),
+  subredditNotes: z.array(z.string()).optional(),
 });
 
 const VoiceMapSchema = z.record(VoiceDefinitionSchema);
@@ -42,32 +42,40 @@ export function formatVoiceContext(voice: string): string {
   const definition = getVoiceDefinition(voice);
   if (!definition) return "";
 
-  const lines: string[] = ["VOICE_CONTEXT:"];
-  lines.push(`- Persona: ${definition.persona}`);
+  const blocks: string[] = [];
 
-  for (const trait of definition.traits) {
-    lines.push(`- ${trait}`);
+  // Voice persona
+  blocks.push(`VOICE_PERSONA: ${definition.persona}`);
+
+  // Voice traits
+  if (definition.traits?.length) {
+    blocks.push('VOICE_TRAITS:');
+    definition.traits.forEach(trait => blocks.push(`- ${trait}`));
   }
 
+  // Audience hooks
   if (definition.hooks?.length) {
-    for (const hook of definition.hooks) {
-      lines.push(`- Hook pattern: ${hook}`);
-    }
+    blocks.push('AUDIENCE_HOOKS:');
+    definition.hooks.forEach(hook => blocks.push(`- ${hook}`));
   }
 
-  if (definition.cta) {
-    lines.push(`- CTA direction: ${definition.cta}`);
+  // CTA patterns
+  if (definition.cta?.length) {
+    blocks.push('CTA_PATTERNS:');
+    definition.cta.forEach(cta => blocks.push(`- ${cta}`));
   }
 
-  if (definition.cadence) {
-    lines.push(`- Cadence: ${definition.cadence}`);
+  // Authenticity checklist
+  if (definition.authenticity?.length) {
+    blocks.push('AUTHENTICITY_CHECKLIST:');
+    definition.authenticity.forEach(auth => blocks.push(`- ${auth}`));
   }
 
-  if (definition.avoid?.length) {
-    for (const rule of definition.avoid) {
-      lines.push(`- Avoid: ${rule}`);
-    }
+  // Subreddit notes (optional)
+  if (definition.subredditNotes?.length) {
+    blocks.push('SUBREDDIT_NOTES:');
+    definition.subredditNotes.forEach(note => blocks.push(`- ${note}`));
   }
 
-  return lines.join("\n");
+  return blocks.join('\n');
 }

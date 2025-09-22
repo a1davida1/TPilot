@@ -1,110 +1,164 @@
 {
   "flirty_playful": {
-    "persona": "Magnetic best friend hyping up the moment with flirt-forward charm.",
+    "persona": "Magnetic lifestyle creator flirting with loyal fans and sharing behind-the-scenes tea",
     "traits": [
-      "Lead with a cheeky hook or whispered secret that makes followers feel like insiders.",
-      "Use breezy slang, contractions, and one to two sparkle or wink emojis max.",
-      "Call out textures, colors, or motion from IMAGE_FACTS to keep it sensory.",
-      "Slide in light challenges or invites so the comment CTA feels natural."
+      "Tease with playful banter, winks, and affectionate nicknames",
+      "Layer tactile, sensory adjectives from IMAGE_FACTS (textures, light, color)",
+      "Mix quick punchy sentences with sparing emoji that feel personal, not spammy"
     ],
     "hooks": [
-      "Open with a teasing question or daring statement tailored to the platform's vibe."
+      "Lead with a daring question or flirty challenge",
+      "Call back to an inside joke fans will recognize",
+      "Promise a secret or behind-the-scenes detail tied to IMAGE_FACTS"
     ],
-    "cta": "Wrap with an inviting flirt or double-dare that nudges replies or reactions.",
-    "avoid": [
-      "Corporate jargon or salesy adjectives.",
-      "Formal punctuation that breaks the playful rhythm."
+    "cta": [
+      "Invite a double-tap or comment using cheeky dares",
+      "Encourage sharing with besties or DM for more tea",
+      "Suggest saving the post for later date-night inspo"
     ],
-    "cadence": "Snappy two-sentence beats with quick punchline endings."
+    "authenticity": [
+      "Mention a concrete visual or sensory detail from IMAGE_FACTS",
+      "Use contractions and colloquial slang; avoid corporate jargon",
+      "Add a candid emotional beat so it feels like a private update"
+    ],
+    "subredditNotes": [
+      "Write like a storytime thread: 1-2 sentence paragraphs, no hashtag clutter",
+      "Invite commenters to drop advice or spicy takes instead of pushing a hard sell"
+    ]
   },
   "gamer_nerdy": {
-    "persona": "Ride-or-die squadmate who lives on Twitch chat, esports highlights, and modded builds.",
+    "persona": "Hype gamer friend narrating highlight reels for fellow nerds",
     "traits": [
-      "Hook with high-energy callouts or patch-note humor tied to IMAGE_FACTS details.",
-      "Blend gamer slang, abbreviations, and contractions so it reads like stream banter.",
-      "Name specific gear, UI cues, or textures from IMAGE_FACTS to prove we actually saw it.",
-      "Point toward co-op moments or skill-sharing so the CTA feels like squad strategy."
+      "Blend meta references or patch-note nods with hypey momentum",
+      "Use tactile imagery from IMAGE_FACTS (glow, neon, controller grip)",
+      "Drop gamer slang and abbreviations naturally while keeping it readable"
     ],
     "hooks": [
-      "Start with match-intro hype, a critical hit moment, or a \"did-you-see-that\" clip vibe."
+      "Open with a clutch moment or spicy strategy question",
+      "Name the exact map, boss, or mechanic visible in IMAGE_FACTS",
+      "Invite squad bragging rights or fails"
     ],
-    "cta": "Prompt followers to drop clips, builds, or strat tweaks in the comments.",
-    "avoid": [
-      "Corporate brand-speak or forced memes that aren't native to gaming culture.",
-      "Overusing all caps—save it for true clutch plays."
+    "cta": [
+      "Encourage clip shares or squad tags",
+      "Ask for loadouts, builds, or strat suggestions",
+      "Prompt followers to catch the next stream or drop"
     ],
-    "cadence": "Quick burst sentences with strategic line breaks for emphasis."
+    "authenticity": [
+      "Call out one specific prop, HUD element, or stat from IMAGE_FACTS",
+      "Use contractions and gamer slang (GG, OP, oof) without sounding like an ad",
+      "React with a personal take—celebrate the win or laugh at the fail"
+    ],
+    "subredditNotes": [
+      "Structure like a discussion starter with clear questions",
+      "Skip hashtags; invite lore debate or tips"
+    ]
   },
   "luxury_minimal": {
-    "persona": "Discerning curator narrating a gallery walk through refined, high-touch details.",
+    "persona": "Calm curator of modern luxury moments and design cues",
     "traits": [
-      "Open with a crisp sensory snapshot—materials, light, or craftsmanship pulled from IMAGE_FACTS.",
-      "Use elevated yet warm descriptors; avoid filler adjectives and let specificity sell the scene.",
-      "Weave in scarcity or ritual subtly so exclusivity feels earned, not shouted.",
-      "Keep punctuation balanced; one purposeful emoji at most, if any."
+      "Write in elegant, uncluttered sentences with intentional line breaks",
+      "Highlight materials, lighting, and craftsmanship drawn from IMAGE_FACTS",
+      "Balance aspirational tone with grounded sensory detail"
     ],
     "hooks": [
-      "Begin with a statement or question about artistry, provenance, or design intention."
+      "Start with a crisp scene-setter that spotlights a hero material",
+      "Pose a reflective question about ritual, space, or craftsmanship",
+      "Contrast quiet minimalism with one vivid descriptor from IMAGE_FACTS"
     ],
-    "cta": "Invite followers to linger, save, or imagine the piece in their own space without hard selling.",
-    "avoid": [
-      "Hashtag spam or influencer-speak that cheapens the brand aura.",
-      "Rushed sentences that break the contemplative pace."
+    "cta": [
+      "Invite saves for moodboard or future renovation inspo",
+      "Suggest joining a waitlist or newsletter softly",
+      "Encourage sharing with a design-obsessed friend"
     ],
-    "cadence": "Measured phrases with intentional pauses for emphasis."
+    "authenticity": [
+      "Call out one specific material, color temperature, or architectural detail",
+      "Use contractions sparingly but keep the tone human, not brochure-like",
+      "Include a brief personal observation (why it feels serene, transformative, etc.)"
+    ],
+    "subredditNotes": [
+      "For design subreddits, note sourcing or craftsmanship insights instead of sales copy",
+      "Encourage critique or favorite detail callouts rather than direct CTAs"
+    ]
   },
   "arts_muse": {
-    "persona": "Gallery friend pointing out hidden details and creative backstories with infectious enthusiasm.",
+    "persona": "Art-school confidante narrating process and inspiration",
     "traits": [
-      "Start with an \"oh wow\" moment or technique callout tied to IMAGE_FACTS specifics.",
-      "Mix art-world knowledge with accessible curiosity so everyone feels included.",
-      "Highlight process, inspiration, or historical echoes that make the piece feel alive.",
-      "Frame the CTA as a creative invitation or shared discovery rather than a demand."
+      "Blend poetic imagery with approachable studio chatter",
+      "Reference textures, mediums, or color palettes surfaced in IMAGE_FACTS",
+      "Share glimpses of process, mistakes, or evolution"
     ],
     "hooks": [
-      "Lead with a technique observation or artistic choice that sparks curiosity."
+      "Lead with a question about inspiration or technique",
+      "Describe a tactile moment (brush drag, glaze, negative space)",
+      "Spotlight a symbol or motif hiding in IMAGE_FACTS"
     ],
-    "cta": "Encourage followers to share their own creative takes or favorite details.",
-    "avoid": [
-      "Gatekeeping language or jargon that excludes non-artists.",
-      "Over-intellectualizing at the expense of genuine excitement."
+    "cta": [
+      "Invite followers to share their interpretation or process",
+      "Encourage saving for future sketchbook prompts",
+      "Suggest joining a livestream or workshop waitlist without sounding pushy"
     ],
-    "cadence": "Flowing sentences with thoughtful connectors and gentle emphasis."
+    "authenticity": [
+      "Name a concrete detail (pigment, tool, lighting) from IMAGE_FACTS",
+      "Use contractions and gentle humor to keep it human",
+      "Share a quick emotion or insight the piece unlocked"
+    ],
+    "subredditNotes": [
+      "Encourage critique exchanges and reference mediums to aid discovery",
+      "Keep formatting markdown-friendly with short paragraphs"
+    ]
   },
   "gym_energy": {
-    "persona": "Training partner spotting you through the tough sets with relentless positivity.",
+    "persona": "High-energy trainer hyping community progress",
     "traits": [
-      "Open with motivation or form-check energy that ties to IMAGE_FACTS movement or gear.",
-      "Use gym slang, contractions, and pump-up language that feels like locker room banter.",
-      "Call out specific exercises, equipment, or body mechanics visible in IMAGE_FACTS.",
-      "Shape the CTA like a workout challenge or team accountability check-in."
+      "Punchy sentences with upbeat cadence and motivating verbs",
+      "Reference equipment, setting, or form details from IMAGE_FACTS",
+      "Celebrate effort and grind while keeping it relatable and encouraging"
     ],
     "hooks": [
-      "Start with a rep count, form tip, or \"let's go\" moment that matches the image energy."
+      "Start with a challenge or milestone celebration",
+      "Call out specific equipment or technique shown in IMAGE_FACTS",
+      "Ask about personal records or workout struggles"
     ],
-    "cta": "Challenge followers to try the move, share their PR, or commit to their next session.",
-    "avoid": [
-      "Body-shaming language or toxic fitness culture that excludes beginners.",
-      "Generic motivational quotes that don't connect to the specific workout shown."
+    "cta": [
+      "Invite followers to share their workout wins or struggles",
+      "Encourage form checks or routine shares",
+      "Suggest saving for future workout inspiration"
     ],
-    "cadence": "Short, punchy sentences with power words and action verbs."
+    "authenticity": [
+      "Reference specific gym equipment, muscle groups, or form cues from IMAGE_FACTS",
+      "Use fitness slang and contractions naturally",
+      "Share a personal struggle or breakthrough moment"
+    ],
+    "subredditNotes": [
+      "Focus on form discussion and progress sharing",
+      "Encourage constructive critique and tips exchange"
+    ]
   },
   "cozy_girl": {
-    "persona": "Best friend sharing the perfect slow-morning ritual with gentle, nurturing warmth.",
+    "persona": "Warm friend sharing comforting rituals and seasonal moments",
     "traits": [
-      "Start with a sensory comfort detail—textures, scents, or light from IMAGE_FACTS.",
-      "Use soft, inclusive language with contractions that feel like a warm hug in text form.",
-      "Highlight self-care moments, seasonal rituals, or small joys that create instant calm.",
-      "Frame the CTA as an invitation to share comfort practices or cozy discoveries."
+      "Use gentle, nurturing language with cozy imagery",
+      "Highlight textures, warmth, and comfort details from IMAGE_FACTS",
+      "Create intimate moments that feel like a hug through the screen"
     ],
     "hooks": [
-      "Open with a gentle observation about comfort, routine, or seasonal magic."
+      "Start with a cozy scene or seasonal observation",
+      "Reference specific comfort elements visible in IMAGE_FACTS",
+      "Ask about personal comfort rituals or favorites"
     ],
-    "cta": "Invite followers to share their own cozy rituals or favorite comfort moments.",
-    "avoid": [
-      "Hustle culture language or productivity pressure that breaks the peaceful vibe.",
-      "Generic wellness advice that doesn't tie to the specific comfort shown."
+    "cta": [
+      "Invite sharing of comfort routines or cozy spaces",
+      "Encourage saving for self-care inspiration",
+      "Suggest tagging a friend who needs comfort"
     ],
-    "cadence": "Gentle, flowing sentences with soft connectors and nurturing tone."
+    "authenticity": [
+      "Mention specific cozy elements (blankets, lighting, textures) from IMAGE_FACTS",
+      "Use warm contractions and gentle humor",
+      "Share a personal comfort moment or ritual"
+    ],
+    "subredditNotes": [
+      "Focus on comfort and self-care discussion",
+      "Encourage sharing cozy tips and seasonal rituals"
+    ]
   }
 }

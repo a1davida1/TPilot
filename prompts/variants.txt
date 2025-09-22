@@ -1,31 +1,28 @@
 Given:
 PLATFORM: <instagram|x|reddit|tiktok>
 VOICE: <flirty_playful|gamer_nerdy|luxury_minimal|arts_muse|gym_energy|cozy_girl>
-VOICE_CONTEXT:
-- persona + trait bullets for the selected voice
+VOICE_PERSONA: <string>
+VOICE_TRAITS:
+- <bullet points>
+AUDIENCE_HOOKS:
+- <bullet points>
+CTA_PATTERNS:
+- <bullet points>
+AUTHENTICITY_CHECKLIST:
+- <bullet points>
+SUBREDDIT_NOTES:
+- <optional bullet points>
 IMAGE_FACTS: <json>
-NSFW: <true|false>
-(Optional) HINT: <revision instructions>
 
-Deliverable: Write 5 distinct options. Return ONLY a JSON array with 5 objects using this schema:
-{"caption":"","alt":"","hashtags":[],"cta":"","mood":"","style":"","safety_level":"","nsfw":false}
+Write 5 options. Return JSON array of 5 objects ONLY:
+{"caption":"","alt":"","hashtags":[],"cta":"","mood":"","style":"","safety_level":""}
 
-Rules of play:
-- Audience Hooks:
-  * Every caption opens with a platform-ready hook that matches VOICE_CONTEXT.
-  * Instagram/TikTok hooks should feel cinematic or sensory; X hooks should be punchy and scroll-stopping; Reddit hooks read like a post title or story cold open.
-- Subreddit Norms:
-  * When PLATFORM=reddit, write in first-person or inclusive community voice, never add hashtags, and reference shared knowledge or etiquette when relevant.
-- CTA Guidance:
-  * CTA must feel organic to the platform: IG invites comments or saves, X nudges replies/RTs, TikTok sparks duet/stitch or quick reactions, Reddit encourages discussion or feedback (no "follow me").
-- Authenticity Checklist (apply to every variant):
-  * Mention at least one concrete visual or factual detail pulled from IMAGE_FACTS.
-  * Use colloquial contractions and natural speech—no corporate phrasing.
-  * Nod to the creator↔fan relationship or shared community energy.
-  * Keep emoji purposeful; never spam or repeat more than twice.
-- Platform Guardrails:
-  * Instagram: hook ≤125 chars, total ≤2200 chars, 3–8 thoughtful hashtags.
-  * X: ≤250 chars total, maximum 3 hashtags, no thread prompts unless IMAGE_FACTS demand it.
-  * Reddit: 1–3 short paragraphs, no hashtags, alt can summarize visual context for mods if needed.
-  * TikTok: 150–220 chars, 2–5 hashtags, rhythmic line breaks allowed.
-- Always align mood/style/cta fields with the text, respect NSFW flag, and avoid placeholders or meta commentary.
+Rules:
+- 5 different angles; include 1 short/punchy, 1 CTA-forward, 1 aesthetic/poetic.
+- Each caption must open with a hook grounded in AUDIENCE_HOOKS or VOICE_PERSONA that spotlights the target community.
+- Mention at least one concrete sensory or visual detail from IMAGE_FACTS in both the caption and the alt text.
+- CTA lines must follow CTA_PATTERNS and respect platform norms (IG: saves/shares; X: replies/quote chains; TikTok: watch/like/follow; Reddit: conversation/upvotes without hashtags).
+- Apply every AUTHENTICITY_CHECKLIST item: use contractions, keep tone conversational, show a personal reaction, and avoid corporate phrasing.
+- When PLATFORM=reddit, follow SUBREDDIT_NOTES (if provided), keep paragraphs compact, and never spam hashtags or emoji.
+- Use nouns/colors/setting from IMAGE_FACTS.
+- Platform limits: IG hook<=125, total<=2200 & 3–8 tags; X<=250 & 0–3 tags; Reddit no tag spam; TikTok 150–220 & 2–5 tags.
