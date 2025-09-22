@@ -1,0 +1,882 @@
+Add helper for caption generation
+Sep 20 · a1davida1/TPilot · main
++570-34
+1. Introduce a helper in `server/caption` (e.g., `inferFallbackFromFacts.ts`) that builds hashtags, CTA, and alt text from `facts`, `existingCaption`, or `theme` using noun extraction and platform limits.
+2. Swap the current hard-coded assignments in `generateVariants`, `generateVariantsTextOnly`, and both `rankAndSelect` implementations for calls to the new helper so that even fallback data feels contextual.
+3. Back this with unit tests covering various fact shapes (image with beach facts, text-only launch promo, etc.) to prove hashtags/CTA adapt to inputs.
+
+Summary
+
+    Added inferFallbackFromFacts helper to extract keywords from facts, themes, or existing captions and generate platform-aware hashtags, CTA copy, and alt text.
+
+Replaced hard-coded fallbacks in Gemini’s vision pipeline with contextual outputs and passed source facts into ranking so backup metadata matches the underlying content.
+
+Updated the text-only pipeline to reuse the helper for both variant generation and ranking, ensuring promotional themes still yield compliant hashtags and calls to action.
+
+Added unit tests covering beach imagery and product launch scenarios to confirm the helper and pipelines adapt fallbacks to the provided inputs.
+
+Testing
+
+    ✅ npm run lint
+
+❌ npm test (fails across many pre-existing suites because required external services/env vars are unavailable; command stopped after repeated upstream errors)
+
+
+server/caption/geminiPipeline.ts
++71-12
+import fs from "node:fs/promises";
+import path from "node:path";
+import { z } from "zod";
+import { visionModel, textModel } from "../lib/gemini";
+import { CaptionArray, CaptionItem, RankResult, platformChecks } from "./schema";
+import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
+import { inferFallbackFromFacts } from "./inferFallbackFromFacts";
+
+// Custom error class for image validation failures
+export class InvalidImageError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'InvalidImageError';
+  }
+}
+
+// CaptionResult interface for type safety
+interface CaptionResult {
+  provider: string;
+  final: z.infer<typeof CaptionItem>;
+  facts?: Record<string, unknown>;
+  variants?: z.infer<typeof CaptionArray>;
+  ranked?: z.infer<typeof RankResult>;
+}
+
+async function load(p: string): Promise<string> {
+  return fs.readFile(path.join(process.cwd(), "prompts", p), "utf8");
+}
+async function b64(url: string): Promise<{ base64: string; mimeType: string }> {
+  try {
+    const r = await fetch(url);
+    if (!r.ok) throw new InvalidImageError(`fetch failed: ${r.status} ${r.statusText}`);
+@@ -200,129 +201,187 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
+}
+
+export async function generateVariants(params: {
+  platform: "instagram" | "x" | "reddit" | "tiktok";
+  voice: string;
+  style?: string;
+  mood?: string;
+  facts: Record<string, unknown>;
+  hint?: string;
+  nsfw?: boolean;
+}): Promise<z.infer<typeof CaptionArray>> {
+  const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("variants.txt");
+  const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\n${params.style ? `STYLE: ${params.style}\n` : ''}${params.mood ? `MOOD: ${params.mood}\n` : ''}IMAGE_FACTS: ${JSON.stringify(params.facts)}\nNSFW: ${params.nsfw || false}\n${params.hint?`HINT:${params.hint}`:""}`;
+  let res;
+  try {
+    res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+user }]);
+  } catch (error) {
+    console.error('Gemini textModel.generateContent failed:', error);
+    throw error;
+  }
+  const json = stripToJSON(res.response.text()) as unknown[];
+  // Fix common safety_level values and missing fields
+  if(Array.isArray(json)){
+    json.forEach((item) => {
+      const variant = item as Record<string, unknown>;
+      const fallback = inferFallbackFromFacts({
+        platform: params.platform,
+        facts: params.facts,
+        existingCaption: typeof variant.caption === 'string' ? variant.caption : params.hint,
+      });
+      variant.safety_level = normalizeSafetyLevel(
+        typeof variant.safety_level === 'string' ? variant.safety_level : 'normal'
+      );
+      // Fix other fields
+      if(typeof variant.mood !== 'string' || variant.mood.length < 2) variant.mood = "engaging";
+      if(typeof variant.style !== 'string' || variant.style.length < 2) variant.style = "authentic";
+      if(typeof variant.cta !== 'string' || variant.cta.length < 2) variant.cta = "Check it out";
+      if(typeof variant.alt !== 'string' || variant.alt.length < 20) variant.alt = "Engaging social media content";
+      if(!Array.isArray(variant.hashtags)) variant.hashtags = ["#content", "#creative", "#amazing"];
+      if(typeof variant.cta !== 'string' || variant.cta.length < 2) variant.cta = fallback.cta;
+      if(typeof variant.alt !== 'string' || variant.alt.length < 20) variant.alt = fallback.alt;
+      const providedHashtags = Array.isArray(variant.hashtags)
+        ? (variant.hashtags as unknown[])
+            .filter((tag): tag is string => typeof tag === 'string')
+            .map(tag => tag.trim())
+            .filter(tag => tag.length > 0)
+        : [];
+      if(providedHashtags.length === 0 || providedHashtags.length < fallback.hashtags.length) {
+        variant.hashtags = fallback.hashtags;
+      } else {
+        variant.hashtags = providedHashtags;
+      }
+      if(typeof variant.caption !== 'string' || variant.caption.length < 1) variant.caption = "Check out this amazing content!";
+    });
+
+    // Ensure exactly 5 variants by padding with variations if needed
+    while(json.length < 5) {
+      const template = (json[0] as Record<string, unknown>) || {
+        caption: "Check out this amazing content!",
+        alt: "Engaging social media content",
+        hashtags: ["#content", "#creative", "#amazing"],
+        cta: "Check it out",
+        mood: "engaging",
+        style: "authentic",
+        safety_level: normalizeSafetyLevel('normal'),
+        nsfw: false
+      };
+      const fallback = inferFallbackFromFacts({
+        platform: params.platform,
+        facts: params.facts,
+        existingCaption: typeof template.caption === 'string' ? template.caption : params.hint,
+      });
+      json.push({
+        ...template,
+        caption: `${template.caption as string} (Variant ${json.length + 1})`
+        caption: typeof template.caption === 'string'
+          ? `${template.caption} (Variant ${json.length + 1})`
+          : `Fresh take (Variant ${json.length + 1})`,
+        alt: typeof template.alt === 'string' && template.alt.length >= 20 ? template.alt : fallback.alt,
+        hashtags: Array.isArray(template.hashtags) && (template.hashtags as unknown[]).length > 0
+          ? (template.hashtags as string[])
+          : fallback.hashtags,
+        cta: typeof template.cta === 'string' && template.cta.length >= 2 ? template.cta : fallback.cta,
+        mood: typeof template.mood === 'string' && template.mood.length >= 2 ? template.mood : 'engaging',
+        style: typeof template.style === 'string' && template.style.length >= 2 ? template.style : 'authentic',
+        safety_level: normalizeSafetyLevel(typeof template.safety_level === 'string' ? template.safety_level : 'normal'),
+        nsfw: Boolean(template.nsfw)
+      });
+    }
+
+    // Trim to exactly 5 if more than 5
+    if(json.length > 5) {
+      json.splice(5);
+    }
+  }
+  return CaptionArray.parse(json);
+}
+
+export async function rankAndSelect(variants: z.infer<typeof CaptionArray>): Promise<z.infer<typeof RankResult>> {
+export async function rankAndSelect(
+  variants: z.infer<typeof CaptionArray>,
+  context?: {
+    platform: "instagram" | "x" | "reddit" | "tiktok";
+    facts?: Record<string, unknown>;
+    existingCaption?: string;
+    theme?: string;
+  }
+): Promise<z.infer<typeof RankResult>> {
+  const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rank.txt");
+  let res;
+  try {
+    res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+JSON.stringify(variants) }]);
+  } catch (error) {
+    console.error('Gemini textModel.generateContent failed:', error);
+    throw error;
+  }
+  let json = stripToJSON(res.response.text()) as unknown;
+  
+  // Handle case where AI returns array instead of ranking object
+  if(Array.isArray(json)) {
+    const winner = json[0] || variants[0];
+    json = {
+      winner_index: 0,
+      scores: [5, 4, 3, 2, 1],
+      reason: "Selected based on engagement potential",
+      final: winner
+    };
+  }
+  
+  // Accept any safety_level in final result
+  if((json as Record<string, unknown>).final){
+    const final = (json as { final: Record<string, unknown> }).final;
+    const fallback = context && context.platform
+      ? inferFallbackFromFacts({
+          platform: context.platform,
+          facts: context.facts,
+          existingCaption: typeof final.caption === 'string' ? final.caption : context.existingCaption,
+          theme: context.theme,
+        })
+      : undefined;
+    const fallbackHashtags = fallback?.hashtags ?? ["#content", "#creative", "#amazing"];
+    const fallbackCta = fallback?.cta ?? "Check it out";
+    const fallbackAlt = fallback?.alt ?? "Engaging social media content";
+    final.safety_level = normalizeSafetyLevel(
+      typeof final.safety_level === 'string' ? final.safety_level : 'normal'
+    );
+    if(typeof final.mood !== 'string' || final.mood.length<2) final.mood="engaging";
+    if(typeof final.style !== 'string' || final.style.length<2) final.style="authentic";
+    if(typeof final.cta !== 'string' || final.cta.length<2) final.cta="Check it out";
+    if(typeof final.alt !== 'string' || final.alt.length<20) final.alt="Engaging social media content";
+    if(!Array.isArray(final.hashtags)) final.hashtags=["#content", "#creative", "#amazing"];
+    if(typeof final.cta !== 'string' || final.cta.length<2) final.cta=fallbackCta;
+    if(typeof final.alt !== 'string' || final.alt.length<20) final.alt=fallbackAlt;
+    const finalHashtags = Array.isArray(final.hashtags)
+      ? (final.hashtags as unknown[])
+          .filter((tag): tag is string => typeof tag === 'string')
+          .map(tag => tag.trim())
+          .filter(tag => tag.length > 0)
+      : [];
+    if(finalHashtags.length === 0 || finalHashtags.length < fallbackHashtags.length) {
+      final.hashtags = fallbackHashtags;
+    } else {
+      final.hashtags = finalHashtags;
+    }
+    if(typeof final.caption !== 'string' || final.caption.length<1) final.caption="Check out this amazing content!";
+  }
+  return RankResult.parse(json);
+}
+
+export async function pipeline({ imageUrl, platform, voice = "flirty_playful", style, mood, nsfw = false }: {
+  imageUrl: string;
+  platform: "instagram" | "x" | "reddit" | "tiktok";
+  voice?: string;
+  style?: string;
+  mood?: string;
+  nsfw?: boolean;
+}): Promise<CaptionResult> {
+  try {
+    const facts = await extractFacts(imageUrl);
+    let variants = await generateVariants({ platform, voice, style, mood, facts, nsfw });
+    let ranked = await rankAndSelect(variants);
+    let ranked = await rankAndSelect(variants, { platform, facts });
+    let out = ranked.final;
+
+    const err = platformChecks(platform, out);
+    if (err) {
+      variants = await generateVariants({ platform, voice, facts, hint:`Fix: ${err}. Use IMAGE_FACTS nouns/colors/setting explicitly.`, nsfw });
+      ranked = await rankAndSelect(variants);
+      ranked = await rankAndSelect(variants, { platform, facts });
+      out = ranked.final;
+    }
+
+    return { provider: 'gemini', facts, variants, ranked, final: out };
+  } catch (error) {
+    const { openAICaptionFallback } = await import('./openaiFallback');
+    const final = await openAICaptionFallback({ platform, voice, imageUrl });
+    return { provider: 'openai', final } as CaptionResult;
+  }
+}
+server/caption/inferFallbackFromFacts.ts
+New
++293-0
+import { z } from "zod";
+
+type Platform = "instagram" | "x" | "reddit" | "tiktok";
+
+export interface FallbackInferenceInput {
+  platform: Platform;
+  facts?: Record<string, unknown>;
+  existingCaption?: string;
+  theme?: string;
+  context?: string;
+}
+
+export interface FallbackInferenceResult {
+  hashtags: string[];
+  cta: string;
+  alt: string;
+}
+
+const PLATFORM_HASHTAG_RULES: Record<Platform, { min: number; max: number; prefix: "#" | ""; filler: string[] }> = {
+  instagram: { min: 3, max: 8, prefix: "#", filler: ["creatorspotlight", "dailyvibes", "socialstory", "behindthescenes"] },
+  x: { min: 1, max: 3, prefix: "#", filler: ["trendwatch", "nowplaying", "dailyupdate"] },
+  reddit: { min: 1, max: 3, prefix: "", filler: ["community insights", "open discussion", "deep dive"] },
+  tiktok: { min: 2, max: 5, prefix: "#", filler: ["fypfinds", "mustwatch", "trendalert", "creatorlife"] }
+};
+
+const STOPWORDS = new Set([
+  "the", "and", "for", "with", "from", "this", "that", "have", "your", "about", "into", "will", "would", "their",
+  "there", "been", "were", "just", "like", "over", "make", "made", "after", "before", "while", "where", "which",
+  "ever", "every", "other", "such", "very", "more", "than", "some", "only", "when", "then", "them", "they",
+  "because", "across", "through", "without", "among", "between", "around", "under", "above", "within", "beyond",
+  "again", "those", "these", "also", "into", "onto", "plus", "minus", "its", "it's", "ours", "yours", "hers",
+  "his", "ourselves", "themselves", "myself", "yourself", "ourselves", "himself", "herself", "itself", "ours",
+  "yourselves", "ourselves", "nsfw", "safe", "level", "image", "photo", "picture", "caption", "post"
+]);
+
+const KEY_EXCLUSIONS = new Set(["nsfw", "safety", "safety_level", "image", "photo", "metadata", "caption"]);
+
+const sentenceSchema = z.string().min(1);
+
+function sanitizePhrase(input: string): string {
+  const trimmed = sentenceSchema.safeParse(input).success ? input : "";
+  return trimmed
+    .replace(/[#@]/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/[^\p{L}0-9\s-]/gu, " ")
+    .trim();
+}
+
+function dedupePreserveOrder(values: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const value of values) {
+    const sanitized = sanitizePhrase(value).toLowerCase();
+    if (!sanitized || seen.has(sanitized)) continue;
+    seen.add(sanitized);
+    result.push(value.trim());
+  }
+  return result;
+}
+
+type FactValue = string | number | boolean | null | undefined | FactValue[] | Record<string, FactValue>;
+
+function flattenFacts(facts?: Record<string, unknown>): string[] {
+  if (!facts) return [];
+  const phrases: string[] = [];
+  const stack: Array<{ key?: string; value: FactValue }> = [];
+  for (const [key, value] of Object.entries(facts)) {
+    stack.push({ key, value: value as FactValue });
+  }
+
+  while (stack.length > 0) {
+    const current = stack.pop();
+    if (!current) continue;
+    const { key, value } = current;
+
+    if (typeof value === "string") {
+      phrases.push(value);
+      if (key && !KEY_EXCLUSIONS.has(key.toLowerCase())) {
+        phrases.push(key.replace(/_/g, " "));
+      }
+    } else if (typeof value === "number") {
+      phrases.push(value.toString());
+      if (key && !KEY_EXCLUSIONS.has(key.toLowerCase())) {
+        phrases.push(key.replace(/_/g, " "));
+      }
+    } else if (typeof value === "boolean") {
+      if (value && key && !KEY_EXCLUSIONS.has(key.toLowerCase())) {
+        phrases.push(key.replace(/_/g, " "));
+      }
+    } else if (Array.isArray(value)) {
+      value.forEach(item => stack.push({ key, value: item as FactValue }));
+    } else if (typeof value === "object" && value !== null) {
+      const entries = Object.entries(value as Record<string, FactValue>);
+      entries.forEach(([nestedKey, nestedValue]) => {
+        stack.push({ key: nestedKey, value: nestedValue });
+      });
+    }
+  }
+  return dedupePreserveOrder(phrases);
+}
+
+function extractKeywords(texts: string[]): string[] {
+  const keywords: string[] = [];
+  const seen = new Set<string>();
+
+  for (const text of texts) {
+    const sanitized = sanitizePhrase(text).toLowerCase();
+    if (!sanitized) continue;
+    const tokens = sanitized.match(/[a-z0-9][a-z0-9\-']+/g);
+    if (!tokens) continue;
+
+    for (const token of tokens) {
+      const word = token.replace(/['-]/g, "");
+      if (word.length < 3) continue;
+      if (STOPWORDS.has(word)) continue;
+      if (seen.has(word)) continue;
+      seen.add(word);
+      keywords.push(word);
+    }
+  }
+
+  return keywords;
+}
+
+function toTitleCase(text: string): string {
+  return text
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+function buildHashtags(
+  platform: Platform,
+  primaryKeywords: string[],
+  phraseSources: string[],
+  supplementalKeywords: string[]
+): string[] {
+  const { min, max, prefix, filler } = PLATFORM_HASHTAG_RULES[platform];
+  const tags: string[] = [];
+  const seen = new Set<string>();
+
+  const addTag = (raw: string) => {
+    const sanitized = sanitizePhrase(raw).toLowerCase();
+    if (!sanitized) return;
+    const canonical = prefix === "#" ? `#${sanitized.replace(/\s+/g, "")}` : sanitized.replace(/\s+/g, " ");
+    if (!canonical || seen.has(canonical)) return;
+    seen.add(canonical);
+    tags.push(canonical);
+  };
+
+  primaryKeywords.forEach(keyword => {
+    if (tags.length >= max) return;
+    addTag(keyword);
+  });
+
+  for (const phrase of phraseSources) {
+    if (tags.length >= max) break;
+    const cleaned = sanitizePhrase(phrase).toLowerCase();
+    if (!cleaned) continue;
+    const words = cleaned.split(/\s+/).filter(word => word && !STOPWORDS.has(word));
+    if (words.length === 0) continue;
+    if (prefix === "#") {
+      addTag(words.slice(0, 2).join(""));
+    } else {
+      addTag(words.slice(0, 3).join(" "));
+    }
+  }
+
+  supplementalKeywords.forEach(keyword => {
+    if (tags.length >= max) return;
+    addTag(keyword);
+  });
+
+  filler.forEach(keyword => {
+    if (tags.length >= max) return;
+    addTag(keyword);
+  });
+
+  while (tags.length < min) {
+    addTag(prefix === "#" ? "socialupdate" : "community spotlight");
+    if (tags.length >= min) break;
+    addTag(prefix === "#" ? "trendwatch" : "deep dive");
+    if (tags.length >= min) break;
+  }
+
+  return tags.slice(0, max);
+}
+
+function buildCTA(
+  platform: Platform,
+  prioritizedKeywords: string[],
+  themeKeywords: string[],
+  captionKeywords: string[],
+  theme?: string,
+  existingCaption?: string
+): string {
+  const topicWords = prioritizedKeywords.length > 0
+    ? prioritizedKeywords
+    : (themeKeywords.length > 0
+      ? themeKeywords
+      : captionKeywords);
+
+  const topic = topicWords.slice(0, 2).join(" ");
+  const readableTopic = topic ? toTitleCase(topic) : undefined;
+
+  switch (platform) {
+    case "instagram":
+      return readableTopic ? `Tap to explore ${readableTopic}` : "Tap to see the full story";
+    case "x":
+      return readableTopic ? `Join the ${readableTopic} conversation` : "Join the conversation";
+    case "tiktok":
+      return readableTopic ? `Follow for more ${readableTopic}` : "Follow for more moments";
+    case "reddit":
+      return readableTopic ? `Share your ${readableTopic} take` : "Share your thoughts with the community";
+    default:
+      return existingCaption || theme || "Discover more";
+  }
+}
+
+function buildAlt(
+  platform: Platform,
+  factPhrases: string[],
+  themePhrases: string[],
+  captionPhrases: string[],
+  keywords: string[],
+  theme?: string,
+  existingCaption?: string
+): string {
+  const descriptorSources = factPhrases.length > 0
+    ? factPhrases
+    : (themePhrases.length > 0 ? themePhrases : captionPhrases);
+
+  const descriptors = dedupePreserveOrder(descriptorSources)
+    .map(sanitizePhrase)
+    .filter(Boolean)
+    .slice(0, 4);
+
+  let alt: string;
+  if (descriptors.length > 0) {
+    alt = `Scene featuring ${descriptors.join(", ")}.`;
+  } else if (keywords.length > 0) {
+    alt = `Story focusing on ${keywords.slice(0, 3).join(", ")}.`;
+  } else if (theme) {
+    alt = `Visual representation of ${sanitizePhrase(theme)}.`;
+  } else if (existingCaption) {
+    alt = `Illustration supporting the caption: ${sanitizePhrase(existingCaption)}.`;
+  } else {
+    alt = `Engaging social media content tailored for ${platform}.`;
+  }
+
+  if (alt.length < 20) {
+    alt = `${alt} Detailed social media moment.`;
+  }
+
+  if (alt.length > 200) {
+    alt = `${alt.slice(0, 197).replace(/[.,]?\s*$/, "")}...`;
+  }
+
+  return alt;
+}
+
+export function inferFallbackFromFacts(input: FallbackInferenceInput): FallbackInferenceResult {
+  const factPhrases = flattenFacts(input.facts);
+  const themePhrases = input.theme ? dedupePreserveOrder([input.theme, input.context ?? ""]) : (input.context ? [input.context] : []);
+  const captionPhrases = input.existingCaption ? [input.existingCaption] : [];
+
+  const allPhrases = dedupePreserveOrder([
+    ...factPhrases,
+    ...themePhrases,
+    ...captionPhrases
+  ]);
+
+  const factKeywords = extractKeywords(factPhrases);
+  const themeKeywords = extractKeywords(themePhrases);
+  const captionKeywords = extractKeywords(captionPhrases);
+  const prioritizedKeywords = extractKeywords(allPhrases);
+  const supplementalKeywords = factKeywords.length > 0 ? factKeywords : themeKeywords.length > 0 ? themeKeywords : captionKeywords;
+
+  const hashtags = buildHashtags(input.platform, prioritizedKeywords, factPhrases, supplementalKeywords);
+  const cta = buildCTA(input.platform, prioritizedKeywords, themeKeywords, captionKeywords, input.theme, input.existingCaption);
+  const alt = buildAlt(
+    input.platform,
+    factPhrases,
+    themePhrases,
+    captionPhrases,
+    prioritizedKeywords,
+    input.theme,
+    input.existingCaption
+  );
+
+  return { hashtags, cta, alt };
+}
+server/caption/textOnlyPipeline.ts
++82-22
+import fs from "node:fs/promises";
+import path from "node:path";
+import { textModel } from "../lib/gemini";
+import { CaptionArray, RankResult, platformChecks } from "./schema";
+import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
+import { inferFallbackFromFacts } from "./inferFallbackFromFacts";
+
+async function load(p:string){ return fs.readFile(path.join(process.cwd(),"prompts",p),"utf8"); }
+function stripToJSON(txt:string){ const i=Math.min(...[txt.indexOf("{"),txt.indexOf("[")].filter(x=>x>=0));
+  const j=Math.max(txt.lastIndexOf("}"),txt.lastIndexOf("]")); return JSON.parse((i>=0&&j>=0)?txt.slice(i,j+1):txt); }
+
+export async function generateVariantsTextOnly(params:{platform:"instagram"|"x"|"reddit"|"tiktok", voice:string, style?:string, mood?:string, theme:string, context?:string, hint?:string, nsfw?:boolean}){
+  const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("variants_textonly.txt");
+  const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\n${params.style ? `STYLE: ${params.style}\n` : ''}${params.mood ? `MOOD: ${params.mood}\n` : ''}THEME: "${params.theme}"\nCONTEXT: "${params.context||''}"\nNSFW: ${params.nsfw || false}${params.hint?`\nHINT:${params.hint}`:""}`;
+  const res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+user }]);
+  const raw=stripToJSON(res.response.text());
+  const json=Array.isArray(raw)?raw:[raw];
+  // Fix common safety_level values and missing fields
+  if(Array.isArray(json)){
+    json.forEach((item) => {
+      const variant = item as Record<string, unknown>;
+      const fallback = inferFallbackFromFacts({
+        platform: params.platform,
+        theme: params.theme,
+        context: params.context,
+        existingCaption: typeof variant.caption === 'string' ? variant.caption : undefined,
+      });
+      variant.safety_level = normalizeSafetyLevel(
+        typeof variant.safety_level === 'string' ? variant.safety_level : 'normal'
+      );
+      // Fix other fields
+      if(typeof variant.mood !== 'string' || variant.mood.length<2) variant.mood="engaging";
+      if(typeof variant.style !== 'string' || variant.style.length<2) variant.style="authentic";
+      if(typeof variant.cta !== 'string' || variant.cta.length<2) variant.cta="Check it out";
+      if(typeof variant.alt !== 'string' || variant.alt.length<20) variant.alt="Engaging social media content";
+      if(!Array.isArray(variant.hashtags) || variant.hashtags.length < 3) {
+        if(params.platform === 'instagram') {
+          variant.hashtags=["#content", "#creative", "#amazing", "#lifestyle"];
+        } else {
+          variant.hashtags=["#content", "#creative", "#amazing"];
+        }
+      if(typeof variant.cta !== 'string' || variant.cta.length<2) variant.cta=fallback.cta;
+      if(typeof variant.alt !== 'string' || variant.alt.length<20) variant.alt=fallback.alt;
+      const providedHashtags = Array.isArray(variant.hashtags)
+        ? (variant.hashtags as unknown[])
+            .filter((tag): tag is string => typeof tag === 'string')
+            .map(tag => tag.trim())
+            .filter(tag => tag.length > 0)
+        : [];
+      if(providedHashtags.length === 0 || providedHashtags.length < fallback.hashtags.length) {
+        variant.hashtags = fallback.hashtags;
+      } else {
+        variant.hashtags = providedHashtags;
+      }
+      if(typeof variant.caption !== 'string' || variant.caption.length<1) variant.caption="Check out this amazing content!";
+    });
+
+    // Ensure exactly 5 variants by padding with variations if needed
+    while(json.length < 5) {
+      const template = (json[0] as Record<string, unknown>) || {
+        caption: "Check out this amazing content!",
+        alt: "Engaging social media content",
+        hashtags: ["#content", "#creative", "#amazing"],
+        cta: "Check it out",
+        mood: "engaging",
+        style: "authentic",
+        safety_level: normalizeSafetyLevel('normal'),
+        nsfw: false
+      };
+      const fallback = inferFallbackFromFacts({
+        platform: params.platform,
+        theme: params.theme,
+        context: params.context,
+        existingCaption: typeof template.caption === 'string' ? template.caption : undefined,
+      });
+      json.push({
+        ...template,
+        caption: `${template.caption as string} (Variant ${json.length + 1})`
+        caption: typeof template.caption === 'string'
+          ? `${template.caption} (Variant ${json.length + 1})`
+          : `Fresh take (Variant ${json.length + 1})`,
+        alt: typeof template.alt === 'string' && template.alt.length >= 20 ? template.alt : fallback.alt,
+        hashtags: Array.isArray(template.hashtags) && (template.hashtags as unknown[]).length > 0
+          ? (template.hashtags as string[])
+          : fallback.hashtags,
+        cta: typeof template.cta === 'string' && template.cta.length >= 2 ? template.cta : fallback.cta,
+        mood: typeof template.mood === 'string' && template.mood.length >= 2 ? template.mood : 'engaging',
+        style: typeof template.style === 'string' && template.style.length >= 2 ? template.style : 'authentic',
+        safety_level: normalizeSafetyLevel(typeof template.safety_level === 'string' ? template.safety_level : 'normal'),
+        nsfw: Boolean(template.nsfw)
+      });
+    }
+
+    // Trim to exactly 5 if more than 5
+    if(json.length > 5) {
+      json.splice(5);
+    }
+  }
+  return CaptionArray.parse(json);
+}
+
+export async function rankAndSelect(variants: unknown[], params?: { platform?: string; nsfw?: boolean }){
+export async function rankAndSelect(
+  variants: unknown[],
+  params?: {
+    platform?: "instagram" | "x" | "reddit" | "tiktok";
+    nsfw?: boolean;
+    theme?: string;
+    context?: string;
+    facts?: Record<string, unknown>;
+    existingCaption?: string;
+  }
+){
+  const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rank.txt");
+  const res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+JSON.stringify(variants) }]);
+  let json=stripToJSON(res.response.text()) as unknown;
+  
+  // Handle case where AI returns array instead of ranking object
+  if(Array.isArray(json)) {
+    const winner = json[0] || variants[0];
+    json = {
+      winner_index: 0,
+      scores: [5, 4, 3, 2, 1],
+      reason: "Selected based on engagement potential",
+      final: winner
+    };
+  }
+  
+  // Fix safety_level in final result
+  if((json as Record<string, unknown>).final){
+    const final = (json as { final: Record<string, unknown> }).final;
+    const fallback = params?.platform
+      ? inferFallbackFromFacts({
+          platform: params.platform,
+          facts: params.facts,
+          theme: params.theme,
+          context: params.context,
+          existingCaption: typeof final.caption === 'string' ? final.caption : params.existingCaption,
+        })
+      : undefined;
+    const fallbackHashtags = fallback?.hashtags ?? ["#content", "#creative", "#amazing"];
+    const fallbackCta = fallback?.cta ?? "Check it out";
+    const fallbackAlt = fallback?.alt ?? "Engaging social media content";
+    final.safety_level = normalizeSafetyLevel(
+      typeof final.safety_level === 'string' ? final.safety_level : 'normal'
+    );
+    if(typeof final.mood !== 'string' || final.mood.length<2) final.mood="engaging";
+    if(typeof final.style !== 'string' || final.style.length<2) final.style="authentic";
+    if(typeof final.cta !== 'string' || final.cta.length<2) final.cta="Check it out";
+    if(typeof final.alt !== 'string' || final.alt.length<20) final.alt="Engaging social media content";
+    if(!Array.isArray(final.hashtags) || final.hashtags.length < 3) {
+      if(params?.platform === 'instagram') {
+        final.hashtags=["#content", "#creative", "#amazing", "#lifestyle"];
+      } else {
+        final.hashtags=["#content", "#creative", "#amazing"];
+      }
+    if(typeof final.cta !== 'string' || final.cta.length<2) final.cta=fallbackCta;
+    if(typeof final.alt !== 'string' || final.alt.length<20) final.alt=fallbackAlt;
+    const finalHashtags = Array.isArray(final.hashtags)
+      ? (final.hashtags as unknown[])
+          .filter((tag): tag is string => typeof tag === 'string')
+          .map(tag => tag.trim())
+          .filter(tag => tag.length > 0)
+      : [];
+    if(finalHashtags.length === 0 || finalHashtags.length < fallbackHashtags.length) {
+      final.hashtags = fallbackHashtags;
+    } else {
+      final.hashtags = finalHashtags;
+    }
+    if(typeof final.caption !== 'string' || final.caption.length<1) final.caption="Check out this amazing content!";
+  }
+  return RankResult.parse(json);
+}
+
+export async function pipelineTextOnly({ platform, voice="flirty_playful", style, mood, theme, context, nsfw=false }:{
+  platform:"instagram"|"x"|"reddit"|"tiktok", voice?:string, style?:string, mood?:string, theme:string, context?:string, nsfw?:boolean }){
+  let variants = await generateVariantsTextOnly({ platform, voice, style, mood, theme, context, nsfw });
+  let ranked = await rankAndSelect(variants, { platform, nsfw });
+  let ranked = await rankAndSelect(variants, { platform, nsfw, theme, context });
+  let out = ranked.final;
+
+  const err = platformChecks(platform, out);
+  if (err) {
+    variants = await generateVariantsTextOnly({ platform, voice, theme, context, hint:`Fix: ${err}. Be specific and engaging.`, nsfw });
+    ranked = await rankAndSelect(variants);
+    variants = await generateVariantsTextOnly({
+      platform,
+      voice,
+      theme,
+      context,
+      hint:`Fix: ${err}. Be specific and engaging.`,
+      nsfw
+    });
+    ranked = await rankAndSelect(variants, { platform, nsfw, theme, context });
+    out = ranked.final;
+  }
+
+  return { variants, ranked, final: out };
+}
+tests/unit/caption/fallback-inference.test.ts
+New
++124-0
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import type { Mock } from 'vitest';
+
+vi.mock('../../../server/lib/gemini.js', () => ({
+  textModel: {
+    generateContent: vi.fn(),
+  },
+  visionModel: {
+    generateContent: vi.fn(),
+  },
+}));
+
+describe('inferFallbackFromFacts helper', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('infers beach-centric fallbacks from image facts', async () => {
+    const { inferFallbackFromFacts } = await import('../../../server/caption/inferFallbackFromFacts.js');
+    const fallback = inferFallbackFromFacts({
+      platform: 'instagram',
+      facts: {
+        objects: ['surfer', 'board'],
+        setting: 'sunny beach cove',
+        colors: ['turquoise water'],
+      },
+    });
+
+    expect(fallback.hashtags.some(tag => tag.includes('beach') || tag.includes('surfer'))).toBe(true);
+    expect(fallback.cta.toLowerCase()).toContain('beach');
+    expect(fallback.alt.toLowerCase()).toContain('beach');
+  });
+
+  it('adapts fallback data for text-only launch themes', async () => {
+    const { inferFallbackFromFacts } = await import('../../../server/caption/inferFallbackFromFacts.js');
+    const fallback = inferFallbackFromFacts({
+      platform: 'x',
+      theme: 'Fintech product launch',
+      context: 'Beta waitlist opens tonight',
+    });
+
+    expect(fallback.hashtags.length).toBeLessThanOrEqual(3);
+    expect(fallback.hashtags.some(tag => tag.includes('launch') || tag.includes('product'))).toBe(true);
+    expect(fallback.cta.toLowerCase()).toContain('launch');
+  });
+});
+
+describe('pipeline fallbacks', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('fills missing variant fields with contextual beach data', async () => {
+    const { textModel } = await import('../../../server/lib/gemini.js');
+    (textModel.generateContent as unknown as Mock).mockResolvedValueOnce({
+      response: {
+        text: () =>
+          JSON.stringify([
+            {
+              caption: 'Sunset set vibes',
+              hashtags: [],
+              safety_level: 'normal',
+              mood: '',
+              style: '',
+              cta: '',
+              alt: '',
+              nsfw: false,
+            },
+          ]),
+      },
+    });
+
+    const { generateVariants } = await import('../../../server/caption/geminiPipeline.js');
+    const variants = await generateVariants({
+      platform: 'instagram',
+      voice: 'bold',
+      facts: {
+        setting: 'sunny beach cove',
+        objects: ['surfer', 'board'],
+      },
+      nsfw: false,
+    });
+
+    const first = variants[0];
+    expect(first.hashtags.some(tag => tag.includes('beach') || tag.includes('surfer'))).toBe(true);
+    expect(first.cta.toLowerCase()).toContain('beach');
+    expect(first.alt.toLowerCase()).toContain('beach');
+  });
+
+  it('crafts launch-oriented fallbacks for text-only prompts', async () => {
+    const { textModel } = await import('../../../server/lib/gemini.js');
+    (textModel.generateContent as unknown as Mock).mockResolvedValueOnce({
+      response: {
+        text: () =>
+          JSON.stringify([
+            {
+              caption: 'Join us for something big',
+              hashtags: [],
+              safety_level: 'normal',
+              mood: '',
+              style: '',
+              cta: '',
+              alt: '',
+              nsfw: false,
+            },
+          ]),
+      },
+    });
+
+    const { generateVariantsTextOnly } = await import('../../../server/caption/textOnlyPipeline.js');
+    const variants = await generateVariantsTextOnly({
+      platform: 'x',
+      voice: 'confident',
+      theme: 'SaaS platform launch',
+      context: 'Waitlist opens this Friday',
+      nsfw: false,
+    });
+
+    const first = variants[0];
+    expect(first.hashtags.some(tag => tag.includes('launch') || tag.includes('saas'))).toBe(true);
+    expect(first.cta.toLowerCase()).toContain('launch');
+    expect(first.alt.toLowerCase()).toContain('launch');
+  });
+});

@@ -7,6 +7,7 @@ import { extractToneOptions, ToneOptions } from "./toneOptions";
 import { buildVoiceGuideBlock } from "./stylePack";
 import { formatVoiceContext } from "./voiceTraits";
 import { serializePromptField } from "./promptUtils";
+import { inferFallbackFromFacts } from "./inferFallbackFromFacts";
 
 async function load(p:string){ return fs.readFile(path.join(process.cwd(),"prompts",p),"utf8"); }
 function stripToJSON(txt:string){ const i=Math.min(...[txt.indexOf("{"),txt.indexOf("[")].filter(x=>x>=0));
@@ -47,20 +48,30 @@ export async function generateVariantsTextOnly(params:TextOnlyVariantParams){
   if(Array.isArray(json)){
     json.forEach((item) => {
       const variant = item as Record<string, unknown>;
+      const fallback = inferFallbackFromFacts({
+        platform: params.platform,
+        theme: params.theme,
+        context: params.context,
+        existingCaption: typeof variant.caption === 'string' ? variant.caption : undefined,
+      });
       variant.safety_level = normalizeSafetyLevel(
         typeof variant.safety_level === 'string' ? variant.safety_level : 'normal'
       );
       // Fix other fields
       if(typeof variant.mood !== 'string' || variant.mood.length<2) variant.mood="engaging";
       if(typeof variant.style !== 'string' || variant.style.length<2) variant.style="authentic";
-      if(typeof variant.cta !== 'string' || variant.cta.length<2) variant.cta="Check it out";
-      if(typeof variant.alt !== 'string' || variant.alt.length<20) variant.alt="Engaging social media content";
-      if(!Array.isArray(variant.hashtags) || variant.hashtags.length < 3) {
-        if(params.platform === 'instagram') {
-          variant.hashtags=["#content", "#creative", "#amazing", "#lifestyle"];
-        } else {
-          variant.hashtags=["#content", "#creative", "#amazing"];
-        }
+      if(typeof variant.cta !== 'string' || variant.cta.length<2) variant.cta=fallback.cta;
+      if(typeof variant.alt !== 'string' || variant.alt.length<20) variant.alt=fallback.alt;
+      const providedHashtags = Array.isArray(variant.hashtags)
+        ? (variant.hashtags as unknown[])
+            .filter((tag): tag is string => typeof tag === 'string')
+            .map(tag => tag.trim())
+            .filter(tag => tag.length > 0)
+        : [];
+      if(providedHashtags.length === 0 || providedHashtags.length < fallback.hashtags.length) {
+        variant.hashtags = fallback.hashtags;
+      } else {
+        variant.hashtags = providedHashtags;
       }
       if(typeof variant.caption !== 'string' || variant.caption.length<1) variant.caption="Check out this amazing content!";
     });
@@ -77,9 +88,26 @@ export async function generateVariantsTextOnly(params:TextOnlyVariantParams){
         safety_level: normalizeSafetyLevel('normal'),
         nsfw: false
       };
+      const fallback = inferFallbackFromFacts({
+        platform: params.platform,
+        theme: params.theme,
+        context: params.context,
+        existingCaption: typeof template.caption === 'string' ? template.caption : undefined,
+      });
       json.push({
         ...template,
-        caption: `${template.caption as string} (Variant ${json.length + 1})`
+        caption: typeof template.caption === 'string'
+          ? `${template.caption} (Variant ${json.length + 1})`
+          : `Fresh take (Variant ${json.length + 1})`,
+        alt: typeof template.alt === 'string' && template.alt.length >= 20 ? template.alt : fallback.alt,
+        hashtags: Array.isArray(template.hashtags) && (template.hashtags as unknown[]).length > 0
+          ? (template.hashtags as string[])
+          : fallback.hashtags,
+        cta: typeof template.cta === 'string' && template.cta.length >= 2 ? template.cta : fallback.cta,
+        mood: typeof template.mood === 'string' && template.mood.length >= 2 ? template.mood : 'engaging',
+        style: typeof template.style === 'string' && template.style.length >= 2 ? template.style : 'authentic',
+        safety_level: normalizeSafetyLevel(typeof template.safety_level === 'string' ? template.safety_level : 'normal'),
+        nsfw: Boolean(template.nsfw)
       });
     }
 
@@ -91,7 +119,17 @@ export async function generateVariantsTextOnly(params:TextOnlyVariantParams){
   return CaptionArray.parse(json);
 }
 
-export async function rankAndSelect(variants: unknown[], params?: { platform?: string; nsfw?: boolean }){
+export async function rankAndSelect(
+  variants: unknown[],
+  params?: {
+    platform?: "instagram" | "x" | "reddit" | "tiktok";
+    nsfw?: boolean;
+    theme?: string;
+    context?: string;
+    facts?: Record<string, unknown>;
+    existingCaption?: string;
+  }
+){
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rank.txt");
   const res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+JSON.stringify(variants) }]);
   let json=stripToJSON(res.response.text()) as unknown;
@@ -110,19 +148,35 @@ export async function rankAndSelect(variants: unknown[], params?: { platform?: s
   // Fix safety_level in final result
   if((json as Record<string, unknown>).final){
     const final = (json as { final: Record<string, unknown> }).final;
+    const fallback = params?.platform
+      ? inferFallbackFromFacts({
+          platform: params.platform,
+          facts: params.facts,
+          theme: params.theme,
+          context: params.context,
+          existingCaption: typeof final.caption === 'string' ? final.caption : params.existingCaption,
+        })
+      : undefined;
+    const fallbackHashtags = fallback?.hashtags ?? ["#content", "#creative", "#amazing"];
+    const fallbackCta = fallback?.cta ?? "Check it out";
+    const fallbackAlt = fallback?.alt ?? "Engaging social media content";
     final.safety_level = normalizeSafetyLevel(
       typeof final.safety_level === 'string' ? final.safety_level : 'normal'
     );
     if(typeof final.mood !== 'string' || final.mood.length<2) final.mood="engaging";
     if(typeof final.style !== 'string' || final.style.length<2) final.style="authentic";
-    if(typeof final.cta !== 'string' || final.cta.length<2) final.cta="Check it out";
-    if(typeof final.alt !== 'string' || final.alt.length<20) final.alt="Engaging social media content";
-    if(!Array.isArray(final.hashtags) || final.hashtags.length < 3) {
-      if(params?.platform === 'instagram') {
-        final.hashtags=["#content", "#creative", "#amazing", "#lifestyle"];
-      } else {
-        final.hashtags=["#content", "#creative", "#amazing"];
-      }
+    if(typeof final.cta !== 'string' || final.cta.length<2) final.cta=fallbackCta;
+    if(typeof final.alt !== 'string' || final.alt.length<20) final.alt=fallbackAlt;
+    const finalHashtags = Array.isArray(final.hashtags)
+      ? (final.hashtags as unknown[])
+          .filter((tag): tag is string => typeof tag === 'string')
+          .map(tag => tag.trim())
+          .filter(tag => tag.length > 0)
+      : [];
+    if(finalHashtags.length === 0 || finalHashtags.length < fallbackHashtags.length) {
+      final.hashtags = fallbackHashtags;
+    } else {
+      final.hashtags = finalHashtags;
     }
     if(typeof final.caption !== 'string' || final.caption.length<1) final.caption="Check out this amazing content!";
   }
@@ -149,13 +203,13 @@ type TextOnlyPipelineArgs = {
 export async function pipelineTextOnly({ platform, voice="flirty_playful", theme, context, nsfw=false, ...toneRest }:TextOnlyPipelineArgs){
   const tone = extractToneOptions(toneRest);
   let variants = await generateVariantsTextOnly({ platform, voice, theme, context, nsfw, ...tone });
-  let ranked = await rankAndSelect(variants, { platform, nsfw });
+  let ranked = await rankAndSelect(variants, { platform, nsfw, theme, context });
   let out = ranked.final;
 
   const err = platformChecks(platform, out);
   if (err) {
     variants = await generateVariantsTextOnly({ platform, voice, theme, context, nsfw, ...tone, hint:`Fix: ${err}. Be specific and engaging.` });
-    ranked = await rankAndSelect(variants);
+    ranked = await rankAndSelect(variants, { platform, nsfw, theme, context });
     out = ranked.final;
   }
 

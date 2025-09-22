@@ -8,6 +8,7 @@ import { buildVoiceGuideBlock } from "./stylePack";
 import { serializePromptField } from "./promptUtils";
 import { formatVoiceContext } from "./voiceTraits";
 import { ensureFactCoverage } from "./ensureFactCoverage";
+import { inferFallbackFromFacts } from "./inferFallbackFromFacts";
 
 // CaptionResult interface for type safety
 interface CaptionResult {

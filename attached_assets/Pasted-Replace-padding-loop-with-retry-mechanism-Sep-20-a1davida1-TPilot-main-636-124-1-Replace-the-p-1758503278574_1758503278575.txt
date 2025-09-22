@@ -1,0 +1,1180 @@
+Replace padding loop with retry mechanism
+Sep 20 · a1davida1/TPilot · main
++636-124
+1. Replace the padding loop in `generateVariants` and `generateVariantsTextOnly` with a retry mechanism: re-issue the prompt (with an extra `HINT:` like “You already wrote X; deliver a fresh angle”) until five distinct captions (e.g., unique first 80 chars) are collected or a retry ceiling is hit.
+2. Add a helper that deduplicates by lowercase caption comparison and length gap thresholds before calling `rankAndSelect`.
+3. Extend `tests/routes/caption-generation.test.ts` to confirm all returned variants are unique and that retries occur when duplicates are detected.
+
+Summary
+
+    Added a dedupeVariantsForRanking helper to collapse near-duplicate captions and synthesize fallback variants when needed before ranking.
+
+Reworked Gemini and text-only variant generation to iterate with dynamic HINT: prompts until five unique captions are gathered, then deduped the outputs before ranking.
+
+Expanded caption-generation route tests with richer fixtures and new assertions that verify unique variants and retry behaviour for both pipelines.
+
+Testing
+
+    ✅ npm run lint (passes with existing warnings in unrelated files)
+
+⚠️ npm test (aborted after encountering numerous pre-existing suite failures outside this change)
+
+
+server/caption/dedupeVariants.ts
+New
++82-0
+import { z } from "zod";
+import { CaptionArray } from "./schema";
+
+const LENGTH_GAP_THRESHOLD = 8;
+
+type CaptionVariant = z.infer<typeof CaptionArray>[number];
+
+const FALLBACK_VARIANT: CaptionVariant = {
+  caption: "Check out this amazing content!",
+  alt: "Engaging social media content",
+  hashtags: ["#content", "#creative", "#amazing"],
+  cta: "Check it out",
+  mood: "engaging",
+  style: "authentic",
+  safety_level: "normal",
+  nsfw: false,
+};
+
+function normalizeCaption(caption: string): string {
+  return caption.trim().toLowerCase();
+}
+
+function isNearDuplicate(existing: string, candidate: string): boolean {
+  if (existing === candidate) return true;
+
+  const lengthGap = Math.abs(existing.length - candidate.length);
+  if (lengthGap > LENGTH_GAP_THRESHOLD) return false;
+
+  const shorter = existing.length <= candidate.length ? existing : candidate;
+  const longer = existing.length > candidate.length ? existing : candidate;
+  return shorter.length > 0 && longer.startsWith(shorter);
+}
+
+function buildFreshCaption(baseCaption: string, index: number): string {
+  const cleaned = baseCaption.trim();
+  const root = cleaned.length > 0 ? cleaned : FALLBACK_VARIANT.caption;
+  return `Fresh POV ${index}: ${root}`;
+}
+
+export function dedupeVariantsForRanking(
+  variants: z.infer<typeof CaptionArray>,
+  targetLength = 5
+): z.infer<typeof CaptionArray> {
+  const uniques: CaptionVariant[] = [];
+  const duplicates: CaptionVariant[] = [];
+
+  for (const variant of variants) {
+    const normalized = normalizeCaption(variant.caption);
+    if (!normalized) {
+      duplicates.push(variant);
+      continue;
+    }
+
+    const hasMatch = uniques.some(existing =>
+      isNearDuplicate(normalizeCaption(existing.caption), normalized)
+    );
+
+    if (hasMatch) {
+      duplicates.push(variant);
+    } else {
+      uniques.push(variant);
+    }
+  }
+
+  const base = uniques[0] ?? duplicates[0] ?? FALLBACK_VARIANT;
+
+  while (uniques.length < targetLength) {
+    const source = duplicates.shift() ?? base;
+    const index = uniques.length + 1;
+    const freshCaption = buildFreshCaption(source.caption, index);
+    uniques.push({
+      ...source,
+      caption: freshCaption,
+    });
+  }
+
+  if (uniques.length > targetLength) {
+    uniques.length = targetLength;
+  }
+
+  return uniques;
+}
+server/caption/geminiPipeline.ts
++126-44
+import fs from "node:fs/promises";
+import path from "node:path";
+import { z } from "zod";
+import { visionModel, textModel } from "../lib/gemini";
+import { CaptionArray, CaptionItem, RankResult, platformChecks } from "./schema";
+import { dedupeVariantsForRanking } from "./dedupeVariants";
+import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
+
+// Custom error class for image validation failures
+export class InvalidImageError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'InvalidImageError';
+  }
+}
+
+// CaptionResult interface for type safety
+interface CaptionResult {
+  provider: string;
+  final: z.infer<typeof CaptionItem>;
+  facts?: Record<string, unknown>;
+  variants?: z.infer<typeof CaptionArray>;
+  ranked?: z.infer<typeof RankResult>;
+}
+
+async function load(p: string): Promise<string> {
+  return fs.readFile(path.join(process.cwd(), "prompts", p), "utf8");
+}
+async function b64(url: string): Promise<{ base64: string; mimeType: string }> {
+  try {
+    const r = await fetch(url);
+    if (!r.ok) throw new InvalidImageError(`fetch failed: ${r.status} ${r.statusText}`);
+
+    const ct = r.headers.get("content-type") || "";
+    if (!ct.startsWith("image/"))
+      throw new InvalidImageError(`unsupported content-type: ${ct}`);
+
+    const b = Buffer.from(await r.arrayBuffer());
+    const base64 = b.toString("base64");
+    if (base64.length < 100) throw new InvalidImageError("image data too small");
+
+    return { base64, mimeType: ct.split(";")[0] };
+  } catch (err) {
+    console.error("Error fetching image:", err);
+    if (err instanceof InvalidImageError) throw err;
+    throw new InvalidImageError(
+      `Failed to fetch image: ${err instanceof Error ? err.message : String(err)}`
+    );
+  }
+}
+const MAX_VARIANT_ATTEMPTS = 4;
+
+function stripToJSON(txt: string): unknown {
+  const i = Math.min(...[txt.indexOf("{"), txt.indexOf("[")].filter(x => x >= 0));
+  const j = Math.max(txt.lastIndexOf("}"), txt.lastIndexOf("]"));
+  return JSON.parse((i >= 0 && j >= 0) ? txt.slice(i, j + 1) : txt);
+}
+
+function captionKey(caption: string): string {
+  return caption.trim().slice(0, 80).toLowerCase();
+}
+
+function hintSnippet(caption: string): string {
+  const normalized = caption.trim().replace(/\s+/g, " ");
+  return normalized.length > 60 ? `${normalized.slice(0, 57)}…` : normalized;
+}
+
+export async function extractFacts(imageUrl: string): Promise<Record<string, unknown>> {
+  try {
+    console.log('Starting fact extraction for image:', imageUrl.substring(0, 100) + '...');
+    const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("extract.txt");
+    
+    // Handle data URLs differently from regular URLs
+    let imageData: string;
+    let mimeType = "image/jpeg";
+    
+    if (imageUrl.startsWith('data:')) {
+      // Extract base64 data from data URL - use indexOf to find first comma only
+      const commaIndex = imageUrl.indexOf(',');
+      if (commaIndex === -1) {
+        throw new Error('Invalid data URL format - missing comma separator');
+      }
+      
+      const header = imageUrl.substring(0, commaIndex);
+      imageData = imageUrl.substring(commaIndex + 1);
+      
+      // Extract mime type from header
+      const mimeMatch = header.match(/data:([^;]+)/);
+      if (mimeMatch) {
+        mimeType = mimeMatch[1];
+      }
+      
+@@ -187,99 +199,167 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
+          angles: ['dynamic'],
+          mood: 'playful',
+          style: 'animated'
+        };
+      }
+      
+      throw error;
+    }
+  } catch (error) {
+    console.error('Error in extractFacts:', error);
+    if (error instanceof InvalidImageError) throw error;
+    throw new Error(`Failed to extract facts: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+export async function generateVariants(params: {
+  platform: "instagram" | "x" | "reddit" | "tiktok";
+  voice: string;
+  style?: string;
+  mood?: string;
+  facts: Record<string, unknown>;
+  hint?: string;
+  nsfw?: boolean;
+}): Promise<z.infer<typeof CaptionArray>> {
+  const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("variants.txt");
+  const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\n${params.style ? `STYLE: ${params.style}\n` : ''}${params.mood ? `MOOD: ${params.mood}\n` : ''}IMAGE_FACTS: ${JSON.stringify(params.facts)}\nNSFW: ${params.nsfw || false}\n${params.hint?`HINT:${params.hint}`:""}`;
+  let res;
+  try {
+    res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+user }]);
+  } catch (error) {
+    console.error('Gemini textModel.generateContent failed:', error);
+    throw error;
+  }
+  const json = stripToJSON(res.response.text()) as unknown[];
+  // Fix common safety_level values and missing fields
+  if(Array.isArray(json)){
+    json.forEach((item) => {
+      const variant = item as Record<string, unknown>;
+      variant.safety_level = normalizeSafetyLevel(
+        typeof variant.safety_level === 'string' ? variant.safety_level : 'normal'
+      );
+      // Fix other fields
+      if(typeof variant.mood !== 'string' || variant.mood.length < 2) variant.mood = "engaging";
+      if(typeof variant.style !== 'string' || variant.style.length < 2) variant.style = "authentic";
+      if(typeof variant.cta !== 'string' || variant.cta.length < 2) variant.cta = "Check it out";
+      if(typeof variant.alt !== 'string' || variant.alt.length < 20) variant.alt = "Engaging social media content";
+      if(!Array.isArray(variant.hashtags)) variant.hashtags = ["#content", "#creative", "#amazing"];
+      if(typeof variant.caption !== 'string' || variant.caption.length < 1) variant.caption = "Check out this amazing content!";
+    });
+  const hints: string[] = [];
+  if (params.hint) hints.push(params.hint);
+
+  const defaults: Record<string, unknown> = {
+    caption: "Check out this amazing content!",
+    alt: "Engaging social media content",
+    hashtags: ["#content", "#creative", "#amazing"],
+    cta: "Check it out",
+    mood: "engaging",
+    style: "authentic",
+    safety_level: normalizeSafetyLevel('normal'),
+    nsfw: false,
+  };
+
+  const sanitizeVariant = (item: unknown): Record<string, unknown> => {
+    const variant = typeof item === 'object' && item !== null ? { ...(item as Record<string, unknown>) } : {};
+    const hashtagsSource = Array.isArray((variant as { hashtags?: unknown }).hashtags)
+      ? ((variant as { hashtags: unknown[] }).hashtags.filter((tag): tag is string => typeof tag === 'string' && tag.trim().length > 0))
+      : [];
+    const sanitizedHashtags = hashtagsSource.length > 0 ? hashtagsSource : defaults.hashtags as string[];
+
+    return {
+      ...variant,
+      caption: typeof (variant as { caption?: unknown }).caption === 'string' && (variant as { caption?: string }).caption.trim().length > 0
+        ? (variant as { caption: string }).caption
+        : defaults.caption,
+      alt: typeof (variant as { alt?: unknown }).alt === 'string' && (variant as { alt?: string }).alt.length >= 20
+        ? (variant as { alt: string }).alt
+        : defaults.alt,
+      hashtags: sanitizedHashtags,
+      cta: typeof (variant as { cta?: unknown }).cta === 'string' && (variant as { cta?: string }).cta.length >= 2
+        ? (variant as { cta: string }).cta
+        : defaults.cta,
+      mood: typeof (variant as { mood?: unknown }).mood === 'string' && (variant as { mood?: string }).mood.length >= 2
+        ? (variant as { mood: string }).mood
+        : defaults.mood,
+      style: typeof (variant as { style?: unknown }).style === 'string' && (variant as { style?: string }).style.length >= 2
+        ? (variant as { style: string }).style
+        : defaults.style,
+      safety_level: normalizeSafetyLevel(
+        typeof (variant as { safety_level?: unknown }).safety_level === 'string'
+          ? (variant as { safety_level: string }).safety_level
+          : defaults.safety_level as string
+      ),
+      nsfw: typeof (variant as { nsfw?: unknown }).nsfw === 'boolean'
+        ? (variant as { nsfw: boolean }).nsfw
+        : defaults.nsfw,
+    };
+  };
+
+  const seenKeys = new Set<string>();
+  const collected: Record<string, unknown>[] = [];
+
+    // Ensure exactly 5 variants by padding with variations if needed
+    while(json.length < 5) {
+      const template = (json[0] as Record<string, unknown>) || {
+        caption: "Check out this amazing content!",
+        alt: "Engaging social media content",
+        hashtags: ["#content", "#creative", "#amazing"],
+        cta: "Check it out",
+        mood: "engaging",
+        style: "authentic",
+        safety_level: normalizeSafetyLevel('normal'),
+        nsfw: false
+      };
+      json.push({
+        ...template,
+        caption: `${template.caption as string} (Variant ${json.length + 1})`
+      });
+  for (let attempt = 0; attempt < MAX_VARIANT_ATTEMPTS && collected.length < 5; attempt += 1) {
+    const hintBlock = hints.map(hint => `\nHINT:${hint}`).join('');
+    const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\n${params.style ? `STYLE: ${params.style}\n` : ''}${params.mood ? `MOOD: ${params.mood}\n` : ''}IMAGE_FACTS: ${JSON.stringify(params.facts)}\nNSFW: ${params.nsfw || false}${hintBlock}`;
+    let res;
+    try {
+      res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+user }]);
+    } catch (error) {
+      console.error('Gemini textModel.generateContent failed:', error);
+      throw error;
+    }
+
+    const parsed = stripToJSON(res.response.text());
+    const arr = Array.isArray(parsed) ? parsed : [parsed];
+    let duplicateForHint: string | undefined;
+
+    for (const item of arr) {
+      const variant = sanitizeVariant(item);
+      const caption = typeof variant.caption === 'string' ? variant.caption : '';
+      const key = captionKey(caption);
+      if (!key) continue;
+      if (seenKeys.has(key)) {
+        if (!duplicateForHint) duplicateForHint = caption;
+        continue;
+      }
+      seenKeys.add(key);
+      collected.push(variant);
+      if (collected.length === 5) break;
+    }
+
+    // Trim to exactly 5 if more than 5
+    if(json.length > 5) {
+      json.splice(5);
+    if (collected.length >= 5) break;
+
+    const nextHint = duplicateForHint
+      ? `You already wrote "${hintSnippet(duplicateForHint)}"; deliver a fresh angle.`
+      : 'You already wrote very similar captions; deliver a fresh angle.';
+    if (!hints.includes(nextHint)) {
+      hints.push(nextHint);
+    }
+  }
+  return CaptionArray.parse(json);
+
+  const baseVariant = collected[0] ?? defaults;
+  while (collected.length < 5) {
+    const index = collected.length + 1;
+    const baseCaption = typeof baseVariant.caption === 'string' ? baseVariant.caption : String(defaults.caption);
+    let freshCaption = `Fresh POV ${index}: ${baseCaption}`;
+    let freshKey = captionKey(freshCaption);
+    let collisionCount = 1;
+    while (seenKeys.has(freshKey)) {
+      collisionCount += 1;
+      freshCaption = `Fresh POV ${index}.${collisionCount}: ${baseCaption}`;
+      freshKey = captionKey(freshCaption);
+    }
+    const newVariant = {
+      ...baseVariant,
+      caption: freshCaption,
+    };
+    collected.push(newVariant);
+    seenKeys.add(freshKey);
+  }
+
+  if (collected.length > 5) {
+    collected.splice(5);
+  }
+
+  return CaptionArray.parse(collected);
+}
+
+export async function rankAndSelect(variants: z.infer<typeof CaptionArray>): Promise<z.infer<typeof RankResult>> {
+  const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rank.txt");
+  let res;
+  try {
+    res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+JSON.stringify(variants) }]);
+  } catch (error) {
+    console.error('Gemini textModel.generateContent failed:', error);
+    throw error;
+  }
+  let json = stripToJSON(res.response.text()) as unknown;
+  
+  // Handle case where AI returns array instead of ranking object
+  if(Array.isArray(json)) {
+    const winner = json[0] || variants[0];
+    json = {
+      winner_index: 0,
+      scores: [5, 4, 3, 2, 1],
+      reason: "Selected based on engagement potential",
+      final: winner
+    };
+  }
+  
+  // Accept any safety_level in final result
+@@ -287,42 +367,44 @@ export async function rankAndSelect(variants: z.infer<typeof CaptionArray>): Pro
+    const final = (json as { final: Record<string, unknown> }).final;
+    final.safety_level = normalizeSafetyLevel(
+      typeof final.safety_level === 'string' ? final.safety_level : 'normal'
+    );
+    if(typeof final.mood !== 'string' || final.mood.length<2) final.mood="engaging";
+    if(typeof final.style !== 'string' || final.style.length<2) final.style="authentic";
+    if(typeof final.cta !== 'string' || final.cta.length<2) final.cta="Check it out";
+    if(typeof final.alt !== 'string' || final.alt.length<20) final.alt="Engaging social media content";
+    if(!Array.isArray(final.hashtags)) final.hashtags=["#content", "#creative", "#amazing"];
+    if(typeof final.caption !== 'string' || final.caption.length<1) final.caption="Check out this amazing content!";
+  }
+  return RankResult.parse(json);
+}
+
+export async function pipeline({ imageUrl, platform, voice = "flirty_playful", style, mood, nsfw = false }: {
+  imageUrl: string;
+  platform: "instagram" | "x" | "reddit" | "tiktok";
+  voice?: string;
+  style?: string;
+  mood?: string;
+  nsfw?: boolean;
+}): Promise<CaptionResult> {
+  try {
+    const facts = await extractFacts(imageUrl);
+    let variants = await generateVariants({ platform, voice, style, mood, facts, nsfw });
+    variants = dedupeVariantsForRanking(variants);
+    let ranked = await rankAndSelect(variants);
+    let out = ranked.final;
+
+    const err = platformChecks(platform, out);
+    if (err) {
+      variants = await generateVariants({ platform, voice, facts, hint:`Fix: ${err}. Use IMAGE_FACTS nouns/colors/setting explicitly.`, nsfw });
+      variants = dedupeVariantsForRanking(variants);
+      ranked = await rankAndSelect(variants);
+      out = ranked.final;
+    }
+
+    return { provider: 'gemini', facts, variants, ranked, final: out };
+  } catch (error) {
+    const { openAICaptionFallback } = await import('./openaiFallback');
+    const final = await openAICaptionFallback({ platform, voice, imageUrl });
+    return { provider: 'openai', final } as CaptionResult;
+  }
+}
+server/caption/textOnlyPipeline.ts
++126-45
+import fs from "node:fs/promises";
+import path from "node:path";
+import { textModel } from "../lib/gemini";
+import { CaptionArray, RankResult, platformChecks } from "./schema";
+import { dedupeVariantsForRanking } from "./dedupeVariants";
+import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
+
+async function load(p:string){ return fs.readFile(path.join(process.cwd(),"prompts",p),"utf8"); }
+function stripToJSON(txt:string){ const i=Math.min(...[txt.indexOf("{"),txt.indexOf("[")].filter(x=>x>=0));
+  const j=Math.max(txt.lastIndexOf("}"),txt.lastIndexOf("]")); return JSON.parse((i>=0&&j>=0)?txt.slice(i,j+1):txt); }
+
+const MAX_VARIANT_ATTEMPTS = 4;
+
+function captionKey(caption: string): string {
+  return caption.trim().slice(0, 80).toLowerCase();
+}
+
+function hintSnippet(caption: string): string {
+  const normalized = caption.trim().replace(/\s+/g, " ");
+  return normalized.length > 60 ? `${normalized.slice(0, 57)}…` : normalized;
+}
+
+export async function generateVariantsTextOnly(params:{platform:"instagram"|"x"|"reddit"|"tiktok", voice:string, style?:string, mood?:string, theme:string, context?:string, hint?:string, nsfw?:boolean}){
+  const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("variants_textonly.txt");
+  const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\n${params.style ? `STYLE: ${params.style}\n` : ''}${params.mood ? `MOOD: ${params.mood}\n` : ''}THEME: "${params.theme}"\nCONTEXT: "${params.context||''}"\nNSFW: ${params.nsfw || false}${params.hint?`\nHINT:${params.hint}`:""}`;
+  const res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+user }]);
+  const raw=stripToJSON(res.response.text());
+  const json=Array.isArray(raw)?raw:[raw];
+  // Fix common safety_level values and missing fields
+  if(Array.isArray(json)){
+    json.forEach((item) => {
+      const variant = item as Record<string, unknown>;
+      variant.safety_level = normalizeSafetyLevel(
+        typeof variant.safety_level === 'string' ? variant.safety_level : 'normal'
+      );
+      // Fix other fields
+      if(typeof variant.mood !== 'string' || variant.mood.length<2) variant.mood="engaging";
+      if(typeof variant.style !== 'string' || variant.style.length<2) variant.style="authentic";
+      if(typeof variant.cta !== 'string' || variant.cta.length<2) variant.cta="Check it out";
+      if(typeof variant.alt !== 'string' || variant.alt.length<20) variant.alt="Engaging social media content";
+      if(!Array.isArray(variant.hashtags) || variant.hashtags.length < 3) {
+        if(params.platform === 'instagram') {
+          variant.hashtags=["#content", "#creative", "#amazing", "#lifestyle"];
+        } else {
+          variant.hashtags=["#content", "#creative", "#amazing"];
+        }
+  const hints: string[] = [];
+  if (params.hint) hints.push(params.hint);
+
+  const defaultHashtags = params.platform === 'instagram'
+    ? ["#content", "#creative", "#amazing", "#lifestyle"]
+    : ["#content", "#creative", "#amazing"];
+
+  const defaults: Record<string, unknown> = {
+    caption: "Check out this amazing content!",
+    alt: "Engaging social media content",
+    hashtags: defaultHashtags,
+    cta: "Check it out",
+    mood: "engaging",
+    style: "authentic",
+    safety_level: normalizeSafetyLevel('normal'),
+    nsfw: false,
+  };
+
+  const sanitizeVariant = (item: unknown): Record<string, unknown> => {
+    const variant = typeof item === 'object' && item !== null ? { ...(item as Record<string, unknown>) } : {};
+    const hashtagsSource = Array.isArray((variant as { hashtags?: unknown }).hashtags)
+      ? ((variant as { hashtags: unknown[] }).hashtags.filter((tag): tag is string => typeof tag === 'string' && tag.trim().length > 0))
+      : [];
+    const sanitizedHashtags = hashtagsSource.length >= (params.platform === 'instagram' ? 4 : 3)
+      ? hashtagsSource
+      : defaultHashtags;
+
+    return {
+      ...variant,
+      caption: typeof (variant as { caption?: unknown }).caption === 'string' && (variant as { caption?: string }).caption.trim().length > 0
+        ? (variant as { caption: string }).caption
+        : defaults.caption,
+      alt: typeof (variant as { alt?: unknown }).alt === 'string' && (variant as { alt?: string }).alt.length >= 20
+        ? (variant as { alt: string }).alt
+        : defaults.alt,
+      hashtags: sanitizedHashtags,
+      cta: typeof (variant as { cta?: unknown }).cta === 'string' && (variant as { cta?: string }).cta.length >= 2
+        ? (variant as { cta: string }).cta
+        : defaults.cta,
+      mood: typeof (variant as { mood?: unknown }).mood === 'string' && (variant as { mood?: string }).mood.length >= 2
+        ? (variant as { mood: string }).mood
+        : defaults.mood,
+      style: typeof (variant as { style?: unknown }).style === 'string' && (variant as { style?: string }).style.length >= 2
+        ? (variant as { style: string }).style
+        : defaults.style,
+      safety_level: normalizeSafetyLevel(
+        typeof (variant as { safety_level?: unknown }).safety_level === 'string'
+          ? (variant as { safety_level: string }).safety_level
+          : defaults.safety_level as string
+      ),
+      nsfw: typeof (variant as { nsfw?: unknown }).nsfw === 'boolean'
+        ? (variant as { nsfw: boolean }).nsfw
+        : defaults.nsfw,
+    };
+  };
+
+  const seenKeys = new Set<string>();
+  const collected: Record<string, unknown>[] = [];
+
+  for (let attempt = 0; attempt < MAX_VARIANT_ATTEMPTS && collected.length < 5; attempt += 1) {
+    const hintBlock = hints.map(hint => `\nHINT:${hint}`).join('');
+    const user=`PLATFORM: ${params.platform}\nVOICE: ${params.voice}\n${params.style ? `STYLE: ${params.style}\n` : ''}${params.mood ? `MOOD: ${params.mood}\n` : ''}THEME: "${params.theme}"\nCONTEXT: "${params.context||''}"\nNSFW: ${params.nsfw || false}${hintBlock}`;
+    const res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+user }]);
+    const raw=stripToJSON(res.response.text());
+    const arr = Array.isArray(raw) ? raw : [raw];
+    let duplicateForHint: string | undefined;
+
+    for (const item of arr) {
+      const variant = sanitizeVariant(item);
+      const caption = typeof variant.caption === 'string' ? variant.caption : '';
+      const key = captionKey(caption);
+      if (!key) continue;
+      if (seenKeys.has(key)) {
+        if (!duplicateForHint) duplicateForHint = caption;
+        continue;
+      }
+      if(typeof variant.caption !== 'string' || variant.caption.length<1) variant.caption="Check out this amazing content!";
+    });
+
+    // Ensure exactly 5 variants by padding with variations if needed
+    while(json.length < 5) {
+      const template = (json[0] as Record<string, unknown>) || {
+        caption: "Check out this amazing content!",
+        alt: "Engaging social media content",
+        hashtags: ["#content", "#creative", "#amazing"],
+        cta: "Check it out",
+        mood: "engaging",
+        style: "authentic",
+        safety_level: normalizeSafetyLevel('normal'),
+        nsfw: false
+      };
+      json.push({
+        ...template,
+        caption: `${template.caption as string} (Variant ${json.length + 1})`
+      });
+      seenKeys.add(key);
+      collected.push(variant);
+      if (collected.length === 5) break;
+    }
+
+    if (collected.length >= 5) break;
+
+    const nextHint = duplicateForHint
+      ? `You already wrote "${hintSnippet(duplicateForHint)}"; deliver a fresh angle.`
+      : 'You already wrote very similar captions; deliver a fresh angle.';
+    if (!hints.includes(nextHint)) {
+      hints.push(nextHint);
+    }
+  }
+
+    // Trim to exactly 5 if more than 5
+    if(json.length > 5) {
+      json.splice(5);
+  const baseVariant = collected[0] ?? defaults;
+  while (collected.length < 5) {
+    const index = collected.length + 1;
+    const baseCaption = typeof baseVariant.caption === 'string' ? baseVariant.caption : String(defaults.caption);
+    let freshCaption = `Fresh POV ${index}: ${baseCaption}`;
+    let freshKey = captionKey(freshCaption);
+    let collisionCount = 1;
+    while (seenKeys.has(freshKey)) {
+      collisionCount += 1;
+      freshCaption = `Fresh POV ${index}.${collisionCount}: ${baseCaption}`;
+      freshKey = captionKey(freshCaption);
+    }
+    const newVariant = {
+      ...baseVariant,
+      hashtags: Array.isArray(baseVariant.hashtags) ? baseVariant.hashtags : defaultHashtags,
+      caption: freshCaption,
+    };
+    collected.push(newVariant);
+    seenKeys.add(freshKey);
+  }
+  return CaptionArray.parse(json);
+
+  if (collected.length > 5) {
+    collected.splice(5);
+  }
+
+  return CaptionArray.parse(collected);
+}
+
+export async function rankAndSelect(variants: unknown[], params?: { platform?: string; nsfw?: boolean }){
+  const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rank.txt");
+  const res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+JSON.stringify(variants) }]);
+  let json=stripToJSON(res.response.text()) as unknown;
+  
+  // Handle case where AI returns array instead of ranking object
+  if(Array.isArray(json)) {
+    const winner = json[0] || variants[0];
+    json = {
+      winner_index: 0,
+      scores: [5, 4, 3, 2, 1],
+      reason: "Selected based on engagement potential",
+      final: winner
+    };
+  }
+  
+  // Fix safety_level in final result
+  if((json as Record<string, unknown>).final){
+    const final = (json as { final: Record<string, unknown> }).final;
+    final.safety_level = normalizeSafetyLevel(
+      typeof final.safety_level === 'string' ? final.safety_level : 'normal'
+    );
+    if(typeof final.mood !== 'string' || final.mood.length<2) final.mood="engaging";
+    if(typeof final.style !== 'string' || final.style.length<2) final.style="authentic";
+    if(typeof final.cta !== 'string' || final.cta.length<2) final.cta="Check it out";
+    if(typeof final.alt !== 'string' || final.alt.length<20) final.alt="Engaging social media content";
+    if(!Array.isArray(final.hashtags) || final.hashtags.length < 3) {
+      if(params?.platform === 'instagram') {
+        final.hashtags=["#content", "#creative", "#amazing", "#lifestyle"];
+      } else {
+        final.hashtags=["#content", "#creative", "#amazing"];
+      }
+    }
+    if(typeof final.caption !== 'string' || final.caption.length<1) final.caption="Check out this amazing content!";
+  }
+  return RankResult.parse(json);
+}
+
+export async function pipelineTextOnly({ platform, voice="flirty_playful", style, mood, theme, context, nsfw=false }:{
+  platform:"instagram"|"x"|"reddit"|"tiktok", voice?:string, style?:string, mood?:string, theme:string, context?:string, nsfw?:boolean }){
+  let variants = await generateVariantsTextOnly({ platform, voice, style, mood, theme, context, nsfw });
+  variants = dedupeVariantsForRanking(variants);
+  let ranked = await rankAndSelect(variants, { platform, nsfw });
+  let out = ranked.final;
+
+  const err = platformChecks(platform, out);
+  if (err) {
+    variants = await generateVariantsTextOnly({ platform, voice, theme, context, hint:`Fix: ${err}. Be specific and engaging.`, nsfw });
+    variants = dedupeVariantsForRanking(variants);
+    ranked = await rankAndSelect(variants);
+    out = ranked.final;
+  }
+
+  return { variants, ranked, final: out };
+}
+tests/routes/caption-generation.test.ts
++302-35
+@@ -36,172 +36,439 @@ vi.mock('../../server/storage.ts', () => ({
+
+describe('Caption Generation', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('Gemini Pipeline', () => {
+    it('should handle image-based caption generation', async () => {
+      const mockImageUrl =
+        'data:image/jpeg;base64,' +
+        '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP///////////////wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACP/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8Af//Z';
+      const mockPlatform = 'instagram';
+      const mockVoice = 'flirty_playful';
+
+      // Mock successful responses
+      const mockFactsResponse = {
+        response: {
+          text: () => JSON.stringify({
+            objects: ['woman', 'lingerie'],
+            setting: 'bedroom',
+            mood: 'seductive',
+          }),
+        },
+      };
+
+      const variantPayload = [
+        {
+          caption: 'Feeling gorgeous tonight ✨',
+          hashtags: ['#lingerie', '#confidence', '#style'],
+          safety_level: 'spicy_safe',
+          mood: 'confident',
+          style: 'authentic',
+          cta: 'What do you think?',
+          alt: 'A glamorous example alt text to satisfy schema requirements',
+          nsfw: false,
+        },
+        {
+          caption: 'Midnight sparkle with satin swagger',
+          hashtags: ['#midnight', '#glow', '#style'],
+          safety_level: 'normal',
+          mood: 'playful',
+          style: 'bold',
+          cta: 'Slide into the night',
+          alt: 'Another richly detailed alt text for validation flow',
+          nsfw: false,
+        },
+        {
+          caption: 'Soft lighting, bold confidence in lace',
+          hashtags: ['#confidence', '#lace', '#nightout'],
+          safety_level: 'normal',
+          mood: 'empowered',
+          style: 'romantic',
+          cta: 'Tell me your vibe',
+          alt: 'Alt text describing the confident pose in detail for testing',
+          nsfw: false,
+        },
+        {
+          caption: 'Velvet mood and playful winks',
+          hashtags: ['#velvet', '#mood', '#playful'],
+          safety_level: 'spicy_safe',
+          mood: 'flirty',
+          style: 'whimsical',
+          cta: 'Drop a secret emoji',
+          alt: 'Detailed caption-friendly alt text for unique variant coverage',
+          nsfw: false,
+        },
+        {
+          caption: 'Glowing in rose-hued whispers tonight',
+          hashtags: ['#rose', '#glow', '#evening'],
+          safety_level: 'normal',
+          mood: 'romantic',
+          style: 'elegant',
+          cta: 'Share the mood',
+          alt: 'Extended alt content to meet schema standards effortlessly',
+          nsfw: false,
+        },
+      ];
+
+      const mockVariantsResponse = {
+        response: {
+          text: () =>
+            JSON.stringify([
+              {
+                caption: 'Feeling gorgeous tonight ✨',
+                hashtags: ['#lingerie', '#confidence', '#style'],
+                safety_level: 'spicy_safe',
+                mood: 'confident',
+                style: 'authentic',
+                cta: 'What do you think?',
+                alt: 'A glamorous example alt text to satisfy schema',
+                nsfw: false,
+              },
+            ]),
+          text: () => JSON.stringify(variantPayload),
+        },
+      };
+
+      const mockRankResponse = {
+        response: {
+          text: () =>
+            JSON.stringify({
+              winner_index: 0,
+              scores: [5, 4, 3, 2, 1],
+              reason: 'Selected based on engagement potential',
+              final: {
+                caption: 'Feeling gorgeous tonight ✨',
+                hashtags: ['#lingerie', '#confidence', '#style'],
+                safety_level: 'spicy_safe',
+                mood: 'confident',
+                style: 'authentic',
+                cta: 'What do you think?',
+                alt: 'A glamorous example alt text to satisfy schema',
+                nsfw: false,
+              },
+              final: variantPayload[0],
+            }),
+        },
+      };
+
+      const { textModel, visionModel } = await import('../../server/lib/gemini.js');
+      (visionModel.generateContent as any).mockResolvedValueOnce(mockFactsResponse);
+      (textModel.generateContent as any)
+        .mockResolvedValueOnce(mockVariantsResponse)
+        .mockResolvedValueOnce(mockRankResponse);
+
+      const result = await pipeline({
+        imageUrl: mockImageUrl,
+        platform: mockPlatform,
+        voice: mockVoice,
+      });
+
+      const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.js');
+
+      expect(openAICaptionFallback).not.toHaveBeenCalled();
+      expect(new Set(result.variants.map(v => v.caption.toLowerCase().slice(0, 80))).size).toBe(5);
+      expect(result.final).toMatchObject({
+        caption: expect.any(String),
+        safety_level: expect.stringMatching(/safe|low|spicy_safe/),
+      });
+    });
+
+    it('should handle safety level normalization', async () => {
+      const mockResponse = {
+        response: {
+          text: () => JSON.stringify([
+            {
+              caption: 'Test caption',
+              hashtags: ['#test'],
+              safety_level: 'spicy_safe', // Should be normalized to spicy_safe
+              mood: 'confident',
+              style: 'authentic',
+              cta: 'Check it out',
+            },
+          ]),
+        },
+      };
+
+      const { textModel } = await import('../../server/lib/gemini.js');
+      (textModel.generateContent as any).mockResolvedValue(mockResponse);
+
+      // This would normally be called as part of the pipeline
+      const { generateVariants } = await import('../../server/caption/geminiPipeline.js');
+      const result = await generateVariants({
+        platform: 'instagram',
+        voice: 'flirty_playful',
+        facts: { objects: ['test'] },
+      });
+
+      expect(result[0].safety_level).toBe('spicy_safe');
+    });
+
+    it('retries when duplicate captions are returned', async () => {
+      const duplicateVariant = {
+        caption: 'Echoed glam look under neon lights',
+        hashtags: ['#glam', '#neon', '#night'],
+        safety_level: 'normal',
+        mood: 'bold',
+        style: 'authentic',
+        cta: 'What catches your eye?',
+        alt: 'Duplicate variant alt text satisfying the schema constraints for testing',
+        nsfw: false,
+      };
+      const duplicateBatch = Array.from({ length: 5 }, () => ({ ...duplicateVariant }));
+      const uniqueBatch = [
+        {
+          caption: 'Fresh spark under city glow tonight',
+          hashtags: ['#city', '#spark', '#style'],
+          safety_level: 'normal',
+          mood: 'excited',
+          style: 'vibrant',
+          cta: 'Share your vibe',
+          alt: 'Alt copy describing a lively city-inspired outfit for uniqueness',
+          nsfw: false,
+        },
+        {
+          caption: 'Silky shadows with a fearless smile',
+          hashtags: ['#silky', '#fearless', '#smile'],
+          safety_level: 'normal',
+          mood: 'confident',
+          style: 'sleek',
+          cta: 'Drop a 🔥 if you feel it',
+          alt: 'Detailed alt content to keep schema happy during retry testing',
+          nsfw: false,
+        },
+        {
+          caption: 'Electric hues and a mischievous wink',
+          hashtags: ['#electric', '#wink', '#glam'],
+          safety_level: 'normal',
+          mood: 'playful',
+          style: 'edgy',
+          cta: 'Tell me your bold color',
+          alt: 'Alt description showcasing the mischievous styling for the test',
+          nsfw: false,
+        },
+        {
+          caption: 'Velvet secrets under moonlit alleys',
+          hashtags: ['#velvet', '#moonlit', '#alleys'],
+          safety_level: 'normal',
+          mood: 'mysterious',
+          style: 'dramatic',
+          cta: 'Reveal your night secret',
+          alt: 'Another long-form alt text to maintain schema compliance',
+          nsfw: false,
+        },
+        {
+          caption: 'Gilded glow with midnight attitude',
+          hashtags: ['#gilded', '#midnight', '#attitude'],
+          safety_level: 'normal',
+          mood: 'sultry',
+          style: 'glamorous',
+          cta: 'Who are you texting tonight?',
+          alt: 'Final alt entry covering the golden styling for unique variant set',
+          nsfw: false,
+        },
+      ];
+
+      const { textModel } = await import('../../server/lib/gemini.js');
+      (textModel.generateContent as any)
+        .mockResolvedValueOnce({
+          response: { text: () => JSON.stringify(duplicateBatch) },
+        })
+        .mockResolvedValueOnce({
+          response: { text: () => JSON.stringify(uniqueBatch) },
+        });
+
+      const { generateVariants } = await import('../../server/caption/geminiPipeline.js');
+      const result = await generateVariants({
+        platform: 'instagram',
+        voice: 'flirty_playful',
+        facts: { objects: ['test'] },
+      });
+
+      expect((textModel.generateContent as any)).toHaveBeenCalledTimes(2);
+      const secondPrompt = (textModel.generateContent as any).mock.calls[1][0][0].text as string;
+      expect(secondPrompt).toContain('HINT:You already wrote');
+      expect(new Set(result.map(v => v.caption.toLowerCase().slice(0, 80))).size).toBe(5);
+    });
+  });
+
+  describe('Text-Only Pipeline', () => {
+    it('should generate content without image context', async () => {
+      const mockResponse = {
+      const variantPayload = [
+        {
+          caption: 'Motivational content for today!',
+          hashtags: ['#motivation', '#mindset', '#focus'],
+          safety_level: 'normal',
+          mood: 'inspiring',
+          style: 'authentic',
+          cta: 'What motivates you?',
+          alt: 'Detailed motivational alt text exceeding the schema minimum length',
+          nsfw: false,
+        },
+        {
+          caption: 'Morning mantra: own the sunrise',
+          hashtags: ['#sunrise', '#grind', '#purpose'],
+          safety_level: 'normal',
+          mood: 'driven',
+          style: 'uplifting',
+          cta: 'Share your mantra',
+          alt: 'Alt text describing a sunrise workout scene to match schema rules',
+          nsfw: false,
+        },
+        {
+          caption: 'Take a breath, chase the big goal',
+          hashtags: ['#breathe', '#goal', '#energy'],
+          safety_level: 'normal',
+          mood: 'focused',
+          style: 'encouraging',
+          cta: 'Tag your accountability buddy',
+          alt: 'Motivational alt description capturing the hustle mindset in detail',
+          nsfw: false,
+        },
+        {
+          caption: 'Small wins stack into unstoppable momentum',
+          hashtags: ['#wins', '#momentum', '#mindset'],
+          safety_level: 'normal',
+          mood: 'optimistic',
+          style: 'practical',
+          cta: 'Drop a recent win',
+          alt: 'Encouraging alt text highlighting the sense of progress for the reader',
+          nsfw: false,
+        },
+        {
+          caption: 'Reset, refuel, and rise again stronger',
+          hashtags: ['#reset', '#fuel', '#rise'],
+          safety_level: 'normal',
+          mood: 'resilient',
+          style: 'supportive',
+          cta: 'Tell us your recharge ritual',
+          alt: 'Supportive alt content illustrating a calming reset routine vividly',
+          nsfw: false,
+        },
+      ];
+
+      const mockVariantsResponse = {
+        response: {
+          text: () => JSON.stringify([
+            {
+              caption: 'Motivational content for today!',
+              hashtags: ['#motivation', '#mindset'],
+              safety_level: 'normal',
+              mood: 'inspiring',
+              style: 'authentic',
+              cta: 'What motivates you?',
+            },
+          ]),
+          text: () => JSON.stringify(variantPayload),
+        },
+      };
+
+      const mockRankResponse = {
+        response: {
+          text: () =>
+            JSON.stringify({
+              winner_index: 1,
+              scores: [4, 5, 3, 2, 1],
+              reason: 'Chose the most energizing option',
+              final: variantPayload[1],
+            }),
+        },
+      };
+
+      const { textModel } = await import('../../server/lib/gemini.js');
+      (textModel.generateContent as any).mockResolvedValue(mockResponse);
+      (textModel.generateContent as any)
+        .mockResolvedValueOnce(mockVariantsResponse)
+        .mockResolvedValueOnce(mockRankResponse);
+
+      const result = await pipelineTextOnly({
+        platform: 'instagram',
+        voice: 'inspiring',
+        theme: 'motivation',
+        context: 'morning motivation post',
+      });
+
+      expect(result.final).toMatchObject({
+        caption: expect.stringContaining('Motivational'),
+        safety_level: 'normal',
+      });
+      expect(new Set(result.variants.map(v => v.caption.toLowerCase().slice(0, 80))).size).toBe(5);
+    });
+
+    it('retries when text-only duplicates occur', async () => {
+      const duplicateVariant = {
+        caption: 'Daily mantra: keep grinding',
+        hashtags: ['#grind', '#focus', '#daily'],
+        safety_level: 'normal',
+        mood: 'driven',
+        style: 'authentic',
+        cta: 'Share your mantra',
+        alt: 'Alt text for duplicate case ensuring schema minimum is exceeded easily',
+        nsfw: false,
+      };
+      const duplicateBatch = Array.from({ length: 5 }, () => ({ ...duplicateVariant }));
+      const uniqueBatch = [
+        {
+          caption: 'Fresh slate energy: breathe and begin',
+          hashtags: ['#fresh', '#breathe', '#begin'],
+          safety_level: 'normal',
+          mood: 'calm',
+          style: 'grounded',
+          cta: 'Tell us how you reset',
+          alt: 'Alt narrative describing a calm reset moment for uniqueness',
+          nsfw: false,
+        },
+        {
+          caption: 'Progress report: tiny steps count big',
+          hashtags: ['#progress', '#steps', '#count'],
+          safety_level: 'normal',
+          mood: 'encouraging',
+          style: 'practical',
+          cta: 'Tag a teammate',
+          alt: 'Detailed alt text celebrating incremental progress for the set',
+          nsfw: false,
+        },
+        {
+          caption: 'Spark your ambition with a mid-day mantra',
+          hashtags: ['#spark', '#ambition', '#midday'],
+          safety_level: 'normal',
+          mood: 'energized',
+          style: 'vibrant',
+          cta: 'Drop your go-to phrase',
+          alt: 'Alt description fueling midday motivation for duplicate testing',
+          nsfw: false,
+        },
+        {
+          caption: 'Refocus, refuel, and repeat your mission',
+          hashtags: ['#refocus', '#refuel', '#mission'],
+          safety_level: 'normal',
+          mood: 'focused',
+          style: 'encouraging',
+          cta: 'Share your repeatable habit',
+          alt: 'Alt copy illustrating a repeatable mission-building routine',
+          nsfw: false,
+        },
+        {
+          caption: 'Evening reflection: celebrate the subtle wins',
+          hashtags: ['#reflection', '#wins', '#evening'],
+          safety_level: 'normal',
+          mood: 'reflective',
+          style: 'warm',
+          cta: 'Note one win tonight',
+          alt: 'Alt text praising subtle wins to finalize unique variant list',
+          nsfw: false,
+        },
+      ];
+
+      const { textModel } = await import('../../server/lib/gemini.js');
+      (textModel.generateContent as any)
+        .mockResolvedValueOnce({
+          response: { text: () => JSON.stringify(duplicateBatch) },
+        })
+        .mockResolvedValueOnce({
+          response: { text: () => JSON.stringify(uniqueBatch) },
+        });
+
+      const { generateVariantsTextOnly } = await import('../../server/caption/textOnlyPipeline.js');
+      const result = await generateVariantsTextOnly({
+        platform: 'instagram',
+        voice: 'motivating',
+        theme: 'daily inspiration',
+        context: 'Morning push notification',
+      });
+
+      expect((textModel.generateContent as any)).toHaveBeenCalledTimes(2);
+      const secondPrompt = (textModel.generateContent as any).mock.calls[1][0][0].text as string;
+      expect(secondPrompt).toContain('HINT:You already wrote');
+      expect(new Set(result.map(v => v.caption.toLowerCase().slice(0, 80))).size).toBe(5);
+    });
+  });
+
+  describe('Rewrite Pipeline', () => {
+    it('should improve existing captions', async () => {
+      const existingCaption = 'Basic caption here';
+      const mockResponse = {
+        response: {
+          text: () => JSON.stringify([
+            {
+              caption: 'Enhanced and engaging caption! ✨',
+              hashtags: ['#enhanced', '#content'],
+              safety_level: 'normal',
+              mood: 'engaging',
+              style: 'authentic',
+              cta: 'What do you think?',
+            },
+          ]),
+        },
+      };
+
+      const { textModel } = await import('../../server/lib/gemini.js');
+      const genSpy = vi.spyOn(textModel, 'generateContent').mockResolvedValue(mockResponse as any);
+
+      const result = await pipelineRewrite({

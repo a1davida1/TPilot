@@ -9,6 +9,7 @@ import { buildVoiceGuideBlock } from "./stylePack";
 import { serializePromptField } from "./promptUtils";
 import { formatVoiceContext } from "./voiceTraits";
 import { ensureFactCoverage } from "./ensureFactCoverage";
+import { inferFallbackFromFacts } from "./inferFallbackFromFacts";
 
 // Custom error class for image validation failures
 export class InvalidImageError extends Error {
@@ -243,15 +244,30 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
   if(Array.isArray(json)){
     json.forEach((item) => {
       const variant = item as Record<string, unknown>;
+      const fallback = inferFallbackFromFacts({
+        platform: params.platform,
+        facts: params.facts,
+        existingCaption: typeof variant.caption === 'string' ? variant.caption : params.hint,
+      });
       variant.safety_level = normalizeSafetyLevel(
         typeof variant.safety_level === 'string' ? variant.safety_level : 'normal'
       );
       // Fix other fields
       if(typeof variant.mood !== 'string' || variant.mood.length < 2) variant.mood = "engaging";
       if(typeof variant.style !== 'string' || variant.style.length < 2) variant.style = "authentic";
-      if(typeof variant.cta !== 'string' || variant.cta.length < 2) variant.cta = "Check it out";
-      if(typeof variant.alt !== 'string' || variant.alt.length < 20) variant.alt = "Engaging social media content";
-      if(!Array.isArray(variant.hashtags)) variant.hashtags = ["#content", "#creative", "#amazing"];
+      if(typeof variant.cta !== 'string' || variant.cta.length < 2) variant.cta = fallback.cta;
+      if(typeof variant.alt !== 'string' || variant.alt.length < 20) variant.alt = fallback.alt;
+      const providedHashtags = Array.isArray(variant.hashtags)
+        ? (variant.hashtags as unknown[])
+            .filter((tag): tag is string => typeof tag === 'string')
+            .map(tag => tag.trim())
+            .filter(tag => tag.length > 0)
+        : [];
+      if(providedHashtags.length === 0 || providedHashtags.length < fallback.hashtags.length) {
+        variant.hashtags = fallback.hashtags;
+      } else {
+        variant.hashtags = providedHashtags;
+      }
       if(typeof variant.caption !== 'string' || variant.caption.length < 1) variant.caption = "Check out this amazing content!";
     });
 
@@ -267,9 +283,25 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
         safety_level: normalizeSafetyLevel('normal'),
         nsfw: false
       };
+      const fallback = inferFallbackFromFacts({
+        platform: params.platform,
+        facts: params.facts,
+        existingCaption: typeof template.caption === 'string' ? template.caption : params.hint,
+      });
       json.push({
         ...template,
-        caption: `${template.caption as string} (Variant ${json.length + 1})`
+        caption: typeof template.caption === 'string'
+          ? `${template.caption} (Variant ${json.length + 1})`
+          : `Fresh take (Variant ${json.length + 1})`,
+        alt: typeof template.alt === 'string' && template.alt.length >= 20 ? template.alt : fallback.alt,
+        hashtags: Array.isArray(template.hashtags) && (template.hashtags as unknown[]).length > 0
+          ? (template.hashtags as string[])
+          : fallback.hashtags,
+        cta: typeof template.cta === 'string' && template.cta.length >= 2 ? template.cta : fallback.cta,
+        mood: typeof template.mood === 'string' && template.mood.length >= 2 ? template.mood : 'engaging',
+        style: typeof template.style === 'string' && template.style.length >= 2 ? template.style : 'authentic',
+        safety_level: normalizeSafetyLevel(typeof template.safety_level === 'string' ? template.safety_level : 'normal'),
+        nsfw: Boolean(template.nsfw)
       });
     }
 
@@ -281,7 +313,15 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
   return CaptionArray.parse(json);
 }
 
-export async function rankAndSelect(variants: z.infer<typeof CaptionArray>): Promise<z.infer<typeof RankResult>> {
+export async function rankAndSelect(
+  variants: z.infer<typeof CaptionArray>,
+  context?: {
+    platform: "instagram" | "x" | "reddit" | "tiktok";
+    facts?: Record<string, unknown>;
+    existingCaption?: string;
+    theme?: string;
+  }
+): Promise<z.infer<typeof RankResult>> {
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rank.txt");
   let res;
   try {
@@ -306,14 +346,35 @@ export async function rankAndSelect(variants: z.infer<typeof CaptionArray>): Pro
   // Accept any safety_level in final result
   if((json as Record<string, unknown>).final){
     const final = (json as { final: Record<string, unknown> }).final;
+    const fallback = context && context.platform
+      ? inferFallbackFromFacts({
+          platform: context.platform,
+          facts: context.facts,
+          existingCaption: typeof final.caption === 'string' ? final.caption : context.existingCaption,
+          theme: context.theme,
+        })
+      : undefined;
+    const fallbackHashtags = fallback?.hashtags ?? ["#content", "#creative", "#amazing"];
+    const fallbackCta = fallback?.cta ?? "Check it out";
+    const fallbackAlt = fallback?.alt ?? "Engaging social media content";
     final.safety_level = normalizeSafetyLevel(
       typeof final.safety_level === 'string' ? final.safety_level : 'normal'
     );
     if(typeof final.mood !== 'string' || final.mood.length<2) final.mood="engaging";
     if(typeof final.style !== 'string' || final.style.length<2) final.style="authentic";
-    if(typeof final.cta !== 'string' || final.cta.length<2) final.cta="Check it out";
-    if(typeof final.alt !== 'string' || final.alt.length<20) final.alt="Engaging social media content";
-    if(!Array.isArray(final.hashtags)) final.hashtags=["#content", "#creative", "#amazing"];
+    if(typeof final.cta !== 'string' || final.cta.length<2) final.cta=fallbackCta;
+    if(typeof final.alt !== 'string' || final.alt.length<20) final.alt=fallbackAlt;
+    const finalHashtags = Array.isArray(final.hashtags)
+      ? (final.hashtags as unknown[])
+          .filter((tag): tag is string => typeof tag === 'string')
+          .map(tag => tag.trim())
+          .filter(tag => tag.length > 0)
+      : [];
+    if(finalHashtags.length === 0 || finalHashtags.length < fallbackHashtags.length) {
+      final.hashtags = fallbackHashtags;
+    } else {
+      final.hashtags = finalHashtags;
+    }
     if(typeof final.caption !== 'string' || final.caption.length<1) final.caption="Check out this amazing content!";
   }
   return RankResult.parse(json);
@@ -341,7 +402,7 @@ export async function pipeline({ imageUrl, platform, voice = "flirty_playful", n
     const tone = extractToneOptions(toneRest);
     const facts = await extractFacts(imageUrl);
     let variants = await generateVariants({ platform, voice, facts, nsfw, ...tone });
-    let ranked = await rankAndSelect(variants);
+    let ranked = await rankAndSelect(variants, { platform, facts });
     let out = ranked.final;
 
     const enforceCoverage = async () => {
@@ -350,7 +411,7 @@ export async function pipeline({ imageUrl, platform, voice = "flirty_playful", n
       while (!coverage.ok && coverage.hint && attempts < 2) {
         attempts += 1;
         variants = await generateVariants({ platform, voice, facts, hint: coverage.hint, nsfw, ...tone });
-        ranked = await rankAndSelect(variants);
+        ranked = await rankAndSelect(variants, { platform, facts });
         out = ranked.final;
         coverage = ensureFactCoverage({ facts, caption: out.caption, alt: out.alt });
       }
@@ -361,7 +422,7 @@ export async function pipeline({ imageUrl, platform, voice = "flirty_playful", n
     const err = platformChecks(platform, out);
     if (err) {
       variants = await generateVariants({ platform, voice, facts, nsfw, ...tone, hint:`Fix: ${err}. Use IMAGE_FACTS nouns/colors/setting explicitly.` });
-      ranked = await rankAndSelect(variants);
+      ranked = await rankAndSelect(variants, { platform, facts });
       out = ranked.final;
       await enforceCoverage();
     }
