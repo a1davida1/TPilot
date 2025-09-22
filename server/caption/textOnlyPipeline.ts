@@ -5,6 +5,7 @@ import { textModel } from "../lib/gemini";
 import { CaptionArray, CaptionItem, RankResult, platformChecks } from "./schema";
 import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
 import { extractToneOptions, ToneOptions } from "./toneOptions";
+import { BANNED_WORDS_HINT, variantContainsBannedWord } from "./bannedWords";
 import { buildVoiceGuideBlock } from "./stylePack";
 import { formatVoiceContext } from "./voiceTraits";
 import { serializePromptField } from "./promptUtils";
@@ -128,10 +129,18 @@ export async function generateVariantsTextOnly(params:TextOnlyVariantParams){
     const raw = stripToJSON(res.response.text());
     const items = Array.isArray(raw) ? raw : [raw];
     const iterationDuplicates: string[] = [];
+    let hasBannedWords = false;
 
     items.forEach(item => {
       const candidate = (typeof item === "object" && item !== null ? item : {}) as Record<string, unknown>;
       const normalized = normalizeVariantFields(candidate);
+      
+      // Check for banned words in the variant
+      if (variantContainsBannedWord(normalized)) {
+        hasBannedWords = true;
+        return; // Skip this variant
+      }
+      
       const key = uniqueCaptionKey(normalized.caption);
       const existingIndex = keyIndex.get(key);
 
@@ -155,7 +164,14 @@ export async function generateVariantsTextOnly(params:TextOnlyVariantParams){
 
     if (variants.length < VARIANT_TARGET) {
       const needed = VARIANT_TARGET - variants.length;
-      currentHint = buildRetryHint(params.hint, iterationDuplicates, needed);
+      let retryHint = buildRetryHint(params.hint, iterationDuplicates, needed);
+      
+      // Add banned words hint if banned words were detected
+      if (hasBannedWords) {
+        retryHint = retryHint ? `${retryHint}. ${BANNED_WORDS_HINT}` : BANNED_WORDS_HINT;
+      }
+      
+      currentHint = retryHint;
     }
   }
 
@@ -207,6 +223,16 @@ export async function rankAndSelect(
   const first = await requestTextOnlyRanking(variants, serializedVariants, promptBlock, params?.platform);
   let parsed = RankResult.parse(first);
   const violations = detectVariantViolations(parsed.final);
+  
+  // Check for banned words in the final selection
+  if (variantContainsBannedWord(parsed.final)) {
+    violations.push({
+      type: "banned_word",
+      content: parsed.final.caption || "",
+      field: "caption"
+    });
+  }
+  
   if (violations.length === 0) {
     return parsed;
   }
@@ -220,6 +246,16 @@ export async function rankAndSelect(
   );
   parsed = RankResult.parse(rerank);
   const rerankViolations = detectVariantViolations(parsed.final);
+  
+  // Check for banned words in the reranked final selection
+  if (variantContainsBannedWord(parsed.final)) {
+    rerankViolations.push({
+      type: "banned_word",
+      content: parsed.final.caption || "",
+      field: "caption"
+    });
+  }
+  
   if (rerankViolations.length === 0) {
     return parsed;
   }
