@@ -87,7 +87,7 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
-export function ModernDashboard({ _isRedditConnected = false, user, userTier = 'free', isAdmin = false }: ModernDashboardProps) {
+export function ModernDashboard({ isRedditConnected = false, user, userTier = 'free', isAdmin = false }: ModernDashboardProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
@@ -100,7 +100,7 @@ export function ModernDashboard({ _isRedditConnected = false, user, userTier = '
   const resolvedUser = authUser ?? user;
   const isAdminUser = Boolean(authUser?.isAdmin || authUser?.role === 'admin' || resolvedTier === 'admin' || isAdmin);
   const isPremium = isAdminUser || resolvedTier === 'premium' || resolvedTier === 'pro';
-  const displayName = resolvedUser?.username ?? resolvedUser?.displayName ?? resolvedUser?.email ?? 'Creator';
+  const displayName = resolvedUser?.username ?? resolvedUser?.email ?? 'Creator';
   const dashboardPrompt = isAdminUser
     ? 'Review platform performance and respond to creator needs.'
     : 'What would you like to do today?';
