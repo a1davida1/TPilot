@@ -914,3 +914,33 @@ export type SystemLog = typeof systemLogs.$inferSelect;
 export type ContentFlag = typeof contentFlags.$inferSelect;
 export type UserAction = typeof userActions.$inferSelect;
 export type AdminAuditLog = typeof adminAuditLog.$inferSelect;
+
+// ==========================================
+// SHADOWBAN DETECTION SCHEMAS
+// ==========================================
+
+export type ShadowbanStatusType = 'clear' | 'suspected' | 'unknown';
+
+export interface ShadowbanSubmissionSummary {
+  id: string;
+  createdUtc: number;
+  permalink: string;
+  title?: string;
+  subreddit?: string;
+}
+
+export interface ShadowbanEvidenceResponse {
+  username: string;
+  checkedAt: string;
+  privateCount: number;
+  publicCount: number;
+  privateSubmissions: ShadowbanSubmissionSummary[];
+  publicSubmissions: ShadowbanSubmissionSummary[];
+  missingSubmissionIds: string[];
+}
+
+export interface ShadowbanCheckApiResponse {
+  status: ShadowbanStatusType;
+  reason?: string;
+  evidence: ShadowbanEvidenceResponse;
+}
