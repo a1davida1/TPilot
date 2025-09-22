@@ -50,6 +50,137 @@ interface AuthenticatedRequest extends express.Request {
   user?: typeof users.$inferSelect;
 }
 
+// User tier type
+type UserTier = 'free' | 'starter' | 'pro' | 'premium';
+
+// ==========================================
+// PRO RESOURCES ROUTES
+// ==========================================
+
+function registerProResourcesRoutes(app: Express) {
+  // Helper to get user tier
+  const getUserTier = (user: any): UserTier => {
+    if (!user) return 'free';
+    if (user.subscriptionTier === 'pro' || user.subscriptionTier === 'premium') {
+      return user.subscriptionTier as UserTier;
+    }
+    return 'free';
+  };
+
+  // GET /api/pro-resources - List all perks for authenticated users
+  app.get('/api/pro-resources', authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(403).json({ 
+          perks: [], 
+          accessGranted: false,
+          message: "Authentication required for pro resources" 
+        });
+      }
+
+      const userTier = getUserTier(req.user);
+      
+      // Only pro/premium users get access
+      if (userTier === 'free' || userTier === 'starter') {
+        return res.status(403).json({
+          perks: [],
+          accessGranted: false,
+          message: "Pro subscription required to access these resources"
+        });
+      }
+
+      const availablePerks = getAvailablePerks(userTier);
+      
+      res.json({
+        perks: availablePerks,
+        accessGranted: true
+      });
+
+    } catch (error) {
+      logger.error("Pro resources error:", error);
+      res.status(500).json({ 
+        perks: [], 
+        accessGranted: false,
+        message: "Failed to load pro resources" 
+      });
+    }
+  });
+
+  // GET /api/pro-resources/:id/signup-instructions - Get detailed signup instructions
+  app.get('/api/pro-resources/:id/signup-instructions', authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const userTier = getUserTier(req.user);
+      if (userTier === 'free' || userTier === 'starter') {
+        return res.status(403).json({ message: "Pro subscription required" });
+      }
+
+      const perkId = req.params.id;
+      if (!perkId) {
+        return res.status(400).json({ message: "Perk ID required" });
+      }
+
+      // Verify the perk exists and user has access
+      const availablePerks = getAvailablePerks(userTier);
+      const perk = availablePerks.find(p => p.id === perkId);
+      
+      if (!perk) {
+        return res.status(404).json({ message: "Perk not found or not accessible" });
+      }
+
+      const instructions = getSignupInstructions(perkId);
+      
+      res.json({
+        instructions
+      });
+
+    } catch (error) {
+      logger.error("Signup instructions error:", error);
+      res.status(500).json({ message: "Failed to load signup instructions" });
+    }
+  });
+
+  // POST /api/pro-resources/:id/referral-code - Generate referral code
+  app.post('/api/pro-resources/:id/referral-code', authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const userTier = getUserTier(req.user);
+      if (userTier === 'free' || userTier === 'starter') {
+        return res.status(403).json({ message: "Pro subscription required" });
+      }
+
+      const perkId = req.params.id;
+      if (!perkId) {
+        return res.status(400).json({ message: "Perk ID required" });
+      }
+
+      // Verify the perk exists and user has access
+      const availablePerks = getAvailablePerks(userTier);
+      const perk = availablePerks.find(p => p.id === perkId);
+      
+      if (!perk) {
+        return res.status(404).json({ message: "Perk not found or not accessible" });
+      }
+
+      const referralCode = generateReferralCode(req.user.id, perkId);
+      
+      res.json({
+        referralCode
+      });
+
+    } catch (error) {
+      logger.error("Referral code generation error:", error);
+      res.status(500).json({ message: "Failed to generate referral code" });
+    }
+  });
+}
+
 // Session interface with Reddit OAuth properties
 interface RedditSessionData {
   redditOAuthState?: string;
@@ -70,7 +201,7 @@ import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage.js";
 import { getRandomTemplates, addWatermark, getTemplateByMood } from "./content-templates.js";
 import { generateAdvancedContent, type ContentParameters } from "./advanced-content-generator.js";
 // Reddit communities now handled in reddit-routes.ts
-import { getAvailablePerks, getPerksByCategory, generateReferralCode, getSignupInstructions } from "./pro-perks.js";
+import { getAvailablePerks, getPerksByCategory, generateReferralCode, getSignupInstructions, realProPerks } from "./pro-perks.js";
 
 // API route modules
 import { registerApiRoutes } from "./api-routes.js";
@@ -746,6 +877,9 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
 
   // Register Expense Routes (Tax Tracker API)
   registerExpenseRoutes(app);
+
+  // Register Pro Resources Routes
+  registerProResourcesRoutes(app);
 
   // Register Caption Routes (2-pass Gemini pipeline) - MOVED UP to get routing priority
   app.use('/api/caption', captionRouter);
