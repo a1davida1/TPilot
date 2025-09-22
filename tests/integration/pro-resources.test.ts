@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll, vi } from 'vitest';
 import request from 'supertest';
 import express from 'express';
 import type { Express } from 'express';
-import type { User } from '../../shared/schema.js';
+import { storage } from '../../server/storage.js';
 
 // Mock auth module to simulate different authentication states
 const mockUsers = new Map<number, any>();
@@ -47,8 +47,111 @@ vi.mock('../../server/middleware/auth.js', () => ({
   authenticateToken: mockAuthMiddleware
 }));
 
+// Mock storage for testing fallback behavior
+vi.mock('../../server/storage.js', () => ({
+  storage: {
+    getUserById: vi.fn()
+  }
+}));
+
 describe('Pro Resources Integration', () => {
   let app: Express;
+  type StoredUser = NonNullable<Awaited<ReturnType<typeof storage.getUserById>>>;
+
+  const originalOpenAiKey = process.env.OPENAI_API_KEY;
+  const originalGeminiKey = process.env.GOOGLE_GENAI_API_KEY;
+  const originalSessionSecret = process.env.SESSION_SECRET;
+  const originalJwtSecret = process.env.JWT_SECRET;
+  const originalDatabaseUrl = process.env.DATABASE_URL;
+
+  beforeAll(() => {
+    if (!process.env.OPENAI_API_KEY) {
+      process.env.OPENAI_API_KEY = 'test-openai-key';
+    }
+    if (!process.env.GOOGLE_GENAI_API_KEY) {
+      process.env.GOOGLE_GENAI_API_KEY = 'test-gemini-key';
+    }
+    if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32) {
+      process.env.SESSION_SECRET = 'test-session-secret-key-1234567890abcd';
+    }
+    if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+      process.env.JWT_SECRET = 'test-jwt-secret-key-1234567890abcd';
+    }
+    const defaultDatabaseUrl = 'postgres://user:pass@localhost:5432/testdb';
+    if (!process.env.DATABASE_URL || !URL.canParse(process.env.DATABASE_URL)) {
+      process.env.DATABASE_URL = defaultDatabaseUrl;
+    }
+  });
+
+  afterAll(() => {
+    if (originalOpenAiKey === undefined) {
+      delete process.env.OPENAI_API_KEY;
+    } else {
+      process.env.OPENAI_API_KEY = originalOpenAiKey;
+    }
+    if (originalGeminiKey === undefined) {
+      delete process.env.GOOGLE_GENAI_API_KEY;
+    } else {
+      process.env.GOOGLE_GENAI_API_KEY = originalGeminiKey;
+    }
+    if (originalSessionSecret === undefined) {
+      delete process.env.SESSION_SECRET;
+    } else {
+      process.env.SESSION_SECRET = originalSessionSecret;
+    }
+    if (originalJwtSecret === undefined) {
+      delete process.env.JWT_SECRET;
+    } else {
+      process.env.JWT_SECRET = originalJwtSecret;
+    }
+    if (originalDatabaseUrl === undefined) {
+      delete process.env.DATABASE_URL;
+    } else {
+      process.env.DATABASE_URL = originalDatabaseUrl;
+    }
+  });
+
+  const createStoredUser = (tierValue: 'free' | 'starter' | 'pro' | 'premium', overrides?: Partial<StoredUser>): StoredUser => {
+    const now = new Date();
+    return {
+      id: overrides?.id ?? 42,
+      username: overrides?.username ?? 'testuser',
+      password: overrides?.password ?? 'hashedpassword',
+      email: overrides?.email ?? 'test@example.com',
+      role: overrides?.role ?? 'user',
+      isAdmin: overrides?.isAdmin ?? false,
+      emailVerified: overrides?.emailVerified ?? true,
+      firstName: overrides?.firstName ?? 'Test',
+      lastName: overrides?.lastName ?? 'User',
+      tier: tierValue,
+      mustChangePassword: overrides?.mustChangePassword ?? false,
+      subscriptionStatus: overrides?.subscriptionStatus ?? 'active',
+      trialEndsAt: overrides?.trialEndsAt ?? null,
+      provider: overrides?.provider ?? null,
+      providerId: overrides?.providerId ?? null,
+      avatar: overrides?.avatar ?? null,
+      bio: overrides?.bio ?? null,
+      referralCodeId: overrides?.referralCodeId ?? null,
+      referredBy: overrides?.referredBy ?? null,
+      redditUsername: overrides?.redditUsername ?? null,
+      redditAccessToken: overrides?.redditAccessToken ?? null,
+      redditRefreshToken: overrides?.redditRefreshToken ?? null,
+      redditId: overrides?.redditId ?? null,
+      stripeCustomerId: overrides?.stripeCustomerId ?? null,
+      stripeSubscriptionId: overrides?.stripeSubscriptionId ?? null,
+      bannedAt: overrides?.bannedAt ?? null,
+      suspendedUntil: overrides?.suspendedUntil ?? null,
+      banReason: overrides?.banReason ?? null,
+      suspensionReason: overrides?.suspensionReason ?? null,
+      createdAt: overrides?.createdAt ?? now,
+      updatedAt: overrides?.updatedAt ?? now,
+      lastLogin: overrides?.lastLogin ?? null,
+      passwordResetAt: overrides?.passwordResetAt ?? null,
+      deletedAt: overrides?.deletedAt ?? null,
+      isDeleted: overrides?.isDeleted ?? false,
+      ...overrides
+    };
+  };
 
   beforeEach(async () => {
     // Clear mocks and reset state
@@ -387,6 +490,92 @@ describe('Pro Resources Integration', () => {
       affiliatePerks.forEach((perk: any) => {
         expect(perk.commissionRate || perk.estimatedEarnings).toBeTruthy();
       });
+    });
+  });
+
+  describe('Storage Fallback Behavior', () => {
+    it('should fallback to storage when session lacks subscriptionTier', async () => {
+      // User session without subscriptionTier
+      currentMockUser = {
+        id: 123,
+        username: 'fallbackuser',
+        tier: 'free' // Only has basic tier, no subscriptionTier
+      };
+
+      // Mock storage to return pro user
+      const storedUser = createStoredUser('pro', { id: 123 });
+      (storage.getUserById as any).mockResolvedValue(storedUser);
+
+      const response = await request(app)
+        .get('/api/pro-resources')
+        .set('Content-Type', 'application/json')
+        .set('Authorization', 'Bearer mock-token')
+        .expect(200);
+
+      expect(response.body).toMatchObject({
+        perks: expect.arrayContaining([
+          expect.objectContaining({
+            id: 'onlyfans-referral'
+          })
+        ]),
+        accessGranted: true
+      });
+
+      expect(storage.getUserById).toHaveBeenCalledWith(123);
+    });
+
+    it('should handle storage errors gracefully', async () => {
+      currentMockUser = {
+        id: 456,
+        username: 'erroruser'
+        // No tier information at all
+      };
+
+      // Mock storage to throw error
+      (storage.getUserById as any).mockRejectedValue(new Error('Storage unavailable'));
+
+      const response = await request(app)
+        .get('/api/pro-resources')
+        .set('Content-Type', 'application/json')
+        .set('Authorization', 'Bearer mock-token')
+        .expect(403);
+
+      expect(response.body).toMatchObject({
+        perks: [],
+        accessGranted: false,
+        message: expect.stringContaining('Pro subscription required')
+      });
+
+      expect(storage.getUserById).toHaveBeenCalledWith(456);
+    });
+
+    it('should use subscriptionTier from storage when session tier is outdated', async () => {
+      currentMockUser = {
+        id: 789,
+        username: 'outdateduser',
+        tier: 'free', // Session shows old tier
+        subscriptionTier: null // Explicitly null
+      };
+
+      // Storage shows updated tier
+      const storedUser = createStoredUser('pro', { 
+        id: 789,
+        tier: 'pro'
+      });
+      (storedUser as any).subscriptionTier = 'pro';
+      (storage.getUserById as any).mockResolvedValue(storedUser);
+
+      const response = await request(app)
+        .post('/api/pro-resources/onlyfans-referral/referral-code')
+        .set('Content-Type', 'application/json')
+        .set('Authorization', 'Bearer mock-token')
+        .expect(200);
+
+      expect(response.body).toMatchObject({
+        referralCode: expect.stringContaining('TP789')
+      });
+
+      expect(storage.getUserById).toHaveBeenCalledWith(789);
     });
   });
 });

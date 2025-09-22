@@ -46,8 +46,10 @@ interface AuthUser {
 }
 
 // Auth request interface that includes user  
+type SessionUser = typeof users.$inferSelect & { subscriptionTier?: string | null };
+
 interface AuthenticatedRequest extends express.Request {
-  user?: typeof users.$inferSelect;
+  user?: SessionUser;
 }
 
 // User tier type
@@ -58,45 +60,51 @@ type UserTier = 'free' | 'starter' | 'pro' | 'premium';
 // ==========================================
 
 function registerProResourcesRoutes(app: Express) {
-  type SessionUser = (typeof users.$inferSelect & { subscriptionTier?: string | null }) | undefined;
-  type PersistedUser = typeof users.$inferSelect & { subscriptionTier?: string | null };
-
-  const resolveTier = (tierValue: string | null | undefined): UserTier => {
-    if (tierValue === 'pro' || tierValue === 'premium') {
+  const resolveTier = (tierValue: string | null | undefined): UserTier | undefined => {
+    if (tierValue === 'pro' || tierValue === 'premium' || tierValue === 'starter') {
       return tierValue;
     }
-    if (tierValue === 'starter') {
-      return 'starter';
+    if (tierValue === 'free') {
+      return 'free';
     }
-    return 'free';
+    return undefined;
   };
 
   // Helper to get user tier with storage fallback when session lacks tier information
-  const getUserTier = async (user: SessionUser): Promise<UserTier> => {
+  const getUserTier = async (user: SessionUser | undefined): Promise<UserTier> => {
     if (!user?.id) {
       return 'free';
     }
 
-    const sessionTier = user.subscriptionTier ?? user.tier;
-    if (sessionTier !== undefined && sessionTier !== null) {
-      return resolveTier(sessionTier);
+    if (user.subscriptionTier !== undefined && user.subscriptionTier !== null) {
+      return resolveTier(user.subscriptionTier) ?? 'free';
+    }
+
+    const tierFromUser = resolveTier(user.tier);
+    if (tierFromUser) {
+      return tierFromUser;
     }
 
     try {
       const persistedUser = await storage.getUserById(user.id);
-      if (!persistedUser) {
-        return 'free';
+      if (persistedUser) {
+        const persistedTier = resolveTier(
+          (persistedUser as SessionUser).subscriptionTier ?? persistedUser.tier
+        );
+        if (persistedTier) {
+          return persistedTier;
+        }
       }
-
-      const persistedTier = (persistedUser as PersistedUser).subscriptionTier ?? persistedUser.tier;
-      return resolveTier(persistedTier);
-    } catch (error) {
-      logger.warn('Failed to resolve user tier from storage fallback', {
-        error: error instanceof Error ? error.message : String(error)
+    } catch (storageError) {
+      logger.warn('Failed to resolve user tier from storage', {
+        userId: user.id,
+        error: storageError instanceof Error ? storageError.message : String(storageError)
       });
-      return 'free';
     }
+
+    return 'free';
   };
+
 
   // GET /api/pro-resources - List all perks for authenticated users
   app.get('/api/pro-resources', authenticateToken, async (req: AuthenticatedRequest, res) => {
@@ -120,7 +128,9 @@ function registerProResourcesRoutes(app: Express) {
         });
       }
 
-      const availablePerks = getAvailablePerks(userTier === 'premium' ? 'pro' : userTier as 'free' | 'starter' | 'pro');
+      const availablePerks = userTier === 'premium'
+        ? getAvailablePerks('pro')
+        : getAvailablePerks(userTier);
       
       res.json({
         perks: availablePerks,
@@ -155,7 +165,9 @@ function registerProResourcesRoutes(app: Express) {
       }
 
       // Verify the perk exists and user has access
-      const availablePerks = getAvailablePerks(userTier === 'premium' ? 'pro' : userTier as 'free' | 'starter' | 'pro');
+      const availablePerks = userTier === 'premium'
+        ? getAvailablePerks('pro')
+        : getAvailablePerks(userTier);
       const perk = availablePerks.find(p => p.id === perkId);
       
       if (!perk) {
@@ -192,7 +204,9 @@ function registerProResourcesRoutes(app: Express) {
       }
 
       // Verify the perk exists and user has access
-      const availablePerks = getAvailablePerks(userTier === 'premium' ? 'pro' : userTier as 'free' | 'starter' | 'pro');
+      const availablePerks = userTier === 'premium'
+        ? getAvailablePerks('pro')
+        : getAvailablePerks(userTier);
       const perk = availablePerks.find(p => p.id === perkId);
       
       if (!perk) {
