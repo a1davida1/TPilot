@@ -18,6 +18,7 @@ import {
   AlertCircle,
   Sparkles
 } from 'lucide-react';
+import { MediaLibrarySelector } from './MediaLibrarySelector';
 
 interface QuickPostTemplate {
   subreddit: string;
@@ -25,6 +26,24 @@ interface QuickPostTemplate {
   titleSuffix?: string;
   contentTemplate?: string;
   isNsfw: boolean;
+}
+
+interface MediaAsset {
+  id: number;
+  filename: string;
+  signedUrl?: string;
+  downloadUrl?: string;
+  createdAt: string;
+}
+
+interface QuickPostPayload {
+  subreddit: string;
+  title: string;
+  nsfw: boolean;
+  body?: string;
+  postType?: 'text' | 'link' | 'image' | 'gallery';
+  url?: string;
+  images?: Array<{ url: string; caption?: string }>;
 }
 
 const QUICK_TEMPLATES: QuickPostTemplate[] = [
@@ -59,12 +78,34 @@ export function RedditQuickPost() {
   const [customTitle, setCustomTitle] = useState('');
   const [customContent, setCustomContent] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
+  const [selectedMediaIds, setSelectedMediaIds] = useState<number[]>([]);
+  const [mediaCaptions, setMediaCaptions] = useState<Record<number, string>>({});
 
   // Fetch Reddit accounts
   const { data: accounts = [], isLoading: accountsLoading } = useQuery({
     queryKey: ['/api/reddit/accounts'],
     retry: false,
   });
+
+  const { data: mediaAssets = [], isLoading: mediaLoading } = useQuery<MediaAsset[]>({
+    queryKey: ['/api/media'],
+    retry: false,
+  });
+
+  const selectedAssets = mediaAssets.filter((asset) => selectedMediaIds.includes(asset.id));
+
+  const toggleMediaSelection = (assetId: number) => {
+    setSelectedMediaIds((prev) => {
+      if (prev.includes(assetId)) {
+        return prev.filter((id) => id !== assetId);
+      }
+      return [...prev, assetId];
+    });
+  };
+
+  const handleCaptionChange = (assetId: number, caption: string) => {
+    setMediaCaptions((prev) => ({ ...prev, [assetId]: caption }));
+  };
 
   // Connect Reddit account
   const connectReddit = async () => {
@@ -93,7 +134,7 @@ export function RedditQuickPost() {
 
   // Submit post
   const { mutate: submitPost, isPending: submitting } = useMutation({
-    mutationFn: async (data: { subreddit: string; title: string; body: string; nsfw: boolean }) => {
+    mutationFn: async (data: QuickPostPayload) => {
       const response = await apiRequest('POST', '/api/reddit/submit', data);
       return response.json();
     },
@@ -108,6 +149,8 @@ export function RedditQuickPost() {
         setCustomTitle('');
         setCustomContent('');
         setSelectedTemplate('');
+        setSelectedMediaIds([]);
+        setMediaCaptions({});
         queryClient.invalidateQueries({ queryKey: ['/api/reddit/posts'] });
       } else {
         toast({
@@ -142,12 +185,46 @@ export function RedditQuickPost() {
     const title = customTitle || `${template.titlePrefix} ${template.titleSuffix || ''}`.trim();
     const body = customContent || template.contentTemplate || '';
 
-    submitPost({
+    const assetsWithUrls = selectedAssets
+      .map((asset) => {
+        const url = asset.downloadUrl ?? asset.signedUrl;
+        if (!url) {
+          return null;
+        }
+        return {
+          asset,
+          url,
+          caption: mediaCaptions[asset.id]?.trim() || asset.filename
+        };
+      })
+      .filter((value): value is { asset: MediaAsset; url: string; caption: string } => value !== null);
+
+    if (selectedAssets.length > 0 && assetsWithUrls.length !== selectedAssets.length) {
+      toast({
+        title: "⚠️ Media unavailable",
+        description: "One or more selected media files could not be resolved. Please refresh your media library and try again.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const payload: QuickPostPayload = {
       subreddit: template.subreddit,
       title,
-      body,
       nsfw: template.isNsfw
-    });
+    };
+
+    if (assetsWithUrls.length > 1) {
+      payload.postType = 'gallery';
+      payload.images = assetsWithUrls.map(({ url, caption }) => ({ url, caption }));
+    } else if (assetsWithUrls.length === 1) {
+      payload.postType = 'image';
+      payload.url = assetsWithUrls[0].url;
+    } else {
+      payload.body = body;
+    }
+
+    submitPost(payload);
   };
 
   const hasRedditAccount = accounts && Array.isArray(accounts) && accounts.length > 0;
@@ -232,6 +309,28 @@ export function RedditQuickPost() {
                 onChange={(e) => setCustomContent(e.target.value)}
                 rows={3}
                 data-testid="textarea-quick-content"
+              />
+            </div>
+
+            {/* Media Selection */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label>Attach Media (optional)</Label>
+                {selectedAssets.length > 0 && (
+                  <Badge variant="outline" className="text-xs">
+                    {selectedAssets.length === 1 ? 'Posting as image' : 'Posting as gallery'}
+                  </Badge>
+                )}
+              </div>
+              <MediaLibrarySelector
+                assets={mediaAssets}
+                selectedIds={selectedMediaIds}
+                onToggle={toggleMediaSelection}
+                captions={mediaCaptions}
+                onCaptionChange={handleCaptionChange}
+                maxSelection={20}
+                isLoading={mediaLoading}
+                showCaptions={true}
               />
             </div>
 

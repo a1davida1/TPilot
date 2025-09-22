@@ -39,6 +39,7 @@ import {
   LogIn,
   UserCheck
 } from 'lucide-react';
+import { MediaLibrarySelector } from '@/components/MediaLibrarySelector';
 
 interface RedditAccount {
   id: number;
@@ -97,6 +98,14 @@ interface SchedulePostResponse {
   scheduledAt: string;
 }
 
+interface MediaAsset {
+  id: number;
+  filename: string;
+  signedUrl?: string;
+  downloadUrl?: string;
+  createdAt: string;
+}
+
 interface PostData {
   subreddit: string;
   title: string;
@@ -107,8 +116,8 @@ interface PostData {
   url?: string;
   imageData?: string;
   images?: Array<{
-    data: string | ArrayBuffer | null;
-    caption: string;
+    url: string;
+    caption?: string;
   }>;
 }
 
@@ -127,7 +136,8 @@ export default function RedditPostingPage() {
   const [postType, setPostType] = useState<'text' | 'link' | 'image' | 'gallery'>('image');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
-  const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
+  const [selectedMediaIds, setSelectedMediaIds] = useState<number[]>([]);
+  const [mediaCaptions, setMediaCaptions] = useState<Record<number, string>>({});
   const [scheduledAt, setScheduledAt] = useState('');
   
   // UI state
@@ -148,9 +158,17 @@ export default function RedditPostingPage() {
     }
   };
 
-  const handleGallerySelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []).slice(0, 20); // Max 20 images
-    setGalleryFiles(files);
+  const toggleMediaSelection = (assetId: number) => {
+    setSelectedMediaIds((prev) => {
+      if (prev.includes(assetId)) {
+        return prev.filter((id) => id !== assetId);
+      }
+      return [...prev, assetId];
+    });
+  };
+
+  const handleCaptionChange = (assetId: number, caption: string) => {
+    setMediaCaptions((prev) => ({ ...prev, [assetId]: caption }));
   };
 
   // Fetch Reddit accounts
@@ -164,6 +182,14 @@ export default function RedditPostingPage() {
     queryKey: ['/api/reddit/communities'],
     retry: false,
   });
+
+  // Fetch media assets
+  const { data: mediaAssets = [], isLoading: mediaLoading } = useQuery<MediaAsset[]>({
+    queryKey: ['/api/media'],
+    retry: false,
+  });
+
+  const selectedAssets = mediaAssets.filter((asset) => selectedMediaIds.includes(asset.id));
 
   // Test Reddit connection
   const { mutate: testConnection, isPending: testingConnection } = useMutation({
@@ -246,6 +272,8 @@ export default function RedditPostingPage() {
         setBody('');
         setUrl('');
         setSubreddit('');
+        setSelectedMediaIds([]);
+        setMediaCaptions({});
         queryClient.invalidateQueries({ queryKey: ['/api/reddit/posts'] });
       } else {
         toast({
@@ -330,23 +358,30 @@ export default function RedditPostingPage() {
         submitPost(postData);
       };
       reader.readAsDataURL(imageFile);
-    } else if (postType === 'gallery' && galleryFiles.length > 0) {
-      // For gallery, we'll send URLs or process files
-      const images = await Promise.all(
-        galleryFiles.map(async (file) => {
-          return new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-              resolve({
-                data: reader.result as string | ArrayBuffer | null,
-                caption: file.name
-              });
-            };
-            reader.readAsDataURL(file);
-          });
+    } else if (postType === 'gallery' && selectedAssets.length > 0) {
+      const assetsWithUrls = selectedAssets
+        .map((asset) => {
+          const url = asset.downloadUrl ?? asset.signedUrl;
+          if (!url) {
+            return null;
+          }
+          return {
+            url,
+            caption: mediaCaptions[asset.id]?.trim() || asset.filename
+          };
         })
-      );
-      postData.images = images as Array<{ data: string | ArrayBuffer | null; caption: string }>;
+        .filter((value): value is { url: string; caption: string } => value !== null);
+
+      if (assetsWithUrls.length !== selectedAssets.length) {
+        toast({
+          title: "⚠️ Media unavailable",
+          description: "One or more selected media files could not be resolved. Please refresh your media library and try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      postData.images = assetsWithUrls;
       submitPost(postData);
     } else if (postType === 'link') {
       postData.url = url;
@@ -600,6 +635,19 @@ export default function RedditPostingPage() {
                 )}
 
                 {postType === 'gallery' && (
+                  <MediaLibrarySelector
+                    assets={mediaAssets}
+                    selectedIds={selectedMediaIds}
+                    onToggle={toggleMediaSelection}
+                    captions={mediaCaptions}
+                    onCaptionChange={handleCaptionChange}
+                    maxSelection={20}
+                    isLoading={mediaLoading}
+                    showCaptions={true}
+                  />
+                )}
+
+                {postType === 'gallery' && false && (
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="gallery">Select Images (Max 20)</Label>
@@ -610,7 +658,7 @@ export default function RedditPostingPage() {
                         multiple
                         onChange={handleGallerySelect}
                         className="cursor-pointer"
-                        data-testid="input-gallery-upload"
+                        data-testid="input-gallery-upload-old"
                       />
                     </div>
                     {galleryFiles.length > 0 && (
