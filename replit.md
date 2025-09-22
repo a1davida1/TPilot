@@ -17,6 +17,14 @@ ThottoPilot is a social media content creation platform for adult content creato
 - ✅ **Enhanced type safety**: Added proper TypeScript types and improved error handling
 - ✅ **Comprehensive test coverage**: Added unit tests verifying no filler strings and proper hint forwarding
 
+### Caption Generation Logic Enhancement
+- ✅ **Unicode-aware normalization**: Added comprehensive text normalization with NFKD, character replacement, and whitespace cleanup
+- ✅ **Levenshtein distance deduplication**: Implemented advanced similarity detection using edit distance and token-based Jaccard similarity
+- ✅ **Progressive retry mechanism**: Replaced clone loops with intelligent variety hints that escalate across 5 attempts
+- ✅ **Comprehensive sanitization**: Added robust variant sanitization with fallback values for all required fields
+- ✅ **Both pipelines updated**: Applied improvements to both Gemini and text-only caption generation pipelines
+- ✅ **Test coverage expansion**: Enhanced tests to verify retry mechanisms, deduplication, and multi-response scenarios
+
 ## Recent Changes (September 20, 2025)
 
 ### Caption Pipeline Tone Parameter Forwarding

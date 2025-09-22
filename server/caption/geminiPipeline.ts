@@ -157,6 +157,68 @@ function stripToJSON(txt: string): unknown {
   return JSON.parse((i >= 0 && j >= 0) ? txt.slice(i, j + 1) : txt);
 }
 
+function normalizeCaptionText(caption: string): string {
+  return caption
+    .normalize("NFKD")
+    .toLowerCase()
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201c\u201d]/g, '"')
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function levenshtein(a: string, b: string): number {
+  const rows = a.length + 1;
+  const cols = b.length + 1;
+  const dist: number[][] = Array.from({ length: rows }, (_, i) => {
+    const row = new Array<number>(cols);
+    row[0] = i;
+    return row;
+  });
+
+  for (let j = 0; j < cols; j += 1) {
+    dist[0][j] = j;
+  }
+
+  for (let i = 1; i < rows; i += 1) {
+    for (let j = 1; j < cols; j += 1) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dist[i][j] = Math.min(
+        dist[i - 1][j] + 1,
+        dist[i][j - 1] + 1,
+        dist[i - 1][j - 1] + cost
+      );
+    }
+  }
+
+  return dist[rows - 1][cols - 1];
+}
+
+function captionsAreSimilar(a: string, b: string): boolean {
+  const normalizedA = normalizeCaptionText(a);
+  const normalizedB = normalizeCaptionText(b);
+
+  if (!normalizedA && !normalizedB) return true;
+  if (!normalizedA || !normalizedB) return normalizedA === normalizedB;
+  if (normalizedA === normalizedB) return true;
+
+  const distance = levenshtein(normalizedA, normalizedB);
+  const maxLen = Math.max(normalizedA.length, normalizedB.length);
+  if (maxLen === 0) return true;
+
+  const similarityScore = 1 - distance / maxLen;
+  if (similarityScore > 0.9) return true;
+
+  const tokensA = new Set(normalizedA.split(" ").filter(Boolean));
+  const tokensB = new Set(normalizedB.split(" ").filter(Boolean));
+  const intersectionSize = [...tokensA].filter(token => tokensB.has(token)).length;
+  const unionSize = new Set([...tokensA, ...tokensB]).size || 1;
+  const jaccard = intersectionSize / unionSize;
+
+  return jaccard > 0.82;
+}
+
 export async function extractFacts(imageUrl: string): Promise<Record<string, unknown>> {
   try {
     console.log('Starting fact extraction for image:', imageUrl.substring(0, 100) + '...');
@@ -320,78 +382,121 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
     load("variants.txt")
   ]);
 
-  let attempts = 0;
-  let currentHint = params.hint;
-  let variants: z.infer<typeof CaptionItem>[] = [];
-  const keyIndex = new Map<string, number>();
+  const sanitizeVariant = (item: Record<string, unknown>): Record<string, unknown> => {
+    const variant = { ...item } as Record<string, unknown>;
 
-  while (attempts < VARIANT_RETRY_LIMIT && variants.length < VARIANT_TARGET) {
-    attempts += 1;
-    const voiceContext = formatVoiceContext(params.voice);
-    const user = `PLATFORM: ${params.platform}\nVOICE: ${params.voice}\n${voiceContext ? `${voiceContext}\n` : ''}${params.style ? `STYLE: ${params.style}\n` : ''}${params.mood ? `MOOD: ${params.mood}\n` : ''}IMAGE_FACTS: ${JSON.stringify(params.facts)}\nNSFW: ${params.nsfw || false}${currentHint ? `\nHINT:${currentHint}` : ''}`;
+    variant.safety_level = normalizeSafetyLevel(
+      typeof variant.safety_level === "string" ? variant.safety_level : "normal"
+    );
 
-    let res;
+    const caption = typeof variant.caption === "string" && variant.caption.trim().length > 0
+      ? variant.caption
+      : "Check out this amazing content!";
+    variant.caption = caption;
+
+    variant.mood = typeof variant.mood === "string" && variant.mood.trim().length >= 2
+      ? variant.mood
+      : "engaging";
+    variant.style = typeof variant.style === "string" && variant.style.trim().length >= 2
+      ? variant.style
+      : "authentic";
+    variant.cta = typeof variant.cta === "string" && variant.cta.trim().length >= 2
+      ? variant.cta
+      : "Check it out";
+
+    const alt = typeof variant.alt === "string" && variant.alt.trim().length >= 20
+      ? variant.alt
+      : "Engaging social media content that highlights the visual story.";
+    variant.alt = alt;
+
+    const hashtags = Array.isArray(variant.hashtags)
+      ? variant.hashtags
+          .map(tag => (typeof tag === "string" ? tag.trim() : ""))
+          .filter(tag => tag.length > 0)
+      : [];
+    variant.hashtags = hashtags.length > 0 ? hashtags.slice(0, 10) : ["#content", "#creative", "#amazing"];
+
+    variant.nsfw = typeof variant.nsfw === "boolean" ? variant.nsfw : false;
+
+    return variant;
+  };
+
+  const buildUserPrompt = (varietyHint: string | undefined, existingCaptions: string[]): string => {
+    const lines = [
+      `PLATFORM: ${params.platform}`,
+      `VOICE: ${params.voice}`
+    ];
+
+    if (params.style) lines.push(`STYLE: ${params.style}`);
+    if (params.mood) lines.push(`MOOD: ${params.mood}`);
+
+    lines.push(`IMAGE_FACTS: ${JSON.stringify(params.facts)}`);
+    lines.push(`NSFW: ${params.nsfw ?? false}`);
+
+    const hintParts: string[] = [];
+    if (varietyHint) {
+      hintParts.push(varietyHint.trim());
+    }
+    if (existingCaptions.length > 0) {
+      hintParts.push(
+        `Avoid repeating or lightly editing these captions: ${existingCaptions.join(" | ")}.`
+      );
+    }
+    hintParts.push("Provide five options that vary tone, structure, and specific imagery.");
+
+    const combinedHint = hintParts.filter(Boolean).join(" ");
+    lines.push(`HINT: ${combinedHint}`);
+
+    return lines.join("\n");
+  };
+
+  const fetchVariants = async (varietyHint: string | undefined, existingCaptions: string[]) => {
+    const user = buildUserPrompt(varietyHint, existingCaptions);
     try {
-      res = await textModel.generateContent([{ text: `${sys}\n${guard}\n${prompt}\n${user}` }]);
+      const res = await textModel.generateContent([
+        { text: `${sys}\n${guard}\n${prompt}\n${user}` }
+      ]);
+      const json = stripToJSON(res.response.text());
+      return Array.isArray(json) ? json : [];
     } catch (error) {
-      console.error('Gemini textModel.generateContent failed:', error);
+      console.error("Gemini textModel.generateContent failed:", error);
       throw error;
     }
+  };
 
-    const raw = stripToJSON(res.response.text());
-    const items = Array.isArray(raw) ? raw : [raw];
-    const iterationDuplicates: string[] = [];
-    let hasBannedWords = false;
+  const uniqueVariants: z.infer<typeof CaptionItem>[] = [];
+  const existingCaptions: string[] = [];
+  const maxAttempts = 5;
 
-    items.forEach(item => {
-      const candidate = (typeof item === "object" && item !== null ? item : {}) as Record<string, unknown>;
-      const normalized = normalizeVariantFields(candidate, params.platform, params.facts);
-      
-      // Check for banned words in the variant
-      if (variantContainsBannedWord(normalized)) {
-        hasBannedWords = true;
-        return; // Skip this variant
+  for (let attempt = 0; attempt < maxAttempts && uniqueVariants.length < 5; attempt += 1) {
+    const varietyHint = attempt === 0
+      ? params.hint
+      : `${params.hint ? `${params.hint} ` : ""}Need much more variety across tone, structure, and imagery.`;
+
+    const rawVariants = await fetchVariants(varietyHint, existingCaptions);
+
+    for (const raw of rawVariants) {
+      if (uniqueVariants.length >= 5) break;
+      if (typeof raw !== "object" || raw === null) continue;
+
+      const sanitized = sanitizeVariant(raw as Record<string, unknown>);
+      const captionText = sanitized.caption as string;
+
+      const isDuplicate = existingCaptions.some(existing => captionsAreSimilar(existing, captionText));
+      if (isDuplicate) {
+        continue;
       }
-      
-      const key = uniqueCaptionKey(normalized.caption);
-      const existingIndex = keyIndex.get(key);
 
-      if (existingIndex === undefined) {
-        variants.push(normalized);
-        keyIndex.set(key, variants.length - 1);
-      } else {
-        iterationDuplicates.push(normalized.caption);
-        const existing = variants[existingIndex];
-        if (normalized.caption.length > existing.caption.length) {
-          variants[existingIndex] = normalized;
-        }
-      }
-    });
-
-    variants = dedupeCaptionVariants(variants as { caption: string }[]).slice(0, VARIANT_TARGET);
-    keyIndex.clear();
-    variants.forEach((variant, index) => {
-      keyIndex.set(uniqueCaptionKey(variant.caption), index);
-    });
-
-    if (variants.length < VARIANT_TARGET) {
-      const needed = VARIANT_TARGET - variants.length;
-      let retryHint = buildRetryHint(params.hint, iterationDuplicates, needed);
-      
-      // Add banned words hint if banned words were detected
-      if (hasBannedWords) {
-        retryHint = retryHint ? `${retryHint}. ${BANNED_WORDS_HINT}` : BANNED_WORDS_HINT;
-      }
-      
-      currentHint = retryHint;
+      uniqueVariants.push(sanitized as z.infer<typeof CaptionItem>);
+      existingCaptions.push(captionText);
     }
   }
 
-  if (variants.length !== VARIANT_TARGET) {
-    throw new Error(`Failed to generate ${VARIANT_TARGET} unique caption variants.`);
+  if (uniqueVariants.length < 5) {
+    throw new Error("Failed to produce five unique caption variants from Gemini");
   }
 
-  return CaptionArray.parse(variants);
+  return CaptionArray.parse(uniqueVariants);
 }
 
 function normalizeGeminiFinal(
