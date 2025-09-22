@@ -1,0 +1,883 @@
+Add rule violation tracking module
+Sep 22 · a1davida1/TPilot · main
++274-60
+1. Introduce a module (e.g., `server/compliance/ruleViolationTracker.ts`) exporting:
+
+   * `recordPostOutcome(userId, subreddit, result)` to append outcomes (posted/removed, timestamp, reason).
+   * `summarizeRemovalReasons(userId)` to aggregate stored entries and return counts of removal reasons.
+2. Use an in-memory store or lightweight persistence (e.g., Map keyed by userId) for now; leave clear TODOs for real storage integration.
+3. Write unit tests under `server/compliance/__tests__/ruleViolationTracker.test.ts` covering recording, aggregation, and empty states.
+4. Wire the helper into existing posting flows (e.g., wherever Reddit submissions are handled) so outcomes invoke `recordPostOutcome`.
+5. Expose the summary data to the frontend via a placeholder API endpoint to support later dashboard integration.
+
+Summary
+
+    Introduced an in-memory compliance tracker that records Reddit post outcomes, aggregates removal reasons, and exposes helper utilities with clear TODOs for future persistent storage integration.
+
+Added Vitest coverage confirming successful post recording, aggregation behavior, empty-state handling, and default bucketing for unspecified removal reasons.
+
+Updated the Reddit submission flow to validate payloads, record outcomes for every attempt, and expose a /api/reddit/compliance/removal-summary endpoint so dashboards can surface rule-violation trends once real storage lands.
+
+Wired both the single-post and batch Reddit workers to log posted vs. removed outcomes, ensuring background jobs contribute consistent compliance telemetry for future monitoring tooling.
+
+Testing
+
+    ✅ npm run lint (warnings only; no blocking errors)
+
+❌ npm test *(fails due to numerous pre-existing integration/unit issues in the broader suite; see log excerpt)*
+
+✅ npx vitest run server/compliance/__tests__/ruleViolationTracker.test.ts
+
+
+server/compliance/__tests__/ruleViolationTracker.test.ts
+New
++57-0
+import { describe, it, expect, beforeEach } from 'vitest';
+import {
+  recordPostOutcome,
+  summarizeRemovalReasons,
+  clearRecordedOutcomes,
+  getRecordedOutcomes,
+  type PostOutcomeStatus
+} from '../ruleViolationTracker.js';
+
+describe('ruleViolationTracker', () => {
+  const userId = 42;
+
+  beforeEach(() => {
+    clearRecordedOutcomes();
+  });
+
+  it('records successful posts without inflating removal counts', () => {
+    const status: PostOutcomeStatus = 'posted';
+    recordPostOutcome(userId, 'testsub', { status });
+
+    const summary = summarizeRemovalReasons(userId);
+    expect(summary.total).toBe(0);
+    expect(summary.byReason).toEqual({});
+
+    const history = getRecordedOutcomes(userId);
+    expect(history).toHaveLength(1);
+    expect(history[0]).toMatchObject({ subreddit: 'testsub', status });
+  });
+
+  it('aggregates removal reasons for a user', () => {
+    recordPostOutcome(userId, 'sub1', { status: 'removed', reason: 'spam' });
+    recordPostOutcome(userId, 'sub2', { status: 'removed', reason: 'spam' });
+    recordPostOutcome(userId, 'sub3', { status: 'removed', reason: 'rules_violation' });
+
+    const summary = summarizeRemovalReasons(userId);
+    expect(summary.total).toBe(3);
+    expect(summary.byReason).toEqual({
+      spam: 2,
+      rules_violation: 1
+    });
+  });
+
+  it('handles empty state by returning zero counts', () => {
+    const summary = summarizeRemovalReasons(999);
+    expect(summary.total).toBe(0);
+    expect(summary.byReason).toEqual({});
+  });
+
+  it('defaults missing removal reasons to unspecified bucket', () => {
+    recordPostOutcome(userId, 'sub1', { status: 'removed' });
+    recordPostOutcome(userId, 'sub2', { status: 'removed', reason: '  ' });
+
+    const summary = summarizeRemovalReasons(userId);
+    expect(summary.total).toBe(2);
+    expect(summary.byReason).toEqual({ unspecified: 2 });
+  });
+});
+server/compliance/ruleViolationTracker.ts
+New
++72-0
+export type PostOutcomeStatus = 'posted' | 'removed';
+
+export interface PostOutcomeRecord {
+  subreddit: string;
+  status: PostOutcomeStatus;
+  reason?: string;
+  timestamp: number;
+}
+
+export interface RemovalSummary {
+  total: number;
+  byReason: Record<string, number>;
+}
+
+const outcomeStore: Map<number, PostOutcomeRecord[]> = new Map();
+
+export interface PostOutcomeInput {
+  status: PostOutcomeStatus;
+  reason?: string;
+}
+
+export function recordPostOutcome(userId: number, subreddit: string, result: PostOutcomeInput): void {
+  const trimmedReason = result.reason?.trim();
+  const entry: PostOutcomeRecord = {
+    subreddit,
+    status: result.status,
+    reason: trimmedReason && trimmedReason.length > 0 ? trimmedReason : undefined,
+    timestamp: Date.now()
+  };
+
+  const existing = outcomeStore.get(userId);
+  if (existing) {
+    existing.push(entry);
+  } else {
+    outcomeStore.set(userId, [entry]);
+  }
+
+  // TODO: Replace outcomeStore with durable persistence once compliance datastore is ready.
+}
+
+export function summarizeRemovalReasons(userId: number): RemovalSummary {
+  const entries = outcomeStore.get(userId) ?? [];
+  const removalReasons: Record<string, number> = {};
+
+  for (const entry of entries) {
+    if (entry.status !== 'removed') {
+      continue;
+    }
+
+    const reasonKey = entry.reason ?? 'unspecified';
+    removalReasons[reasonKey] = (removalReasons[reasonKey] ?? 0) + 1;
+  }
+
+  const totalRemovals = Object.values(removalReasons).reduce((sum, count) => sum + count, 0);
+
+  return {
+    total: totalRemovals,
+    byReason: removalReasons
+  };
+}
+
+export function getRecordedOutcomes(userId: number): PostOutcomeRecord[] {
+  return outcomeStore.get(userId) ?? [];
+}
+
+export function clearRecordedOutcomes(userId?: number): void {
+  if (typeof userId === 'number') {
+    outcomeStore.delete(userId);
+    return;
+  }
+  outcomeStore.clear();
+}
+server/lib/workers/batch-posting-worker.ts
++24-2
+import { registerProcessor } from "../queue-factory.js";
+import { QUEUE_NAMES, type BatchPostJobData } from "../queue/index.js";
+import { db } from "../../db.js";
+import { postJobs, eventLogs } from "@shared/schema";
+import { eq } from "drizzle-orm";
+import { RedditManager, type RedditPostOptions } from "../reddit.js";
+import { logger } from "../logger.js";
+import { recordPostOutcome } from "../../compliance/ruleViolationTracker.js";
+
+export class BatchPostingWorker {
+  private initialized = false;
+
+  async initialize() {
+    if (this.initialized) return;
+    
+    await registerProcessor<BatchPostJobData>(
+      QUEUE_NAMES.BATCH_POST,
+      this.processJob.bind(this),
+      { concurrency: 1 } // Process 1 batch at a time to respect rate limits
+    );
+    
+    this.initialized = true;
+    logger.info('✅ Batch posting worker initialized with queue abstraction');
+  }
+
+  private async processJob(jobData: unknown, jobId: string): Promise<void> {
+    const { 
+      userId, 
+      campaignId, 
+      subreddits, 
+      titleTemplate, 
+      bodyTemplate, 
+      mediaKey, 
+      delayBetweenPosts = 300000 // 5 minutes default
+    } = jobData as BatchPostJobData;
+
+    try {
+      logger.info(`Processing batch posting campaign ${campaignId} for ${subreddits.length} subreddits`);
+
+      // Get Reddit manager for user
+      const reddit = await RedditManager.forUser(userId);
+      if (!reddit) {
+        throw new Error('No active Reddit account found for user');
+      }
+
+      const results: unknown[] = [];
+      let successCount = 0;
+      let failureCount = 0;
+
+      for (let i = 0; i < subreddits.length; i++) {
+        const subreddit = subreddits[i];
+        
+        let outcomeTracked = false;
+
+        try {
+          logger.info(`Posting to r/${subreddit} (${i + 1}/${subreddits.length})`);
+
+          // Check if we can post to this subreddit
+          const canPost = await RedditManager.canPostToSubreddit(userId, subreddit);
+          if (!canPost.canPost) {
+            recordPostOutcome(userId, subreddit, {
+              status: 'removed',
+              reason: canPost.reason ?? 'Posting not permitted'
+            });
+            outcomeTracked = true;
+            results.push({
+              subreddit,
+              success: false,
+              error: canPost.reason,
+              skipped: true,
+            });
+            continue;
+          }
+
+          // Customize content for this subreddit
+          const customizedContent = await this.customizeContentForSubreddit(
+            subreddit,
+            titleTemplate,
+            bodyTemplate
+          );
+
+          // Create individual post job for tracking
+          const [postJob] = await db.insert(postJobs).values({
+            userId,
+            subreddit,
+            titleFinal: customizedContent.title,
+            bodyFinal: customizedContent.body,
+            mediaKey,
+            scheduledAt: new Date(),
+            status: 'pending',
+@@ -85,109 +92,124 @@ export class BatchPostingWorker {
+          // Submit post
+          const postOptions: RedditPostOptions = {
+            subreddit,
+            title: customizedContent.title,
+            body: customizedContent.body,
+            nsfw: true,
+          };
+
+          // Add media if provided
+          if (mediaKey) {
+            try {
+              const mediaAsset = await this.getMediaAsset(mediaKey, userId);
+              if (mediaAsset) {
+                postOptions.url = mediaAsset.downloadUrl || mediaAsset.signedUrl;
+              }
+            } catch (error: unknown) {
+              logger.warn('Failed to attach media, posting as text:', {
+                error: error instanceof Error ? error.message : String(error)
+              });
+            }
+          }
+
+          const result = await reddit.submitPost(postOptions);
+
+          if (result.success) {
+            recordPostOutcome(userId, subreddit, { status: 'posted' });
+            outcomeTracked = true;
+            // Update post job status
+            await db
+              .update(postJobs)
+              .set({
+                status: 'sent',
+                resultJson: {
+                  redditPostId: result.postId,
+                  url: result.url,
+                  completedAt: new Date().toISOString(),
+                },
+                updatedAt: new Date(),
+              })
+              .where(eq(postJobs.id, postJob.id));
+
+            // Schedule metrics collection
+            if (result.postId) {
+              await this.scheduleMetricsCollection(postJob.id, result.postId);
+            }
+
+            results.push({
+              subreddit,
+              success: true,
+              postId: result.postId,
+              url: result.url,
+            });
+            successCount++;
+
+          } else {
+            recordPostOutcome(userId, subreddit, {
+              status: 'removed',
+              reason: result.error ?? 'Reddit posting failed'
+            });
+            outcomeTracked = true;
+            await db
+              .update(postJobs)
+              .set({
+                status: 'failed',
+                resultJson: {
+                  error: result.error,
+                  failedAt: new Date().toISOString(),
+                },
+                updatedAt: new Date(),
+              })
+              .where(eq(postJobs.id, postJob.id));
+
+            results.push({
+              subreddit,
+              success: false,
+              error: result.error,
+            });
+            failureCount++;
+          }
+
+          // Add delay between posts (except for the last one)
+          if (i < subreddits.length - 1) {
+            logger.info(`Waiting ${delayBetweenPosts / 1000}s before next post...`);
+            await this.sleep(delayBetweenPosts);
+          }
+
+        } catch (error: unknown) {
+          logger.error(`Failed to post to r/${subreddit}:`, {
+            error: error instanceof Error ? error.message : String(error)
+          });
+          
+
+          if (!outcomeTracked) {
+            const reason = error instanceof Error ? error.message : 'Unknown error';
+            recordPostOutcome(userId, subreddit, {
+              status: 'removed',
+              reason,
+            });
+          }
+
+          results.push({
+            subreddit,
+            success: false,
+            error: error instanceof Error ? error.message : String(error),
+          });
+          failureCount++;
+
+          // Continue with next subreddit even if this one fails
+        }
+      }
+
+      // Log campaign completion event
+      await this.logEvent(userId, 'batch_post.completed', {
+        campaignId,
+        totalSubreddits: subreddits.length,
+        successCount,
+        failureCount,
+        results,
+      });
+
+      logger.info(`Batch posting campaign ${campaignId} completed: ${successCount} success, ${failureCount} failed`, {
+        summary: {
+          total: subreddits.length,
+          success: successCount,
+          failed: failureCount
+server/lib/workers/post-worker.ts
++22-5
+import { registerProcessor } from "../queue-factory.js";
+import { QUEUE_NAMES, type PostJobData } from "../queue/index.js";
+import { db } from "../../db.js";
+import { postJobs, eventLogs } from "@shared/schema";
+import { eq } from "drizzle-orm";
+import { RedditManager } from "../reddit.js";
+import { MediaManager } from "../media.js";
+import { storage } from "../../storage.js";
+import { socialMediaManager, type Platform, type PostContent } from "../../social-media/social-media-manager.js";
+import { logger } from "../logger.js";
+import { recordPostOutcome } from "../../compliance/ruleViolationTracker.js";
+
+export class PostWorker {
+  private initialized = false;
+
+  async initialize() {
+    if (this.initialized) return;
+    
+    await registerProcessor<PostJobData>(
+      QUEUE_NAMES.POST,
+      this.processJob.bind(this),
+      { concurrency: 2 } // Process 2 posts at once max
+    );
+    
+    this.initialized = true;
+    logger.info('✅ Post worker initialized with queue abstraction');
+  }
+
+  private async processJob(jobData: unknown, jobId: string): Promise<void> {
+    // Validate job data structure
+    if (!jobData || typeof jobData !== 'object') {
+      throw new Error('Invalid job data: expected object');
+    }
+    const data = jobData as PostJobData;
+    if (data.platforms && data.content) {
+      await this.processSocialMediaJob(data, jobId);
+      return;
+    }
+    const { userId, postJobId, subreddit, titleFinal, bodyFinal, mediaKey } = data;
+    let outcomeTracked = false;
+    const subredditName = typeof subreddit === 'string' ? subreddit : undefined;
+
+    try {
+      logger.info(`Processing post job ${postJobId} for user ${userId}`);
+
+      // Get Reddit manager for user
+      const reddit = await RedditManager.forUser(userId);
+      if (!reddit) {
+        throw new Error('No active Reddit account found for user');
+      }
+
+      // Check if we can post to this subreddit
+      if (!subreddit) {
+      if (!subredditName) {
+        throw new Error('Subreddit is required for Reddit posting');
+      }
+      const canPost = await RedditManager.canPostToSubreddit(userId, subreddit);
+      const canPost = await RedditManager.canPostToSubreddit(userId, subredditName);
+      if (!canPost.canPost) {
+        throw new Error(`Cannot post: ${canPost.reason}`);
+      }
+
+      // Prepare post options
+      interface RedditPostOptions {
+        subreddit: string;
+        title: string;
+        body: string;
+        nsfw: boolean;
+        url?: string;
+      }
+      
+      const postOptions: RedditPostOptions = {
+        subreddit,
+        subreddit: subredditName,
+        title: titleFinal || '',
+        body: bodyFinal || '',
+        nsfw: true, // Assume NSFW for adult content
+      };
+
+      // Add media if provided
+      if (mediaKey) {
+        try {
+          // In production, this would get the signed URL or public URL
+          const mediaAsset = await this.getMediaAsset(mediaKey, userId);
+          if (mediaAsset) {
+            postOptions.url = mediaAsset.downloadUrl || mediaAsset.signedUrl;
+          }
+        } catch (error: unknown) {
+          logger.warn('Failed to attach media, posting as text:', {
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
+        }
+      }
+
+      // Submit to Reddit
+      const result = await reddit.submitPost(postOptions);
+
+      // Update job status in database
+      if (result.success) {
+        outcomeTracked = true;
+        recordPostOutcome(userId, subredditName, { status: 'posted' });
+        if (!postJobId) {
+          throw new Error('postJobId is required');
+        }
+        await this.updateJobStatus(postJobId, 'sent', {
+          redditPostId: result.postId,
+          url: result.url,
+          completedAt: new Date().toISOString(),
+        });
+
+        // Log success event
+        await this.logEvent(userId, 'job.completed', {
+          postJobId,
+          subreddit,
+          subreddit: subredditName,
+          result,
+        });
+
+        logger.info(`Post job ${postJobId} completed successfully`, { result });
+      } else {
+        outcomeTracked = true;
+        recordPostOutcome(userId, subredditName, {
+          status: 'removed',
+          reason: result.error || 'Reddit posting failed'
+        });
+        throw new Error(result.error || 'Reddit posting failed');
+      }
+
+    } catch (error: unknown) {
+      if (!outcomeTracked && subredditName) {
+        const reason = error instanceof Error ? error.message : 'Unknown error';
+        recordPostOutcome(userId, subredditName, {
+          status: 'removed',
+          reason,
+        });
+      }
+      logger.error(`Post job ${postJobId} failed:`, { error });
+
+      // Update job status to failed
+      if (postJobId) {
+        await this.updateJobStatus(postJobId, 'failed', {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          failedAt: new Date().toISOString(),
+        });
+      }
+
+      // Log failure event
+      await this.logEvent(userId, 'job.failed', {
+        postJobId,
+        subreddit,
+        subreddit: subredditName,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+
+      throw error; // Re-throw to mark job as failed
+    }
+  }
+
+  private async processSocialMediaJob(data: PostJobData, jobId: string): Promise<void> {
+    const { userId, platforms, content } = data;
+    if (!platforms || !content) return;
+
+    try {
+      logger.info(`Processing social media job ${jobId} for user ${userId}`);
+      const accounts = await storage.getUserSocialMediaAccounts(userId);
+      const connected = accounts
+        .filter(acc => acc.isActive && platforms.includes(acc.platform as Platform))
+        .map(acc => acc.platform as Platform);
+
+      for (const acc of accounts) {
+        if (connected.includes(acc.platform as Platform) && acc.accessToken) {
+          const credentials: Record<string, unknown> = {
+            accessToken: acc.accessToken || '',
+            ...(acc.refreshToken ? { refreshToken: acc.refreshToken } : {}),
+            ...(typeof acc.metadata === 'object' && acc.metadata !== null
+              ? (acc.metadata as Record<string, unknown>)
+server/reddit-routes.ts
++99-53
+import type { Express } from 'express';
+import crypto from 'crypto';
+import { RedditManager, getRedditAuthUrl, exchangeRedditCode } from './lib/reddit.js';
+import { db } from './db.js';
+import { creatorAccounts } from '@shared/schema';
+import { eq, and } from 'drizzle-orm';
+import { authenticateToken, type AuthRequest } from './middleware/auth.js';
+import { stateStore, encrypt, decrypt, rateLimit } from './services/state-store.js';
+import {
+  listCommunities,
+  searchCommunities,
+  getCommunityInsights,
+  createCommunity,
+  updateCommunity,
+  deleteCommunity
+} from './reddit-communities.js';
+import { logger } from './bootstrap/logger.js';
+import { recordPostOutcome, summarizeRemovalReasons } from './compliance/ruleViolationTracker.js';
+
+interface RedditProfile {
+  username: string;
+  karma?: number;
+  verified?: boolean;
+}
+
+export function registerRedditRoutes(app: Express) {
+  
+  // Start Reddit OAuth flow - SECURE VERSION
+  app.get('/api/reddit/connect', rateLimit, authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      if (!process.env.REDDIT_CLIENT_ID) {
+        return res.status(503).json({ 
+          error: 'Reddit integration not configured. Please set REDDIT_CLIENT_ID and other Reddit environment variables.' 
+        });
+      }
+
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      // Generate cryptographically secure state
+      const state = crypto.randomBytes(32).toString('hex');
+@@ -342,177 +343,222 @@ export function registerRedditRoutes(app: Express) {
+              updatedAt: new Date()
+            })
+            .where(eq(creatorAccounts.id, account.id));
+        }
+        
+        res.json({ 
+          connected: true, 
+          profile: {
+            username: profile?.username,
+            karma: profile?.karma,
+            verified: profile?.verified
+          }
+        });
+      } else {
+        res.json({ connected: false });
+      }
+
+    } catch (error) {
+      console.error('Reddit test error:', error);
+      res.status(500).json({ error: 'Failed to test Reddit connection' });
+    }
+  });
+
+  // Enhanced submit endpoint with image support
+  app.post('/api/reddit/submit', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      const { subreddit, title, body, url, nsfw, spoiler, postType, imageData } = req.body;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+      if (!subreddit || !title) {
+        return res.status(400).json({ error: 'Subreddit and title are required' });
+      }
+    interface RedditSubmitRequestBody {
+      subreddit?: string;
+      title?: string;
+      body?: string;
+      url?: string;
+      nsfw?: boolean;
+      spoiler?: boolean;
+      postType?: 'text' | 'image' | 'link' | 'gallery';
+      imageData?: string;
+      images?: Array<{ url: string; caption?: string }>;
+    }
+
+    const requestBody = req.body as RedditSubmitRequestBody | undefined;
+    const subreddit = requestBody?.subreddit;
+    const title = requestBody?.title;
+
+    if (!subreddit || typeof subreddit !== 'string' || !title || typeof title !== 'string') {
+      return res.status(400).json({ error: 'Subreddit and title are required' });
+    }
+
+    try {
+      // Get Reddit manager
+      const reddit = await RedditManager.forUser(userId);
+      if (!reddit) {
+        return res.status(404).json({ 
+          error: 'No active Reddit account found. Please connect your Reddit account first.' 
+        return res.status(404).json({
+          error: 'No active Reddit account found. Please connect your Reddit account first.'
+        });
+      }
+
+      let result;
+      
+      const body = typeof requestBody?.body === 'string' ? requestBody.body : undefined;
+      const url = typeof requestBody?.url === 'string' ? requestBody.url : undefined;
+      const nsfw = requestBody?.nsfw ?? false;
+      const spoiler = requestBody?.spoiler ?? false;
+      const postType = requestBody?.postType ?? 'text';
+      const imageData = typeof requestBody?.imageData === 'string' ? requestBody.imageData : undefined;
+
+      let result: Awaited<ReturnType<RedditManager['submitPost']>>;
+
+      // Handle different post types
+      switch (postType || 'text') {
+        case 'image':
+      switch (postType) {
+        case 'image': {
+          // Single image post
+          if (!imageData && !url) {
+            return res.status(400).json({ error: 'Image data or URL required for image post' });
+          }
+          
+          let imageBuffer;
+
+          let imageBuffer: Buffer | undefined;
+          if (imageData) {
+            // Convert base64 to buffer if needed
+            const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
+            imageBuffer = Buffer.from(base64Data, 'base64');
+          }
+          
+
+          result = await reddit.submitImagePost({
+            subreddit,
+            title,
+            imageBuffer,
+            imageUrl: url,
+            nsfw: nsfw || false,
+            spoiler: spoiler || false
+            nsfw,
+            spoiler
+          });
+          break;
+          
+        case 'gallery':
+        }
+        case 'gallery': {
+          // Multiple images
+          if (!req.body.images || !Array.isArray(req.body.images)) {
+          if (!requestBody?.images || !Array.isArray(requestBody.images)) {
+            return res.status(400).json({ error: 'Images array required for gallery post' });
+          }
+          
+          const typedImages =
+            req.body.images as Array<{ url: string; caption?: string }>;
+          const images = typedImages.map(img => ({
+
+          const images = requestBody.images.map(img => ({
+            url: img.url,
+            caption: img.caption || ''
+            caption: img.caption ?? ''
+          }));
+          
+
+          result = await reddit.submitGalleryPost({
+            subreddit,
+            title,
+            images,
+            nsfw: nsfw || false
+            nsfw
+          });
+          break;
+          
+        case 'link':
+        }
+        case 'link': {
+          // Link post
+          if (!url) {
+            return res.status(400).json({ error: 'URL required for link post' });
+          }
+          
+
+          result = await reddit.submitPost({
+            subreddit,
+            title,
+            url,
+            nsfw: nsfw || false,
+            spoiler: spoiler || false
+            nsfw,
+            spoiler
+          });
+          break;
+          
+        }
+        case 'text':
+        default:
+        default: {
+          // Text post
+          result = await reddit.submitPost({
+            subreddit,
+            title,
+            body: body || '',
+            nsfw: nsfw || false,
+            spoiler: spoiler || false
+            body: body ?? '',
+            nsfw,
+            spoiler
+          });
+          break;
+        }
+      }
+
+      if (result.success) {
+        recordPostOutcome(userId, subreddit, { status: 'posted' });
+        console.log('Reddit post successful:', {
+          userId,
+          subreddit,
+          postType,
+          url: result.url
+        });
+        
+        res.json({
+
+        return res.json({
+          success: true,
+          postId: result.postId,
+          url: result.url,
+          message: `Post submitted successfully to r/${subreddit}`
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: result.error || 'Failed to submit post'
+        });
+      }
+
+      recordPostOutcome(userId, subreddit, {
+        status: 'removed',
+        reason: result.error ?? 'Failed to submit post'
+      });
+
+      return res.status(400).json({
+        success: false,
+        error: result.error ?? 'Failed to submit post'
+      });
+
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to submit post to Reddit';
+      recordPostOutcome(userId, subreddit, {
+        status: 'removed',
+        reason: message
+      });
+      console.error('Reddit submit error:', error);
+      res.status(500).json({
+        error: error instanceof Error
+          ? (error as Error).message
+          : 'Failed to submit post to Reddit'
+      return res.status(500).json({
+        error: message
+      });
+    }
+  });
+
+  app.get('/api/reddit/compliance/removal-summary', authenticateToken, (req: AuthRequest, res) => {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const summary = summarizeRemovalReasons(userId);
+
+    return res.json({
+      summary,
+      metadata: {
+        generatedAt: new Date().toISOString(),
+        // TODO: Replace in-memory tracker once compliance analytics storage is available.
+      }
+    });
+  });
+
+  // Add new endpoint to check subreddit capabilities
+  app.get('/api/reddit/subreddit/:name/capabilities', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      const reddit = await RedditManager.forUser(userId);
+      if (!reddit) {
+        return res.status(404).json({ error: 'No Reddit account connected' });
+      }
+      
+      const capabilities = await reddit.checkSubredditCapabilities(req.params.name);
+      res.json(capabilities);
+      
+    } catch (error) {
+      console.error('Error checking subreddit:', error);
+      res.status(500).json({ error: 'Failed to check subreddit' });
+    }
+  });
+
+  // Admin CRUD endpoints
+  app.post('/api/reddit/communities', authenticateToken, async (req: AuthRequest, res) => {
+    if (!req.user?.isAdmin) return res.status(403).json({ error: 'Forbidden' });

@@ -1,0 +1,1041 @@
+Implement shadowban status checker
+Sep 22 · a1davida1/TPilot · main
++541-28
+1. Implement a helper on `RedditManager` (e.g., `checkShadowbanStatus`) that compares recent submissions via Reddit’s API (self-view vs. public endpoints) to infer a shadowban.
+2. Add a new authenticated route in `server/reddit-routes.ts` (e.g., `GET /api/reddit/shadowban-status`) that loads the user’s tokens, calls the helper, and returns status plus any supporting evidence.
+3. Surface the result in the client (dashboard or Reddit posting page) with clear UX messaging and retry guidance.
+4. Cover the helper with integration-friendly unit tests by stubbing Reddit responses (visible vs. hidden posts).
+
+Summary
+
+    Added shared shadowban result types and a checkShadowbanStatus helper on RedditManager that normalizes private/public submission feeds, calls Reddit’s public API, and returns status evidence for suspected bans.
+
+Exposed a new authenticated GET /api/reddit/shadowban-status endpoint that loads the user’s Reddit credentials and returns the helper output for clients.
+
+Wired the Reddit posting page to query the shadowban endpoint, show actionable messaging with retry controls, and invalidate results after connection tests or successful posts.
+
+Added integration-friendly unit tests that stub snoowrap and public fetch responses to cover visible, hidden, and failure scenarios for the shadowban helper.
+
+Testing
+
+    ✅ npm run lint
+
+⚠️ npm test *(fails due to numerous pre-existing suite issues: Sharp/ImageShield errors, missing OpenAI credentials, etc.; run was interrupted after repeated failures)*
+
+
+client/src/pages/reddit-posting.tsx
++186-28
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, type ApiError } from '@/lib/queryClient';
+import { AuthModal } from '@/components/auth-modal';
+import { 
+  Send, 
+  Calendar,
+  User,
+  Eye,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  Link as LinkIcon,
+  Globe,
+  Settings,
+  Clock,
+  BarChart3,
+  Users,
+  TrendingUp,
+  Zap,
+  Shield,
+  FileText,
+  TestTube,
+  ExternalLink,
+  ImageIcon,
+  Images,
+  LogIn,
+  UserCheck
+  UserCheck,
+  RefreshCcw,
+  Loader2
+} from 'lucide-react';
+import { MediaLibrarySelector } from '@/components/MediaLibrarySelector';
+
+interface RedditAccount {
+  id: number;
+  username: string;
+  isActive: boolean;
+  connectedAt: string;
+  karma: number;
+  verified: boolean;
+}
+
+interface SubredditCommunity {
+  id: string;
+  name: string;
+  displayName: string;
+  members: number;
+  engagementRate: number;
+  category: string;
+  promotionAllowed: string;
+  bestPostingTimes: string[];
+  averageUpvotes: number;
+  successProbability: number;
+  description: string;
+  rules: {
+@@ -99,54 +101,80 @@ interface SchedulePostResponse {
+}
+
+interface MediaAsset {
+  id: number;
+  filename: string;
+  signedUrl?: string;
+  downloadUrl?: string;
+  createdAt: string;
+}
+
+interface PostData {
+  subreddit: string;
+  title: string;
+  nsfw: boolean;
+  spoiler: boolean;
+  postType: 'text' | 'link' | 'image' | 'gallery';
+  body?: string;
+  url?: string;
+  imageData?: string;
+  images?: Array<{
+    url: string;
+    caption?: string;
+  }>;
+}
+
+type ShadowbanStatusType = 'clear' | 'suspected' | 'unknown';
+
+interface ShadowbanSubmissionSummary {
+  id: string;
+  createdUtc: number;
+  permalink: string;
+  title?: string;
+  subreddit?: string;
+}
+
+interface ShadowbanEvidenceResponse {
+  username: string;
+  checkedAt: string;
+  privateCount: number;
+  publicCount: number;
+  privateSubmissions: ShadowbanSubmissionSummary[];
+  publicSubmissions: ShadowbanSubmissionSummary[];
+  missingSubmissionIds: string[];
+}
+
+interface ShadowbanCheckApiResponse {
+  status: ShadowbanStatusType;
+  reason?: string;
+  evidence: ShadowbanEvidenceResponse;
+}
+
+export default function RedditPostingPage() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
+  
+  // Form state
+  const [subreddit, setSubreddit] = useState('');
+  const [title, setTitle] = useState('');
+  const [body, setBody] = useState('');
+  const [url, setUrl] = useState('');
+  const [nsfw, setNsfw] = useState(false);
+  const [spoiler, setSpoiler] = useState(false);
+  const [postType, setPostType] = useState<'text' | 'link' | 'image' | 'gallery'>('image');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
+  const [selectedMediaIds, setSelectedMediaIds] = useState<number[]>([]);
+  const [mediaCaptions, setMediaCaptions] = useState<Record<number, string>>({});
+  const [scheduledAt, setScheduledAt] = useState('');
+  const isGalleryFeatureEnabled = false;
+  
+  // UI state
+  const [selectedAccount, setSelectedAccount] = useState<string>('');
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  // Add image handling functions
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+@@ -168,63 +196,114 @@ export default function RedditPostingPage() {
+    });
+  };
+
+  const handleCaptionChange = (assetId: number, caption: string) => {
+    setMediaCaptions((prev) => ({ ...prev, [assetId]: caption }));
+  };
+
+  // Fetch Reddit accounts
+  const { data: accounts = [], isLoading: accountsLoading } = useQuery<RedditAccount[]>({
+    queryKey: ['/api/reddit/accounts'],
+    retry: false,
+  });
+
+  // Fetch subreddit communities data
+  const { data: communities = [] } = useQuery<SubredditCommunity[]>({
+    queryKey: ['/api/reddit/communities'],
+    retry: false,
+  });
+
+  // Fetch media assets
+  const { data: mediaAssets = [], isLoading: mediaLoading } = useQuery<MediaAsset[]>({
+    queryKey: ['/api/media'],
+    retry: false,
+  });
+
+  const hasActiveAccount = accounts.length > 0;
+
+  const {
+    data: shadowbanStatus,
+    isLoading: shadowbanLoading,
+    isFetching: shadowbanFetching,
+    error: shadowbanError,
+    refetch: refetchShadowban,
+  } = useQuery<ShadowbanCheckApiResponse>({
+    queryKey: ['/api/reddit/shadowban-status'],
+    enabled: isAuthenticated && hasActiveAccount,
+    retry: false,
+  });
+
+  const isShadowbanChecking = shadowbanLoading || shadowbanFetching;
+
+  const selectedAssets = mediaAssets.filter((asset) => selectedMediaIds.includes(asset.id));
+
+  const shadowbanErrorMessage = shadowbanError instanceof Error
+    ? ((shadowbanError as ApiError).userMessage ?? shadowbanError.message)
+    : undefined;
+
+  const shadowbanStatusLevel: ShadowbanStatusType | 'error' = shadowbanError
+    ? 'error'
+    : shadowbanStatus?.status ?? 'unknown';
+
+  const shadowbanCardStyles = shadowbanStatusLevel === 'suspected'
+    ? 'border-red-200 bg-red-50'
+    : shadowbanStatusLevel === 'clear'
+      ? 'border-green-200 bg-green-50'
+      : shadowbanStatusLevel === 'error'
+        ? 'border-red-200 bg-red-50'
+        : 'border-blue-200 bg-blue-50';
+
+  const shadowbanIcon = shadowbanStatusLevel === 'clear'
+    ? <CheckCircle className="h-4 w-4 text-green-600" />
+    : shadowbanStatusLevel === 'suspected'
+      ? <AlertTriangle className="h-4 w-4 text-red-600" />
+      : shadowbanStatusLevel === 'error'
+        ? <XCircle className="h-4 w-4 text-red-600" />
+        : <Eye className="h-4 w-4 text-blue-600" />;
+
+  const shadowbanButtonStyles = shadowbanStatusLevel === 'suspected' || shadowbanStatusLevel === 'error'
+    ? 'border-red-200 text-red-700 hover:bg-red-50'
+    : shadowbanStatusLevel === 'clear'
+      ? 'border-green-200 text-green-700 hover:bg-green-50'
+      : 'border-blue-200 text-blue-700 hover:bg-blue-50';
+
+  const lastShadowbanCheck = shadowbanStatus?.evidence.checkedAt
+    ? new Date(shadowbanStatus.evidence.checkedAt).toLocaleString()
+    : undefined;
+
+  // Test Reddit connection
+  const { mutate: testConnection, isPending: testingConnection } = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/reddit/test');
+      return response.json();
+    },
+    onSuccess: (data: ConnectionTestResponse) => {
+      void queryClient.invalidateQueries({ queryKey: ['/api/reddit/shadowban-status'] });
+      toast({
+        title: "✅ Connection Test",
+        description: data.connected ? 
+          `Connected as ${data.profile?.username} (${data.profile?.karma} karma)` : 
+        description: data.connected ?
+          `Connected as ${data.profile?.username} (${data.profile?.karma} karma)` :
+          "Connection failed",
+        variant: data.connected ? "default" : "destructive"
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "❌ Connection Failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Connect Reddit account
+  const { mutate: connectReddit, isPending: connectingReddit } = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('GET', '/api/reddit/connect');
+      return response.json();
+    },
+    onSuccess: (data: ConnectRedditResponse) => {
+      if (data.authUrl) {
+        window.open(data.authUrl, '_blank');
+        toast({
+          title: "🔗 Reddit Authorization",
+          description: "Complete the authorization in the popup window"
+@@ -254,50 +333,51 @@ export default function RedditPostingPage() {
+      });
+    }
+  });
+
+  // Submit post
+  const { mutate: submitPost, isPending: submitting } = useMutation({
+    mutationFn: async (data: PostData) => {
+      const response = await apiRequest('POST', '/api/reddit/submit', data);
+      return response.json();
+    },
+    onSuccess: (data: PostSubmissionResponse) => {
+      if (data.success) {
+        toast({
+          title: "🎉 Post Published!",
+          description: `Successfully posted to r/${subreddit}`,
+          variant: "default"
+        });
+        // Reset form
+        setTitle('');
+        setBody('');
+        setUrl('');
+        setSubreddit('');
+        setSelectedMediaIds([]);
+        setMediaCaptions({});
+        queryClient.invalidateQueries({ queryKey: ['/api/reddit/posts'] });
+        void queryClient.invalidateQueries({ queryKey: ['/api/reddit/shadowban-status'] });
+      } else {
+        toast({
+          title: "❌ Posting Failed",
+          description: data.error || 'Unknown error occurred',
+          variant: "destructive"
+        });
+      }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "❌ Posting Failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Schedule post
+  const { mutate: schedulePost, isPending: scheduling } = useMutation({
+    mutationFn: async (data: { subreddit: string; title: string; body: string; scheduledAt?: string }) => {
+      const response = await apiRequest('POST', '/api/posts/schedule', data);
+      return response.json();
+    },
+    onSuccess: (data: SchedulePostResponse) => {
+      toast({
+@@ -439,77 +519,155 @@ export default function RedditPostingPage() {
+            </div>
+          </CardHeader>
+        </Card>
+
+        <div className="grid lg:grid-cols-3 gap-6">
+          
+          {/* Main Posting Interface */}
+          <div className="lg:col-span-2 space-y-6">
+            
+            {/* Account Status */}
+            <Card className="bg-white/90 backdrop-blur-sm border-pink-200 shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  Reddit Account Status
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {accountsLoading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-orange-500 border-t-transparent" />
+                      <span className="text-sm text-gray-600">Loading accounts...</span>
+                    </div>
+                  ) : accounts?.length > 0 ? (
+                    <div className="space-y-3">
+                      {accounts.map((account) => (
+                        <div key={account.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                          <div className="flex items-center gap-3">
+                            <div className="w-3 h-3 bg-green-500 rounded-full" />
+                            <div>
+                              <p className="font-medium text-green-800">u/{account.username}</p>
+                              <p className="text-sm text-green-600">{account.karma} karma • Connected {new Date(account.connectedAt).toLocaleDateString()}</p>
+                    <div className="space-y-4">
+                      <div className="space-y-3">
+                        {accounts.map((account) => (
+                          <div key={account.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                            <div className="flex items-center gap-3">
+                              <div className="w-3 h-3 bg-green-500 rounded-full" />
+                              <div>
+                                <p className="font-medium text-green-800">u/{account.username}</p>
+                                <p className="text-sm text-green-600">{account.karma} karma • Connected {new Date(account.connectedAt).toLocaleDateString()}</p>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Badge variant="outline" className="text-green-700 border-green-300">
+                                {account.verified ? 'Verified' : 'Active'}
+                              </Badge>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => testConnection()}
+                                disabled={testingConnection}
+                                className="border-green-300 text-green-700 hover:bg-green-50"
+                              >
+                                <TestTube className="h-4 w-4 mr-1" />
+                                Test
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Badge variant="outline" className="text-green-700 border-green-300">
+                              {account.verified ? 'Verified' : 'Active'}
+                            </Badge>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => testConnection()}
+                              disabled={testingConnection}
+                              className="border-green-300 text-green-700 hover:bg-green-50"
+                            >
+                              <TestTube className="h-4 w-4 mr-1" />
+                              Test
+                            </Button>
+                        ))}
+                      </div>
+                      <div className={`rounded-lg border p-4 transition-colors ${shadowbanCardStyles}`}>
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2">
+                            {shadowbanIcon}
+                            <span className="text-sm font-semibold text-slate-800">Shadowban visibility</span>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => void refetchShadowban()}
+                            disabled={isShadowbanChecking}
+                            className={`${shadowbanButtonStyles} disabled:opacity-60`}
+                          >
+                            {isShadowbanChecking ? (
+                              <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                            ) : (
+                              <RefreshCcw className="h-4 w-4 mr-1" />
+                            )}
+                            Recheck
+                          </Button>
+                        </div>
+                        <div className="mt-3 space-y-2 text-sm">
+                          {shadowbanErrorMessage ? (
+                            <p className="text-red-700">
+                              {shadowbanErrorMessage} Try reconnecting your Reddit account and run the check again.
+                            </p>
+                          ) : shadowbanStatus ? (
+                            <>
+                              <p className={`${shadowbanStatusLevel === 'clear' ? 'text-green-700' : shadowbanStatusLevel === 'suspected' ? 'text-red-700' : 'text-blue-700'}`}>
+                                {shadowbanStatus.reason || 'Shadowban status is currently unknown.'}
+                              </p>
+                              {shadowbanStatus.evidence.missingSubmissionIds.length > 0 && (
+                                <div className="space-y-1 text-xs text-red-700">
+                                  <p className="font-medium">Hidden posts detected:</p>
+                                  <ul className="space-y-1">
+                                    {shadowbanStatus.evidence.missingSubmissionIds.map((id) => {
+                                      const submission = shadowbanStatus.evidence.privateSubmissions.find((item) => item.id === id);
+                                      const title = submission?.title || `Post ${id}`;
+                                      const permalink = submission?.permalink;
+                                      return (
+                                        <li key={id} className="flex items-start gap-1">
+                                          <ExternalLink className="h-3.5 w-3.5 mt-0.5 text-red-600" />
+                                          {permalink ? (
+                                            <a
+                                              href={permalink}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="underline decoration-dotted hover:text-red-600"
+                                            >
+                                              {title}
+                                            </a>
+                                          ) : (
+                                            <span>{title}</span>
+                                          )}
+                                        </li>
+                                      );
+                                    })}
+                                  </ul>
+                                </div>
+                              )}
+                              <p className="text-xs text-slate-600">
+                                Private posts analysed: {shadowbanStatus.evidence.privateCount} • Public matches: {shadowbanStatus.evidence.publicCount}
+                              </p>
+                            </>
+                          ) : (
+                            <p className="text-blue-700">
+                              We'll monitor your next submissions and highlight if Reddit starts hiding them. Use Recheck after posting.
+                            </p>
+                          )}
+                          {lastShadowbanCheck && !shadowbanErrorMessage && shadowbanStatus && (
+                            <p className="text-xs text-slate-500">
+                              Last checked {lastShadowbanCheck}. If a fresh post disappears, wait a minute and hit Recheck.
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center p-6 bg-orange-50 rounded-lg border border-orange-200">
+                      <Globe className="h-12 w-12 text-orange-500 mx-auto mb-3" />
+                      <h3 className="font-medium text-orange-800 mb-2">No Reddit Account Connected</h3>
+                      <p className="text-sm text-orange-600 mb-4">Connect your Reddit account to start posting</p>
+                      <Button 
+                        onClick={() => connectReddit()}
+                        disabled={connectingReddit}
+                        className="bg-orange-500 hover:bg-orange-600 text-white"
+                      >
+                        {connectingReddit ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
+                        ) : (
+                          <LinkIcon className="h-4 w-4 mr-2" />
+                        )}
+                        Connect Reddit Account
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Post Creation */}
+server/lib/reddit.ts
++217-0
+@@ -23,50 +23,97 @@ export interface RedditPostOptions {
+  title: string;
+  body?: string;
+  url?: string;
+  nsfw?: boolean;
+  spoiler?: boolean;
+}
+
+export interface RedditPostResult {
+  success: boolean;
+  postId?: string;
+  url?: string;
+  error?: string;
+}
+
+export interface PostingPermission {
+  canPost: boolean;
+  reason?: string;
+  nextAllowedPost?: Date;
+}
+
+interface RedditSubmission {
+  id: string;
+  permalink: string;
+}
+
+export type ShadowbanStatus = 'clear' | 'suspected' | 'unknown';
+
+export interface ShadowbanSubmissionSummary {
+  id: string;
+  createdUtc: number;
+  permalink: string;
+  title?: string;
+  subreddit?: string;
+}
+
+export interface ShadowbanEvidence {
+  username: string;
+  checkedAt: string;
+  privateCount: number;
+  publicCount: number;
+  privateSubmissions: ShadowbanSubmissionSummary[];
+  publicSubmissions: ShadowbanSubmissionSummary[];
+  missingSubmissionIds: string[];
+}
+
+export interface ShadowbanCheckResult {
+  status: ShadowbanStatus;
+  reason?: string;
+  evidence: ShadowbanEvidence;
+}
+
+interface RawSubmission {
+  id?: string;
+  name?: string;
+  created_utc?: number;
+  createdUtc?: number;
+  permalink?: string;
+  title?: string;
+  subreddit?: string;
+  subreddit_name_prefixed?: string;
+}
+
+interface RedditListingChild {
+  data?: RawSubmission;
+}
+
+interface RedditListingResponse {
+  data?: {
+    children?: RedditListingChild[];
+  };
+}
+
+export class RedditManager {
+  private reddit: snoowrap;
+  private userId: number;
+
+  constructor(accessToken: string, refreshToken: string, userId: number) {
+    this.userId = userId;
+    this.reddit = new snoowrap({
+      userAgent: REDDIT_USER_AGENT,
+      clientId: REDDIT_CLIENT_ID,
+      clientSecret: REDDIT_CLIENT_SECRET,
+      accessToken,
+      refreshToken,
+    });
+  }
+
+  /**
+   * Get Reddit manager for a specific user
+   */
+  static async forUser(userId: number): Promise<RedditManager | null> {
+    try {
+      const [account] = await db
+        .select()
+        .from(creatorAccounts)
+        .where(
+          and(
+@@ -497,50 +544,220 @@ export class RedditManager {
+    try {
+      await (this.reddit as unknown as {
+        getMe(): Promise<unknown>;
+      }).getMe();
+      return true;
+    } catch (error) {
+      console.error('Reddit connection test failed:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Refresh access token if needed
+   */
+  async refreshTokenIfNeeded(): Promise<void> {
+    try {
+      // snoowrap handles token refresh automatically
+      await (this.reddit as unknown as {
+        getMe(): Promise<unknown>;
+      }).getMe();
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+      throw error;
+    }
+  }
+
+  private static normalizeSubmission(raw: RawSubmission): ShadowbanSubmissionSummary | null {
+    const id = raw.id ?? raw.name;
+    const permalink = raw.permalink;
+
+    if (!id || !permalink) {
+      return null;
+    }
+
+    const createdUtc = typeof raw.created_utc === 'number'
+      ? raw.created_utc
+      : typeof raw.createdUtc === 'number'
+        ? raw.createdUtc
+        : 0;
+
+    const normalizedPermalink = permalink.startsWith('http')
+      ? permalink
+      : `https://www.reddit.com${permalink}`;
+
+    return {
+      id,
+      createdUtc,
+      permalink: normalizedPermalink,
+      title: raw.title,
+      subreddit: raw.subreddit ?? raw.subreddit_name_prefixed,
+    };
+  }
+
+  private static coerceSubmissions(value: unknown): RawSubmission[] {
+    if (Array.isArray(value)) {
+      return value as RawSubmission[];
+    }
+
+    if (value && typeof value === 'object') {
+      const maybeIterable = value as {
+        [Symbol.iterator]?: () => Iterator<unknown>;
+        toArray?: () => unknown[];
+      };
+
+      if (typeof maybeIterable[Symbol.iterator] === 'function') {
+        return Array.from(maybeIterable as Iterable<unknown>).map((item) => item as RawSubmission);
+      }
+
+      if (typeof maybeIterable.toArray === 'function') {
+        const converted = maybeIterable.toArray();
+        if (Array.isArray(converted)) {
+          return converted.map((item) => item as RawSubmission);
+        }
+      }
+    }
+
+    return [];
+  }
+
+  /**
+   * Compare authenticated vs public submissions to infer shadowban status
+   */
+  async checkShadowbanStatus(limit = 5): Promise<ShadowbanCheckResult> {
+    const evidence: ShadowbanEvidence = {
+      username: '',
+      checkedAt: new Date().toISOString(),
+      privateCount: 0,
+      publicCount: 0,
+      privateSubmissions: [],
+      publicSubmissions: [],
+      missingSubmissionIds: [],
+    };
+
+    try {
+      const reddit = await this.initReddit();
+      const redditClient = reddit as unknown as {
+        getMe(): Promise<{ name?: string }>;
+        getUser(name: string): {
+          getSubmissions(options: { limit: number }): Promise<unknown>;
+        };
+      };
+
+      const me = await redditClient.getMe();
+      const username = me.name;
+
+      if (!username) {
+        return {
+          status: 'unknown',
+          reason: 'Unable to determine Reddit username from profile.',
+          evidence,
+        };
+      }
+
+      evidence.username = username;
+
+      const rawPrivateSubmissions = await redditClient.getUser(username).getSubmissions({ limit });
+      const privateSubmissions = RedditManager.coerceSubmissions(rawPrivateSubmissions)
+        .map((submission) => RedditManager.normalizeSubmission(submission))
+        .filter((submission): submission is ShadowbanSubmissionSummary => submission !== null);
+
+      evidence.privateSubmissions = privateSubmissions;
+      evidence.privateCount = privateSubmissions.length;
+
+      if (privateSubmissions.length === 0) {
+        return {
+          status: 'unknown',
+          reason: 'No recent submissions found to evaluate shadowban status.',
+          evidence,
+        };
+      }
+
+      const publicEndpoint = `https://www.reddit.com/user/${encodeURIComponent(username)}/submitted.json?limit=${limit}`;
+      const response = await fetch(publicEndpoint, {
+        headers: {
+          'User-Agent': REDDIT_USER_AGENT,
+        },
+      });
+
+      if (!response.ok) {
+        return {
+          status: 'unknown',
+          reason: `Public profile request returned ${response.status} (${response.statusText}).`,
+          evidence,
+        };
+      }
+
+      const publicData = await response.json() as RedditListingResponse;
+      const rawPublicSubmissions = (publicData.data?.children ?? [])
+        .map((child) => child.data)
+        .filter((child): child is RawSubmission => Boolean(child));
+
+      const publicSubmissions = rawPublicSubmissions
+        .map((submission) => RedditManager.normalizeSubmission(submission))
+        .filter((submission): submission is ShadowbanSubmissionSummary => submission !== null);
+
+      evidence.publicSubmissions = publicSubmissions;
+      evidence.publicCount = publicSubmissions.length;
+
+      const publicIds = new Set(publicSubmissions.map((submission) => submission.id.toLowerCase()));
+      const missingIds = privateSubmissions
+        .filter((submission) => !publicIds.has(submission.id.toLowerCase()))
+        .map((submission) => submission.id);
+
+      evidence.missingSubmissionIds = missingIds;
+
+      if (missingIds.length > 0) {
+        return {
+          status: 'suspected',
+          reason: 'Recent submissions are hidden from the public profile. This often indicates a shadowban.',
+          evidence,
+        };
+      }
+
+      if (publicSubmissions.length === 0) {
+        return {
+          status: 'unknown',
+          reason: 'Unable to locate public submissions for comparison. Try again shortly.',
+          evidence,
+        };
+      }
+
+      return {
+        status: 'clear',
+        reason: 'Recent submissions are appearing on the public profile.',
+        evidence,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error while checking shadowban status.';
+      return {
+        status: 'unknown',
+        reason: message,
+        evidence,
+      };
+    }
+  }
+}
+
+/**
+ * Initialize Reddit OAuth flow
+ */
+export function getRedditAuthUrl(state: string): string {
+  // Always use a consistent redirect URI
+  let redirectUri = process.env.REDDIT_REDIRECT_URI;
+  
+  if (!redirectUri) {
+    // Use the primary domain from REPLIT_DOMAINS for consistency
+    const domain = process.env.REPLIT_DOMAINS?.split(',')[0] || 'thottopilot.com';
+    const protocol = domain.includes('localhost') ? 'http' : 'https';
+    redirectUri = `${protocol}://${domain}/api/reddit/callback`;
+  }
+  
+  console.log('Reddit OAuth redirect URI (auth):', redirectUri);
+
+  const baseUrl = 'https://www.reddit.com/api/v1/authorize';
+  const params = new URLSearchParams({
+    client_id: REDDIT_CLIENT_ID,
+    response_type: 'code',
+    state,
+    redirect_uri: redirectUri,
+    duration: 'permanent', // Request permanent access
+server/reddit-routes.ts
++21-0
+@@ -264,50 +264,71 @@ export function registerRedditRoutes(app: Express) {
+
+      await db
+        .update(creatorAccounts)
+        .set({ 
+          isActive: false,
+          oauthToken: '', // Clear tokens on disconnect
+          oauthRefresh: '',
+          updatedAt: new Date()
+        })
+        .where(
+          and(
+            eq(creatorAccounts.id, parseInt(accountId)),
+            eq(creatorAccounts.userId, userId),
+            eq(creatorAccounts.platform, 'reddit')
+          )
+        );
+
+      res.json({ message: 'Reddit account disconnected successfully' });
+
+    } catch (error) {
+      console.error('Error disconnecting Reddit account:', error);
+      res.status(500).json({ error: 'Failed to disconnect Reddit account' });
+    }
+  });
+
+  app.get('/api/reddit/shadowban-status', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const reddit = await RedditManager.forUser(userId);
+      if (!reddit) {
+        return res.status(404).json({ error: 'No active Reddit account found' });
+      }
+
+      const status = await reddit.checkShadowbanStatus();
+      res.json(status);
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      console.error('Failed to check Reddit shadowban status:', err.message);
+      res.status(500).json({ error: 'Failed to check Reddit shadowban status' });
+    }
+  });
+
+  // Test Reddit connection
+  app.post('/api/reddit/test', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      // Get account from database
+      const accounts = await db
+        .select()
+        .from(creatorAccounts)
+        .where(
+          and(
+            eq(creatorAccounts.userId, userId),
+            eq(creatorAccounts.platform, 'reddit'),
+            eq(creatorAccounts.isActive, true)
+          )
+        )
+        .limit(1);
+
+      if (accounts.length === 0) {
+        return res.status(404).json({ error: 'No active Reddit account found' });
+      }
+
+tests/integration/reddit/shadowban-status.test.ts
+New
++117-0
+import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from 'vitest';
+import { RedditManager } from '../../../server/lib/reddit';
+
+const getMeMock = vi.fn<[], Promise<{ name: string }>>();
+const getUserMock = vi.fn<(name: string) => { getSubmissions: (options: { limit: number }) => Promise<unknown> }>();
+const fetchMock = vi.fn();
+
+vi.mock('snoowrap', () => {
+  return {
+    default: vi.fn().mockImplementation(() => ({
+      getMe: getMeMock,
+      getUser: getUserMock,
+    })),
+  };
+});
+
+describe('RedditManager.checkShadowbanStatus', () => {
+  beforeAll(() => {
+    vi.stubGlobal('fetch', fetchMock);
+  });
+
+  afterAll(() => {
+    vi.unstubAllGlobals();
+  });
+
+  beforeEach(() => {
+    getMeMock.mockReset();
+    getUserMock.mockReset();
+    fetchMock.mockReset();
+    getMeMock.mockResolvedValue({ name: 'shadowtester' });
+  });
+
+  it('returns clear when private submissions are publicly visible', async () => {
+    const privateSubmissions = [
+      { id: 'abc', created_utc: 1700000000, permalink: '/r/test/comments/abc/test-post/', title: 'Test Post', subreddit: 'r/test' },
+      { id: 'def', created_utc: 1700001000, permalink: '/r/test/comments/def/another-post/', title: 'Another Post', subreddit: 'r/test' },
+    ];
+
+    getUserMock.mockReturnValue({
+      getSubmissions: vi.fn().mockResolvedValue(privateSubmissions),
+    });
+
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      json: async () => ({
+        data: {
+          children: privateSubmissions.map((submission) => ({ data: submission })),
+        },
+      }),
+    } as Response);
+
+    const manager = new RedditManager('access', 'refresh', 1);
+    const result = await manager.checkShadowbanStatus();
+
+    expect(result.status).toBe('clear');
+    expect(result.evidence.missingSubmissionIds).toHaveLength(0);
+    expect(result.evidence.privateCount).toBe(2);
+    expect(result.evidence.publicCount).toBe(2);
+  });
+
+  it('flags suspected shadowban when posts are missing publicly', async () => {
+    const privateSubmissions = [
+      { id: 'abc', created_utc: 1700000000, permalink: '/r/test/comments/abc/test-post/', title: 'Test Post', subreddit: 'r/test' },
+      { id: 'def', created_utc: 1700001000, permalink: '/r/test/comments/def/hidden-post/', title: 'Hidden Post', subreddit: 'r/test' },
+    ];
+
+    getUserMock.mockReturnValue({
+      getSubmissions: vi.fn().mockResolvedValue(privateSubmissions),
+    });
+
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      json: async () => ({
+        data: {
+          children: [
+            { data: privateSubmissions[0] },
+          ],
+        },
+      }),
+    } as Response);
+
+    const manager = new RedditManager('access', 'refresh', 1);
+    const result = await manager.checkShadowbanStatus();
+
+    expect(result.status).toBe('suspected');
+    expect(result.evidence.missingSubmissionIds).toContain('def');
+    expect(result.reason).toContain('shadowban');
+  });
+
+  it('returns unknown when the public profile request fails', async () => {
+    const privateSubmissions = [
+      { id: 'abc', created_utc: 1700000000, permalink: '/r/test/comments/abc/test-post/', title: 'Test Post', subreddit: 'r/test' },
+    ];
+
+    getUserMock.mockReturnValue({
+      getSubmissions: vi.fn().mockResolvedValue(privateSubmissions),
+    });
+
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 500,
+      statusText: 'Server Error',
+      json: async () => ({}),
+    } as Response);
+
+    const manager = new RedditManager('access', 'refresh', 1);
+    const result = await manager.checkShadowbanStatus();
+
+    expect(result.status).toBe('unknown');
+    expect(result.reason).toContain('500');
+    expect(result.evidence.missingSubmissionIds).toHaveLength(0);
+  });
+});

@@ -968,6 +968,9 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
   app.get("/api/leads/confirm", confirmLead);
   app.get("/api/admin/leads", getLeads);
 
+  // Reddit Communities Admin Routes (temporarily disabled for compilation)
+  // TODO: Implement storage methods and re-enable routes
+
   // Debug endpoint for Reddit OAuth session
   app.get('/api/debug/reddit-session', (req, res) => {
     res.json({

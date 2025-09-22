@@ -1,0 +1,831 @@
+Implement eligibility check for Reddit communities
+Sep 22 · a1davida1/TPilot · main
++304-36
+1. In `server/reddit-communities.ts`, add a helper such as `getEligibleCommunitiesForUser({ karma, accountAgeDays, verified })` that filters the existing records by `rules.minKarma`, `rules.minAccountAge`, and `verificationRequired` before returning the subreddit list.
+2. Update `RedditManager.canPostToSubreddit` in `server/lib/reddit.ts` to load the signed-in user’s Reddit profile (`getProfile()` for karma/creation time and `creatorAccounts` metadata for verification) and call the new helper instead of returning `canPost: true`.
+3. Expose an authenticated route in `server/reddit-routes.ts` that returns this filtered array so the “Where can I post?” UI, Quick Post, and suggestion flows can consume the eligibility data.
+4. Ensure account age is computed from the Reddit `created_utc` timestamp and include safeguards for missing profile data before finalizing the API response.
+
+Summary
+
+    Introduced CommunityEligibilityCriteria, parseCommunityRules, and getEligibleCommunitiesForUser so community listings can be filtered by per-subreddit karma, minimum account age, and verification requirements using the existing dataset.
+
+Extended RedditManager with typed RedditProfileData, recalculated subreddit eligibility inside canPostToSubreddit, and exported getUserRedditCommunityEligibility to reuse profile/metadata checks before allowing a submission.
+
+Added an authenticated /api/reddit/communities/eligible endpoint that returns the filtered community list plus profile readiness flags, and updated existing routes to consume the typed Reddit profile response.
+
+Testing
+
+    ✅ npm run lint (passes with existing repository warnings about any types and unused symbols).
+
+⚠️ npm test (fails in this environment because of missing binary/image fixtures and API credentials, e.g., Sharp buffer errors and absent OpenAI key; tests were interrupted after repeated baseline failures).
+
+
+server/lib/reddit.ts
++173-15
+import snoowrap from 'snoowrap';
+import { db } from '../db.js';
+import { creatorAccounts } from '@shared/schema';
+import type { RedditCommunity } from '@shared/schema';
+import { eq, and } from 'drizzle-orm';
+import { decrypt } from '../services/state-store.js';
+import { getEligibleCommunitiesForUser } from '../reddit-communities.js';
+
+function getEnvOrDefault(name: string, defaultValue?: string): string {
+  const value = process.env[name];
+  if (!value && !defaultValue) {
+    console.warn(`Warning: Missing environment variable: ${name}`);
+    return '';
+  }
+  return value || defaultValue || '';
+}
+
+// These will be validated when actually needed, not at startup
+const REDDIT_CLIENT_ID = getEnvOrDefault('REDDIT_CLIENT_ID');
+const REDDIT_CLIENT_SECRET = getEnvOrDefault('REDDIT_CLIENT_SECRET');
+const REDDIT_USER_AGENT = getEnvOrDefault('REDDIT_USER_AGENT', 'ThottoPilot/1.0 (Content scheduling bot)');
+
+export interface RedditPostOptions {
+  subreddit: string;
+  title: string;
+  body?: string;
+  url?: string;
+  nsfw?: boolean;
+  spoiler?: boolean;
+}
+
+export interface RedditPostResult {
+  success: boolean;
+  postId?: string;
+  url?: string;
+  error?: string;
+}
+
+export interface PostingPermission {
+  canPost: boolean;
+  reason?: string;
+  nextAllowedPost?: Date;
+}
+
+export interface RedditProfileData {
+  username: string;
+  karma: number;
+  createdUtc: number;
+  verified: boolean;
+  goldStatus: boolean;
+  hasMail: boolean;
+}
+
+export interface RedditCommunityEligibility {
+  karma: number | null;
+  accountAgeDays: number | null;
+  verified: boolean;
+  communities: RedditCommunity[];
+  profileLoaded: boolean;
+}
+
+interface RedditSubmission {
+  id: string;
+  permalink: string;
+}
+
+export class RedditManager {
+  private reddit: snoowrap;
+  private userId: number;
+
+  constructor(accessToken: string, refreshToken: string, userId: number) {
+    this.userId = userId;
+    this.reddit = new snoowrap({
+      userAgent: REDDIT_USER_AGENT,
+      clientId: REDDIT_CLIENT_ID,
+      clientSecret: REDDIT_CLIENT_SECRET,
+      accessToken,
+      refreshToken,
+    });
+  }
+
+  /**
+   * Get Reddit manager for a specific user
+   */
+  static async forUser(userId: number): Promise<RedditManager | null> {
+    try {
+@@ -400,149 +419,288 @@ export class RedditManager {
+      };
+    } catch (error) {
+      console.error('Failed to check subreddit capabilities:', error);
+      return {
+        allowsImages: true,
+        allowsGalleries: false,
+        allowsVideos: false,
+        isNsfw: false
+      };
+    }
+  }
+
+  /**
+   * Initialize Reddit instance (helper for new methods)
+   */
+  private async initReddit(): Promise<unknown> {
+    await this.refreshTokenIfNeeded();
+    return this.reddit;
+  }
+
+  /**
+   * Check if user can post to a specific subreddit (rate limiting)
+   */
+  static async canPostToSubreddit(userId: number, subreddit: string): Promise<PostingPermission> {
+    try {
+      // Check if user has exceeded posting limits for this subreddit
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      
+      // In a real implementation, you'd check:
+      // - Subreddit-specific post limits
+      // - User's posting history
+      // - Account age and karma requirements
+      // - Subreddit ban status
+      const eligibility = await getUserRedditCommunityEligibility(userId);
+
+      if (!eligibility) {
+        return {
+          canPost: false,
+          reason: 'No active Reddit account found for user'
+        };
+      }
+
+      if (!eligibility.profileLoaded) {
+        return {
+          canPost: false,
+          reason: 'Unable to verify Reddit profile information'
+        };
+      }
+
+      if (eligibility.karma === null || eligibility.accountAgeDays === null) {
+        return {
+          canPost: false,
+          reason: 'Missing Reddit profile data required for eligibility checks'
+        };
+      }
+
+      const normalizedTarget = normalizeSubredditName(subreddit);
+      if (!normalizedTarget) {
+        return {
+          canPost: false,
+          reason: 'Invalid subreddit name'
+        };
+      }
+
+      const canPost = eligibility.communities.some((community) => {
+        const possibleMatches = [
+          normalizeSubredditName(community.name),
+          normalizeSubredditName(community.id)
+        ].filter((value): value is string => value !== null);
+
+        return possibleMatches.includes(normalizedTarget);
+      });
+
+      if (canPost) {
+        return { canPost: true };
+      }
+
+      return {
+        canPost: true
+        canPost: false,
+        reason: 'Subreddit requirements not met for current Reddit account'
+      };
+
+    } catch (error) {
+      console.error('Error checking posting permission:', error);
+      return {
+        canPost: false,
+        reason: 'Unable to verify posting permissions'
+      };
+    }
+  }
+
+  /**
+   * Update rate limiting after successful post
+   */
+  private async updateRateLimit(subreddit: string): Promise<void> {
+    try {
+      // In production, update rate limiting tables
+      console.log(`Updated rate limit for user ${this.userId} in r/${subreddit}`);
+      
+      // This would insert/update records in post_rate_limits table
+      // await db.insert(postRateLimits).values({...})
+      
+    } catch (error) {
+      console.error('Failed to update rate limit:', error);
+    }
+  }
+
+  /**
+   * Get user's Reddit profile info
+   */
+  async getProfile(): Promise<unknown> {
+  async getProfile(): Promise<RedditProfileData | null> {
+    try {
+      const user = await (this.reddit as unknown as {
+        getMe(): Promise<{
+          name: string;
+          link_karma: number;
+          comment_karma: number;
+          created_utc: number;
+          verified: boolean;
+          is_gold: boolean;
+          has_mail: boolean;
+        }>;
+      }).getMe();
+
+      const totalKarma = (user.link_karma ?? 0) + (user.comment_karma ?? 0);
+
+      return {
+        username: user.name,
+        karma: user.link_karma + user.comment_karma,
+        created: user.created_utc,
+        verified: user.verified,
+        goldStatus: user.is_gold,
+        hasMail: user.has_mail,
+        karma: Number.isFinite(totalKarma) ? totalKarma : 0,
+        createdUtc: typeof user.created_utc === 'number' ? user.created_utc : 0,
+        verified: user.verified ?? false,
+        goldStatus: user.is_gold ?? false,
+        hasMail: user.has_mail ?? false,
+      };
+    } catch (error) {
+      console.error('Failed to get Reddit profile:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Test Reddit connection
+   */
+  async testConnection(): Promise<boolean> {
+    try {
+      await (this.reddit as unknown as {
+        getMe(): Promise<unknown>;
+      }).getMe();
+      return true;
+    } catch (error) {
+      console.error('Reddit connection test failed:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Refresh access token if needed
+   */
+  async refreshTokenIfNeeded(): Promise<void> {
+    try {
+      // snoowrap handles token refresh automatically
+      await (this.reddit as unknown as {
+        getMe(): Promise<unknown>;
+      }).getMe();
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+      throw error;
+    }
+  }
+}
+
+function normalizeSubredditName(value: string | null | undefined): string | null {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  return trimmed.replace(/^r\//i, '').toLowerCase();
+}
+
+function extractVerifiedFromMetadata(metadata: unknown): boolean | undefined {
+  if (typeof metadata !== 'object' || metadata === null) {
+    return undefined;
+  }
+
+  const record = metadata as Record<string, unknown>;
+  const value = record.verified;
+
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  return undefined;
+}
+
+function calculateAccountAgeDays(createdUtc: number | null | undefined): number | null {
+  if (typeof createdUtc !== 'number' || !Number.isFinite(createdUtc) || createdUtc <= 0) {
+    return null;
+  }
+
+  const createdMs = createdUtc * 1000;
+  const now = Date.now();
+
+  if (!Number.isFinite(createdMs) || createdMs <= 0 || createdMs > now) {
+    return null;
+  }
+
+  const diffMs = now - createdMs;
+  const age = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  return age >= 0 ? age : 0;
+}
+
+export async function getUserRedditCommunityEligibility(
+  userId: number
+): Promise<RedditCommunityEligibility | null> {
+  const redditManager = await RedditManager.forUser(userId);
+
+  if (!redditManager) {
+    return null;
+  }
+
+  const [account] = await db
+    .select({ metadata: creatorAccounts.metadata })
+    .from(creatorAccounts)
+    .where(
+      and(
+        eq(creatorAccounts.userId, userId),
+        eq(creatorAccounts.platform, 'reddit'),
+        eq(creatorAccounts.isActive, true)
+      )
+    )
+    .limit(1);
+
+  const metadataVerified = extractVerifiedFromMetadata(account?.metadata);
+
+  const profile = await redditManager.getProfile();
+
+  if (!profile) {
+    return {
+      karma: null,
+      accountAgeDays: null,
+      verified: metadataVerified ?? false,
+      communities: [],
+      profileLoaded: false,
+    };
+  }
+
+  const karmaValue = Number.isFinite(profile.karma) ? profile.karma : null;
+  const accountAgeDays = calculateAccountAgeDays(profile.createdUtc);
+  const verified = metadataVerified ?? profile.verified;
+
+  const communities = await getEligibleCommunitiesForUser({
+    karma: karmaValue ?? undefined,
+    accountAgeDays: accountAgeDays ?? undefined,
+    verified,
+  });
+
+  return {
+    karma: karmaValue,
+    accountAgeDays,
+    verified,
+    communities,
+    profileLoaded: true,
+  };
+}
+
+/**
+ * Initialize Reddit OAuth flow
+ */
+export function getRedditAuthUrl(state: string): string {
+  // Always use a consistent redirect URI
+  let redirectUri = process.env.REDDIT_REDIRECT_URI;
+  
+  if (!redirectUri) {
+    // Use the primary domain from REPLIT_DOMAINS for consistency
+    const domain = process.env.REPLIT_DOMAINS?.split(',')[0] || 'thottopilot.com';
+    const protocol = domain.includes('localhost') ? 'http' : 'https';
+    redirectUri = `${protocol}://${domain}/api/reddit/callback`;
+  }
+  
+  console.log('Reddit OAuth redirect URI (auth):', redirectUri);
+
+  const baseUrl = 'https://www.reddit.com/api/v1/authorize';
+  const params = new URLSearchParams({
+    client_id: REDDIT_CLIENT_ID,
+    response_type: 'code',
+    state,
+    redirect_uri: redirectUri,
+    duration: 'permanent', // Request permanent access
+    scope: 'identity submit edit read vote save history mysubreddits',
+  });
+server/reddit-communities.ts
++59-0
+import { db } from './db.js';
+import {
+  redditCommunities,
+  type RedditCommunity,
+  insertRedditCommunitySchema,
+  type InsertRedditCommunity
+} from '@shared/schema';
+import { eq, ilike, desc, or } from 'drizzle-orm';
+
+interface CommunityRules {
+  minKarma?: number;
+  minAccountAge?: number;
+}
+
+function parseCommunityRules(rules: unknown): CommunityRules {
+  if (typeof rules !== 'object' || rules === null) {
+    return {};
+  }
+
+  const record = rules as Record<string, unknown>;
+  const parsed: CommunityRules = {};
+
+  if (typeof record.minKarma === 'number' && Number.isFinite(record.minKarma)) {
+    parsed.minKarma = record.minKarma;
+  }
+
+  if (typeof record.minAccountAge === 'number' && Number.isFinite(record.minAccountAge)) {
+    parsed.minAccountAge = record.minAccountAge;
+  }
+
+  return parsed;
+}
+
+export async function listCommunities() {
+  return db.select().from(redditCommunities).orderBy(desc(redditCommunities.members));
+}
+
+export async function searchCommunities(query: string) {
+  const like = `%${query}%`;
+  return db.select()
+    .from(redditCommunities)
+    .where(
+      or(
+        ilike(redditCommunities.name, like),
+        ilike(redditCommunities.displayName, like),
+        ilike(redditCommunities.description, like)
+      )
+    );
+}
+
+export interface CommunityEligibilityCriteria {
+  karma?: number | null;
+  accountAgeDays?: number | null;
+  verified?: boolean | null;
+}
+
+export async function getEligibleCommunitiesForUser(
+  criteria: CommunityEligibilityCriteria
+): Promise<RedditCommunity[]> {
+  const { karma, accountAgeDays, verified } = criteria;
+  const karmaScore = typeof karma === 'number' && Number.isFinite(karma) ? karma : 0;
+  const ageInDays = typeof accountAgeDays === 'number' && Number.isFinite(accountAgeDays) ? accountAgeDays : 0;
+  const isVerified = verified === true;
+
+  const communities = await listCommunities();
+
+  return communities.filter((community) => {
+    const rules = parseCommunityRules(community.rules);
+
+    if (typeof rules.minKarma === 'number' && karmaScore < rules.minKarma) {
+      return false;
+    }
+
+    if (typeof rules.minAccountAge === 'number' && ageInDays < rules.minAccountAge) {
+      return false;
+    }
+
+    if (community.verificationRequired && !isVerified) {
+      return false;
+    }
+
+    return true;
+  });
+}
+
+export async function createCommunity(data: unknown) {
+  const value: InsertRedditCommunity = insertRedditCommunitySchema.parse(data) as InsertRedditCommunity;
+  const [row] = await db.insert(redditCommunities).values(value).returning();
+  return row;
+}
+
+export async function updateCommunity(id: string, data: unknown) {
+  const value: Partial<InsertRedditCommunity> = insertRedditCommunitySchema
+    .partial()
+    .parse(data) as Partial<InsertRedditCommunity>;
+  const [row] = await db.update(redditCommunities).set(value).where(eq(redditCommunities.id, id)).returning();
+  return row;
+}
+
+export async function deleteCommunity(id: string) {
+  await db.delete(redditCommunities).where(eq(redditCommunities.id, id));
+}
+
+export async function getCommunityInsights(communityId: string): Promise<{
+  bestTimes: string[];
+  successTips: string[];
+  warnings: string[];
+}> {
+  const [community] = await db
+    .select()
+server/reddit-routes.ts
++72-21
+import type { Express } from 'express';
+import crypto from 'crypto';
+import { RedditManager, getRedditAuthUrl, exchangeRedditCode } from './lib/reddit.js';
+import {
+  RedditManager,
+  getRedditAuthUrl,
+  exchangeRedditCode,
+  getUserRedditCommunityEligibility
+} from './lib/reddit.js';
+import { db } from './db.js';
+import { creatorAccounts } from '@shared/schema';
+import { eq, and } from 'drizzle-orm';
+import { authenticateToken, type AuthRequest } from './middleware/auth.js';
+import { stateStore, encrypt, decrypt, rateLimit } from './services/state-store.js';
+import {
+  listCommunities,
+  searchCommunities,
+  getCommunityInsights,
+  createCommunity,
+  updateCommunity,
+  deleteCommunity
+} from './reddit-communities.js';
+import { logger } from './bootstrap/logger.js';
+
+interface RedditProfile {
+  username: string;
+  karma?: number;
+  verified?: boolean;
+}
+
+export function registerRedditRoutes(app: Express) {
+  
+  // Start Reddit OAuth flow - SECURE VERSION
+  app.get('/api/reddit/connect', rateLimit, authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      if (!process.env.REDDIT_CLIENT_ID) {
+        return res.status(503).json({ 
+          error: 'Reddit integration not configured. Please set REDDIT_CLIENT_ID and other Reddit environment variables.' 
+        });
+      }
+
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      // Generate cryptographically secure state
+      const state = crypto.randomBytes(32).toString('hex');
+      
+      // Store state securely with user binding
+      await stateStore.set(`reddit_state:${state}`, {
+        userId,
+        ip: req.ip,
+        userAgent: req.get('user-agent'),
+        timestamp: Date.now()
+@@ -107,53 +106,52 @@ export function registerRedditRoutes(app: Express) {
+      const userId = stateData.userId;
+      logger.info('Processing Reddit OAuth for user', { userId });
+
+      // Exchange code for tokens
+      let tokenData;
+      try {
+        const codeStr = Array.isArray(code) ? code[0] : code;
+        tokenData = await exchangeRedditCode(String(codeStr));
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error(String(err));
+        logger.error('Reddit token exchange error', { error: (error as Error).message, stack: error.stack });
+        return res.redirect('/dashboard?error=reddit_token_exchange_failed');
+      }
+
+      if (!tokenData || !tokenData.accessToken) {
+        logger.error('Failed to exchange code for tokens');
+        return res.redirect('/dashboard?error=reddit_token_exchange_failed');
+      }
+
+      if (!tokenData.refreshToken) {
+        logger.warn('Reddit token response missing refresh token', { userId });
+      }
+      
+      // Get Reddit user info
+      const tempReddit = new RedditManager(tokenData.accessToken, tokenData.refreshToken, userId);
+      const redditProfile = await tempReddit.getProfile();
+      const profile = redditProfile as RedditProfile;
+      
+      const profile = await tempReddit.getProfile();
+
+      if (!profile) {
+        logger.error('Failed to fetch Reddit profile');
+        return res.redirect('/dashboard?error=reddit_profile_failed');
+      }
+
+      logger.info('Reddit profile fetched', { username: profile.username });
+
+      // Encrypt tokens before storing
+      const encryptedAccessToken = encrypt(tokenData.accessToken);
+      const encryptedRefreshToken = tokenData.refreshToken ? encrypt(tokenData.refreshToken) : null;
+
+      // Store account in database
+      await db
+        .insert(creatorAccounts)
+        .values({
+          userId,
+          platform: 'reddit',
+          handle: profile.username,
+          platformUsername: profile.username,
+          oauthToken: encryptedAccessToken,
+          oauthRefresh: encryptedRefreshToken || '',
+          isActive: true,
+          metadata: {
+            karma: profile.karma || 0,
+            verified: profile.verified || false,
+@@ -185,50 +183,102 @@ export function registerRedditRoutes(app: Express) {
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      console.error('Reddit callback error:', err.message);
+      res.redirect('/dashboard?error=reddit_connection_failed');
+    }
+  });
+
+  // Reddit communities listing
+  app.get('/api/reddit/communities', async (req, res) => {
+    try {
+      const { category, search } = req.query;
+      let communities = search
+        ? await searchCommunities(search as string)
+        : await listCommunities();
+      if (category && category !== 'all') {
+        communities = communities.filter(c => c.category === category);
+      }
+      res.json(communities);
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      console.error('Error fetching Reddit communities:', err.message);
+      res.status(500).json({ error: 'Failed to fetch Reddit communities' });
+    }
+  });
+
+  app.get('/api/reddit/communities/eligible', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const eligibility = await getUserRedditCommunityEligibility(userId);
+
+      if (!eligibility) {
+        return res.json({
+          communities: [],
+          profile: {
+            karma: null,
+            accountAgeDays: null,
+            verified: false,
+            missingProfileData: true,
+            profileLoaded: false,
+            missingFields: ['karma', 'accountAgeDays']
+          },
+          error: 'No active Reddit account connected'
+        });
+      }
+
+      const missingFields: string[] = [];
+      if (eligibility.karma === null) {
+        missingFields.push('karma');
+      }
+      if (eligibility.accountAgeDays === null) {
+        missingFields.push('accountAgeDays');
+      }
+
+      const missingProfileData = !eligibility.profileLoaded || missingFields.length > 0;
+
+      res.json({
+        communities: eligibility.communities,
+        profile: {
+          karma: eligibility.karma,
+          accountAgeDays: eligibility.accountAgeDays,
+          verified: eligibility.verified,
+          missingProfileData,
+          profileLoaded: eligibility.profileLoaded,
+          missingFields
+        }
+      });
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      console.error('Error determining Reddit community eligibility:', err.message);
+      res.status(500).json({ error: 'Failed to determine eligible Reddit communities' });
+    }
+  });
+
+  // Detailed community insights
+  app.get('/api/reddit/community-insights/:communityId', async (req, res) => {
+    try {
+      const { communityId } = req.params;
+      const insights = await getCommunityInsights(communityId);
+      res.json(insights);
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      console.error('Error fetching community insights:', err.message);
+      res.status(500).json({ error: 'Failed to fetch community insights' });
+    }
+  });
+
+  // Get user's Reddit connections
+  app.get('/api/reddit/accounts', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const accounts = await db
+        .select()
+        .from(creatorAccounts)
+        .where(
+@@ -304,75 +354,76 @@ export function registerRedditRoutes(app: Express) {
+            eq(creatorAccounts.platform, 'reddit'),
+            eq(creatorAccounts.isActive, true)
+          )
+        )
+        .limit(1);
+
+      if (accounts.length === 0) {
+        return res.status(404).json({ error: 'No active Reddit account found' });
+      }
+
+      const account = accounts[0];
+      
+      // Decrypt tokens
+      const accessToken = account.oauthToken ? decrypt(account.oauthToken) : null;
+      const refreshToken = account.oauthRefresh ? decrypt(account.oauthRefresh) : null;
+      
+      if (!accessToken) {
+        return res.status(401).json({ error: 'Invalid tokens. Please reconnect your Reddit account.' });
+      }
+      
+      // Create Reddit manager with decrypted tokens
+      const reddit = new RedditManager(accessToken, refreshToken || '', userId);
+      const isConnected = await reddit.testConnection();
+      
+      if (isConnected) {
+        const fetchedProfile = await reddit.getProfile();
+        const profile = fetchedProfile as RedditProfile | null;
+        
+        const profile = await reddit.getProfile();
+
+        // Update metadata with latest info
+        if (profile) {
+          await db
+            .update(creatorAccounts)
+            .set({
+              metadata: {
+                karma: profile.karma || 0,
+                verified: profile.verified || false,
+                lastTested: Date.now()
+              },
+              updatedAt: new Date()
+            })
+            .where(eq(creatorAccounts.id, account.id));
+        }
+        
+        res.json({ 
+          connected: true, 
+          profile: {
+            username: profile?.username,
+            karma: profile?.karma,
+            verified: profile?.verified
+          }
+
+        res.json({
+          connected: true,
+          profile: profile
+            ? {
+                username: profile.username,
+                karma: profile.karma,
+                verified: profile.verified
+              }
+            : null
+        });
+      } else {
+        res.json({ connected: false });
+      }
+
+    } catch (error) {
+      console.error('Reddit test error:', error);
+      res.status(500).json({ error: 'Failed to test Reddit connection' });
+    }
+  });
+
+  // Enhanced submit endpoint with image support
+  app.post('/api/reddit/submit', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      const { subreddit, title, body, url, nsfw, spoiler, postType, imageData } = req.body;
+
+      if (!subreddit || !title) {
+        return res.status(400).json({ error: 'Subreddit and title are required' });
+      }
+
