@@ -179,7 +179,7 @@ export function formatViolationSummary(violations: Violation[]): string {
     }
   }
 
-  return `Ranking sanitization applied: ${summaries.join(", ")}`;
+  return `Sanitized: ${summaries.join(", ")}`;
 }
 
 export function sanitizeFinalVariant(variant: any, platform?: string): any {
@@ -240,25 +240,20 @@ export function sanitizeFinalVariant(variant: any, platform?: string): any {
       .filter((tag: any) => typeof tag === "string" && !containsBannedWord(tag))
       .filter((tag: any) => !GENERIC_HASHTAGS.has(tag.toLowerCase()));
     
-    // Apply platform-specific hashtag limits
-    const platformLimits: Record<string, number> = {
-      'x': 3,        // X (Twitter) platform limit to 3 hashtags
-      'instagram': Infinity,  // Instagram allows up to 30
-      'tiktok': Infinity,     // TikTok allows many
-      'reddit': 1             // Reddit uses descriptive labels
-    };
-    
-    const maxHashtags = platformLimits[platform || 'instagram'] || Infinity;
-    if (cleanedHashtags.length > maxHashtags && maxHashtags !== Infinity) {
-      cleanedHashtags = cleanedHashtags.slice(0, maxHashtags);
-    }
-    
     // Reddit special case: strip leading # from descriptive labels
     if (platform === 'reddit') {
       cleanedHashtags = cleanedHashtags.map((tag: string) => 
         tag.startsWith('#') ? tag.substring(1) : tag
       );
     }
+    
+    // Apply platform-specific hashtag limits after cleaning
+    if (platform === 'x' && cleanedHashtags.length > 3) {
+      cleanedHashtags = cleanedHashtags.slice(0, 3);
+    } else if (platform === 'reddit' && cleanedHashtags.length > 1) {
+      cleanedHashtags = cleanedHashtags.slice(0, 1);
+    }
+    // Instagram and TikTok: no limit enforced
     
     // Enforce minimum requirements or fall back
     const fallback = fallbackHashtags(platform);
