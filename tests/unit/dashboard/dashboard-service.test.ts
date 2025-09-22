@@ -10,7 +10,7 @@ const mockDbInstance = vi.hoisted(() => ({
   limit: vi.fn().mockReturnThis(),
 }));
 
-vi.mock('../../../server/db.js', () => ({
+vi.mock('../../../server/database.js', () => ({
   db: mockDbInstance,
 }));
 
@@ -64,7 +64,7 @@ describe('DashboardService', () => {
   describe('getDashboardStats', () => {
     it('should return dashboard stats for a user', async () => {
       // Mock database responses
-      const mockDb = mockDbInstance;
+      const { db: mockDb } = await import('../../../server/database.js');
 
       // Mock posts count query
       mockDb.select.mockReturnValueOnce({
@@ -111,7 +111,7 @@ describe('DashboardService', () => {
     });
 
     it('should handle database errors gracefully', async () => {
-      const mockDb = mockDbInstance;
+      const { db: mockDb } = await import('../../../server/database.js');
       
       // Mock database error
       mockDb.select.mockReturnValueOnce({
@@ -135,7 +135,7 @@ describe('DashboardService', () => {
 
   describe('getDashboardActivity', () => {
     it('should return dashboard activity for a user', async () => {
-      const mockDb = mockDbInstance;
+      const { db: mockDb } = await import('../../../server/database.js');
       
       // Mock media assets query
       mockDb.select.mockReturnValueOnce({
@@ -173,7 +173,7 @@ describe('DashboardService', () => {
     });
 
     it('should handle database errors gracefully', async () => {
-      const mockDb = mockDbInstance;
+      const { db: mockDb } = await import('../../../server/database.js');
       
       // Mock database error
       mockDb.select.mockReturnValueOnce({
@@ -196,7 +196,7 @@ describe('DashboardService', () => {
 
   describe('getAdminDashboardStats', () => {
     it('should return admin dashboard stats', async () => {
-      const mockDb = mockDbInstance;
+      const { db: mockDb } = await import('../../../server/database.js');
       
       // Mock various queries for admin stats
       mockDb.select.mockReturnValue({
@@ -221,7 +221,7 @@ describe('DashboardService', () => {
 
   describe('getAdminDashboardActivity', () => {
     it('should return admin dashboard activity', async () => {
-      const mockDb = mockDbInstance;
+      const { db: mockDb } = await import('../../../server/database.js');
       
       // Mock media assets query for admin
       mockDb.select.mockReturnValueOnce({
