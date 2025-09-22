@@ -583,6 +583,19 @@ function normalizeGeminiFinal(
   final.caption = trimmedCaption.length > 0 ? trimmedCaption : "Sharing something I'm genuinely proud of.";
 }
 
+// Helper function to invoke text model regardless of its type (function vs object)
+async function invokeTextModel(prompt: Array<{ text: string }>): Promise<unknown> {
+  if (typeof textModel === 'function') {
+    // Function-based textModel
+    return await (textModel as any)(prompt);
+  } else if (textModel && typeof (textModel as any).generateContent === 'function') {
+    // Object-based textModel with generateContent method
+    return await (textModel as any).generateContent(prompt);
+  } else {
+    throw new Error('textModel is neither a function nor has a generateContent method');
+  }
+}
+
 async function requestGeminiRanking(
   variantsInput: z.infer<typeof CaptionArray>,
   serializedVariants: string,
@@ -594,12 +607,18 @@ async function requestGeminiRanking(
   const hintBlock = extraHint && extraHint.trim().length > 0 ? `\nREMINDER: ${extraHint.trim()}` : "";
   let res;
   try {
-    res=await textModel.generateContent([{ text: `${promptBlock}${hintBlock}\n${serializedVariants}` }]);
+    res = await invokeTextModel([{ text: `${promptBlock}${hintBlock}\n${serializedVariants}` }]);
   } catch (error) {
-    console.error('Gemini textModel.generateContent failed:', error);
+    console.error('Gemini textModel invocation failed:', error);
     throw error;
   }
-  let json = stripToJSON(res.response.text()) as unknown;
+  let json = stripToJSON(
+    (res as any)?.response?.text 
+      ? (res as any).response.text() 
+      : typeof res === 'string' 
+        ? res 
+        : JSON.stringify(res)
+  ) as unknown;
   
   if(Array.isArray(json)) {
     const winner = json[0] as Record<string, unknown> | undefined;

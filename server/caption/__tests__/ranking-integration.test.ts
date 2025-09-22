@@ -4,56 +4,96 @@ import { RankResult } from '../schema';
 import { CaptionItem } from '../schema';
 import { z } from 'zod';
 type CaptionItemType = z.infer<typeof CaptionItem>;
+type GeminiContent = Array<{ text: string }>;
+type TextModelMock = ReturnType<typeof vi.fn>;
 
-// Mock the text model
-vi.mock('../../lib/gemini', () => ({
-  textModel: vi.fn()
-}));
+const createMockResponse = (payload: unknown) => ({
+  response: {
+    text: () => (typeof payload === 'string' ? payload : JSON.stringify(payload))
+  }
+});
 
-// Mock the file loading
-vi.mock('../../lib/prompts', () => ({
-  load: vi.fn().mockImplementation((filename: string) => {
-    if (filename === 'system.txt') return Promise.resolve('System prompt');
-    if (filename === 'guard.txt') return Promise.resolve('Guard prompt');
-    if (filename === 'rank.txt') return Promise.resolve('Ranking prompt with violation detection');
-    return Promise.resolve('Mock prompt');
-  })
-}));
+type ScenarioConfig = {
+  label: string;
+  applyGeminiMock: () => { textModelMock: TextModelMock };
+};
 
-import { textModel } from '../../lib/gemini';
+const scenarios: ScenarioConfig[] = [
+  {
+    label: 'function-based textModel mock',
+    applyGeminiMock: () => {
+      const textModelMock = vi.fn();
 
-describe('Ranking Integration Tests', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+      vi.doMock('../../lib/gemini', () => ({
+        textModel: textModelMock
+      }));
+
+      return { textModelMock };
+    }
+  },
+  {
+    label: 'object-based textModel mock',
+    applyGeminiMock: () => {
+      const generateContent = vi.fn();
+
+      vi.doMock('../../lib/gemini', () => ({
+        textModel: { generateContent }
+      }));
+
+      return { textModelMock: generateContent };
+    }
+  }
+];
+
+describe.each(scenarios)('Ranking Integration Tests ($label)', ({ applyGeminiMock }) => {
+  let rankAndSelect: (typeof import('../geminiPipeline'))['rankAndSelect'];
+  let textModelMock: TextModelMock;
+
+  beforeEach(async () => {
+    vi.resetModules();
+
+    vi.doMock('../../lib/prompts', () => ({
+      load: vi.fn().mockImplementation((filename: string) => {
+        if (filename === 'system.txt') return Promise.resolve('System prompt');
+        if (filename === 'guard.txt') return Promise.resolve('Guard prompt');
+        if (filename === 'rank.txt') return Promise.resolve('Ranking prompt with violation detection');
+        return Promise.resolve('Mock prompt');
+      })
+    }));
+
+    const { textModelMock: appliedMock } = applyGeminiMock();
+    textModelMock = appliedMock;
+
+    ({ rankAndSelect } = await import('../geminiPipeline'));
   });
 
   describe('rankAndSelect', () => {
     it('should sanitize output when AI returns banned content', async () => {
       // Mock AI returning banned content
-      const mockBannedResponse = JSON.stringify({
+      const mockBannedResponse = createMockResponse({
         final: {
-          caption: "Check out this amazing content! ✨",
-          alt: "A photo",
-          hashtags: ["#content", "#creative", "#amazing"],
-          cta: "Link in bio for more!"
+          caption: 'Check out this amazing content! ✨',
+          alt: 'A photo',
+          hashtags: ['#content', '#creative', '#amazing'],
+          cta: 'Link in bio for more!'
         },
-        reason: "Selected for engagement"
+        reason: 'Selected for engagement'
       });
 
       // Mock successful rerank attempt with clean content
-      const mockCleanResponse = JSON.stringify({
+      const mockCleanResponse = createMockResponse({
         final: {
-          caption: "Enjoying the peaceful morning light",
-          alt: "Person in a sunlit room",
-          hashtags: ["#morninglight", "#peaceful"],
-          cta: "What's your favorite time of day?"
+          caption: 'Enjoying the peaceful morning light',
+          alt: 'Person in a sunlit room',
+          hashtags: ['#morninglight', '#peaceful'],
+          cta: 'What\'s your favorite time of day?'
         },
-        reason: "Clean, engaging content"
+        reason: 'Clean, engaging content'
       });
 
-      (textModel as any)
-        .mockResolvedValueOnce(mockBannedResponse)  // First attempt returns banned content
-        .mockResolvedValueOnce(mockCleanResponse); // Rerank returns clean content
+      textModelMock
+        .mockResolvedValueOnce(mockBannedResponse)
+        .mockResolvedValueOnce(mockCleanResponse);
 
       const variants: CaptionItemType[] = [
         {
