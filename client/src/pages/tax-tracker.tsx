@@ -95,6 +95,41 @@ const usdFormatter = new Intl.NumberFormat('en-US', {
 const formatCurrency = (amountInCents: number | null | undefined) =>
   usdFormatter.format((amountInCents ?? 0) / 100);
 
+const DEDUCTION_FALLBACK_TEXT = '—% Deductible';
+
+const formatDeductionPercentage = (deductionPercentage: number | null | undefined): string => {
+  if (typeof deductionPercentage !== 'number' || Number.isNaN(deductionPercentage)) {
+    return '—%';
+  }
+
+  return `${deductionPercentage}%`;
+};
+
+const formatDeductionBadgeText = (
+  deductionPercentage: number | null | undefined,
+  label?: string | null
+): string => {
+  const percentageText = formatDeductionPercentage(deductionPercentage);
+
+  if (percentageText === '—%') {
+    return DEDUCTION_FALLBACK_TEXT;
+  }
+
+  const trimmedLabel = label?.trim();
+  const shouldShowLabel =
+    typeof deductionPercentage === 'number' &&
+    deductionPercentage < 100 &&
+    Boolean(trimmedLabel);
+
+  const labelSuffix = shouldShowLabel ? ` (${trimmedLabel})` : '';
+
+  return `${percentageText} Deductible${labelSuffix}`;
+};
+
+const formatCategoryDeduction = (
+  category: Pick<ExpenseCategory, 'deductionPercentage' | 'name'> | null | undefined
+): string => formatDeductionBadgeText(category?.deductionPercentage, category?.name);
+
 const riskLevelStyles: Record<string, string> = {
   low: 'bg-green-100 text-green-700',
   medium: 'bg-yellow-100 text-yellow-700',
@@ -487,8 +522,12 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                         </div>
                         <div className="text-right">
                           <p className="font-bold text-gray-900">{formatCurrency(expense.amount)}</p>
-                          <Badge variant="secondary" className="bg-green-100 text-green-700">
-                            100% Deductible
+                          <Badge
+                            variant="secondary"
+                            className="bg-green-100 text-green-700"
+                            data-testid="recent-expense-deduction-badge"
+                          >
+                            {formatCategoryDeduction(expense.category)}
                           </Badge>
                         </div>
                       </div>
@@ -524,7 +563,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                                 <IconComponent className="h-6 w-6" />
                               </div>
                               <Badge className="bg-green-100 text-green-700">
-                                {category.deductionPercentage}% Deductible
+                                {formatCategoryDeduction(category)}
                               </Badge>
                             </div>
                           
