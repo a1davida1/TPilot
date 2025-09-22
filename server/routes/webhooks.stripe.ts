@@ -5,9 +5,10 @@ import { db } from "../db.js";
 import { subscriptions, invoices, users } from "../../shared/schema.js";
 import { eq } from "drizzle-orm";
 
-export function mountStripeWebhook(app: Express) {
+export function mountStripeWebhook(app: Express, apiPrefix: string) {
+  const webhookPath = `${apiPrefix}/webhooks/stripe`;
   // IMPORTANT: raw body for Stripe signature verification. Ensure your server uses express.raw on this path.
-  app.post("/api/webhooks/stripe", async (req: Request, res: Response) => {
+  app.post(webhookPath, async (req: Request, res: Response) => {
     const sig = req.headers["stripe-signature"] as string;
     let event: Stripe.Event;
     try {

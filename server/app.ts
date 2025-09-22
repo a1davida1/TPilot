@@ -240,7 +240,7 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
 
     setupAuth(app);
     setupSocialAuth(app);
-    mountStripeWebhook(app);
+    mountStripeWebhook(app, API_PREFIX);
     mountBillingRoutes(app);
 
     const server = await registerRoutes(app, API_PREFIX);
