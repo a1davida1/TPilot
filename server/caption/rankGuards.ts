@@ -1,4 +1,5 @@
 // Ranking guards utilities for detecting and sanitizing sparkle-filler content
+import { variantContainsBannedWord, replaceBannedWords, containsBannedWord } from "./bannedWords";
 
 export const HUMAN_CTA = "What do you think?";
 
@@ -60,6 +61,15 @@ export interface Violation {
 
 export function detectVariantViolations(variant: any): Violation[] {
   const violations: Violation[] = [];
+
+  // Check for banned words first
+  if (variantContainsBannedWord(variant)) {
+    violations.push({
+      type: "banned_word",
+      content: variant.caption || "",
+      field: "caption"
+    });
+  }
 
   // Check caption for banned phrases
   if (typeof variant.caption === "string") {
@@ -154,16 +164,56 @@ export function formatViolationSummary(violations: Violation[]): string {
 export function sanitizeFinalVariant(variant: any, platform?: string): any {
   const sanitized = { ...variant };
 
-  // Sanitize caption if it contains banned phrases
+  // Sanitize caption for banned words first
   if (typeof sanitized.caption === "string") {
-    let caption = sanitized.caption;
+    if (containsBannedWord(sanitized.caption)) {
+      sanitized.caption = replaceBannedWords(sanitized.caption);
+      if (!sanitized.caption || sanitized.caption.trim().length === 0) {
+        sanitized.caption = "Sharing something I'm genuinely proud of.";
+      }
+    }
+  }
+
+  // Sanitize caption if it contains banned phrases  
+  if (typeof sanitized.caption === "string") {
     for (const regex of BANNED_PHRASES) {
-      if (regex.test(caption)) {
-        caption = "Sharing something I'm genuinely proud of.";
+      if (regex.test(sanitized.caption)) {
+        sanitized.caption = "Sharing something I'm genuinely proud of.";
         break;
       }
     }
-    sanitized.caption = caption;
+  }
+
+  // Sanitize CTA for banned words
+  if (typeof sanitized.cta === "string") {
+    if (containsBannedWord(sanitized.cta)) {
+      sanitized.cta = replaceBannedWords(sanitized.cta);
+      if (!sanitized.cta || sanitized.cta.trim().length === 0) {
+        sanitized.cta = HUMAN_CTA;
+      }
+    }
+  }
+
+  // Sanitize alt text for banned words
+  if (typeof sanitized.alt === "string") {
+    if (containsBannedWord(sanitized.alt)) {
+      sanitized.alt = replaceBannedWords(sanitized.alt);
+      if (!sanitized.alt || sanitized.alt.trim().length < 20) {
+        sanitized.alt = "Descriptive photo for the post";
+      }
+    }
+  }
+
+  // Sanitize hashtags for banned words
+  if (Array.isArray(sanitized.hashtags)) {
+    const cleanedHashtags = sanitized.hashtags.filter((tag: any) => 
+      typeof tag === "string" && !containsBannedWord(tag)
+    );
+    if (cleanedHashtags.length < 3) {
+      sanitized.hashtags = fallbackHashtags(platform);
+    } else {
+      sanitized.hashtags = cleanedHashtags;
+    }
   }
 
   // Sanitize hashtags if they're generic

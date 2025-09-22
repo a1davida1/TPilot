@@ -215,22 +215,22 @@ export async function variantsRewrite(params: RewriteVariantsParams) {
       json.forEach((item) => {
         const variant = item as Record<string, unknown>;
         
-        // Check for banned words first
-        if (variantContainsBannedWord(variant)) {
-          hasBannedWords = true;
-          return; // Skip this variant
-        }
-        
-        // Normalize variant fields
+        // Normalize variant fields first
         variant.safety_level = normalizeSafetyLevel(
           typeof variant.safety_level === 'string' ? variant.safety_level : 'normal'
         );
         if (typeof variant.mood !== 'string' || variant.mood.length < 2) variant.mood = "engaging";
         if (typeof variant.style !== 'string' || variant.style.length < 2) variant.style = "authentic";
         if (typeof variant.cta !== 'string' || variant.cta.length < 2) variant.cta = "Check it out";
-        if (typeof variant.alt !== 'string' || variant.alt.length < 20) variant.alt = "Engaging social media content";
-        if (!Array.isArray(variant.hashtags)) variant.hashtags = ["#content", "#creative", "#amazing"];
-        if (typeof variant.caption !== 'string' || variant.caption.length < 1) variant.caption = "Check out this amazing content, you'll love it and want more!";
+        if (typeof variant.alt !== 'string' || variant.alt.length < 20) variant.alt = "Descriptive photo for the post";
+        if (!Array.isArray(variant.hashtags)) variant.hashtags = ["#authentic", "#creative", "#amazing"];
+        if (typeof variant.caption !== 'string' || variant.caption.length < 1) variant.caption = "Here's something I'm proud of today.";
+        
+        // Check for banned words after normalization
+        if (variantContainsBannedWord(variant)) {
+          hasBannedWords = true;
+          return; // Skip this variant
+        }
         
         variants.push(variant);
       });
@@ -253,9 +253,9 @@ export async function variantsRewrite(params: RewriteVariantsParams) {
   // Ensure exactly 5 variants by padding with variations if needed
   while (variants.length < VARIANT_TARGET) {
     const template = variants[0] || {
-      caption: "Check out this amazing content, you'll love it and want more!",
-      alt: "Engaging social media content",
-      hashtags: ["#content", "#creative", "#amazing"],
+      caption: "Here's something I'm proud of today.",
+      alt: "Descriptive photo for the post",
+      hashtags: ["#authentic", "#creative", "#amazing"],
       cta: "Check it out",
       mood: "engaging",
       style: "authentic",
@@ -318,15 +318,6 @@ export async function rankAndSelect(
   let parsed = RankResult.parse(first);
   const violations = detectVariantViolations(parsed.final);
   
-  // Check for banned words in the final selection
-  if (variantContainsBannedWord(parsed.final)) {
-    violations.push({
-      type: "banned_word",
-      content: parsed.final.caption || "",
-      field: "caption"
-    });
-  }
-  
   if (violations.length === 0) {
     return parsed;
   }
@@ -340,15 +331,6 @@ export async function rankAndSelect(
   );
   parsed = RankResult.parse(rerank);
   const rerankViolations = detectVariantViolations(parsed.final);
-  
-  // Check for banned words in the reranked final selection
-  if (variantContainsBannedWord(parsed.final)) {
-    rerankViolations.push({
-      type: "banned_word",
-      content: parsed.final.caption || "",
-      field: "caption"
-    });
-  }
   
   if (rerankViolations.length === 0) {
     return parsed;

@@ -96,11 +96,11 @@ function normalizeVariantFields(variant: Record<string, unknown>): z.infer<typeo
   if (typeof next.style !== "string" || next.style.trim().length < 2) next.style = "authentic";
   if (typeof next.cta !== "string" || next.cta.trim().length < 2) next.cta = "Check it out";
   if (typeof next.alt !== "string" || next.alt.trim().length < 20)
-    next.alt = "Engaging social media content";
+    next.alt = "Descriptive photo for the post";
   if (!Array.isArray(next.hashtags) || next.hashtags.length < 3)
-    next.hashtags = ["#content", "#creative", "#amazing"];
+    next.hashtags = ["#authentic", "#creative", "#amazing"];
   if (typeof next.caption !== "string" || next.caption.trim().length < 1)
-    next.caption = "Check out this amazing content!";
+    next.caption = "Here's something I'm proud of today.";
   return CaptionItem.parse(next);
 }
 
@@ -445,15 +445,6 @@ export async function rankAndSelect(
   let parsed = RankResult.parse(first);
   const violations = detectVariantViolations(parsed.final);
   
-  // Check for banned words in the final selection
-  if (variantContainsBannedWord(parsed.final)) {
-    violations.push({
-      type: "banned_word",
-      content: parsed.final.caption || "",
-      field: "caption"
-    });
-  }
-  
   if (violations.length === 0) {
     return parsed;
   }
@@ -467,15 +458,6 @@ export async function rankAndSelect(
   );
   parsed = RankResult.parse(rerank);
   const rerankViolations = detectVariantViolations(parsed.final);
-  
-  // Check for banned words in the reranked final selection
-  if (variantContainsBannedWord(parsed.final)) {
-    rerankViolations.push({
-      type: "banned_word",
-      content: parsed.final.caption || "",
-      field: "caption"
-    });
-  }
   
   if (rerankViolations.length === 0) {
     return parsed;
