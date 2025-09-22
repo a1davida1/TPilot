@@ -944,7 +944,7 @@ describe('Caption Generation', () => {
       generateContentMock.mockRestore();
     });
 
-    it('retries when mandatory tokens are dropped', async () => {
+    it('retries when mandatory tokens are dropped without platform errors', async () => {
       const existingCaption = 'Launch day! RSVP at https://example.com/launch with @LaunchHQ on 12/25 for the "Mega Launch" by MegaCorp™ #LaunchDay';
       const variantFactory = (caption: string) => ({
         caption,
@@ -1017,12 +1017,17 @@ describe('Caption Generation', () => {
       const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.js');
       expect(openAICaptionFallback).not.toHaveBeenCalled();
       expect(textGenerateMock).toHaveBeenCalledTimes(4);
-      expect((result.final as any).caption).toContain('https://example.com/launch');
-      expect((result.final as any).caption).toContain('@LaunchHQ');
-      expect((result.final as any).caption).toContain('#LaunchDay');
-      expect((result.final as any).caption).toContain('12/25');
-      expect((result.final as any).caption).toContain('"Mega Launch"');
-      expect((result.final as any).caption).toContain('MegaCorp™');
+      const promptCalls = [...textGenerateMock.mock.calls];
+      expect(promptCalls[2]?.[0]?.[0]?.text).toContain('ABSOLUTE RULE: Keep these tokens verbatim in the caption');
+      expect(promptCalls[2]?.[0]?.[0]?.text).not.toContain('Fix platform issue');
+      expect(result.provider).toBe('gemini');
+      expect(result.final.caption).toBe(enforcedCaption);
+      expect(result.final.caption).toContain('https://example.com/launch');
+      expect(result.final.caption).toContain('@LaunchHQ');
+      expect(result.final.caption).toContain('#LaunchDay');
+      expect(result.final.caption).toContain('12/25');
+      expect(result.final.caption).toContain('"Mega Launch"');
+      expect(result.final.caption).toContain('MegaCorp™');
 
       textGenerateMock.mockReset();
     });
