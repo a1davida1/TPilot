@@ -1,0 +1,556 @@
+Refactor SelectTrigger usages for themes
+Sep 22 · a1davida1/TPilot · main
++31-22
+* Review all `SelectTrigger` usages that set `bg-gray-900/50`, `bg-white/60`, or similar hard-coded overlays (see `simple-content-generator`, `trending-tags`, `dual-workflow-generator`, `trending-tags-expanded`, etc.).
+* Replace those overrides with theme-token-friendly classes (e.g. `bg-card/90 text-card-foreground border-border` plus an appropriate dark-mode adjustment) or introduce a reusable prop/variant in `ui/select.tsx` so the component handles contrast automatically.
+* Verify light and dark themes render readable text for selected values and placeholders.
+* Run `npm run lint` and `npm test`.
+
+Summary
+
+    Added an overlay variant to SelectTrigger, applying theme-token backgrounds, borders, and text colors so translucent menus remain legible in light and dark themes.
+
+Replaced hard-coded translucent classes with the new variant across the simple content generator, dual workflow generator, trending tags views, and Reddit communities filters to ensure consistent contrast-aware styling while preserving layout widths.
+
+Testing
+
+    ✅ npm run lint
+
+❌ npm test (fails because many suites depend on unavailable external AI services, image processing, seeded databases, and environment-specific integrations in this container)
+
+
+client/src/components/dual-workflow-generator.tsx
++5-5
+@@ -155,73 +155,73 @@ XOXO 💋`,
+      <Card className="bg-gradient-to-br from-purple-900/20 to-pink-900/20 border-purple-500/30">
+        <CardHeader>
+          <CardTitle className="text-2xl">Dual Workflow Creator</CardTitle>
+          <CardDescription className="text-gray-300">
+            Choose your creative workflow - start with an image or generate content first
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs value={workflowMode} onValueChange={(v) => setWorkflowMode(v as 'text-first' | 'image-first')}>
+            <TabsList className="grid w-full grid-cols-2 bg-gray-900/50">
+              <TabsTrigger value="text-first" className="data-[state=active]:bg-purple-600">
+                <FileText className="mr-2 h-4 w-4" />
+                Text First
+              </TabsTrigger>
+              <TabsTrigger value="image-first" className="data-[state=active]:bg-purple-600">
+                <Image className="mr-2 h-4 w-4" />
+                Image First
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Text-First Workflow */}
+            <TabsContent value="text-first" className="space-y-4 mt-6">
+              <div className="space-y-4">
+                <div className="grid md:grid-cols-3 gap-4">
+                  <Select value={platform} onValueChange={setPlatform}>
+                    <SelectTrigger className="bg-gray-900/50 border-purple-500/20">
+                    <SelectTrigger variant="overlay">
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="reddit">Reddit</SelectItem>
+                      <SelectItem value="twitter">Twitter</SelectItem>
+                      <SelectItem value="instagram">Instagram</SelectItem>
+                      <SelectItem value="onlyfans">OnlyFans</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={style} onValueChange={setStyle}>
+                    <SelectTrigger className="bg-gray-900/50 border-purple-500/20">
+                    <SelectTrigger variant="overlay">
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="playful">Playful & Flirty</SelectItem>
+                      <SelectItem value="mysterious">Mysterious</SelectItem>
+                      <SelectItem value="confident">Bold & Confident</SelectItem>
+                      <SelectItem value="intimate">Intimate & Personal</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={theme} onValueChange={setTheme}>
+                    <SelectTrigger className="bg-gray-900/50 border-purple-500/20">
+                    <SelectTrigger variant="overlay">
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="teasing">Teasing</SelectItem>
+                      <SelectItem value="behind-scenes">Behind the Scenes</SelectItem>
+                      <SelectItem value="outfit">Outfit Reveal</SelectItem>
+                      <SelectItem value="lifestyle">Lifestyle</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Textarea
+                  value={customPrompt}
+                  onChange={(e) => setCustomPrompt(e.target.value)}
+                  className="bg-gray-900/50 border-purple-500/20 min-h-[100px]"
+                />
+
+                <Button 
+                  onClick={handleGenerateFromText}
+                  disabled={isGenerating}
+                  className="w-full bg-gradient-to-r from-purple-500 to-pink-500"
+                >
+                  {isGenerating ? (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                      Generating...
+@@ -346,62 +346,62 @@ XOXO 💋`,
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="relative rounded-lg overflow-hidden">
+                      <img 
+                        src={uploadedImage} 
+                        alt="Uploaded" 
+                        className="w-full h-64 object-cover"
+                      />
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="absolute top-2 right-2"
+                        onClick={() => {
+                          setUploadedImage(null);
+                          setImageFile(null);
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <Select value={platform} onValueChange={setPlatform}>
+                        <SelectTrigger className="bg-gray-900/50 border-purple-500/20">
+                        <SelectTrigger variant="overlay">
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="reddit">Reddit</SelectItem>
+                          <SelectItem value="twitter">Twitter</SelectItem>
+                          <SelectItem value="instagram">Instagram</SelectItem>
+                          <SelectItem value="onlyfans">OnlyFans</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      <Select value={style} onValueChange={setStyle}>
+                        <SelectTrigger className="bg-gray-900/50 border-purple-500/20">
+                        <SelectTrigger variant="overlay">
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="playful">Playful & Flirty</SelectItem>
+                          <SelectItem value="mysterious">Mysterious</SelectItem>
+                          <SelectItem value="confident">Bold & Confident</SelectItem>
+                          <SelectItem value="intimate">Intimate & Personal</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <Button 
+                      onClick={handleGenerateFromImage}
+                      disabled={isGenerating}
+                      className="w-full bg-gradient-to-r from-purple-500 to-pink-500"
+                    >
+                      {isGenerating ? (
+                        <>
+                          <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                          Analyzing Image...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="mr-2 h-4 w-4" />
+                          Generate Caption & Titles
+                        </>
+client/src/components/reddit-communities.tsx
++4-4
+@@ -190,88 +190,88 @@ export function RedditCommunities() {
+  };
+
+  return (
+    <Card className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-pink-200/50 dark:border-pink-500/20 shadow-xl">
+      <CardHeader>
+        <CardTitle className="text-2xl bg-gradient-to-r from-pink-600 via-rose-500 to-purple-600 dark:from-pink-400 dark:via-rose-400 dark:to-purple-400 bg-clip-text text-transparent">
+          Reddit Communities Database
+        </CardTitle>
+        <p className="text-sm text-gray-600 dark:text-gray-300">
+          100+ communities with success probability scoring, growth trends, and intelligent recommendations
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Filters and Search */}
+        <div className="flex flex-col lg:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-white/60 dark:bg-gray-800/60 border-pink-200 dark:border-pink-500/30 focus:border-pink-400 dark:focus:border-pink-400"
+            />
+          </div>
+          
+          <Select value={filterCategory} onValueChange={setFilterCategory}>
+            <SelectTrigger className="w-[180px] bg-white/60 dark:bg-gray-800/60 border-pink-200 dark:border-pink-500/30">
+            <SelectTrigger variant="overlay" className="w-[180px]">
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              <SelectItem value="premium">Premium</SelectItem>
+              <SelectItem value="gonewild">Gone Wild</SelectItem>
+              <SelectItem value="general">General</SelectItem>
+              <SelectItem value="niche">Niche</SelectItem>
+              <SelectItem value="fetish">Fetish</SelectItem>
+              <SelectItem value="selling">Selling</SelectItem>
+              <SelectItem value="verification">Verification</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={filterPromotion} onValueChange={setFilterPromotion}>
+            <SelectTrigger className="w-[180px] bg-white/60 dark:bg-gray-800/60 border-pink-200 dark:border-pink-500/30">
+            <SelectTrigger variant="overlay" className="w-[180px]">
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Promotion</SelectItem>
+              <SelectItem value="yes">Allowed</SelectItem>
+              <SelectItem value="limited">Limited</SelectItem>
+              <SelectItem value="subtle">Subtle</SelectItem>
+              <SelectItem value="no">Not Allowed</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={filterVerification} onValueChange={setFilterVerification}>
+            <SelectTrigger className="w-[180px] bg-white/60 dark:bg-gray-800/60 border-pink-200 dark:border-pink-500/30">
+            <SelectTrigger variant="overlay" className="w-[180px]">
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Verification</SelectItem>
+              <SelectItem value="required">Required</SelectItem>
+              <SelectItem value="not-required">Not Required</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={sortBy} onValueChange={(v: 'success' | 'engagement' | 'members' | 'upvotes' | 'name') => setSortBy(v)}>
+            <SelectTrigger className="w-[150px] bg-white/60 dark:bg-gray-800/60 border-pink-200 dark:border-pink-500/30">
+            <SelectTrigger variant="overlay" className="w-[150px]">
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="success">Success Rate</SelectItem>
+              <SelectItem value="engagement">Engagement</SelectItem>
+              <SelectItem value="members">Members</SelectItem>
+              <SelectItem value="upvotes">Avg Upvotes</SelectItem>
+              <SelectItem value="name">Name</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Results count */}
+        <div className="text-sm text-gray-400">
+          Showing {filteredCommunities.length} communities
+        </div>
+
+        {/* Communities Table */}
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-purple-500/20">
+                <TableHead className="text-purple-300">Community</TableHead>
+                <TableHead className="text-purple-300">Members</TableHead>
+                <TableHead className="text-purple-300">Success Rate</TableHead>
+                <TableHead className="text-purple-300">Engagement</TableHead>
+client/src/components/simple-content-generator.tsx
++3-3
+@@ -107,75 +107,75 @@ export function SimpleContentGenerator({ isGuestMode = false, onContentGenerated
+      selectedHashtags: []
+    });
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copied!",
+      description: "Content copied to clipboard"
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Content Generator */}
+      <Card className="bg-gradient-to-br from-purple-900/20 to-pink-900/20 border-purple-500/30">
+        <CardHeader>
+          <CardTitle className="text-2xl">Content Creator</CardTitle>
+          <CardDescription className="text-gray-300">
+            Generate engaging content with professional photo guidance
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid md:grid-cols-3 gap-4">
+            <Select value={platform} onValueChange={setPlatform}>
+              <SelectTrigger className="bg-gray-900/50 border-purple-500/20">
+              <SelectTrigger variant="overlay">
+                <SelectValue placeholder="Select platform" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="reddit">Reddit</SelectItem>
+                <SelectItem value="twitter">Twitter</SelectItem>
+                <SelectItem value="instagram">Instagram</SelectItem>
+                <SelectItem value="onlyfans">OnlyFans</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={style} onValueChange={setStyle}>
+              <SelectTrigger className="bg-gray-900/50 border-purple-500/20">
+              <SelectTrigger variant="overlay">
+                <SelectValue placeholder="Select style" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="playful">Playful & Flirty</SelectItem>
+                <SelectItem value="mysterious">Mysterious</SelectItem>
+                <SelectItem value="confident">Bold & Confident</SelectItem>
+                <SelectItem value="intimate">Intimate & Personal</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={theme} onValueChange={setTheme}>
+              <SelectTrigger className="bg-gray-900/50 border-purple-500/20">
+              <SelectTrigger variant="overlay">
+                <SelectValue placeholder="Select theme" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="teasing">Teasing</SelectItem>
+                <SelectItem value="behind-scenes">Behind the Scenes</SelectItem>
+                <SelectItem value="outfit">Outfit Reveal</SelectItem>
+                <SelectItem value="lifestyle">Lifestyle</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Textarea
+            value={customPrompt}
+            onChange={(e) => setCustomPrompt(e.target.value)}
+            className="bg-gray-900/50 border-purple-500/20 min-h-[100px]"
+          />
+
+          <Button 
+            onClick={handleGenerate}
+            disabled={generateContentMutation.isPending}
+            className="w-full bg-gradient-to-r from-purple-500 to-pink-500"
+          >
+            {generateContentMutation.isPending ? (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+client/src/components/trending-tags-expanded.tsx
++3-3
+@@ -233,75 +233,75 @@ export function TrendingTagsExpanded() {
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+              <p className="text-xs text-gray-400 mt-2 flex items-center justify-end gap-1">
+                <Clock className="h-3 w-3" />
+                Updated {lastUpdated.toLocaleTimeString()}
+              </p>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+
+      {/* Filters */}
+      <div className="flex flex-col lg:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 bg-gray-900/50 border-purple-500/20"
+          />
+        </div>
+        
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          <SelectTrigger className="w-[180px] bg-gray-900/50 border-purple-500/20">
+          <SelectTrigger variant="overlay" className="w-[180px]">
+          </SelectTrigger>
+          <SelectContent>
+            {categories.map(cat => (
+              <SelectItem key={cat} value={cat}>
+                {cat.charAt(0).toUpperCase() + cat.slice(1)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={platformFilter} onValueChange={setPlatformFilter}>
+          <SelectTrigger className="w-[180px] bg-gray-900/50 border-purple-500/20">
+          <SelectTrigger variant="overlay" className="w-[180px]">
+          </SelectTrigger>
+          <SelectContent>
+            {platforms.map(platform => (
+              <SelectItem key={platform} value={platform}>
+                {platform}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={timeRange} onValueChange={(v: '1h' | '24h' | '7d' | '30d') => setTimeRange(v)}>
+          <SelectTrigger className="w-[140px] bg-gray-900/50 border-purple-500/20">
+          <SelectTrigger variant="overlay" className="w-[140px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="1h">Last Hour</SelectItem>
+            <SelectItem value="24h">Last 24h</SelectItem>
+            <SelectItem value="7d">Last 7 Days</SelectItem>
+            <SelectItem value="30d">Last 30 Days</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid md:grid-cols-4 gap-4">
+        <Card className="bg-gray-900/50 border-purple-500/20">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-400">Total Volume</p>
+                <p className="text-2xl font-bold">482.3K</p>
+                <p className="text-xs text-green-400">+23% from yesterday</p>
+              </div>
+              <BarChart3 className="h-8 w-8 text-purple-400/50" />
+            </div>
+          </CardContent>
+        </Card>
+client/src/components/trending-tags.tsx
++2-2
+@@ -97,64 +97,64 @@ export function TrendingTags() {
+
+  return (
+    <Card className="bg-gray-900/50 backdrop-blur-xl border-white/10">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <TrendingUp className="h-5 w-5 text-purple-400" />
+          Trending Tags
+        </CardTitle>
+        <CardDescription>
+          Most engaging tags in the last 24 hours
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {/* Search and Filter Controls */}
+        <div className="flex flex-col lg:flex-row gap-3 mb-6">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-gray-900/50 border-white/10"
+            />
+          </div>
+          
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-[180px] bg-gray-900/50 border-white/10">
+            <SelectTrigger variant="overlay" className="w-[180px]">
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              {categories.map(cat => (
+                <SelectItem key={cat} value={cat}>
+                  {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={timeRange} onValueChange={setTimeRange}>
+            <SelectTrigger className="w-[140px] bg-gray-900/50 border-white/10">
+            <SelectTrigger variant="overlay" className="w-[140px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="24h">Last 24h</SelectItem>
+              <SelectItem value="7d">Last 7 Days</SelectItem>
+              <SelectItem value="30d">Last 30 Days</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Stats Summary */}
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          <div className="p-3 bg-purple-900/20 rounded-lg border border-purple-500/20">
+            <p className="text-xs text-gray-400">Total Tags</p>
+            <p className="text-xl font-bold">{filteredTags.length}</p>
+          </div>
+          <div className="p-3 bg-orange-900/20 rounded-lg border border-orange-500/20">
+            <p className="text-xs text-gray-400">Hot Trending</p>
+            <p className="text-xl font-bold">{filteredTags.filter(t => t.heat === 'hot').length}</p>
+          </div>
+          <div className="p-3 bg-green-900/20 rounded-lg border border-green-500/20">
+            <p className="text-xs text-gray-400">Avg Growth</p>
+            <p className="text-xl font-bold">{avgGrowth}</p>
+          </div>
+        </div>
+client/src/components/ui/select.tsx
++14-5
+"use client"
+
+import * as React from "react"
+import * as SelectPrimitive from "@radix-ui/react-select"
+import { Check, ChevronDown, ChevronUp } from "lucide-react"
+
+import { cn } from "@/lib/utils"
+
+const Select = SelectPrimitive.Root
+
+const SelectGroup = SelectPrimitive.Group
+
+const SelectValue = SelectPrimitive.Value
+
+type SelectTriggerProps = React.ComponentPropsWithoutRef<
+  typeof SelectPrimitive.Trigger
+> & {
+  variant?: "default" | "overlay"
+}
+
+const SelectTrigger = React.forwardRef<
+  React.ElementRef<typeof SelectPrimitive.Trigger>,
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger>
+>(({ className, children, ...props }, ref) => (
+  SelectTriggerProps
+>(({ className, children, variant = "default", ...props }, ref) => (
+  <SelectPrimitive.Trigger
+    ref={ref}
+    className={cn(
+      "flex h-10 w-full items-center justify-between rounded-md border border-input " +
+      "bg-background text-foreground px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground " +
+      "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+      "flex h-10 w-full items-center justify-between rounded-md px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground " +
+        "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+      variant === "default" && "border border-input bg-background text-foreground",
+      variant === "overlay" &&
+        "border border-border bg-card/90 text-card-foreground shadow-sm supports-[backdrop-filter]:backdrop-blur-sm " +
+          "dark:bg-popover/80 dark:text-popover-foreground",
+      className
+    )}
+    {...props}
+  >
+    {children}
+    <SelectPrimitive.Icon asChild>
+      <ChevronDown className="h-4 w-4 opacity-50" />
+    </SelectPrimitive.Icon>
+  </SelectPrimitive.Trigger>
+))
+SelectTrigger.displayName = SelectPrimitive.Trigger.displayName
+
+const SelectScrollUpButton = React.forwardRef<
+  React.ElementRef<typeof SelectPrimitive.ScrollUpButton>,
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollUpButton>
+>(({ className, ...props }, ref) => (
+  <SelectPrimitive.ScrollUpButton
+    ref={ref}
+    className={cn(
+      "flex cursor-default items-center justify-center py-1",
+      className
+    )}
+    {...props}
+  >
+    <ChevronUp className="h-4 w-4" />

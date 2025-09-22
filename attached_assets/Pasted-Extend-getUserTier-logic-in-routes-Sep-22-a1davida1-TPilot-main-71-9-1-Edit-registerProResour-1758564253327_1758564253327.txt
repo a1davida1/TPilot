@@ -1,0 +1,323 @@
+Extend getUserTier logic in routes
+Sep 22 · a1davida1/TPilot · main
++71-9
+1. Edit `registerProResourcesRoutes` in `server/routes.ts` to extend the existing `getUserTier` logic when the request’s session payload lacks `subscriptionTier`, e.g., load the user from `storage.getUserById` as a fallback.
+2. Ensure the handler still returns 401 for unauthenticated users, 403 for non-pro tiers, 404 when a perk is missing, and 200 with the generated code otherwise.
+3. Update/extend the pro-resources tests to cover the fallback path so regressions are caught in CI.
+
+Summary
+
+    Added an asynchronous getUserTier helper that normalizes session data, falls back to storage.getUserById when the session lacks a tier, and logs fallback issues while preserving pro/premium gating in the pro-resources routes.
+
+Extended the pro-resources integration suite with a referral-code test that mocks the storage lookup so the fallback path is exercised and verified end-to-end.
+
+Testing
+
+    ⚠️ npm run lint *(fails because the repository already contains numerous unrelated lint violations)*
+
+✅ npx eslint server/routes.ts tests/integration/pro-resources.test.ts
+
+⚠️ npm test *(Vitest currently reports zero collected tests without additional configuration)*
+
+⚠️ npx vitest run tests/integration/pro-resources.test.ts *(aborted after suites failed on missing external credentials such as OPENAI_API_KEY)*
+
+
+server/routes.ts
++40-9
+@@ -36,143 +36,174 @@ interface AnalyticsRequest extends express.Request {
+}
+
+// Import users table for type inference
+import { users, type ContentGeneration } from "@shared/schema";
+
+// AuthUser interface for passport serialization
+interface AuthUser {
+  id: number;
+  username?: string;
+  isAdmin?: boolean;
+}
+
+// Auth request interface that includes user  
+interface AuthenticatedRequest extends express.Request {
+  user?: typeof users.$inferSelect;
+}
+
+// User tier type
+type UserTier = 'free' | 'starter' | 'pro' | 'premium';
+
+// ==========================================
+// PRO RESOURCES ROUTES
+// ==========================================
+
+function registerProResourcesRoutes(app: Express) {
+  // Helper to get user tier
+  const getUserTier = (user: any): UserTier => {
+    if (!user) return 'free';
+    if (user.subscriptionTier === 'pro' || user.subscriptionTier === 'premium') {
+      return user.subscriptionTier as UserTier;
+  type SessionUser = (typeof users.$inferSelect & { subscriptionTier?: string | null }) | undefined;
+  type PersistedUser = typeof users.$inferSelect & { subscriptionTier?: string | null };
+
+  const resolveTier = (tierValue: string | null | undefined): UserTier => {
+    if (tierValue === 'pro' || tierValue === 'premium') {
+      return tierValue;
+    }
+    if (tierValue === 'starter') {
+      return 'starter';
+    }
+    return 'free';
+  };
+
+  // Helper to get user tier with storage fallback when session lacks tier information
+  const getUserTier = async (user: SessionUser): Promise<UserTier> => {
+    if (!user?.id) {
+      return 'free';
+    }
+
+    const sessionTier = user.subscriptionTier ?? user.tier;
+    if (sessionTier !== undefined && sessionTier !== null) {
+      return resolveTier(sessionTier);
+    }
+
+    try {
+      const persistedUser = await storage.getUserById(user.id);
+      if (!persistedUser) {
+        return 'free';
+      }
+
+      const persistedTier = (persistedUser as PersistedUser).subscriptionTier ?? persistedUser.tier;
+      return resolveTier(persistedTier);
+    } catch (error) {
+      logger.warn('Failed to resolve user tier from storage fallback', {
+        error: error instanceof Error ? error.message : String(error)
+      });
+      return 'free';
+    }
+  };
+
+  // GET /api/pro-resources - List all perks for authenticated users
+  app.get('/api/pro-resources', authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(403).json({ 
+          perks: [], 
+          accessGranted: false,
+          message: "Authentication required for pro resources" 
+        });
+      }
+
+      const userTier = getUserTier(req.user);
+      
+      const userTier = await getUserTier(req.user);
+
+      // Only pro/premium users get access
+      if (userTier === 'free' || userTier === 'starter') {
+        return res.status(403).json({
+          perks: [],
+          accessGranted: false,
+          message: "Pro subscription required to access these resources"
+        });
+      }
+
+      const availablePerks = getAvailablePerks(userTier === 'premium' ? 'pro' : userTier as 'free' | 'starter' | 'pro');
+      
+      res.json({
+        perks: availablePerks,
+        accessGranted: true
+      });
+
+    } catch (error) {
+      logger.error("Pro resources error:", error);
+      res.status(500).json({ 
+        perks: [], 
+        accessGranted: false,
+        message: "Failed to load pro resources" 
+      });
+    }
+  });
+
+  // GET /api/pro-resources/:id/signup-instructions - Get detailed signup instructions
+  app.get('/api/pro-resources/:id/signup-instructions', authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const userTier = getUserTier(req.user);
+      const userTier = await getUserTier(req.user);
+      if (userTier === 'free' || userTier === 'starter') {
+        return res.status(403).json({ message: "Pro subscription required" });
+      }
+
+      const perkId = req.params.id;
+      if (!perkId) {
+        return res.status(400).json({ message: "Perk ID required" });
+      }
+
+      // Verify the perk exists and user has access
+      const availablePerks = getAvailablePerks(userTier === 'premium' ? 'pro' : userTier as 'free' | 'starter' | 'pro');
+      const perk = availablePerks.find(p => p.id === perkId);
+      
+      if (!perk) {
+        return res.status(404).json({ message: "Perk not found or not accessible" });
+      }
+
+      const instructions = getSignupInstructions(perkId);
+      
+      res.json({
+        instructions
+      });
+
+    } catch (error) {
+      logger.error("Signup instructions error:", error);
+      res.status(500).json({ message: "Failed to load signup instructions" });
+    }
+  });
+
+  // POST /api/pro-resources/:id/referral-code - Generate referral code
+  app.post('/api/pro-resources/:id/referral-code', authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const userTier = getUserTier(req.user);
+      const userTier = await getUserTier(req.user);
+      if (userTier === 'free' || userTier === 'starter') {
+        return res.status(403).json({ message: "Pro subscription required" });
+      }
+
+      const perkId = req.params.id;
+      if (!perkId) {
+        return res.status(400).json({ message: "Perk ID required" });
+      }
+
+      // Verify the perk exists and user has access
+      const availablePerks = getAvailablePerks(userTier === 'premium' ? 'pro' : userTier as 'free' | 'starter' | 'pro');
+      const perk = availablePerks.find(p => p.id === perkId);
+      
+      if (!perk) {
+        return res.status(404).json({ message: "Perk not found or not accessible" });
+      }
+
+      const referralCode = generateReferralCode(req.user.id, perkId);
+      
+      res.json({
+        referralCode
+      });
+
+    } catch (error) {
+      logger.error("Referral code generation error:", error);
+tests/integration/pro-resources.test.ts
++31-0
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import request from 'supertest';
+import express from 'express';
+import type { Express } from 'express';
+import type { User } from '../../shared/schema.js';
+
+// Mock auth module to simulate different authentication states
+const mockUsers = new Map<number, any>();
+let currentMockUser: any = null;
+
+// Mock the auth middleware to simulate real behavior
+const mockAuthMiddleware = vi.fn((req: any, res: any, next: any) => {
+  if (currentMockUser) {
+    req.user = currentMockUser;
+  }
+  next();
+});
+
+// Mock the pro-perks module
+vi.mock('../../server/pro-perks.js', () => ({
+  getAvailablePerks: vi.fn(() => [
+    {
+      id: 'onlyfans-referral',
+      name: 'OnlyFans Creator Referral',
+      category: 'affiliate',
+      tier: 'pro',
+      description: 'Earn 5% lifetime commission by referring new creators',
+      commissionRate: '5% lifetime',
+      signupProcess: 'Auto-approval with tracking link',
+      estimatedEarnings: '$100-500/month potential',
+@@ -260,50 +261,80 @@ describe('Pro Resources Integration', () => {
+        id: 2,
+        subscriptionTier: 'pro',
+        username: 'prouser1'
+      };
+
+      const response1 = await request(app)
+        .post('/api/pro-resources/onlyfans-referral/referral-code')
+        .set('Authorization', 'Bearer mock-pro-token1')
+        .expect(200);
+
+      // Second user
+      currentMockUser = {
+        id: 3,
+        subscriptionTier: 'pro',
+        username: 'prouser2'
+      };
+
+      const response2 = await request(app)
+        .post('/api/pro-resources/onlyfans-referral/referral-code')
+        .set('Authorization', 'Bearer mock-pro-token2')
+        .expect(200);
+
+      // Referral codes should be different for different users
+      expect(response1.body.referralCode).not.toBe(response2.body.referralCode);
+    });
+
+    it('should fall back to stored tier when session is missing subscription tier', async () => {
+      const persistedUserId = 45;
+      currentMockUser = {
+        id: persistedUserId,
+        username: 'fallback-pro'
+      };
+
+      const { storage } = await import('../../server/storage.js');
+      const storedUser: Partial<User> & { subscriptionTier?: string | null } = {
+        id: persistedUserId,
+        tier: 'pro'
+      };
+
+      const getUserByIdSpy = vi
+        .spyOn(storage, 'getUserById')
+        .mockResolvedValue(storedUser as User);
+
+      const response = await request(app)
+        .post('/api/pro-resources/onlyfans-referral/referral-code')
+        .set('Authorization', 'Bearer mock-storage-tier')
+        .expect(200);
+
+      expect(getUserByIdSpy).toHaveBeenCalledWith(persistedUserId);
+      expect(response.body).toMatchObject({
+        referralCode: expect.stringMatching(/^TP45/)
+      });
+
+      getUserByIdSpy.mockRestore();
+    });
+  });
+
+  describe('Data Validation', () => {
+    it('should return perks with correct structure and required fields', async () => {
+      currentMockUser = {
+        id: 2,
+        subscriptionTier: 'pro',
+        username: 'prouser'
+      };
+
+      const response = await request(app)
+        .get('/api/pro-resources')
+        .set('Authorization', 'Bearer mock-pro-token')
+        .expect(200);
+
+      // Verify each perk has all required fields
+      response.body.perks.forEach((perk: any) => {
+        expect(perk).toMatchObject({
+          id: expect.any(String),
+          name: expect.any(String),
+          category: expect.stringMatching(/^(affiliate|integration|tools|community|pro)$/),
+          tier: expect.stringMatching(/^(starter|pro)$/),
+          description: expect.any(String),
+          signupProcess: expect.any(String),
+          estimatedEarnings: expect.any(String),

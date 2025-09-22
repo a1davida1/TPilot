@@ -657,6 +657,7 @@ describe('Caption Generation', () => {
           text: () => JSON.stringify([
             {
               caption: 'Motivational content for today!',
+              alt: 'Motivational text content image',
               hashtags: ['#motivation', '#mindset'],
               safety_level: 'normal',
               mood: 'inspiring',

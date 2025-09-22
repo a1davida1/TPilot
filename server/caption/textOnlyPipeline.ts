@@ -287,7 +287,11 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
     const needed = 5 - uniqueVariants.length;
     const varietyHint = attempt === 0
       ? params.hint
-      : buildRetryHint(params.hint, duplicatesThisAttempt, needed);
+      : (() => {
+          // Build complete base hint with variety clause first, then pass to buildRetryHint
+          const baseHintWithVariety = `${params.hint ? `${params.hint} ` : ""}Need much more variety across tone, structure, and themes.`;
+          return buildRetryHint(baseHintWithVariety, duplicatesThisAttempt, needed);
+        })();
 
     const rawVariants = await fetchVariants(varietyHint, existingCaptions);
     duplicatesThisAttempt.length = 0; // Reset for this attempt
@@ -379,7 +383,12 @@ export async function rankAndSelect(
   const violations = detectVariantViolations(parsed.final);
   
   if (violations.length === 0) {
-    return parsed;
+    // Always sanitize final variant to ensure required fields like alt are present
+    const sanitizedFinal = sanitizeFinalVariant(parsed.final, params?.platform);
+    return RankResult.parse({
+      ...parsed,
+      final: sanitizedFinal
+    });
   }
 
   const rerank = await requestTextOnlyRanking(

@@ -475,7 +475,11 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
     const needed = 5 - uniqueVariants.length;
     const varietyHint = attempt === 0
       ? params.hint
-      : buildRetryHint(params.hint, duplicatesThisAttempt, needed);
+      : (() => {
+          // Build complete base hint with variety clause first, then pass to buildRetryHint
+          const baseHintWithVariety = `${params.hint ? `${params.hint} ` : ""}Need much more variety across tone, structure, and imagery.`;
+          return buildRetryHint(baseHintWithVariety, duplicatesThisAttempt, needed);
+        })();
 
     const rawVariants = await fetchVariants(varietyHint, existingCaptions);
     duplicatesThisAttempt.length = 0; // Reset for this attempt

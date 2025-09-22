@@ -194,7 +194,7 @@ export function sanitizeFinalVariant(variant: any, platform?: string): any {
     }
   }
 
-  // Sanitize alt text for banned words
+  // Sanitize alt text for banned words and ensure it's always present
   if (typeof sanitized.alt === "string") {
     if (containsBannedWord(sanitized.alt)) {
       sanitized.alt = replaceBannedWords(sanitized.alt);
@@ -202,6 +202,9 @@ export function sanitizeFinalVariant(variant: any, platform?: string): any {
         sanitized.alt = "Descriptive photo for the post";
       }
     }
+  } else if (!sanitized.alt) {
+    // Ensure alt is always present, even if not originally provided
+    sanitized.alt = "Descriptive photo for the post";
   }
 
   // Sanitize hashtags for banned words
