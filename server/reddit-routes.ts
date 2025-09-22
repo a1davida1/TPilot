@@ -14,6 +14,7 @@ import {
   updateCommunity,
   deleteCommunity
 } from './reddit-communities.js';
+import { getUserRedditCommunityEligibility } from './lib/reddit.js';
 import { logger } from './bootstrap/logger.js';
 
 interface RedditProfile {
@@ -510,6 +511,42 @@ export function registerRedditRoutes(app: Express) {
     } catch (error) {
       console.error('Error checking subreddit:', error);
       res.status(500).json({ error: 'Failed to check subreddit' });
+    }
+  });
+
+  // Get eligible communities for authenticated user
+  app.get('/api/reddit/communities/eligible', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const eligibility = await getUserRedditCommunityEligibility(userId);
+      
+      if (!eligibility) {
+        return res.status(404).json({ 
+          error: 'No Reddit account connected',
+          karma: null,
+          accountAgeDays: null,
+          verified: false,
+          communities: [],
+          profileLoaded: false
+        });
+      }
+
+      res.json(eligibility);
+      
+    } catch (error) {
+      console.error('Error fetching eligible communities:', error);
+      res.status(500).json({ 
+        error: 'Failed to fetch eligible communities',
+        karma: null,
+        accountAgeDays: null,
+        verified: false,
+        communities: [],
+        profileLoaded: false
+      });
     }
   });
 
