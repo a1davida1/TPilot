@@ -13,17 +13,21 @@ vi.mock('../../server/lib/gemini.js', () => ({
   },
 }));
 
+import { CaptionItem } from '../../server/caption/schema.js';
+
 vi.mock('../../server/caption/openaiFallback.js', () => ({
-  openAICaptionFallback: vi.fn().mockResolvedValue({
-    caption: 'Fallback caption',
-    hashtags: ['#fallback1', '#fallback2', '#fallback3'],
-    safety_level: 'normal',
-    alt: 'Fallback alt text that is sufficiently long',
-    mood: 'neutral',
-    style: 'informative',
-    cta: 'Check this out',
-    nsfw: false,
-  }),
+  openAICaptionFallback: vi.fn().mockResolvedValue(
+    CaptionItem.parse({
+      caption: 'Fallback caption',
+      hashtags: ['#fallback1', '#fallback2', '#fallback3'],
+      safety_level: 'normal',
+      alt: 'Fallback alt text that is sufficiently long',
+      mood: 'neutral',
+      style: 'informative',
+      cta: 'Check this out',
+      nsfw: false,
+    })
+  ),
 }));
 
 const asMock = <T extends (...args: any[]) => any>(fn: T) =>

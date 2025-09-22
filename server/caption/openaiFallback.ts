@@ -1,26 +1,15 @@
 import OpenAI from 'openai';
-import * as z from 'zod';
+import { z } from 'zod';
+import { ensureFallbackCompliance, type FallbackInferenceInput } from './inferFallbackFromFacts';
+import { CaptionItem } from './schema';
 import { serializePromptField } from './promptUtils';
 import { formatVoiceContext } from './voiceTraits';
-
-// Assuming CaptionItem is defined elsewhere and imported
-// For the purpose of this example, let's define a placeholder if it's not provided
-const CaptionItem = z.object({
-  caption: z.string(),
-  hashtags: z.array(z.string()),
-  safety_level: z.string(),
-  mood: z.string(),
-  style: z.string(),
-  cta: z.string(),
-  alt: z.string(),
-  nsfw: z.boolean()
-});
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || '' });
 
 export interface FallbackParams {
-  platform: string;
-  voice: string;
+  platform: 'instagram' | 'x' | 'reddit' | 'tiktok';
+  voice?: string;
   imageUrl?: string;
   theme?: string;
   context?: string;
@@ -31,30 +20,56 @@ export async function openAICaptionFallback({
   platform,
   voice = "flirty_playful",
   imageUrl,
-  existingCaption
-}: {
-  platform: "instagram" | "x" | "reddit" | "tiktok";
-  voice?: string;
-  imageUrl?: string;
-  existingCaption?: string;
-}): Promise<z.infer<typeof CaptionItem>> {
+  existingCaption,
+  context,
+  theme,
+}: FallbackParams): Promise<z.infer<typeof CaptionItem>> {
   // Guard against real API calls in test environment
   if (process.env.NODE_ENV === 'test') {
-    return {
+    const base = {
       caption: existingCaption || "Test fallback caption",
       hashtags: ["#test", "#fallback"],
       safety_level: "normal",
-      mood: voice.includes('flirty') ? 'flirty' : 'confident',
+      mood: voice?.includes('flirty') ? 'flirty' : 'confident',
       style: "authentic",
       cta: "Test CTA",
       alt: "Test fallback alt text for deterministic testing",
       nsfw: false
     };
+    const compliance = ensureFallbackCompliance(
+      {
+        caption: base.caption,
+        hashtags: base.hashtags,
+        cta: base.cta,
+        alt: base.alt,
+      },
+      {
+        platform,
+        context: context ?? existingCaption,
+        existingCaption,
+        theme,
+      }
+    );
+
+    return CaptionItem.parse({
+      ...base,
+      hashtags: compliance.hashtags,
+      cta: compliance.cta,
+      alt: compliance.alt,
+    });
   }
   let messages: any[] = [];
   const sanitizedExistingCaption = existingCaption ? serializePromptField(existingCaption) : undefined;
   const voiceContext = formatVoiceContext(voice);
   const systemVoiceSuffix = voiceContext ? `\n${voiceContext}` : '';
+
+  const fallbackContext = context ?? existingCaption ?? sanitizedExistingCaption;
+  const fallbackParamsForCompliance: FallbackInferenceInput = {
+    platform,
+    context: fallbackContext,
+    existingCaption,
+    theme,
+  };
 
   if (imageUrl && openai) {
     try {
@@ -156,29 +171,66 @@ Return ONLY a JSON object with this structure:
       json = { caption: response.choices[0].message.content || 'Fallback caption' };
     }
 
-    const jsonData: any = json;
-    return {
-      caption: jsonData?.caption ?? 'Fallback caption',
-      hashtags: jsonData?.hashtags ?? [],
-      safety_level: jsonData?.safety_level ?? 'normal',
-      mood: jsonData?.mood ?? 'neutral',
-      style: jsonData?.style ?? 'fallback',
-      cta: jsonData?.cta ?? '',
-      alt: jsonData?.alt ?? 'Image description not available',
-      nsfw: jsonData?.nsfw ?? false
-    };
+    const jsonData: Record<string, unknown> = (json ?? {}) as Record<string, unknown>;
+    const candidateHashtags = Array.isArray(jsonData.hashtags)
+      ? jsonData.hashtags.filter((tag): tag is string => typeof tag === 'string')
+      : undefined;
+
+    const compliance = ensureFallbackCompliance(
+      {
+        caption: typeof jsonData.caption === 'string' ? jsonData.caption : undefined,
+        hashtags: candidateHashtags,
+        cta: typeof jsonData.cta === 'string' ? jsonData.cta : undefined,
+        alt: typeof jsonData.alt === 'string' ? jsonData.alt : undefined,
+      },
+      fallbackParamsForCompliance
+    );
+
+    const resolvedCaption = typeof jsonData.caption === 'string' && jsonData.caption.trim().length > 0
+      ? jsonData.caption
+      : (existingCaption && existingCaption.trim().length > 0
+        ? existingCaption
+        : 'Fallback caption');
+
+    return CaptionItem.parse({
+      caption: resolvedCaption,
+      hashtags: compliance.hashtags,
+      safety_level: typeof jsonData.safety_level === 'string' && jsonData.safety_level.trim().length > 0
+        ? (jsonData.safety_level as string)
+        : 'normal',
+      mood: typeof jsonData.mood === 'string' && jsonData.mood.trim().length > 1
+        ? (jsonData.mood as string)
+        : 'neutral',
+      style: typeof jsonData.style === 'string' && jsonData.style.trim().length > 1
+        ? (jsonData.style as string)
+        : 'fallback',
+      cta: compliance.cta,
+      alt: compliance.alt,
+      nsfw: typeof jsonData.nsfw === 'boolean' ? jsonData.nsfw : false,
+    });
   } catch (error) {
     console.error("Error calling OpenAI API:", error);
-    // Provide a more robust fallback if the API call itself fails
-    return {
-      caption: sanitizedExistingCaption ? `Could not generate new caption. Original: ${sanitizedExistingCaption}` : 'Error generating caption.',
-      hashtags: [],
+    const fallback = ensureFallbackCompliance(
+      {
+        caption: sanitizedExistingCaption,
+        hashtags: [],
+        cta: undefined,
+        alt: undefined,
+      },
+      fallbackParamsForCompliance
+    );
+
+    return CaptionItem.parse({
+      caption: sanitizedExistingCaption
+        ? `Could not generate new caption. Original: ${sanitizedExistingCaption}`
+        : 'Error generating caption.',
+      hashtags: fallback.hashtags,
       safety_level: 'normal',
       mood: 'neutral',
       style: 'error',
-      cta: '',
-      alt: 'Image description not available',
-      nsfw: false
-    };
+      cta: fallback.cta,
+      alt: fallback.alt,
+      nsfw: false,
+    });
   }
 }

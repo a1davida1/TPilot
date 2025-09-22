@@ -1,0 +1,1873 @@
+Add subreddit directory with CRUD functionality
+Sep 22 · a1davida1/TPilot · main
++1648-3
+1. Add a new tab/panel to `client/src/pages/admin.tsx` dedicated to the subreddit directory (e.g., “Communities”), including a table of entries, search/filter, and forms wired to the existing `/api/reddit/communities` admin endpoints.
+2. Create React query hooks/mutations for listing, creating, updating, and deleting communities, respecting admin auth checks already in place.
+3. Ensure the UI handles the structured rule metadata (post-stub #2) so admins can edit rule-aware fields.
+4. Provide frontend tests (component/unit) confirming CRUD flows call the expected endpoints and render updates.
+
+Summary
+
+    Added typed React Query hooks for listing and mutating Reddit communities, including parameterized filters and consistent cache invalidation for admin workflows.
+
+Built an AdminCommunitiesPanel with search, filter, table actions, structured rule editing, and create/edit dialogs wired to the admin endpoints, with management state gating based on admin access.
+
+Connected the admin dashboard to expose the new Communities tab and panel, respecting the logged-in admin state.
+
+Added component tests that mock the API to confirm search filtering plus create, update, and delete flows trigger the correct endpoints and update the rendered table.
+
+Testing
+
+    ✅ npm run lint (warnings only, no blocking errors)
+
+⚠️ npm test *(fails due to numerous pre-existing suite issues such as Sharp image processing errors and Gemini integration failures; see log excerpt)*
+
+
+client/src/components/admin/admin-communities-panel.tsx
+New
++1030-0
+import { useMemo, useState } from 'react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import {
+  type AdminCommunity,
+  type CommunityPayload,
+  type PromotionPolicy,
+  type GrowthTrend,
+  type ActivityLevel,
+  type CompetitionLevel,
+  useAdminCommunities,
+  useCreateCommunity,
+  useUpdateCommunity,
+  useDeleteCommunity,
+} from '@/hooks/use-admin-communities';
+import { cn } from '@/lib/utils';
+import { CheckCircle, Edit2, Loader2, PlusCircle, ShieldAlert, Trash2 } from 'lucide-react';
+
+interface AdminCommunitiesPanelProps {
+  canManage: boolean;
+}
+
+type TriState = 'unspecified' | 'allowed' | 'disallowed';
+
+interface CommunityFormState {
+  id: string;
+  name: string;
+  displayName: string;
+  category: string;
+  members: string;
+  engagementRate: string;
+  verificationRequired: boolean;
+  promotionAllowed: PromotionPolicy;
+  postingLimitsPerDay: string;
+  postingLimitsPerWeek: string;
+  postingLimitsCooldownHours: string;
+  rulesMinKarma: string;
+  rulesMinAccountAge: string;
+  rulesWatermarksAllowed: TriState;
+  rulesSellingAllowed: TriState;
+  rulesTitleRules: string;
+  rulesContentRules: string;
+  rulesLinkRestrictions: string;
+  bestPostingTimes: string;
+  averageUpvotes: string;
+  successProbability: string;
+  growthTrend: GrowthTrend;
+  modActivity: ActivityLevel;
+  description: string;
+  tags: string;
+  competitionLevel: CompetitionLevel;
+}
+
+const defaultFormState: CommunityFormState = {
+  id: '',
+  name: '',
+  displayName: '',
+  category: '',
+  members: '',
+  engagementRate: '',
+  verificationRequired: false,
+  promotionAllowed: 'limited',
+  postingLimitsPerDay: '',
+  postingLimitsPerWeek: '',
+  postingLimitsCooldownHours: '',
+  rulesMinKarma: '',
+  rulesMinAccountAge: '',
+  rulesWatermarksAllowed: 'unspecified',
+  rulesSellingAllowed: 'unspecified',
+  rulesTitleRules: '',
+  rulesContentRules: '',
+  rulesLinkRestrictions: '',
+  bestPostingTimes: '',
+  averageUpvotes: '',
+  successProbability: '',
+  growthTrend: 'stable',
+  modActivity: 'medium',
+  description: '',
+  tags: '',
+  competitionLevel: 'medium',
+};
+
+function parseNumber(value: string): number | undefined {
+  const trimmed = value.trim();
+  if (trimmed === '') return undefined;
+  const parsed = Number(trimmed);
+  return Number.isNaN(parsed) ? undefined : parsed;
+}
+
+function parseList(value: string): string[] | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  const items = trimmed
+    .split(/\n|,/)
+    .map(item => item.trim())
+    .filter(Boolean);
+  return items.length ? items : undefined;
+}
+
+function communityToForm(community: AdminCommunity): CommunityFormState {
+  return {
+    id: community.id,
+    name: community.name,
+    displayName: community.displayName,
+    category: community.category,
+    members: String(community.members ?? ''),
+    engagementRate: String(community.engagementRate ?? ''),
+    verificationRequired: community.verificationRequired,
+    promotionAllowed: community.promotionAllowed,
+    postingLimitsPerDay: community.postingLimits?.perDay ? String(community.postingLimits.perDay) : '',
+    postingLimitsPerWeek: community.postingLimits?.perWeek ? String(community.postingLimits.perWeek) : '',
+    postingLimitsCooldownHours: community.postingLimits?.cooldownHours
+      ? String(community.postingLimits.cooldownHours)
+      : '',
+    rulesMinKarma: community.rules?.minKarma !== undefined ? String(community.rules.minKarma) : '',
+    rulesMinAccountAge: community.rules?.minAccountAge !== undefined ? String(community.rules.minAccountAge) : '',
+    rulesWatermarksAllowed:
+      community.rules?.watermarksAllowed === true
+        ? 'allowed'
+        : community.rules?.watermarksAllowed === false
+          ? 'disallowed'
+          : 'unspecified',
+    rulesSellingAllowed:
+      community.rules?.sellingAllowed === true
+        ? 'allowed'
+        : community.rules?.sellingAllowed === false
+          ? 'disallowed'
+          : 'unspecified',
+    rulesTitleRules: (community.rules?.titleRules ?? []).join('\n'),
+    rulesContentRules: (community.rules?.contentRules ?? []).join('\n'),
+    rulesLinkRestrictions: (community.rules?.linkRestrictions ?? []).join('\n'),
+    bestPostingTimes: (community.bestPostingTimes ?? []).join(', '),
+    averageUpvotes: community.averageUpvotes !== null && community.averageUpvotes !== undefined
+      ? String(community.averageUpvotes)
+      : '',
+    successProbability: community.successProbability !== null && community.successProbability !== undefined
+      ? String(community.successProbability)
+      : '',
+    growthTrend: community.growthTrend ?? 'stable',
+    modActivity: community.modActivity ?? 'medium',
+    description: community.description ?? '',
+    tags: (community.tags ?? []).join(', '),
+    competitionLevel: community.competitionLevel ?? 'medium',
+  };
+}
+
+function formToPayload(form: CommunityFormState): CommunityPayload {
+  const members = parseNumber(form.members);
+  const engagementRate = parseNumber(form.engagementRate);
+  if (members === undefined) {
+    throw new Error('Member count is required and must be a number.');
+  }
+  if (engagementRate === undefined) {
+    throw new Error('Engagement rate is required and must be a number.');
+  }
+
+  const bestPostingTimes = parseList(form.bestPostingTimes);
+  const tags = parseList(form.tags);
+  const postingLimitsPerDay = parseNumber(form.postingLimitsPerDay);
+  const postingLimitsPerWeek = parseNumber(form.postingLimitsPerWeek);
+  const postingLimitsCooldownHours = parseNumber(form.postingLimitsCooldownHours);
+  const rulesMinKarma = parseNumber(form.rulesMinKarma);
+  const rulesMinAccountAge = parseNumber(form.rulesMinAccountAge);
+  const rulesTitleRules = parseList(form.rulesTitleRules);
+  const rulesContentRules = parseList(form.rulesContentRules);
+  const rulesLinkRestrictions = parseList(form.rulesLinkRestrictions);
+  const averageUpvotes = parseNumber(form.averageUpvotes);
+  const successProbability = parseNumber(form.successProbability);
+
+  const postingLimits = {
+    ...(postingLimitsPerDay !== undefined ? { perDay: postingLimitsPerDay } : {}),
+    ...(postingLimitsPerWeek !== undefined ? { perWeek: postingLimitsPerWeek } : {}),
+    ...(postingLimitsCooldownHours !== undefined ? { cooldownHours: postingLimitsCooldownHours } : {}),
+  };
+  const normalizedPostingLimits = Object.keys(postingLimits).length ? postingLimits : null;
+
+  const watermarksAllowed =
+    form.rulesWatermarksAllowed === 'allowed'
+      ? true
+      : form.rulesWatermarksAllowed === 'disallowed'
+        ? false
+        : undefined;
+  const sellingAllowed =
+    form.rulesSellingAllowed === 'allowed'
+      ? true
+      : form.rulesSellingAllowed === 'disallowed'
+        ? false
+        : undefined;
+
+  const rules = {
+    ...(rulesMinKarma !== undefined ? { minKarma: rulesMinKarma } : {}),
+    ...(rulesMinAccountAge !== undefined ? { minAccountAge: rulesMinAccountAge } : {}),
+    ...(watermarksAllowed !== undefined ? { watermarksAllowed } : {}),
+    ...(sellingAllowed !== undefined ? { sellingAllowed } : {}),
+    ...(rulesTitleRules ? { titleRules: rulesTitleRules } : {}),
+    ...(rulesContentRules ? { contentRules: rulesContentRules } : {}),
+    ...(rulesLinkRestrictions ? { linkRestrictions: rulesLinkRestrictions } : {}),
+  };
+  const normalizedRules = Object.keys(rules).length ? rules : null;
+
+  return {
+    id: form.id.trim() || undefined,
+    name: form.name.trim(),
+    displayName: form.displayName.trim(),
+    category: form.category.trim(),
+    members,
+    engagementRate,
+    verificationRequired: form.verificationRequired,
+    promotionAllowed: form.promotionAllowed,
+    postingLimits: normalizedPostingLimits,
+    rules: normalizedRules,
+    bestPostingTimes: bestPostingTimes ?? null,
+    averageUpvotes: averageUpvotes ?? null,
+    successProbability: successProbability ?? null,
+    growthTrend: form.growthTrend,
+    modActivity: form.modActivity,
+    description: form.description.trim() || null,
+    tags: tags ?? null,
+    competitionLevel: form.competitionLevel,
+  };
+}
+
+function RuleSummary({ community }: { community: AdminCommunity }) {
+  const ruleItems: string[] = [];
+  if (community.rules?.minKarma !== undefined) {
+    ruleItems.push(`Min Karma ${community.rules.minKarma}`);
+  }
+  if (community.rules?.minAccountAge !== undefined) {
+    ruleItems.push(`Account ${community.rules.minAccountAge}d`);
+  }
+  if (community.rules?.watermarksAllowed === true) {
+    ruleItems.push('Watermarks allowed');
+  }
+  if (community.rules?.watermarksAllowed === false) {
+    ruleItems.push('No watermarks');
+  }
+  if (community.rules?.sellingAllowed === true) {
+    ruleItems.push('Selling allowed');
+  }
+  if (community.rules?.sellingAllowed === false) {
+    ruleItems.push('No selling');
+  }
+  if ((community.rules?.titleRules?.length ?? 0) > 0) {
+    ruleItems.push(`${community.rules?.titleRules?.length ?? 0} title rules`);
+  }
+  if ((community.rules?.contentRules?.length ?? 0) > 0) {
+    ruleItems.push(`${community.rules?.contentRules?.length ?? 0} content rules`);
+  }
+  if ((community.rules?.linkRestrictions?.length ?? 0) > 0) {
+    ruleItems.push('Link restrictions');
+  }
+  return (
+    <div className="flex flex-wrap gap-1">
+      {ruleItems.length ? (
+        ruleItems.map(item => (
+          <Badge key={item} variant="secondary" className="bg-purple-50 text-purple-700">
+            {item}
+          </Badge>
+        ))
+      ) : (
+        <span className="text-sm text-muted-foreground">No structured rules</span>
+      )}
+    </div>
+  );
+}
+
+export function AdminCommunitiesPanel({ canManage }: AdminCommunitiesPanelProps) {
+  const { toast } = useToast();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [promotionFilter, setPromotionFilter] = useState<'all' | PromotionPolicy>('all');
+  const [verificationFilter, setVerificationFilter] = useState<'all' | 'required' | 'not-required'>('all');
+  const [formState, setFormState] = useState<CommunityFormState>(defaultFormState);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingCommunity, setEditingCommunity] = useState<AdminCommunity | null>(null);
+
+  const filters = useMemo(
+    () => ({
+      search: searchTerm.trim() || undefined,
+      category: categoryFilter,
+      promotion: promotionFilter,
+      verification: verificationFilter,
+    }),
+    [searchTerm, categoryFilter, promotionFilter, verificationFilter],
+  );
+
+  const { data: communities = [], isLoading, error } = useAdminCommunities(filters);
+  const createCommunity = useCreateCommunity();
+  const updateCommunity = useUpdateCommunity();
+  const deleteCommunity = useDeleteCommunity();
+
+  const categories = useMemo(() => {
+    const values = new Set<string>();
+    communities.forEach(community => {
+      if (community.category) values.add(community.category);
+    });
+    return Array.from(values).sort((a, b) => a.localeCompare(b));
+  }, [communities]);
+
+  const handleOpenCreate = () => {
+    setFormState(defaultFormState);
+    setIsCreateOpen(true);
+  };
+
+  const handleEdit = (community: AdminCommunity) => {
+    setEditingCommunity(community);
+    setFormState(communityToForm(community));
+  };
+
+  const resetForm = () => {
+    setFormState(defaultFormState);
+    setEditingCommunity(null);
+    setIsCreateOpen(false);
+  };
+
+  const handleSubmitCreate = async () => {
+    try {
+      if (!formState.id.trim()) {
+        throw new Error('A community ID (subreddit name) is required.');
+      }
+      if (!formState.name.trim() || !formState.displayName.trim() || !formState.category.trim()) {
+        throw new Error('Name, display name, and category are required.');
+      }
+      const payload = formToPayload(formState);
+      await createCommunity.mutateAsync(payload);
+      toast({ title: 'Community created', description: `${payload.displayName} is now available.` });
+      resetForm();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to create community';
+      toast({ title: 'Unable to create community', description: message, variant: 'destructive' });
+    }
+  };
+
+  const handleSubmitEdit = async () => {
+    if (!editingCommunity) return;
+    try {
+      if (!formState.name.trim() || !formState.displayName.trim() || !formState.category.trim()) {
+        throw new Error('Name, display name, and category are required.');
+      }
+      const payload = formToPayload(formState);
+      await updateCommunity.mutateAsync({ id: editingCommunity.id, payload });
+      toast({ title: 'Community updated', description: `${payload.displayName} has been saved.` });
+      resetForm();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to update community';
+      toast({ title: 'Unable to update community', description: message, variant: 'destructive' });
+    }
+  };
+
+  const handleDelete = async (community: AdminCommunity) => {
+    try {
+      await deleteCommunity.mutateAsync(community.id);
+      toast({ title: 'Community deleted', description: `${community.displayName} has been removed.` });
+      if (editingCommunity?.id === community.id) {
+        resetForm();
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to delete community';
+      toast({ title: 'Unable to delete community', description: message, variant: 'destructive' });
+    }
+  };
+
+  const isMutating = createCommunity.isPending || updateCommunity.isPending || deleteCommunity.isPending;
+  const disableManagement = !canManage || isMutating;
+
+  return (
+    <Card className="border-gray-200 shadow-lg">
+      <CardHeader className="space-y-2">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <CardTitle>Communities Directory</CardTitle>
+            <CardDescription>Manage approved subreddits with rule-aware metadata.</CardDescription>
+          </div>
+          <div className="flex items-center gap-2">
+            {!canManage && (
+              <div className="flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 text-amber-800">
+                <ShieldAlert className="h-4 w-4" />
+                <span className="text-sm">Read-only access</span>
+              </div>
+            )}
+            <Button
+              onClick={handleOpenCreate}
+              disabled={disableManagement}
+              data-testid="open-create-community"
+              variant="default"
+            >
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Add Community
+            </Button>
+          </div>
+        </div>
+        <div className="grid gap-3 md:grid-cols-4">
+          <div className="md:col-span-2">
+            <Label htmlFor="community-search">Search</Label>
+            <Input
+              id="community-search"
+              value={searchTerm}
+              onChange={event => setSearchTerm(event.target.value)}
+              placeholder="Search by name, description, or tag..."
+              data-testid="community-search"
+            />
+          </div>
+          <div>
+            <Label>Category</Label>
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger data-testid="community-category-filter">
+                <SelectValue placeholder="Filter category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All categories</SelectItem>
+                {categories.map(category => (
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label>Promotion</Label>
+              <Select value={promotionFilter} onValueChange={value => setPromotionFilter(value as typeof promotionFilter)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Promotion policy" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="yes">Allowed</SelectItem>
+                  <SelectItem value="limited">Limited</SelectItem>
+                  <SelectItem value="subtle">Subtle</SelectItem>
+                  <SelectItem value="no">Not allowed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Verification</Label>
+              <Select value={verificationFilter} onValueChange={value => setVerificationFilter(value as typeof verificationFilter)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Verification" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="required">Required</SelectItem>
+                  <SelectItem value="not-required">Optional</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {isLoading && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Loading communities…
+          </div>
+        )}
+        {error && (
+          <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+            Unable to load communities. {error.userMessage ?? error.message}
+          </div>
+        )}
+        {!isLoading && !error && (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead className="hidden lg:table-cell">Members</TableHead>
+                  <TableHead className="hidden md:table-cell">Category</TableHead>
+                  <TableHead className="hidden lg:table-cell">Promotion</TableHead>
+                  <TableHead className="hidden xl:table-cell">Success</TableHead>
+                  <TableHead>Rules</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {communities.map(community => (
+                  <TableRow key={community.id} data-testid={`community-row-${community.id}`}>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="font-medium text-gray-900">{community.displayName}</span>
+                        <span className="text-sm text-muted-foreground">r/{community.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell">
+                      <div className="font-medium">{community.members.toLocaleString()}</div>
+                      <div className="text-xs text-muted-foreground">{community.engagementRate}% engagement</div>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      <Badge variant="outline">{community.category}</Badge>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell">
+                      <Badge
+                        variant="secondary"
+                        className={cn('capitalize',
+                          community.promotionAllowed === 'yes' && 'bg-emerald-50 text-emerald-700',
+                          community.promotionAllowed === 'limited' && 'bg-amber-50 text-amber-700',
+                          community.promotionAllowed === 'subtle' && 'bg-blue-50 text-blue-700',
+                          community.promotionAllowed === 'no' && 'bg-rose-50 text-rose-700',
+                        )}
+                      >
+                        {community.promotionAllowed}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="hidden xl:table-cell">
+                      {community.successProbability !== null && community.successProbability !== undefined ? (
+                        <div className="flex items-center gap-1 text-emerald-600">
+                          <CheckCircle className="h-4 w-4" />
+                          {community.successProbability}%
+                        </div>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">No score</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <RuleSummary community={community} />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(community)}
+                          disabled={disableManagement}
+                          data-testid={`edit-community-${community.id}`}
+                        >
+                          <Edit2 className="mr-1 h-4 w-4" />
+                          Edit
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              disabled={disableManagement}
+                              data-testid={`delete-community-${community.id}`}
+                            >
+                              <Trash2 className="mr-1 h-4 w-4" />
+                              Delete
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete {community.displayName}?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. Scheduled posts and recommendations for this community will stop.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDelete(community)}
+                                data-testid="confirm-delete-community"
+                                disabled={isMutating}
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {communities.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
+                      No communities match the current filters.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+
+      <Dialog open={isCreateOpen} onOpenChange={open => (open ? setIsCreateOpen(true) : resetForm())}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto" data-testid="create-community-dialog">
+          <DialogHeader>
+            <DialogTitle>Add Community</DialogTitle>
+            <DialogDescription>Register a new subreddit with posting guardrails.</DialogDescription>
+          </DialogHeader>
+          <CommunityForm
+            formState={formState}
+            setFormState={setFormState}
+            onSubmit={handleSubmitCreate}
+            onReset={() => setFormState(defaultFormState)}
+            submitting={createCommunity.isPending}
+            disabled={disableManagement}
+            mode="create"
+          />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editingCommunity !== null} onOpenChange={open => (!open ? resetForm() : undefined)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto" data-testid="edit-community-dialog">
+          <DialogHeader>
+            <DialogTitle>Edit Community</DialogTitle>
+            <DialogDescription>Update discovery data and posting rules.</DialogDescription>
+          </DialogHeader>
+          <CommunityForm
+            formState={formState}
+            setFormState={setFormState}
+            onSubmit={handleSubmitEdit}
+            onReset={() => {
+              if (editingCommunity) {
+                setFormState(communityToForm(editingCommunity));
+              }
+            }}
+            submitting={updateCommunity.isPending}
+            disabled={disableManagement}
+            mode="edit"
+          />
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+}
+
+interface CommunityFormProps {
+  formState: CommunityFormState;
+  setFormState: React.Dispatch<React.SetStateAction<CommunityFormState>>;
+  onSubmit: () => Promise<void>;
+  onReset: () => void;
+  submitting: boolean;
+  disabled: boolean;
+  mode: 'create' | 'edit';
+}
+
+function CommunityForm({ formState, setFormState, onSubmit, onReset, submitting, disabled, mode }: CommunityFormProps) {
+  const isCreate = mode === 'create';
+
+  const handleChange = (key: keyof CommunityFormState) => (value: string | boolean | TriState) => {
+    setFormState(prev => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (disabled) return;
+    await onSubmit();
+  };
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-4"
+      data-testid={isCreate ? 'community-form-create' : 'community-form-edit'}
+    >
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor={`community-id-${mode}`}>Subreddit ID</Label>
+          <Input
+            id={`community-id-${mode}`}
+            value={formState.id}
+            disabled={!isCreate || disabled}
+            onChange={event => handleChange('id')(event.target.value)}
+            placeholder="e.g. socialmedia"
+            required={isCreate}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={`community-name-${mode}`}>Internal name</Label>
+          <Input
+            id={`community-name-${mode}`}
+            value={formState.name}
+            onChange={event => handleChange('name')(event.target.value)}
+            placeholder="Slug used for filtering"
+            disabled={disabled}
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={`community-display-${mode}`}>Display name</Label>
+          <Input
+            id={`community-display-${mode}`}
+            value={formState.displayName}
+            onChange={event => handleChange('displayName')(event.target.value)}
+            placeholder="What admins will see"
+            disabled={disabled}
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={`community-category-${mode}`}>Category</Label>
+          <Input
+            id={`community-category-${mode}`}
+            value={formState.category}
+            onChange={event => handleChange('category')(event.target.value)}
+            placeholder="e.g. growth, gonewild"
+            disabled={disabled}
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={`community-members-${mode}`}>Members</Label>
+          <Input
+            id={`community-members-${mode}`}
+            type="number"
+            min={0}
+            value={formState.members}
+            onChange={event => handleChange('members')(event.target.value)}
+            disabled={disabled}
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={`community-engagement-${mode}`}>Engagement rate (%)</Label>
+          <Input
+            id={`community-engagement-${mode}`}
+            type="number"
+            min={0}
+            value={formState.engagementRate}
+            onChange={event => handleChange('engagementRate')(event.target.value)}
+            disabled={disabled}
+            required
+          />
+        </div>
+        <div className="flex items-center justify-between rounded-lg border border-gray-200 p-3">
+          <div>
+            <Label className="font-medium">Verification required</Label>
+            <p className="text-xs text-muted-foreground">Toggle if mods require verification before posting.</p>
+          </div>
+          <Switch
+            checked={formState.verificationRequired}
+            onCheckedChange={value => handleChange('verificationRequired')(value)}
+            disabled={disabled}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Promotion policy</Label>
+          <Select
+            value={formState.promotionAllowed}
+            onValueChange={value => handleChange('promotionAllowed')(value as PromotionPolicy)}
+            disabled={disabled}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Choose policy" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="yes">Allowed</SelectItem>
+              <SelectItem value="limited">Limited</SelectItem>
+              <SelectItem value="subtle">Subtle</SelectItem>
+              <SelectItem value="no">Not allowed</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={`community-growth-${mode}`}>Growth trend</Label>
+          <Select
+            value={formState.growthTrend}
+            onValueChange={value => handleChange('growthTrend')(value as GrowthTrend)}
+            disabled={disabled}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Trend" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="rising">Rising</SelectItem>
+              <SelectItem value="up">Up</SelectItem>
+              <SelectItem value="stable">Stable</SelectItem>
+              <SelectItem value="steady">Steady</SelectItem>
+              <SelectItem value="down">Declining</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={`community-activity-${mode}`}>Moderator activity</Label>
+          <Select
+            value={formState.modActivity}
+            onValueChange={value => handleChange('modActivity')(value as ActivityLevel)}
+            disabled={disabled}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Activity" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="high">High</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="low">Low</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={`community-competition-${mode}`}>Competition</Label>
+          <Select
+            value={formState.competitionLevel}
+            onValueChange={value => handleChange('competitionLevel')(value as CompetitionLevel)}
+            disabled={disabled}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Competition" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="low">Low</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="high">High</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={`community-upvotes-${mode}`}>Average upvotes</Label>
+          <Input
+            id={`community-upvotes-${mode}`}
+            type="number"
+            min={0}
+            value={formState.averageUpvotes}
+            onChange={event => handleChange('averageUpvotes')(event.target.value)}
+            disabled={disabled}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={`community-success-${mode}`}>Success probability (%)</Label>
+          <Input
+            id={`community-success-${mode}`}
+            type="number"
+            min={0}
+            max={100}
+            value={formState.successProbability}
+            onChange={event => handleChange('successProbability')(event.target.value)}
+            disabled={disabled}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={`community-best-times-${mode}`}>Best posting times</Label>
+          <Input
+            id={`community-best-times-${mode}`}
+            value={formState.bestPostingTimes}
+            onChange={event => handleChange('bestPostingTimes')(event.target.value)}
+            placeholder="Comma separated e.g. morning, evening"
+            disabled={disabled}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={`community-tags-${mode}`}>Tags</Label>
+          <Input
+            id={`community-tags-${mode}`}
+            value={formState.tags}
+            onChange={event => handleChange('tags')(event.target.value)}
+            placeholder="Comma separated tags"
+            disabled={disabled}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor={`community-description-${mode}`}>Description</Label>
+        <Textarea
+          id={`community-description-${mode}`}
+          value={formState.description}
+          onChange={event => handleChange('description')(event.target.value)}
+          placeholder="Short description used in recommendations"
+          disabled={disabled}
+          rows={3}
+        />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor={`posting-limit-day-${mode}`}>Posts per day</Label>
+          <Input
+            id={`posting-limit-day-${mode}`}
+            type="number"
+            min={0}
+            value={formState.postingLimitsPerDay}
+            onChange={event => handleChange('postingLimitsPerDay')(event.target.value)}
+            disabled={disabled}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={`posting-limit-week-${mode}`}>Posts per week</Label>
+          <Input
+            id={`posting-limit-week-${mode}`}
+            type="number"
+            min={0}
+            value={formState.postingLimitsPerWeek}
+            onChange={event => handleChange('postingLimitsPerWeek')(event.target.value)}
+            disabled={disabled}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={`posting-limit-cooldown-${mode}`}>Cooldown hours</Label>
+          <Input
+            id={`posting-limit-cooldown-${mode}`}
+            type="number"
+            min={0}
+            value={formState.postingLimitsCooldownHours}
+            onChange={event => handleChange('postingLimitsCooldownHours')(event.target.value)}
+            disabled={disabled}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-3 rounded-lg border border-gray-200 p-4">
+        <div>
+          <h3 className="text-sm font-semibold text-gray-900">Structured rules</h3>
+          <p className="text-xs text-muted-foreground">
+            Provide enforcement metadata so the scheduler can surface compliant communities.
+          </p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor={`rules-karma-${mode}`}>Minimum karma</Label>
+            <Input
+              id={`rules-karma-${mode}`}
+              type="number"
+              min={0}
+              value={formState.rulesMinKarma}
+              onChange={event => handleChange('rulesMinKarma')(event.target.value)}
+              disabled={disabled}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor={`rules-account-${mode}`}>Account age (days)</Label>
+            <Input
+              id={`rules-account-${mode}`}
+              type="number"
+              min={0}
+              value={formState.rulesMinAccountAge}
+              onChange={event => handleChange('rulesMinAccountAge')(event.target.value)}
+              disabled={disabled}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor={`rules-watermarks-${mode}`}>Watermarks</Label>
+            <Select
+              value={formState.rulesWatermarksAllowed}
+              onValueChange={value => handleChange('rulesWatermarksAllowed')(value as TriState)}
+              disabled={disabled}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Watermark policy" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="unspecified">Not specified</SelectItem>
+                <SelectItem value="allowed">Allowed</SelectItem>
+                <SelectItem value="disallowed">Disallowed</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor={`rules-selling-${mode}`}>Selling</Label>
+            <Select
+              value={formState.rulesSellingAllowed}
+              onValueChange={value => handleChange('rulesSellingAllowed')(value as TriState)}
+              disabled={disabled}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selling policy" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="unspecified">Not specified</SelectItem>
+                <SelectItem value="allowed">Allowed</SelectItem>
+                <SelectItem value="disallowed">Disallowed</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={`rules-title-${mode}`}>Title requirements</Label>
+          <Textarea
+            id={`rules-title-${mode}`}
+            value={formState.rulesTitleRules}
+            onChange={event => handleChange('rulesTitleRules')(event.target.value)}
+            placeholder="One rule per line"
+            rows={3}
+            disabled={disabled}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={`rules-content-${mode}`}>Content restrictions</Label>
+          <Textarea
+            id={`rules-content-${mode}`}
+            value={formState.rulesContentRules}
+            onChange={event => handleChange('rulesContentRules')(event.target.value)}
+            placeholder="One rule per line"
+            rows={3}
+            disabled={disabled}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={`rules-links-${mode}`}>Link restrictions</Label>
+          <Textarea
+            id={`rules-links-${mode}`}
+            value={formState.rulesLinkRestrictions}
+            onChange={event => handleChange('rulesLinkRestrictions')(event.target.value)}
+            placeholder="One rule per line"
+            rows={3}
+            disabled={disabled}
+          />
+        </div>
+      </div>
+
+      <div className="flex items-center justify-end gap-2">
+        <Button type="button" variant="outline" onClick={onReset} disabled={disabled}>
+          Reset
+        </Button>
+        <Button type="submit" disabled={disabled} data-testid={isCreate ? 'submit-create-community' : 'submit-edit-community'}>
+          {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {isCreate ? 'Create community' : 'Save changes'}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+client/src/hooks/use-admin-communities.ts
+New
++160-0
+import { useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
+import { apiRequest, type ApiError } from '@/lib/queryClient';
+
+export type PromotionPolicy = 'yes' | 'limited' | 'subtle' | 'no';
+export type GrowthTrend = 'up' | 'stable' | 'down' | 'rising' | 'steady';
+export type ActivityLevel = 'high' | 'medium' | 'low';
+export type CompetitionLevel = 'low' | 'medium' | 'high';
+
+export interface CommunityRuleMetadata {
+  minKarma?: number;
+  minAccountAge?: number;
+  watermarksAllowed?: boolean;
+  sellingAllowed?: boolean;
+  titleRules?: string[];
+  contentRules?: string[];
+  linkRestrictions?: string[];
+}
+
+export interface CommunityPostingLimits {
+  perDay?: number;
+  perWeek?: number;
+  cooldownHours?: number;
+}
+
+export interface AdminCommunity {
+  id: string;
+  name: string;
+  displayName: string;
+  members: number;
+  engagementRate: number;
+  category: string;
+  verificationRequired: boolean;
+  promotionAllowed: PromotionPolicy;
+  postingLimits: CommunityPostingLimits | null;
+  rules: CommunityRuleMetadata | null;
+  bestPostingTimes: string[] | null;
+  averageUpvotes: number | null;
+  successProbability: number | null;
+  growthTrend: GrowthTrend | null;
+  modActivity: ActivityLevel | null;
+  description: string | null;
+  tags: string[] | null;
+  competitionLevel: CompetitionLevel | null;
+}
+
+export interface CommunityFilters {
+  search?: string;
+  category?: string;
+  promotion?: PromotionPolicy | 'all';
+  verification?: 'required' | 'not-required' | 'all';
+}
+
+export interface CommunityPayload {
+  id?: string;
+  name: string;
+  displayName: string;
+  members: number;
+  engagementRate: number;
+  category: string;
+  verificationRequired: boolean;
+  promotionAllowed: PromotionPolicy;
+  postingLimits?: CommunityPostingLimits | null;
+  rules?: CommunityRuleMetadata | null;
+  bestPostingTimes?: string[] | null;
+  averageUpvotes?: number | null;
+  successProbability?: number | null;
+  growthTrend?: GrowthTrend | null;
+  modActivity?: ActivityLevel | null;
+  description?: string | null;
+  tags?: string[] | null;
+  competitionLevel?: CompetitionLevel | null;
+}
+
+function buildQueryKey(filters: CommunityFilters) {
+  return [
+    'admin-communities',
+    filters.search ?? '',
+    filters.category ?? '',
+    filters.promotion ?? 'all',
+    filters.verification ?? 'all',
+  ] as const;
+}
+
+function buildQueryString(filters: CommunityFilters): string {
+  const params = new URLSearchParams();
+  if (filters.search) {
+    params.set('search', filters.search);
+  }
+  if (filters.category && filters.category !== 'all') {
+    params.set('category', filters.category);
+  }
+  if (filters.promotion && filters.promotion !== 'all') {
+    params.set('promotion', filters.promotion);
+  }
+  if (filters.verification === 'required') {
+    params.set('verification', 'required');
+  }
+  if (filters.verification === 'not-required') {
+    params.set('verification', 'not-required');
+  }
+  const query = params.toString();
+  return query ? `?${query}` : '';
+}
+
+export function useAdminCommunities(filters: CommunityFilters) {
+  const queryKey = useMemo(() => buildQueryKey(filters), [filters]);
+
+  return useQuery<AdminCommunity[], ApiError>({
+    queryKey,
+    queryFn: async () => {
+      const query = buildQueryString(filters);
+      const response = await apiRequest('GET', `/api/reddit/communities${query}`);
+      return response.json() as Promise<AdminCommunity[]>;
+    },
+    staleTime: 30_000,
+    gcTime: 120_000,
+    retry: 1,
+  });
+}
+
+export function useCreateCommunity() {
+  const queryClient = useQueryClient();
+  return useMutation<AdminCommunity, ApiError, CommunityPayload>({
+    mutationFn: async (payload: CommunityPayload) => {
+      const response = await apiRequest('POST', '/api/reddit/communities', payload);
+      return response.json() as Promise<AdminCommunity>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-communities'] });
+    },
+  });
+}
+
+export function useUpdateCommunity() {
+  const queryClient = useQueryClient();
+  return useMutation<AdminCommunity, ApiError, { id: string; payload: CommunityPayload }>({
+    mutationFn: async ({ id, payload }) => {
+      const response = await apiRequest('PUT', `/api/reddit/communities/${id}`, payload);
+      return response.json() as Promise<AdminCommunity>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-communities'] });
+    },
+  });
+}
+
+export function useDeleteCommunity() {
+  const queryClient = useQueryClient();
+  return useMutation<{ success: boolean }, ApiError, string>({
+    mutationFn: async (id: string) => {
+      const response = await apiRequest('DELETE', `/api/reddit/communities/${id}`);
+      return response.json() as Promise<{ success: boolean }>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-communities'] });
+    },
+  });
+}
+client/src/pages/__tests__/admin-communities.test.tsx
+New
++446-0
+import React from 'react';
+import { act } from 'react';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createRoot } from 'react-dom/client';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+import { AdminCommunitiesPanel } from '@/components/admin/admin-communities-panel';
+import type { AdminCommunity, CommunityPayload } from '@/hooks/use-admin-communities';
+
+const apiRequestMock = vi.fn<(method: string, url: string, body?: unknown) => Promise<Response>>();
+
+vi.mock('@/lib/queryClient', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/queryClient')>('@/lib/queryClient');
+  return {
+    ...actual,
+    apiRequest: apiRequestMock,
+  };
+});
+
+const toastMock = vi.fn();
+vi.mock('@/hooks/use-toast', () => ({
+  useToast: () => ({ toast: toastMock }),
+}));
+
+type GlobalWithReact = typeof globalThis & {
+  React?: typeof React;
+  IS_REACT_ACT_ENVIRONMENT?: boolean;
+};
+
+const globalScope = globalThis as GlobalWithReact;
+
+globalScope.React = React;
+globalScope.IS_REACT_ACT_ENVIRONMENT = true;
+
+class ResizeObserverMock {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
+globalThis.ResizeObserver = ResizeObserverMock as unknown as typeof ResizeObserver;
+
+const baseCommunities: AdminCommunity[] = [
+  {
+    id: 'growthhacking',
+    name: 'growthhacking',
+    displayName: 'Growth Hacking',
+    members: 250_000,
+    engagementRate: 8,
+    category: 'growth',
+    verificationRequired: false,
+    promotionAllowed: 'limited',
+    postingLimits: { perDay: 1 },
+    rules: { minKarma: 10, titleRules: ['No clickbait'] },
+    bestPostingTimes: ['morning'],
+    averageUpvotes: 120,
+    successProbability: 75,
+    growthTrend: 'rising',
+    modActivity: 'high',
+    description: 'Tactics for scaling acquisition.',
+    tags: ['marketing', 'growth'],
+    competitionLevel: 'medium',
+  },
+  {
+    id: 'contentcreators',
+    name: 'ContentCreators',
+    displayName: 'Content Creators',
+    members: 180_000,
+    engagementRate: 6,
+    category: 'creator',
+    verificationRequired: true,
+    promotionAllowed: 'subtle',
+    postingLimits: { perWeek: 3 },
+    rules: { minAccountAge: 30, sellingAllowed: false },
+    bestPostingTimes: ['evening'],
+    averageUpvotes: 90,
+    successProbability: 68,
+    growthTrend: 'steady',
+    modActivity: 'medium',
+    description: 'Strategy hub for creators.',
+    tags: ['video', 'creator'],
+    competitionLevel: 'high',
+  },
+];
+
+let communities: AdminCommunity[] = [];
+
+function createMockResponse<T>(data: T): Response {
+  return {
+    ok: true,
+    json: async () => data,
+  } as unknown as Response;
+}
+
+function setupApiMock() {
+  apiRequestMock.mockImplementation(async (method: string, url: string, body?: unknown) => {
+    const target = new URL(url, 'http://localhost');
+    if (method === 'GET') {
+      let result = [...communities];
+      const search = target.searchParams.get('search');
+      if (search) {
+        const term = search.toLowerCase();
+        result = result.filter(community =>
+          community.name.toLowerCase().includes(term) ||
+          community.displayName.toLowerCase().includes(term) ||
+          (community.description ?? '').toLowerCase().includes(term) ||
+          (community.tags ?? []).some(tag => tag.toLowerCase().includes(term)),
+        );
+      }
+      const category = target.searchParams.get('category');
+      if (category && category !== 'all') {
+        result = result.filter(community => community.category === category);
+      }
+      const promotion = target.searchParams.get('promotion');
+      if (promotion && promotion !== 'all') {
+        result = result.filter(community => community.promotionAllowed === promotion);
+      }
+      const verification = target.searchParams.get('verification');
+      if (verification === 'required') {
+        result = result.filter(community => community.verificationRequired);
+      } else if (verification === 'not-required') {
+        result = result.filter(community => !community.verificationRequired);
+      }
+      return createMockResponse(result);
+    }
+
+    if (method === 'POST') {
+      const payload = body as CommunityPayload;
+      const created: AdminCommunity = {
+        id: payload.id ?? payload.name,
+        name: payload.name,
+        displayName: payload.displayName,
+        members: payload.members,
+        engagementRate: payload.engagementRate,
+        category: payload.category,
+        verificationRequired: payload.verificationRequired,
+        promotionAllowed: payload.promotionAllowed,
+        postingLimits: payload.postingLimits ?? null,
+        rules: payload.rules ?? null,
+        bestPostingTimes: payload.bestPostingTimes ?? null,
+        averageUpvotes: payload.averageUpvotes ?? null,
+        successProbability: payload.successProbability ?? null,
+        growthTrend: payload.growthTrend ?? 'stable',
+        modActivity: payload.modActivity ?? 'medium',
+        description: payload.description ?? null,
+        tags: payload.tags ?? null,
+        competitionLevel: payload.competitionLevel ?? 'medium',
+      };
+      communities = [...communities, created];
+      return createMockResponse(created);
+    }
+
+    if (method === 'PUT') {
+      const id = target.pathname.split('/').pop() ?? '';
+      const payload = body as CommunityPayload;
+      const current = communities.find(community => community.id === id);
+      if (!current) {
+        throw new Error('Community not found');
+      }
+      const updated: AdminCommunity = {
+        ...current,
+        name: payload.name,
+        displayName: payload.displayName,
+        members: payload.members,
+        engagementRate: payload.engagementRate,
+        category: payload.category,
+        verificationRequired: payload.verificationRequired,
+        promotionAllowed: payload.promotionAllowed,
+        postingLimits: payload.postingLimits ?? null,
+        rules: payload.rules ?? null,
+        bestPostingTimes: payload.bestPostingTimes ?? null,
+        averageUpvotes: payload.averageUpvotes ?? null,
+        successProbability: payload.successProbability ?? null,
+        growthTrend: payload.growthTrend ?? current.growthTrend,
+        modActivity: payload.modActivity ?? current.modActivity,
+        description: payload.description ?? null,
+        tags: payload.tags ?? null,
+        competitionLevel: payload.competitionLevel ?? current.competitionLevel,
+      };
+      communities = communities.map(community => (community.id === id ? updated : community));
+      return createMockResponse(updated);
+    }
+
+    if (method === 'DELETE') {
+      const id = target.pathname.split('/').pop() ?? '';
+      communities = communities.filter(community => community.id !== id);
+      return createMockResponse({ success: true });
+    }
+
+    throw new Error(`Unhandled request ${method} ${url}`);
+  });
+}
+
+async function flushPromises() {
+  await act(async () => {
+    await new Promise(resolve => setTimeout(resolve, 0));
+  });
+}
+
+async function renderCommunitiesPanel() {
+  const container = document.createElement('div');
+  document.body.appendChild(container);
+  const root = createRoot(container);
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
+  });
+
+  await act(async () => {
+    root.render(
+      <QueryClientProvider client={queryClient}>
+        <AdminCommunitiesPanel canManage />
+      </QueryClientProvider>,
+    );
+  });
+
+  return { container, root };
+}
+
+describe('AdminCommunitiesPanel', () => {
+  beforeAll(() => {
+    setupApiMock();
+  });
+
+  beforeEach(() => {
+    communities = [...baseCommunities];
+    apiRequestMock.mockClear();
+    toastMock.mockClear();
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  it('fetches and filters communities based on search input', async () => {
+    const { container, root } = await renderCommunitiesPanel();
+    await flushPromises();
+
+    expect(apiRequestMock).toHaveBeenCalledWith('GET', '/api/reddit/communities', undefined);
+    const initialRows = container.querySelectorAll('[data-testid^="community-row-"]');
+    expect(initialRows.length).toBe(2);
+
+    const searchInput = container.querySelector<HTMLInputElement>('[data-testid="community-search"]');
+    expect(searchInput).not.toBeNull();
+    if (!searchInput) return;
+
+    await act(async () => {
+      searchInput.value = 'creator';
+      searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await flushPromises();
+
+    const getCall = apiRequestMock.mock.calls.find(call => call[0] === 'GET' && call[1].includes('search=creator'));
+    expect(getCall).toBeTruthy();
+
+    const filteredRows = container.querySelectorAll('[data-testid^="community-row-"]');
+    expect(filteredRows.length).toBe(1);
+    expect(filteredRows[0].getAttribute('data-testid')).toContain('contentcreators');
+
+    await act(async () => {
+      root.unmount();
+    });
+    container.remove();
+  });
+
+  it('performs create, update, and delete flows', async () => {
+    const { container, root } = await renderCommunitiesPanel();
+    await flushPromises();
+
+    const createButton = container.querySelector<HTMLButtonElement>('[data-testid="open-create-community"]');
+    expect(createButton).not.toBeNull();
+    if (!createButton) return;
+
+    await act(async () => {
+      createButton.click();
+    });
+
+    await flushPromises();
+
+    const idInput = document.querySelector<HTMLInputElement>('#community-id-create');
+    const nameInput = document.querySelector<HTMLInputElement>('#community-name-create');
+    const displayInput = document.querySelector<HTMLInputElement>('#community-display-create');
+    const categoryInput = document.querySelector<HTMLInputElement>('#community-category-create');
+    const membersInput = document.querySelector<HTMLInputElement>('#community-members-create');
+    const engagementInput = document.querySelector<HTMLInputElement>('#community-engagement-create');
+    const descriptionInput = document.querySelector<HTMLTextAreaElement>('#community-description-create');
+    const tagsInput = document.querySelector<HTMLInputElement>('#community-tags-create');
+    const bestTimesInput = document.querySelector<HTMLInputElement>('#community-best-times-create');
+    const karmaInput = document.querySelector<HTMLInputElement>('#rules-karma-create');
+    const accountInput = document.querySelector<HTMLInputElement>('#rules-account-create');
+    const titleTextarea = document.querySelector<HTMLTextAreaElement>('#rules-title-create');
+    const contentTextarea = document.querySelector<HTMLTextAreaElement>('#rules-content-create');
+
+    expect(idInput && nameInput && displayInput && categoryInput && membersInput && engagementInput).toBeTruthy();
+    if (
+      !idInput ||
+      !nameInput ||
+      !displayInput ||
+      !categoryInput ||
+      !membersInput ||
+      !engagementInput ||
+      !descriptionInput ||
+      !tagsInput ||
+      !bestTimesInput ||
+      !karmaInput ||
+      !accountInput ||
+      !titleTextarea ||
+      !contentTextarea
+    ) {
+      return;
+    }
+
+    await act(async () => {
+      idInput.value = 'marketingops';
+      idInput.dispatchEvent(new Event('input', { bubbles: true }));
+      nameInput.value = 'marketingops';
+      nameInput.dispatchEvent(new Event('input', { bubbles: true }));
+      displayInput.value = 'Marketing Ops';
+      displayInput.dispatchEvent(new Event('input', { bubbles: true }));
+      categoryInput.value = 'growth';
+      categoryInput.dispatchEvent(new Event('input', { bubbles: true }));
+      membersInput.value = '50000';
+      membersInput.dispatchEvent(new Event('input', { bubbles: true }));
+      engagementInput.value = '9';
+      engagementInput.dispatchEvent(new Event('input', { bubbles: true }));
+      descriptionInput.value = 'Automation tactics';
+      descriptionInput.dispatchEvent(new Event('input', { bubbles: true }));
+      tagsInput.value = 'automation, operations';
+      tagsInput.dispatchEvent(new Event('input', { bubbles: true }));
+      bestTimesInput.value = 'morning, afternoon';
+      bestTimesInput.dispatchEvent(new Event('input', { bubbles: true }));
+      karmaInput.value = '25';
+      karmaInput.dispatchEvent(new Event('input', { bubbles: true }));
+      accountInput.value = '45';
+      accountInput.dispatchEvent(new Event('input', { bubbles: true }));
+      titleTextarea.value = 'Title must include goal';
+      titleTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+      contentTextarea.value = 'No spam links';
+      contentTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    const submitCreate = document.querySelector<HTMLButtonElement>('[data-testid="submit-create-community"]');
+    expect(submitCreate).not.toBeNull();
+    if (!submitCreate) return;
+
+    await act(async () => {
+      submitCreate.click();
+    });
+    await flushPromises();
+
+    const postCall = apiRequestMock.mock.calls.find(call => call[0] === 'POST');
+    expect(postCall).toBeTruthy();
+    if (postCall) {
+      const [, url, payload] = postCall;
+      expect(url).toBe('/api/reddit/communities');
+      expect(payload).toMatchObject({
+        id: 'marketingops',
+        name: 'marketingops',
+        displayName: 'Marketing Ops',
+        rules: {
+          minKarma: 25,
+          minAccountAge: 45,
+          titleRules: ['Title must include goal'],
+          contentRules: ['No spam links'],
+        },
+      });
+    }
+
+    await flushPromises();
+    const createdRow = document.querySelector('[data-testid="community-row-marketingops"]');
+    expect(createdRow).not.toBeNull();
+
+    const editButton = document.querySelector<HTMLButtonElement>('[data-testid="edit-community-marketingops"]');
+    expect(editButton).not.toBeNull();
+    if (!editButton) return;
+
+    await act(async () => {
+      editButton.click();
+    });
+    await flushPromises();
+
+    const editDisplay = document.querySelector<HTMLInputElement>('#community-display-edit');
+    expect(editDisplay).not.toBeNull();
+    if (!editDisplay) return;
+
+    await act(async () => {
+      editDisplay.value = 'Marketing Ops Elite';
+      editDisplay.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    const submitEdit = document.querySelector<HTMLButtonElement>('[data-testid="submit-edit-community"]');
+    expect(submitEdit).not.toBeNull();
+    if (!submitEdit) return;
+
+    await act(async () => {
+      submitEdit.click();
+    });
+    await flushPromises();
+
+    const putCall = apiRequestMock.mock.calls.find(call => call[0] === 'PUT');
+    expect(putCall).toBeTruthy();
+    if (putCall) {
+      const [, url, payload] = putCall;
+      expect(url).toBe('/api/reddit/communities/marketingops');
+      expect(payload).toMatchObject({ displayName: 'Marketing Ops Elite' });
+    }
+
+    await flushPromises();
+    const updatedRow = document.querySelector('[data-testid="community-row-marketingops"]');
+    expect(updatedRow?.textContent).toContain('Marketing Ops Elite');
+
+    const deleteButton = document.querySelector<HTMLButtonElement>('[data-testid="delete-community-marketingops"]');
+    expect(deleteButton).not.toBeNull();
+    if (!deleteButton) return;
+
+    await act(async () => {
+      deleteButton.click();
+    });
+    await flushPromises();
+
+    const confirmDelete = document.querySelector<HTMLButtonElement>('[data-testid="confirm-delete-community"]');
+    expect(confirmDelete).not.toBeNull();
+    if (!confirmDelete) return;
+
+    await act(async () => {
+      confirmDelete.click();
+    });
+    await flushPromises();
+
+    const deleteCall = apiRequestMock.mock.calls.find(call => call[0] === 'DELETE');
+    expect(deleteCall).toBeTruthy();
+    if (deleteCall) {
+      const [, url] = deleteCall;
+      expect(url).toBe('/api/reddit/communities/marketingops');
+    }
+
+    await flushPromises();
+    const removedRow = document.querySelector('[data-testid="community-row-marketingops"]');
+    expect(removedRow).toBeNull();
+
+    await act(async () => {
+      root.unmount();
+    });
+    container.remove();
+  });
+});
+
+client/src/pages/admin.tsx
++12-3
+import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { AdminCommunitiesPanel } from '@/components/admin/admin-communities-panel';
+import { 
+  Users, 
+  DollarSign, 
+  TrendingUp, 
+  Settings, 
+  Shield,
+  Activity,
+  Database,
+  CreditCard,
+  Eye,
+  BarChart3,
+  Ban,
+  Clock3,
+  Key,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+  Target,
+  Smartphone,
+  Calendar,
+  VideoIcon,
+  MessageSquare,
+  Globe,
+  Zap,
+  Gift,
+@@ -85,50 +86,52 @@ interface SystemHealth {
+  services: {
+    [key: string]: {
+      status: string;
+      message?: string;
+    };
+  };
+}
+
+interface Analytics {
+  visitors: number;
+  pageViews: number;
+  sessions: number;
+  conversionRate: number;
+}
+
+interface Completeness {
+  percentage: number;
+  items: {
+    name: string;
+    status: boolean;
+  }[];
+}
+
+export function AdminDashboard() {
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const isAdmin = Boolean(user?.isAdmin);
+  const [selectedPeriod, setSelectedPeriod] = useState('7d');
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [actionType, setActionType] = useState<'ban' | 'suspend' | 'unban' | 'reset-password' | 'tier-management' | 'user-details' | null>(null);
+  const [reason, setReason] = useState('');
+  const [duration, setDuration] = useState('24');
+  const [tempPassword, setTempPassword] = useState('');
+  const [newTier, setNewTier] = useState('free');
+
+  // Authenticated API request helper (using cookies)
+  const authenticatedFetch = async (url: string) => {
+    const response = await fetch(url, {
+      credentials: 'include' // Use cookie-based authentication
+    });
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status}`);
+    }
+    return response.json();
+  };
+
+  // Fetch admin stats
+  const { data: stats } = useQuery<AdminStats>({
+    queryKey: ['/api/admin/stats', selectedPeriod],
+    queryFn: () => authenticatedFetch('/api/admin/stats')
+  });
+
+@@ -277,50 +280,51 @@ export function AdminDashboard() {
+                  stat.color === 'text-blue-500' ? 'from-blue-500/20 to-blue-600/20' :
+                  stat.color === 'text-green-500' ? 'from-green-500/20 to-green-600/20' :
+                  stat.color === 'text-purple-500' ? 'from-purple-500/20 to-purple-600/20' :
+                  'from-pink-500/20 to-pink-600/20'
+                }`}>
+                  <span className={`${stat.color} text-lg`}>{stat.icon}</span>
+                </div>
+                <Badge variant="secondary" className="bg-gray-100 text-gray-900 border-gray-300 text-xs font-medium">
+                  {stat.change}
+                </Badge>
+              </div>
+              <p className="text-3xl font-bold text-gray-900 mb-1">{stat.value}</p>
+              <p className="text-sm text-gray-600">{stat.label}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Main Content Tabs */}
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList className="bg-gray-100 border-gray-200 p-1 rounded-xl">
+          <TabsTrigger value="overview" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Overview</TabsTrigger>
+          <TabsTrigger value="analytics" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Analytics</TabsTrigger>
+          <TabsTrigger value="users" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Users</TabsTrigger>
+          <TabsTrigger value="providers" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Providers</TabsTrigger>
+          <TabsTrigger value="communities" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Communities</TabsTrigger>
+          <TabsTrigger value="revenue" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Revenue</TabsTrigger>
+          <TabsTrigger value="roadmap" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Roadmap</TabsTrigger>
+          <TabsTrigger value="system" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">System</TabsTrigger>
+          <TabsTrigger value="status" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Status</TabsTrigger>
+        </TabsList>
+
+        {/* Overview Tab */}
+        <TabsContent value="overview" className="space-y-6">
+          <div className="grid lg:grid-cols-2 gap-6">
+            {/* User Activity Chart */}
+            <Card className="bg-white border-gray-200 shadow-lg">
+              <CardHeader>
+                <CardTitle>User Activity</CardTitle>
+                <CardDescription>User registrations and activity trends</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 bg-white/5 rounded-lg">
+                      <p className="text-sm text-gray-400">New Users Today</p>
+                      <p className="text-2xl font-bold text-blue-400">{(stats as any)?.newUsersToday || 0}</p>
+                    </div>
+                    <div className="p-4 bg-white/5 rounded-lg">
+                      <p className="text-sm text-gray-400">Trial Users</p>
+                      <p className="text-2xl font-bold text-purple-400">{(stats as any)?.trialUsers || 0}</p>
+@@ -484,50 +488,55 @@ export function AdminDashboard() {
+                        {typedProvider.available ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <p className="text-gray-500">Input Cost</p>
+                        <p className="font-medium">${typedProvider.inputCost}/1M tokens</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500">Output Cost</p>
+                        <p className="font-medium">${typedProvider.outputCost}/1M tokens</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500">Savings vs GPT-4</p>
+                        <p className="font-medium text-green-400">{typedProvider.savings}%</p>
+                      </div>
+                    </div>
+                  </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Communities Tab */}
+        <TabsContent value="communities" className="space-y-6">
+          <AdminCommunitiesPanel canManage={isAdmin} />
+        </TabsContent>
+
+        {/* Revenue Tab */}
+        <TabsContent value="revenue" className="space-y-6">
+          <div className="grid lg:grid-cols-3 gap-6">
+            <Card className="bg-white border-gray-200 shadow-lg">
+              <CardHeader>
+                <CardTitle>Monthly Revenue</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold">${(stats as any)?.revenue || '0'}</p>
+                <p className="text-sm text-gray-400 mt-2">Total platform revenue</p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white border-gray-200 shadow-lg">
+              <CardHeader>
+                <CardTitle>Active Subscriptions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Free</span>
+                    <span>{(stats as any)?.freeUsers || 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Pro ($20/mo)</span>
