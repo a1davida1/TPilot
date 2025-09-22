@@ -1,16 +1,12 @@
 /* eslint-env node, jest */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 import type { InsertExpense } from '../../../shared/schema.js';
+import { buildStorageMock } from '../../_helpers/buildStorageMock.js';
 
 // Mock the storage module
-const mockStorage = {
-  createExpense: vi.fn(),
-  getExpenseTotals: vi.fn(),
-  updateExpense: vi.fn(),
-  getUserExpenses: vi.fn(),
-};
+const mockStorage = buildStorageMock();
 
-vi.mock('../../../server/storage', () => ({
+vi.mock('../../../server/storage.ts', () => ({
   storage: mockStorage
 }));
 

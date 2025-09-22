@@ -6,6 +6,8 @@ import fs from 'fs/promises';
 
 // Mock dependencies
 const mockStorage = vi.hoisted(() => ({
+  getExpense: vi.fn(),
+  getExpenseCategory: vi.fn(),
   updateExpense: vi.fn(),
 }));
 
