@@ -38,7 +38,7 @@ export function replaceBannedWords(text: string): string {
   if (!text) return text;
   
   return text
-    .replace(/\bai\b/gi, "my work")
     .replace(/\bai-generated\b/gi, "custom-made")
+    .replace(/\bai\b/gi, "my work")
     .replace(/\bcontent\b/gi, "post");
 }
