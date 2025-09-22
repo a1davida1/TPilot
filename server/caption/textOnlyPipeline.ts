@@ -11,17 +11,13 @@ import { serializePromptField } from "./promptUtils";
 import { inferFallbackFromFacts } from "./inferFallbackFromFacts";
 import { dedupeVariantsForRanking } from "./dedupeVariants";
 import {
-  bannedExamples,
-  detectRankingViolations,
-  formatViolations,
-  sanitizeVariantForRanking,
-  safeFallbackCaption,
-  safeFallbackCta,
-  safeFallbackHashtags,
-  normalizeVariantForRanking,
-  truncateReason,
-  type CaptionVariant,
-} from "./rankingGuards";
+  HUMAN_CTA,
+  buildRerankHint,
+  detectVariantViolations,
+  fallbackHashtags,
+  formatViolationSummary,
+  sanitizeFinalVariant
+} from "./rankGuards";
 
 const MAX_VARIANT_ATTEMPTS = 4;
 
@@ -55,15 +51,11 @@ export async function generateVariantsTextOnly(params:TextOnlyVariantParams){
   const hints: string[] = [];
   if (params.hint) hints.push(params.hint);
 
-  const defaultHashtags = params.platform === 'instagram'
-    ? ["#content", "#creative", "#amazing", "#lifestyle"]
-    : ["#content", "#creative", "#amazing"];
-
   const defaults: Record<string, unknown> = {
-    caption: "Check out this amazing content!",
-    alt: "Engaging social media content",
-    hashtags: defaultHashtags,
-    cta: "Check it out",
+    caption: "Sharing something I'm genuinely proud of.",
+    alt: "Detailed social media alt text describing the scene.",
+    hashtags: fallbackHashtags(params.platform),
+    cta: HUMAN_CTA,
     mood: "engaging",
     style: "authentic",
     safety_level: normalizeSafetyLevel('normal'),
@@ -192,7 +184,7 @@ export async function generateVariantsTextOnly(params:TextOnlyVariantParams){
     }
     const newVariant = {
       ...baseVariant,
-      hashtags: Array.isArray(baseVariant.hashtags) ? baseVariant.hashtags : defaultHashtags,
+      hashtags: Array.isArray(baseVariant.hashtags) ? baseVariant.hashtags : fallbackHashtags(params.platform),
       caption: freshCaption,
     };
     collected.push(newVariant);
@@ -208,136 +200,71 @@ export async function generateVariantsTextOnly(params:TextOnlyVariantParams){
   return deduped;
 }
 
-const MAX_RANK_ATTEMPTS = 3;
-
-interface PromptBundle {
-  sys: string;
-  guard: string;
-  prompt: string;
-}
-
-interface RankingAttemptResult {
-  parsed: z.infer<typeof RankResult>;
-  normalizedFinal: CaptionVariant;
-  violations: string[];
-}
-
-async function executeRankingAttempt(
-  variants: unknown[],
-  prompts: PromptBundle,
-  retryHint?: string
-): Promise<RankingAttemptResult> {
+async function requestTextOnlyRanking(
+  variantsInput: unknown[],
+  serializedVariants: string,
+  promptBlock: string,
+  platform?: string,
+  extraHint?: string
+): Promise<unknown> {
+  const hintBlock = extraHint && extraHint.trim().length > 0 ? `\nREMINDER: ${extraHint.trim()}` : "";
   let res;
   try {
-    const payload = {
-      variants,
-      retry_hint: retryHint ?? null,
-      banned_examples: bannedExamples,
-    };
-    res = await textModel.generateContent([
-      { text: `${prompts.sys}\n${prompts.guard}\n${prompts.prompt}\n${JSON.stringify(payload)}` },
-    ]);
+    res = await textModel.generateContent([{ text: `${promptBlock}${hintBlock}\n${serializedVariants}` }]);
   } catch (error) {
     console.error('Text-only textModel.generateContent failed:', error);
     throw error;
   }
   let json = stripToJSON(res.response.text()) as unknown;
-
-  if (Array.isArray(json)) {
-    const winner = (json[0] as CaptionVariant | undefined) ?? variants[0];
+  
+  if(Array.isArray(json)) {
+    const winner = json[0] as Record<string, unknown> | undefined;
     json = {
       winner_index: 0,
       scores: [5, 4, 3, 2, 1],
       reason: "Selected based on engagement potential",
-      final: winner,
+      final: winner ?? variantsInput[0]
     };
   }
-
-  if (!json || typeof json !== 'object') {
-    throw new Error('Ranking response missing body');
-  }
-
-  const container = json as { final?: Record<string, unknown> };
-  if (!container.final || typeof container.final !== 'object') {
-    throw new Error('Ranking response missing final caption');
-  }
-
-  const normalizedFinal = normalizeVariantForRanking(container.final);
-  const violations = detectRankingViolations(normalizedFinal);
-  const sanitizedFinal = sanitizeVariantForRanking(normalizedFinal);
-  container.final = sanitizedFinal;
-
-  const parsed = RankResult.parse(json);
-
-  return { parsed, normalizedFinal, violations };
-}
-
-async function rankAndSelectWithRetry(
-  variants: unknown[],
-  attempt: number,
-  prompts: PromptBundle,
-  retryHint?: string
-): Promise<z.infer<typeof RankResult>> {
-  const { parsed, normalizedFinal, violations } = await executeRankingAttempt(variants, prompts, retryHint);
-
-  if (violations.length === 0) {
-    return parsed;
-  }
-
-  if (attempt + 1 >= MAX_RANK_ATTEMPTS) {
-    const safeIndex = variants.findIndex((variant) => detectRankingViolations(variant as CaptionVariant).length === 0);
-    if (safeIndex >= 0) {
-      const safeVariant = sanitizeVariantForRanking(variants[safeIndex] as CaptionVariant);
-      return {
-        ...parsed,
-        winner_index: safeIndex,
-        final: safeVariant,
-        reason: truncateReason(
-          `Fallback to variant ${safeIndex + 1} after violations: ${formatViolations(violations)}`
-        ),
-      };
-    }
-
-    const sanitized = sanitizeVariantForRanking(normalizedFinal);
-    return {
-      ...parsed,
-      final: sanitized,
-      reason: truncateReason(`Sanitized disqualified caption (${formatViolations(violations)})`),
-    };
-  }
-
-  const hint = `Previous winner broke rules (${formatViolations(violations)}). Ignore those entries and pick the most human alternative.`;
-  return rankAndSelectWithRetry(variants, attempt + 1, prompts, hint);
+  
+  return json;
 }
 
 export async function rankAndSelect(
   variants: unknown[],
-  params?: {
-    platform?: "instagram" | "x" | "reddit" | "tiktok";
-    nsfw?: boolean;
-    theme?: string;
-    context?: string;
-    facts?: Record<string, unknown>;
-    existingCaption?: string;
-  }
+  params?: { platform?: string }
 ): Promise<z.infer<typeof RankResult>> {
-  const prompts: PromptBundle = {
-    sys: await load("system.txt"),
-    guard: await load("guard.txt"),
-    prompt: await load("rank.txt"),
-  };
-  
-  const result = await rankAndSelectWithRetry(variants, 0, prompts);
-  
-  // Enforce platform hashtag limits
-  if (params?.platform && result.final?.hashtags) {
-    const platformLimit = params.platform === 'x' ? 2 : params.platform === 'instagram' ? 30 : 5;
-    if (Array.isArray(result.final.hashtags) && result.final.hashtags.length > platformLimit) {
-      result.final.hashtags = result.final.hashtags.slice(0, platformLimit);
-    }
+  const sys = await load("system.txt"), guard = await load("guard.txt"), prompt = await load("rank.txt");
+  const promptBlock = `${sys}\n${guard}\n${prompt}`;
+  const serializedVariants = JSON.stringify(variants);
+
+  const first = await requestTextOnlyRanking(variants, serializedVariants, promptBlock, params?.platform);
+  let parsed = RankResult.parse(first);
+  const violations = detectVariantViolations(parsed.final);
+  if (violations.length === 0) {
+    return parsed;
   }
-  
-  return result;
+
+  const rerank = await requestTextOnlyRanking(
+    variants,
+    serializedVariants,
+    promptBlock,
+    params?.platform,
+    buildRerankHint(violations)
+  );
+  parsed = RankResult.parse(rerank);
+  const rerankViolations = detectVariantViolations(parsed.final);
+  if (rerankViolations.length === 0) {
+    return parsed;
+  }
+
+  const sanitizedFinal = sanitizeFinalVariant(parsed.final, params?.platform);
+  const summary = formatViolationSummary(rerankViolations) || parsed.reason;
+  return RankResult.parse({
+    ...parsed,
+    final: sanitizedFinal,
+    reason: summary
+  });
 }
 
 type TextOnlyPipelineArgs = {
@@ -361,14 +288,14 @@ export async function pipelineTextOnly({ platform, voice="flirty_playful", theme
   const tone = extractToneOptions(toneRest);
   let variants = await generateVariantsTextOnly({ platform, voice, theme, context, nsfw, ...tone });
   variants = dedupeVariantsForRanking(variants, 5, { platform, theme, context });
-  let ranked = await rankAndSelect(variants, { platform, nsfw, theme, context });
+  let ranked = await rankAndSelect(variants, { platform });
   let out = ranked.final;
 
   const err = platformChecks(platform, out);
   if (err) {
     variants = await generateVariantsTextOnly({ platform, voice, theme, context, nsfw, ...tone, hint:`Fix: ${err}. Be specific and engaging.` });
     variants = dedupeVariantsForRanking(variants, 5, { platform, theme, context });
-    ranked = await rankAndSelect(variants, { platform, nsfw, theme, context });
+    ranked = await rankAndSelect(variants, { platform });
     out = ranked.final;
   }
 

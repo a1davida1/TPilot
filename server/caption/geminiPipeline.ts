@@ -12,17 +12,13 @@ import { ensureFactCoverage } from "./ensureFactCoverage";
 import { inferFallbackFromFacts } from "./inferFallbackFromFacts";
 import { dedupeVariantsForRanking } from "./dedupeVariants";
 import {
-  bannedExamples,
-  detectRankingViolations,
-  formatViolations,
-  sanitizeVariantForRanking,
-  safeFallbackCaption,
-  safeFallbackCta,
-  safeFallbackHashtags,
-  normalizeVariantForRanking,
-  truncateReason,
-  type CaptionVariant,
-} from "./rankingGuards";
+  HUMAN_CTA,
+  buildRerankHint,
+  detectVariantViolations,
+  fallbackHashtags,
+  formatViolationSummary,
+  sanitizeFinalVariant
+} from "./rankGuards";
 
 // Custom error class for image validation failures
 export class InvalidImageError extends Error {
@@ -246,10 +242,10 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
   if (params.hint) hints.push(params.hint);
 
   const defaults: Record<string, unknown> = {
-    caption: "Check out this amazing content!",
-    alt: "Engaging social media content",
-    hashtags: ["#content", "#creative", "#amazing"],
-    cta: "Check it out",
+    caption: "Sharing something I'm genuinely proud of.",
+    alt: "Detailed social media alt text describing the scene.",
+    hashtags: fallbackHashtags(params.platform),
+    cta: HUMAN_CTA,
     mood: "engaging",
     style: "authentic",
     safety_level: normalizeSafetyLevel('normal'),
@@ -267,7 +263,8 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
     const hashtagsSource = Array.isArray((variant as { hashtags?: unknown }).hashtags)
       ? ((variant as { hashtags: unknown[] }).hashtags.filter((tag): tag is string => typeof tag === 'string' && tag.trim().length > 0))
       : [];
-    const sanitizedHashtags = hashtagsSource.length > 0 ? hashtagsSource : fallback.hashtags;
+    const fallbackTags = fallbackHashtags(params.platform);
+    const sanitizedHashtags = hashtagsSource.length >= fallbackTags.length ? hashtagsSource : [...fallbackTags];
 
     return {
       ...variant,
@@ -390,134 +387,102 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
   return deduped;
 }
 
-const MAX_RANK_ATTEMPTS = 3;
-
-interface PromptBundle {
-  sys: string;
-  guard: string;
-  prompt: string;
+function normalizeGeminiFinal(final: Record<string, unknown>, platform?: string){
+  final.safety_level = normalizeSafetyLevel(
+    typeof final.safety_level === "string" ? final.safety_level : "normal"
+  );
+  final.mood = typeof final.mood === "string" && final.mood.trim().length >= 2 ? final.mood.trim() : "engaging";
+  final.style = typeof final.style === "string" && final.style.trim().length >= 2 ? final.style.trim() : "authentic";
+  const trimmedCta = typeof final.cta === "string" ? final.cta.trim() : "";
+  final.cta = trimmedCta.length >= 2 ? trimmedCta : HUMAN_CTA;
+  const trimmedAlt = typeof final.alt === "string" ? final.alt.trim() : "";
+  final.alt = trimmedAlt.length >= 20
+    ? trimmedAlt
+    : "Detailed social media alt text describing the scene.";
+  const fallback = fallbackHashtags(platform);
+  let hashtags: string[] = [];
+  if (Array.isArray(final.hashtags)) {
+    hashtags = (final.hashtags as unknown[])
+      .map((tag) => (typeof tag === "string" ? tag.trim() : ""))
+      .filter((tag) => tag.length > 0);
+  }
+  if (hashtags.length < fallback.length) {
+    hashtags = [...fallback];
+  }
+  final.hashtags = hashtags;
+  const trimmedCaption = typeof final.caption === "string" ? final.caption.trim() : "";
+  final.caption = trimmedCaption.length > 0 ? trimmedCaption : "Sharing something I'm genuinely proud of.";
 }
 
-interface RankingAttemptResult {
-  parsed: z.infer<typeof RankResult>;
-  normalizedFinal: CaptionVariant;
-  violations: string[];
-}
-
-async function executeRankingAttempt(
-  variants: z.infer<typeof CaptionArray>,
-  prompts: PromptBundle,
-  retryHint?: string
-): Promise<RankingAttemptResult> {
+async function requestGeminiRanking(
+  variantsInput: z.infer<typeof CaptionArray>,
+  serializedVariants: string,
+  promptBlock: string,
+  platform?: string,
+  extraHint?: string
+): Promise<unknown> {
+  const hintBlock = extraHint && extraHint.trim().length > 0 ? `\nREMINDER: ${extraHint.trim()}` : "";
   let res;
   try {
-    const payload = {
-      variants,
-      retry_hint: retryHint ?? null,
-      banned_examples: bannedExamples,
-    };
-    res = await textModel.generateContent([
-      { text: `${prompts.sys}\n${prompts.guard}\n${prompts.prompt}\n${JSON.stringify(payload)}` },
-    ]);
+    res=await textModel.generateContent([{ text: `${promptBlock}${hintBlock}\n${serializedVariants}` }]);
   } catch (error) {
     console.error('Gemini textModel.generateContent failed:', error);
     throw error;
   }
   let json = stripToJSON(res.response.text()) as unknown;
-
-  if (Array.isArray(json)) {
-    const winner = (json[0] as CaptionVariant | undefined) ?? variants[0];
+  
+  if(Array.isArray(json)) {
+    const winner = json[0] as Record<string, unknown> | undefined;
     json = {
       winner_index: 0,
       scores: [5, 4, 3, 2, 1],
       reason: "Selected based on engagement potential",
-      final: winner,
+      final: winner ?? variantsInput[0]
     };
   }
-
-  if (!json || typeof json !== 'object') {
-    throw new Error('Ranking response missing body');
+  
+  if((json as Record<string, unknown>).final){
+    const final = (json as { final: Record<string, unknown> }).final;
+    normalizeGeminiFinal(final, platform);
   }
-
-  const container = json as { final?: Record<string, unknown> };
-  if (!container.final || typeof container.final !== 'object') {
-    throw new Error('Ranking response missing final caption');
-  }
-
-  const normalizedFinal = normalizeVariantForRanking(container.final);
-  const violations = detectRankingViolations(normalizedFinal);
-  const sanitizedFinal = sanitizeVariantForRanking(normalizedFinal);
-  container.final = sanitizedFinal;
-
-  const parsed = RankResult.parse(json);
-
-  return { parsed, normalizedFinal, violations };
-}
-
-async function rankAndSelectWithRetry(
-  variants: z.infer<typeof CaptionArray>,
-  attempt: number,
-  prompts: PromptBundle,
-  retryHint?: string
-): Promise<z.infer<typeof RankResult>> {
-  const { parsed, normalizedFinal, violations } = await executeRankingAttempt(variants, prompts, retryHint);
-
-  if (violations.length === 0) {
-    return parsed;
-  }
-
-  if (attempt + 1 >= MAX_RANK_ATTEMPTS) {
-    const safeIndex = variants.findIndex((variant) => detectRankingViolations(variant).length === 0);
-    if (safeIndex >= 0) {
-      const safeVariant = sanitizeVariantForRanking(variants[safeIndex]);
-      return {
-        ...parsed,
-        winner_index: safeIndex,
-        final: safeVariant,
-        reason: truncateReason(
-          `Fallback to variant ${safeIndex + 1} after violations: ${formatViolations(violations)}`
-        ),
-      };
-    }
-
-    const sanitized = sanitizeVariantForRanking(normalizedFinal);
-    return {
-      ...parsed,
-      final: sanitized,
-      reason: truncateReason(`Sanitized disqualified caption (${formatViolations(violations)})`),
-    };
-  }
-
-  const hint = `Previous winner broke rules (${formatViolations(violations)}). Ignore those entries and pick the most human alternative.`;
-  return rankAndSelectWithRetry(variants, attempt + 1, prompts, hint);
+  return json;
 }
 
 export async function rankAndSelect(
   variants: z.infer<typeof CaptionArray>,
-  context?: {
-    platform: "instagram" | "x" | "reddit" | "tiktok";
-    facts?: Record<string, unknown>;
-    existingCaption?: string;
-    theme?: string;
-  }
+  params?: { platform?: string }
 ): Promise<z.infer<typeof RankResult>> {
-  const prompts: PromptBundle = {
-    sys: await load("system.txt"),
-    guard: await load("guard.txt"),
-    prompt: await load("rank.txt"),
-  };
-  
-  const result = await rankAndSelectWithRetry(variants, 0, prompts);
-  
-  // Enforce platform hashtag limits
-  if (context?.platform && result.final?.hashtags) {
-    const platformLimit = context.platform === 'x' ? 2 : context.platform === 'instagram' ? 30 : 5;
-    if (Array.isArray(result.final.hashtags) && result.final.hashtags.length > platformLimit) {
-      result.final.hashtags = result.final.hashtags.slice(0, platformLimit);
-    }
+  const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rank.txt");
+  const promptBlock = `${sys}\n${guard}\n${prompt}`;
+  const serializedVariants = JSON.stringify(variants);
+
+  const first = await requestGeminiRanking(variants, serializedVariants, promptBlock, params?.platform);
+  let parsed = RankResult.parse(first);
+  const violations = detectVariantViolations(parsed.final);
+  if (violations.length === 0) {
+    return parsed;
   }
-  
-  return result;
+
+  const rerank = await requestGeminiRanking(
+    variants,
+    serializedVariants,
+    promptBlock,
+    params?.platform,
+    buildRerankHint(violations)
+  );
+  parsed = RankResult.parse(rerank);
+  const rerankViolations = detectVariantViolations(parsed.final);
+  if (rerankViolations.length === 0) {
+    return parsed;
+  }
+
+  const sanitizedFinal = sanitizeFinalVariant(parsed.final, params?.platform);
+  const summary = formatViolationSummary(rerankViolations) || parsed.reason;
+  return RankResult.parse({
+    ...parsed,
+    final: sanitizedFinal,
+    reason: summary
+  });
 }
 
 type GeminiPipelineArgs = {
@@ -543,7 +508,7 @@ export async function pipeline({ imageUrl, platform, voice = "flirty_playful", n
     const facts = await extractFacts(imageUrl);
     let variants = await generateVariants({ platform, voice, facts, nsfw, ...tone });
     variants = dedupeVariantsForRanking(variants, 5, { platform, facts });
-    let ranked = await rankAndSelect(variants, { platform, facts });
+    let ranked = await rankAndSelect(variants, { platform });
     let out = ranked.final;
 
     const enforceCoverage = async () => {
@@ -553,7 +518,7 @@ export async function pipeline({ imageUrl, platform, voice = "flirty_playful", n
         attempts += 1;
         variants = await generateVariants({ platform, voice, facts, hint: coverage.hint, nsfw, ...tone });
         variants = dedupeVariantsForRanking(variants, 5, { platform, facts });
-        ranked = await rankAndSelect(variants, { platform, facts });
+        ranked = await rankAndSelect(variants, { platform });
         out = ranked.final;
         coverage = ensureFactCoverage({ facts, caption: out.caption, alt: out.alt });
       }
@@ -565,7 +530,7 @@ export async function pipeline({ imageUrl, platform, voice = "flirty_playful", n
     if (err) {
       variants = await generateVariants({ platform, voice, facts, nsfw, ...tone, hint:`Fix: ${err}. Use IMAGE_FACTS nouns/colors/setting explicitly.` });
       variants = dedupeVariantsForRanking(variants, 5, { platform, facts });
-      ranked = await rankAndSelect(variants, { platform, facts });
+      ranked = await rankAndSelect(variants, { platform });
       out = ranked.final;
       await enforceCoverage();
     }
