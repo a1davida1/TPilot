@@ -1,0 +1,1701 @@
+Add authenticated handlers for pro resources
+Sep 22 · a1davida1/TPilot · main
++738-692
+1. Add authenticated handlers in `server/routes.ts` (or a dedicated router) for `GET /api/pro-resources` and related endpoints, returning the `realProPerks`, `getSignupInstructions`, and `generateReferralCode` payloads from `server/pro-perks.ts`.
+2. Adapt `client/src/components/pro-perks.tsx` so it consumes the new `ProPerk[]` response shape instead of the placeholder `defaultResources` array and renders the real affiliate metadata (commission rates, signup steps, links).
+3. Create a lightweight integration test that hits `/api/pro-resources` with an authenticated request and verifies the response includes at least one `affiliate` perk to prevent regressions.
+
+Summary
+
+    Added a dedicated pro-resources router that normalizes user tiers and exposes secured endpoints for listing perks, returning signup instructions, and generating referral codes straight from the real pro perks catalog.
+
+Mounted the new router inside the global route registry so /api/pro-resources shares the existing authentication middleware stack alongside the other API modules.
+
+Rebuilt the ProPerks component to fetch the live API payload, drive category filters and stats, and surface signup instructions plus referral-code workflows inside the dialog experience.
+
+Introduced an integration test that mocks auth, hits /api/pro-resources, and asserts an authenticated response contains at least one affiliate perk to guard against regressions.
+
+Testing
+
+    ✅ npm run lint
+
+⚠️ npm test *(fails because numerous pre-existing integration/unit suites expect external services, assets, and image tooling; aborted after repeated legacy failures)*
+
+✅ npx vitest run tests/integration/pro-resources.test.ts
+
+
+client/src/components/pro-perks.tsx
++609-691
+import { useState, useEffect } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
+import { 
+  FileText, 
+  Gift, 
+  Shield, 
+  DollarSign,
+  Download,
+  BookOpen,
+  Tag,
+  Percent,
+  Calculator,
+  Lock,
+  Star,
+  TrendingUp,
+  Users,
+  Heart,
+import { useToast } from "@/hooks/use-toast";
+import {
+  Gift,
+  Search,
+  Sparkles,
+  CheckCircle,
+  Users,
+  TrendingUp,
+  ExternalLink,
+  Shield,
+  Copy,
+  Search,
+  Filter,
+  Award,
+  Clock,
+  Bookmark,
+  Eye,
+  PlayCircle,
+  ChevronRight,
+  Info,
+  Calendar,
+  Zap
+  CheckCircle,
+  Loader2,
+  Coins,
+  Globe
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import type { LucideIcon } from "lucide-react";
+
+interface Resource {
+interface ProPerk {
+  id: string;
+  title: string;
+  name: string;
+  category: "affiliate" | "integration" | "tools" | "community" | "pro";
+  tier: "starter" | "pro";
+  description: string;
+  category: string;
+  type: 'pdf' | 'ebook' | 'coupon' | 'discount' | 'service';
+  value?: string;
+  downloadUrl?: string;
+  externalUrl?: string;
+  isPremium?: boolean;
+  savedAmount?: string;
+  validUntil?: string;
+  rating?: number;
+  downloads?: number;
+  commissionRate?: string;
+  requirements?: string[];
+  signupProcess: string;
+  estimatedEarnings: string;
+  status: "available" | "application-required" | "coming-soon";
+  officialLink?: string;
+  features: string[];
+}
+
+interface SignupInstructions {
+  steps: string[];
+  requirements: string[];
+  timeline: string;
+  support: string;
+}
+
+interface ProResourcesResult {
+  perks: ProPerk[];
+  accessGranted: boolean;
+}
+
+interface ProPerksProps {
+  userTier?: 'guest' | 'free' | 'pro' | 'premium';
+  userTier?: "guest" | "free" | "pro" | "premium";
+}
+
+export function ProPerks({ userTier = 'pro' }: ProPerksProps) {
+type CategoryFilter = "all" | ProPerk["category"];
+
+const categoryMetadata: Record<ProPerk["category"], {
+  label: string;
+  description: string;
+  icon: LucideIcon;
+  gradient: string;
+}> = {
+  affiliate: {
+    label: "Affiliate Programs",
+    description: "Earn recurring revenue by promoting aligned creator platforms.",
+    icon: Sparkles,
+    gradient: "from-purple-500/20 to-pink-500/20"
+  },
+  integration: {
+    label: "Platform Integrations",
+    description: "Connect your brand with high-impact distribution channels.",
+    icon: Globe,
+    gradient: "from-blue-500/20 to-cyan-500/20"
+  },
+  tools: {
+    label: "Creator Tools",
+    description: "Software and services that automate workflow and monetization.",
+    icon: Shield,
+    gradient: "from-amber-500/20 to-orange-500/20"
+  },
+  community: {
+    label: "Community & Partnerships",
+    description: "Grow influence with verified partner and ambassador programs.",
+    icon: Users,
+    gradient: "from-emerald-500/20 to-lime-500/20"
+  },
+  pro: {
+    label: "Pro Exclusives",
+    description: "Premium perks curated exclusively for ThottoPilot Pro members.",
+    icon: Gift,
+    gradient: "from-rose-500/20 to-red-500/20"
+  }
+};
+
+const statusStyles: Record<ProPerk["status"], { label: string; className: string }> = {
+  available: {
+    label: "Available",
+    className: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+  },
+  "application-required": {
+    label: "Application Required",
+    className: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30"
+  },
+  "coming-soon": {
+    label: "Coming Soon",
+    className: "bg-slate-500/20 text-slate-300 border-slate-500/30"
+  }
+};
+
+export function ProPerks({ userTier = "pro" }: ProPerksProps) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeCategory, setActiveCategory] = useState("all");
+  const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
+  const [downloadProgress, setDownloadProgress] = useState<Record<string, number>>({});
+  const [bookmarkedItems, setBookmarkedItems] = useState<Set<string>>(new Set());
+  const [recentActivity, setRecentActivity] = useState<Array<{id: string, action: string, timestamp: Date}>>([]);
+  const [activeCategory, setActiveCategory] = useState<CategoryFilter>("all");
+  const [selectedPerk, setSelectedPerk] = useState<ProPerk | null>(null);
+  const [instructionsByPerk, setInstructionsByPerk] = useState<Record<string, SignupInstructions>>({});
+  const [referralCodes, setReferralCodes] = useState<Record<string, string>>({});
+  const [instructionsLoading, setInstructionsLoading] = useState<string | null>(null);
+  const [referralLoading, setReferralLoading] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  // Fetch real resources from API
+  const { data: resourcesData, isLoading: resourcesLoading } = useQuery({
+    queryKey: ['pro-resources'],
+  const { data, isLoading, isError } = useQuery<ProResourcesResult>({
+    queryKey: ["pro-resources"],
+    queryFn: async () => {
+      const token = localStorage.getItem('authToken');
+      if (!token) return { resources: [] };
+      
+      if (typeof window === "undefined") {
+        return { perks: [], accessGranted: false } satisfies ProResourcesResult;
+      }
+
+      const token = window.localStorage.getItem("authToken");
+      if (!token) {
+        return { perks: [], accessGranted: false } satisfies ProResourcesResult;
+      }
+
+      try {
+        const response = await fetch('/api/pro-resources', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        const response = await fetch("/api/pro-resources", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error('Failed to fetch resources');
+        return response.json();
+
+        if (response.status === 403) {
+          return { perks: [], accessGranted: false } satisfies ProResourcesResult;
+        }
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch pro resources");
+        }
+
+        const payload = await response.json() as { perks: ProPerk[] };
+        return { perks: payload.perks, accessGranted: true } satisfies ProResourcesResult;
+      } catch (error) {
+        return { resources: [] };
+        const message = error instanceof Error ? error.message : "Failed to fetch pro resources";
+        throw new Error(message);
+      }
+    }
+  });
+
+  const resources: Resource[] = resourcesData?.resources || [
+  ];
+  const perks = data?.perks ?? [];
+  const hasAccess = data?.accessGranted ?? false;
+
+  const categories = useMemo(() => {
+    const uniqueCategories = new Set<ProPerk["category"]>(perks.map((perk) => perk.category));
+    const baseCategory = {
+      id: "all" as const,
+      label: "All Perks",
+      description: "Every curated partner program in one view.",
+      icon: Sparkles,
+      gradient: "from-purple-500/20 to-pink-500/20"
+    };
+
+    const mapped = Array.from(uniqueCategories).map((category) => ({
+      id: category,
+      ...categoryMetadata[category]
+    }));
+
+    return [baseCategory, ...mapped];
+  }, [perks]);
+
+  const filteredPerks = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+
+    return perks.filter((perk) => {
+      const matchesCategory = activeCategory === "all" || perk.category === activeCategory;
+      if (!matchesCategory) {
+        return false;
+      }
+
+      if (!term) {
+        return true;
+      }
+
+      const searchableFields = [
+        perk.name,
+        perk.description,
+        perk.commissionRate ?? "",
+        perk.estimatedEarnings,
+        perk.features.join(" ")
+      ];
+
+      return searchableFields.some((field) => field.toLowerCase().includes(term));
+    });
+  }, [perks, activeCategory, searchTerm]);
+
+  const affiliateCount = useMemo(
+    () => perks.filter((perk) => perk.category === "affiliate").length,
+    [perks]
+  );
+
+  const applicationRequiredCount = useMemo(
+    () => perks.filter((perk) => perk.status === "application-required").length,
+    [perks]
+  );
+
+  const availableNowCount = useMemo(
+    () => perks.filter((perk) => perk.status === "available").length,
+    [perks]
+  );
+
+  const ensureInstructions = useCallback(async (perk: ProPerk) => {
+    if (instructionsByPerk[perk.id]) {
+      return;
+    }
+
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const token = window.localStorage.getItem("authToken");
+    if (!token) {
+      toast({
+        title: "Sign in required",
+        description: "Log in with your Pro account to view detailed signup steps.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setInstructionsLoading(perk.id);
+      const response = await fetch(`/api/pro-resources/${perk.id}/signup-instructions`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to load signup instructions");
+      }
+
+      const payload = await response.json() as { instructions: SignupInstructions };
+      setInstructionsByPerk((previous) => ({
+        ...previous,
+        [perk.id]: payload.instructions
+      }));
+    } catch (error) {
+      toast({
+        title: "Unable to load instructions",
+        description: error instanceof Error ? error.message : "Unexpected error loading perk guidance.",
+        variant: "destructive"
+      });
+    } finally {
+      setInstructionsLoading(null);
+    }
+  }, [instructionsByPerk, toast]);
+
+  const handleOpenPerk = useCallback((perk: ProPerk) => {
+    setSelectedPerk(perk);
+    void ensureInstructions(perk);
+  }, [ensureInstructions]);
+
+  // Show empty state when no resources available
+  if (!resourcesLoading && resources.length === 0) {
+  const handleGenerateReferral = useCallback(async (perk: ProPerk) => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const token = window.localStorage.getItem("authToken");
+    if (!token) {
+      toast({
+        title: "Sign in required",
+        description: "Log in with your Pro account to generate referral codes.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setReferralLoading(perk.id);
+      const response = await fetch(`/api/pro-resources/${perk.id}/referral-code`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate referral code");
+      }
+
+      const payload = await response.json() as { referralCode: string };
+      setReferralCodes((previous) => ({
+        ...previous,
+        [perk.id]: payload.referralCode
+      }));
+
+      if (window.navigator && window.navigator.clipboard) {
+        try {
+          await window.navigator.clipboard.writeText(payload.referralCode);
+        } catch (clipboardError) {
+          console.warn("Failed to copy referral code", clipboardError);
+        }
+      }
+
+      toast({
+        title: "Referral code ready",
+        description: "Your unique referral code has been copied to the clipboard.",
+        variant: "default"
+      });
+    } catch (error) {
+      toast({
+        title: "Unable to generate referral code",
+        description: error instanceof Error ? error.message : "Unexpected error generating referral code.",
+        variant: "destructive"
+      });
+    } finally {
+      setReferralLoading(null);
+    }
+  }, [toast]);
+
+  if (isError) {
+    return (
+      <Card className="bg-gray-900/50 backdrop-blur-xl border-white/10">
+      <Card className="bg-gray-900/50 backdrop-blur-xl border-red-500/30">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Gift className="h-5 w-5 text-purple-400" />
+            Pro Perks & Resources
+          <CardTitle className="flex items-center gap-2 text-red-300">
+            <Shield className="h-5 w-5" />
+            Unable to load Pro perks
+          </CardTitle>
+          <CardDescription>
+            Exclusive resources and discounts for Pro users
+            Check your connection and try again. If the issue persists, contact support.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+
+  if (!isLoading && !hasAccess) {
+    return (
+      <Card className="bg-gray-900/50 backdrop-blur-xl border-purple-500/30">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-purple-200">
+            <Gift className="h-5 w-5" />
+            Pro Perks require an active subscription
+          </CardTitle>
+          <CardDescription>
+            Upgrade to ThottoPilot Pro to unlock vetted affiliate programs, integrations, and partner playbooks.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <Gift className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-400">Resources coming soon!</p>
+            <p className="text-sm text-gray-500 mt-2">We're partnering with top platforms to bring you exclusive discounts</p>
+          <div className="flex flex-col items-start gap-3 text-gray-300">
+            <p>Secure instant access to:</p>
+            <ul className="list-disc list-inside space-y-1 text-sm text-gray-400">
+              <li>Verified affiliate programs paying lifetime commissions</li>
+              <li>Step-by-step activation guides and compliance checklists</li>
+              <li>Private referral codes and partner manager introductions</li>
+            </ul>
+            <Button className="mt-2 bg-gradient-to-r from-purple-500 to-pink-500">
+              Upgrade to Pro
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const defaultResources = [
+    {
+      id: '1',
+      title: 'Content Creator Tax Guide 2025',
+      description: 'Complete guide to managing taxes as an adult content creator, including deductions and quarterly payments',
+      category: 'tax',
+      type: 'pdf',
+      downloads: 1842,
+      rating: 4.8
+    },
+    {
+      id: '2',
+      title: 'Building Your Personal Brand',
+      description: 'Step-by-step strategies for creating a memorable and profitable personal brand',
+      category: 'business',
+      type: 'ebook',
+      downloads: 2156,
+      rating: 4.9
+    },
+    {
+      id: '3',
+      title: 'Social Media Safety & Privacy Guide',
+      description: 'Protect your identity and maintain privacy while building your online presence',
+      category: 'safety',
+      type: 'pdf',
+      downloads: 3421,
+      rating: 5.0
+    },
+    {
+      id: '4',
+      title: 'Photography & Lighting Masterclass',
+      description: 'Professional photography techniques for content creators on any budget',
+      category: 'skills',
+      type: 'ebook',
+      downloads: 1523,
+      rating: 4.7
+    },
+    {
+      id: '5',
+      title: 'Mental Health for Content Creators',
+      description: 'Managing stress, burnout, and maintaining work-life balance in the digital age',
+      category: 'wellness',
+      type: 'pdf',
+      downloads: 892,
+      rating: 4.9
+    },
+    {
+      id: '6',
+      title: 'Legal Rights & Contracts Guide',
+      description: 'Understanding your rights, DMCA, and contract negotiations',
+      category: 'legal',
+      type: 'pdf',
+      downloads: 1234,
+      rating: 4.8
+    },
+    
+    // Coupons & Discounts
+    {
+      id: '7',
+      title: '40% Off DeleteMe Service',
+      description: 'Remove your personal information from 100+ data broker sites',
+      category: 'privacy',
+      type: 'coupon',
+      value: 'THOTTO40',
+      savedAmount: '$60',
+      validUntil: '2025-12-31',
+      externalUrl: 'https://deleteme.com'
+    },
+    {
+      id: '8',
+      title: '30% Off Professional Photo Editing',
+      description: 'Premium photo editing and retouching services from verified professionals',
+      category: 'services',
+      type: 'discount',
+      value: 'CREATOR30',
+      savedAmount: '$45/month',
+      validUntil: '2025-09-30'
+    },
+    {
+      id: '9',
+      title: 'Free Month of VPN Service',
+      description: 'Protect your online activity and access content from anywhere',
+      category: 'privacy',
+      type: 'coupon',
+      value: 'THOTTOVPN',
+      savedAmount: '$12.99',
+      validUntil: '2025-08-31'
+    },
+    {
+      id: '10',
+      title: '50% Off QuickBooks Self-Employed',
+      description: 'Track income, expenses, and maximize tax deductions automatically',
+      category: 'tax',
+      type: 'discount',
+      value: 'CREATOR50',
+      savedAmount: '$7.50/month',
+      validUntil: '2025-12-31'
+    },
+    {
+      id: '11',
+      title: '25% Off Ring Light Equipment',
+      description: 'Professional lighting equipment for content creation',
+      category: 'equipment',
+      type: 'coupon',
+      value: 'LIGHT25',
+      savedAmount: 'Up to $50',
+      validUntil: '2025-10-31'
+    },
+    
+    // Services
+    {
+      id: '12',
+      title: 'Free Tax Consultation',
+      description: '30-minute consultation with a CPA specializing in content creator taxes',
+      category: 'tax',
+      type: 'service',
+      isPremium: true,
+      savedAmount: '$150 value'
+    },
+    {
+      id: '13',
+      title: 'Online Reputation Cleanup',
+      description: 'Professional service to remove unwanted content and protect your reputation',
+      category: 'privacy',
+      type: 'service',
+      isPremium: true,
+      savedAmount: '$500 value'
+    },
+    {
+      id: '14',
+      title: 'Legal Document Templates',
+      description: 'Customizable contracts, model releases, and DMCA templates',
+      category: 'legal',
+      type: 'service',
+      downloads: 567
+    },
+    {
+      id: '15',
+      title: 'Content Planning Calendar',
+      description: '12-month content calendar template with optimal posting times',
+      category: 'business',
+      type: 'pdf',
+      downloads: 2341,
+      rating: 4.6
+    }
+  ];
+
+  const categories = [
+    { id: 'all', label: 'All Perks', icon: Sparkles },
+    { id: 'tax', label: 'Tax & Finance', icon: Calculator },
+    { id: 'privacy', label: 'Privacy & Safety', icon: Shield },
+    { id: 'business', label: 'Business Growth', icon: TrendingUp },
+    { id: 'skills', label: 'Skills & Education', icon: BookOpen },
+    { id: 'services', label: 'Services', icon: Users },
+    { id: 'legal', label: 'Legal', icon: FileText },
+    { id: 'wellness', label: 'Wellness', icon: Heart }
+  ];
+
+  const filteredResources = resources.filter(resource => {
+    const matchesSearch = resource.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          resource.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = activeCategory === 'all' || resource.category === activeCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  const handleDownload = (resource: Resource) => {
+    setDownloadProgress(prev => ({ ...prev, [resource.id]: 0 }));
+    
+    // Simulate download progress
+    const interval = setInterval(() => {
+      setDownloadProgress(prev => {
+        const currentProgress = prev[resource.id] || 0;
+        const newProgress = Math.min(currentProgress + Math.random() * 30, 100);
+        
+        if (newProgress >= 100) {
+          clearInterval(interval);
+          setTimeout(() => {
+            setDownloadProgress(prev => {
+              const updated = { ...prev };
+              delete updated[resource.id];
+              return updated;
+            });
+            
+            // Add to recent activity
+            setRecentActivity(prev => [
+              { id: resource.id, action: 'downloaded', timestamp: new Date() },
+              ...prev.slice(0, 4)
+            ]);
+            
+            toast({
+              title: "Download Complete!",
+              description: `${resource.title} has been downloaded successfully`
+            });
+          }, 500);
+          return { ...prev, [resource.id]: 100 };
+        }
+        
+        return { ...prev, [resource.id]: newProgress };
+      });
+    }, 200);
+  };
+
+  const copyCoupon = (code: string, resourceTitle: string) => {
+    navigator.clipboard.writeText(code);
+    
+    // Add to recent activity
+    setRecentActivity(prev => [
+      { id: Date.now().toString(), action: 'copied coupon', timestamp: new Date() },
+      ...prev.slice(0, 4)
+    ]);
+    
+    toast({
+      title: "Coupon Copied!",
+      description: `Code "${code}" for ${resourceTitle} copied to clipboard`
+    });
+  };
+
+  const toggleBookmark = (resourceId: string) => {
+    setBookmarkedItems(prev => {
+      const updated = new Set(prev);
+      if (updated.has(resourceId)) {
+        updated.delete(resourceId);
+        toast({
+          title: "Bookmark Removed",
+          description: "Resource removed from your bookmarks"
+        });
+      } else {
+        updated.add(resourceId);
+        toast({
+          title: "Bookmarked!",
+          description: "Resource added to your bookmarks"
+        });
+      }
+      return updated;
+    });
+  };
+
+  const getResourceIcon = (type: string) => {
+    switch (type) {
+      case 'pdf': return <FileText className="h-5 w-5" />;
+      case 'ebook': return <BookOpen className="h-5 w-5" />;
+      case 'coupon': return <Tag className="h-5 w-5" />;
+      case 'discount': return <Percent className="h-5 w-5" />;
+      case 'service': return <Users className="h-5 w-5" />;
+      default: return <Gift className="h-5 w-5" />;
+    }
+  };
+
+  const getResourceBadge = (type: string) => {
+    const badges = {
+      pdf: 'PDF',
+      ebook: 'Ebook',
+      coupon: 'Coupon',
+      discount: 'Discount',
+      service: 'Service'
+    };
+    return badges[type as keyof typeof badges] || type;
+  };
+  if (!isLoading && hasAccess && perks.length === 0) {
+    return (
+      <Card className="bg-gray-900/50 backdrop-blur-xl border-purple-500/30">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-purple-200">
+            <Sparkles className="h-5 w-5" />
+            Pro perks are being curated
+          </CardTitle>
+          <CardDescription>
+            Our partnerships team is finalizing the next drop of premium monetization opportunities. Check back shortly.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-gray-400">
+            You have full access—new programs will appear here automatically as soon as they are verified.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <Card className="bg-gradient-to-br from-purple-900/20 to-pink-900/20 border-purple-500/30">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <CardTitle className="text-3xl bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                ProPerks Library
+                ProPerks Growth Vault
+              </CardTitle>
+              <CardDescription className="text-gray-300 mt-2">
+                Exclusive resources, discounts, and tools for professional creators
+              <CardDescription className="text-gray-300 mt-2 max-w-2xl">
+                Unlock high-converting affiliate programs, verified integrations, and revenue systems curated for elite creators.
+              </CardDescription>
+            </div>
+            <div className="text-right">
+              <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0">
+                PRO MEMBER
+                {userTier === "premium" ? "PRO PLUS" : "PRO MEMBER"}
+              </Badge>
+              <p className="text-sm text-gray-400 mt-2">Access to {resources.length}+ perks</p>
+              <p className="text-sm text-gray-400 mt-2">{perks.length}+ vetted monetization partners</p>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+
+      {/* Search and Filter */}
+      <div className="flex flex-col lg:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="Search affiliate programs, tools, or keywords"
+            className="pl-10 bg-gray-900/50 border-purple-500/20"
+          />
+        </div>
+      </div>
+
+      {/* Category Tabs */}
+      <div className="flex flex-wrap gap-2">
+        {categories.map((category) => {
+          const Icon = category.icon;
+          const isActive = activeCategory === category.id;
+          return (
+            <Button
+              key={category.id}
+              variant={activeCategory === category.id ? "default" : "outline"}
+              variant={isActive ? "default" : "outline"}
+              size="sm"
+              onClick={() => setActiveCategory(category.id)}
+              className={activeCategory === category.id 
+              className={isActive
+                ? "bg-gradient-to-r from-purple-500 to-pink-500 border-0"
+                : "border-purple-500/30 hover:bg-purple-500/10"
+              }
+                : "border-purple-500/30 hover:bg-purple-500/10"}
+            >
+              <Icon className="h-4 w-4 mr-2" />
+              {category.label}
+            </Button>
+          );
+        })}
+      </div>
+
+      {/* Recent Activity Sidebar */}
+      {recentActivity.length > 0 && (
+        <Card className="bg-gradient-to-r from-blue-900/20 to-cyan-900/20 border-blue-500/30">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Recent Activity
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {recentActivity.map((activity, index) => (
+                <div key={index} className="flex items-center gap-2 text-sm">
+                  <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                  <span className="text-gray-300">
+                    You {activity.action} a resource {activity.timestamp.toLocaleTimeString()}
+                  </span>
+                </div>
+              ))}
+      <div className="grid md:grid-cols-3 gap-4">
+        <Card className="bg-gradient-to-br from-green-900/20 to-emerald-900/20 border-green-500/30">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs text-gray-400">Active partnership opportunities</p>
+              <p className="text-3xl font-bold text-green-300 tabular-nums">{availableNowCount}</p>
+              <p className="text-xs text-green-400/70 mt-1">Ready to launch today</p>
+            </div>
+            <CheckCircle className="h-10 w-10 text-green-400/60" />
+          </CardContent>
+        </Card>
+      )}
+        <Card className="bg-gradient-to-br from-purple-900/20 to-violet-900/20 border-purple-500/30">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs text-gray-400">High-value affiliate programs</p>
+              <p className="text-3xl font-bold text-purple-300 tabular-nums">{affiliateCount}</p>
+              <p className="text-xs text-purple-400/70 mt-1">Lifetime commission partners</p>
+            </div>
+            <Coins className="h-10 w-10 text-purple-400/60" />
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-amber-900/20 to-orange-900/20 border-amber-500/30">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs text-gray-400">White-glove application programs</p>
+              <p className="text-3xl font-bold text-amber-300 tabular-nums">{applicationRequiredCount}</p>
+              <p className="text-xs text-amber-400/70 mt-1">Dedicated account manager introductions</p>
+            </div>
+            <TrendingUp className="h-10 w-10 text-amber-400/60" />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Resources Grid */}
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filteredResources.map((resource) => (
+          <Card 
+            key={resource.id} 
+            className="bg-gray-900/50 border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl group cursor-pointer"
+          >
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-purple-500/20 rounded-lg group-hover:bg-purple-500/30 transition-colors">
+                    {getResourceIcon(resource.type)}
+        {filteredPerks.map((perk) => {
+          const category = categoryMetadata[perk.category];
+          const status = statusStyles[perk.status];
+          return (
+            <Card
+              key={perk.id}
+              className="bg-gray-900/50 border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 hover:scale-[1.01] hover:shadow-xl"
+            >
+              <CardHeader>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="outline" className="border-purple-500/50 text-purple-200">
+                      {category.label}
+                    </Badge>
+                    <Badge variant="outline" className="border-cyan-500/40 text-cyan-200">
+                      {perk.tier.toUpperCase()} ACCESS
+                    </Badge>
+                    <Badge variant="outline" className={status.className}>
+                      {status.label}
+                    </Badge>
+                  </div>
+                  <Badge variant="outline" className="border-purple-500/50 text-purple-300">
+                    {getResourceBadge(resource.type)}
+                  </Badge>
+                </div>
+                <div className="flex gap-1">
+                  {resource.isPremium && (
+                    <Award className="h-4 w-4 text-yellow-500" />
+                  )}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleBookmark(resource.id);
+                    }}
+                    className="p-1 h-auto text-gray-400 hover:text-yellow-400"
+                  >
+                    <Bookmark 
+                      className={`h-4 w-4 ${bookmarkedItems.has(resource.id) ? 'fill-yellow-400 text-yellow-400' : ''}`} 
+                    />
+                  </Button>
+                </div>
+              </div>
+              <div onClick={() => setSelectedResource(resource)}>
+                <CardTitle className="text-lg mt-3 group-hover:text-purple-300 transition-colors">
+                  {resource.title}
+                <CardTitle className="text-xl mt-3 text-white">
+                  {perk.name}
+                </CardTitle>
+                <CardDescription className="text-gray-400 text-sm line-clamp-2">
+                  {resource.description}
+                <CardDescription className="text-gray-400 mt-2">
+                  {perk.description}
+                </CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {/* Download Progress */}
+              {downloadProgress[resource.id] !== undefined && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-400">Downloading...</span>
+                    <span className="text-purple-400">{Math.round(downloadProgress[resource.id])}%</span>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 gap-3 text-sm text-gray-300">
+                  {perk.commissionRate && (
+                    <div className="flex items-center gap-2 bg-purple-500/10 border border-purple-500/30 rounded-lg px-3 py-2">
+                      <Coins className="h-4 w-4 text-purple-300" />
+                      <span className="font-medium text-purple-200">Commission:</span>
+                      <span>{perk.commissionRate}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 bg-blue-500/10 border border-blue-500/30 rounded-lg px-3 py-2">
+                    <TrendingUp className="h-4 w-4 text-blue-300" />
+                    <span className="font-medium text-blue-200">Projected earnings:</span>
+                    <span>{perk.estimatedEarnings}</span>
+                  </div>
+                  <Progress value={downloadProgress[resource.id]} className="h-2" />
+                  {perk.requirements && perk.requirements.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs uppercase tracking-wide text-gray-400">Key requirements</p>
+                      <div className="flex flex-wrap gap-2">
+                        {perk.requirements.slice(0, 4).map((item) => (
+                          <Badge key={item} variant="outline" className="border-gray-600/40 text-gray-200">
+                            {item}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Metadata */}
+              <div className="flex flex-wrap gap-2 text-xs text-gray-400">
+                {resource.downloads && (
+                  <div className="flex items-center gap-1 bg-gray-800/50 px-2 py-1 rounded">
+                    <Download className="h-3 w-3" />
+                    {resource.downloads.toLocaleString()}
+                  </div>
+                )}
+                {resource.rating && (
+                  <div className="flex items-center gap-1 bg-yellow-500/10 px-2 py-1 rounded">
+                    <Star className="h-3 w-3 text-yellow-500" />
+                    {resource.rating}
+                  </div>
+                )}
+                {resource.savedAmount && (
+                  <div className="flex items-center gap-1 text-green-400 bg-green-500/10 px-2 py-1 rounded">
+                    <DollarSign className="h-3 w-3" />
+                    Save {resource.savedAmount}
+                  </div>
+                )}
+                {resource.validUntil && (
+                  <div className="text-orange-400 bg-orange-500/10 px-2 py-1 rounded flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    Valid until {new Date(resource.validUntil).toLocaleDateString()}
+
+                {perk.features.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs uppercase tracking-wide text-gray-400">Why creators love it</p>
+                    <ul className="space-y-2 text-sm text-gray-300">
+                      {perk.features.slice(0, 4).map((feature) => (
+                        <li key={feature} className="flex items-start gap-2">
+                          <CheckCircle className="h-4 w-4 mt-0.5 text-green-300" />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+
+              {/* Coupon Code */}
+              {resource.value && (
+                <div className="flex items-center gap-2 p-3 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg border border-purple-500/20">
+                  <code className="flex-1 text-purple-300 font-mono font-bold">{resource.value}</code>
+                <div className="flex flex-wrap gap-3 pt-2">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      copyCoupon(resource.value!, resource.title);
+                    }}
+                    className="text-purple-400 hover:text-purple-300 hover:bg-purple-500/20"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-2">
+                {resource.downloadUrl !== undefined ? (
+                  <Button 
+                    className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDownload(resource);
+                    }}
+                    disabled={downloadProgress[resource.id] !== undefined}
+                  >
+                    {downloadProgress[resource.id] !== undefined ? (
+                      <>
+                        <div className="animate-spin mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                        Downloading...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-4 w-4 mr-2" />
+                        Download
+                      </>
+                    )}
+                  </Button>
+                ) : resource.externalUrl ? (
+                  <Button 
+                    className="flex-1"
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.open(resource.externalUrl, '_blank');
+                    }}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Visit Site
+                  </Button>
+                ) : resource.type === 'service' ? (
+                  <Button 
+                    className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500"
+                    size="sm"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Claim Now
+                  </Button>
+                ) : (
+                  <Button 
+                    onClick={() => handleOpenPerk(perk)}
+                    className="flex-1"
+                    variant="outline"
+                    size="sm"
+                  >
+                    <Lock className="h-4 w-4 mr-2" />
+                    Coming Soon
+                    View signup instructions
+                  </Button>
+                )}
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedResource(resource)}
+                  className="px-3"
+                >
+                  <Eye className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+                  {perk.officialLink && (
+                    <Button
+                      className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500"
+                      onClick={() => window.open(perk.officialLink, "_blank", "noopener")}
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Visit program
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Resource Detail Modal */}
+      <Dialog open={!!selectedResource} onOpenChange={() => setSelectedResource(null)}>
+        <DialogContent className="max-w-2xl bg-gray-900 border-purple-500/30">
+          {selectedResource && (
+      {filteredPerks.length === 0 && (
+        <Card className="p-12 text-center bg-gray-900/30 border-gray-600/30">
+          <Search className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-xl font-medium text-gray-300 mb-2">No perks found</h3>
+          <p className="text-gray-500 mb-4">
+            {searchTerm
+              ? `No results for "${searchTerm}". Try a different keyword or category.`
+              : "No perks available in this category yet. Check back soon!"}
+          </p>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setSearchTerm("");
+              setActiveCategory("all");
+            }}
+          >
+            Clear filters
+          </Button>
+        </Card>
+      )}
+
+      <Dialog open={!!selectedPerk} onOpenChange={(open) => { if (!open) setSelectedPerk(null); }}>
+        <DialogContent className="max-w-3xl bg-gray-950/95 border-purple-500/40">
+          {selectedPerk && (
+            <>
+              <DialogHeader>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-3 bg-purple-500/20 rounded-lg">
+                    {getResourceIcon(selectedResource.type)}
+                  </div>
+                  <div>
+                    <DialogTitle className="text-xl text-white">{selectedResource.title}</DialogTitle>
+                    <Badge variant="outline" className="border-purple-500/50 text-purple-300 mt-1">
+                      {getResourceBadge(selectedResource.type)}
+                    </Badge>
+                  </div>
+                </div>
+                <DialogDescription className="text-gray-300 text-base leading-relaxed">
+                  {selectedResource.description}
+                <DialogTitle className="text-2xl text-white flex items-center gap-2">
+                  <Gift className="h-5 w-5 text-purple-300" />
+                  {selectedPerk.name}
+                </DialogTitle>
+                <DialogDescription className="text-gray-300">
+                  {selectedPerk.description}
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-4">
+                {/* Resource Stats */}
+                <div className="grid grid-cols-2 gap-4">
+                  {selectedResource.downloads && (
+                    <div className="bg-gray-800/50 p-3 rounded-lg">
+                      <div className="flex items-center gap-2 text-sm text-gray-400">
+                        <Download className="h-4 w-4" />
+                        Downloads
+                      </div>
+                      <div className="text-xl font-bold text-white">
+                        {selectedResource.downloads.toLocaleString()}
+                      </div>
+
+              <div className="flex flex-wrap gap-2 mb-4">
+                <Badge variant="outline" className="border-purple-500/50 text-purple-200">
+                  {categoryMetadata[selectedPerk.category].label}
+                </Badge>
+                <Badge variant="outline" className="border-cyan-500/40 text-cyan-200">
+                  {selectedPerk.tier.toUpperCase()} ACCESS
+                </Badge>
+                <Badge variant="outline" className={statusStyles[selectedPerk.status].className}>
+                  {statusStyles[selectedPerk.status].label}
+                </Badge>
+              </div>
+
+              <div className="space-y-6 text-gray-200">
+                <section className="space-y-3">
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-400">Signup instructions</h3>
+                  {instructionsLoading === selectedPerk.id && (
+                    <div className="flex items-center gap-2 text-sm text-gray-400">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Fetching the official playbook...
+                    </div>
+                  )}
+                  {selectedResource.rating && (
+                    <div className="bg-gray-800/50 p-3 rounded-lg">
+                      <div className="flex items-center gap-2 text-sm text-gray-400">
+                        <Star className="h-4 w-4" />
+                        Rating
+                  {instructionsLoading !== selectedPerk.id && instructionsByPerk[selectedPerk.id] && (
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        <p className="text-xs uppercase tracking-wide text-gray-400">Step-by-step process</p>
+                        <ol className="list-decimal list-inside space-y-2 text-sm text-gray-200">
+                          {instructionsByPerk[selectedPerk.id].steps.map((step) => (
+                            <li key={step}>{step}</li>
+                          ))}
+                        </ol>
+                      </div>
+                      <div className="text-xl font-bold text-yellow-400">
+                        {selectedResource.rating}/5.0
+                      <div className="space-y-3">
+                        <p className="text-xs uppercase tracking-wide text-gray-400">Approval requirements</p>
+                        <ul className="space-y-2 text-sm text-gray-200">
+                          {instructionsByPerk[selectedPerk.id].requirements.length > 0
+                            ? instructionsByPerk[selectedPerk.id].requirements.map((requirement) => (
+                                <li key={requirement} className="flex items-start gap-2">
+                                  <CheckCircle className="h-4 w-4 mt-0.5 text-green-300" />
+                                  <span>{requirement}</span>
+                                </li>
+                              ))
+                            : (
+                              <li className="text-gray-400">No special requirements listed.</li>
+                            )}
+                        </ul>
+                        <div className="text-sm text-gray-300">
+                          <p className="font-medium text-white">Timeline</p>
+                          <p>{instructionsByPerk[selectedPerk.id].timeline}</p>
+                        </div>
+                        <div className="text-sm text-gray-300">
+                          <p className="font-medium text-white">Support</p>
+                          <p>{instructionsByPerk[selectedPerk.id].support}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                </section>
+
+                {/* Additional Info */}
+                {selectedResource.savedAmount && (
+                  <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 p-4 rounded-lg border border-green-500/20">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="h-5 w-5 text-green-400" />
+                      <span className="text-green-400 font-medium">
+                        Save {selectedResource.savedAmount} with this resource
+                      </span>
+                    </div>
+                  </div>
+                {selectedPerk.features.length > 0 && (
+                  <section className="space-y-3">
+                    <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-400">Program highlights</h3>
+                    <ul className="grid md:grid-cols-2 gap-3 text-sm text-gray-200">
+                      {selectedPerk.features.map((feature) => (
+                        <li key={feature} className="flex items-start gap-2">
+                          <CheckCircle className="h-4 w-4 mt-0.5 text-green-300" />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-4">
+                  {selectedResource.downloadUrl !== undefined ? (
+                    <Button 
+                      className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500"
+                      onClick={() => {
+                        handleDownload(selectedResource);
+                        setSelectedResource(null);
+                      }}
+                <section className="space-y-3">
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-400">Referral code</h3>
+                  <div className="flex flex-col md:flex-row md:items-center gap-3">
+                    <Button
+                      onClick={() => handleGenerateReferral(selectedPerk)}
+                      disabled={referralLoading === selectedPerk.id}
+                      className="md:w-auto"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download Resource
+                      {referralLoading === selectedPerk.id ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          Generating code...
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-4 w-4 mr-2" />
+                          {referralCodes[selectedPerk.id] ? "Copy referral code" : "Generate referral code"}
+                        </>
+                      )}
+                    </Button>
+                  ) : selectedResource.externalUrl ? (
+                    <Button 
+                      className="flex-1"
+                      onClick={() => {
+                        window.open(selectedResource.externalUrl, '_blank');
+                        setSelectedResource(null);
+                      }}
+                    {referralCodes[selectedPerk.id] && (
+                      <div className="flex items-center gap-2 bg-gray-900/60 border border-purple-500/30 rounded-lg px-3 py-2 text-sm text-purple-200">
+                        <span className="font-mono tracking-wider">{referralCodes[selectedPerk.id]}</span>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => {
+                            if (typeof window !== "undefined" && window.navigator.clipboard) {
+                              window.navigator.clipboard.writeText(referralCodes[selectedPerk.id]).catch(() => undefined);
+                            }
+                            toast({
+                              title: "Referral code copied",
+                              description: "Share this link with creators and track performance in your dashboard."
+                            });
+                          }}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                {selectedPerk.officialLink && (
+                  <section className="space-y-3">
+                    <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-400">Official partner hub</h3>
+                    <Button
+                      className="bg-gradient-to-r from-purple-500 to-pink-500"
+                      onClick={() => window.open(selectedPerk.officialLink, "_blank", "noopener")}
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Visit Website
+                    </Button>
+                  ) : (
+                    <Button className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500">
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Get Access
+                      Visit partner dashboard
+                    </Button>
+                  )}
+                  
+                  <Button
+                    variant="outline"
+                    onClick={() => toggleBookmark(selectedResource.id)}
+                  >
+                    <Bookmark 
+                      className={`h-4 w-4 mr-2 ${bookmarkedItems.has(selectedResource.id) ? 'fill-yellow-400 text-yellow-400' : ''}`} 
+                    />
+                    {bookmarkedItems.has(selectedResource.id) ? 'Bookmarked' : 'Bookmark'}
+                  </Button>
+                </div>
+                  </section>
+                )}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Enhanced Stats Section */}
+      <div className="grid md:grid-cols-4 gap-4">
+        <Card className="bg-gradient-to-br from-green-900/20 to-emerald-900/20 border-green-500/30 hover:border-green-500/50 transition-all">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-400">Total Savings</p>
+                <p className="text-2xl font-bold text-green-400 tabular-nums">$1,247</p>
+                <p className="text-xs text-green-400/70 mt-1">+$124 this month</p>
+              </div>
+              <div className="relative">
+                <DollarSign className="h-8 w-8 text-green-400/50" />
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-gradient-to-br from-purple-900/20 to-violet-900/20 border-purple-500/30 hover:border-purple-500/50 transition-all">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-400">Resources Used</p>
+                <p className="text-2xl font-bold text-purple-400 tabular-nums">23</p>
+                <p className="text-xs text-purple-400/70 mt-1">{bookmarkedItems.size} bookmarked</p>
+              </div>
+              <FileText className="h-8 w-8 text-purple-400/50" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-gradient-to-br from-pink-900/20 to-rose-900/20 border-pink-500/30 hover:border-pink-500/50 transition-all">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-400">Active Discounts</p>
+                <p className="text-2xl font-bold text-pink-400 tabular-nums">8</p>
+                <p className="text-xs text-pink-400/70 mt-1">3 expiring soon</p>
+              </div>
+              <Tag className="h-8 w-8 text-pink-400/50" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-gradient-to-br from-orange-900/20 to-amber-900/20 border-orange-500/30 hover:border-orange-500/50 transition-all">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-400">New This Month</p>
+                <p className="text-2xl font-bold text-orange-400 tabular-nums">5</p>
+                <p className="text-xs text-orange-400/70 mt-1">2 added today</p>
+              </div>
+              <div className="relative">
+                <Sparkles className="h-8 w-8 text-orange-400/50" />
+                <Zap className="absolute -top-1 -right-1 h-4 w-4 text-orange-400 animate-bounce" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {filteredResources.length === 0 && (
+        <Card className="p-12 text-center bg-gray-900/30 border-gray-600/30">
+          <Search className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-xl font-medium text-gray-300 mb-2">No perks found</h3>
+          <p className="text-gray-500 mb-4">
+            {searchTerm 
+              ? `No results for "${searchTerm}". Try adjusting your search.`
+              : "No perks available in this category."
+            }
+          </p>
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              setSearchTerm("");
+              setActiveCategory("all");
+            }}
+          >
+            Clear Filters
+          </Button>
+        </Card>
+      )}
+    </div>
+  );
+}
+}
+server/routes.ts
++4-1
+@@ -48,51 +48,51 @@ interface AuthUser {
+// Auth request interface that includes user  
+interface AuthenticatedRequest extends express.Request {
+  user?: typeof users.$inferSelect;
+}
+
+// Session interface with Reddit OAuth properties
+interface RedditSessionData {
+  redditOAuthState?: string;
+  redditConnected?: boolean;
+}
+
+declare module 'express-session' {
+  interface SessionData extends RedditSessionData {}
+}
+
+// Service imports
+import { generateContent } from "./services/content-generator.js";
+import { generateAIContent, analyzeImageForContent } from "./services/ai-generator.js";
+import { generateWithMultiProvider, getProviderStatus } from "./services/multi-ai-provider.js";
+import { generateUnifiedAIContent, analyzeImage } from "./services/unified-ai-service.js";
+import { generateImageCaption, imageToBase64, validateImageFormat } from "./image-caption-generator.js";
+import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage.js";
+import { getRandomTemplates, addWatermark, getTemplateByMood } from "./content-templates.js";
+import { generateAdvancedContent, type ContentParameters } from "./advanced-content-generator.js";
+// Reddit communities now handled in reddit-routes.ts
+import { getAvailablePerks, getPerksByCategory, generateReferralCode, getSignupInstructions } from "./pro-perks.js";
+import { proResourcesRouter } from "./routes/pro-resources.js";
+
+// API route modules
+import { registerApiRoutes } from "./api-routes.js";
+import { registerPolicyRoutes } from "./policy-routes.js";
+import { registerRedditRoutes } from "./reddit-routes.js";
+import { registerAnalyticsRoutes } from "./analytics-routes.js";
+import { createLead, confirmLead } from "./api/leads.js";
+import { getLeads } from "./api/admin-leads.js";
+import { captionRouter } from "./routes/caption.js";
+import { contentGenerationLimiter } from "./middleware/tiered-rate-limit.js";
+import { registerSocialMediaRoutes } from "./social-media-routes.js";
+
+// Schema imports
+import { insertContentGenerationSchema, insertUserImageSchema } from "@shared/schema";
+
+// Core dependencies
+import multer from 'multer';
+import fs from 'fs/promises';
+import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
+import csrf from 'csurf';
+
+// Get secure environment variables (no fallbacks)
+const rawSessionSecret = process.env.SESSION_SECRET;
+@@ -289,50 +289,53 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'):
+
+  // ==========================================
+  // AUTHENTICATION SETUP
+  // ==========================================
+  
+  // Setup authentication
+  setupAuth(app);
+  setupAdminRoutes(app);
+  
+  // Configure social authentication
+  configureSocialAuth();
+
+  // ==========================================
+  // ROUTE REGISTRATION
+  // ==========================================
+  
+  // Authentication routes - handled by setupAuth() in server/auth.ts
+  // app.use('/api/auth', authRoutes); // Removed - duplicate auth system
+  
+  // Upload routes
+  app.use('/api/upload', uploadRoutes);
+  
+  // Media routes
+  app.use('/api/media', mediaRoutes);
+
+  // Pro resources routes
+  app.use('/api/pro-resources', proResourcesRouter);
+
+  // Analytics routes
+  app.use('/api', analyticsRouter);
+  
+  // Social auth routes
+  app.get('/api/auth/google', socialAuthRoutes.googleAuth);
+  app.get('/api/auth/google/callback', socialAuthRoutes.googleCallback);
+  app.get('/api/auth/facebook', socialAuthRoutes.facebookAuth);
+  app.get('/api/auth/facebook/callback', socialAuthRoutes.facebookCallback);
+  app.get('/api/auth/reddit', socialAuthRoutes.redditAuth);
+  app.get('/api/auth/reddit/callback', socialAuthRoutes.redditCallback);
+
+  // Serve uploaded files securely
+  app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
+  // ==========================================
+  // STRIPE PAYMENT ENDPOINTS
+  // ==========================================
+  
+  // Create subscription payment intent
+  app.post("/api/create-subscription", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      if (!stripe) {
+        return res.status(503).json({ 
+          message: "Payment system is not configured. Please try again later." 
+        });
+server/routes/pro-resources.ts
+New
++89-0
+import { Router } from 'express';
+import type { Response } from 'express';
+import { authenticateToken, type AuthRequest } from '../middleware/auth.js';
+import { getAvailablePerks, getSignupInstructions, generateReferralCode, type ProPerk } from '../pro-perks.js';
+
+const proResourcesRouter = Router();
+
+type NormalizedTier = 'free' | 'starter' | 'pro';
+
+function normalizeTier(tier: string | null | undefined): NormalizedTier {
+  if (!tier) {
+    return 'free';
+  }
+
+  const normalized = tier.toLowerCase();
+  if (normalized === 'pro' || normalized === 'pro_plus' || normalized === 'premium') {
+    return 'pro';
+  }
+  if (normalized === 'starter') {
+    return 'starter';
+  }
+  return 'free';
+}
+
+function guardProAccess(req: AuthRequest, res: Response): ProPerk[] | null {
+  const normalizedTier = normalizeTier(req.user?.tier);
+  if (normalizedTier !== 'pro') {
+    res.status(403).json({ message: 'Pro membership required' });
+    return null;
+  }
+
+  return getAvailablePerks('pro');
+}
+
+proResourcesRouter.use(authenticateToken);
+
+proResourcesRouter.get('/', (req: AuthRequest, res) => {
+  const perks = guardProAccess(req, res);
+  if (!perks) {
+    return;
+  }
+
+  res.json({ perks });
+});
+
+proResourcesRouter.get('/:perkId/signup-instructions', (req: AuthRequest, res) => {
+  const perks = guardProAccess(req, res);
+  if (!perks) {
+    return;
+  }
+
+  const { perkId } = req.params;
+  const perk = perks.find((item) => item.id === perkId);
+
+  if (!perk) {
+    res.status(404).json({ message: 'Perk not found' });
+    return;
+  }
+
+  const instructions = getSignupInstructions(perkId);
+  res.json({ perk, instructions });
+});
+
+proResourcesRouter.post('/:perkId/referral-code', (req: AuthRequest, res) => {
+  const perks = guardProAccess(req, res);
+  if (!perks) {
+    return;
+  }
+
+  const { perkId } = req.params;
+  const perk = perks.find((item) => item.id === perkId);
+
+  if (!perk) {
+    res.status(404).json({ message: 'Perk not found' });
+    return;
+  }
+
+  const userId = req.user?.id;
+  if (!userId) {
+    res.status(401).json({ message: 'Authentication required' });
+    return;
+  }
+
+  const referralCode = generateReferralCode(userId, perkId);
+  res.json({ referralCode, perkId });
+});
+
+export { proResourcesRouter };
+
+tests/integration/pro-resources.test.ts
+New
++36-0
+import express from 'express';
+import type { Request, Response, NextFunction } from 'express';
+import request from 'supertest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
+
+vi.mock('../../server/middleware/auth.js', () => ({
+  authenticateToken: (req: Request & { user?: { id: number; tier: string } }, _res: Response, next: NextFunction) => {
+    req.user = { id: 42, tier: 'pro' };
+    next();
+  }
+}));
+
+import { proResourcesRouter } from '../../server/routes/pro-resources.js';
+
+describe('Pro resources API', () => {
+  let app: express.Express;
+
+  beforeAll(() => {
+    app = express();
+    app.use('/api/pro-resources', proResourcesRouter);
+  });
+
+  it('returns affiliate perks for authenticated users', async () => {
+    const response = await request(app)
+      .get('/api/pro-resources')
+      .set('Authorization', 'Bearer test-token');
+
+    expect(response.status).toBe(200);
+
+    const body = response.body as { perks?: Array<{ category: string }> };
+    expect(Array.isArray(body.perks)).toBe(true);
+
+    const affiliatePerk = body.perks?.find((perk) => perk.category === 'affiliate');
+    expect(affiliatePerk).toBeDefined();
+  });
+});

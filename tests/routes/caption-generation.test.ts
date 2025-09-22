@@ -122,6 +122,146 @@ describe('Caption Generation', () => {
       });
     });
 
+    it('should fallback to safe defaults when Gemini returns variants with missing hashtags', async () => {
+      const mockImageUrl =
+        'data:image/jpeg;base64,' +
+        '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP///////////////wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACP/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8Af//Z';
+      const mockPlatform = 'instagram';
+      const mockVoice = 'flirty_playful';
+
+      // Mock successful facts response
+      const mockFactsResponse = {
+        response: {
+          text: () => JSON.stringify({
+            objects: ['lingerie'],
+            setting: 'bedroom',
+            mood: 'confident',
+          }),
+        },
+      };
+
+      // Mock variants response with missing hashtags (empty array)
+      const mockVariantsResponse = {
+        response: {
+          text: () => JSON.stringify([
+            {
+              caption: 'Feeling gorgeous tonight ✨',
+              hashtags: [], // Empty hashtags should trigger fallback
+              safety_level: 'spicy_safe',
+              mood: 'confident',
+              style: 'authentic',
+              cta: 'What do you think?',
+              alt: 'A glamorous example alt text to satisfy schema',
+              nsfw: false,
+            },
+            {
+              caption: 'Another amazing look',
+              hashtags: [], // Empty hashtags should trigger fallback
+              safety_level: 'safe',
+              mood: 'confident',
+              style: 'authentic',
+              cta: 'Love this look!',
+              alt: 'Another example alt text that meets requirements',
+              nsfw: false,
+            },
+            {
+              caption: 'Third variant caption',
+              // hashtags field completely missing
+              safety_level: 'safe',
+              mood: 'confident',
+              style: 'authentic',
+              cta: 'Check it out',
+              alt: 'Third alt text example that is long enough',
+              nsfw: false,
+            },
+            {
+              caption: 'Fourth variant here',
+              hashtags: [], // Empty again
+              safety_level: 'safe',
+              mood: 'confident',
+              style: 'authentic',
+              cta: 'See more',
+              alt: 'Fourth alt text example with sufficient length',
+              nsfw: false,
+            },
+            {
+              caption: 'Fifth and final variant',
+              hashtags: [], // Empty again
+              safety_level: 'safe',
+              mood: 'confident',
+              style: 'authentic',
+              cta: 'Discover more',
+              alt: 'Fifth alt text example that meets all criteria',
+              nsfw: false,
+            },
+          ]),
+        },
+      };
+
+      const mockRankResponse = {
+        response: {
+          text: () =>
+            JSON.stringify({
+              winner_index: 0,
+              scores: [5, 4, 3, 2, 1],
+              reason: 'Selected variant with safe fallback hashtags',
+              final: {
+                caption: 'Feeling gorgeous tonight ✨',
+                hashtags: ['#thoughts'], // Should be populated by fallback
+                safety_level: 'spicy_safe',
+                mood: 'confident',
+                style: 'authentic',
+                cta: 'What do you think?',
+                alt: 'A glamorous example alt text to satisfy schema',
+                nsfw: false,
+              },
+            }),
+        },
+      };
+
+      const { textModel, visionModel } = await import('../../server/lib/gemini.js');
+      const visionGenerateMock = asMock(visionModel.generateContent);
+      visionGenerateMock.mockResolvedValueOnce(mockFactsResponse);
+      const textGenerateMock = asMock(textModel.generateContent);
+      textGenerateMock
+        .mockResolvedValueOnce(mockVariantsResponse)
+        .mockResolvedValueOnce(mockRankResponse);
+
+      const result = await pipeline({
+        imageUrl: mockImageUrl,
+        platform: mockPlatform,
+        voice: mockVoice,
+      });
+
+      const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.js');
+
+      // When Gemini returns variants with missing or empty hashtags, 
+      // the pipeline should fall back to OpenAI which provides safe defaults
+      expect(openAICaptionFallback).toHaveBeenCalledWith({
+        imageUrl: mockImageUrl,
+        platform: mockPlatform,
+        voice: mockVoice,
+      });
+      
+      // Verify the result has the expected structure from OpenAI fallback
+      expect(result.final).toMatchObject({
+        caption: 'Fallback caption',
+        hashtags: ['#fallback1', '#fallback2', '#fallback3'],
+        safety_level: 'normal',
+        alt: 'Fallback alt text that is sufficiently long',
+        mood: 'neutral',
+        style: 'informative',
+        cta: 'Check this out',
+        nsfw: false,
+      });
+      
+      // Verify the fallback hashtags don't contain banned words
+      const fallbackHashtags = ['#fallback1', '#fallback2', '#fallback3'];
+      fallbackHashtags.forEach((tag) => {
+        expect(tag.toLowerCase()).not.toContain('content');
+      });
+    });
+
     it('should handle safety level normalization', async () => {
       const mockResponse = {
         response: {

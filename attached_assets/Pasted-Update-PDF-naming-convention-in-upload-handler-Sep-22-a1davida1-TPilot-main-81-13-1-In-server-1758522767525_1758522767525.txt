@@ -1,0 +1,238 @@
+Update PDF naming convention in upload handler
+Sep 22 · a1davida1/TPilot · main
++81-13
+1. In `server/expense-routes.ts`’s `upload.single('receipt')` handler, update the non-S3 branch so PDFs are written with the same timestamped prefix used for images (e.g., `protected_${Date.now()}-${safeOriginalName}`) or another unique suffix.
+2. Adjust any receipt upload tests (see `tests/unit/expenses/receipt-upload.test.ts`) to reflect the new naming convention and assert that successive PDF uploads produce distinct filenames.
+
+Summary
+
+    Updated the local-storage receipt handler to apply a timestamped protected_ prefix to every saved filename so PDF uploads receive the same unique naming treatment as images.
+
+Revised the receipt upload unit tests to expect timestamped PDF metadata, capture the write path, and confirm two consecutive PDF uploads produce distinct filenames on disk.
+
+Testing
+
+    ✅ npm run lint – passes with existing repository-wide warnings (no new errors introduced).
+
+⚠️ npm test – aborted after numerous pre-existing suite failures unrelated to these changes; see log for details.
+
+✅ npx vitest run tests/unit/expenses/receipt-upload.test.ts
+
+
+server/expense-routes.ts
++2-1
+@@ -284,45 +284,46 @@ export function registerExpenseRoutes(app: Express) {
+        // Apply ImageShield protection to receipt
+        logger.info(
+          `Applying ImageShield protection (${protectionLevel}) to receipt for user ${req.user.id}, tier: ${userTier}`
+        );
+        receiptBuffer = await applyReceiptImageShieldProtection(
+          req.file.buffer,
+          protectionLevel as 'light' | 'standard' | 'heavy',
+          addWatermark
+        );
+        desiredFileName = `protected_${safeOriginalName}`;
+      }
+
+      let receiptUrl: string;
+      let receiptFileName = desiredFileName;
+
+      if (process.env.S3_BUCKET_MEDIA) {
+        const asset = await MediaManager.uploadFile(receiptBuffer, {
+          userId: req.user.id,
+          filename: desiredFileName,
+        });
+        receiptUrl = asset.downloadUrl || asset.signedUrl || asset.key;
+        receiptFileName = asset.filename;
+      } else {
+        const uploadDir = path.join(process.cwd(), 'uploads', 'receipts');
+        await fs.mkdir(uploadDir, { recursive: true });
+        const fileName = isPdf ? safeOriginalName : `protected_${Date.now()}-${safeOriginalName}`;
+        const timestampedFileName = `protected_${Date.now()}-${safeOriginalName}`;
+        const fileName = timestampedFileName;
+        await fs.writeFile(path.join(uploadDir, fileName), receiptBuffer);
+        receiptUrl = `/uploads/receipts/${fileName}`;
+        receiptFileName = fileName;
+      }
+
+      const expense = await storage.updateExpense(expenseId, req.user.id, {
+        receiptUrl,
+        receiptFileName,
+      });
+
+      const uploadDescriptor = isPdf ? 'PDF receipt stored' : 'Protected receipt uploaded';
+      logger.info(`${uploadDescriptor}: ${receiptFileName} for expense ${expenseId}`);
+      res.json(expense);
+    } catch (error) {
+      console.error('Error uploading receipt:', error);
+      res.status(500).json({ message: 'Failed to upload receipt' });
+    }
+  });
+}
+tests/unit/expenses/receipt-upload.test.ts
++79-12
+@@ -161,85 +161,152 @@ describe('Receipt Upload with ImageShield Protection', () => {
+        '89504e470d0a1a0a0000000d494844520000000100000001080600000001f15c48950000000d49444154789c626001000000050001180dd4010000000049454e44ae426082',
+        'hex'
+      );
+
+      await request(app)
+        .post('/api/expenses/1/receipt')
+        .attach('receipt', testImageBuffer, 'test-receipt.jpg')
+        .expect(401);
+
+      expect(mockStorage.updateExpense).not.toHaveBeenCalled();
+    });
+
+    test('should handle missing file upload', async () => {
+      await request(app)
+        .post('/api/expenses/1/receipt')
+        .expect(400);
+
+      expect(mockStorage.updateExpense).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('PDF receipt handling', () => {
+    test('should accept PDF receipts without applying protection', async () => {
+      delete process.env.S3_BUCKET_MEDIA;
+
+      const mockExpense = {
+        id: 4,
+        receiptUrl: '/uploads/receipts/invoice.pdf',
+        receiptFileName: 'invoice.pdf',
+      };
+
+      mockStorage.updateExpense.mockResolvedValue(mockExpense);
+      const updateCalls: Array<{ receiptUrl: string; receiptFileName: string }> = [];
+      mockStorage.updateExpense.mockImplementation(async (_expenseId, _userId, update) => {
+        const receiptUrl = update.receiptUrl ?? '';
+        const receiptFileName = update.receiptFileName ?? '';
+        updateCalls.push({ receiptUrl, receiptFileName });
+        return {
+          id: 4,
+          receiptUrl,
+          receiptFileName,
+        };
+      });
+
+      const pdfBuffer = Buffer.from('%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF');
+
+      const response = await request(app)
+        .post('/api/expenses/4/receipt')
+        .attach('receipt', pdfBuffer, { filename: 'invoice.pdf', contentType: 'application/pdf' })
+        .expect(200);
+
+      expect(response.body).toEqual(mockExpense);
+      expect(mockMediaManager.uploadFile).not.toHaveBeenCalled();
+      expect(mockStorage.updateExpense).toHaveBeenCalledWith(
+        4,
+        1,
+        expect.objectContaining({
+          receiptUrl: '/uploads/receipts/invoice.pdf',
+          receiptFileName: 'invoice.pdf',
+          receiptUrl: expect.stringMatching(/\/uploads\/receipts\/protected_\d+-invoice\.pdf$/u),
+          receiptFileName: expect.stringMatching(/^protected_\d+-invoice\.pdf$/u),
+        })
+      );
+
+      expect(response.body.receiptFileName).toMatch(/^protected_\d+-invoice\.pdf$/u);
+      expect(response.body.receiptUrl).toMatch(/\/uploads\/receipts\/protected_\d+-invoice\.pdf$/u);
+
+      const firstUpdate = updateCalls[0];
+      expect(firstUpdate).toBeDefined();
+      if (!firstUpdate) {
+        throw new Error('Expected updateExpense to be called with receipt metadata.');
+      }
+
+      expect(firstUpdate.receiptFileName).toMatch(/^protected_\d+-invoice\.pdf$/u);
+      expect(firstUpdate.receiptUrl).toMatch(/\/uploads\/receipts\/protected_\d+-invoice\.pdf$/u);
+
+      const writeMock = fs.writeFile as unknown as MockInstance<[string, Buffer], unknown>;
+      expect(writeMock).toHaveBeenCalledWith(expect.stringContaining('invoice.pdf'), expect.any(Buffer));
+      expect(writeMock).toHaveBeenCalledWith(expect.stringMatching(/protected_\d+-invoice\.pdf$/u), expect.any(Buffer));
+      const firstCall = writeMock.mock.calls[0];
+      expect(firstCall).toBeDefined();
+      const [, storedBuffer] = firstCall;
+      const [writtenPath, storedBuffer] = firstCall;
+      expect(typeof writtenPath).toBe('string');
+      expect(writtenPath).toMatch(/protected_\d+-invoice\.pdf$/u);
+      expect(Buffer.isBuffer(storedBuffer)).toBe(true);
+      expect(storedBuffer.equals(pdfBuffer)).toBe(true);
+    });
+
+    test('should generate unique filenames for successive local PDF uploads', async () => {
+      delete process.env.S3_BUCKET_MEDIA;
+
+      const pdfBuffer = Buffer.from('%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF');
+
+      const storedFileNames: string[] = [];
+      mockStorage.updateExpense.mockImplementation(async (_expenseId, _userId, update) => {
+        const receiptFileName = update.receiptFileName ?? '';
+        storedFileNames.push(receiptFileName);
+        return {
+          id: storedFileNames.length,
+          receiptUrl: update.receiptUrl ?? '',
+          receiptFileName,
+        };
+      });
+
+      const nowSpy = vi.spyOn(Date, 'now');
+      let callIndex = 0;
+      nowSpy.mockImplementation(() => 1700000000000 + callIndex++ * 1000);
+
+      try {
+        await request(app)
+          .post('/api/expenses/6/receipt')
+          .attach('receipt', pdfBuffer, { filename: 'invoice.pdf', contentType: 'application/pdf' })
+          .expect(200);
+
+        await request(app)
+          .post('/api/expenses/7/receipt')
+          .attach('receipt', pdfBuffer, { filename: 'invoice.pdf', contentType: 'application/pdf' })
+          .expect(200);
+      } finally {
+        nowSpy.mockRestore();
+      }
+
+      expect(storedFileNames).toHaveLength(2);
+      expect(storedFileNames[0]).toMatch(/^protected_\d+-invoice\.pdf$/u);
+      expect(storedFileNames[1]).toMatch(/^protected_\d+-invoice\.pdf$/u);
+      expect(new Set(storedFileNames).size).toBe(2);
+
+      const writeMock = fs.writeFile as unknown as MockInstance<[string, Buffer], unknown>;
+      expect(writeMock).toHaveBeenCalledTimes(2);
+      const firstPath = writeMock.mock.calls[0]?.[0];
+      const secondPath = writeMock.mock.calls[1]?.[0];
+      expect(typeof firstPath).toBe('string');
+      expect(typeof secondPath).toBe('string');
+      expect(firstPath).toContain(storedFileNames[0]);
+      expect(secondPath).toContain(storedFileNames[1]);
+      expect(firstPath).not.toBe(secondPath);
+    });
+
+    test('should retain original filename when uploading to S3', async () => {
+      process.env.S3_BUCKET_MEDIA = 'test-bucket';
+
+      const mockAsset = {
+        downloadUrl: 'https://s3.amazonaws.com/test-bucket/invoice.pdf',
+        filename: 'invoice.pdf',
+        key: 'receipts/invoice.pdf',
+      };
+
+      mockMediaManager.uploadFile.mockResolvedValue(mockAsset);
+      mockStorage.updateExpense.mockResolvedValue({
+        id: 5,
+        receiptUrl: mockAsset.downloadUrl,
+        receiptFileName: mockAsset.filename,
+      });
+
+      const pdfBuffer = Buffer.from('%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF');
+
+      const response = await request(app)
+        .post('/api/expenses/5/receipt')
+        .attach('receipt', pdfBuffer, { filename: 'invoice.pdf', contentType: 'application/pdf' })
+        .expect(200);
+
+      expect(response.body.receiptFileName).toBe('invoice.pdf');
+      expect(mockMediaManager.uploadFile).toHaveBeenCalledWith(

@@ -1,8 +1,45 @@
 import { z } from "zod";
 import { CaptionArray } from "./schema";
 import { inferFallbackFromFacts } from "./inferFallbackFromFacts";
+import { fallbackHashtags, HUMAN_CTA } from "./rankGuards";
 
 const LENGTH_GAP_THRESHOLD = 8;
+const SAFE_DEFAULT_CAPTION = "Sharing a moment that means a lot to me.";
+const SAFE_DEFAULT_ALT = "Detailed description available for everyone.";
+const REDDIT_FALLBACK_TAGS = ["community spotlight"];
+
+function minimumHashtagCount(platform?: string): number {
+  switch (platform) {
+    case "instagram":
+      return 3;
+    case "tiktok":
+      return 2;
+    case "reddit":
+      return 1;
+    case "x":
+    default:
+      return 1;
+  }
+}
+
+function resolveFallbackHashtags(platform?: string): string[] {
+  const fallback = fallbackHashtags(platform);
+  if (fallback.length > 0) {
+    return [...fallback];
+  }
+  if (platform === "reddit") {
+    return [...REDDIT_FALLBACK_TAGS];
+  }
+  return ["#thoughts"];
+}
+
+function sanitizeHashtagList(hashtags: string[] | undefined, min: number): string[] {
+  if (!Array.isArray(hashtags)) return [];
+  const sanitized = hashtags
+    .map(tag => tag.trim())
+    .filter(tag => tag.length > 0);
+  return sanitized.length >= min ? sanitized : [];
+}
 
 type CaptionVariant = z.infer<typeof CaptionArray>[number];
 
@@ -23,7 +60,7 @@ function isNearDuplicate(existing: string, candidate: string): boolean {
 
 function buildFreshCaption(baseCaption: string, index: number): string {
   const cleaned = baseCaption.trim();
-  const root = cleaned.length > 0 ? cleaned : "Check out this amazing content!";
+  const root = cleaned.length > 0 ? cleaned : SAFE_DEFAULT_CAPTION;
   return `Fresh POV ${index}: ${root}`;
 }
 
@@ -59,12 +96,33 @@ export function dedupeVariantsForRanking(
   }
 
   // Get contextual fallback data for padding if needed
-  const fallbackData = context && context.platform ? inferFallbackFromFacts(context as Required<Pick<typeof context, 'platform'>> & typeof context) : null;
+  const fallbackData = context?.platform
+    ? inferFallbackFromFacts({
+        platform: context.platform,
+        facts: context.facts,
+        theme: context.theme,
+        context: context.context,
+      })
+    : null;
+  const platform = context?.platform;
+  const minHashtags = minimumHashtagCount(platform);
+  const inferredHashtags = sanitizeHashtagList(fallbackData?.hashtags, minHashtags);
+  const fallbackTags = inferredHashtags.length >= minHashtags
+    ? inferredHashtags
+    : resolveFallbackHashtags(platform);
+  const fallbackAlt =
+    typeof fallbackData?.alt === "string" && fallbackData.alt.trim().length >= 20
+      ? fallbackData.alt.trim()
+      : SAFE_DEFAULT_ALT;
+  const fallbackCta =
+    typeof fallbackData?.cta === "string" && fallbackData.cta.trim().length >= 2
+      ? fallbackData.cta.trim()
+      : HUMAN_CTA;
   const base = uniques[0] ?? duplicates[0] ?? {
-    caption: "Check out this amazing content!",
-    alt: fallbackData?.alt ?? "Engaging social media content",
-    hashtags: fallbackData?.hashtags ?? ["#content", "#creative", "#amazing"],
-    cta: fallbackData?.cta ?? "Check it out",
+    caption: SAFE_DEFAULT_CAPTION,
+    alt: fallbackAlt,
+    hashtags: [...fallbackTags],
+    cta: fallbackCta,
     mood: "engaging",
     style: "authentic",
     safety_level: "normal",
@@ -78,9 +136,9 @@ export function dedupeVariantsForRanking(
     uniques.push({
       ...source,
       caption: freshCaption,
-      hashtags: fallbackData?.hashtags ?? source.hashtags,
-      cta: fallbackData?.cta ?? source.cta,
-      alt: fallbackData?.alt ?? source.alt,
+      hashtags: [...fallbackTags],
+      cta: fallbackCta,
+      alt: fallbackAlt,
     });
   }
 

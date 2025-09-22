@@ -4,6 +4,13 @@ ThottoPilot is a social media content creation platform for adult content creato
 
 ## Recent Changes (September 22, 2025)
 
+### Safe Caption Normalization Defaults Implemented (September 22, 2025)
+- ✅ **Replaced banned word defaults**: Updated `dedupeVariants.ts` to use safe fallback constants (`SAFE_DEFAULT_CAPTION`, `SAFE_DEFAULT_ALT`, `REDDIT_FALLBACK_TAGS`) instead of defaults containing "content"
+- ✅ **Platform-aware hashtag resolution**: Added `minimumHashtagCount()`, `resolveFallbackHashtags()`, and `sanitizeHashtagList()` helpers for context-aware safe defaults
+- ✅ **Enhanced normalization logic**: Both `geminiPipeline.ts` and `textOnlyPipeline.ts` now use `ensureFallbackCompliance` helper to provide safe hashtags via `fallbackHashtags()` function
+- ✅ **Comprehensive test coverage**: Added integration test proving Gemini pipeline handles missing hashtags gracefully by falling back to safe OpenAI defaults without banned tokens
+- ✅ **Banned word elimination**: All normalization paths now avoid introducing "content", "creative", "amazing" and other sparkle-filler terms in generated hashtags and captions
+
 ### Enhanced Expense Management with Category Integration (September 22, 2025)
 - ✅ **defaultBusinessPurpose field added**: Extended expenseCategories schema with defaultBusinessPurpose field for automated business purpose assignment
 - ✅ **Enhanced validation and deduction logic**: Updated expense routes with comprehensive validation, automatic deduction percentage application from categories, and intelligent business purpose defaults

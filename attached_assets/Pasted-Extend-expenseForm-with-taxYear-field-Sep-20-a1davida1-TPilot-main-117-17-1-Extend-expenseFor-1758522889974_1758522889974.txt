@@ -1,0 +1,440 @@
+Extend expenseForm with taxYear field
+Sep 20 · a1davida1/TPilot · main
++117-17
+1. Extend `expenseForm` state in `client/src/pages/tax-tracker.tsx` with a `taxYear` field initialized to the current year.
+2. Add a number or select input (with validation) to the modal so users can choose the correct filing year, and include that value in `createExpenseMutation.mutate`.
+3. Update the server to trust the supplied `taxYear` (after validating it is reasonable) instead of always defaulting to `currentYear`.
+
+Summary
+
+    Extended the tax tracker client state to include a defaulted taxYear, enforced validation for amount/category/year before submission, and exposed a numeric tax year control in the expense modal so the selected year is sent with the creation mutation.
+
+Updated the expense creation API to respect validated user-supplied tax years, clamp unreasonable defaults, and reject non-positive amounts before persisting expenses.
+
+Testing
+
+    ✅ npm run lint
+
+❌ npm test *(fails due to numerous pre-existing integration/unit suites that rely on unavailable external services and mocks, e.g., queue initialization and email verification dependencies)*
+
+
+client/src/pages/tax-tracker.tsx
++75-15
+@@ -35,80 +35,97 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  FileText,
+  DollarSign
+};
+
+interface TaxTrackerProps {
+  userTier?: 'guest' | 'free' | 'pro' | 'premium';
+}
+
+interface ExpenseCategory {
+  id: number;
+  name: string;
+  deductionPercentage: number;
+  icon: string;
+  color?: string;
+  description?: string;
+  examples: string[];
+  legalExplanation?: string;
+}
+
+interface Expense {
+  id: number;
+  description: string;
+  amount: number;
+  categoryId: number;
+  expenseDate: string;
+  taxYear: number;
+  receiptUrl?: string;
+  receiptFileName?: string;
+  notes?: string;
+  category: ExpenseCategory | null;
+  date?: string;
+}
+
+interface ExpenseFormState {
+  description: string;
+  amount: string;
+  category: string;
+  date: string;
+  notes: string;
+  taxYear: string;
+}
+
+const usdFormatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2
+});
+
+const formatCurrency = (amountInCents: number | null | undefined) =>
+  usdFormatter.format((amountInCents ?? 0) / 100);
+
+const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
+  const [selectedCategory, setSelectedCategory] = useState<ExpenseCategory | null>(null);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [calendarDate, setCalendarDate] = useState<Date>(new Date());
+  const [expenseForm, setExpenseForm] = useState({
+  const currentYear = new Date().getFullYear();
+  const earliestTaxYear = 2000;
+  const latestTaxYear = currentYear + 1;
+
+  const createDefaultExpenseForm = (): ExpenseFormState => ({
+    description: '',
+    amount: '',
+    category: '',
+    date: format(new Date(), 'yyyy-MM-dd'),
+    notes: ''
+    notes: '',
+    taxYear: String(currentYear)
+  });
+
+  const [selectedCategory, setSelectedCategory] = useState<ExpenseCategory | null>(null);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [calendarDate, setCalendarDate] = useState<Date>(new Date());
+  const [expenseForm, setExpenseForm] = useState<ExpenseFormState>(createDefaultExpenseForm);
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptExpenseId, setReceiptExpenseId] = useState('');
+  const [expenseError, setExpenseError] = useState<string | null>(null);
+  
+  const queryClient = useQueryClient();
+
+  const { data: expenseCategories = [], isLoading: categoriesLoading, error: categoriesError } = useQuery<ExpenseCategory[]>({
+    queryKey: ['/api/expense-categories'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/expense-categories');
+      return res.json();
+    }
+  });
+
+  useEffect(() => {
+    if (!selectedCategory && expenseCategories.length > 0) {
+      setSelectedCategory(expenseCategories[0]);
+    }
+  }, [expenseCategories, selectedCategory]);
+
+
+  // Fetch expense totals
+  const { data: expenseTotals = { total: 0, deductible: 0, byCategory: {} }, isLoading: totalsLoading, error: totalsError } =
+    useQuery({
+    queryKey: ['/api/expenses/totals'],
+@@ -131,87 +148,113 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
+
+  // Fetch calendar expenses
+  const { data: calendarExpenses = [], isLoading: calendarLoading, error: calendarError } = useQuery<Expense[]>({
+    queryKey: ['/api/expenses/range', format(startOfMonth(calendarDate), 'yyyy-MM-dd'), format(endOfMonth(calendarDate), 'yyyy-MM-dd')],
+    enabled: activeTab === 'calendar',
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        startDate: format(startOfMonth(calendarDate), 'yyyy-MM-dd'),
+        endDate: format(endOfMonth(calendarDate), 'yyyy-MM-dd')
+      });
+      const res = await apiRequest('GET', `/api/expenses/range?${params.toString()}`);
+      return res.json();
+    }
+  });
+
+  // Create expense mutation
+  const createExpenseMutation = useMutation({
+    mutationFn: async (expenseData: Omit<Expense, 'id' | 'category'>) => {
+      const response = await apiRequest('POST', '/api/expenses', expenseData);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/expenses/totals'] });
+      setShowExpenseModal(false);
+      setExpenseForm({ description: '', amount: '', category: '', date: format(new Date(), 'yyyy-MM-dd'), notes: '' });
+      setExpenseForm(createDefaultExpenseForm());
+      setExpenseError(null);
+    },
+    onError: (error: unknown) => {
+      const apiError = error as ApiError;
+      setExpenseError(apiError.userMessage ?? apiError.message);
+    }
+  });
+
+  const uploadReceiptMutation = useMutation({
+    mutationFn: async ({ expenseId, file }: { expenseId: string; file: File }) => {
+      const formData = new FormData();
+      formData.append('receipt', file);
+      const res = await apiRequest('POST', `/api/expenses/${expenseId}/receipt`, formData);
+      return res.json();
+    },
+    onSuccess: (updatedExpense: Expense) => {
+      queryClient.setQueryData<Expense[]>(['/api/expenses'], (old = []) =>
+        old.map((exp: Expense) => (exp.id === updatedExpense.id ? updatedExpense : exp))
+      );
+      queryClient.invalidateQueries({ queryKey: ['/api/expenses/range'] });
+      setShowReceiptModal(false);
+      setReceiptFile(null);
+      setReceiptExpenseId('');
+    }
+  });
+
+  const handleCreateExpense = () => {
+    if (!expenseForm.description || !expenseForm.amount || !expenseForm.category) return;
+    if (!expenseForm.description || !expenseForm.amount || !expenseForm.category || !expenseForm.taxYear) {
+      setExpenseError('Please complete all required fields before submitting.');
+      return;
+    }
+
+    const amountValue = Number.parseFloat(expenseForm.amount);
+    if (!Number.isFinite(amountValue) || amountValue <= 0) {
+      setExpenseError('Please enter a valid expense amount greater than zero.');
+      return;
+    }
+
+    const parsedCategoryId = Number.parseInt(expenseForm.category, 10);
+    if (Number.isNaN(parsedCategoryId)) {
+      setExpenseError('Please select a valid expense category.');
+      return;
+    }
+
+    const parsedTaxYear = Number.parseInt(expenseForm.taxYear, 10);
+    if (
+      Number.isNaN(parsedTaxYear) ||
+      parsedTaxYear < earliestTaxYear ||
+      parsedTaxYear > latestTaxYear
+    ) {
+      setExpenseError(`Please enter a tax year between ${earliestTaxYear} and ${latestTaxYear}.`);
+      return;
+    }
+
+    setExpenseError(null);
+    createExpenseMutation.mutate({
+      description: expenseForm.description,
+      amount: parseFloat(expenseForm.amount),
+      categoryId: parseInt(expenseForm.category, 10),
+      amount: amountValue,
+      categoryId: parsedCategoryId,
+      expenseDate: expenseForm.date,
+      notes: expenseForm.notes
+      notes: expenseForm.notes,
+      taxYear: parsedTaxYear
+    });
+  };
+
+  const handleReceiptUpload = () => {
+    if (!receiptFile || !receiptExpenseId) return;
+    uploadReceiptMutation.mutate({ expenseId: receiptExpenseId, file: receiptFile });
+  };
+
+  const getDaysWithExpenses = () => {
+    const daysInMonth = eachDayOfInterval({
+      start: startOfMonth(calendarDate),
+      end: endOfMonth(calendarDate)
+    });
+    
+    return daysInMonth.map(day => {
+      const dayExpenses = calendarExpenses.filter(expense =>
+        isSameDay(parseISO(expense.expenseDate), day)
+      );
+      const totalAmount = dayExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+      const hasReceipt = dayExpenses.some(expense => expense.receiptUrl);
+
+      return {
+        date: day,
+        expenses: dayExpenses,
+        totalAmount,
+@@ -667,73 +710,90 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
+                  onValueChange={(value) => setExpenseForm({...expenseForm, category: value})}
+                >
+                  <SelectTrigger className="w-full" data-testid="select-expense-category">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {expenseCategories.map(category => (
+                      <SelectItem key={category.id} value={category.id.toString()}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="date">Date</Label>
+                <Input
+                  id="date"
+                  type="date"
+                  value={expenseForm.date}
+                  onChange={(e) => setExpenseForm({...expenseForm, date: e.target.value})}
+                  data-testid="input-expense-date"
+                />
+              </div>
+              
+
+              <div>
+                <Label htmlFor="taxYear">Tax Year</Label>
+                <Input
+                  id="taxYear"
+                  type="number"
+                  min={earliestTaxYear}
+                  max={latestTaxYear}
+                  step={1}
+                  value={expenseForm.taxYear}
+                  onChange={(e) => setExpenseForm({...expenseForm, taxYear: e.target.value})}
+                  data-testid="input-expense-tax-year"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Enter the filing year for this deduction ({earliestTaxYear} - {latestTaxYear}).
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="notes">Notes (Optional)</Label>
+                <Textarea
+                  id="notes"
+                  value={expenseForm.notes}
+                  onChange={(e) => setExpenseForm({...expenseForm, notes: e.target.value})}
+                  data-testid="textarea-expense-notes"
+                />
+              </div>
+              
+              <div className="flex space-x-2 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowExpenseModal(false)}
+                  className="flex-1"
+                  data-testid="button-cancel-expense"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                <Button
+                  onClick={handleCreateExpense}
+                  disabled={!expenseForm.description || !expenseForm.amount || !expenseForm.category || createExpenseMutation.isPending}
+                  disabled={!expenseForm.description || !expenseForm.amount || !expenseForm.category || !expenseForm.taxYear || createExpenseMutation.isPending}
+                  className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500"
+                  data-testid="button-create-expense"
+                >
+                  {createExpenseMutation.isPending ? 'Adding...' : 'Add Expense'}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Upload Receipt Modal */}
+        <Dialog open={showReceiptModal} onOpenChange={setShowReceiptModal}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2">
+                <Upload className="h-5 w-5 text-purple-600" />
+                <span>Upload Receipt</span>
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <Select value={receiptExpenseId} onValueChange={setReceiptExpenseId}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select expense" />
+                </SelectTrigger>
+                <SelectContent>
+server/expense-routes.ts
++42-2
+@@ -140,55 +140,95 @@ export function registerExpenseRoutes(app: Express) {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+
+      const taxYear = req.query.taxYear ? parseInt(req.query.taxYear as string) : undefined;
+      const expenses = await storage.getUserExpenses(req.user.id, taxYear);
+      res.json(expenses);
+    } catch (error) {
+      console.error('Error fetching expenses:', error);
+      res.status(500).json({ message: 'Failed to fetch expenses' });
+    }
+  });
+
+  // Create new expense
+  app.post('/api/expenses', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+
+      const currentYear = new Date().getFullYear();
+      const expenseDate = new Date(req.body.expenseDate);
+      if (Number.isNaN(expenseDate.getTime())) {
+        return res.status(400).json({ message: 'Invalid expense date' });
+      }
+      const minimumTaxYear = 2000;
+      const maximumTaxYear = currentYear + 1;
+      const rawTaxYear: unknown = req.body.taxYear;
+      const hasProvidedTaxYear = rawTaxYear !== undefined && rawTaxYear !== null && rawTaxYear !== '';
+
+      let taxYear = expenseDate.getFullYear();
+
+      if (hasProvidedTaxYear) {
+        let parsedTaxYear: number | null = null;
+
+        if (typeof rawTaxYear === 'number') {
+          parsedTaxYear = rawTaxYear;
+        } else if (typeof rawTaxYear === 'string') {
+          const trimmedTaxYear = rawTaxYear.trim();
+          if (trimmedTaxYear !== '') {
+            parsedTaxYear = Number(trimmedTaxYear);
+          }
+        }
+
+        if (parsedTaxYear === null || !Number.isInteger(parsedTaxYear)) {
+          return res.status(400).json({ message: 'Tax year must be a valid year.' });
+        }
+
+        if (parsedTaxYear < minimumTaxYear || parsedTaxYear > maximumTaxYear) {
+          return res
+            .status(400)
+            .json({ message: `Tax year must be between ${minimumTaxYear} and ${maximumTaxYear}.` });
+        }
+
+        taxYear = parsedTaxYear;
+      } else if (taxYear < minimumTaxYear || taxYear > maximumTaxYear) {
+        taxYear = Math.min(Math.max(taxYear, minimumTaxYear), maximumTaxYear);
+      }
+
+      const rawAmount: unknown = req.body.amount;
+      const amountValue = typeof rawAmount === 'number' ? rawAmount : Number.parseFloat(String(rawAmount));
+      if (!Number.isFinite(amountValue) || amountValue <= 0) {
+        return res.status(400).json({ message: 'Invalid expense amount' });
+      }
+
+      const expenseData = {
+        ...req.body,
+        userId: req.user.id,
+        taxYear: req.body.taxYear || currentYear,
+        amount: Math.round(parseFloat(req.body.amount) * 100),
+        taxYear,
+        amount: Math.round(amountValue * 100),
+        expenseDate,
+      };
+
+      const expense = await storage.createExpense(expenseData as InsertExpense);
+      res.status(201).json(expense);
+    } catch (error) {
+      console.error('Error creating expense:', error);
+      res.status(500).json({ message: 'Failed to create expense' });
+    }
+  });
+
+  // Update expense
+  app.put('/api/expenses/:id', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+
+      const expenseId = parseInt(req.params.id);
+      const updates = {
+        ...req.body,
+        amount: req.body.amount ? Math.round(parseFloat(req.body.amount) * 100) : undefined,
+        expenseDate: req.body.expenseDate ? new Date(req.body.expenseDate) : undefined,
+      };
+      if (updates.expenseDate && Number.isNaN(updates.expenseDate.getTime())) {
