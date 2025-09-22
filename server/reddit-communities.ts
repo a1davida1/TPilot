@@ -12,6 +12,71 @@ import {
 import { eq, ilike, desc, or } from 'drizzle-orm';
 import { lintCaption } from './lib/policy-linter.js';
 
+// ==========================================
+// ELIGIBILITY TYPES AND INTERFACES
+// ==========================================
+
+export interface CommunityEligibilityCriteria {
+  karma?: number;
+  accountAgeDays?: number;
+  verified: boolean;
+}
+
+export interface CommunityRules {
+  minKarma?: number | null;
+  minAccountAge?: number | null;
+  verificationRequired?: boolean;
+}
+
+/**
+ * Parse community rules from the database response
+ * Handles both legacy column-level rules and new structured rules
+ */
+export function parseCommunityRules(community: RedditCommunity): CommunityRules {
+  const columnLevelVerification = community.verificationRequired;
+  const structuredRules = normalizeRules(community.rules, community.promotionAllowed, community.category);
+  
+  return {
+    minKarma: structuredRules.minKarma,
+    minAccountAge: structuredRules.minAccountAge,
+    verificationRequired: columnLevelVerification || structuredRules.verificationRequired
+  };
+}
+
+/**
+ * Filter communities based on user eligibility criteria
+ */
+export async function getEligibleCommunitiesForUser(criteria: CommunityEligibilityCriteria): Promise<RedditCommunity[]> {
+  // Get all communities
+  const allCommunities = await listCommunities();
+  
+  // Filter based on eligibility criteria
+  return allCommunities.filter(community => {
+    const rules = parseCommunityRules(community);
+    
+    // Check minimum karma requirement
+    if (rules.minKarma !== null && rules.minKarma !== undefined) {
+      if (criteria.karma === undefined || criteria.karma < rules.minKarma) {
+        return false;
+      }
+    }
+    
+    // Check minimum account age requirement
+    if (rules.minAccountAge !== null && rules.minAccountAge !== undefined) {
+      if (criteria.accountAgeDays === undefined || criteria.accountAgeDays < rules.minAccountAge) {
+        return false;
+      }
+    }
+    
+    // Check verification requirement
+    if (rules.verificationRequired && !criteria.verified) {
+      return false;
+    }
+    
+    return true;
+  });
+}
+
 /**
  * Normalize and hydrate community rules from database response
  * Handles backward compatibility with legacy array-based rules
@@ -216,4 +281,12 @@ export async function syncCommunityRules(communityName: string) {
     console.error('Failed to sync community rules:', error);
     return false;
   }
+}
+
+/**
+ * Get eligible communities count for quick stats
+ */
+export async function getEligibleCommunitiesCount(criteria: CommunityEligibilityCriteria): Promise<number> {
+  const eligibleCommunities = await getEligibleCommunitiesForUser(criteria);
+  return eligibleCommunities.length;
 }
