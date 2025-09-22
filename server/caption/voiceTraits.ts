@@ -15,6 +15,13 @@ const VoiceMapSchema = z.record(VoiceDefinitionSchema);
 
 let cache: z.infer<typeof VoiceMapSchema> | null = null;
 
+/**
+ * Clear cached voice profiles to allow hot-reload of voices.json
+ */
+export function clearVoiceCache(): void {
+  cache = null;
+}
+
 function loadVoiceMap(): z.infer<typeof VoiceMapSchema> | null {
   if (cache) return cache;
   try {

@@ -20,7 +20,7 @@ This release wires structured voice guidance directly into every caption pipelin
 - **Usage notes:**
   - Each array renders as bullet points inside the prompt (`VOICE_TRAITS`, `AUDIENCE_HOOKS`, `CTA_PATTERNS`, `AUTHENTICITY_CHECKLIST`, `SUBREDDIT_NOTES`).
   - Keep verbs vivid and actionable; they are injected verbatim, so avoid pronouns that depend on prior context.
-  - Add new voices by inserting another object with the same keys. No restart needed—the helper reads the JSON at runtime.
+  - Add new voices by inserting another object with the same keys. Changes are cached on first read—restart the server or clear cache via development tools for immediate effect.
 
 ## System + task prompt changes
 - `prompts/system.txt` now enforces creator-first tone, sensory detail, and authenticity checks.

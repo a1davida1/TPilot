@@ -7,7 +7,6 @@ import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
 import { extractToneOptions, ToneOptions } from "./toneOptions";
 import { buildVoiceGuideBlock } from "./stylePack";
 import { formatVoiceContext } from "./voiceTraits";
-import { formatVoicePromptBlock } from "../../shared/voiceTraits";
 import { serializePromptField } from "./promptUtils";
 import { inferFallbackFromFacts } from "./inferFallbackFromFacts";
 import { dedupeVariantsForRanking } from "./dedupeVariants";

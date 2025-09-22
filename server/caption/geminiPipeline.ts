@@ -8,7 +8,6 @@ import { extractToneOptions, ToneOptions } from "./toneOptions";
 import { buildVoiceGuideBlock } from "./stylePack";
 import { serializePromptField } from "./promptUtils";
 import { formatVoiceContext } from "./voiceTraits";
-import { formatVoicePromptBlock } from "../../shared/voiceTraits";
 import { ensureFactCoverage } from "./ensureFactCoverage";
 import { inferFallbackFromFacts } from "./inferFallbackFromFacts";
 import { dedupeVariantsForRanking } from "./dedupeVariants";
