@@ -89,7 +89,7 @@ function registerProResourcesRoutes(app: Express) {
         });
       }
 
-      const availablePerks = getAvailablePerks(userTier);
+      const availablePerks = getAvailablePerks(userTier === 'premium' ? 'pro' : userTier as 'free' | 'starter' | 'pro');
       
       res.json({
         perks: availablePerks,
@@ -124,7 +124,7 @@ function registerProResourcesRoutes(app: Express) {
       }
 
       // Verify the perk exists and user has access
-      const availablePerks = getAvailablePerks(userTier);
+      const availablePerks = getAvailablePerks(userTier === 'premium' ? 'pro' : userTier as 'free' | 'starter' | 'pro');
       const perk = availablePerks.find(p => p.id === perkId);
       
       if (!perk) {
@@ -161,7 +161,7 @@ function registerProResourcesRoutes(app: Express) {
       }
 
       // Verify the perk exists and user has access
-      const availablePerks = getAvailablePerks(userTier);
+      const availablePerks = getAvailablePerks(userTier === 'premium' ? 'pro' : userTier as 'free' | 'starter' | 'pro');
       const perk = availablePerks.find(p => p.id === perkId);
       
       if (!perk) {
