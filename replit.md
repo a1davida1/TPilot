@@ -1,87 +1,6 @@
 # Overview
 
-ThottoPilot is a social media content creation platform for adult content creators, generating engaging Reddit posts with personalized titles, content, and photo instructions. It offers intelligent promotion features, image protection capabilities, and adapts content based on subreddit promotion rules. The platform aims to streamline content monetization and protection for creators.
-
-## Recent Changes (September 22, 2025)
-
-### Safe Caption Normalization Defaults Implemented (September 22, 2025)
-- ✅ **Replaced banned word defaults**: Updated `dedupeVariants.ts` to use safe fallback constants (`SAFE_DEFAULT_CAPTION`, `SAFE_DEFAULT_ALT`, `REDDIT_FALLBACK_TAGS`) instead of defaults containing "content"
-- ✅ **Platform-aware hashtag resolution**: Added `minimumHashtagCount()`, `resolveFallbackHashtags()`, and `sanitizeHashtagList()` helpers for context-aware safe defaults
-- ✅ **Enhanced normalization logic**: Both `geminiPipeline.ts` and `textOnlyPipeline.ts` now use `ensureFallbackCompliance` helper to provide safe hashtags via `fallbackHashtags()` function
-- ✅ **Comprehensive test coverage**: Added integration test proving Gemini pipeline handles missing hashtags gracefully by falling back to safe OpenAI defaults without banned tokens
-- ✅ **Banned word elimination**: All normalization paths now avoid introducing "content", "creative", "amazing" and other sparkle-filler terms in generated hashtags and captions
-
-### Enhanced Expense Management with Category Integration (September 22, 2025)
-- ✅ **defaultBusinessPurpose field added**: Extended expenseCategories schema with defaultBusinessPurpose field for automated business purpose assignment
-- ✅ **Enhanced validation and deduction logic**: Updated expense routes with comprehensive validation, automatic deduction percentage application from categories, and intelligent business purpose defaults
-- ✅ **Storage optimization**: Refactored updateExpense to recalculate deduction percentages when category changes, with exported summarizeExpenseTotals helper for consistent calculations
-- ✅ **Regression test coverage**: Added comprehensive unit tests verifying expense totals calculations with different deduction percentages and category-based logic
-- ✅ **Database migration applied**: Successfully added default_business_purpose column to expense_categories table with proper schema synchronization
-
-### JWT_SECRET Handling Fixed in Admin Routes
-- ✅ **Lazy JWT secret resolution**: Admin routes now load without throwing when JWT_SECRET is undefined, resolving the secret lazily inside middleware
-- ✅ **Test environment support**: Deterministic fallback ('test-jwt-secret') provided when NODE_ENV === 'test'
-- ✅ **Production safeguards maintained**: Middleware returns HTTP 500 error when secret is missing in non-test environments instead of throwing
-- ✅ **Module import safety**: Express app can now initialize for test doubles without crashes
-- ✅ **Unit test coverage**: Added comprehensive tests verifying admin routes setup works without JWT_SECRET in test mode and properly rejects requests in production
-
-### RewritePipeline Refactoring Completed  
-- ✅ **Removed sparkle fallback**: Eliminated length-check branch that concatenated generic sparkle sentences
-- ✅ **Progressive retry system**: Implemented 3-tier escalating hints system for better caption generation
-- ✅ **Enhanced type safety**: Added proper TypeScript types and improved error handling
-- ✅ **Comprehensive test coverage**: Added unit tests verifying no filler strings and proper hint forwarding
-
-### Caption Generation Logic Enhancement
-- ✅ **Unicode-aware normalization**: Added comprehensive text normalization with NFKD, character replacement, and whitespace cleanup
-- ✅ **Levenshtein distance deduplication**: Implemented advanced similarity detection using edit distance and token-based Jaccard similarity
-- ✅ **Progressive retry mechanism**: Replaced clone loops with intelligent variety hints that escalate across 5 attempts
-- ✅ **Comprehensive sanitization**: Added robust variant sanitization with fallback values for all required fields
-- ✅ **Both pipelines updated**: Applied improvements to both Gemini and text-only caption generation pipelines
-- ✅ **Test coverage expansion**: Enhanced tests to verify retry mechanisms, deduplication, and multi-response scenarios
-
-## Recent Changes (September 20, 2025)
-
-### Caption Pipeline Tone Parameter Forwarding
-- ✅ **Tone persistence across retries**: Implemented comprehensive tone parameter forwarding system for all caption generation pipelines
-- ✅ **ToneOptions helper created**: Centralized type-safe extraction of tone parameters (style, mood) from request parameters
-- ✅ **Pipeline consistency maintained**: All three pipelines (Gemini, rewrite, text-only) now preserve caller's tone preferences during platform validation retries
-- ✅ **Regression test coverage**: Added comprehensive unit tests verifying tone parameter extraction and preservation logic
-- ✅ **Type safety enhanced**: Updated pipeline type definitions to properly handle tone parameters with intersection types
-
-### Pricing Structure Updated
-- ✅ **Updated subscription tiers**: New pricing structure with Starter ($13.99/month) and Pro ($24.99/month) plans
-- ✅ **Removed Premium tier**: Simplified to two paid tiers, Enterprise/Agency tier planned for future
-- ✅ **Updated feature allocation**: Free (5 generations/day, 2GB storage), Starter (50 generations/day, 10GB storage), Pro (unlimited generations, 50GB storage, API access)
-- ✅ **Frontend pricing updates**: All checkout flows, billing dashboard, and feature comparison tables updated
-- ✅ **Backend billing configuration**: Updated Stripe price labels and billing API responses
-
-## Recent Changes (September 17, 2025)
-
-### Test Stabilization Completed
-- ✅ **Email verification tests stabilized**: Fixed request type detection using req.accepts(['html','json']), added missing sendWelcomeEmail call
-- ✅ **Policy linter database normalization fixed**: Subreddit names now preserve underscores for correct database lookups
-- ✅ Authentication flow tests now 4/4 passing with consistent JSON vs redirect behavior
-- ✅ Content moderation system stabilized with proper subreddit rule matching
-
-### TypeScript Deployment Fixes Applied (August 19, 2025)
-- ✅ Fixed duplicate property names in server/lib/config.ts (APP_BASE_URL, CCBILL_*, WATERMARK_*, etc.)
-- ✅ Added missing database schema properties (MEDIA_MAX_BYTES_FREE, MEDIA_MAX_BYTES_PRO)
-- ✅ Fixed TypeScript strict type checking with proper null checks and type assertions
-- ✅ Added downlevelIteration: true and target: "ES2015" to tsconfig.json for Set iteration support
-- ✅ Fixed database query type mismatches with proper type conversions for user IDs
-- ✅ Resolved React component type issues (analytics dashboard, media library, enterprise components)
-- ✅ Fixed API request parameter mismatches throughout the codebase
-- ✅ Reduced TypeScript compilation errors from 300+ to 122 (61% reduction)
-
-### Production Deployment Status (August 19, 2025)
-- ✅ **Gemini API Configured**: Google Gemini now primary AI provider with GOOGLE_GENAI_API_KEY
-- ✅ OpenAI configured as fallback (currently quota exceeded but available as backup)
-- ✅ TypeScript errors being fixed (reduced from 300+ to ~100)
-- ✅ Enhanced AI content generation with automatic fallback system
-- ✅ Safety systems (rate limiting, duplicate detection) fully operational
-- ✅ Database schema alignment completed for critical tables
-- ✅ Server running successfully with graceful error handling
-- ✅ API endpoints working with Gemini primary, OpenAI fallback, template as last resort
+ThottoPilot is a social media content creation platform designed for adult content creators. Its primary purpose is to generate engaging Reddit posts, including personalized titles, content, and photo instructions, while offering intelligent promotion features and image protection capabilities. The platform adapts content based on subreddit promotion rules to streamline content monetization and protection for creators. Key capabilities include advanced AI content generation, multi-layered image protection, and a tiered access system. The project aims to provide a comprehensive solution for adult content creators to manage and promote their work effectively and safely across social media.
 
 # User Preferences
 
@@ -102,20 +21,20 @@ Compliance: Phased approach - base features without ID verification, gate advanc
 - **Framework**: React 18 with TypeScript using Vite.
 - **UI Components**: Shadcn/ui built on Radix UI.
 - **Styling**: Tailwind CSS with comprehensive token-based theming system.
-- **Theme System**: Token-based light/dark mode with WCAG AA compliance, SSR-safe persistence, and comprehensive CSS variables.
+- **Theme System**: Token-based light/dark mode with WCAG AA compliance.
 - **State Management**: TanStack Query (React Query).
 - **Routing**: Wouter.
 - **Form Handling**: React Hook Form with Zod validation.
-- **UI/UX Decisions**: Bubblegum color scheme (vibrant pink/rose with yellow accents), ultra-polished interface with guaranteed high-contrast text for permanent readability, glass morphism, dynamic gradients, premium CSS animations, and mobile-first design. Anti-hover visibility patterns implemented. Three-tier portal views (Guest, Free, Starter $13.99/mo, Pro $24.99/mo) with upgrade prompts.
-- **Accessibility**: WCAG AA compliance enforced via ESLint/Stylelint rules, comprehensive test suite, high contrast and reduced motion support.
+- **UI/UX Decisions**: Bubblegum color scheme, ultra-polished interface with high-contrast text, glass morphism, dynamic gradients, premium CSS animations, and mobile-first design. Anti-hover visibility patterns. Three-tier portal views (Guest, Free, Starter, Pro) with upgrade prompts.
+- **Accessibility**: WCAG AA compliance enforced.
 
 ## Backend Architecture
 - **Server Framework**: Express.js with TypeScript on Node.js.
 - **API Design**: RESTful API.
 - **Data Storage**: PostgreSQL.
-- **Content Generation**: Advanced template-based content generator adapting content for specific social media platforms and subreddit promotion rules.
+- **Content Generation**: Advanced template-based content generator for social media platforms and subreddit rules.
 - **Session Management**: Express sessions with PostgreSQL-backed storage.
-- **System Design Choices**: Smart 4090 architecture for batch processing (ImageShield preprocessing, Content Engine generation, Voice Clone library creation) to optimize costs. Unified content creator with dual workflow (Text-First, Image-First) and tier-based access. Queue provider abstraction with Redis/PostgreSQL fallback.
+- **System Design Choices**: Smart 4090 architecture for batch processing (ImageShield preprocessing, Content Engine generation, Voice Clone library creation). Unified content creator with dual workflow (Text-First, Image-First) and tier-based access. Queue provider abstraction.
 
 ## Database Design
 - **ORM**: Drizzle ORM for PostgreSQL.
@@ -128,18 +47,18 @@ Compliance: Phased approach - base features without ID verification, gate advanc
 - **Authorization**: User-scoped content generation history and statistics. Admin portal.
 
 ## Content Generation System
-- **Template Engine**: Predefined templates organized by platform, style, and theme. Includes 50+ promotional templates.
+- **Template Engine**: Predefined templates organized by platform, style, and theme, including 50+ promotional templates.
 - **Photo Instructions**: Structured guidance for lighting, angles, composition, styling, and technical settings.
-- **Platform Optimization**: Content tailored for social media requirements and audience expectations.
+- **Platform Optimization**: Content tailored for social media requirements.
 - **Promotion Intelligence**: Smart content adaptation based on subreddit rules.
-- **Advanced Features**: Fine-tuning with sample library and personalization settings. One-click style presets. Tiered content system with pre-generated templates for free users (5 generations/day), enhanced capabilities for Starter users (50 generations/day), and unlimited AI generation for Pro users. Advanced content generation engine producing outputs based on photo type, text tone, promotion settings, and hashtag selection. Dual AI providers (Gemini + OpenAI) with response caching.
+- **Advanced Features**: Fine-tuning with sample library and personalization settings. One-click style presets. Tiered content system with varying generation capabilities. Dual AI providers (Gemini + OpenAI) with response caching.
 
 ## Image Protection System
 - **Anti-Reverse Search**: Multi-layered image processing (Gaussian blur, subtle noise, intelligent resizing, metadata stripping).
 - **Quality Preservation**: Maintains visual appeal post-processing.
 - **Client-Side Processing**: Browser-based manipulation using HTML5 Canvas.
 - **Preset Configurations**: Light, standard, and heavy protection levels.
-- **Watermark System**: Tiered watermarking for free users ("Protected by ThottoPilot™").
+- **Watermark System**: Tiered watermarking for free users.
 
 # External Dependencies
 
@@ -172,7 +91,7 @@ Compliance: Phased approach - base features without ID verification, gate advanc
 - **snoowrap**: Reddit API wrapper.
 - **Google GenAI**: AI content generation.
 - **OpenAI**: AI content generation (GPT-4o).
-- **BullMQ**: Background job processing (legacy, now abstracted).
-- **ioredis**: Redis client (legacy, now abstracted).
+- **BullMQ**: Background job processing.
+- **ioredis**: Redis client.
 - **CCBill**: Billing integration.
 - **SegPay, Epoch, Paxum, Coinbase Commerce**: Multi-payment provider scaffolds.

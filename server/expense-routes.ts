@@ -467,7 +467,8 @@ export function registerExpenseRoutes(app: Express) {
       } else {
         const uploadDir = path.join(process.cwd(), 'uploads', 'receipts');
         await fs.mkdir(uploadDir, { recursive: true });
-        const fileName = isPdf ? safeOriginalName : `protected_${Date.now()}-${safeOriginalName}`;
+        const timestampedFileName = `protected_${Date.now()}-${safeOriginalName}`;
+        const fileName = timestampedFileName;
         await fs.writeFile(path.join(uploadDir, fileName), receiptBuffer);
         receiptUrl = `/uploads/receipts/${fileName}`;
         receiptFileName = fileName;
