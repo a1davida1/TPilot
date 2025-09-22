@@ -550,6 +550,67 @@ export function registerRedditRoutes(app: Express) {
     }
   });
 
+  // Check shadowban status for authenticated user
+  app.get('/api/reddit/shadowban-status', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const reddit = await RedditManager.forUser(userId);
+      if (!reddit) {
+        return res.status(404).json({
+          status: 'unknown',
+          reason: 'No Reddit account connected',
+          evidence: {
+            username: 'unknown',
+            checkedAt: new Date().toISOString(),
+            privateCount: 0,
+            publicCount: 0,
+            privateSubmissions: [],
+            publicSubmissions: [],
+            missingSubmissionIds: []
+          }
+        });
+      }
+
+      const shadowbanResult = await reddit.checkShadowbanStatus();
+      
+      logger.info('Shadowban status checked', {
+        userId,
+        username: shadowbanResult.evidence.username,
+        status: shadowbanResult.status,
+        privateCount: shadowbanResult.evidence.privateCount,
+        publicCount: shadowbanResult.evidence.publicCount,
+        missingCount: shadowbanResult.evidence.missingSubmissionIds.length
+      });
+
+      res.json(shadowbanResult);
+      
+    } catch (error) {
+      logger.error('Error checking shadowban status', { 
+        userId: req.user?.id, 
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      
+      res.status(500).json({
+        status: 'unknown',
+        reason: 'Failed to check shadowban status',
+        evidence: {
+          username: 'unknown',
+          checkedAt: new Date().toISOString(),
+          privateCount: 0,
+          publicCount: 0,
+          privateSubmissions: [],
+          publicSubmissions: [],
+          missingSubmissionIds: []
+        }
+      });
+    }
+  });
+
   // Admin CRUD endpoints
   app.post('/api/reddit/communities', authenticateToken, async (req: AuthRequest, res) => {
     if (!req.user?.isAdmin) return res.status(403).json({ error: 'Forbidden' });
