@@ -125,6 +125,7 @@ export class SafetyManager {
   static async recordPost(userId: string, subreddit: string): Promise<void> {
     const now = new Date();
     const windowStart = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const userIdNumeric = Number.parseInt(userId, 10);
 
     // Try to update existing record
     const updated = await db
@@ -136,21 +137,49 @@ export class SafetyManager {
       })
       .where(
         and(
-          eq(postRateLimits.userId, parseInt(userId)),
+          eq(postRateLimits.userId, userIdNumeric),
           eq(postRateLimits.subreddit, subreddit),
           gte(postRateLimits.lastPostAt, windowStart)
         )
       );
 
-    // If no existing record, create new one
-    if (!updated) {
-      await db.insert(postRateLimits).values({
-        userId: parseInt(userId),
-        subreddit,
-        postCount24h: 1,
-        lastPostAt: now,
-      });
+    const rowsUpdated = SafetyManager.getRowCount(updated);
+
+    if (rowsUpdated === 0) {
+      await db
+        .insert(postRateLimits)
+        .values({
+          userId: userIdNumeric,
+          subreddit,
+          postCount24h: 1,
+          lastPostAt: now,
+        })
+        .onConflictDoUpdate({
+          target: [postRateLimits.userId, postRateLimits.subreddit],
+          set: {
+            postCount24h: 1,
+            lastPostAt: now,
+            updatedAt: now,
+          },
+        });
     }
+  }
+
+  private static hasRowCount(result: unknown): result is { rowCount?: number } {
+    return typeof result === 'object' && result !== null && 'rowCount' in result;
+  }
+
+  private static getRowCount(result: unknown): number {
+    if (Array.isArray(result)) {
+      return result.length;
+    }
+
+    if (SafetyManager.hasRowCount(result)) {
+      const { rowCount } = result;
+      return typeof rowCount === 'number' ? rowCount : 0;
+    }
+
+    return 0;
   }
 
   /**
