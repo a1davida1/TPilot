@@ -35,6 +35,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { QuickStartModal } from "@/components/dashboard-quick-start";
 
 interface ModernDashboardProps {
   isRedditConnected?: boolean;
@@ -179,6 +180,8 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showMoreTools, setShowMoreTools] = useState(false);
   const [onboardingProgress, setOnboardingProgress] = useState<OnboardingProgress>(() => readStoredProgress());
+  const [quickStartOpen, setQuickStartOpen] = useState(false);
+  const [quickStartStep, setQuickStartStep] = useState<'connect' | 'subreddit' | 'copy' | 'confirm'>('connect');
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { user: authUser } = useAuth();
@@ -469,10 +472,15 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
   };
 
   const handleQuickAction = () => {
-    toast({
-      title: "Quick Actions",
-      description: "Quick action menu opening...",
-    });
+    // Determine the appropriate starting step based on onboarding progress
+    if (!onboardingProgress.connectedReddit) {
+      setQuickStartStep('connect');
+    } else if (!onboardingProgress.selectedCommunities) {
+      setQuickStartStep('subreddit');
+    } else {
+      setQuickStartStep('copy');
+    }
+    setQuickStartOpen(true);
   };
 
   const handleCommandCenter = () => {
@@ -480,10 +488,48 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
   };
 
   const handleTaskFlow = () => {
-    toast({
-      title: "Task Flow",
-      description: "Guided workflow starting...",
-    });
+    // Task flow always starts from the beginning for guided experience
+    setQuickStartStep('connect');
+    setQuickStartOpen(true);
+  };
+
+  const handleQuickStartConnected = () => {
+    const updatedProgress = {
+      ...onboardingProgress,
+      connectedReddit: true
+    };
+    setOnboardingProgress(updatedProgress);
+    try {
+      window.localStorage.setItem(MODERN_DASHBOARD_ONBOARDING_STORAGE_KEY, JSON.stringify(updatedProgress));
+    } catch (error) {
+      // Ignore localStorage errors
+    }
+  };
+
+  const handleQuickStartSelectedCommunity = () => {
+    const updatedProgress = {
+      ...onboardingProgress,
+      selectedCommunities: true
+    };
+    setOnboardingProgress(updatedProgress);
+    try {
+      window.localStorage.setItem(MODERN_DASHBOARD_ONBOARDING_STORAGE_KEY, JSON.stringify(updatedProgress));
+    } catch (error) {
+      // Ignore localStorage errors
+    }
+  };
+
+  const handleQuickStartPosted = () => {
+    const updatedProgress = {
+      ...onboardingProgress,
+      createdFirstPost: true
+    };
+    setOnboardingProgress(updatedProgress);
+    try {
+      window.localStorage.setItem(MODERN_DASHBOARD_ONBOARDING_STORAGE_KEY, JSON.stringify(updatedProgress));
+    } catch (error) {
+      // Ignore localStorage errors
+    }
   };
 
   // Get current onboarding stage for hero card
@@ -1101,6 +1147,18 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
           </Card>
         </div>
       </div>
+
+      {/* Quick Start Modal */}
+      <QuickStartModal
+        open={quickStartOpen}
+        onOpenChange={setQuickStartOpen}
+        initialStep={quickStartStep}
+        isRedditConnected={isRedditConnected}
+        onNavigate={setLocation}
+        onConnected={handleQuickStartConnected}
+        onSelectedCommunity={handleQuickStartSelectedCommunity}
+        onPosted={handleQuickStartPosted}
+      />
     </div>
   );
 }
