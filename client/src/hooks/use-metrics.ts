@@ -10,7 +10,7 @@ export interface Metrics {
   generatedAt: string;
 }
 
-const metricsQueryKey = ['/api/landing/summary'] as const;
+const metricsQueryKey = ['/api/analytics/summary'] as const;
 const metricsQueryFn = getQueryFn<Metrics>({ on401: 'returnNull' });
 
 export function useMetrics() {
