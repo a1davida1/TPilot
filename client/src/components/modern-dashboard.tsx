@@ -26,7 +26,8 @@ import {
   Wand2,
   Zap,
   ListChecks,
-  Command
+  Command,
+  CheckCircle2
 } from "lucide-react";
 import { FaReddit } from "react-icons/fa";
 import { cn } from "@/lib/utils";
@@ -40,6 +41,49 @@ interface ModernDashboardProps {
   user?: { id: number; username: string; email?: string; tier?: string; isVerified?: boolean };
   userTier?: 'guest' | 'free' | 'basic' | 'starter' | 'pro' | 'premium' | 'admin';
   isAdmin?: boolean;
+}
+
+type UserTier = NonNullable<ModernDashboardProps['userTier']>;
+
+interface OnboardingProgress {
+  connectedReddit: boolean;
+  selectedCommunities: boolean;
+  createdFirstPost: boolean;
+}
+
+type OnboardingMilestone = keyof OnboardingProgress;
+
+export const MODERN_DASHBOARD_ONBOARDING_STORAGE_KEY = 'modern-dashboard:onboarding-progress';
+
+const onboardingDefaults: OnboardingProgress = {
+  connectedReddit: false,
+  selectedCommunities: false,
+  createdFirstPost: false,
+};
+
+const tierHierarchy: Record<UserTier, number> = {
+  guest: 0,
+  free: 1,
+  basic: 2,
+  starter: 3,
+  pro: 4,
+  premium: 5,
+  admin: 6,
+};
+
+interface ActionCardConfig {
+  id: string;
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  color: string;
+  route: string | null;
+  comingSoon?: boolean;
+  premium?: boolean;
+  requiredTier?: UserTier;
+  requiredMilestones?: OnboardingMilestone[];
+  group: 'core' | 'growth' | 'secondary';
+  completeMilestone?: OnboardingMilestone;
 }
 
 interface DashboardStatsResponse {
@@ -88,11 +132,53 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
+function readStoredProgress(): OnboardingProgress {
+  if (typeof window === 'undefined') {
+    return onboardingDefaults;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(MODERN_DASHBOARD_ONBOARDING_STORAGE_KEY);
+    if (!raw) {
+      return onboardingDefaults;
+    }
+
+    const parsed = JSON.parse(raw) as Partial<OnboardingProgress> | null;
+    if (!parsed || typeof parsed !== 'object') {
+      return onboardingDefaults;
+    }
+
+    return {
+      connectedReddit: typeof parsed.connectedReddit === 'boolean' ? parsed.connectedReddit : onboardingDefaults.connectedReddit,
+      selectedCommunities:
+        typeof parsed.selectedCommunities === 'boolean' ? parsed.selectedCommunities : onboardingDefaults.selectedCommunities,
+      createdFirstPost:
+        typeof parsed.createdFirstPost === 'boolean' ? parsed.createdFirstPost : onboardingDefaults.createdFirstPost,
+    };
+  } catch (error) {
+    return onboardingDefaults;
+  }
+}
+
+function hasTierAccess(currentTier: UserTier, requiredTier: UserTier | undefined, isAdminUser: boolean): boolean {
+  if (!requiredTier) {
+    return true;
+  }
+
+  if (isAdminUser) {
+    return true;
+  }
+
+  return tierHierarchy[currentTier] >= tierHierarchy[requiredTier];
+}
+
 export function ModernDashboard({ isRedditConnected = false, user, userTier = 'free', isAdmin = false }: ModernDashboardProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showMoreTools, setShowMoreTools] = useState(false);
+  const [onboardingProgress, setOnboardingProgress] = useState<OnboardingProgress>(() => readStoredProgress());
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { user: authUser } = useAuth();
@@ -123,6 +209,35 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
     queryKey: ['/api/dashboard/activity'],
     enabled: Boolean(resolvedUser?.id),
   });
+
+  // Sync onboarding progress with props and API data
+  useEffect(() => {
+    const currentProgress = { ...onboardingProgress };
+    let hasChanges = false;
+
+    // Sync Reddit connection status
+    if (currentProgress.connectedReddit !== isRedditConnected) {
+      currentProgress.connectedReddit = isRedditConnected;
+      hasChanges = true;
+    }
+
+    // Sync post creation status (example: check if user has posted)
+    // This would typically come from API data about user's posting history
+    // For now, we'll just check if they have recent posts from the stats
+    if (statsData?.postsToday && statsData.postsToday > 0 && !currentProgress.createdFirstPost) {
+      currentProgress.createdFirstPost = true;
+      hasChanges = true;
+    }
+
+    if (hasChanges) {
+      setOnboardingProgress(currentProgress);
+      try {
+        window.localStorage.setItem(MODERN_DASHBOARD_ONBOARDING_STORAGE_KEY, JSON.stringify(currentProgress));
+      } catch (error) {
+        // Ignore localStorage errors
+      }
+    }
+  }, [isRedditConnected, statsData?.postsToday, onboardingProgress]);
 
   useEffect(() => {
     if (statsError instanceof Error) {
@@ -199,30 +314,16 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
   const galleryItems = activityData?.recentMedia ?? [];
   const showGalleryEmptyState = !activityLoading && galleryItems.length === 0;
 
-  const actionCards = [
+  const actionCards: ActionCardConfig[] = [
     {
-      id: "quick-post",
-      title: "Quick Post",
-      description: "Upload a post in seconds",
-      icon: <Upload className="h-6 w-6" />,
-      color: "from-purple-500 to-purple-600",
-      route: "/reddit"
-    },
-    {
-      id: "generate-caption",
-      title: "Generate Caption",
-      description: "AI-powered content",
-      icon: <Sparkles className="h-6 w-6" />,
-      color: "from-blue-500 to-blue-600",
-      route: "/caption-generator"
-    },
-    {
-      id: "protect-image",
-      title: "Protect Image",
-      description: "Image/Video protection",
-      icon: <Shield className="h-6 w-6" />,
-      color: "from-green-500 to-green-600",
-      route: "/imageshield"
+      id: "connect-reddit",
+      title: "Connect Reddit",
+      description: "Link your Reddit account",
+      icon: <FaReddit className="h-6 w-6" />,
+      color: "from-orange-500 to-orange-600",
+      route: "/auth/reddit",
+      group: "core",
+      completeMilestone: "connectedReddit"
     },
     {
       id: "find-subreddits",
@@ -230,7 +331,41 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
       description: "Best communities for you",
       icon: <Target className="h-6 w-6" />,
       color: "from-orange-500 to-orange-600",
-      route: "/communities"
+      route: "/communities",
+      group: "core",
+      requiredMilestones: ["connectedReddit"],
+      completeMilestone: "selectedCommunities"
+    },
+    {
+      id: "quick-post",
+      title: "Quick Post",
+      description: "Upload a post in seconds",
+      icon: <Upload className="h-6 w-6" />,
+      color: "from-purple-500 to-purple-600",
+      route: "/reddit",
+      group: "core",
+      requiredMilestones: ["connectedReddit", "selectedCommunities"],
+      completeMilestone: "createdFirstPost"
+    },
+    {
+      id: "generate-caption",
+      title: "Generate Caption",
+      description: "AI-powered content",
+      icon: <Sparkles className="h-6 w-6" />,
+      color: "from-blue-500 to-blue-600",
+      route: "/caption-generator",
+      group: "growth",
+      requiredMilestones: ["connectedReddit", "selectedCommunities"]
+    },
+    {
+      id: "protect-image",
+      title: "Protect Image",
+      description: "Image/Video protection",
+      icon: <Shield className="h-6 w-6" />,
+      color: "from-green-500 to-green-600",
+      route: "/imageshield",
+      group: "growth",
+      requiredMilestones: ["connectedReddit", "selectedCommunities"]
     },
     {
       id: "scan-takedowns",
@@ -239,7 +374,10 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
       icon: <Scale className="h-6 w-6" />,
       color: "from-red-500 to-red-600",
       route: null,
-      comingSoon: true
+      comingSoon: true,
+      group: "secondary",
+      requiredTier: "pro",
+      requiredMilestones: ["connectedReddit", "selectedCommunities", "createdFirstPost"]
     },
     {
       id: "view-analytics",
@@ -248,7 +386,10 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
       icon: <BarChart3 className="h-6 w-6" />,
       color: "from-indigo-500 to-indigo-600",
       route: null,
-      comingSoon: true
+      comingSoon: true,
+      group: "secondary",
+      requiredTier: "starter",
+      requiredMilestones: ["connectedReddit", "selectedCommunities", "createdFirstPost"]
     },
     {
       id: "tax-tracker",
@@ -256,7 +397,10 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
       description: "Track expenses",
       icon: <Calculator className="h-6 w-6" />,
       color: "from-teal-500 to-teal-600",
-      route: "/tax-tracker"
+      route: "/tax-tracker",
+      group: "secondary",
+      requiredTier: "starter",
+      requiredMilestones: ["connectedReddit", "selectedCommunities", "createdFirstPost"]
     },
     {
       id: "pro-perks",
@@ -265,11 +409,50 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
       icon: <Gift className="h-6 w-6" />,
       color: "from-pink-500 to-pink-600",
       route: null,
-      premium: true
+      premium: true,
+      group: "secondary",
+      requiredTier: "pro",
+      requiredMilestones: ["connectedReddit", "selectedCommunities", "createdFirstPost"]
     }
   ];
 
-  const handleCardClick = (card: typeof actionCards[0]) => {
+  // Filter cards based on onboarding progress and tier access
+  const getVisibleCards = () => {
+    return actionCards.filter(card => {
+      // Check tier access
+      if (!hasTierAccess(resolvedTier, card.requiredTier, isAdminUser)) {
+        return false;
+      }
+
+      // Check milestone requirements
+      if (card.requiredMilestones) {
+        return card.requiredMilestones.every(milestone => onboardingProgress[milestone]);
+      }
+
+      return true;
+    });
+  };
+
+  const visibleCards = getVisibleCards();
+  const coreCards = visibleCards.filter(card => card.group === 'core');
+  const growthCards = visibleCards.filter(card => card.group === 'growth');
+  const secondaryCards = visibleCards.filter(card => card.group === 'secondary');
+
+  const handleCardClick = (card: ActionCardConfig) => {
+    // Complete milestone if applicable
+    if (card.completeMilestone && !onboardingProgress[card.completeMilestone]) {
+      const updatedProgress = {
+        ...onboardingProgress,
+        [card.completeMilestone]: true
+      };
+      setOnboardingProgress(updatedProgress);
+      try {
+        window.localStorage.setItem(MODERN_DASHBOARD_ONBOARDING_STORAGE_KEY, JSON.stringify(updatedProgress));
+      } catch (error) {
+        // Ignore localStorage errors
+      }
+    }
+
     if (card.route) {
       setLocation(card.route);
     } else if (card.comingSoon) {
@@ -301,6 +484,133 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
       title: "Task Flow",
       description: "Guided workflow starting...",
     });
+  };
+
+  // Get current onboarding stage for hero card
+  const getCurrentStage = () => {
+    if (!onboardingProgress.connectedReddit) {
+      return 'connect-reddit';
+    }
+    if (!onboardingProgress.selectedCommunities) {
+      return 'find-communities';
+    }
+    if (!onboardingProgress.createdFirstPost) {
+      return 'first-post';
+    }
+    return 'advanced';
+  };
+
+  const currentStage = getCurrentStage();
+
+  const renderHeroCard = () => {
+    switch (currentStage) {
+      case 'connect-reddit':
+        return (
+          <Card className="bg-gradient-to-r from-orange-500 to-red-500 border-0 mb-6">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                  <FaReddit className="h-7 w-7 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-white mb-1">
+                    Connect your Reddit account to sync communities
+                  </h3>
+                  <p className="text-white/80">
+                    Link your Reddit account to get started with automated posting
+                  </p>
+                </div>
+                <Button
+                  onClick={() => setLocation('/auth/reddit')}
+                  className="bg-white text-orange-600 hover:bg-gray-100"
+                  data-testid="button-connect-reddit-to-start"
+                >
+                  Connect Reddit to Start
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      case 'find-communities':
+        return (
+          <Card className="bg-gradient-to-r from-blue-500 to-purple-500 border-0 mb-6">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                  <Target className="h-7 w-7 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-white mb-1">
+                    Pick your top subreddits next
+                  </h3>
+                  <p className="text-white/80">
+                    Choose the communities where you want to share your content
+                  </p>
+                </div>
+                <Button
+                  onClick={() => setLocation('/communities')}
+                  className="bg-white text-blue-600 hover:bg-gray-100"
+                >
+                  Browse Communities
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      case 'first-post':
+        return (
+          <Card className="bg-gradient-to-r from-green-500 to-teal-500 border-0 mb-6">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                  <Upload className="h-7 w-7 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-white mb-1">
+                    Ship your first Reddit post
+                  </h3>
+                  <p className="text-white/80">
+                    Create and publish your first post to get things rolling
+                  </p>
+                </div>
+                <Button
+                  onClick={() => setLocation('/reddit')}
+                  className="bg-white text-green-600 hover:bg-gray-100"
+                >
+                  Create Post
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      case 'advanced':
+        return (
+          <Card className="bg-gradient-to-r from-purple-500 to-pink-500 border-0 mb-6">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                  <CheckCircle2 className="h-7 w-7 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-white mb-1">
+                    You're ready for deeper automation
+                  </h3>
+                  <p className="text-white/80">
+                    Explore advanced tools to scale your content creation
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Badge className="bg-white/20 text-white border-white/30">
+                    {Object.values(onboardingProgress).filter(Boolean).length}/3 Complete
+                  </Badge>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      default:
+        return null;
+    }
   };
 
 
@@ -479,38 +789,219 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
           ))}
         </div>
 
-        {/* Action Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {actionCards.map((card) => (
-            <Card
-              key={card.id}
-              className={cn(
-                "bg-gray-800 border-gray-700 cursor-pointer transition-all hover:scale-105",
-                selectedCard === card.id && "ring-2 ring-purple-500"
-              )}
-              onClick={() => handleCardClick(card)}
-              onMouseEnter={() => setSelectedCard(card.id)}
-              onMouseLeave={() => setSelectedCard(null)}
-            >
-              <CardContent className="p-6">
-                <div className={cn(
-                  "w-12 h-12 rounded-lg bg-gradient-to-br flex items-center justify-center mb-4",
-                  card.color
-                )}>
-                  {card.icon}
-                </div>
-                <h3 className="text-white font-semibold mb-1">{card.title}</h3>
-                <p className="text-gray-400 text-sm">{card.description}</p>
-                {card.comingSoon && (
-                  <Badge className="mt-2" variant="outline">Coming Soon</Badge>
+        {/* Hero Onboarding Card */}
+        {renderHeroCard()}
+
+        {/* Core Action Cards */}
+        {coreCards.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold text-white mb-4">Getting Started</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {coreCards.map((card) => (
+                <Card
+                  key={card.id}
+                  className={cn(
+                    "bg-gray-800 border-gray-700 cursor-pointer transition-all hover:scale-105",
+                    selectedCard === card.id && "ring-2 ring-purple-500"
+                  )}
+                  onClick={() => handleCardClick(card)}
+                  onMouseEnter={() => setSelectedCard(card.id)}
+                  onMouseLeave={() => setSelectedCard(null)}
+                  data-testid={`card-${card.id}`}
+                >
+                  <CardContent className="p-6">
+                    <div className={cn(
+                      "w-12 h-12 rounded-lg bg-gradient-to-br flex items-center justify-center mb-4",
+                      card.color
+                    )}>
+                      {card.icon}
+                    </div>
+                    <h3 className="text-white font-semibold mb-1">{card.title}</h3>
+                    <p className="text-gray-400 text-sm">{card.description}</p>
+                    {card.comingSoon && (
+                      <Badge className="mt-2" variant="outline">Coming Soon</Badge>
+                    )}
+                    {card.premium && !isPremium && (
+                      <Badge className="mt-2" variant="outline">Pro</Badge>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Growth Action Cards */}
+        {growthCards.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold text-white mb-4">Content Creation</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {growthCards.map((card) => (
+                <Card
+                  key={card.id}
+                  className={cn(
+                    "bg-gray-800 border-gray-700 cursor-pointer transition-all hover:scale-105",
+                    selectedCard === card.id && "ring-2 ring-purple-500"
+                  )}
+                  onClick={() => handleCardClick(card)}
+                  onMouseEnter={() => setSelectedCard(card.id)}
+                  onMouseLeave={() => setSelectedCard(null)}
+                  data-testid={`card-${card.id}`}
+                >
+                  <CardContent className="p-6">
+                    <div className={cn(
+                      "w-12 h-12 rounded-lg bg-gradient-to-br flex items-center justify-center mb-4",
+                      card.color
+                    )}>
+                      {card.icon}
+                    </div>
+                    <h3 className="text-white font-semibold mb-1">{card.title}</h3>
+                    <p className="text-gray-400 text-sm">{card.description}</p>
+                    {card.comingSoon && (
+                      <Badge className="mt-2" variant="outline">Coming Soon</Badge>
+                    )}
+                    {card.premium && !isPremium && (
+                      <Badge className="mt-2" variant="outline">Pro</Badge>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Advanced Tools Expander */}
+        {(secondaryCards.length > 0 || currentStage === 'advanced') && (
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-white">Advanced Tools</h2>
+              <Button
+                variant="ghost"
+                onClick={() => setShowMoreTools(!showMoreTools)}
+                className="text-gray-400 hover:text-white"
+                data-testid={`button-${showMoreTools ? 'hide' : 'show'}-more-tools`}
+              >
+                {showMoreTools ? 'Hide Tools' : 'Show More Tools'}
+                <ChevronRight className={cn("h-4 w-4 ml-2 transition-transform", showMoreTools && "rotate-90")} />
+              </Button>
+            </div>
+            {showMoreTools && (
+              <div>
+                {hasTierAccess(resolvedTier, 'starter', isAdminUser) ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {secondaryCards.map((card) => (
+                      <Card
+                        key={card.id}
+                        className={cn(
+                          "bg-gray-800 border-gray-700 cursor-pointer transition-all hover:scale-105",
+                          selectedCard === card.id && "ring-2 ring-purple-500"
+                        )}
+                        onClick={() => handleCardClick(card)}
+                        onMouseEnter={() => setSelectedCard(card.id)}
+                        onMouseLeave={() => setSelectedCard(null)}
+                        data-testid={`card-${card.id}`}
+                      >
+                        <CardContent className="p-6">
+                          <div className={cn(
+                            "w-12 h-12 rounded-lg bg-gradient-to-br flex items-center justify-center mb-4",
+                            card.color
+                          )}>
+                            {card.icon}
+                          </div>
+                          <h3 className="text-white font-semibold mb-1">{card.title}</h3>
+                          <p className="text-gray-400 text-sm">{card.description}</p>
+                          {card.comingSoon && (
+                            <Badge className="mt-2" variant="outline">Coming Soon</Badge>
+                          )}
+                          {card.premium && !isPremium && (
+                            <Badge className="mt-2" variant="outline">Pro</Badge>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <Card className="bg-gray-800 border-gray-700">
+                    <CardContent className="p-6 text-center">
+                      <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center mx-auto mb-4">
+                        <Gift className="h-8 w-8 text-white" />
+                      </div>
+                      <h3 className="text-white font-semibold mb-2">Upgrade to Unlock</h3>
+                      <p className="text-gray-400 text-sm mb-4">
+                        Upgrade your plan to unlock analytics, takedown scanning, and finance workflows
+                      </p>
+                      <Button
+                        onClick={() => {
+                          toast({
+                            title: "Upgrade Available",
+                            description: "Contact support to upgrade your plan.",
+                          });
+                        }}
+                        className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white"
+                      >
+                        Upgrade Plan
+                      </Button>
+                    </CardContent>
+                  </Card>
                 )}
-                {card.premium && !isPremium && (
-                  <Badge className="mt-2" variant="outline">Pro</Badge>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Progress Pills */}
+        {currentStage !== 'connect-reddit' && (
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-white mb-3">Your Progress</h3>
+            <div className="flex gap-3 flex-wrap">
+              <Badge
+                className={cn(
+                  "flex items-center gap-2 px-3 py-1",
+                  onboardingProgress.connectedReddit
+                    ? "bg-green-500/20 text-green-400 border-green-500/30"
+                    : "bg-gray-500/20 text-gray-400 border-gray-500/30"
                 )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              >
+                {onboardingProgress.connectedReddit ? (
+                  <CheckCircle2 className="h-4 w-4" />
+                ) : (
+                  <Clock className="h-4 w-4" />
+                )}
+                Connect Reddit
+              </Badge>
+              <Badge
+                className={cn(
+                  "flex items-center gap-2 px-3 py-1",
+                  onboardingProgress.selectedCommunities
+                    ? "bg-green-500/20 text-green-400 border-green-500/30"
+                    : "bg-gray-500/20 text-gray-400 border-gray-500/30"
+                )}
+              >
+                {onboardingProgress.selectedCommunities ? (
+                  <CheckCircle2 className="h-4 w-4" />
+                ) : (
+                  <Clock className="h-4 w-4" />
+                )}
+                Pick Communities
+              </Badge>
+              <Badge
+                className={cn(
+                  "flex items-center gap-2 px-3 py-1",
+                  onboardingProgress.createdFirstPost
+                    ? "bg-green-500/20 text-green-400 border-green-500/30"
+                    : "bg-gray-500/20 text-gray-400 border-gray-500/30"
+                )}
+              >
+                {onboardingProgress.createdFirstPost ? (
+                  <CheckCircle2 className="h-4 w-4" />
+                ) : (
+                  <Clock className="h-4 w-4" />
+                )}
+                First Post
+              </Badge>
+            </div>
+          </div>
+        )}
 
         {/* Bottom Sections */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -546,6 +1037,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                         src={item.signedUrl ?? item.url}
                         alt={item.alt}
                         className="w-full h-full object-cover"
+                        data-testid={`img-recent-media-${item.id}`}
                       />
                     </div>
                   ))}
