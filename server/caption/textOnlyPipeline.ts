@@ -9,7 +9,7 @@ import { BANNED_WORDS_HINT, variantContainsBannedWord } from "./bannedWords";
 import { buildVoiceGuideBlock } from "./stylePack";
 import { formatVoiceContext } from "./voiceTraits";
 import { serializePromptField } from "./promptUtils";
-import { inferFallbackFromFacts } from "./inferFallbackFromFacts";
+import { inferFallbackFromFacts, ensureFallbackCompliance } from "./inferFallbackFromFacts";
 import { dedupeVariantsForRanking } from "./dedupeVariants";
 import { dedupeCaptionVariants } from "./dedupeCaptionVariants";
 import {
@@ -69,20 +69,44 @@ function buildRetryHint(
   return parts.join(" ").trim();
 }
 
-function normalizeVariantFields(variant: Record<string, unknown>): z.infer<typeof CaptionItem> {
+function normalizeVariantFields(
+  variant: Record<string, unknown>, 
+  platform: "instagram" | "x" | "reddit" | "tiktok",
+  theme?: string,
+  context?: string,
+  existingCaption?: string
+): z.infer<typeof CaptionItem> {
   const next: Record<string, unknown> = { ...variant };
   next.safety_level = normalizeSafetyLevel(
     typeof next.safety_level === "string" ? next.safety_level : "normal"
   );
   if (typeof next.mood !== "string" || next.mood.trim().length < 2) next.mood = "engaging";
   if (typeof next.style !== "string" || next.style.trim().length < 2) next.style = "authentic";
-  if (typeof next.cta !== "string" || next.cta.trim().length < 2) next.cta = "Check it out";
-  if (typeof next.alt !== "string" || next.alt.trim().length < 20)
-    next.alt = "Descriptive photo for the post";
-  if (!Array.isArray(next.hashtags) || next.hashtags.length < 3)
-    next.hashtags = ["#authentic", "#creative", "#amazing"];
-  if (typeof next.caption !== "string" || next.caption.trim().length < 1)
-    next.caption = "Here's something I'm proud of today.";
+  
+  // Use helper for contextual fallbacks
+  const fallback = ensureFallbackCompliance(
+    {
+      caption: typeof next.caption === 'string' ? next.caption : undefined,
+      hashtags: Array.isArray(next.hashtags) ? next.hashtags.filter((tag): tag is string => typeof tag === 'string') : undefined,
+      cta: typeof next.cta === 'string' ? next.cta : undefined,
+      alt: typeof next.alt === 'string' ? next.alt : undefined,
+    },
+    {
+      platform,
+      theme,
+      context,
+      existingCaption: existingCaption || (typeof next.caption === 'string' ? next.caption : undefined),
+    }
+  );
+  
+  next.hashtags = fallback.hashtags;
+  next.cta = fallback.cta;
+  next.alt = fallback.alt;
+  
+  if (typeof next.caption !== "string" || next.caption.trim().length < 1) {
+    next.caption = existingCaption || "Here's something I'm proud of today.";
+  }
+  
   return CaptionItem.parse(next);
 }
 
@@ -133,7 +157,7 @@ export async function generateVariantsTextOnly(params:TextOnlyVariantParams){
 
     items.forEach(item => {
       const candidate = (typeof item === "object" && item !== null ? item : {}) as Record<string, unknown>;
-      const normalized = normalizeVariantFields(candidate);
+      const normalized = normalizeVariantFields(candidate, params.platform, params.theme, params.context);
       
       // Check for banned words after normalization
       if (variantContainsBannedWord(normalized)) {
@@ -214,7 +238,7 @@ async function requestTextOnlyRanking(
 
 export async function rankAndSelect(
   variants: unknown[],
-  params?: { platform?: string }
+  params?: { platform?: string; theme?: string; context?: string }
 ): Promise<z.infer<typeof RankResult>> {
   const sys = await load("system.txt"), guard = await load("guard.txt"), prompt = await load("rank.txt");
   const promptBlock = `${sys}\n${guard}\n${prompt}`;
@@ -272,14 +296,14 @@ export async function pipelineTextOnly({ platform, voice="flirty_playful", theme
   const tone = extractToneOptions(toneRest);
   let variants = await generateVariantsTextOnly({ platform, voice, theme, context, nsfw, ...tone });
   variants = dedupeVariantsForRanking(variants, 5, { platform, theme, context });
-  let ranked = await rankAndSelect(variants, { platform });
+  let ranked = await rankAndSelect(variants, { platform, theme, context });
   let out = ranked.final;
 
   const err = platformChecks(platform, out);
   if (err) {
     variants = await generateVariantsTextOnly({ platform, voice, theme, context, nsfw, ...tone, hint:`Fix: ${err}. Be specific and engaging.` });
     variants = dedupeVariantsForRanking(variants, 5, { platform, theme, context });
-    ranked = await rankAndSelect(variants, { platform });
+    ranked = await rankAndSelect(variants, { platform, theme, context });
     out = ranked.final;
   }
 

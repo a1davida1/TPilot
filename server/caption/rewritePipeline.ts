@@ -18,7 +18,7 @@ import { buildVoiceGuideBlock } from "./stylePack";
 import { serializePromptField } from "./promptUtils";
 import { formatVoiceContext } from "./voiceTraits";
 import { ensureFactCoverage } from "./ensureFactCoverage";
-import { inferFallbackFromFacts } from "./inferFallbackFromFacts";
+import { inferFallbackFromFacts, ensureFallbackCompliance } from "./inferFallbackFromFacts";
 
 // CaptionResult interface for type safety
 interface CaptionResult {
@@ -221,10 +221,29 @@ export async function variantsRewrite(params: RewriteVariantsParams) {
         );
         if (typeof variant.mood !== 'string' || variant.mood.length < 2) variant.mood = "engaging";
         if (typeof variant.style !== 'string' || variant.style.length < 2) variant.style = "authentic";
-        if (typeof variant.cta !== 'string' || variant.cta.length < 2) variant.cta = "Check it out";
-        if (typeof variant.alt !== 'string' || variant.alt.length < 20) variant.alt = "Descriptive photo for the post";
-        if (!Array.isArray(variant.hashtags)) variant.hashtags = ["#authentic", "#creative", "#amazing"];
-        if (typeof variant.caption !== 'string' || variant.caption.length < 1) variant.caption = "Here's something I'm proud of today.";
+        
+        // Use helper for contextual fallbacks
+        const fallback = ensureFallbackCompliance(
+          {
+            caption: typeof variant.caption === 'string' ? variant.caption : undefined,
+            hashtags: Array.isArray(variant.hashtags) ? variant.hashtags.filter((tag): tag is string => typeof tag === 'string') : undefined,
+            cta: typeof variant.cta === 'string' ? variant.cta : undefined,
+            alt: typeof variant.alt === 'string' ? variant.alt : undefined,
+          },
+          {
+            platform: params.platform,
+            facts: params.facts,
+            existingCaption: params.existingCaption,
+          }
+        );
+        
+        variant.hashtags = fallback.hashtags;
+        variant.cta = fallback.cta;
+        variant.alt = fallback.alt;
+        
+        if (typeof variant.caption !== 'string' || variant.caption.length < 1) {
+          variant.caption = params.existingCaption || "Here's something I'm proud of today.";
+        }
         
         // Check for banned words after normalization
         if (variantContainsBannedWord(variant)) {
@@ -252,11 +271,17 @@ export async function variantsRewrite(params: RewriteVariantsParams) {
   
   // Ensure exactly 5 variants by padding with variations if needed
   while (variants.length < VARIANT_TARGET) {
+    const fallbackContent = inferFallbackFromFacts({
+      platform: params.platform,
+      facts: params.facts,
+      existingCaption: params.existingCaption,
+    });
+    
     const template = variants[0] || {
-      caption: "Here's something I'm proud of today.",
-      alt: "Descriptive photo for the post",
-      hashtags: ["#authentic", "#creative", "#amazing"],
-      cta: "Check it out",
+      caption: params.existingCaption || "Here's something I'm proud of today.",
+      alt: fallbackContent.alt,
+      hashtags: fallbackContent.hashtags,
+      cta: fallbackContent.cta,
       mood: "engaging",
       style: "authentic",
       safety_level: normalizeSafetyLevel('normal'),

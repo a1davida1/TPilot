@@ -10,7 +10,7 @@ import { buildVoiceGuideBlock } from "./stylePack";
 import { serializePromptField } from "./promptUtils";
 import { formatVoiceContext } from "./voiceTraits";
 import { ensureFactCoverage } from "./ensureFactCoverage";
-import { inferFallbackFromFacts } from "./inferFallbackFromFacts";
+import { inferFallbackFromFacts, ensureFallbackCompliance } from "./inferFallbackFromFacts";
 import { dedupeVariantsForRanking } from "./dedupeVariants";
 import { dedupeCaptionVariants } from "./dedupeCaptionVariants";
 import {
@@ -87,20 +87,42 @@ function buildRetryHint(
   return parts.join(" ").trim();
 }
 
-function normalizeVariantFields(variant: Record<string, unknown>): z.infer<typeof CaptionItem> {
+function normalizeVariantFields(
+  variant: Record<string, unknown>, 
+  platform: "instagram" | "x" | "reddit" | "tiktok",
+  facts?: Record<string, unknown>,
+  existingCaption?: string
+): z.infer<typeof CaptionItem> {
   const next: Record<string, unknown> = { ...variant };
   next.safety_level = normalizeSafetyLevel(
     typeof next.safety_level === "string" ? next.safety_level : "normal"
   );
   if (typeof next.mood !== "string" || next.mood.trim().length < 2) next.mood = "engaging";
   if (typeof next.style !== "string" || next.style.trim().length < 2) next.style = "authentic";
-  if (typeof next.cta !== "string" || next.cta.trim().length < 2) next.cta = "Check it out";
-  if (typeof next.alt !== "string" || next.alt.trim().length < 20)
-    next.alt = "Descriptive photo for the post";
-  if (!Array.isArray(next.hashtags) || next.hashtags.length < 3)
-    next.hashtags = ["#authentic", "#creative", "#amazing"];
-  if (typeof next.caption !== "string" || next.caption.trim().length < 1)
-    next.caption = "Here's something I'm proud of today.";
+  
+  // Use helper for contextual fallbacks
+  const fallback = ensureFallbackCompliance(
+    {
+      caption: typeof next.caption === 'string' ? next.caption : undefined,
+      hashtags: Array.isArray(next.hashtags) ? next.hashtags.filter((tag): tag is string => typeof tag === 'string') : undefined,
+      cta: typeof next.cta === 'string' ? next.cta : undefined,
+      alt: typeof next.alt === 'string' ? next.alt : undefined,
+    },
+    {
+      platform,
+      facts,
+      existingCaption: existingCaption || (typeof next.caption === 'string' ? next.caption : undefined),
+    }
+  );
+  
+  next.hashtags = fallback.hashtags;
+  next.cta = fallback.cta;
+  next.alt = fallback.alt;
+  
+  if (typeof next.caption !== "string" || next.caption.trim().length < 1) {
+    next.caption = existingCaption || "Here's something I'm proud of today.";
+  }
+  
   return CaptionItem.parse(next);
 }
 
@@ -323,7 +345,7 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
 
     items.forEach(item => {
       const candidate = (typeof item === "object" && item !== null ? item : {}) as Record<string, unknown>;
-      const normalized = normalizeVariantFields(candidate);
+      const normalized = normalizeVariantFields(candidate, params.platform, params.facts);
       
       // Check for banned words in the variant
       if (variantContainsBannedWord(normalized)) {
@@ -372,29 +394,57 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
   return CaptionArray.parse(variants);
 }
 
-function normalizeGeminiFinal(final: Record<string, unknown>, platform?: string){
+function normalizeGeminiFinal(
+  final: Record<string, unknown>, 
+  platform?: string,
+  facts?: Record<string, unknown>
+){
   final.safety_level = normalizeSafetyLevel(
     typeof final.safety_level === "string" ? final.safety_level : "normal"
   );
   final.mood = typeof final.mood === "string" && final.mood.trim().length >= 2 ? final.mood.trim() : "engaging";
   final.style = typeof final.style === "string" && final.style.trim().length >= 2 ? final.style.trim() : "authentic";
-  const trimmedCta = typeof final.cta === "string" ? final.cta.trim() : "";
-  final.cta = trimmedCta.length >= 2 ? trimmedCta : HUMAN_CTA;
-  const trimmedAlt = typeof final.alt === "string" ? final.alt.trim() : "";
-  final.alt = trimmedAlt.length >= 20
-    ? trimmedAlt
-    : "Detailed social media alt text describing the scene.";
-  const fallback = fallbackHashtags(platform);
-  let hashtags: string[] = [];
-  if (Array.isArray(final.hashtags)) {
-    hashtags = (final.hashtags as unknown[])
-      .map((tag) => (typeof tag === "string" ? tag.trim() : ""))
-      .filter((tag) => tag.length > 0);
+  
+  // Use helper for contextual fallbacks
+  if (platform) {
+    const fallback = ensureFallbackCompliance(
+      {
+        caption: typeof final.caption === 'string' ? final.caption : undefined,
+        hashtags: Array.isArray(final.hashtags) ? final.hashtags.filter((tag): tag is string => typeof tag === 'string') : undefined,
+        cta: typeof final.cta === 'string' ? final.cta : undefined,
+        alt: typeof final.alt === 'string' ? final.alt : undefined,
+      },
+      {
+        platform: platform as "instagram" | "x" | "reddit" | "tiktok",
+        facts,
+        existingCaption: typeof final.caption === 'string' ? final.caption : undefined,
+      }
+    );
+    
+    final.hashtags = fallback.hashtags;
+    final.cta = fallback.cta;
+    final.alt = fallback.alt;
+  } else {
+    // Fallback to original logic if no platform
+    const trimmedCta = typeof final.cta === "string" ? final.cta.trim() : "";
+    final.cta = trimmedCta.length >= 2 ? trimmedCta : HUMAN_CTA;
+    const trimmedAlt = typeof final.alt === "string" ? final.alt.trim() : "";
+    final.alt = trimmedAlt.length >= 20
+      ? trimmedAlt
+      : "Detailed social media alt text describing the scene.";
+    const fallback = fallbackHashtags(platform);
+    let hashtags: string[] = [];
+    if (Array.isArray(final.hashtags)) {
+      hashtags = (final.hashtags as unknown[])
+        .map((tag) => (typeof tag === "string" ? tag.trim() : ""))
+        .filter((tag) => tag.length > 0);
+    }
+    if (hashtags.length < fallback.length) {
+      hashtags = [...fallback];
+    }
+    final.hashtags = hashtags;
   }
-  if (hashtags.length < fallback.length) {
-    hashtags = [...fallback];
-  }
-  final.hashtags = hashtags;
+  
   const trimmedCaption = typeof final.caption === "string" ? final.caption.trim() : "";
   final.caption = trimmedCaption.length > 0 ? trimmedCaption : "Sharing something I'm genuinely proud of.";
 }
@@ -404,7 +454,8 @@ async function requestGeminiRanking(
   serializedVariants: string,
   promptBlock: string,
   platform?: string,
-  extraHint?: string
+  extraHint?: string,
+  facts?: Record<string, unknown>
 ): Promise<unknown> {
   const hintBlock = extraHint && extraHint.trim().length > 0 ? `\nREMINDER: ${extraHint.trim()}` : "";
   let res;
@@ -428,20 +479,20 @@ async function requestGeminiRanking(
   
   if((json as Record<string, unknown>).final){
     const final = (json as { final: Record<string, unknown> }).final;
-    normalizeGeminiFinal(final, platform);
+    normalizeGeminiFinal(final, platform, facts);
   }
   return json;
 }
 
 export async function rankAndSelect(
   variants: z.infer<typeof CaptionArray>,
-  params?: { platform?: string }
+  params?: { platform?: string; facts?: Record<string, unknown> }
 ): Promise<z.infer<typeof RankResult>> {
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rank.txt");
   const promptBlock = `${sys}\n${guard}\n${prompt}`;
   const serializedVariants = JSON.stringify(variants);
 
-  const first = await requestGeminiRanking(variants, serializedVariants, promptBlock, params?.platform);
+  const first = await requestGeminiRanking(variants, serializedVariants, promptBlock, params?.platform, undefined, params?.facts);
   let parsed = RankResult.parse(first);
   const violations = detectVariantViolations(parsed.final);
   
@@ -454,7 +505,8 @@ export async function rankAndSelect(
     serializedVariants,
     promptBlock,
     params?.platform,
-    buildRerankHint(violations)
+    buildRerankHint(violations),
+    params?.facts
   );
   parsed = RankResult.parse(rerank);
   const rerankViolations = detectVariantViolations(parsed.final);
@@ -495,7 +547,7 @@ export async function pipeline({ imageUrl, platform, voice = "flirty_playful", n
     const facts = await extractFacts(imageUrl);
     let variants = await generateVariants({ platform, voice, facts, nsfw, ...tone });
     variants = dedupeVariantsForRanking(variants, 5, { platform, facts });
-    let ranked = await rankAndSelect(variants, { platform });
+    let ranked = await rankAndSelect(variants, { platform, facts });
     let out = ranked.final;
 
     const enforceCoverage = async () => {
@@ -505,7 +557,7 @@ export async function pipeline({ imageUrl, platform, voice = "flirty_playful", n
         attempts += 1;
         variants = await generateVariants({ platform, voice, facts, hint: coverage.hint, nsfw, ...tone });
         variants = dedupeVariantsForRanking(variants, 5, { platform, facts });
-        ranked = await rankAndSelect(variants, { platform });
+        ranked = await rankAndSelect(variants, { platform, facts });
         out = ranked.final;
         coverage = ensureFactCoverage({ facts, caption: out.caption, alt: out.alt });
       }

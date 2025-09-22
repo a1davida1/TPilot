@@ -291,3 +291,65 @@ export function inferFallbackFromFacts(input: FallbackInferenceInput): FallbackI
 
   return { hashtags, cta, alt };
 }
+
+interface ContentToValidate {
+  caption?: string;
+  hashtags?: string[];
+  cta?: string;
+  alt?: string;
+}
+
+export function ensureFallbackCompliance(
+  content: ContentToValidate,
+  params: FallbackInferenceInput
+): FallbackInferenceResult {
+  const fallback = inferFallbackFromFacts(params);
+  const rules = PLATFORM_HASHTAG_RULES[params.platform];
+  
+  // Validate and fix hashtags
+  let hashtags = content.hashtags || [];
+  if (!Array.isArray(hashtags)) {
+    hashtags = [];
+  }
+  
+  // Filter and format hashtags according to platform rules
+  hashtags = hashtags
+    .filter(tag => typeof tag === 'string' && tag.trim().length > 0)
+    .map(tag => {
+      const cleaned = sanitizePhrase(tag).toLowerCase();
+      if (rules.prefix === "#") {
+        return cleaned.startsWith('#') ? `#${cleaned.slice(1).replace(/\s+/g, "")}` : `#${cleaned.replace(/\s+/g, "")}`;
+      } else {
+        return cleaned.replace(/^#/, "").replace(/\s+/g, " ");
+      }
+    })
+    .filter(tag => tag.length > 2)
+    .slice(0, rules.max);
+  
+  // Ensure minimum hashtag count
+  if (hashtags.length < rules.min) {
+    const needed = rules.min - hashtags.length;
+    const additionalTags = fallback.hashtags
+      .filter(tag => !hashtags.includes(tag))
+      .slice(0, needed);
+    hashtags.push(...additionalTags);
+  }
+  
+  // Validate CTA
+  let cta = content.cta;
+  if (!cta || typeof cta !== 'string' || cta.trim().length < 3) {
+    cta = fallback.cta;
+  }
+  
+  // Validate alt text
+  let alt = content.alt;
+  if (!alt || typeof alt !== 'string' || alt.trim().length < 20) {
+    alt = fallback.alt;
+  }
+  
+  return {
+    hashtags,
+    cta,
+    alt
+  };
+}
