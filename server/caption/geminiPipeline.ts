@@ -11,6 +11,7 @@ import { formatVoiceContext } from "./voiceTraits";
 import { ensureFactCoverage } from "./ensureFactCoverage";
 import { inferFallbackFromFacts } from "./inferFallbackFromFacts";
 import { dedupeVariantsForRanking } from "./dedupeVariants";
+import { dedupeCaptionVariants } from "./dedupeCaptionVariants";
 import {
   HUMAN_CTA,
   buildRerankHint,
@@ -38,6 +39,9 @@ interface CaptionResult {
 }
 
 const MAX_VARIANT_ATTEMPTS = 4;
+const VARIANT_TARGET = 5;
+const VARIANT_RETRY_LIMIT = 4;
+const CAPTION_KEY_LENGTH = 80;
 
 function captionKey(caption: string): string {
   return caption.trim().slice(0, 80).toLowerCase();
@@ -46,6 +50,57 @@ function captionKey(caption: string): string {
 function hintSnippet(caption: string): string {
   const normalized = caption.trim().replace(/\s+/g, " ");
   return normalized.length > 60 ? `${normalized.slice(0, 57)}…` : normalized;
+}
+
+function uniqueCaptionKey(caption: string): string {
+  return caption.trim().slice(0, CAPTION_KEY_LENGTH).toLowerCase();
+}
+
+function truncateForHint(caption: string): string {
+  const trimmed = caption.trim();
+  if (trimmed.length <= 60) {
+    return trimmed;
+  }
+  return `${trimmed.slice(0, 57)}...`;
+}
+
+function buildRetryHint(
+  baseHint: string | undefined,
+  duplicates: string[],
+  needed: number
+): string {
+  const parts: string[] = [];
+  if (baseHint && baseHint.trim().length > 0) {
+    parts.push(baseHint.trim());
+  }
+  if (duplicates.length > 0) {
+    const lastDuplicate = duplicates[duplicates.length - 1];
+    parts.push(
+      `You already wrote "${truncateForHint(lastDuplicate)}". Deliver a fresh angle and add ${needed} more unique caption${needed > 1 ? "s" : ""}.`
+    );
+  } else {
+    parts.push(
+      `Need ${needed} more unique caption${needed > 1 ? "s" : ""}. Explore a different perspective with new imagery details.`
+    );
+  }
+  return parts.join(" ").trim();
+}
+
+function normalizeVariantFields(variant: Record<string, unknown>): z.infer<typeof CaptionItem> {
+  const next: Record<string, unknown> = { ...variant };
+  next.safety_level = normalizeSafetyLevel(
+    typeof next.safety_level === "string" ? next.safety_level : "normal"
+  );
+  if (typeof next.mood !== "string" || next.mood.trim().length < 2) next.mood = "engaging";
+  if (typeof next.style !== "string" || next.style.trim().length < 2) next.style = "authentic";
+  if (typeof next.cta !== "string" || next.cta.trim().length < 2) next.cta = "Check it out";
+  if (typeof next.alt !== "string" || next.alt.trim().length < 20)
+    next.alt = "Engaging social media content";
+  if (!Array.isArray(next.hashtags) || next.hashtags.length < 3)
+    next.hashtags = ["#content", "#creative", "#amazing"];
+  if (typeof next.caption !== "string" || next.caption.trim().length < 1)
+    next.caption = "Check out this amazing content!";
+  return CaptionItem.parse(next);
 }
 
 async function load(p: string): Promise<string> {
@@ -236,155 +291,69 @@ type GeminiVariantParams = {
 };
 
 export async function generateVariants(params: GeminiVariantParams): Promise<z.infer<typeof CaptionArray>> {
-  const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("variants.txt");
-  
-  const hints: string[] = [];
-  if (params.hint) hints.push(params.hint);
+  const [sys, guard, prompt] = await Promise.all([
+    load("system.txt"),
+    load("guard.txt"),
+    load("variants.txt")
+  ]);
 
-  const defaults: Record<string, unknown> = {
-    caption: "Sharing something I'm genuinely proud of.",
-    alt: "Detailed social media alt text describing the scene.",
-    hashtags: fallbackHashtags(params.platform),
-    cta: HUMAN_CTA,
-    mood: "engaging",
-    style: "authentic",
-    safety_level: normalizeSafetyLevel('normal'),
-    nsfw: false,
-  };
+  let attempts = 0;
+  let currentHint = params.hint;
+  let variants: z.infer<typeof CaptionItem>[] = [];
+  const keyIndex = new Map<string, number>();
 
-  const sanitizeVariant = (item: unknown): Record<string, unknown> => {
-    const variant = typeof item === 'object' && item !== null ? { ...(item as Record<string, unknown>) } : {};
-    const fallback = inferFallbackFromFacts({
-      platform: params.platform,
-      facts: params.facts,
-      existingCaption: typeof variant.caption === 'string' ? variant.caption : params.hint,
-    });
-    
-    const hashtagsSource = Array.isArray((variant as { hashtags?: unknown }).hashtags)
-      ? ((variant as { hashtags: unknown[] }).hashtags.filter((tag): tag is string => typeof tag === 'string' && tag.trim().length > 0))
-      : [];
-    const fallbackTags = fallbackHashtags(params.platform);
-    const sanitizedHashtags = hashtagsSource.length >= fallbackTags.length ? hashtagsSource : [...fallbackTags];
-
-    return {
-      ...variant,
-      caption: typeof (variant as { caption?: unknown }).caption === 'string' && (variant as { caption?: string }).caption.trim().length > 0
-        ? (variant as { caption: string }).caption
-        : defaults.caption,
-      alt: typeof (variant as { alt?: unknown }).alt === 'string' && (variant as { alt?: string }).alt.length >= 20
-        ? (variant as { alt: string }).alt
-        : fallback.alt,
-      hashtags: sanitizedHashtags,
-      cta: typeof (variant as { cta?: unknown }).cta === 'string' && (variant as { cta?: string }).cta.length >= 2
-        ? (variant as { cta: string }).cta
-        : fallback.cta,
-      mood: typeof (variant as { mood?: unknown }).mood === 'string' && (variant as { mood?: string }).mood.length >= 2
-        ? (variant as { mood: string }).mood
-        : defaults.mood,
-      style: typeof (variant as { style?: unknown }).style === 'string' && (variant as { style?: string }).style.length >= 2
-        ? (variant as { style: string }).style
-        : defaults.style,
-      safety_level: normalizeSafetyLevel(
-        typeof (variant as { safety_level?: unknown }).safety_level === 'string'
-          ? (variant as { safety_level: string }).safety_level
-          : defaults.safety_level as string
-      ),
-      nsfw: typeof (variant as { nsfw?: unknown }).nsfw === 'boolean'
-        ? (variant as { nsfw: boolean }).nsfw
-        : defaults.nsfw,
-    };
-  };
-
-  const seenKeys = new Set<string>();
-  const collected: Record<string, unknown>[] = [];
-
-  for (let attempt = 0; attempt < MAX_VARIANT_ATTEMPTS && collected.length < 5; attempt += 1) {
+  while (attempts < VARIANT_RETRY_LIMIT && variants.length < VARIANT_TARGET) {
+    attempts += 1;
     const voiceContext = formatVoiceContext(params.voice);
-    const user = [
-      `PLATFORM: ${params.platform}`,
-      `VOICE: ${params.voice}`,
-      voiceContext,
-      params.style ? `STYLE: ${params.style}` : "",
-      params.mood ? `MOOD: ${params.mood}` : "",
-      `IMAGE_FACTS: ${JSON.stringify(params.facts)}`,
-      `NSFW: ${params.nsfw || false}`,
-      ...hints.map(hint => `HINT: ${hint}`),
-    ].filter((line): line is string => Boolean(line)).join("\n");
-    const voiceGuide = buildVoiceGuideBlock(params.voice);
-    const promptSections = [sys, guard, prompt, user];
-    if (voiceGuide) promptSections.push(voiceGuide);
-    
+    const user = `PLATFORM: ${params.platform}\nVOICE: ${params.voice}\n${voiceContext ? `${voiceContext}\n` : ''}${params.style ? `STYLE: ${params.style}\n` : ''}${params.mood ? `MOOD: ${params.mood}\n` : ''}IMAGE_FACTS: ${JSON.stringify(params.facts)}\nNSFW: ${params.nsfw || false}${currentHint ? `\nHINT:${currentHint}` : ''}`;
+
     let res;
     try {
-      res=await textModel.generateContent([{ text: promptSections.join("\n") }]);
+      res = await textModel.generateContent([{ text: `${sys}\n${guard}\n${prompt}\n${user}` }]);
     } catch (error) {
-      console.error('Gemini textModel.generateContent failed on attempt', attempt + 1, ':', error);
-      const errorHint = 'Previous attempt failed; produce 5 fresh, distinct variants.';
-      if (!hints.includes(errorHint)) {
-        hints.push(errorHint);
-      }
-      continue;
+      console.error('Gemini textModel.generateContent failed:', error);
+      throw error;
     }
 
-    const parsed = stripToJSON(res.response.text());
-    const arr = Array.isArray(parsed) ? parsed : [parsed];
-    let duplicateForHint: string | undefined;
+    const raw = stripToJSON(res.response.text());
+    const items = Array.isArray(raw) ? raw : [raw];
+    const iterationDuplicates: string[] = [];
 
-    for (const item of arr) {
-      const variant = sanitizeVariant(item);
-      const caption = typeof variant.caption === 'string' ? variant.caption : '';
-      const key = captionKey(caption);
-      if (!key) continue;
-      if (seenKeys.has(key)) {
-        if (!duplicateForHint) duplicateForHint = caption;
-        continue;
+    items.forEach(item => {
+      const candidate = (typeof item === "object" && item !== null ? item : {}) as Record<string, unknown>;
+      const normalized = normalizeVariantFields(candidate);
+      const key = uniqueCaptionKey(normalized.caption);
+      const existingIndex = keyIndex.get(key);
+
+      if (existingIndex === undefined) {
+        variants.push(normalized);
+        keyIndex.set(key, variants.length - 1);
+      } else {
+        iterationDuplicates.push(normalized.caption);
+        const existing = variants[existingIndex];
+        if (normalized.caption.length > existing.caption.length) {
+          variants[existingIndex] = normalized;
+        }
       }
-      seenKeys.add(key);
-      collected.push(variant);
-      if (collected.length === 5) break;
-    }
+    });
 
-    if (collected.length >= 5) break;
+    variants = dedupeCaptionVariants(variants).slice(0, VARIANT_TARGET);
+    keyIndex.clear();
+    variants.forEach((variant, index) => {
+      keyIndex.set(uniqueCaptionKey(variant.caption), index);
+    });
 
-    const nextHint = duplicateForHint
-      ? `You already wrote "${hintSnippet(duplicateForHint)}"; deliver a fresh angle.`
-      : 'You already wrote very similar captions; deliver a fresh angle.';
-    if (!hints.includes(nextHint)) {
-      hints.push(nextHint);
-      // Keep HINT list bounded to prevent prompt bloat
-      if (hints.length > 3) {
-        hints.splice(0, hints.length - 3);
-      }
+    if (variants.length < VARIANT_TARGET) {
+      const needed = VARIANT_TARGET - variants.length;
+      currentHint = buildRetryHint(params.hint, iterationDuplicates, needed);
     }
   }
 
-  const baseVariant = collected[0] ?? defaults;
-  while (collected.length < 5) {
-    const index = collected.length + 1;
-    const baseCaption = typeof baseVariant.caption === 'string' ? baseVariant.caption : String(defaults.caption);
-    let freshCaption = `Fresh POV ${index}: ${baseCaption}`;
-    let freshKey = captionKey(freshCaption);
-    let collisionCount = 1;
-    while (seenKeys.has(freshKey)) {
-      collisionCount += 1;
-      freshCaption = `Fresh POV ${index}.${collisionCount}: ${baseCaption}`;
-      freshKey = captionKey(freshCaption);
-    }
-    const newVariant = {
-      ...baseVariant,
-      caption: freshCaption,
-    };
-    collected.push(newVariant);
-    seenKeys.add(freshKey);
+  if (variants.length !== VARIANT_TARGET) {
+    throw new Error(`Failed to generate ${VARIANT_TARGET} unique caption variants.`);
   }
 
-  if (collected.length > 5) {
-    collected.splice(5);
-  }
-
-  // Apply dedupe helper for final consistency
-  const deduped = dedupeVariantsForRanking(CaptionArray.parse(collected), 5, { platform: params.platform, facts: params.facts });
-  return deduped;
+  return CaptionArray.parse(variants);
 }
 
 function normalizeGeminiFinal(final: Record<string, unknown>, platform?: string){
