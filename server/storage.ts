@@ -840,9 +840,21 @@ export class DatabaseStorage implements IStorage {
   async updateExpense(id: number, userId: number, updates: Partial<Expense>): Promise<Expense> {
     try {
       let updatesToApply: Partial<Expense> = { ...updates };
+      const businessPurposeValue = updates.businessPurpose;
+      const hasEmptyBusinessPurpose =
+        typeof businessPurposeValue === 'string' && businessPurposeValue.trim().length === 0;
+
+      if (hasEmptyBusinessPurpose) {
+        delete updatesToApply.businessPurpose;
+      }
+
+      const needsExistingExpenseLookup = updates.categoryId !== undefined || hasEmptyBusinessPurpose;
+      let existingExpense: Expense | undefined;
+      if (needsExistingExpenseLookup) {
+        existingExpense = await this.getExpense(id, userId);
+      }
 
       if (updates.categoryId !== undefined) {
-        const existingExpense = await this.getExpense(id, userId);
         const categoryChanged = existingExpense ? existingExpense.categoryId !== updates.categoryId : true;
 
         if (categoryChanged) {
@@ -854,7 +866,6 @@ export class DatabaseStorage implements IStorage {
               deductionPercentage: category.deductionPercentage,
             };
 
-            const businessPurposeValue = updates.businessPurpose;
             const shouldApplyDefaultBusinessPurpose =
               (businessPurposeValue === undefined ||
                 (typeof businessPurposeValue === 'string' && businessPurposeValue.trim().length === 0)) &&
@@ -867,6 +878,21 @@ export class DatabaseStorage implements IStorage {
               };
             }
           }
+        }
+
+        if (hasEmptyBusinessPurpose && categoryDefaults.defaultBusinessPurpose) {
+          updatesToApply = {
+            ...updatesToApply,
+            businessPurpose: categoryDefaults.defaultBusinessPurpose,
+          };
+        }
+      } else if (hasEmptyBusinessPurpose && existingExpense?.categoryId !== undefined) {
+        const category = await this.getExpenseCategory(existingExpense.categoryId);
+        if (category?.defaultBusinessPurpose) {
+          updatesToApply = {
+            ...updatesToApply,
+            businessPurpose: category.defaultBusinessPurpose,
+          };
         }
       }
 

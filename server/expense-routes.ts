@@ -312,6 +312,10 @@ export function registerExpenseRoutes(app: Express) {
         (rawBusinessPurpose === undefined ||
           (typeof rawBusinessPurpose === 'string' && (trimmedBusinessPurpose?.length ?? 0) === 0)) &&
         rawBusinessPurpose !== null;
+      const shouldApplyDefaultFromExistingCategory =
+        shouldApplyDefaultBusinessPurpose &&
+        requestBody.categoryId === undefined &&
+        rawBusinessPurpose !== undefined;
 
       if (rawBusinessPurpose === null) {
         updates.businessPurpose = null;
@@ -336,6 +340,17 @@ export function registerExpenseRoutes(app: Express) {
 
         if (shouldApplyDefaultBusinessPurpose && categoryDefaults.defaultBusinessPurpose) {
           updates.businessPurpose = categoryDefaults.defaultBusinessPurpose;
+        }
+      }
+
+      if (shouldApplyDefaultFromExistingCategory) {
+        const existingExpense = await storage.getExpense(expenseId, req.user.id);
+        const existingCategoryId = existingExpense?.categoryId;
+        if (existingCategoryId !== undefined) {
+          const existingCategory = await storage.getExpenseCategory(existingCategoryId);
+          if (existingCategory?.defaultBusinessPurpose) {
+            updates.businessPurpose = existingCategory.defaultBusinessPurpose;
+          }
         }
       }
 
