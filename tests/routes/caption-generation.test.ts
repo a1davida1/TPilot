@@ -27,7 +27,7 @@ vi.mock('../../server/caption/openaiFallback.js', () => ({
 }));
 
 const asMock = <T extends (...args: any[]) => any>(fn: T) =>
-  fn as unknown as Mock<Parameters<T>, ReturnType<T>>;
+  fn as unknown as Mock;
 
 vi.mock('../../server/storage.ts', () => ({
   storage: {
@@ -572,8 +572,8 @@ describe('Caption Generation', () => {
         existingCaption,
       });
 
-      expect(result.final.caption).not.toBe(existingCaption);
-      expect(result.final.caption).toContain('Enhanced');
+      expect((result.final as any).caption).not.toBe(existingCaption);
+      expect((result.final as any).caption).toContain('Enhanced');
 
       textGenerateMock.mockReset();
     });
@@ -651,12 +651,12 @@ describe('Caption Generation', () => {
       const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.js');
       expect(openAICaptionFallback).not.toHaveBeenCalled();
       expect(textGenerateMock).toHaveBeenCalledTimes(4);
-      expect(result.final.caption).toContain('https://example.com/launch');
-      expect(result.final.caption).toContain('@LaunchHQ');
-      expect(result.final.caption).toContain('#LaunchDay');
-      expect(result.final.caption).toContain('12/25');
-      expect(result.final.caption).toContain('"Mega Launch"');
-      expect(result.final.caption).toContain('MegaCorp™');
+      expect((result.final as any).caption).toContain('https://example.com/launch');
+      expect((result.final as any).caption).toContain('@LaunchHQ');
+      expect((result.final as any).caption).toContain('#LaunchDay');
+      expect((result.final as any).caption).toContain('12/25');
+      expect((result.final as any).caption).toContain('"Mega Launch"');
+      expect((result.final as any).caption).toContain('MegaCorp™');
 
       textGenerateMock.mockReset();
     });
@@ -763,9 +763,9 @@ describe('Caption Generation', () => {
         existingCaption,
       });
 
-      expect(result.final.caption.length).toBeGreaterThan(existingCaption.length);
-      expect(result.final.caption).toBe(longerCaption);
-      expect(result.final.caption).not.toContain('Enhanced with engaging content and call-to-action that drives better engagement');
+      expect((result.final as any).caption.length).toBeGreaterThan(existingCaption.length);
+      expect((result.final as any).caption).toBe(longerCaption);
+      expect((result.final as any).caption).not.toContain('Enhanced with engaging content and call-to-action that drives better engagement');
 
       const promptCalls = [...generateContentMock.mock.calls];
       expect(promptCalls).toHaveLength(4);
@@ -849,12 +849,12 @@ describe('Caption Generation', () => {
       const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.js');
       expect(openAICaptionFallback).not.toHaveBeenCalled();
       expect(textGenerateMock).toHaveBeenCalledTimes(4);
-      expect(result.final.caption).toContain('https://example.com/launch');
-      expect(result.final.caption).toContain('@LaunchHQ');
-      expect(result.final.caption).toContain('#LaunchDay');
-      expect(result.final.caption).toContain('12/25');
-      expect(result.final.caption).toContain('"Mega Launch"');
-      expect(result.final.caption).toContain('MegaCorp™');
+      expect((result.final as any).caption).toContain('https://example.com/launch');
+      expect((result.final as any).caption).toContain('@LaunchHQ');
+      expect((result.final as any).caption).toContain('#LaunchDay');
+      expect((result.final as any).caption).toContain('12/25');
+      expect((result.final as any).caption).toContain('"Mega Launch"');
+      expect((result.final as any).caption).toContain('MegaCorp™');
 
       textGenerateMock.mockReset();
     });
