@@ -1,4 +1,7 @@
 Rank the 5 for Relevance(40), Voice(25), Originality(20), CTA(10), Safety(5).
+Disqualify any option containing sparkle-filler ("Check out this amazing content", "✨ Enhanced"), generic placeholder hashtags (#content, #creative, #amazing, #lifestyle), or repeated CTA templates like "Check it out"/"Click the link". Explain the exact violations in the reason.
+You receive JSON: {"variants":[...],"retry_hint":string|null,"banned_examples":string[]}.
+If retry_hint is provided, obey it strictly, drop the flagged options, and choose the most human alternative.
 Return JSON:
 {"winner_index":0,"scores":[0,0,0,0,0],"reason":"<240 chars","final":{"caption":"","alt":"","hashtags":[],"cta":"","mood":"","style":"","safety_level":""}}
 Trim hashtags to platform limits.

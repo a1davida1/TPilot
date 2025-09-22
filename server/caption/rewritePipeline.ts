@@ -1,8 +1,21 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { z } from "zod";
 import { textModel, visionModel } from "../lib/gemini";
 import { CaptionArray, RankResult, platformChecks } from "./schema";
 import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
+import {
+  bannedExamples,
+  detectRankingViolations,
+  formatViolations,
+  sanitizeVariantForRanking,
+  safeFallbackCaption,
+  safeFallbackCta,
+  safeFallbackHashtags,
+  normalizeVariantForRanking,
+  truncateReason,
+  type CaptionVariant,
+} from "./rankingGuards";
 import { extractToneOptions, ToneOptions } from "./toneOptions";
 import { buildVoiceGuideBlock } from "./stylePack";
 import { serializePromptField } from "./promptUtils";
@@ -223,41 +236,131 @@ export async function variantsRewrite(params:RewriteVariantsParams){
   return CaptionArray.parse(json);
 }
 
-export async function rankAndSelect(variants: unknown[]){
-  const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rank.txt");
+const MAX_RANK_ATTEMPTS = 3;
+
+interface PromptBundle {
+  sys: string;
+  guard: string;
+  prompt: string;
+}
+
+interface RankingAttemptResult {
+  parsed: z.infer<typeof RankResult>;
+  normalizedFinal: CaptionVariant;
+  violations: string[];
+}
+
+async function executeRankingAttempt(
+  variants: unknown[],
+  prompts: PromptBundle,
+  retryHint?: string
+): Promise<RankingAttemptResult> {
   let res;
   try {
-    res=await textModel.generateContent([{ text: sys+"\n"+guard+"\n"+prompt+"\n"+JSON.stringify(variants) }]);
+    const payload = {
+      variants,
+      retry_hint: retryHint ?? null,
+      banned_examples: bannedExamples,
+    };
+    res = await textModel.generateContent([
+      { text: `${prompts.sys}\n${prompts.guard}\n${prompts.prompt}\n${JSON.stringify(payload)}` },
+    ]);
   } catch (error) {
-    console.error('Gemini textModel.generateContent failed:', error);
+    console.error('Rewrite textModel.generateContent failed:', error);
     throw error;
   }
-  let json=stripToJSON(res.response.text()) as unknown;
+  let json = stripToJSON(res.response.text()) as unknown;
 
-  // Handle case where AI returns array instead of ranking object
-  if(Array.isArray(json)) {
-    const winner = json[0] || variants[0];
+  if (Array.isArray(json)) {
+    const winner = (json[0] as CaptionVariant | undefined) ?? variants[0];
     json = {
       winner_index: 0,
       scores: [5, 4, 3, 2, 1],
       reason: "Selected based on engagement potential",
-      final: winner
+      final: winner,
     };
   }
 
-  if((json as Record<string, unknown>).final){
-    const final = (json as { final: Record<string, unknown> }).final;
-    final.safety_level = normalizeSafetyLevel(
-      typeof final.safety_level === 'string' ? final.safety_level : 'normal'
-    );
-    if(typeof final.mood !== 'string' || final.mood.length<2) final.mood="engaging";
-    if(typeof final.style !== 'string' || final.style.length<2) final.style="authentic";
-    if(typeof final.cta !== 'string' || final.cta.length<2) final.cta="Check it out";
-    if(typeof final.alt !== 'string' || final.alt.length<20) final.alt="Engaging social media content";
-    if(!Array.isArray(final.hashtags)) final.hashtags=["#content", "#creative", "#amazing"];
-    if(typeof final.caption !== 'string' || final.caption.length<1) final.caption="Check out this amazing content!";
+  if (!json || typeof json !== 'object') {
+    throw new Error('Ranking response missing body');
   }
-  return RankResult.parse(json);
+
+  const container = json as { final?: Record<string, unknown> };
+  if (!container.final || typeof container.final !== 'object') {
+    throw new Error('Ranking response missing final caption');
+  }
+
+  const normalizedFinal = normalizeVariantForRanking(container.final);
+  const violations = detectRankingViolations(normalizedFinal);
+  const sanitizedFinal = sanitizeVariantForRanking(normalizedFinal);
+  container.final = sanitizedFinal;
+
+  const parsed = RankResult.parse(json);
+
+  return { parsed, normalizedFinal, violations };
+}
+
+async function rankAndSelectWithRetry(
+  variants: unknown[],
+  attempt: number,
+  prompts: PromptBundle,
+  retryHint?: string
+): Promise<z.infer<typeof RankResult>> {
+  const { parsed, normalizedFinal, violations } = await executeRankingAttempt(variants, prompts, retryHint);
+
+  if (violations.length === 0) {
+    return parsed;
+  }
+
+  if (attempt + 1 >= MAX_RANK_ATTEMPTS) {
+    const safeIndex = variants.findIndex((variant) => detectRankingViolations(variant as CaptionVariant).length === 0);
+    if (safeIndex >= 0) {
+      const safeVariant = sanitizeVariantForRanking(variants[safeIndex] as CaptionVariant);
+      return {
+        ...parsed,
+        winner_index: safeIndex,
+        final: safeVariant,
+        reason: truncateReason(
+          `Fallback to variant ${safeIndex + 1} after violations: ${formatViolations(violations)}`
+        ),
+      };
+    }
+
+    const sanitized = sanitizeVariantForRanking(normalizedFinal);
+    return {
+      ...parsed,
+      final: sanitized,
+      reason: truncateReason(`Sanitized disqualified caption (${formatViolations(violations)})`),
+    };
+  }
+
+  const hint = `Previous winner broke rules (${formatViolations(violations)}). Ignore those entries and pick the most human alternative.`;
+  return rankAndSelectWithRetry(variants, attempt + 1, prompts, hint);
+}
+
+export async function rankAndSelect(
+  variants: unknown[],
+  params?: {
+    platform?: "instagram" | "x" | "reddit" | "tiktok";
+  }
+): Promise<z.infer<typeof RankResult>> {
+  const prompts: PromptBundle = {
+    sys: await load("system.txt"),
+    guard: await load("guard.txt"),
+    prompt: await load("rank.txt"),
+  };
+  
+  const result = await rankAndSelectWithRetry(variants, 0, prompts);
+  
+  // Enforce platform hashtag limits
+  if (params?.platform && result.final?.hashtags) {
+    const platformLimit = params.platform === 'x' ? 2 : params.platform === 'instagram' ? 30 : 5;
+    if (Array.isArray(result.final.hashtags) && result.final.hashtags.length > platformLimit) {
+      result.final.hashtags = result.final.hashtags.slice(0, platformLimit);
+    }
+  }
+  
+  return result;
 }
 
 type RewritePipelineArgs = {
