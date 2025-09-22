@@ -1,16 +1,17 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { dashboardService } from '../../../server/services/dashboard-service.js';
 
-// Mock the database
-vi.mock('../../../server/database.js', () => ({
-  db: {
-    select: vi.fn().mockReturnThis(),
-    from: vi.fn().mockReturnThis(),
-    leftJoin: vi.fn().mockReturnThis(),
-    where: vi.fn().mockReturnThis(),
-    orderBy: vi.fn().mockReturnThis(),
-    limit: vi.fn().mockReturnThis(),
-  }
+// Hoisted mock database instance
+const mockDbInstance = vi.hoisted(() => ({
+  select: vi.fn().mockReturnThis(),
+  from: vi.fn().mockReturnThis(),
+  leftJoin: vi.fn().mockReturnThis(),
+  where: vi.fn().mockReturnThis(),
+  orderBy: vi.fn().mockReturnThis(),
+  limit: vi.fn().mockReturnThis(),
+}));
+
+vi.mock('../../../server/db.js', () => ({
+  db: mockDbInstance,
 }));
 
 // Mock the schema imports
@@ -53,6 +54,8 @@ vi.mock('drizzle-orm', () => ({
   sql: vi.fn((template, ...values) => ({ template, values, type: 'sql' }))
 }));
 
+const { dashboardService } = await import('../../../server/services/dashboard-service.js');
+
 describe('DashboardService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -61,8 +64,8 @@ describe('DashboardService', () => {
   describe('getDashboardStats', () => {
     it('should return dashboard stats for a user', async () => {
       // Mock database responses
-      const mockDb = require('../../../server/database.js').db;
-      
+      const mockDb = mockDbInstance;
+
       // Mock posts count query
       mockDb.select.mockReturnValueOnce({
         from: vi.fn().mockReturnValueOnce({
@@ -108,7 +111,7 @@ describe('DashboardService', () => {
     });
 
     it('should handle database errors gracefully', async () => {
-      const mockDb = require('../../../server/database.js').db;
+      const mockDb = mockDbInstance;
       
       // Mock database error
       mockDb.select.mockReturnValueOnce({
@@ -132,7 +135,7 @@ describe('DashboardService', () => {
 
   describe('getDashboardActivity', () => {
     it('should return dashboard activity for a user', async () => {
-      const mockDb = require('../../../server/database.js').db;
+      const mockDb = mockDbInstance;
       
       // Mock media assets query
       mockDb.select.mockReturnValueOnce({
@@ -170,7 +173,7 @@ describe('DashboardService', () => {
     });
 
     it('should handle database errors gracefully', async () => {
-      const mockDb = require('../../../server/database.js').db;
+      const mockDb = mockDbInstance;
       
       // Mock database error
       mockDb.select.mockReturnValueOnce({
@@ -193,7 +196,7 @@ describe('DashboardService', () => {
 
   describe('getAdminDashboardStats', () => {
     it('should return admin dashboard stats', async () => {
-      const mockDb = require('../../../server/database.js').db;
+      const mockDb = mockDbInstance;
       
       // Mock various queries for admin stats
       mockDb.select.mockReturnValue({
@@ -218,7 +221,7 @@ describe('DashboardService', () => {
 
   describe('getAdminDashboardActivity', () => {
     it('should return admin dashboard activity', async () => {
-      const mockDb = require('../../../server/database.js').db;
+      const mockDb = mockDbInstance;
       
       // Mock media assets query for admin
       mockDb.select.mockReturnValueOnce({
