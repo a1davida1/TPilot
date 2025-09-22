@@ -1,0 +1,445 @@
+Reintroduce doNotDrop workflow and tests
+Sep 22 · a1davida1/TPilot · main
++207-7
+1. In `pipelineRewrite` (`server/caption/rewritePipeline.ts`), reintroduce the `doNotDrop` workflow: call `extractKeyEntities` before attempting rewrites, pass the resulting list into `variantsRewrite`, and add a post-attempt check that retries with an explicit hint if any protected token goes missing.
+2. Re-add the `ensureFactCoverage` loop so that after each successful ranking, the pipeline verifies the caption covers the extracted image facts (when present) and prompts Gemini with the returned hint until coverage succeeds or retry limits are hit.
+3. Update or add tests in `tests/routes/caption-generation.test.ts` to confirm rewrites continue to include required tokens (e.g., `@handles`, URLs, hashtags) and to validate that captions mention key facts when `imageUrl` is supplied.
+
+Summary
+
+    Injected the mandatory token list into Gemini rewrite prompts and added a retry guard that regenerates variants with an explicit “ABSOLUTE RULE” hint whenever protected strings drop out of the caption.
+
+Restored the do-not-drop aware rewrite pipeline flow, including fact-coverage retries after each ranking and platform-specific rerun, so captions stay longer than the original while weaving in extracted image facts.
+
+Updated rewrite pipeline tests to assert mandatory tokens remain, new fact-coverage behavior produces camera/rooftop mentions, and adjusted key-entity expectations to match the current extractor output.
+
+Testing
+
+    ⚠️ npm run lint (fails: repository-wide lint warnings/errors pre-exist)
+
+✅ npx eslint server/caption/rewritePipeline.ts tests/routes/caption-generation.test.ts
+
+⚠️ npm test (fails: numerous integration/unit suites require unavailable services)
+
+✅ npx vitest run tests/routes/caption-generation.test.ts -t "retries when mandatory tokens are dropped"
+
+✅ npx vitest run tests/routes/caption-generation.test.ts -t "enforces fact coverage when image context is available"
+
+✅ npx vitest run tests/routes/caption-generation.test.ts -t "extractKeyEntities"
+
+
+server/caption/rewritePipeline.ts
++64-6
+@@ -156,65 +156,69 @@ export async function extractFacts(imageUrl:string){
+
+type RewriteVariantsParams = {
+  platform:"instagram"|"x"|"reddit"|"tiktok";
+  voice:string;
+  existingCaption:string;
+  facts?:Record<string, unknown>;
+  hint?:string;
+  nsfw?:boolean;
+  doNotDrop?: string[];
+  style?: string;
+  mood?: string
+};
+
+const VARIANT_TARGET = 5;
+const VARIANT_RETRY_LIMIT = 3;
+
+export async function variantsRewrite(params: RewriteVariantsParams) {
+  const [sys, guard, prompt] = await Promise.all([
+    load("system.txt"),
+    load("guard.txt"),
+    load("rewrite.txt")
+  ]);
+
+  let attempts = 0;
+  let currentHint = params.hint;
+  let variants: any[] = [];
+  const mandatoryTokens = params.doNotDrop && params.doNotDrop.length > 0
+    ? `MANDATORY TOKENS: ${params.doNotDrop.join(" | ")}`
+    : "";
+  const variants: any[] = [];
+
+  while (attempts < VARIANT_RETRY_LIMIT && variants.length < VARIANT_TARGET) {
+    attempts += 1;
+    
+    const voiceContext = formatVoiceContext(params.voice);
+    const user = [
+      `PLATFORM: ${params.platform}`,
+      `VOICE: ${params.voice}`,
+      voiceContext,
+      params.style ? `STYLE: ${params.style}` : "",
+      params.mood ? `MOOD: ${params.mood}` : "",
+      `EXISTING_CAPTION: ${serializePromptField(params.existingCaption)}`,
+      params.facts ? `IMAGE_FACTS: ${JSON.stringify(params.facts)}` : "",
+      `NSFW: ${params.nsfw || false}`,
+      mandatoryTokens,
+      currentHint ? `HINT:${serializePromptField(currentHint, { block: true })}` : "",
+    ].filter((line): line is string => Boolean(line)).join("\n");
+    
+    const voiceGuide = buildVoiceGuideBlock(params.voice);
+    const promptSections = [sys, guard, prompt, user];
+    if (voiceGuide) promptSections.push(voiceGuide);
+    
+    let res;
+    try {
+      res = await textModel.generateContent([{ text: promptSections.join("\n") }]);
+    } catch (error) {
+      console.error('Gemini textModel.generateContent failed:', error);
+      throw error;
+    }
+    
+    const json = stripToJSON(res.response.text()) as unknown;
+    let hasBannedWords = false;
+    
+    if (Array.isArray(json)) {
+      json.forEach((item) => {
+        const variant = item as Record<string, unknown>;
+        
+        // Normalize variant fields first
+        variant.safety_level = normalizeSafetyLevel(
+          typeof variant.safety_level === 'string' ? variant.safety_level : 'normal'
+@@ -374,82 +378,136 @@ type RewritePipelineArgs = {
+  platform:"instagram"|"x"|"reddit"|"tiktok";
+  voice?:string;
+  existingCaption:string;
+  imageUrl?:string;
+  nsfw?:boolean;
+  style?: string;
+  mood?: string;
+};
+
+/**
+ * Caption rewriting pipeline that enhances existing captions while preserving tone.
+ *
+ * @remarks
+ * Persona controls such as `style`, `mood`, and future tone keys must persist through
+ * retries. When platform validation fails we re-run Gemini with the exact same tone
+ * payload so the caller's requested persona stays intact.
+ */
+type CaptionItemType = z.infer<typeof CaptionItem>;
+type CaptionArrayResult = z.infer<typeof CaptionArray>;
+type RankResultType = z.infer<typeof RankResult>;
+
+export async function pipelineRewrite({ platform, voice="flirty_playful", style, mood, existingCaption, imageUrl, nsfw=false }:{
+  platform:"instagram"|"x"|"reddit"|"tiktok", voice?:string, style?:string, mood?:string, existingCaption:string, imageUrl?:string, nsfw?:boolean }){
+  try {
+    const facts = imageUrl ? await extractFacts(imageUrl) : undefined;
+    
+    const doNotDrop = extractKeyEntities(existingCaption);
+
+    const attemptHints: (string | undefined)[] = [
+      undefined,
+      "Make it 20% longer with a natural hook and CTA; keep it human, no sparkle clichés.",
+      facts
+        ? "Make it 25% longer with a natural hook and CTA; rewrite with concrete imagery from IMAGE_FACTS and stay grounded."
+        : "Make it 25% longer with a natural hook and CTA; weave in concrete sensory imagery and stay grounded.",
+    ];
+
+    const baseParams = { platform, voice, style, mood, existingCaption, facts, nsfw } as const;
+    const baseParams = { platform, voice, style, mood, existingCaption, facts, nsfw, doNotDrop } as const;
+
+    type AttemptResult = { variants: CaptionArrayResult; ranked: RankResultType; final: CaptionItemType };
+
+    const performAttempt = async (hint?: string): Promise<{ variants: CaptionArrayResult; ranked: RankResultType; final: CaptionItemType }> => {
+    const performAttempt = async (hint?: string): Promise<AttemptResult> => {
+      const attemptVariants = await variantsRewrite({ ...baseParams, hint });
+      const attemptRanked = await rankAndSelect(attemptVariants);
+      return { variants: attemptVariants, ranked: attemptRanked, final: attemptRanked.final };
+    };
+
+    const enforceMandatoryTokens = async (
+      attempt: AttemptResult,
+      priorHint?: string
+    ): Promise<AttemptResult> => {
+      if (doNotDrop.length === 0) {
+        return attempt;
+      }
+      const missing = doNotDrop.filter((token) => !attempt.final.caption.includes(token));
+      if (missing.length === 0) {
+        return attempt;
+      }
+      const messageParts = [
+        priorHint,
+        `ABSOLUTE RULE: Keep these tokens verbatim in the caption: ${doNotDrop.join(", ")}`,
+        `Previous attempt removed: ${missing.join(", ")}`
+      ].filter((part): part is string => Boolean(part && part.trim()));
+      const retried = await performAttempt(messageParts.join(" "));
+      const retryMissing = doNotDrop.filter((token) => !retried.final.caption.includes(token));
+      if (retryMissing.length > 0) {
+        throw new Error(`Missing mandatory tokens after retry: ${retryMissing.join(", ")}`);
+      }
+      return retried;
+    };
+
+    let lastAttempt: { variants: CaptionArrayResult; ranked: RankResultType; final: CaptionItemType } | undefined;
+    let successfulAttempt: { variants: CaptionArrayResult; ranked: RankResultType; final: CaptionItemType } | undefined;
+
+    for (const hint of attemptHints) {
+      const attempt = await performAttempt(hint);
+      let attempt = await performAttempt(hint);
+      attempt = await enforceMandatoryTokens(attempt, hint);
+      lastAttempt = attempt;
+      if (attempt.final.caption.length > existingCaption.length) {
+        successfulAttempt = attempt;
+        break;
+      }
+    }
+
+    const chosenAttempt = successfulAttempt ?? lastAttempt;
+
+    if (!chosenAttempt || chosenAttempt.final.caption.length <= existingCaption.length) {
+      throw new Error('Rewrite did not produce a longer caption');
+    }
+
+    let { variants, ranked, final: out } = chosenAttempt;
+
+    const enforceCoverage = async () => {
+      if (!facts) {
+        return;
+      }
+      let attempts = 0;
+      let coverage = ensureFactCoverage({ facts, caption: out.caption, alt: out.alt });
+      while (!coverage.ok && coverage.hint && attempts < 2) {
+        attempts += 1;
+        let nextAttempt = await performAttempt(coverage.hint);
+        nextAttempt = await enforceMandatoryTokens(nextAttempt, coverage.hint);
+        ({ variants, ranked, final: out } = nextAttempt);
+        coverage = ensureFactCoverage({ facts, caption: out.caption, alt: out.alt });
+      }
+    };
+
+    await enforceCoverage();
+
+    if (out.caption.length <= existingCaption.length) {
+      throw new Error('Rewrite did not produce a longer caption');
+    }
+
+    const err = platformChecks(platform, out);
+    if (err) {
+      const platformAttempt = await performAttempt(`Fix: ${err}. Be specific, human, and avoid clichés while staying platform safe.`);
+      let platformAttempt = await performAttempt(`Fix: ${err}. Be specific, human, and avoid clichés while staying platform safe.`);
+      platformAttempt = await enforceMandatoryTokens(platformAttempt, `Fix: ${err}. Be specific, human, and avoid clichés while staying platform safe.`);
+      if (platformAttempt.final.caption.length <= existingCaption.length) {
+        throw new Error('Platform-specific rewrite failed to improve length');
+      }
+      const platformErr = platformChecks(platform, platformAttempt.final);
+      if (platformErr) {
+        throw new Error(platformErr);
+      }
+      ({ variants, ranked, final: out } = platformAttempt);
+      await enforceCoverage();
+      if (out.caption.length <= existingCaption.length) {
+        throw new Error('Platform-specific rewrite failed to improve length');
+      }
+    }
+
+    return { provider: 'gemini', facts, variants, ranked, final: out };
+  } catch (error) {
+    const { openAICaptionFallback } = await import('./openaiFallback');
+    const final = await openAICaptionFallback({ platform, voice, existingCaption, imageUrl });
+    return { provider: 'openai', final } as CaptionResult;
+  }
+}
+tests/routes/caption-generation.test.ts
++143-1
+@@ -855,54 +855,196 @@ describe('Caption Generation', () => {
+            winner_index: 0,
+            scores: [5, 4, 3, 2, 1],
+            reason: 'Retry keeps mandatory tokens',
+            final: variantFactory(enforcedCaption),
+          }),
+        },
+      };
+
+      const { textModel } = await import('../../server/lib/gemini.js');
+      const textGenerateMock = asMock(textModel.generateContent);
+      textGenerateMock
+        .mockResolvedValueOnce(missingVariants)
+        .mockResolvedValueOnce(missingRank)
+        .mockResolvedValueOnce(enforcedVariants)
+        .mockResolvedValueOnce(enforcedRank);
+
+      const result = await pipelineRewrite({
+        platform: 'instagram',
+        voice: 'engaging',
+        existingCaption,
+      });
+
+      const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.js');
+      expect(openAICaptionFallback).not.toHaveBeenCalled();
+      expect(textGenerateMock).toHaveBeenCalledTimes(4);
+      const firstPrompt = textGenerateMock.mock.calls[0]?.[0]?.[0]?.text as string;
+      expect(firstPrompt).toContain('MANDATORY TOKENS:');
+      const protectedTokens = ['RSVP', 'https://example.com/launch', '@LaunchHQ', '12/25', '"Mega Launch"', 'MegaCorp', '#LaunchDay'];
+      protectedTokens.forEach(token => {
+        expect(firstPrompt).toContain(token);
+      });
+      const promptMessages = textGenerateMock.mock.calls
+        .map(call => call?.[0]?.[0]?.text as string | undefined)
+        .filter((value): value is string => Boolean(value));
+      expect(promptMessages.some(text => text.includes('ABSOLUTE RULE: Keep these tokens verbatim in the caption'))).toBe(true);
+      expect((result.final as any).caption).toContain('https://example.com/launch');
+      expect((result.final as any).caption).toContain('@LaunchHQ');
+      expect((result.final as any).caption).toContain('#LaunchDay');
+      expect((result.final as any).caption).toContain('12/25');
+      expect((result.final as any).caption).toContain('"Mega Launch"');
+      expect((result.final as any).caption).toContain('MegaCorp™');
+
+      textGenerateMock.mockReset();
+    });
+
+    it('enforces fact coverage when image context is available', async () => {
+      const existingCaption = 'City nights, city lights.';
+      const imageUrl = 'https://example.com/mock.jpg';
+
+      const originalFetch = globalThis.fetch;
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        arrayBuffer: async () => new ArrayBuffer(8),
+      });
+      // @ts-expect-error - allow overriding fetch for the test environment
+      globalThis.fetch = fetchMock;
+
+      try {
+        const mockFacts = {
+          objects: ['camera'],
+          colors: ['blue'],
+          setting: ['rooftop'],
+        };
+
+        const coverageMissCaption = 'Late-night energy with the crew downtown.';
+        const coverageHitCaption = 'Blue rooftop vibes with my camera ready for the skyline.';
+
+        const missVariants = {
+          response: {
+            text: () => JSON.stringify([
+              {
+                caption: coverageMissCaption,
+                hashtags: ['#citylife', '#nightout', '#crew'],
+                safety_level: 'normal',
+                mood: 'engaging',
+                style: 'authentic',
+                cta: 'Tell me your city vibe',
+                alt: 'Friends laughing together downtown at night.',
+                nsfw: false,
+              },
+            ]),
+          },
+        } satisfies { response: { text: () => string } };
+
+        const missRank = {
+          response: {
+            text: () =>
+              JSON.stringify({
+                winner_index: 0,
+                scores: [5, 4, 3, 2, 1],
+                reason: 'Initial rewrite lacking facts',
+                final: {
+                  caption: coverageMissCaption,
+                  hashtags: ['#citylife', '#nightout', '#crew'],
+                  safety_level: 'normal',
+                  mood: 'engaging',
+                  style: 'authentic',
+                  cta: 'Tell me your city vibe',
+                  alt: 'Friends laughing together downtown at night.',
+                  nsfw: false,
+                },
+              }),
+          },
+        } satisfies { response: { text: () => string } };
+
+        const hitVariants = {
+          response: {
+            text: () => JSON.stringify([
+              {
+                caption: coverageHitCaption,
+                hashtags: ['#bluehour', '#rooftop', '#camera'],
+                safety_level: 'normal',
+                mood: 'engaging',
+                style: 'authentic',
+                cta: 'Share your rooftop ritual',
+                alt: 'Holding a camera on a blue-lit rooftop overlooking the skyline.',
+                nsfw: false,
+              },
+            ]),
+          },
+        } satisfies { response: { text: () => string } };
+
+        const hitRank = {
+          response: {
+            text: () =>
+              JSON.stringify({
+                winner_index: 0,
+                scores: [5, 4, 3, 2, 1],
+                reason: 'Retry includes IMAGE_FACTS details',
+                final: {
+                  caption: coverageHitCaption,
+                  hashtags: ['#bluehour', '#rooftop', '#camera'],
+                  safety_level: 'normal',
+                  mood: 'engaging',
+                  style: 'authentic',
+                  cta: 'Share your rooftop ritual',
+                  alt: 'Holding a camera on a blue-lit rooftop overlooking the skyline.',
+                  nsfw: false,
+                },
+              }),
+          },
+        } satisfies { response: { text: () => string } };
+
+        const { visionModel, textModel } = await import('../../server/lib/gemini.js');
+        const visionGenerateMock = asMock(visionModel.generateContent);
+        visionGenerateMock.mockResolvedValueOnce({
+          response: {
+            text: () => JSON.stringify(mockFacts),
+          },
+        });
+
+        const textGenerateMock = asMock(textModel.generateContent);
+        textGenerateMock
+          .mockResolvedValueOnce(missVariants)
+          .mockResolvedValueOnce(missRank)
+          .mockResolvedValueOnce(hitVariants)
+          .mockResolvedValueOnce(hitRank);
+
+        const result = await pipelineRewrite({
+          platform: 'instagram',
+          voice: 'engaging',
+          existingCaption,
+          imageUrl,
+        });
+
+        const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.js');
+        expect(openAICaptionFallback).not.toHaveBeenCalled();
+        expect(textGenerateMock).toHaveBeenCalledTimes(4);
+        expect(result.final.caption).toContain('camera');
+        expect(result.final.caption.toLowerCase()).toContain('blue');
+        expect(result.final.caption.toLowerCase()).toContain('rooftop');
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    });
+  });
+});
+
+describe('extractKeyEntities', () => {
+  it('captures urls, handles, hashtags, numbers, quotes, and branded terms', () => {
+    const caption = 'Launch day 2024! RSVP at https://example.com/launch with @LaunchHQ on 12/25 for the "Mega Launch" by MegaCorp™ and NASA #LaunchDay';
+    const entities = extractKeyEntities(caption);
+
+    expect(entities).toEqual([
+      '2024',
+      'RSVP',
+      'https://example.com/launch',
+      '@LaunchHQ',
+      '12/25',
+      '"Mega Launch"',
+      'MegaCorp™',
+      'MegaCorp',
+      'NASA',
+      '#LaunchDay',
+    ]);
+  });
+});

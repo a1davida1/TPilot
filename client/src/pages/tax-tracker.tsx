@@ -58,11 +58,21 @@ interface Expense {
   amount: number;
   categoryId: number;
   expenseDate: string;
+  taxYear: number;
   receiptUrl?: string;
   receiptFileName?: string;
   notes?: string;
   category: ExpenseCategory | null;
   date?: string;
+}
+
+interface ExpenseFormState {
+  description: string;
+  amount: string;
+  category: string;
+  date: string;
+  notes: string;
+  taxYear: string;
 }
 
 interface TaxDeductionGuidance {
@@ -104,18 +114,25 @@ const formatRiskLabel = (riskLevel: string) => {
 };
 
 const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
+  const currentYear = new Date().getFullYear();
+  const earliestTaxYear = 2000;
+  const latestTaxYear = currentYear + 1;
+
+  const createDefaultExpenseForm = (): ExpenseFormState => ({
+    description: '',
+    amount: '',
+    category: '',
+    date: format(new Date(), 'yyyy-MM-dd'),
+    notes: '',
+    taxYear: String(currentYear)
+  });
+
   const [selectedCategory, setSelectedCategory] = useState<ExpenseCategory | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [calendarDate, setCalendarDate] = useState<Date>(new Date());
-  const [expenseForm, setExpenseForm] = useState({
-    description: '',
-    amount: '',
-    category: '',
-    date: format(new Date(), 'yyyy-MM-dd'),
-    notes: ''
-  });
+  const [expenseForm, setExpenseForm] = useState<ExpenseFormState>(createDefaultExpenseForm);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [receiptExpenseId, setReceiptExpenseId] = useState('');
   const [expenseError, setExpenseError] = useState<string | null>(null);
@@ -216,7 +233,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
       queryClient.invalidateQueries({ queryKey: ['/api/expenses'] });
       queryClient.invalidateQueries({ queryKey: ['/api/expenses/totals'] });
       setShowExpenseModal(false);
-      setExpenseForm({ description: '', amount: '', category: '', date: format(new Date(), 'yyyy-MM-dd'), notes: '' });
+      setExpenseForm(createDefaultExpenseForm());
       setExpenseError(null);
     },
     onError: (error: unknown) => {
@@ -244,15 +261,41 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
   });
 
   const handleCreateExpense = () => {
-    if (!expenseForm.description || !expenseForm.amount || !expenseForm.category) return;
+    if (!expenseForm.description || !expenseForm.amount || !expenseForm.category || !expenseForm.taxYear) {
+      setExpenseError('Please complete all required fields before submitting.');
+      return;
+    }
+
+    const amountValue = Number.parseFloat(expenseForm.amount);
+    if (!Number.isFinite(amountValue) || amountValue <= 0) {
+      setExpenseError('Please enter a valid expense amount greater than zero.');
+      return;
+    }
+
+    const parsedCategoryId = Number.parseInt(expenseForm.category, 10);
+    if (Number.isNaN(parsedCategoryId)) {
+      setExpenseError('Please select a valid expense category.');
+      return;
+    }
+
+    const parsedTaxYear = Number.parseInt(expenseForm.taxYear, 10);
+    if (
+      Number.isNaN(parsedTaxYear) ||
+      parsedTaxYear < earliestTaxYear ||
+      parsedTaxYear > latestTaxYear
+    ) {
+      setExpenseError(`Please enter a tax year between ${earliestTaxYear} and ${latestTaxYear}.`);
+      return;
+    }
 
     setExpenseError(null);
     createExpenseMutation.mutate({
       description: expenseForm.description,
-      amount: parseFloat(expenseForm.amount),
-      categoryId: parseInt(expenseForm.category, 10),
+      amount: amountValue,
+      categoryId: parsedCategoryId,
       expenseDate: expenseForm.date,
-      notes: expenseForm.notes
+      notes: expenseForm.notes,
+      taxYear: parsedTaxYear
     });
   };
 
@@ -813,6 +856,23 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
               </div>
               
               <div>
+                <Label htmlFor="taxYear">Tax Year</Label>
+                <Input
+                  id="taxYear"
+                  type="number"
+                  min={earliestTaxYear}
+                  max={latestTaxYear}
+                  step={1}
+                  value={expenseForm.taxYear}
+                  onChange={(e) => setExpenseForm({...expenseForm, taxYear: e.target.value})}
+                  data-testid="input-expense-tax-year"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Enter the filing year for this deduction ({earliestTaxYear} - {latestTaxYear}).
+                </p>
+              </div>
+
+              <div>
                 <Label htmlFor="notes">Notes (Optional)</Label>
                 <Textarea
                   id="notes"
@@ -831,9 +891,9 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                 >
                   Cancel
                 </Button>
-                <Button 
+                <Button
                   onClick={handleCreateExpense}
-                  disabled={!expenseForm.description || !expenseForm.amount || !expenseForm.category || createExpenseMutation.isPending}
+                  disabled={!expenseForm.description || !expenseForm.amount || !expenseForm.category || !expenseForm.taxYear || createExpenseMutation.isPending}
                   className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500"
                   data-testid="button-create-expense"
                 >
