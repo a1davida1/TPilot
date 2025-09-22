@@ -21,8 +21,8 @@ interface MockMutationResult {
   reset: () => void;
 }
 
-const mockUseQuery = vi.fn<[MockQueryOptions], MockQueryResult>();
-const mockUseMutation = vi.fn<[unknown], MockMutationResult>();
+const mockUseQuery = vi.fn().mockReturnValue({} as MockQueryResult);
+const mockUseMutation = vi.fn().mockReturnValue({} as MockMutationResult);
 const mockInvalidateQueries = vi.fn();
 const mockSetQueryData = vi.fn();
 
@@ -33,8 +33,8 @@ vi.mock('@tanstack/react-query', async () => {
 
   return {
     ...actual,
-    useQuery: (options: MockQueryOptions) => mockUseQuery(options),
-    useMutation: (options: unknown) => mockUseMutation(options),
+    useQuery: (options: MockQueryOptions) => mockUseQuery(),
+    useMutation: (options: unknown) => mockUseMutation(),
     useQueryClient: () => ({
       invalidateQueries: mockInvalidateQueries,
       setQueryData: mockSetQueryData,
