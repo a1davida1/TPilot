@@ -647,43 +647,6 @@ export default function RedditPostingPage() {
                   />
                 )}
 
-                {postType === 'gallery' && false && (
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="gallery">Select Images (Max 20)</Label>
-                      <Input
-                        id="gallery"
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={handleGallerySelect}
-                        className="cursor-pointer"
-                        data-testid="input-gallery-upload-old"
-                      />
-                    </div>
-                    {galleryFiles.length > 0 && (
-                      <div className="space-y-2">
-                        <Label>Preview ({galleryFiles.length} images)</Label>
-                        <div className="grid grid-cols-3 gap-2 p-4 border-2 border-dashed border-pink-300 rounded-lg">
-                          {galleryFiles.slice(0, 9).map((file, index) => (
-                            <div key={index} className="relative">
-                              <img
-                                src={URL.createObjectURL(file)}
-                                alt={`Gallery ${index + 1}`}
-                                className="w-full h-20 object-cover rounded"
-                                data-testid={`img-gallery-preview-${index}`}
-                              />
-                              {index === 8 && galleryFiles.length > 9 && (
-                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded text-white text-sm">
-                                  +{galleryFiles.length - 9} more
-                                </div>
-                              )}
-                            </div>
-                          ))}\n                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
 
                 {postType === 'text' && (
                   <div className="space-y-2">
