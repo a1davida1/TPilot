@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,8 +14,18 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { apiRequest } from '@/lib/queryClient';
 import { AuthModal } from '@/components/auth-modal';
-import { 
-  Send, 
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator
+} from '@/components/ui/command';
+import {
+  Send,
   Calendar,
   User,
   Eye,
@@ -37,7 +47,8 @@ import {
   ImageIcon,
   Images,
   LogIn,
-  UserCheck
+  UserCheck,
+  ChevronsUpDown
 } from 'lucide-react';
 import { MediaLibrarySelector } from '@/components/MediaLibrarySelector';
 
@@ -48,6 +59,7 @@ interface RedditAccount {
   connectedAt: string;
   karma: number;
   verified: boolean;
+  accountAgeDays?: number;
 }
 
 interface SubredditCommunity {
@@ -62,13 +74,13 @@ interface SubredditCommunity {
   averageUpvotes: number;
   successProbability: number;
   description: string;
-  rules: {
-    minKarma: number;
-    minAccountAge: number;
-    watermarksAllowed: boolean;
-    sellingAllowed: boolean;
-    titleRules: string[];
-    contentRules: string[];
+  rules?: {
+    minKarma?: number;
+    minAccountAge?: number;
+    watermarksAllowed?: boolean;
+    sellingAllowed?: boolean;
+    titleRules?: string[];
+    contentRules?: string[];
   };
 }
 
@@ -121,6 +133,84 @@ interface PostData {
   }>;
 }
 
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+interface CommunityEligibility {
+  community: SubredditCommunity;
+  isEligible: boolean;
+  reasons: string[];
+  badges: {
+    karmaOk: boolean;
+    ageOk: boolean;
+    sellingOk: boolean;
+    watermarkOk: boolean;
+  };
+}
+
+function checkCommunityEligibility(
+  community: SubredditCommunity,
+  account: RedditAccount | null
+): CommunityEligibility {
+  const reasons: string[] = [];
+  let isEligible = true;
+
+  const badges = {
+    karmaOk: true,
+    ageOk: true,
+    sellingOk: true,
+    watermarkOk: true,
+  };
+
+  if (!account) {
+    reasons.push('Account not connected');
+    return {
+      community,
+      isEligible: false,
+      reasons,
+      badges: {
+        karmaOk: false,
+        ageOk: false,
+        sellingOk: false,
+        watermarkOk: false,
+      },
+    };
+  }
+
+  if (community.rules?.minKarma && account.karma < community.rules.minKarma) {
+    reasons.push(`Requires ${community.rules.minKarma} karma (you have ${account.karma})`);
+    isEligible = false;
+    badges.karmaOk = false;
+  }
+
+  if (community.rules?.minAccountAge && account.accountAgeDays) {
+    if (account.accountAgeDays < community.rules.minAccountAge) {
+      reasons.push(`Account must be ${community.rules.minAccountAge} days old (yours is ${account.accountAgeDays} days)`);
+      isEligible = false;
+      badges.ageOk = false;
+    }
+  }
+
+  // Include selling and watermark restrictions in eligibility
+  if (community.rules?.sellingAllowed === false) {
+    badges.sellingOk = false;
+    reasons.push('Selling not allowed in this community');
+    isEligible = false;
+  }
+
+  if (community.rules?.watermarksAllowed === false) {
+    badges.watermarkOk = false;
+    reasons.push('Watermarks not allowed in this community');
+    isEligible = false;
+  }
+
+  return {
+    community,
+    isEligible,
+    reasons,
+    badges,
+  };
+}
+
 export default function RedditPostingPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -128,6 +218,7 @@ export default function RedditPostingPage() {
   
   // Form state
   const [subreddit, setSubreddit] = useState('');
+  const [communityPickerOpen, setCommunityPickerOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [url, setUrl] = useState('');
@@ -191,6 +282,40 @@ export default function RedditPostingPage() {
   });
 
   const selectedAssets = mediaAssets.filter((asset) => selectedMediaIds.includes(asset.id));
+
+  // Get the active account (assuming first active account for eligibility checking)
+  const activeAccount = accounts.find((acc) => acc.isActive) || null;
+
+  // Sort communities by eligibility and karma requirements
+  const sortedCommunities = useMemo(() => {
+    if (!communities || communities.length === 0) return [];
+
+    const communitiesWithEligibility = communities.map((community) => 
+      checkCommunityEligibility(community, activeAccount)
+    );
+
+    // Sort: eligible first, then by karma requirement (ascending)
+    return communitiesWithEligibility.sort((a, b) => {
+      if (a.isEligible !== b.isEligible) {
+        return a.isEligible ? -1 : 1; // Eligible first
+      }
+      
+      // Within same eligibility, sort by karma requirement
+      const aKarma = a.community.rules?.minKarma || 0;
+      const bKarma = b.community.rules?.minKarma || 0;
+      return aKarma - bKarma;
+    });
+  }, [communities, activeAccount]);
+
+  // Set default community to first eligible one (only if no selection made yet)
+  useEffect(() => {
+    if (sortedCommunities.length > 0 && !subreddit) {
+      const firstEligible = sortedCommunities.find(sc => sc.isEligible);
+      if (firstEligible) {
+        setSubreddit(firstEligible.community.id);
+      }
+    }
+  }, [sortedCommunities]); // Remove subreddit dependency to prevent fighting user choice
 
   // Test Reddit connection
   const { mutate: testConnection, isPending: testingConnection } = useMutation({
@@ -412,9 +537,9 @@ export default function RedditPostingPage() {
     });
   };
 
-  // Find community data for selected subreddit
+  // Find community data for selected subreddit (normalized case-insensitive matching)
   const selectedCommunity = communities.find((c) => 
-    c.name.toLowerCase() === `r/${subreddit.toLowerCase()}` || c.id === subreddit.toLowerCase()
+    c.id.toLowerCase() === subreddit.toLowerCase()
   );
 
   return (
@@ -562,34 +687,172 @@ export default function RedditPostingPage() {
                   </Button>
                 </div>
 
-                {/* Subreddit Input */}
+                {/* Community Picker */}
                 <div className="space-y-2">
-                  <Label htmlFor="subreddit">Subreddit</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-3 text-gray-500 text-sm">r/</span>
-                    <Input
-                      id="subreddit"
-                      value={subreddit}
-                      onChange={(e) => setSubreddit(e.target.value)}
-                      className="pl-8"
-                      data-testid="input-subreddit"
-                    />
-                  </div>
-                  {selectedCommunity && (
-                    <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg border border-blue-200">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium text-blue-800">{selectedCommunity.displayName}</span>
-                        <Badge variant="outline" className="text-blue-700 border-blue-300">
-                          {selectedCommunity.members.toLocaleString()} members
-                        </Badge>
+                  <Label>Subreddit</Label>
+                  <Popover open={communityPickerOpen} onOpenChange={setCommunityPickerOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={communityPickerOpen}
+                        className="w-full justify-between"
+                        data-testid="community-picker-trigger"
+                      >
+                        {subreddit ? (
+                          (() => {
+                            const selected = sortedCommunities.find(sc => sc.community.id === subreddit);
+                            return selected ? selected.community.displayName : subreddit;
+                          })()
+                        ) : (
+                          'Select community...'
+                        )}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0">
+                      <Command>
+                        <CommandInput placeholder="Search communities..." />
+                        <CommandEmpty>No communities found.</CommandEmpty>
+                        <CommandList>
+                          <CommandGroup heading="Eligible Communities">
+                            {sortedCommunities
+                              .filter(sc => sc.isEligible)
+                              .map((sc) => (
+                                <CommandItem
+                                  key={sc.community.id}
+                                  value={sc.community.id}
+                                  onSelect={(currentValue) => {
+                                    setSubreddit(currentValue === subreddit ? '' : currentValue);
+                                    setCommunityPickerOpen(false);
+                                  }}
+                                  data-testid={`community-option-${sc.community.id}`}
+                                >
+                                  <div className="flex items-center justify-between w-full">
+                                    <div className="flex-1">
+                                      <div className="font-medium">{sc.community.displayName}</div>
+                                      <div className="text-xs text-gray-500 truncate">
+                                        {sc.community.members.toLocaleString()} members • {sc.community.successProbability}% success
+                                      </div>
+                                    </div>
+                                    <div className="flex gap-1 ml-2">
+                                      {sc.badges.karmaOk && <Badge variant="secondary" className="text-xs">Karma OK</Badge>}
+                                      {sc.badges.ageOk && <Badge variant="secondary" className="text-xs">Age OK</Badge>}
+                                      {sc.badges.sellingOk && <Badge variant="secondary" className="text-xs">Selling OK</Badge>}
+                                    </div>
+                                  </div>
+                                </CommandItem>
+                              ))}
+                          </CommandGroup>
+                          
+                          {sortedCommunities.some(sc => !sc.isEligible) && (
+                            <>
+                              <CommandSeparator />
+                              <CommandGroup heading="Requires Qualification">
+                                {sortedCommunities
+                                  .filter(sc => !sc.isEligible)
+                                  .map((sc) => (
+                                    <CommandItem
+                                      key={sc.community.id}
+                                      value={sc.community.id}
+                                      disabled
+                                      data-testid={`community-option-${sc.community.id}`}
+                                    >
+                                      <div className="flex items-center justify-between w-full opacity-50">
+                                        <div className="flex-1">
+                                          <div className="font-medium">{sc.community.displayName}</div>
+                                          <div className="text-xs text-red-600" data-testid={`community-option-${sc.community.id}-reasons`}>
+                                            {sc.reasons.join(', ')}
+                                          </div>
+                                        </div>
+                                        <div className="flex gap-1 ml-2">
+                                          {!sc.badges.karmaOk && <Badge variant="destructive" className="text-xs">Karma</Badge>}
+                                          {!sc.badges.ageOk && <Badge variant="destructive" className="text-xs">Age</Badge>}
+                                        </div>
+                                      </div>
+                                    </CommandItem>
+                                  ))}
+                              </CommandGroup>
+                            </>
+                          )}
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  
+                  {/* Enhanced Community Insights */}
+                  {selectedCommunity && (() => {
+                    const eligibility = checkCommunityEligibility(selectedCommunity, activeAccount);
+                    return (
+                      <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg border border-blue-200">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium text-blue-800" data-testid="selected-community-name">
+                            {selectedCommunity.displayName}
+                          </span>
+                          <Badge variant="outline" className="text-blue-700 border-blue-300">
+                            {selectedCommunity.members.toLocaleString()} members
+                          </Badge>
+                        </div>
+                        <p className="text-blue-700 mb-2">{selectedCommunity.description}</p>
+                        
+                        {/* Eligibility Badges */}
+                        <div className="flex gap-2 mb-2" data-testid="selected-community-eligibility">
+                          {eligibility.badges.karmaOk ? (
+                            <Badge variant="secondary" className="text-green-700 bg-green-50 border-green-200">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Karma OK
+                            </Badge>
+                          ) : (
+                            <Badge variant="destructive" className="text-red-700 bg-red-50 border-red-200">
+                              <XCircle className="h-3 w-3 mr-1" />
+                              Karma Required
+                            </Badge>
+                          )}
+                          
+                          {eligibility.badges.ageOk ? (
+                            <Badge variant="secondary" className="text-green-700 bg-green-50 border-green-200">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Age OK
+                            </Badge>
+                          ) : (
+                            <Badge variant="destructive" className="text-red-700 bg-red-50 border-red-200">
+                              <XCircle className="h-3 w-3 mr-1" />
+                              Age Required
+                            </Badge>
+                          )}
+                          
+                          {selectedCommunity.rules?.sellingAllowed !== false ? (
+                            <Badge variant="secondary" className="text-green-700 bg-green-50 border-green-200">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Selling OK
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-orange-700 bg-orange-50 border-orange-200">
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              No Selling
+                            </Badge>
+                          )}
+                          
+                          {selectedCommunity.rules?.watermarksAllowed !== false ? (
+                            <Badge variant="secondary" className="text-green-700 bg-green-50 border-green-200">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Watermarks OK
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-orange-700 bg-orange-50 border-orange-200">
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              No Watermarks
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div>Success Rate: <span className="font-medium text-green-600">{selectedCommunity.successProbability}%</span></div>
+                          <div>Avg Upvotes: <span className="font-medium text-blue-600">{selectedCommunity.averageUpvotes}</span></div>
+                        </div>
                       </div>
-                      <p className="text-blue-700 mb-2">{selectedCommunity.description}</p>
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div>Success Rate: <span className="font-medium text-green-600">{selectedCommunity.successProbability}%</span></div>
-                        <div>Avg Upvotes: <span className="font-medium text-blue-600">{selectedCommunity.averageUpvotes}</span></div>
-                      </div>
-                    </div>
-                  )}
+                    );
+                  })()}
                 </div>
 
                 {/* Title Input */}
