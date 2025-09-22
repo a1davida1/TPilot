@@ -1,0 +1,1541 @@
+Update RedditManager to handle subreddit rules
+Sep 22 · a1davida1/TPilot · main
++561-102
+1. Update `RedditManager.canPostToSubreddit` (and the worker paths that call it) to load the normalized rules via `db.query.subredditRules` and inspect fields such as link policy or cooldown requirements before allowing a submission (`server/lib/reddit.ts` and `moderation/moderation-utils.ts` already show how to query the table).
+2. Tie `post_rate_limits` updates to real posting history by writing to the table in `updateRateLimit` and reading it in `canPostToSubreddit`, aligning with the schema in `shared/schema.ts`.
+3. Surface the computed decision (allowed vs. blocked, with human-readable reasons) back to the API response so the UI can warn creators before a shadowban risk materializes.
+
+Summary
+
+    Extended RedditManager to load normalized subreddit rules, evaluate link policies, cooldowns, and daily limits from the database, and persist 24-hour posting counters while returning rich decision metadata alongside submissions.
+
+Added permission prechecks and serialized decision storage to both single-post and batch workers so blocked subreddits stop early, success metadata is captured, and duplicate failure logging is avoided.
+
+Surfaced posting decisions through scheduling and submission APIs and covered link-policy and rate-limit behaviors with a new Vitest suite to warn creators before risky posts go live.
+
+Testing
+
+    ✅ npm run lint
+
+    ⚠️ npm test (fails because Gemini/OpenAI/ImageShield integrations lack credentials and emit external-service errors)
+
+
+server/api-routes.ts
++24-3
+@@ -208,80 +208,101 @@ export function registerApiRoutes(app: Express) {
+      res.status(500).json({ error: getErrorMessage(error) });
+    }
+  });
+
+  // Schedule Post
+  app.post('/api/posts/schedule', async (req, res) => {
+    try {
+      const schema = z.object({
+        subreddit: z.string(),
+        title: z.string(),
+        body: z.string(),
+        mediaKey: z.string().optional(),
+        scheduledAt: z.string().datetime().optional(),
+      });
+
+      const data = schema.parse(req.body);
+      const user = req.user;
+      
+      if (!user?.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      const userId = user.id;
+
+      // Schedule the post
+      const scheduledAt = data.scheduledAt 
+      const scheduledAt = data.scheduledAt
+        ? new Date(data.scheduledAt)
+        : await PostScheduler.chooseSendTime(data.subreddit);
+
+      const linkRegex = /https?:\/\//i;
+      const hasLink = Boolean(
+        data.mediaKey ||
+        linkRegex.test(data.title) ||
+        linkRegex.test(data.body)
+      );
+
+      const decision = await RedditManager.canPostToSubreddit(userId, data.subreddit, {
+        hasLink,
+        intendedAt: scheduledAt,
+      });
+
+      if (!decision.canPost) {
+        return res.status(400).json({
+          success: false,
+          error: decision.reason || 'Cannot schedule post for this subreddit',
+          decision,
+        });
+      }
+
+      // Create post job
+      const [postJob] = await db.insert(postJobs).values({
+        userId,
+        subreddit: data.subreddit,
+        titleFinal: data.title,
+        bodyFinal: data.body,
+        mediaKey: data.mediaKey,
+        scheduledAt,
+      }).returning();
+
+      // Add to queue
+      await addJob<PostingJobPayload>('posting' as QueueNames, {
+        userId,
+        postJobId: postJob.id,
+        subreddit: data.subreddit,
+        titleFinal: data.title,
+        bodyFinal: data.body,
+        mediaKey: data.mediaKey,
+      }, {
+        delay: scheduledAt.getTime() - Date.now(),
+      });
+
+      res.json({ 
+        success: true, 
+      res.json({
+        success: true,
+        postJobId: postJob.id,
+        scheduledAt: scheduledAt.toISOString(),
+        decision,
+      });
+    } catch (error: unknown) {
+      console.error('Failed to schedule post:', error);
+      res.status(500).json({ error: getErrorMessage(error) });
+    }
+  });
+
+  // Get Scheduled Posts
+  app.get('/api/posts/scheduled', async (req, res) => {
+    try {
+      const user = req.user;
+      
+      if (!user?.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      const userId = user.id;
+
+      const jobs = await db
+        .select()
+        .from(postJobs)
+        .where(eq(postJobs.userId, userId))
+        .orderBy(desc(postJobs.scheduledAt))
+        .limit(50);
+
+server/lib/reddit.ts
++316-49
+import snoowrap from 'snoowrap';
+import { db } from '../db.js';
+import { creatorAccounts } from '@shared/schema';
+import { creatorAccounts, subredditRules, postRateLimits } from '@shared/schema';
+import { eq, and } from 'drizzle-orm';
+import { decrypt } from '../services/state-store.js';
+import { env } from './config.js';
+
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+
+interface NormalizedSubredditRules {
+  linkPolicy?: 'no-link' | 'one-link' | 'ok';
+  cooldownMinutes?: number;
+  cooldownHours?: number;
+  postingCadence?: {
+    cooldownMinutes?: number;
+  };
+  postingLimits?: {
+    perDay?: number;
+    per24h?: number;
+    daily?: number;
+    cooldownMinutes?: number;
+    cooldownHours?: number;
+  };
+}
+
+export interface PostCheckContext {
+  hasLink?: boolean;
+  intendedAt?: Date;
+}
+
+function getEnvOrDefault(name: string, defaultValue?: string): string {
+  const value = process.env[name];
+  if (!value && !defaultValue) {
+    console.warn(`Warning: Missing environment variable: ${name}`);
+    return '';
+  }
+  return value || defaultValue || '';
+}
+
+// These will be validated when actually needed, not at startup
+const REDDIT_CLIENT_ID = getEnvOrDefault('REDDIT_CLIENT_ID');
+const REDDIT_CLIENT_SECRET = getEnvOrDefault('REDDIT_CLIENT_SECRET');
+const REDDIT_USER_AGENT = getEnvOrDefault('REDDIT_USER_AGENT', 'ThottoPilot/1.0 (Content scheduling bot)');
+
+export interface RedditPostOptions {
+  subreddit: string;
+  title: string;
+  body?: string;
+  url?: string;
+  nsfw?: boolean;
+  spoiler?: boolean;
+}
+
+export interface RedditPostResult {
+  success: boolean;
+  postId?: string;
+  url?: string;
+  error?: string;
+  decision?: PostingPermission;
+}
+
+export interface PostingPermission {
+  canPost: boolean;
+  reason?: string;
+  reasons: string[];
+  warnings: string[];
+  nextAllowedPost?: Date;
+  evaluatedAt: Date;
+  postsInLast24h: number;
+  maxPostsPer24h: number;
+  ruleSummary?: {
+    linkPolicy?: NormalizedSubredditRules['linkPolicy'];
+    cooldownMinutes?: number;
+    dailyLimit?: number;
+  };
+}
+
+function normalizeSubredditName(subreddit: string): string {
+  return subreddit.replace(/^r\//i, '').trim().toLowerCase();
+}
+
+function toDate(value: unknown): Date | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? undefined : value;
+  }
+
+  const parsed = new Date(value as string | number);
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+}
+
+function deriveCooldownMinutes(rules?: NormalizedSubredditRules): number | null {
+  if (!rules) {
+    return null;
+  }
+
+  const values: Array<number | undefined> = [
+    rules.cooldownMinutes,
+    rules.cooldownHours ? rules.cooldownHours * 60 : undefined,
+    rules.postingCadence?.cooldownMinutes,
+    rules.postingLimits?.cooldownMinutes,
+    rules.postingLimits?.cooldownHours ? rules.postingLimits.cooldownHours * 60 : undefined,
+  ];
+
+  for (const value of values) {
+    if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+      return value;
+    }
+  }
+
+  return null;
+}
+
+function deriveDailyLimit(rules?: NormalizedSubredditRules): number | null {
+  if (!rules?.postingLimits) {
+    return null;
+  }
+
+  const { postingLimits } = rules;
+  const candidates: Array<number | undefined> = [
+    postingLimits.perDay,
+    postingLimits.per24h,
+    postingLimits.daily,
+  ];
+
+  for (const value of candidates) {
+    if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+      return value;
+    }
+  }
+
+  return null;
+}
+
+interface RedditSubmission {
+  id: string;
+  permalink: string;
+}
+
+export class RedditManager {
+  private reddit: snoowrap;
+  private userId: number;
+
+  constructor(accessToken: string, refreshToken: string, userId: number) {
+    this.userId = userId;
+    this.reddit = new snoowrap({
+      userAgent: REDDIT_USER_AGENT,
+      clientId: REDDIT_CLIENT_ID,
+      clientSecret: REDDIT_CLIENT_SECRET,
+      accessToken,
+      refreshToken,
+    });
+  }
+
+  /**
+   * Get Reddit manager for a specific user
+   */
+@@ -78,316 +173,351 @@ export class RedditManager {
+
+      if (!account || !account.oauthToken) {
+        return null;
+      }
+
+      // Decrypt tokens
+      const accessToken = decrypt(account.oauthToken);
+      const refreshToken = account.oauthRefresh ? decrypt(account.oauthRefresh) : '';
+      
+      if (!accessToken) {
+        console.error('Failed to decrypt access token for user:', userId);
+        return null;
+      }
+
+      return new RedditManager(accessToken, refreshToken, userId);
+    } catch (error) {
+      console.error('Failed to create Reddit manager for user:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Submit a post to Reddit
+   */
+  async submitPost(options: RedditPostOptions): Promise<RedditPostResult> {
+    let permission: PostingPermission | undefined;
+    try {
+      console.log(`Submitting post to r/${options.subreddit}: "${options.title}"`);
+
+      // Check if we can post to this subreddit
+      const permission = await RedditManager.canPostToSubreddit(this.userId, options.subreddit);
+      permission = await RedditManager.canPostToSubreddit(this.userId, options.subreddit, {
+        hasLink: Boolean(options.url),
+        intendedAt: new Date(),
+      });
+
+      if (!permission.canPost) {
+        return {
+          success: false,
+          error: permission.reason || 'Cannot post to this subreddit'
+          error: permission.reason || 'Cannot post to this subreddit',
+          decision: permission,
+        };
+      }
+
+      let submission: RedditSubmission;
+
+      if (options.url) {
+        // Link post
+        const subreddit = (this.reddit as unknown as {
+          getSubreddit(name: string): {
+            submitLink(input: {
+              subredditName: string;
+              title: string;
+              url: string;
+              nsfw: boolean;
+              spoiler: boolean;
+            }): Promise<RedditSubmission>;
+          };
+        }).getSubreddit(options.subreddit);
+        submission = await subreddit.submitLink({
+          subredditName: options.subreddit,
+          title: options.title,
+          url: options.url,
+          nsfw: options.nsfw ?? false,
+          spoiler: options.spoiler ?? false,
+        });
+      } else {
+        // Text post
+        const subreddit = (this.reddit as unknown as {
+          getSubreddit(name: string): {
+            submitSelfpost(input: {
+              subredditName: string;
+              title: string;
+              text: string;
+              nsfw: boolean;
+              spoiler: boolean;
+            }): Promise<RedditSubmission>;
+          };
+        }).getSubreddit(options.subreddit);
+        submission = await subreddit.submitSelfpost({
+          subredditName: options.subreddit,
+          title: options.title,
+          text: options.body ?? '',
+          nsfw: options.nsfw ?? false,
+          spoiler: options.spoiler ?? false,
+        });
+      }
+
+      // Update rate limiting
+      await this.updateRateLimit(options.subreddit);
+
+      console.log('Reddit submission succeeded:', {
+        userId: this.userId,
+        subreddit: options.subreddit,
+        postId: submission.id,
+      });
+
+      return {
+        success: true,
+        postId: submission.id,
+        url: `https://www.reddit.com${submission.permalink}`,
+        decision: permission,
+      };
+
+    } catch (error: unknown) {
+      console.error('Reddit submission failed:', {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+
+      let errorMessage = 'Failed to submit post';
+      
+      // Parse common Reddit API errors
+
+      const errorObj = error as { message?: string };
+      if (errorObj.message?.includes('RATELIMIT')) {
+        errorMessage = 'Rate limited by Reddit. Please try again later.';
+      } else if (errorObj.message?.includes('SUBREDDIT_NOTALLOWED')) {
+        errorMessage = 'Not allowed to post in this subreddit';
+      } else if (errorObj.message?.includes('NO_TEXT')) {
+        errorMessage = 'Post content cannot be empty';
+      } else if (errorObj.message?.includes('TOO_LONG')) {
+        errorMessage = 'Post title or content is too long';
+      }
+
+      return {
+        success: false,
+        error: errorMessage
+        error: errorMessage,
+        decision: permission,
+      };
+    }
+  }
+
+  /**
+   * Submit image post with direct upload to Reddit
+   */
+  async submitImagePost(options: {
+    subreddit: string;
+    title: string;
+    imageUrl?: string;
+    imageBuffer?: Buffer;
+    imagePath?: string;
+    nsfw?: boolean;
+    spoiler?: boolean;
+  }): Promise<RedditPostResult> {
+    let permission: PostingPermission | undefined;
+    try {
+      permission = await RedditManager.canPostToSubreddit(this.userId, options.subreddit, {
+        hasLink: false,
+        intendedAt: new Date(),
+      });
+
+      if (!permission.canPost) {
+        return {
+          success: false,
+          error: permission.reason || 'Cannot post to this subreddit',
+          decision: permission,
+        };
+      }
+
+      const reddit = await this.initReddit();
+      
+
+      // If we have a URL, download it to buffer
+      if (options.imageUrl && !options.imageBuffer) {
+        const response = await fetch(options.imageUrl);
+        const arrayBuffer = await response.arrayBuffer();
+        options.imageBuffer = Buffer.from(arrayBuffer);
+      }
+
+      // Direct image upload to Reddit
+      if (options.imageBuffer || options.imagePath) {
+        console.log('Uploading image directly to Reddit (i.redd.it)...');
+        
+        const subreddit = (reddit as unknown as {
+          getSubreddit(name: string): {
+            submitImage(input: {
+              title: string;
+              imageFile: Buffer | string;
+              nsfw: boolean;
+              spoiler: boolean;
+              sendReplies: boolean;
+            }): Promise<{ name?: string; id: string; permalink: string }>;
+          };
+        }).getSubreddit(options.subreddit);
+        
+
+        try {
+          // Try direct image upload first
+          const imageFile = options.imageBuffer ?? options.imagePath;
+          if (!imageFile) {
+            throw new Error('No image file or path provided');
+          }
+          
+
+          const submission = await subreddit.submitImage({
+            title: options.title,
+            imageFile,
+            nsfw: options.nsfw ?? false,
+            spoiler: options.spoiler ?? false,
+            sendReplies: true,
+          });
+
+          await this.updateRateLimit(options.subreddit);
+
+          return {
+            success: true,
+            postId: submission.name || submission.id,
+            url: `https://www.reddit.com${submission.permalink}`,
+            decision: permission,
+          };
+        } catch (imgError: unknown) {
+          console.error('Direct image upload failed, falling back to link post:', (imgError as { message?: string }).message);
+          // Fallback to link post if image upload fails
+          if (options.imageUrl) {
+            return this.submitPost({
+              subreddit: options.subreddit,
+              title: options.title,
+              url: options.imageUrl,
+              nsfw: options.nsfw,
+              spoiler: options.spoiler
+            });
+          }
+          throw imgError;
+        }
+      }
+
+      // No image provided
+      return {
+        success: false,
+        error: 'No image provided for upload'
+        error: 'No image provided for upload',
+        decision: permission,
+      };
+
+    } catch (error: unknown) {
+      console.error('Image submission failed:', error);
+      return {
+        success: false,
+        error: (error as { message?: string }).message ?? 'Failed to upload image'
+        error: (error as { message?: string }).message ?? 'Failed to upload image',
+        decision: permission,
+      };
+    }
+  }
+
+  /**
+   * Submit gallery post with multiple images
+   */
+  async submitGalleryPost(options: {
+    subreddit: string;
+    title: string;
+    images: Array<{
+      url?: string;
+      buffer?: Buffer;
+      caption?: string;
+    }>;
+    nsfw?: boolean;
+  }): Promise<RedditPostResult> {
+    let permission: PostingPermission | undefined;
+    try {
+      permission = await RedditManager.canPostToSubreddit(this.userId, options.subreddit, {
+        hasLink: false,
+        intendedAt: new Date(),
+      });
+
+      if (!permission.canPost) {
+        return {
+          success: false,
+          error: permission.reason || 'Cannot post to this subreddit',
+          decision: permission,
+        };
+      }
+
+      const reddit = await this.initReddit();
+      const subreddit = (reddit as unknown as {
+        getSubreddit(name: string): {
+          submitGallery(input: {
+            title: string;
+            images: Array<{ imageFile: Buffer; caption: string }>;
+            nsfw: boolean;
+            sendReplies: boolean;
+          }): Promise<{ name?: string; id: string; permalink: string }>;
+        };
+      }).getSubreddit(options.subreddit);
+      
+      // Prepare images for gallery
+
+      const galleryImages = await Promise.all(
+        options.images.slice(0, 20).map(async (img) => { // Max 20 images
+        options.images.slice(0, 20).map(async (img) => {
+          let imageBuffer = img.buffer;
+          
+
+          if (!imageBuffer && img.url) {
+            const response = await fetch(img.url);
+            const arrayBuffer = await response.arrayBuffer();
+            imageBuffer = Buffer.from(arrayBuffer);
+          }
+          
+
+          if (!imageBuffer) {
+            throw new Error('No image buffer or URL provided for gallery image');
+          }
+          
+
+          return {
+            imageFile: imageBuffer,
+            caption: img.caption ?? ''
+            caption: img.caption ?? '',
+          };
+        })
+      );
+
+      // Submit gallery
+      const submission = await subreddit.submitGallery({
+        title: options.title,
+        images: galleryImages,
+        nsfw: options.nsfw || false,
+        sendReplies: true
+        sendReplies: true,
+      });
+
+      await this.updateRateLimit(options.subreddit);
+
+      return {
+        success: true,
+        postId: submission.name || submission.id,
+        url: `https://www.reddit.com${submission.permalink}`
+        url: `https://www.reddit.com${submission.permalink}`,
+        decision: permission,
+      };
+
+    } catch (error: unknown) {
+      // Not all subreddits support galleries
+      const errorObj = error as { message?: string };
+      if (errorObj.message?.includes('INVALID_OPTION') || errorObj.message?.includes('gallery')) {
+        console.log('Gallery not supported, falling back to single image');
+        return this.submitImagePost({
+          subreddit: options.subreddit,
+          title: options.title,
+          imageBuffer: options.images[0]?.buffer,
+          imageUrl: options.images[0]?.url,
+          nsfw: options.nsfw
+          nsfw: options.nsfw,
+        });
+      }
+      
+
+      return {
+        success: false,
+        error: (error as { message?: string }).message ?? 'Failed to submit gallery'
+        error: (error as { message?: string }).message ?? 'Failed to submit gallery',
+        decision: permission,
+      };
+    }
+  }
+
+  /**
+   * Check if subreddit allows image posts
+   */
+  async checkSubredditCapabilities(subredditName: string): Promise<{
+    allowsImages: boolean;
+    allowsGalleries: boolean;
+    allowsVideos: boolean;
+    isNsfw: boolean;
+  }> {
+    try {
+      const reddit = await this.initReddit();
+      const subreddit = await (reddit as unknown as {
+        getSubreddit(name: string): {
+          fetch(): Promise<{
+            allow_images: boolean;
+            allow_galleries: boolean;
+            allow_videos: boolean;
+            over18: boolean;
+          }>;
+        };
+      }).getSubreddit(subredditName).fetch();
+@@ -398,85 +528,222 @@ export class RedditManager {
+        allowsVideos: subreddit.allow_videos !== false,
+        isNsfw: subreddit.over18 ?? false
+      };
+    } catch (error) {
+      console.error('Failed to check subreddit capabilities:', error);
+      return {
+        allowsImages: true,
+        allowsGalleries: false,
+        allowsVideos: false,
+        isNsfw: false
+      };
+    }
+  }
+
+  /**
+   * Initialize Reddit instance (helper for new methods)
+   */
+  private async initReddit(): Promise<unknown> {
+    await this.refreshTokenIfNeeded();
+    return this.reddit;
+  }
+
+  /**
+   * Check if user can post to a specific subreddit (rate limiting)
+   */
+  static async canPostToSubreddit(userId: number, subreddit: string): Promise<PostingPermission> {
+  static async canPostToSubreddit(
+    userId: number,
+    subreddit: string,
+    context: PostCheckContext = {}
+  ): Promise<PostingPermission> {
+    try {
+      // Check if user has exceeded posting limits for this subreddit
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      
+      // In a real implementation, you'd check:
+      // - Subreddit-specific post limits
+      // - User's posting history
+      // - Account age and karma requirements
+      // - Subreddit ban status
+      const normalizedSubreddit = normalizeSubredditName(subreddit);
+      const evaluatedAt = new Date();
+
+      return {
+        canPost: true
+      if (!normalizedSubreddit) {
+        return {
+          canPost: false,
+          reason: 'Subreddit name is required',
+          reasons: ['Subreddit name is required'],
+          warnings: [],
+          nextAllowedPost: undefined,
+          evaluatedAt,
+          postsInLast24h: 0,
+          maxPostsPer24h: env.MAX_POSTS_PER_SUBREDDIT_24H,
+        };
+      }
+
+      const intendedAt = context.intendedAt ?? evaluatedAt;
+
+      const [ruleRecord, rateRecord] = await Promise.all([
+        db.query.subredditRules.findFirst({
+          where: eq(subredditRules.subreddit, normalizedSubreddit),
+        }),
+        db.query.postRateLimits.findFirst({
+          where: and(
+            eq(postRateLimits.userId, userId),
+            eq(postRateLimits.subreddit, normalizedSubreddit)
+          ),
+        }),
+      ]);
+
+      const rules = ruleRecord?.rulesJson as NormalizedSubredditRules | undefined;
+      const cooldownMinutes = deriveCooldownMinutes(rules);
+      const ruleLimit = deriveDailyLimit(rules);
+      const baseLimit = env.MAX_POSTS_PER_SUBREDDIT_24H > 0 ? env.MAX_POSTS_PER_SUBREDDIT_24H : 1;
+      const maxPosts = ruleLimit && ruleLimit > 0 ? ruleLimit : baseLimit;
+
+      let postsInWindow = 0;
+      const lastPostAt = toDate(rateRecord?.lastPostAt);
+      if (lastPostAt) {
+        const diff = intendedAt.getTime() - lastPostAt.getTime();
+        if (diff < DAY_IN_MS && diff >= 0) {
+          postsInWindow = rateRecord?.postCount24h ?? 0;
+        } else if (diff < 0) {
+          postsInWindow = rateRecord?.postCount24h ?? 0;
+        }
+      }
+
+      const reasons: string[] = [];
+      const warnings: string[] = [];
+      let nextAllowedPost: Date | undefined;
+
+      if (rules?.linkPolicy === 'no-link') {
+        if (context.hasLink) {
+          reasons.push(`Links are not allowed when posting to r/${normalizedSubreddit}.`);
+        } else {
+          warnings.push('This subreddit does not allow promotional links.');
+        }
+      } else if (rules?.linkPolicy === 'one-link' && context.hasLink) {
+        warnings.push('Only one promotional link is allowed per post in this subreddit.');
+      }
+
+      if (cooldownMinutes && lastPostAt) {
+        const cooldownMs = cooldownMinutes * 60 * 1000;
+        const elapsed = intendedAt.getTime() - lastPostAt.getTime();
+        if (elapsed < cooldownMs) {
+          const remainingMs = cooldownMs - Math.max(elapsed, 0);
+          const waitMinutes = Math.ceil(remainingMs / (60 * 1000));
+          const candidate = new Date(lastPostAt.getTime() + cooldownMs);
+          nextAllowedPost = candidate;
+          reasons.push(
+            `Please wait ${waitMinutes} minute${waitMinutes === 1 ? '' : 's'} before posting again to r/${normalizedSubreddit}.`
+          );
+        }
+      }
+
+      if (maxPosts > 0) {
+        if (postsInWindow >= maxPosts) {
+          if (lastPostAt) {
+            const candidate = new Date(lastPostAt.getTime() + DAY_IN_MS);
+            if (!nextAllowedPost || candidate > nextAllowedPost) {
+              nextAllowedPost = candidate;
+            }
+          }
+          reasons.push(
+            `Daily limit reached for r/${normalizedSubreddit}: ${postsInWindow}/${maxPosts} posts in the last 24 hours.`
+          );
+        } else if (maxPosts > 1 && postsInWindow >= maxPosts - 1) {
+          warnings.push(
+            `Approaching the daily posting limit (${postsInWindow}/${maxPosts}) for r/${normalizedSubreddit}.`
+          );
+        }
+      }
+
+      const permission: PostingPermission = {
+        canPost: reasons.length === 0,
+        reason: reasons[0],
+        reasons,
+        warnings,
+        nextAllowedPost,
+        evaluatedAt,
+        postsInLast24h: postsInWindow,
+        maxPostsPer24h: maxPosts,
+        ruleSummary: {
+          linkPolicy: rules?.linkPolicy,
+          cooldownMinutes: cooldownMinutes ?? undefined,
+          dailyLimit: ruleLimit && ruleLimit > 0 ? ruleLimit : maxPosts,
+        },
+      };
+
+      return permission;
+    } catch (error) {
+      console.error('Error checking posting permission:', error);
+      const evaluatedAt = new Date();
+      return {
+        canPost: false,
+        reason: 'Unable to verify posting permissions'
+        reason: 'Unable to verify posting permissions',
+        reasons: ['Unable to verify posting permissions'],
+        warnings: [],
+        nextAllowedPost: undefined,
+        evaluatedAt,
+        postsInLast24h: 0,
+        maxPostsPer24h: env.MAX_POSTS_PER_SUBREDDIT_24H,
+      };
+    }
+  }
+
+  /**
+   * Update rate limiting after successful post
+   */
+  private async updateRateLimit(subreddit: string): Promise<void> {
+    try {
+      // In production, update rate limiting tables
+      console.log(`Updated rate limit for user ${this.userId} in r/${subreddit}`);
+      
+      // This would insert/update records in post_rate_limits table
+      // await db.insert(postRateLimits).values({...})
+      
+      const normalizedSubreddit = normalizeSubredditName(subreddit);
+      if (!normalizedSubreddit) {
+        return;
+      }
+
+      const now = new Date();
+
+      const existing = await db.query.postRateLimits.findFirst({
+        where: and(
+          eq(postRateLimits.userId, this.userId),
+          eq(postRateLimits.subreddit, normalizedSubreddit)
+        ),
+      });
+
+      if (existing) {
+        const lastPostAt = toDate(existing.lastPostAt);
+        const withinWindow = lastPostAt ? now.getTime() - lastPostAt.getTime() < DAY_IN_MS : false;
+        const previousCount = existing.postCount24h ?? 0;
+        const nextCount = withinWindow ? previousCount + 1 : 1;
+        await db
+          .update(postRateLimits)
+          .set({
+            lastPostAt: now,
+            postCount24h: nextCount,
+            updatedAt: now,
+          })
+          .where(eq(postRateLimits.id, existing.id));
+      } else {
+        await db.insert(postRateLimits).values({
+          userId: this.userId,
+          subreddit: normalizedSubreddit,
+          lastPostAt: now,
+          postCount24h: 1,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to update rate limit:', error);
+    }
+  }
+
+  /**
+   * Get user's Reddit profile info
+   */
+  async getProfile(): Promise<unknown> {
+    try {
+      const user = await (this.reddit as unknown as {
+        getMe(): Promise<{
+          name: string;
+          link_karma: number;
+          comment_karma: number;
+          created_utc: number;
+          verified: boolean;
+          is_gold: boolean;
+          has_mail: boolean;
+        }>;
+      }).getMe();
+      return {
+        username: user.name,
+        karma: user.link_karma + user.comment_karma,
+        created: user.created_utc,
+server/lib/workers/batch-posting-worker.ts
++46-24
+import { registerProcessor } from "../queue-factory.js";
+import { QUEUE_NAMES, type BatchPostJobData } from "../queue/index.js";
+import { db } from "../../db.js";
+import { postJobs, eventLogs } from "@shared/schema";
+import { eq } from "drizzle-orm";
+import { RedditManager, type RedditPostOptions } from "../reddit.js";
+import { RedditManager, type RedditPostOptions, type PostingPermission } from "../reddit.js";
+import { logger } from "../logger.js";
+
+function serializeDecision(decision?: PostingPermission): Record<string, unknown> | undefined {
+  if (!decision) {
+    return undefined;
+  }
+
+  const { evaluatedAt, nextAllowedPost, ...rest } = decision;
+  return {
+    ...rest,
+    evaluatedAt: evaluatedAt.toISOString(),
+    ...(nextAllowedPost ? { nextAllowedPost: nextAllowedPost.toISOString() } : {}),
+  };
+}
+
+export class BatchPostingWorker {
+  private initialized = false;
+
+  async initialize() {
+    if (this.initialized) return;
+    
+    await registerProcessor<BatchPostJobData>(
+      QUEUE_NAMES.BATCH_POST,
+      this.processJob.bind(this),
+      { concurrency: 1 } // Process 1 batch at a time to respect rate limits
+    );
+    
+    this.initialized = true;
+    logger.info('✅ Batch posting worker initialized with queue abstraction');
+  }
+
+  private async processJob(jobData: unknown, jobId: string): Promise<void> {
+    const { 
+      userId, 
+      campaignId, 
+      subreddits, 
+      titleTemplate, 
+      bodyTemplate, 
+      mediaKey, 
+      delayBetweenPosts = 300000 // 5 minutes default
+    } = jobData as BatchPostJobData;
+
+    try {
+      logger.info(`Processing batch posting campaign ${campaignId} for ${subreddits.length} subreddits`);
+
+      // Get Reddit manager for user
+      const reddit = await RedditManager.forUser(userId);
+      if (!reddit) {
+        throw new Error('No active Reddit account found for user');
+      }
+
+      const results: unknown[] = [];
+      let successCount = 0;
+      let failureCount = 0;
+
+      for (let i = 0; i < subreddits.length; i++) {
+        const subreddit = subreddits[i];
+        
+        try {
+          logger.info(`Posting to r/${subreddit} (${i + 1}/${subreddits.length})`);
+
+          // Check if we can post to this subreddit
+          const canPost = await RedditManager.canPostToSubreddit(userId, subreddit);
+          if (!canPost.canPost) {
+            results.push({
+              subreddit,
+              success: false,
+              error: canPost.reason,
+              skipped: true,
+            });
+            continue;
+          }
+
+          // Customize content for this subreddit
+          const customizedContent = await this.customizeContentForSubreddit(
+            subreddit,
+            titleTemplate,
+            bodyTemplate
+          );
+
+          // Create individual post job for tracking
+          const [postJob] = await db.insert(postJobs).values({
+            userId,
+            subreddit,
+            titleFinal: customizedContent.title,
+            bodyFinal: customizedContent.body,
+            mediaKey,
+            scheduledAt: new Date(),
+            status: 'pending',
+          }).returning();
+
+          // Submit post
+          const postOptions: RedditPostOptions = {
+            subreddit,
+            title: customizedContent.title,
+            body: customizedContent.body,
+            nsfw: true,
+          };
+
+          // Add media if provided
+          if (mediaKey) {
+            try {
+              const mediaAsset = await this.getMediaAsset(mediaKey, userId);
+              if (mediaAsset) {
+                postOptions.url = mediaAsset.downloadUrl || mediaAsset.signedUrl;
+              }
+            } catch (error: unknown) {
+              logger.warn('Failed to attach media, posting as text:', {
+                error: error instanceof Error ? error.message : String(error)
+              });
+            }
+          }
+
+          const permission = await RedditManager.canPostToSubreddit(userId, subreddit, {
+            hasLink: Boolean(postOptions.url),
+            intendedAt: new Date(),
+          });
+
+          if (!permission.canPost) {
+            results.push({
+              subreddit,
+              success: false,
+              error: permission.reason ?? 'Posting blocked by subreddit policy',
+              skipped: true,
+              decision: serializeDecision(permission),
+            });
+            continue;
+          }
+
+          const [postJob] = await db.insert(postJobs).values({
+            userId,
+            subreddit,
+            titleFinal: customizedContent.title,
+            bodyFinal: customizedContent.body,
+            mediaKey,
+            scheduledAt: new Date(),
+            status: 'pending',
+          }).returning();
+
+          const result = await reddit.submitPost(postOptions);
+
+          if (result.success) {
+            const decisionPayload = serializeDecision(result.decision);
+            // Update post job status
+            await db
+              .update(postJobs)
+              .set({
+                status: 'sent',
+                resultJson: {
+                  redditPostId: result.postId,
+                  url: result.url,
+                  completedAt: new Date().toISOString(),
+                  decision: decisionPayload,
+                },
+                updatedAt: new Date(),
+              })
+              .where(eq(postJobs.id, postJob.id));
+
+            // Schedule metrics collection
+            if (result.postId) {
+              await this.scheduleMetricsCollection(postJob.id, result.postId);
+            }
+
+            results.push({
+              subreddit,
+              success: true,
+              postId: result.postId,
+              url: result.url,
+              decision: decisionPayload,
+            });
+            successCount++;
+
+          } else {
+            const decisionPayload = serializeDecision(result.decision);
+            await db
+              .update(postJobs)
+              .set({
+                status: 'failed',
+                resultJson: {
+                  error: result.error,
+                  failedAt: new Date().toISOString(),
+                  decision: decisionPayload,
+                },
+                updatedAt: new Date(),
+              })
+              .where(eq(postJobs.id, postJob.id));
+
+            results.push({
+              subreddit,
+              success: false,
+              error: result.error,
+              decision: decisionPayload,
+            });
+            failureCount++;
+          }
+
+          // Add delay between posts (except for the last one)
+          if (i < subreddits.length - 1) {
+            logger.info(`Waiting ${delayBetweenPosts / 1000}s before next post...`);
+            await this.sleep(delayBetweenPosts);
+          }
+
+        } catch (error: unknown) {
+          logger.error(`Failed to post to r/${subreddit}:`, {
+            error: error instanceof Error ? error.message : String(error)
+          });
+          
+          results.push({
+            subreddit,
+            success: false,
+            error: error instanceof Error ? error.message : String(error),
+          });
+          failureCount++;
+
+          // Continue with next subreddit even if this one fails
+        }
+      }
+server/lib/workers/post-worker.ts
++91-23
+import { registerProcessor } from "../queue-factory.js";
+import { QUEUE_NAMES, type PostJobData } from "../queue/index.js";
+import { db } from "../../db.js";
+import { postJobs, eventLogs } from "@shared/schema";
+import { eq } from "drizzle-orm";
+import { RedditManager } from "../reddit.js";
+import { RedditManager, type PostingPermission } from "../reddit.js";
+import { MediaManager } from "../media.js";
+import { storage } from "../../storage.js";
+import { socialMediaManager, type Platform, type PostContent } from "../../social-media/social-media-manager.js";
+import { logger } from "../logger.js";
+
+function serializeDecision(decision?: PostingPermission): Record<string, unknown> | undefined {
+  if (!decision) {
+    return undefined;
+  }
+
+  const { evaluatedAt, nextAllowedPost, ...rest } = decision;
+  return {
+    ...rest,
+    evaluatedAt: evaluatedAt.toISOString(),
+    ...(nextAllowedPost ? { nextAllowedPost: nextAllowedPost.toISOString() } : {}),
+  };
+}
+
+export class PostWorker {
+  private initialized = false;
+
+  async initialize() {
+    if (this.initialized) return;
+    
+    await registerProcessor<PostJobData>(
+      QUEUE_NAMES.POST,
+      this.processJob.bind(this),
+      { concurrency: 2 } // Process 2 posts at once max
+    );
+    
+    this.initialized = true;
+    logger.info('✅ Post worker initialized with queue abstraction');
+  }
+
+  private async processJob(jobData: unknown, jobId: string): Promise<void> {
+    // Validate job data structure
+    if (!jobData || typeof jobData !== 'object') {
+      throw new Error('Invalid job data: expected object');
+    }
+    const data = jobData as PostJobData;
+    if (data.platforms && data.content) {
+      await this.processSocialMediaJob(data, jobId);
+      return;
+    }
+    const { userId, postJobId, subreddit, titleFinal, bodyFinal, mediaKey } = data;
+
+    try {
+      logger.info(`Processing post job ${postJobId} for user ${userId}`);
+
+      // Get Reddit manager for user
+      const reddit = await RedditManager.forUser(userId);
+      if (!reddit) {
+        throw new Error('No active Reddit account found for user');
+      }
+
+      // Check if we can post to this subreddit
+      // Ensure subreddit provided
+      if (!subreddit) {
+        throw new Error('Subreddit is required for Reddit posting');
+      }
+      const canPost = await RedditManager.canPostToSubreddit(userId, subreddit);
+      if (!canPost.canPost) {
+        throw new Error(`Cannot post: ${canPost.reason}`);
+      }
+
+      // Prepare post options
+      interface RedditPostOptions {
+        subreddit: string;
+        title: string;
+        body: string;
+        nsfw: boolean;
+        url?: string;
+      }
+      
+
+      const postOptions: RedditPostOptions = {
+        subreddit,
+        title: titleFinal || '',
+        body: bodyFinal || '',
+        nsfw: true, // Assume NSFW for adult content
+        nsfw: true,
+      };
+
+      // Add media if provided
+      if (mediaKey) {
+        try {
+          // In production, this would get the signed URL or public URL
+          const mediaAsset = await this.getMediaAsset(mediaKey, userId);
+          if (mediaAsset) {
+            postOptions.url = mediaAsset.downloadUrl || mediaAsset.signedUrl;
+          }
+        } catch (error: unknown) {
+          logger.warn('Failed to attach media, posting as text:', {
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
+        }
+      }
+
+      // Submit to Reddit
+      const permission = await RedditManager.canPostToSubreddit(userId, subreddit, {
+        hasLink: Boolean(postOptions.url),
+        intendedAt: new Date(),
+      });
+
+      if (!permission.canPost) {
+        const decisionPayload = serializeDecision(permission);
+        if (postJobId) {
+          await this.updateJobStatus(postJobId, 'failed', {
+            error: permission.reason || 'Cannot post to this subreddit',
+            decision: decisionPayload,
+            failedAt: new Date().toISOString(),
+          });
+        }
+
+        await this.logEvent(userId, 'job.failed', {
+          postJobId,
+          subreddit,
+          error: permission.reason || 'Cannot post to this subreddit',
+          decision: decisionPayload,
+        });
+
+        const permissionError = new Error(permission.reason || 'Cannot post to this subreddit') as Error & {
+          skipJobUpdate?: boolean;
+        };
+        permissionError.skipJobUpdate = true;
+        throw permissionError;
+      }
+
+      const result = await reddit.submitPost(postOptions);
+
+      // Update job status in database
+      if (result.success) {
+        if (!postJobId) {
+          throw new Error('postJobId is required');
+        }
+        const decisionPayload = serializeDecision(result.decision);
+        await this.updateJobStatus(postJobId, 'sent', {
+          redditPostId: result.postId,
+          url: result.url,
+          completedAt: new Date().toISOString(),
+          decision: decisionPayload,
+        });
+
+        // Log success event
+        const resultLog: Record<string, unknown> = {
+          ...result,
+        };
+        delete (resultLog as { decision?: unknown }).decision;
+        if (decisionPayload) {
+          resultLog.decision = decisionPayload;
+        }
+
+        await this.logEvent(userId, 'job.completed', {
+          postJobId,
+          subreddit,
+          result,
+          result: resultLog,
+        });
+
+        logger.info(`Post job ${postJobId} completed successfully`, { result });
+      } else {
+        const decisionPayload = serializeDecision(result.decision);
+        if (postJobId) {
+          await this.updateJobStatus(postJobId, 'failed', {
+            error: result.error,
+            failedAt: new Date().toISOString(),
+            decision: decisionPayload,
+          });
+        }
+
+        const resultLog: Record<string, unknown> = {
+          ...result,
+        };
+        delete (resultLog as { decision?: unknown }).decision;
+        if (decisionPayload) {
+          resultLog.decision = decisionPayload;
+        }
+
+        await this.logEvent(userId, 'job.failed', {
+          postJobId,
+          subreddit,
+          error: result.error,
+          result: resultLog,
+        });
+
+        throw new Error(result.error || 'Reddit posting failed');
+      }
+
+    } catch (error: unknown) {
+      logger.error(`Post job ${postJobId} failed:`, { error });
+
+      // Update job status to failed
+      if (postJobId) {
+      const skipJobUpdate = (error as { skipJobUpdate?: boolean }).skipJobUpdate;
+
+      if (postJobId && !skipJobUpdate) {
+        await this.updateJobStatus(postJobId, 'failed', {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          failedAt: new Date().toISOString(),
+        });
+      }
+
+      // Log failure event
+      await this.logEvent(userId, 'job.failed', {
+        postJobId,
+        subreddit,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      if (!skipJobUpdate) {
+        await this.logEvent(userId, 'job.failed', {
+          postJobId,
+          subreddit,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+
+      throw error; // Re-throw to mark job as failed
+    }
+  }
+
+  private async processSocialMediaJob(data: PostJobData, jobId: string): Promise<void> {
+    const { userId, platforms, content } = data;
+    if (!platforms || !content) return;
+
+    try {
+      logger.info(`Processing social media job ${jobId} for user ${userId}`);
+      const accounts = await storage.getUserSocialMediaAccounts(userId);
+      const connected = accounts
+        .filter(acc => acc.isActive && platforms.includes(acc.platform as Platform))
+        .map(acc => acc.platform as Platform);
+
+      for (const acc of accounts) {
+        if (connected.includes(acc.platform as Platform) && acc.accessToken) {
+          const credentials: Record<string, unknown> = {
+            accessToken: acc.accessToken || '',
+            ...(acc.refreshToken ? { refreshToken: acc.refreshToken } : {}),
+            ...(typeof acc.metadata === 'object' && acc.metadata !== null
+              ? (acc.metadata as Record<string, unknown>)
+              : {}),
+          };
+server/reddit-routes.ts
++5-3
+@@ -445,61 +445,63 @@ export function registerRedditRoutes(app: Express) {
+            nsfw: nsfw || false,
+            spoiler: spoiler || false
+          });
+          break;
+          
+        case 'text':
+        default:
+          // Text post
+          result = await reddit.submitPost({
+            subreddit,
+            title,
+            body: body || '',
+            nsfw: nsfw || false,
+            spoiler: spoiler || false
+          });
+          break;
+      }
+
+      if (result.success) {
+        console.log('Reddit post successful:', {
+          userId,
+          subreddit,
+          postType,
+          url: result.url
+        });
+        
+
+        res.json({
+          success: true,
+          postId: result.postId,
+          url: result.url,
+          message: `Post submitted successfully to r/${subreddit}`
+          message: `Post submitted successfully to r/${subreddit}`,
+          decision: result.decision,
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: result.error || 'Failed to submit post'
+          error: result.error || 'Failed to submit post',
+          decision: result.decision,
+        });
+      }
+
+    } catch (error: unknown) {
+      console.error('Reddit submit error:', error);
+      res.status(500).json({
+        error: error instanceof Error
+          ? (error as Error).message
+          : 'Failed to submit post to Reddit'
+      });
+    }
+  });
+
+  // Add new endpoint to check subreddit capabilities
+  app.get('/api/reddit/subreddit/:name/capabilities', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      const reddit = await RedditManager.forUser(userId);
+      if (!reddit) {
+        return res.status(404).json({ error: 'No Reddit account connected' });
+      }
+tests/unit/reddit-permissions.test.ts
+New
++79-0
+import { describe, test, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { db } from '../../server/db';
+import { subredditRules, postRateLimits } from '../../shared/schema';
+import { RedditManager } from '../../server/lib/reddit';
+import { eq, and } from 'drizzle-orm';
+
+const TEST_SUBREDDIT = 'test_permissions';
+const TEST_USER_ID = 98765;
+
+describe('RedditManager.canPostToSubreddit', () => {
+  beforeAll(async () => {
+    await db
+      .insert(subredditRules)
+      .values({
+        subreddit: TEST_SUBREDDIT,
+        rulesJson: {
+          linkPolicy: 'no-link',
+          postingLimits: { perDay: 1 },
+        },
+      })
+      .onConflictDoNothing();
+  });
+
+  beforeEach(async () => {
+    await db
+      .delete(postRateLimits)
+      .where(
+        and(
+          eq(postRateLimits.userId, TEST_USER_ID),
+          eq(postRateLimits.subreddit, TEST_SUBREDDIT)
+        )
+      );
+  });
+
+  afterAll(async () => {
+    await db
+      .delete(subredditRules)
+      .where(eq(subredditRules.subreddit, TEST_SUBREDDIT));
+    await db
+      .delete(postRateLimits)
+      .where(eq(postRateLimits.subreddit, TEST_SUBREDDIT));
+  });
+
+  test('blocks link submissions when subreddit disallows links', async () => {
+    const decision = await RedditManager.canPostToSubreddit(TEST_USER_ID, TEST_SUBREDDIT, {
+      hasLink: true,
+    });
+
+    expect(decision.canPost).toBe(false);
+    expect(decision.reasons[0]).toContain('Links are not allowed');
+    expect(decision.ruleSummary?.linkPolicy).toBe('no-link');
+  });
+
+  test('allows text submissions while warning about link policy', async () => {
+    const decision = await RedditManager.canPostToSubreddit(TEST_USER_ID, TEST_SUBREDDIT, {
+      hasLink: false,
+    });
+
+    expect(decision.canPost).toBe(true);
+    expect(decision.warnings).toContain('This subreddit does not allow promotional links.');
+    expect(decision.ruleSummary?.dailyLimit).toBe(1);
+  });
+
+  test('blocks when daily rate limit is reached', async () => {
+    const now = new Date();
+    await db.insert(postRateLimits).values({
+      userId: TEST_USER_ID,
+      subreddit: TEST_SUBREDDIT,
+      lastPostAt: now,
+      postCount24h: 1,
+    });
+
+    const decision = await RedditManager.canPostToSubreddit(TEST_USER_ID, TEST_SUBREDDIT);
+
+    expect(decision.canPost).toBe(false);
+    expect(decision.reasons[0]).toContain('Daily limit reached');
+    expect(decision.nextAllowedPost).toBeInstanceOf(Date);
+  });
+});

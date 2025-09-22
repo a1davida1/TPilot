@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import request from 'supertest';
 import express from 'express';
 import type { Express } from 'express';
+import type { User } from '../../shared/schema.js';
 
 // Mock auth module to simulate different authentication states
 const mockUsers = new Map<number, any>();
@@ -63,7 +64,7 @@ describe('Pro Resources Integration', () => {
     const { registerRoutes } = await import('../../server/routes.js');
     
     // Call registerRoutes to mount all routes including pro-resources
-    await registerRoutes(app, '/api');
+    await registerRoutes(app);
   });
 
   afterEach(() => {
@@ -205,6 +206,7 @@ describe('Pro Resources Integration', () => {
       
       await request(app)
         .post('/api/pro-resources/test-perk-id/referral-code')
+        .set('Content-Type', 'application/json')
         .expect(401);
     });
 
@@ -217,6 +219,7 @@ describe('Pro Resources Integration', () => {
 
       await request(app)
         .post('/api/pro-resources/test-perk-id/referral-code')
+        .set('Content-Type', 'application/json')
         .set('Authorization', 'Bearer mock-free-token')
         .expect(403);
     });
@@ -230,6 +233,7 @@ describe('Pro Resources Integration', () => {
 
       await request(app)
         .post('/api/pro-resources/non-existent-perk/referral-code')
+        .set('Content-Type', 'application/json')
         .set('Authorization', 'Bearer mock-pro-token')
         .expect(404);
     });
@@ -243,6 +247,7 @@ describe('Pro Resources Integration', () => {
 
       const response = await request(app)
         .post('/api/pro-resources/onlyfans-referral/referral-code')
+        .set('Content-Type', 'application/json')
         .set('Authorization', 'Bearer mock-pro-token')
         .expect(200);
 
@@ -264,6 +269,7 @@ describe('Pro Resources Integration', () => {
 
       const response1 = await request(app)
         .post('/api/pro-resources/onlyfans-referral/referral-code')
+        .set('Content-Type', 'application/json')
         .set('Authorization', 'Bearer mock-pro-token1')
         .expect(200);
 
@@ -276,11 +282,44 @@ describe('Pro Resources Integration', () => {
 
       const response2 = await request(app)
         .post('/api/pro-resources/onlyfans-referral/referral-code')
+        .set('Content-Type', 'application/json')
         .set('Authorization', 'Bearer mock-pro-token2')
         .expect(200);
 
       // Referral codes should be different for different users
       expect(response1.body.referralCode).not.toBe(response2.body.referralCode);
+    });
+
+    it('should fall back to stored tier when session is missing subscription tier', async () => {
+      const persistedUserId = 45;
+      currentMockUser = {
+        id: persistedUserId,
+        username: 'fallback-pro'
+        // Note: no subscriptionTier field, should trigger fallback
+      };
+
+      const { storage } = await import('../../server/storage.js');
+      const storedUser: Partial<User> & { subscriptionTier?: string | null } = {
+        id: persistedUserId,
+        tier: 'pro'
+      };
+
+      const getUserByIdSpy = vi
+        .spyOn(storage, 'getUserById')
+        .mockResolvedValue(storedUser as User);
+
+      const response = await request(app)
+        .post('/api/pro-resources/onlyfans-referral/referral-code')
+        .set('Content-Type', 'application/json')
+        .set('Authorization', 'Bearer mock-storage-tier')
+        .expect(200);
+
+      expect(getUserByIdSpy).toHaveBeenCalledWith(persistedUserId);
+      expect(response.body).toMatchObject({
+        referralCode: expect.stringMatching(/^TP45/)
+      });
+
+      getUserByIdSpy.mockRestore();
     });
   });
 

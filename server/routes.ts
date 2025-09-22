@@ -58,13 +58,44 @@ type UserTier = 'free' | 'starter' | 'pro' | 'premium';
 // ==========================================
 
 function registerProResourcesRoutes(app: Express) {
-  // Helper to get user tier
-  const getUserTier = (user: any): UserTier => {
-    if (!user) return 'free';
-    if (user.subscriptionTier === 'pro' || user.subscriptionTier === 'premium') {
-      return user.subscriptionTier as UserTier;
+  type SessionUser = (typeof users.$inferSelect & { subscriptionTier?: string | null }) | undefined;
+  type PersistedUser = typeof users.$inferSelect & { subscriptionTier?: string | null };
+
+  const resolveTier = (tierValue: string | null | undefined): UserTier => {
+    if (tierValue === 'pro' || tierValue === 'premium') {
+      return tierValue;
+    }
+    if (tierValue === 'starter') {
+      return 'starter';
     }
     return 'free';
+  };
+
+  // Helper to get user tier with storage fallback when session lacks tier information
+  const getUserTier = async (user: SessionUser): Promise<UserTier> => {
+    if (!user?.id) {
+      return 'free';
+    }
+
+    const sessionTier = user.subscriptionTier ?? user.tier;
+    if (sessionTier !== undefined && sessionTier !== null) {
+      return resolveTier(sessionTier);
+    }
+
+    try {
+      const persistedUser = await storage.getUserById(user.id);
+      if (!persistedUser) {
+        return 'free';
+      }
+
+      const persistedTier = (persistedUser as PersistedUser).subscriptionTier ?? persistedUser.tier;
+      return resolveTier(persistedTier);
+    } catch (error) {
+      logger.warn('Failed to resolve user tier from storage fallback', {
+        error: error instanceof Error ? error.message : String(error)
+      });
+      return 'free';
+    }
   };
 
   // GET /api/pro-resources - List all perks for authenticated users
@@ -78,7 +109,7 @@ function registerProResourcesRoutes(app: Express) {
         });
       }
 
-      const userTier = getUserTier(req.user);
+      const userTier = await getUserTier(req.user);
       
       // Only pro/premium users get access
       if (userTier === 'free' || userTier === 'starter') {
@@ -113,7 +144,7 @@ function registerProResourcesRoutes(app: Express) {
         return res.status(401).json({ message: "Authentication required" });
       }
 
-      const userTier = getUserTier(req.user);
+      const userTier = await getUserTier(req.user);
       if (userTier === 'free' || userTier === 'starter') {
         return res.status(403).json({ message: "Pro subscription required" });
       }
@@ -150,7 +181,7 @@ function registerProResourcesRoutes(app: Express) {
         return res.status(401).json({ message: "Authentication required" });
       }
 
-      const userTier = getUserTier(req.user);
+      const userTier = await getUserTier(req.user);
       if (userTier === 'free' || userTier === 'starter') {
         return res.status(403).json({ message: "Pro subscription required" });
       }
