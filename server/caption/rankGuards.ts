@@ -53,7 +53,7 @@ export function fallbackHashtags(platform?: string): string[] {
 }
 
 export interface Violation {
-  type: "banned_phrase" | "generic_hashtag" | "canned_cta";
+  type: "banned_phrase" | "generic_hashtag" | "canned_cta" | "banned_word";
   content: string;
   field: "caption" | "hashtags" | "cta";
 }
@@ -115,6 +115,9 @@ export function buildRerankHint(violations: Violation[]): string {
       case "canned_cta":
         hints.push("create unique calls-to-action instead of templates like 'Check it out'");
         break;
+      case "banned_word":
+        hints.push("avoid banned words (ai, ai-generated, content)");
+        break;
     }
   }
 
@@ -132,6 +135,9 @@ export function formatViolationSummary(violations: Violation[]): string {
     switch (violation.type) {
       case "banned_phrase":
         summaries.push("sanitized sparkle-filler caption");
+        break;
+      case "banned_word":
+        summaries.push("removed banned words");
         break;
       case "generic_hashtag":
         summaries.push("replaced generic hashtags");
