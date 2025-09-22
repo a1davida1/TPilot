@@ -1,7 +1,7 @@
 import snoowrap from 'snoowrap';
 import { z } from 'zod';
 import { db } from '../db.js';
-import { redditCommunities, insertRedditCommunitySchema } from '@shared/schema';
+import { redditCommunities, insertRedditCommunitySchema, InsertRedditCommunity } from '@shared/schema';
 import { logger } from '../lib/logger.js';
 
 // Environment validation schema
@@ -98,7 +98,7 @@ function normalizeSubredditData(subreddit: any, engagementMetrics: any) {
     description,
     members: subscribers,
     category: subreddit.subreddit_type || 'public',
-    rules: JSON.stringify([]), // Rules would be fetched separately
+    rules: [], // Rules would be fetched separately
     engagementRate: Math.round(engagementRate),
     successProbability: Math.round(successProbability),
     competitionLevel,
@@ -106,7 +106,10 @@ function normalizeSubredditData(subreddit: any, engagementMetrics: any) {
     verificationRequired,
     promotionAllowed,
     averageUpvotes: engagementMetrics.avgUpvotes,
-    ...engagementMetrics,
+    postingLimits: null,
+    bestPostingTimes: null,
+    modActivity: null,
+    tags: null,
   };
 }
 
@@ -169,7 +172,7 @@ async function syncSubreddit(reddit: snoowrap, subredditName: string, retryCount
     const normalizedData = normalizeSubredditData(subreddit, engagementMetrics);
     
     // Validate against schema
-    const validatedData = insertRedditCommunitySchema.parse(normalizedData);
+    const validatedData = insertRedditCommunitySchema.parse(normalizedData) as InsertRedditCommunity;
     
     // Upsert to database
     await db.insert(redditCommunities)

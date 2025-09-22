@@ -11,15 +11,28 @@ import { CaptionItem } from '../schema';
 import { z } from 'zod';
 type CaptionItemType = z.infer<typeof CaptionItem>;
 
+// Helper to create valid test caption objects
+const createTestCaption = (overrides: Partial<CaptionItemType>): CaptionItemType => ({
+  style: 'flirty',
+  hashtags: ['#test'],
+  mood: 'playful',
+  nsfw: false,
+  caption: 'Test caption',
+  alt: 'Test alt text',
+  cta: 'Test CTA',
+  safety_level: 'safe',
+  ...overrides
+});
+
 describe('rankGuards', () => {
   describe('detectVariantViolations', () => {
     it('should detect sparkle-filler phrases in captions', () => {
-      const caption: CaptionItemType = {
+      const caption = createTestCaption({
         caption: "Check out this amazing content! ✨",
         alt: "A photo",
         hashtags: ["#photography"],
         cta: "Follow me!"
-      };
+      });
       
       const violations = detectVariantViolations(caption);
       expect(violations).toContainEqual(
@@ -31,12 +44,12 @@ describe('rankGuards', () => {
     });
 
     it('should detect generic hashtags', () => {
-      const caption: CaptionItemType = {
+      const caption = createTestCaption({
         caption: "Beautiful day",
         alt: "A photo",
         hashtags: ["#content", "#creative", "#amazing"],
         cta: "DM me!"
-      };
+      });
       
       const violations = detectVariantViolations(caption);
       expect(violations).toContainEqual(
@@ -48,12 +61,12 @@ describe('rankGuards', () => {
     });
 
     it('should detect canned CTAs', () => {
-      const caption: CaptionItemType = {
+      const caption = createTestCaption({
         caption: "Beautiful sunset",
         alt: "A photo",
         hashtags: ["#photography"],
         cta: "Link in bio for more!"
-      };
+      });
       
       const violations = detectVariantViolations(caption);
       expect(violations).toContainEqual(
@@ -65,24 +78,24 @@ describe('rankGuards', () => {
     });
 
     it('should return no violations for clean content', () => {
-      const caption: CaptionItemType = {
+      const caption = createTestCaption({
         caption: "Enjoying the peaceful morning in my garden",
         alt: "Person tending to flowers in a sunlit garden",
         hashtags: ["#gardening", "#morninglight", "#peaceful"],
         cta: "What's your favorite flower?"
-      };
+      });
       
       const violations = detectVariantViolations(caption);
       expect(violations).toHaveLength(0);
     });
 
     it('should detect multiple violation types', () => {
-      const caption: CaptionItemType = {
+      const caption = createTestCaption({
         caption: "Check out this amazing content! ✨",
         alt: "A photo",
         hashtags: ["#content", "#amazing"],
         cta: "Link in bio!"
-      };
+      });
       
       const violations = detectVariantViolations(caption);
       expect(violations).toHaveLength(3); // banned_phrase, generic_hashtag, canned_cta
@@ -91,12 +104,12 @@ describe('rankGuards', () => {
 
   describe('sanitizeFinalVariant', () => {
     it('should sanitize caption with fallback content', () => {
-      const caption: CaptionItemType = {
+      const caption = createTestCaption({
         caption: "✨ Amazing content! Check it out! ✨",
         alt: "A photo",
         hashtags: ["#content", "#creative"],
         cta: "Link in bio!"
-      };
+      });
       
       const sanitized = sanitizeFinalVariant(caption, 'instagram');
       
@@ -107,36 +120,36 @@ describe('rankGuards', () => {
     });
 
     it('should preserve good content unchanged', () => {
-      const caption: CaptionItemType = {
+      const caption = createTestCaption({
         caption: "Enjoying the peaceful morning in my garden",
         alt: "Person tending to flowers in a sunlit garden",
         hashtags: ["#gardening", "#morninglight"],
         cta: "What's your favorite flower?"
-      };
+      });
       
       const sanitized = sanitizeFinalVariant(caption, 'instagram');
       expect(sanitized).toEqual(caption);
     });
 
     it('should apply platform-specific hashtag limits', () => {
-      const caption: CaptionItemType = {
+      const caption = createTestCaption({
         caption: "Beautiful day",
         alt: "A photo",
         hashtags: Array(10).fill("#test"), // Too many for X platform
         cta: "Nice!"
-      };
+      });
       
       const sanitized = sanitizeFinalVariant(caption, 'x');
       expect(sanitized.hashtags).toHaveLength(2); // X platform limit
     });
 
     it('should provide empty hashtags for Reddit', () => {
-      const caption: CaptionItemType = {
+      const caption = createTestCaption({
         caption: "Beautiful day",
         alt: "A photo", 
         hashtags: ["#test"],
         cta: "Nice!"
-      };
+      });
       
       const sanitized = sanitizeFinalVariant(caption, 'reddit');
       expect(sanitized.hashtags).toEqual([]);

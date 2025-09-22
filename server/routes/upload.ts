@@ -304,7 +304,7 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, 
     // Apply ImageShield protection with retry and timeout
     const protect = () => applyImageShieldProtection(
       tempFilePath,
-      processedFilePath,
+      processedFilePath!,  // Safe: we return early above if undefined
       validatedRequest.protectionLevel,
       validatedRequest.addWatermark,
       String(authReq.user?.id)

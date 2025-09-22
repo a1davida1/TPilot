@@ -1,8 +1,9 @@
 import snoowrap from 'snoowrap';
 import { db } from '../db.js';
-import { creatorAccounts, subredditRules, postRateLimits } from '@shared/schema';
-import { eq, and, gt } from 'drizzle-orm';
+import { creatorAccounts, subredditRules, postRateLimits, redditCommunities, users } from '@shared/schema';
+import { eq, and, gt, or } from 'drizzle-orm';
 import { decrypt } from '../services/state-store.js';
+import { SafetyManager } from './safety-systems.js';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
@@ -25,6 +26,8 @@ interface NormalizedSubredditRules {
 export interface PostCheckContext {
   hasLink?: boolean;
   intendedAt?: Date;
+  title?: string;
+  body?: string;
 }
 
 function getEnvOrDefault(name: string, defaultValue?: string): string {
@@ -202,6 +205,8 @@ export class RedditManager {
       permission = await RedditManager.canPostToSubreddit(this.userId, options.subreddit, {
         hasLink: Boolean(options.url),
         intendedAt: new Date(),
+        title: options.title,
+        body: options.body || options.url || '',
       });
 
       if (!permission.canPost) {
@@ -260,6 +265,8 @@ export class RedditManager {
       await this.updateRateLimit({
         subreddit: options.subreddit,
         postId: submission.id,
+        title: options.title,
+        body: options.body || options.url || '',
       });
 
       console.log('Reddit submission succeeded:', {
@@ -321,6 +328,8 @@ export class RedditManager {
       permission = await RedditManager.canPostToSubreddit(this.userId, options.subreddit, {
         hasLink: false, // Direct image uploads are not link posts
         intendedAt: new Date(),
+        title: options.title,
+        body: options.imageUrl || '',
       });
 
       if (!permission.canPost) {
@@ -392,6 +401,8 @@ export class RedditManager {
           await this.updateRateLimit({
             subreddit: options.subreddit,
             postId: submission.name || submission.id,
+            title: options.title,
+            body: options.imageUrl || '',
           });
 
           return {
@@ -449,9 +460,16 @@ export class RedditManager {
     let permission: PostingPermission | undefined;
     try {
       // Check posting permission (gallery uploads are not link posts)
+      const gallerySummary = (options.images || [])
+        .map((img) => img.caption || img.url || '')
+        .filter(Boolean)
+        .join('\n');
+
       permission = await RedditManager.canPostToSubreddit(this.userId, options.subreddit, {
         hasLink: false, // Gallery uploads are not link posts
         intendedAt: new Date(),
+        title: options.title,
+        body: gallerySummary,
       });
 
       if (!permission.canPost) {
@@ -519,6 +537,8 @@ export class RedditManager {
       await this.updateRateLimit({
         subreddit: options.subreddit,
         postId: submission.name || submission.id,
+        title: options.title,
+        body: gallerySummary,
       });
 
       return {
@@ -598,7 +618,7 @@ export class RedditManager {
   }
 
   /**
-   * Check if we can post to a subreddit based on rules and rate limits
+   * Check if we can post to a subreddit based on rules, community metadata, and safety checks
    */
   static async canPostToSubreddit(
     userId: number,
@@ -609,6 +629,13 @@ export class RedditManager {
     const normalizedSubreddit = normalizeSubredditName(subreddit);
     
     try {
+      // Load community metadata from redditCommunities table
+      const [communityData] = await db
+        .select()
+        .from(redditCommunities)
+        .where(eq(redditCommunities.name, normalizedSubreddit))
+        .limit(1);
+
       // Load normalized subreddit rules from database
       const rulesResult = await db
         .select()
@@ -616,95 +643,176 @@ export class RedditManager {
         .where(eq(subredditRules.subreddit, normalizedSubreddit))
         .limit(1);
 
-      const rules: NormalizedSubredditRules | undefined = rulesResult[0]?.normalizedRules as NormalizedSubredditRules;
-
-      // Determine query window - max of 24h and cooldown period for long cooldowns
-      const cooldownMinutes = deriveCooldownMinutes(rules);
-      const queryWindow = Math.max(DAY_IN_MS, (cooldownMinutes || 0) * 60 * 1000);
-      const queryStartTime = new Date(now.getTime() - queryWindow);
-      
-      // Get post history for rate limiting
-      const recentPosts = await db
+      // Get user data for account stats
+      const [userData] = await db
         .select()
-        .from(postRateLimits)
-        .where(
-          and(
-            eq(postRateLimits.userId, userId),
-            eq(postRateLimits.subreddit, normalizedSubreddit),
-            gt(postRateLimits.postedAt, queryStartTime)
-          )
-        );
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
 
-      // For daily limits, only count posts in last 24h
-      const oneDayAgo = new Date(now.getTime() - DAY_IN_MS);
-      const postsInLast24h = recentPosts.filter(post => {
-        const postDate = toDate(post.postedAt);
-        return postDate && postDate > oneDayAgo;
-      }).length;
-
-      // Check link policy
+      const rules: NormalizedSubredditRules | undefined = rulesResult[0]?.rulesJson as NormalizedSubredditRules;
       const reasons: string[] = [];
       const warnings: string[] = [];
 
-      if (context.hasLink && rules?.linkPolicy === 'no-link') {
-        reasons.push('This subreddit does not allow links');
-      } else if (context.hasLink && rules?.linkPolicy === 'one-link') {
-        // Count only link posts for one-link policy (need to track post types in future)
-        // For now, be conservative and assume all posts could be links
-        if (postsInLast24h > 0) {
-          reasons.push('This subreddit only allows one link per 24 hours');
+      // Perform safety checks (rate limits, duplicates) with SafetyManager
+      if (context.title && context.body) {
+        const safetyCheck = await SafetyManager.performSafetyCheck(
+          userId.toString(),
+          normalizedSubreddit,
+          context.title,
+          context.body
+        );
+
+        if (!safetyCheck.canPost) {
+          reasons.push(...safetyCheck.issues);
         }
+        warnings.push(...safetyCheck.warnings);
       }
 
-      // Check cooldown period
-      let nextAllowedPost: Date | undefined;
+      // Check community-specific requirements
+      if (communityData) {
+        // Verification requirement check
+        if (communityData.verificationRequired && (!userData?.emailVerified)) {
+          reasons.push('Account verification required for this community');
+        }
 
-      if (cooldownMinutes && recentPosts.length > 0) {
-        const mostRecentPost = recentPosts.reduce((latest, post) => {
-          const postDate = toDate(post.postedAt);
-          const latestDate = toDate(latest.postedAt);
-          return postDate && latestDate && postDate > latestDate ? post : latest;
-        });
+        // Check promotion policy
+        if (context.hasLink) {
+          if (communityData.promotionAllowed === 'no') {
+            reasons.push('Promotional content not allowed in this community');
+          } else if (communityData.promotionAllowed === 'verified-only' && !userData?.emailVerified) {
+            reasons.push('Only verified users can post promotional content');
+          }
+        }
 
-        const mostRecentPostTime = toDate(mostRecentPost.postedAt);
-        if (mostRecentPostTime) {
-          const cooldownEnd = new Date(mostRecentPostTime.getTime() + cooldownMinutes * 60 * 1000);
-          if (now < cooldownEnd) {
-            nextAllowedPost = cooldownEnd;
-            const remainingMinutes = Math.ceil((cooldownEnd.getTime() - now.getTime()) / (60 * 1000));
-            reasons.push(`Must wait ${remainingMinutes} minutes before posting again (cooldown period)`);
+        // Use community-specific posting limits if available
+        if (communityData.postingLimits) {
+          const communityLimits = communityData.postingLimits as any;
+          const dailyLimit = communityLimits?.daily || communityLimits?.perDay || communityLimits?.per24h;
+          if (dailyLimit && typeof dailyLimit === 'number') {
+            // Get current posting stats for this community
+            const oneDayAgo = new Date(now.getTime() - DAY_IN_MS);
+            const recentPosts = await db
+              .select()
+              .from(postRateLimits)
+              .where(
+                and(
+                  eq(postRateLimits.userId, userId),
+                  eq(postRateLimits.subreddit, normalizedSubreddit),
+                  gt(postRateLimits.lastPostAt, oneDayAgo)
+                )
+              );
+
+            const postsInLast24h = recentPosts.length;
+            if (postsInLast24h >= dailyLimit) {
+              reasons.push(`Community posting limit reached (${dailyLimit} posts per 24 hours)`);
+            } else if (postsInLast24h >= dailyLimit - 1) {
+              warnings.push(`Approaching community limit: ${postsInLast24h + 1}/${dailyLimit} posts`);
+            }
           }
         }
       }
 
-      // Check daily limit
-      const dailyLimit = deriveDailyLimit(rules);
-      const maxPostsPer24h = dailyLimit || 3; // Conservative default to prevent shadowbans
+      // Apply legacy rule checks if no community data or as fallback
+      if (!communityData || reasons.length === 0) {
+        // Determine query window - max of 24h and cooldown period for long cooldowns
+        const cooldownMinutes = deriveCooldownMinutes(rules);
+        const queryWindow = Math.max(DAY_IN_MS, (cooldownMinutes || 0) * 60 * 1000);
+        const queryStartTime = new Date(now.getTime() - queryWindow);
+        
+        // Get post history for rate limiting
+        const recentPosts = await db
+          .select()
+          .from(postRateLimits)
+          .where(
+            and(
+              eq(postRateLimits.userId, userId),
+              eq(postRateLimits.subreddit, normalizedSubreddit),
+              gt(postRateLimits.lastPostAt, queryStartTime)
+            )
+          );
 
-      if (postsInLast24h >= maxPostsPer24h) {
-        reasons.push(`Daily posting limit reached (${maxPostsPer24h} posts per 24 hours)`);
-        
-        // Calculate when daily limit resets (oldest post + 24h)
-        const postsInLast24hSorted = recentPosts
-          .filter(post => {
-            const postDate = toDate(post.postedAt);
-            return postDate && postDate > oneDayAgo;
-          })
-          .map(post => toDate(post.postedAt))
-          .filter((date): date is Date => !!date)
-          .sort((a, b) => a.getTime() - b.getTime());
-        
-        if (postsInLast24hSorted.length > 0) {
-          const oldestPostIn24h = postsInLast24hSorted[0];
-          const dailyLimitReset = new Date(oldestPostIn24h.getTime() + DAY_IN_MS);
+        // For daily limits, only count posts in last 24h
+        const oneDayAgo = new Date(now.getTime() - DAY_IN_MS);
+        const postsInLast24h = recentPosts.filter(post => {
+          const postDate = toDate(post.lastPostAt);
+          return postDate && postDate > oneDayAgo;
+        }).length;
+
+        // Check link policy
+        if (context.hasLink && rules?.linkPolicy === 'no-link') {
+          reasons.push('This subreddit does not allow links');
+        } else if (context.hasLink && rules?.linkPolicy === 'one-link') {
+          if (postsInLast24h > 0) {
+            reasons.push('This subreddit only allows one link per 24 hours');
+          }
+        }
+
+        // Check cooldown period
+        let nextAllowedPost: Date | undefined;
+        if (cooldownMinutes && recentPosts.length > 0) {
+          const mostRecentPost = recentPosts.reduce((latest, post) => {
+            const postDate = toDate(post.lastPostAt);
+            const latestDate = toDate(latest.lastPostAt);
+            return postDate && latestDate && postDate > latestDate ? post : latest;
+          });
+
+          const mostRecentPostTime = toDate(mostRecentPost.lastPostAt);
+          if (mostRecentPostTime) {
+            const cooldownEnd = new Date(mostRecentPostTime.getTime() + cooldownMinutes * 60 * 1000);
+            if (now < cooldownEnd) {
+              nextAllowedPost = cooldownEnd;
+              const remainingMinutes = Math.ceil((cooldownEnd.getTime() - now.getTime()) / (60 * 1000));
+              reasons.push(`Must wait ${remainingMinutes} minutes before posting again (cooldown period)`);
+            }
+          }
+        }
+
+        // Check daily limit
+        const dailyLimit = deriveDailyLimit(rules);
+        const maxPostsPer24h = dailyLimit || 3; // Conservative default to prevent shadowbans
+
+        if (postsInLast24h >= maxPostsPer24h) {
+          reasons.push(`Daily posting limit reached (${maxPostsPer24h} posts per 24 hours)`);
           
-          // nextAllowedPost is the earliest of cooldown end or daily limit reset
-          if (!nextAllowedPost || dailyLimitReset < nextAllowedPost) {
-            nextAllowedPost = dailyLimitReset;
+          // Calculate when daily limit resets (oldest post + 24h)
+          const postsInLast24hSorted = recentPosts
+            .filter(post => {
+              const postDate = toDate(post.lastPostAt);
+              return postDate && postDate > oneDayAgo;
+            })
+            .map(post => toDate(post.lastPostAt))
+            .filter((date): date is Date => !!date)
+            .sort((a, b) => a.getTime() - b.getTime());
+          
+          if (postsInLast24hSorted.length > 0) {
+            const oldestPostIn24h = postsInLast24hSorted[0];
+            const dailyLimitReset = new Date(oldestPostIn24h.getTime() + DAY_IN_MS);
+            
+            // nextAllowedPost is the earliest of cooldown end or daily limit reset
+            if (!nextAllowedPost || dailyLimitReset < nextAllowedPost) {
+              nextAllowedPost = dailyLimitReset;
+            }
           }
+        } else if (postsInLast24h >= maxPostsPer24h - 1) {
+          warnings.push(`Approaching daily limit: ${postsInLast24h + 1}/${maxPostsPer24h} posts`);
         }
-      } else if (postsInLast24h >= maxPostsPer24h - 1) {
-        warnings.push(`Approaching daily limit: ${postsInLast24h + 1}/${maxPostsPer24h} posts`);
+
+        return {
+          canPost: reasons.length === 0,
+          reason: reasons.length > 0 ? reasons[0] : undefined,
+          reasons,
+          warnings,
+          nextAllowedPost,
+          evaluatedAt: now,
+          postsInLast24h,
+          maxPostsPer24h,
+          ruleSummary: rules ? {
+            linkPolicy: rules.linkPolicy,
+            cooldownMinutes: cooldownMinutes ?? undefined,
+            dailyLimit: dailyLimit ?? undefined,
+          } : undefined,
+        };
       }
 
       const canPost = reasons.length === 0;
@@ -715,21 +823,24 @@ export class RedditManager {
         reason: primaryReason,
         reasons,
         warnings,
-        nextAllowedPost,
+        nextAllowedPost: undefined,
         evaluatedAt: now,
-        postsInLast24h,
-        maxPostsPer24h,
+        postsInLast24h: 0,
+        maxPostsPer24h: communityData?.postingLimits ? 
+          (communityData.postingLimits as any)?.daily || 
+          (communityData.postingLimits as any)?.perDay || 
+          (communityData.postingLimits as any)?.per24h || 3 : 3,
         ruleSummary: rules ? {
           linkPolicy: rules.linkPolicy,
-          cooldownMinutes,
-          dailyLimit,
+          cooldownMinutes: deriveCooldownMinutes(rules) ?? undefined,
+          dailyLimit: deriveDailyLimit(rules) ?? undefined,
         } : undefined,
       };
     } catch (error) {
       console.error('Error checking posting permission:', error);
       return {
         canPost: false,
-        reason: 'Error checking posting permission',
+        reason: 'Error checking posting permission - please try again',
         reasons: ['Error checking posting permission'],
         warnings: [],
         nextAllowedPost: undefined,
@@ -743,18 +854,27 @@ export class RedditManager {
   /**
    * Update rate limiting after successful post
    */
-  private async updateRateLimit(options: { subreddit: string; postId: string }): Promise<void> {
+  private async updateRateLimit(options: { 
+    subreddit: string; 
+    postId: string;
+    title: string;
+    body: string;
+  }): Promise<void> {
     try {
       const normalizedSubreddit = normalizeSubredditName(options.subreddit);
       
-      await db.insert(postRateLimits).values({
-        userId: this.userId,
-        subreddit: normalizedSubreddit,
-        postId: options.postId,
-        postedAt: new Date(),
-      });
+      // Record post using SafetyManager for comprehensive tracking
+      await SafetyManager.recordPost(this.userId.toString(), normalizedSubreddit);
       
-      console.log(`Updated rate limit for user ${this.userId} in r/${options.subreddit}`);
+      // Record duplicate detection data
+      await SafetyManager.recordPostForDuplicateDetection(
+        this.userId.toString(),
+        normalizedSubreddit,
+        options.title,
+        options.body
+      );
+      
+      console.log(`Updated rate limit and recorded post for user ${this.userId} in r/${options.subreddit}`);
     } catch (error) {
       console.error('Failed to update rate limit:', error);
     }
