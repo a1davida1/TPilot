@@ -337,7 +337,7 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
       }
     });
 
-    variants = dedupeCaptionVariants(variants).slice(0, VARIANT_TARGET);
+    variants = dedupeCaptionVariants(variants as { caption: string }[]).slice(0, VARIANT_TARGET);
     keyIndex.clear();
     variants.forEach((variant, index) => {
       keyIndex.set(uniqueCaptionKey(variant.caption), index);

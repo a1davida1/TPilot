@@ -1,0 +1,717 @@
+Update expense routes and storage logic
+Sep 20 · a1davida1/TPilot · main
++386-31
+1. In `server/expense-routes.ts`, before calling `storage.createExpense` or `storage.updateExpense`, load the selected category via `storage.getExpenseCategory` and include its `deductionPercentage` (and optionally `businessPurpose` defaults) in the payload.
+2. Update `server/storage.ts` `updateExpense` to recalculate `deductionPercentage` when `categoryId` changes, ensuring stale percentages do not linger.
+3. Add regression coverage for `getExpenseTotals` that creates a category with <100% deduction, inserts expenses, and asserts totals honor the reduced percentage.
+
+Summary
+
+    Enriched the expense create route to validate input, load the selected category, and apply its deduction percentage and optional default business purpose while preserving other optional fields.
+
+Hardened the expense update route to recalculate deduction percentages when the category changes and to backfill default business purposes where appropriate.
+
+Exported a reusable summarizeExpenseTotals helper and applied it inside getExpenseTotals, while also reloading deduction percentages during category changes in updateExpense so stale values cannot persist.
+
+Added a regression test that builds partial- and full-deduction categories, feeds their expenses through summarizeExpenseTotals, and asserts totals honor each category’s deduction percentage.
+
+Testing
+
+    ✅ npx vitest run tests/unit/expenses/expense-storage.totals.test.ts
+
+    ✅ npm run lint
+
+    ❌ npm test (fails because of numerous pre-existing integration/unit issues around payment providers, email verification, queue setup, etc.)
+
+
+server/expense-routes.ts
++181-15
+import express, { type Express } from 'express';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs/promises';
+import sharp from 'sharp';
+import crypto from 'crypto';
+import { authenticateToken } from './middleware/auth.js';
+import { storage } from './storage.js';
+import { MediaManager } from './lib/media.js';
+import { logger } from './bootstrap/logger.js';
+import { type InsertExpense, type User } from '@shared/schema';
+import { type ExpenseCategory, type InsertExpense, type User } from '@shared/schema';
+
+interface AuthRequest extends express.Request {
+  user?: User;
+}
+
+type ExpenseCategoryWithDefaults = ExpenseCategory & {
+  defaultBusinessPurpose?: string | null;
+};
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === 'string');
+}
+
+const knownImageExtensions = new Set([
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.gif',
+  '.bmp',
+  '.webp',
+  '.tiff'
+]);
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const hasImageMimeType = file.mimetype.startsWith('image/');
+    const fileExtension = path.extname(file.originalname).toLowerCase();
+    const hasKnownImageExtension = knownImageExtensions.has(fileExtension);
+
+    if (hasImageMimeType || hasKnownImageExtension) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed!'));
+    }
+  }
+});
+@@ -136,85 +144,243 @@ export function registerExpenseRoutes(app: Express) {
+
+  // Get user expenses
+  app.get('/api/expenses', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+
+      const taxYear = req.query.taxYear ? parseInt(req.query.taxYear as string) : undefined;
+      const expenses = await storage.getUserExpenses(req.user.id, taxYear);
+      res.json(expenses);
+    } catch (error) {
+      console.error('Error fetching expenses:', error);
+      res.status(500).json({ message: 'Failed to fetch expenses' });
+    }
+  });
+
+  // Create new expense
+  app.post('/api/expenses', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+
+      const currentYear = new Date().getFullYear();
+      const expenseDate = new Date(req.body.expenseDate);
+      const requestBody = req.body as Record<string, unknown>;
+      const expenseDate = new Date(String(requestBody.expenseDate));
+      if (Number.isNaN(expenseDate.getTime())) {
+        return res.status(400).json({ message: 'Invalid expense date' });
+      }
+      const expenseData = {
+        ...req.body,
+      const rawAmount = Number.parseFloat(String(requestBody.amount));
+      if (Number.isNaN(rawAmount)) {
+        return res.status(400).json({ message: 'Invalid expense amount' });
+      }
+      const amountInCents = Math.round(rawAmount * 100);
+
+      const parsedCategoryId = Number.parseInt(String(requestBody.categoryId), 10);
+      if (!Number.isInteger(parsedCategoryId)) {
+        return res.status(400).json({ message: 'Invalid expense category' });
+      }
+
+      const category = await storage.getExpenseCategory(parsedCategoryId);
+      if (!category) {
+        return res.status(400).json({ message: 'Invalid expense category' });
+      }
+
+      const categoryDefaults: ExpenseCategoryWithDefaults = category;
+      const rawBusinessPurpose = requestBody.businessPurpose;
+      const trimmedBusinessPurpose =
+        typeof rawBusinessPurpose === 'string' ? rawBusinessPurpose.trim() : undefined;
+      const businessPurposeToApply =
+        trimmedBusinessPurpose && trimmedBusinessPurpose.length > 0
+          ? trimmedBusinessPurpose
+          : categoryDefaults.defaultBusinessPurpose ?? undefined;
+
+      const parsedTaxYear =
+        requestBody.taxYear !== undefined
+          ? Number.parseInt(String(requestBody.taxYear), 10)
+          : currentYear;
+
+      if (Number.isNaN(parsedTaxYear)) {
+        return res.status(400).json({ message: 'Invalid tax year' });
+      }
+
+      const descriptionValue = requestBody.description;
+      if (typeof descriptionValue !== 'string' || descriptionValue.trim().length === 0) {
+        return res.status(400).json({ message: 'Description is required' });
+      }
+
+      const expensePayload: InsertExpense = {
+        userId: req.user.id,
+        taxYear: req.body.taxYear || currentYear,
+        amount: Math.round(parseFloat(req.body.amount) * 100),
+        categoryId: parsedCategoryId,
+        description: descriptionValue,
+        amount: amountInCents,
+        expenseDate,
+        taxYear: parsedTaxYear,
+        deductionPercentage: category.deductionPercentage,
+      };
+
+      const expense = await storage.createExpense(expenseData as InsertExpense);
+      if (businessPurposeToApply) {
+        expensePayload.businessPurpose = businessPurposeToApply;
+      }
+
+      if (typeof requestBody.vendor === 'string') {
+        expensePayload.vendor = requestBody.vendor;
+      }
+
+      if (typeof requestBody.receiptUrl === 'string') {
+        expensePayload.receiptUrl = requestBody.receiptUrl;
+      }
+
+      if (typeof requestBody.receiptFileName === 'string') {
+        expensePayload.receiptFileName = requestBody.receiptFileName;
+      }
+
+      if (typeof requestBody.notes === 'string') {
+        expensePayload.notes = requestBody.notes;
+      }
+
+      if (isStringArray(requestBody.tags)) {
+        expensePayload.tags = requestBody.tags;
+      }
+
+      if (typeof requestBody.isRecurring === 'boolean') {
+        expensePayload.isRecurring = requestBody.isRecurring;
+      }
+
+      if (typeof requestBody.recurringPeriod === 'string') {
+        expensePayload.recurringPeriod = requestBody.recurringPeriod;
+      }
+
+      const expense = await storage.createExpense(expensePayload);
+      res.status(201).json(expense);
+    } catch (error) {
+      console.error('Error creating expense:', error);
+      res.status(500).json({ message: 'Failed to create expense' });
+    }
+  });
+
+  // Update expense
+  app.put('/api/expenses/:id', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+
+      const expenseId = parseInt(req.params.id);
+      const updates = {
+        ...req.body,
+        amount: req.body.amount ? Math.round(parseFloat(req.body.amount) * 100) : undefined,
+        expenseDate: req.body.expenseDate ? new Date(req.body.expenseDate) : undefined,
+      };
+      if (updates.expenseDate && Number.isNaN(updates.expenseDate.getTime())) {
+        return res.status(400).json({ message: 'Invalid expense date' });
+      const expenseId = Number.parseInt(req.params.id, 10);
+      const requestBody = req.body as Record<string, unknown>;
+      const updates: Partial<InsertExpense> = {};
+
+      if (typeof requestBody.description === 'string') {
+        updates.description = requestBody.description;
+      }
+
+      if (typeof requestBody.vendor === 'string') {
+        updates.vendor = requestBody.vendor;
+      }
+
+      if (typeof requestBody.receiptUrl === 'string') {
+        updates.receiptUrl = requestBody.receiptUrl;
+      }
+
+      if (typeof requestBody.receiptFileName === 'string') {
+        updates.receiptFileName = requestBody.receiptFileName;
+      }
+
+      if (typeof requestBody.notes === 'string') {
+        updates.notes = requestBody.notes;
+      }
+
+      if (isStringArray(requestBody.tags)) {
+        updates.tags = requestBody.tags;
+      }
+
+      if (typeof requestBody.isRecurring === 'boolean') {
+        updates.isRecurring = requestBody.isRecurring;
+      }
+
+      if (typeof requestBody.recurringPeriod === 'string') {
+        updates.recurringPeriod = requestBody.recurringPeriod;
+      }
+
+      if (requestBody.amount !== undefined) {
+        const parsedAmount = Number.parseFloat(String(requestBody.amount));
+        if (Number.isNaN(parsedAmount)) {
+          return res.status(400).json({ message: 'Invalid expense amount' });
+        }
+        updates.amount = Math.round(parsedAmount * 100);
+      }
+
+      if (requestBody.expenseDate !== undefined) {
+        const expenseDate = new Date(String(requestBody.expenseDate));
+        if (Number.isNaN(expenseDate.getTime())) {
+          return res.status(400).json({ message: 'Invalid expense date' });
+        }
+        updates.expenseDate = expenseDate;
+      }
+
+      if (requestBody.taxYear !== undefined) {
+        const parsedTaxYear = Number.parseInt(String(requestBody.taxYear), 10);
+        if (Number.isNaN(parsedTaxYear)) {
+          return res.status(400).json({ message: 'Invalid tax year' });
+        }
+        updates.taxYear = parsedTaxYear;
+      }
+
+      const rawBusinessPurpose = requestBody.businessPurpose;
+      const trimmedBusinessPurpose =
+        typeof rawBusinessPurpose === 'string' ? rawBusinessPurpose.trim() : undefined;
+      const shouldApplyDefaultBusinessPurpose =
+        (rawBusinessPurpose === undefined ||
+          (typeof rawBusinessPurpose === 'string' && (trimmedBusinessPurpose?.length ?? 0) === 0)) &&
+        rawBusinessPurpose !== null;
+
+      if (rawBusinessPurpose === null) {
+        updates.businessPurpose = null;
+      } else if (typeof trimmedBusinessPurpose === 'string' && trimmedBusinessPurpose.length > 0) {
+        updates.businessPurpose = trimmedBusinessPurpose;
+      }
+
+      if (requestBody.categoryId !== undefined) {
+        const parsedCategoryId = Number.parseInt(String(requestBody.categoryId), 10);
+        if (!Number.isInteger(parsedCategoryId)) {
+          return res.status(400).json({ message: 'Invalid expense category' });
+        }
+
+        const category = await storage.getExpenseCategory(parsedCategoryId);
+        if (!category) {
+          return res.status(400).json({ message: 'Invalid expense category' });
+        }
+
+        const categoryDefaults: ExpenseCategoryWithDefaults = category;
+        updates.categoryId = parsedCategoryId;
+        updates.deductionPercentage = category.deductionPercentage;
+
+        if (shouldApplyDefaultBusinessPurpose && categoryDefaults.defaultBusinessPurpose) {
+          updates.businessPurpose = categoryDefaults.defaultBusinessPurpose;
+        }
+      }
+
+      const expense = await storage.updateExpense(expenseId, req.user.id, updates);
+      res.json(expense);
+    } catch (error) {
+      console.error('Error updating expense:', error);
+      res.status(500).json({ message: 'Failed to update expense' });
+    }
+  });
+
+  // Delete expense
+  app.delete('/api/expenses/:id', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+
+      const expenseId = parseInt(req.params.id);
+      await storage.deleteExpense(expenseId, req.user.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error('Error deleting expense:', error);
+      res.status(500).json({ message: 'Failed to delete expense' });
+    }
+  });
+server/storage.ts
++67-16
+@@ -21,50 +21,84 @@ import {
+  type PlatformEngagement,
+  type InsertPlatformEngagement,
+  type PostSchedule,
+  type InsertPostSchedule,
+  type VerificationToken,
+  type InsertVerificationToken,
+  users,
+  contentGenerations,
+  userPreferences,
+  userImages,
+  expenseCategories,
+  expenses,
+  taxDeductionInfo,
+  socialMediaAccounts,
+  socialMediaPosts,
+  platformEngagement,
+  postSchedule,
+  verificationTokens,
+  invoices,
+  userSessions
+} from "../shared/schema.js";
+import { db } from "./db.js";
+import { eq, desc, and, gte, sql, count, isNull } from "drizzle-orm";
+import { safeLog } from './lib/logger-utils.js';
+
+type ExpenseCategoryWithDefaults = ExpenseCategory & {
+  defaultBusinessPurpose?: string | null;
+};
+
+export interface ExpenseTotalsRow {
+  categoryName: string | null;
+  amount: number;
+  deductionPercentage: number;
+}
+
+export interface ExpenseTotalsSummary {
+  total: number;
+  deductible: number;
+  byCategory: { [key: string]: number };
+}
+
+export function summarizeExpenseTotals(rows: ExpenseTotalsRow[]): ExpenseTotalsSummary {
+  let total = 0;
+  let deductible = 0;
+  const byCategory: { [key: string]: number } = {};
+
+  for (const row of rows) {
+    const amount = row.amount;
+    const deductionAmount = Math.round(amount * (row.deductionPercentage / 100));
+    const categoryName = row.categoryName ?? 'Other';
+
+    total += amount;
+    deductible += deductionAmount;
+    byCategory[categoryName] = (byCategory[categoryName] || 0) + deductionAmount;
+  }
+
+  return { total, deductible, byCategory };
+}
+
+export interface IStorage {
+  // User operations
+  getUser(id: number): Promise<User | undefined>;
+  getUserById(id: number): Promise<User | undefined>;
+  getAllUsers(): Promise<User[]>;
+  getUserByUsername(username: string, verified?: boolean): Promise<User | undefined>;
+  getUserByEmail(email: string, verified?: boolean): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
+  updateUserTier(userId: number, tier: string): Promise<void>;
+  updateUser(userId: number, updates: Partial<User>): Promise<User>;
+  updateUserProfile(userId: number, updates: Partial<User>): Promise<User | undefined>;
+  updateUserPassword(userId: number, hashedPassword: string): Promise<void>;
+  updateUserEmailVerified(userId: number, verified: boolean): Promise<void>;
+  createVerificationToken(token: InsertVerificationToken): Promise<VerificationToken>;
+  getVerificationToken(token: string): Promise<VerificationToken | undefined>;
+  deleteVerificationToken(token: string): Promise<void>;
+  deleteUser(userId: number): Promise<void>;
+
+  // Generation operations
+  createGeneration(gen: InsertContentGeneration): Promise<ContentGeneration>;
+  getGenerationsByUserId(userId: number): Promise<ContentGeneration[]>;
+  createContentGeneration(gen: InsertContentGeneration): Promise<ContentGeneration>;
+  getUserContentGenerations(userId: number): Promise<ContentGeneration[]>;
+  getContentGenerationCount(): Promise<number>;
+  getContentGenerationStats(userId: number): Promise<{ total: number; thisWeek: number; thisMonth: number; totalGenerations?: number }>;
+@@ -783,52 +817,83 @@ export class DatabaseStorage implements IStorage {
+
+      const results = await query.orderBy(desc(expenses.expenseDate));
+      return results.map(r => ({
+        ...r.expense,
+        category: r.category
+      })) as (Expense & { category: ExpenseCategory | null })[];
+    } catch (error) {
+      console.error('Error getting user expenses:', { error: (error as Error).message });
+      return [];
+    }
+  }
+
+  async getExpense(id: number, userId: number): Promise<Expense | undefined> {
+    try {
+      const [result] = await db.select().from(expenses)
+        .where(and(eq(expenses.id, id), eq(expenses.userId, userId)));
+      return result;
+    } catch (error) {
+      console.error('Error getting expense:', { error: (error as Error).message });
+      return undefined;
+    }
+  }
+
+  async updateExpense(id: number, userId: number, updates: Partial<Expense>): Promise<Expense> {
+    try {
+      let updatesToApply: Partial<Expense> = { ...updates };
+
+      if (updates.categoryId !== undefined) {
+        const existingExpense = await this.getExpense(id, userId);
+        const categoryChanged = existingExpense ? existingExpense.categoryId !== updates.categoryId : true;
+
+        if (categoryChanged) {
+          const category = await this.getExpenseCategory(updates.categoryId);
+          if (category) {
+            const categoryDefaults: ExpenseCategoryWithDefaults = category;
+            updatesToApply = {
+              ...updatesToApply,
+              deductionPercentage: category.deductionPercentage,
+            };
+
+            const businessPurposeValue = updates.businessPurpose;
+            const shouldApplyDefaultBusinessPurpose =
+              (businessPurposeValue === undefined ||
+                (typeof businessPurposeValue === 'string' && businessPurposeValue.trim().length === 0)) &&
+              businessPurposeValue !== null;
+
+            if (shouldApplyDefaultBusinessPurpose && categoryDefaults.defaultBusinessPurpose) {
+              updatesToApply = {
+                ...updatesToApply,
+                businessPurpose: categoryDefaults.defaultBusinessPurpose,
+              };
+            }
+          }
+        }
+      }
+
+      const [result] = await db.update(expenses)
+        .set({ ...updates, updatedAt: new Date() })
+        .set({ ...updatesToApply, updatedAt: new Date() })
+        .where(and(eq(expenses.id, id), eq(expenses.userId, userId)))
+        .returning();
+      return result;
+    } catch (error) {
+      console.error('Error updating expense:', { error: (error as Error).message });
+      throw error;
+    }
+  }
+
+  async deleteExpense(id: number, userId: number): Promise<void> {
+    try {
+      await db.delete(expenses)
+        .where(and(eq(expenses.id, id), eq(expenses.userId, userId)));
+    } catch (error) {
+      console.error('Error deleting expense:', { error: (error as Error).message });
+      throw error;
+    }
+  }
+
+  async getExpensesByCategory(userId: number, categoryId: number, taxYear?: number): Promise<Expense[]> {
+    try {
+      const conditions = [
+        eq(expenses.userId, userId),
+        eq(expenses.categoryId, categoryId)
+      ];
+@@ -855,66 +920,52 @@ export class DatabaseStorage implements IStorage {
+          sql`${expenses.expenseDate} <= ${endDate}`
+        ))
+        .orderBy(desc(expenses.expenseDate));
+    } catch (error) {
+      console.error('Error getting expenses by date range:', { error: (error as Error).message });
+      return [];
+    }
+  }
+
+  async getExpenseTotals(userId: number, taxYear?: number): Promise<{ total: number; deductible: number; byCategory: { [key: string]: number } }> {
+    try {
+      const query = db.select({
+        categoryName: expenseCategories.name,
+        amount: expenses.amount,
+        deductionPercentage: expenses.deductionPercentage
+      })
+      .from(expenses)
+      .leftJoin(expenseCategories, eq(expenses.categoryId, expenseCategories.id))
+      .where(
+        taxYear 
+          ? and(eq(expenses.userId, userId), eq(expenses.taxYear, taxYear))
+          : eq(expenses.userId, userId)
+      );
+
+      const results = await query;
+      
+      let total = 0;
+      let deductible = 0;
+      const byCategory: { [key: string]: number } = {};
+
+      for (const result of results) {
+        const amount = result.amount;
+        const deductionAmount = Math.round(amount * (result.deductionPercentage / 100));
+        const categoryName = result.categoryName || 'Other';
+
+        total += amount;
+        deductible += deductionAmount;
+        byCategory[categoryName] = (byCategory[categoryName] || 0) + deductionAmount;
+      }
+
+      return { total, deductible, byCategory };
+      return summarizeExpenseTotals(results);
+    } catch (error) {
+      console.error('Error getting expense totals:', { error: (error as Error).message });
+      return { total: 0, deductible: 0, byCategory: {} };
+    }
+  }
+
+  // Tax deduction info operations
+  async getTaxDeductionInfo(): Promise<TaxDeductionInfo[]> {
+    try {
+      return await db.select().from(taxDeductionInfo)
+        .orderBy(taxDeductionInfo.category, taxDeductionInfo.title);
+    } catch (error) {
+      console.error('Error getting tax deduction info:', { error: (error as Error).message });
+      return [];
+    }
+  }
+
+  async getTaxDeductionInfoByCategory(category: string): Promise<TaxDeductionInfo[]> {
+    try {
+      return await db.select().from(taxDeductionInfo)
+        .where(eq(taxDeductionInfo.category, category))
+        .orderBy(taxDeductionInfo.title);
+    } catch (error) {
+      console.error('Error getting tax deduction info by category:', { error: (error as Error).message });
+      return [];
+tests/unit/expenses/expense-storage.totals.test.ts
+New
++138-0
+import { describe, it, expect } from 'vitest';
+import type {
+  ExpenseCategory,
+  Expense,
+} from '../../../shared/schema.js';
+import { summarizeExpenseTotals } from '../../../server/storage.ts';
+
+function makeCategory(overrides: Partial<ExpenseCategory> & Pick<ExpenseCategory, 'name' | 'description' | 'legalExplanation' | 'deductionPercentage' | 'examples' | 'icon' | 'color' | 'isActive' | 'sortOrder'>, id: number): ExpenseCategory {
+  const now = new Date('2024-01-01T00:00:00.000Z');
+  return {
+    id,
+    createdAt: overrides.createdAt ?? now,
+    name: overrides.name,
+    description: overrides.description,
+    legalExplanation: overrides.legalExplanation,
+    deductionPercentage: overrides.deductionPercentage,
+    examples: overrides.examples,
+    icon: overrides.icon,
+    color: overrides.color,
+    isActive: overrides.isActive,
+    sortOrder: overrides.sortOrder,
+    itsDeductionCode: overrides.itsDeductionCode ?? null,
+  } satisfies ExpenseCategory;
+}
+
+function makeExpense(overrides: Partial<Expense> & Pick<Expense, 'userId' | 'categoryId' | 'amount' | 'description' | 'taxYear' | 'deductionPercentage'>, id: number): Expense {
+  const now = new Date('2024-01-01T00:00:00.000Z');
+  return {
+    id,
+    userId: overrides.userId,
+    categoryId: overrides.categoryId,
+    amount: overrides.amount,
+    description: overrides.description,
+    taxYear: overrides.taxYear,
+    deductionPercentage: overrides.deductionPercentage,
+    vendor: overrides.vendor ?? null,
+    expenseDate: overrides.expenseDate ?? now,
+    receiptUrl: overrides.receiptUrl ?? null,
+    receiptFileName: overrides.receiptFileName ?? null,
+    businessPurpose: overrides.businessPurpose ?? null,
+    tags: overrides.tags ?? null,
+    isRecurring: overrides.isRecurring ?? false,
+    recurringPeriod: overrides.recurringPeriod ?? null,
+    notes: overrides.notes ?? null,
+    createdAt: overrides.createdAt ?? now,
+    updatedAt: overrides.updatedAt ?? now,
+  } satisfies Expense;
+}
+
+describe('getExpenseTotals', () => {
+  it('applies stored deduction percentage for partially deductible categories', () => {
+    const userId = 42;
+    const taxYear = 2024;
+
+    const sharedUtilities = makeCategory(
+      {
+        name: 'Shared Utilities',
+        description: 'Utilities partially used for business operations',
+        legalExplanation: 'Only the business-use portion is deductible.',
+        deductionPercentage: 60,
+        examples: ['Internet'],
+        icon: 'bolt',
+        color: '#224466',
+        isActive: true,
+        sortOrder: 1,
+      },
+      1,
+    );
+
+    const marketing = makeCategory(
+      {
+        name: 'Marketing',
+        description: 'Campaigns that directly promote the business',
+        legalExplanation: 'Marketing efforts are fully deductible.',
+        deductionPercentage: 100,
+        examples: ['Online ads'],
+        icon: 'megaphone',
+        color: '#FF8800',
+        isActive: true,
+        sortOrder: 2,
+      },
+      2,
+    );
+
+    const partialAmount = 20000;
+    const fullAmount = 10000;
+
+    const expenses = [
+      makeExpense(
+        {
+          userId,
+          categoryId: sharedUtilities.id,
+          amount: partialAmount,
+          description: 'Shared internet service',
+          taxYear,
+          deductionPercentage: sharedUtilities.deductionPercentage,
+          businessPurpose: 'Home office connectivity',
+        },
+        1,
+      ),
+      makeExpense(
+        {
+          userId,
+          categoryId: marketing.id,
+          amount: fullAmount,
+          description: 'Social media promotion',
+          taxYear,
+          deductionPercentage: marketing.deductionPercentage,
+          businessPurpose: 'Audience growth campaign',
+        },
+        2,
+      ),
+    ];
+
+    const rows = expenses.map((expense) => ({
+      categoryName:
+        expense.categoryId === sharedUtilities.id
+          ? sharedUtilities.name
+          : marketing.name,
+      amount: expense.amount,
+      deductionPercentage: expense.deductionPercentage,
+    }));
+
+    const totals = summarizeExpenseTotals(rows);
+
+    const expectedPartialDeduction = Math.round(
+      partialAmount * (sharedUtilities.deductionPercentage / 100),
+    );
+    const expectedFullDeduction = Math.round(
+      fullAmount * (marketing.deductionPercentage / 100),
+    );
+
+    expect(totals.total).toBe(partialAmount + fullAmount);
+    expect(totals.deductible).toBe(expectedPartialDeduction + expectedFullDeduction);
+    expect(totals.byCategory[sharedUtilities.name]).toBe(expectedPartialDeduction);
+    expect(totals.byCategory[marketing.name]).toBe(expectedFullDeduction);
+  });
+});

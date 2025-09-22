@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import path from "node:path";
+import * as path from "node:path";
 import { z } from "zod";
 
 const VoiceDefinitionSchema = z.object({
