@@ -228,6 +228,41 @@ export const postJobs = pgTable("post_jobs", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// ==========================================
+// REDDIT COMMUNITY RULE SCHEMAS
+// ==========================================
+
+export const redditCommunityRuleSetSchema = z.object({
+  minKarma: z.number().nullable().default(null),
+  minAccountAge: z.number().nullable().default(null), // in days
+  watermarksAllowed: z.boolean().nullable().default(null),
+  sellingAllowed: z.enum(['allowed', 'limited', 'not_allowed', 'unknown']).default('unknown'),
+  titleRules: z.array(z.string()).default([]),
+  contentRules: z.array(z.string()).default([]),
+  verificationRequired: z.boolean().default(false),
+  requiresApproval: z.boolean().default(false),
+  nsfwRequired: z.boolean().default(false),
+  maxPostsPerDay: z.number().nullable().default(null),
+  cooldownHours: z.number().nullable().default(null)
+});
+
+export type RedditCommunityRuleSet = z.infer<typeof redditCommunityRuleSetSchema>;
+
+// Default rule set factory
+export const createDefaultRules = (): RedditCommunityRuleSet => ({
+  minKarma: null,
+  minAccountAge: null,
+  watermarksAllowed: null,
+  sellingAllowed: 'unknown',
+  titleRules: [],
+  contentRules: [],
+  verificationRequired: false,
+  requiresApproval: false,
+  nsfwRequired: false,
+  maxPostsPerDay: null,
+  cooldownHours: null
+});
+
 export const redditCommunities = pgTable("reddit_communities", {
   id: varchar("id", { length: 100 }).primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
@@ -238,7 +273,7 @@ export const redditCommunities = pgTable("reddit_communities", {
   verificationRequired: boolean("verification_required").default(false).notNull(),
   promotionAllowed: varchar("promotion_allowed", { length: 20 }).default("no").notNull(),
   postingLimits: jsonb("posting_limits"),
-  rules: jsonb("rules"),
+  rules: jsonb("rules").$type<RedditCommunityRuleSet>(),
   bestPostingTimes: jsonb("best_posting_times").$type<string[]>(),
   averageUpvotes: integer("average_upvotes"),
   successProbability: integer("success_probability"),

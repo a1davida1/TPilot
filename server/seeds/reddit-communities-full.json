@@ -8,15 +8,40 @@
     "category": "gonewild",
     "verificationRequired": true,
     "promotionAllowed": "no",
-    "postingLimits": {"daily": 3, "weekly": 10},
-    "rules": ["Verification required", "No selling", "OC only"],
-    "bestPostingTimes": ["evening", "night"],
+    "postingLimits": {
+      "daily": 3,
+      "weekly": 10
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": false,
+      "sellingAllowed": "not_allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Verification required",
+        "No selling",
+        "OC only"
+      ],
+      "verificationRequired": true,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening",
+      "night"
+    ],
     "averageUpvotes": 500,
     "successProbability": 65,
     "growthTrend": "steady",
     "modActivity": "high",
     "description": "Share your wild side",
-    "tags": ["amateur", "verified"],
+    "tags": [
+      "amateur",
+      "verified"
+    ],
     "competitionLevel": "high"
   },
   {
@@ -28,15 +53,36 @@
     "category": "amateur",
     "verificationRequired": false,
     "promotionAllowed": "no",
-    "postingLimits": {"daily": 2},
-    "rules": ["No selling", "Amateur only"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": false,
+      "sellingAllowed": "not_allowed",
+      "titleRules": [],
+      "contentRules": [
+        "No selling",
+        "Amateur only"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 400,
     "successProbability": 60,
     "growthTrend": "rising",
     "modActivity": "medium",
     "description": "Real amateur content",
-    "tags": ["amateur"],
+    "tags": [
+      "amateur"
+    ],
     "competitionLevel": "high"
   },
   {
@@ -48,15 +94,39 @@
     "category": "selling",
     "verificationRequired": false,
     "promotionAllowed": "yes",
-    "postingLimits": {"daily": 5},
-    "rules": ["Promotional content allowed", "Must follow format"],
-    "bestPostingTimes": ["afternoon", "evening"],
+    "postingLimits": {
+      "daily": 5
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": true,
+      "sellingAllowed": "allowed",
+      "titleRules": [
+        "Must follow format"
+      ],
+      "contentRules": [
+        "Promotional content allowed"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 5,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "afternoon",
+      "evening"
+    ],
     "averageUpvotes": 150,
     "successProbability": 75,
     "growthTrend": "rising",
     "modActivity": "low",
     "description": "OnlyFans promotion",
-    "tags": ["promotion", "selling"],
+    "tags": [
+      "promotion",
+      "selling"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -68,15 +138,37 @@
     "category": "selling",
     "verificationRequired": false,
     "promotionAllowed": "yes",
-    "postingLimits": {"daily": 3},
-    "rules": ["One post per day", "Direct links allowed"],
-    "bestPostingTimes": ["afternoon"],
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": true,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "One post per day",
+        "Direct links allowed"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "afternoon"
+    ],
     "averageUpvotes": 200,
     "successProbability": 80,
     "growthTrend": "rising",
     "modActivity": "low",
     "description": "OnlyFans creator promotion",
-    "tags": ["promotion", "onlyfans"],
+    "tags": [
+      "promotion",
+      "onlyfans"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -88,15 +180,38 @@
     "category": "body_type",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Petite only", "Limited selling"],
-    "bestPostingTimes": ["evening", "night"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Petite only",
+        "Limited selling"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening",
+      "night"
+    ],
     "averageUpvotes": 350,
     "successProbability": 70,
     "growthTrend": "steady",
     "modActivity": "medium",
     "description": "Petite content creators",
-    "tags": ["petite", "body_type"],
+    "tags": [
+      "petite",
+      "body_type"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -108,15 +223,37 @@
     "category": "ethnicity",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Asian creators only", "Respectful comments"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Asian creators only",
+        "Respectful comments"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 300,
     "successProbability": 68,
     "growthTrend": "steady",
     "modActivity": "high",
     "description": "Asian content creators",
-    "tags": ["asian", "ethnicity"],
+    "tags": [
+      "asian",
+      "ethnicity"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -128,15 +265,38 @@
     "category": "body_type",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 3},
-    "rules": ["Thick/curvy content", "Body positive"],
-    "bestPostingTimes": ["afternoon", "evening"],
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Thick/curvy content",
+        "Body positive"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "afternoon",
+      "evening"
+    ],
     "averageUpvotes": 250,
     "successProbability": 65,
     "growthTrend": "rising",
     "modActivity": "low",
     "description": "Thick and curvy creators",
-    "tags": ["thick", "curvy"],
+    "tags": [
+      "thick",
+      "curvy"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -148,15 +308,35 @@
     "category": "body_type",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Theme specific content only"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Theme specific content only"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 280,
     "successProbability": 66,
     "growthTrend": "steady",
     "modActivity": "medium",
     "description": "Specific body type content",
-    "tags": ["body_type"],
+    "tags": [
+      "body_type"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -168,15 +348,37 @@
     "category": "ethnicity",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Latina creators", "Respectful content"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Latina creators",
+        "Respectful content"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 220,
     "successProbability": 64,
     "growthTrend": "rising",
     "modActivity": "medium",
     "description": "Latina content creators",
-    "tags": ["latina", "ethnicity"],
+    "tags": [
+      "latina",
+      "ethnicity"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -188,15 +390,38 @@
     "category": "selling",
     "verificationRequired": false,
     "promotionAllowed": "yes",
-    "postingLimits": {"daily": 5},
-    "rules": ["Promotion allowed", "Follow title format"],
-    "bestPostingTimes": ["all_day"],
+    "postingLimits": {
+      "daily": 5
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": true,
+      "sellingAllowed": "allowed",
+      "titleRules": [
+        "Follow title format"
+      ],
+      "contentRules": [
+        "Promotion allowed"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 5,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "all_day"
+    ],
     "averageUpvotes": 100,
     "successProbability": 85,
     "growthTrend": "rising",
     "modActivity": "low",
     "description": "Dedicated promotion space",
-    "tags": ["promotion", "selling"],
+    "tags": [
+      "promotion",
+      "selling"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -208,15 +433,37 @@
     "category": "body_type",
     "verificationRequired": false,
     "promotionAllowed": "no",
-    "postingLimits": {"daily": 2},
-    "rules": ["Curvy content only", "No selling"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "not_allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Curvy content only",
+        "No selling"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 200,
     "successProbability": 62,
     "growthTrend": "steady",
     "modActivity": "medium",
     "description": "Curvy content creators",
-    "tags": ["curvy", "body_type"],
+    "tags": [
+      "curvy",
+      "body_type"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -228,15 +475,37 @@
     "category": "theme",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["College age theme", "Limited promotion"],
-    "bestPostingTimes": ["night"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "College age theme",
+        "Limited promotion"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
     "averageUpvotes": 300,
     "successProbability": 60,
     "growthTrend": "steady",
     "modActivity": "high",
     "description": "College themed content",
-    "tags": ["college", "theme"],
+    "tags": [
+      "college",
+      "theme"
+    ],
     "competitionLevel": "high"
   },
   {
@@ -248,15 +517,37 @@
     "category": "style",
     "verificationRequired": false,
     "promotionAllowed": "no",
-    "postingLimits": {"daily": 1},
-    "rules": ["Cute/adorable theme", "No direct selling"],
-    "bestPostingTimes": ["afternoon"],
+    "postingLimits": {
+      "daily": 1
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "not_allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Cute/adorable theme",
+        "No direct selling"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 1,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "afternoon"
+    ],
     "averageUpvotes": 250,
     "successProbability": 58,
     "growthTrend": "steady",
     "modActivity": "medium",
     "description": "Cute and adorable content",
-    "tags": ["cute", "style"],
+    "tags": [
+      "cute",
+      "style"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -268,15 +559,37 @@
     "category": "reveal",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 1},
-    "rules": ["Reveal content only", "OC preferred"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 1
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Reveal content only",
+        "OC preferred"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 1,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 400,
     "successProbability": 55,
     "growthTrend": "rising",
     "modActivity": "medium",
     "description": "Reveal style content",
-    "tags": ["reveal", "surprise"],
+    "tags": [
+      "reveal",
+      "surprise"
+    ],
     "competitionLevel": "high"
   },
   {
@@ -288,15 +601,37 @@
     "category": "body_type",
     "verificationRequired": false,
     "promotionAllowed": "no",
-    "postingLimits": {"daily": 1},
-    "rules": ["Specific body type", "No selling"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 1
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "not_allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Specific body type",
+        "No selling"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 1,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 350,
     "successProbability": 60,
     "growthTrend": "steady",
     "modActivity": "high",
     "description": "Specific body type content",
-    "tags": ["petite", "busty"],
+    "tags": [
+      "petite",
+      "busty"
+    ],
     "competitionLevel": "high"
   },
   {
@@ -308,15 +643,36 @@
     "category": "general",
     "verificationRequired": false,
     "promotionAllowed": "no",
-    "postingLimits": {"daily": 2},
-    "rules": ["General NSFW", "No spam"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "not_allowed",
+      "titleRules": [],
+      "contentRules": [
+        "General NSFW",
+        "No spam"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 200,
     "successProbability": 50,
     "growthTrend": "steady",
     "modActivity": "medium",
     "description": "General NSFW content",
-    "tags": ["general"],
+    "tags": [
+      "general"
+    ],
     "competitionLevel": "very_high"
   },
   {
@@ -328,15 +684,38 @@
     "category": "age",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Age appropriate content", "Respectful"],
-    "bestPostingTimes": ["afternoon", "evening"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Age appropriate content",
+        "Respectful"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "afternoon",
+      "evening"
+    ],
     "averageUpvotes": 250,
     "successProbability": 65,
     "growthTrend": "steady",
     "modActivity": "medium",
     "description": "Mature content creators",
-    "tags": ["mature", "milf"],
+    "tags": [
+      "mature",
+      "milf"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -348,15 +727,37 @@
     "category": "age",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["30+ creators only", "Age verification"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "30+ creators only",
+        "Age verification"
+      ],
+      "verificationRequired": true,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 280,
     "successProbability": 70,
     "growthTrend": "rising",
     "modActivity": "medium",
     "description": "30+ content creators",
-    "tags": ["mature", "30plus"],
+    "tags": [
+      "mature",
+      "30plus"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -368,15 +769,38 @@
     "category": "style",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Alternative style", "Tattoos/piercings welcome"],
-    "bestPostingTimes": ["night"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Alternative style",
+        "Tattoos/piercings welcome"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
     "averageUpvotes": 220,
     "successProbability": 68,
     "growthTrend": "rising",
     "modActivity": "low",
     "description": "Alternative style creators",
-    "tags": ["alt", "tattoo", "piercing"],
+    "tags": [
+      "alt",
+      "tattoo",
+      "piercing"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -388,15 +812,37 @@
     "category": "theme",
     "verificationRequired": false,
     "promotionAllowed": "no",
-    "postingLimits": {"daily": 1},
-    "rules": ["Work themed", "No identifying info"],
-    "bestPostingTimes": ["afternoon"],
+    "postingLimits": {
+      "daily": 1
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "not_allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Work themed",
+        "No identifying info"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 1,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "afternoon"
+    ],
     "averageUpvotes": 180,
     "successProbability": 55,
     "growthTrend": "steady",
     "modActivity": "high",
     "description": "Work themed content",
-    "tags": ["work", "theme"],
+    "tags": [
+      "work",
+      "theme"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -408,15 +854,38 @@
     "category": "comparison",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 1},
-    "rules": ["Before/after format", "Two images required"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 1
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [
+        "Before/after format"
+      ],
+      "contentRules": [
+        "Two images required"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 1,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 300,
     "successProbability": 60,
     "growthTrend": "steady",
     "modActivity": "medium",
     "description": "On/Off comparison content",
-    "tags": ["comparison", "onoff"],
+    "tags": [
+      "comparison",
+      "onoff"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -428,15 +897,37 @@
     "category": "reveal",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 1},
-    "rules": ["Drop/reveal content", "Video preferred"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 1
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Drop/reveal content",
+        "Video preferred"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 1,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 320,
     "successProbability": 58,
     "growthTrend": "rising",
     "modActivity": "low",
     "description": "Drop/reveal content",
-    "tags": ["reveal", "drop"],
+    "tags": [
+      "reveal",
+      "drop"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -448,15 +939,37 @@
     "category": "fetish",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 1},
-    "rules": ["Theme specific", "Consensual content"],
-    "bestPostingTimes": ["night"],
+    "postingLimits": {
+      "daily": 1
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Theme specific",
+        "Consensual content"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 1,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
     "averageUpvotes": 150,
     "successProbability": 52,
     "growthTrend": "steady",
     "modActivity": "high",
     "description": "Specific theme content",
-    "tags": ["fetish", "theme"],
+    "tags": [
+      "fetish",
+      "theme"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -468,15 +981,37 @@
     "category": "style",
     "verificationRequired": false,
     "promotionAllowed": "yes",
-    "postingLimits": {"daily": 3},
-    "rules": ["Goth aesthetic", "Promotion allowed"],
-    "bestPostingTimes": ["night"],
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Goth aesthetic",
+        "Promotion allowed"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
     "averageUpvotes": 200,
     "successProbability": 72,
     "growthTrend": "rising",
     "modActivity": "low",
     "description": "Goth style creators",
-    "tags": ["goth", "alt"],
+    "tags": [
+      "goth",
+      "alt"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -488,15 +1023,37 @@
     "category": "appearance",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Pale skin appreciation", "Body positive"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Pale skin appreciation",
+        "Body positive"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 180,
     "successProbability": 65,
     "growthTrend": "steady",
     "modActivity": "medium",
     "description": "Pale skin creators",
-    "tags": ["pale", "appearance"],
+    "tags": [
+      "pale",
+      "appearance"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -508,15 +1065,37 @@
     "category": "appearance",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Natural or dyed redheads", "Hair visible"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Natural or dyed redheads",
+        "Hair visible"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 210,
     "successProbability": 67,
     "growthTrend": "steady",
     "modActivity": "low",
     "description": "Redhead creators",
-    "tags": ["redhead", "hair"],
+    "tags": [
+      "redhead",
+      "hair"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -528,15 +1107,37 @@
     "category": "appearance",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Blonde hair", "Natural or dyed"],
-    "bestPostingTimes": ["afternoon"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Blonde hair",
+        "Natural or dyed"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "afternoon"
+    ],
     "averageUpvotes": 170,
     "successProbability": 63,
     "growthTrend": "steady",
     "modActivity": "low",
     "description": "Blonde creators",
-    "tags": ["blonde", "hair"],
+    "tags": [
+      "blonde",
+      "hair"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -548,15 +1149,37 @@
     "category": "appearance",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Brunette hair", "Hair visible"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Brunette hair",
+        "Hair visible"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 165,
     "successProbability": 62,
     "growthTrend": "steady",
     "modActivity": "low",
     "description": "Brunette creators",
-    "tags": ["brunette", "hair"],
+    "tags": [
+      "brunette",
+      "hair"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -568,15 +1191,37 @@
     "category": "fetish",
     "verificationRequired": false,
     "promotionAllowed": "yes",
-    "postingLimits": {"daily": 3},
-    "rules": ["Feet content", "Selling allowed"],
-    "bestPostingTimes": ["all_day"],
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Feet content",
+        "Selling allowed"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "all_day"
+    ],
     "averageUpvotes": 120,
     "successProbability": 75,
     "growthTrend": "rising",
     "modActivity": "low",
     "description": "Feet content creators",
-    "tags": ["feet", "fetish"],
+    "tags": [
+      "feet",
+      "fetish"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -588,15 +1233,37 @@
     "category": "fetish",
     "verificationRequired": false,
     "promotionAllowed": "yes",
-    "postingLimits": {"daily": 5},
-    "rules": ["Feet focus", "Selling welcome"],
-    "bestPostingTimes": ["all_day"],
+    "postingLimits": {
+      "daily": 5
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Feet focus",
+        "Selling welcome"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 5,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "all_day"
+    ],
     "averageUpvotes": 100,
     "successProbability": 78,
     "growthTrend": "rising",
     "modActivity": "low",
     "description": "Feet picture sales",
-    "tags": ["feet", "selling"],
+    "tags": [
+      "feet",
+      "selling"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -608,15 +1275,37 @@
     "category": "fetish",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Safe, sane, consensual", "Educational welcome"],
-    "bestPostingTimes": ["night"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Safe, sane, consensual",
+        "Educational welcome"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
     "averageUpvotes": 160,
     "successProbability": 60,
     "growthTrend": "steady",
     "modActivity": "high",
     "description": "BDSM content and education",
-    "tags": ["bdsm", "kink"],
+    "tags": [
+      "bdsm",
+      "kink"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -628,15 +1317,37 @@
     "category": "fetish",
     "verificationRequired": false,
     "promotionAllowed": "yes",
-    "postingLimits": {"daily": 3},
-    "rules": ["Female domination theme", "Respectful"],
-    "bestPostingTimes": ["night"],
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Female domination theme",
+        "Respectful"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
     "averageUpvotes": 140,
     "successProbability": 70,
     "growthTrend": "rising",
     "modActivity": "medium",
     "description": "Female domination content",
-    "tags": ["femdom", "domme"],
+    "tags": [
+      "femdom",
+      "domme"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -648,15 +1359,37 @@
     "category": "fetish",
     "verificationRequired": false,
     "promotionAllowed": "yes",
-    "postingLimits": {"daily": 5},
-    "rules": ["Financial domination", "Clear terms"],
-    "bestPostingTimes": ["all_day"],
+    "postingLimits": {
+      "daily": 5
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Financial domination",
+        "Clear terms"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 5,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "all_day"
+    ],
     "averageUpvotes": 80,
     "successProbability": 82,
     "growthTrend": "rising",
     "modActivity": "low",
     "description": "Financial domination",
-    "tags": ["findom", "fetish"],
+    "tags": [
+      "findom",
+      "fetish"
+    ],
     "competitionLevel": "very_low"
   },
   {
@@ -668,15 +1401,38 @@
     "category": "cosplay",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Cosplay content", "Credit characters"],
-    "bestPostingTimes": ["afternoon", "evening"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Cosplay content",
+        "Credit characters"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "afternoon",
+      "evening"
+    ],
     "averageUpvotes": 200,
     "successProbability": 62,
     "growthTrend": "rising",
     "modActivity": "medium",
     "description": "Cosplay creators",
-    "tags": ["cosplay", "costume"],
+    "tags": [
+      "cosplay",
+      "costume"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -688,15 +1444,37 @@
     "category": "cosplay",
     "verificationRequired": false,
     "promotionAllowed": "yes",
-    "postingLimits": {"daily": 3},
-    "rules": ["Adult cosplay", "Character names required"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Adult cosplay",
+        "Character names required"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 180,
     "successProbability": 68,
     "growthTrend": "rising",
     "modActivity": "low",
     "description": "Adult cosplay content",
-    "tags": ["cosplay", "nsfw"],
+    "tags": [
+      "cosplay",
+      "nsfw"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -708,15 +1486,37 @@
     "category": "niche",
     "verificationRequired": false,
     "promotionAllowed": "yes",
-    "postingLimits": {"daily": 3},
-    "rules": ["Geek culture theme", "Gaming/anime welcome"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Geek culture theme",
+        "Gaming/anime welcome"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 150,
     "successProbability": 70,
     "growthTrend": "rising",
     "modActivity": "low",
     "description": "Geeky content creators",
-    "tags": ["geek", "nerd"],
+    "tags": [
+      "geek",
+      "nerd"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -728,15 +1528,37 @@
     "category": "gaming",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Gaming related", "Setup pics welcome"],
-    "bestPostingTimes": ["night"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Gaming related",
+        "Setup pics welcome"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
     "averageUpvotes": 140,
     "successProbability": 58,
     "growthTrend": "steady",
     "modActivity": "medium",
     "description": "Gaming content creators",
-    "tags": ["gaming", "gamer"],
+    "tags": [
+      "gaming",
+      "gamer"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -748,15 +1570,38 @@
     "category": "fitness",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Fitness focus", "Workout content"],
-    "bestPostingTimes": ["morning", "afternoon"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Fitness focus",
+        "Workout content"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "morning",
+      "afternoon"
+    ],
     "averageUpvotes": 170,
     "successProbability": 60,
     "growthTrend": "steady",
     "modActivity": "medium",
     "description": "Fitness content creators",
-    "tags": ["fitness", "fit"],
+    "tags": [
+      "fitness",
+      "fit"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -768,15 +1613,37 @@
     "category": "fitness",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Yoga poses", "Flexibility content"],
-    "bestPostingTimes": ["morning"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Yoga poses",
+        "Flexibility content"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "morning"
+    ],
     "averageUpvotes": 130,
     "successProbability": 65,
     "growthTrend": "rising",
     "modActivity": "low",
     "description": "Yoga and flexibility",
-    "tags": ["yoga", "flexible"],
+    "tags": [
+      "yoga",
+      "flexible"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -788,15 +1655,37 @@
     "category": "age",
     "verificationRequired": false,
     "promotionAllowed": "yes",
-    "postingLimits": {"daily": 3},
-    "rules": ["Mom creators", "Age appropriate"],
-    "bestPostingTimes": ["afternoon"],
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Mom creators",
+        "Age appropriate"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "afternoon"
+    ],
     "averageUpvotes": 160,
     "successProbability": 72,
     "growthTrend": "rising",
     "modActivity": "low",
     "description": "Mom content creators",
-    "tags": ["milf", "mom"],
+    "tags": [
+      "milf",
+      "mom"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -808,15 +1697,37 @@
     "category": "body_type",
     "verificationRequired": false,
     "promotionAllowed": "yes",
-    "postingLimits": {"daily": 3},
-    "rules": ["Mom body positivity", "Natural bodies"],
-    "bestPostingTimes": ["afternoon"],
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Mom body positivity",
+        "Natural bodies"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "afternoon"
+    ],
     "averageUpvotes": 140,
     "successProbability": 75,
     "growthTrend": "rising",
     "modActivity": "low",
     "description": "Mom body appreciation",
-    "tags": ["mombod", "natural"],
+    "tags": [
+      "mombod",
+      "natural"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -828,15 +1739,37 @@
     "category": "age",
     "verificationRequired": false,
     "promotionAllowed": "yes",
-    "postingLimits": {"daily": 3},
-    "rules": ["Amateur mature content", "30+ creators"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Amateur mature content",
+        "30+ creators"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 150,
     "successProbability": 74,
     "growthTrend": "steady",
     "modActivity": "low",
     "description": "Amateur mature creators",
-    "tags": ["milf", "amateur"],
+    "tags": [
+      "milf",
+      "amateur"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -848,15 +1781,37 @@
     "category": "ethnicity",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Black creators", "Respectful space"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Black creators",
+        "Respectful space"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 180,
     "successProbability": 65,
     "growthTrend": "steady",
     "modActivity": "medium",
     "description": "Black content creators",
-    "tags": ["ebony", "black"],
+    "tags": [
+      "ebony",
+      "black"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -868,15 +1823,37 @@
     "category": "ethnicity",
     "verificationRequired": false,
     "promotionAllowed": "yes",
-    "postingLimits": {"daily": 3},
-    "rules": ["Black creators only", "Celebration space"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Black creators only",
+        "Celebration space"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 160,
     "successProbability": 70,
     "growthTrend": "rising",
     "modActivity": "low",
     "description": "Black creator community",
-    "tags": ["black", "woc"],
+    "tags": [
+      "black",
+      "woc"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -888,15 +1865,37 @@
     "category": "ethnicity",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Indian/South Asian creators", "Cultural respect"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Indian/South Asian creators",
+        "Cultural respect"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 150,
     "successProbability": 62,
     "growthTrend": "steady",
     "modActivity": "medium",
     "description": "Indian content creators",
-    "tags": ["indian", "desi"],
+    "tags": [
+      "indian",
+      "desi"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -908,15 +1907,37 @@
     "category": "ethnicity",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Asian creators", "Body positive"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Asian creators",
+        "Body positive"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 200,
     "successProbability": 64,
     "growthTrend": "steady",
     "modActivity": "medium",
     "description": "Asian creator community",
-    "tags": ["asian", "thick"],
+    "tags": [
+      "asian",
+      "thick"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -928,15 +1949,37 @@
     "category": "ethnicity",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Asian creators", "Theme specific"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Asian creators",
+        "Theme specific"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 180,
     "successProbability": 66,
     "growthTrend": "rising",
     "modActivity": "low",
     "description": "Specific Asian content",
-    "tags": ["asian", "body_type"],
+    "tags": [
+      "asian",
+      "body_type"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -948,15 +1991,37 @@
     "category": "body_type",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Small chest appreciation", "Body positive"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Small chest appreciation",
+        "Body positive"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 160,
     "successProbability": 68,
     "growthTrend": "steady",
     "modActivity": "low",
     "description": "Small chest appreciation",
-    "tags": ["small", "petite"],
+    "tags": [
+      "small",
+      "petite"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -968,15 +2033,37 @@
     "category": "body_type",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Petite chest focus", "Respectful"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Petite chest focus",
+        "Respectful"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 170,
     "successProbability": 69,
     "growthTrend": "steady",
     "modActivity": "medium",
     "description": "Petite chest creators",
-    "tags": ["tiny", "small"],
+    "tags": [
+      "tiny",
+      "small"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -988,15 +2075,37 @@
     "category": "body_type",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Large chest content", "Natural or enhanced"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Large chest content",
+        "Natural or enhanced"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 220,
     "successProbability": 62,
     "growthTrend": "steady",
     "modActivity": "medium",
     "description": "Large chest creators",
-    "tags": ["busty", "large"],
+    "tags": [
+      "busty",
+      "large"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -1008,15 +2117,37 @@
     "category": "body_type",
     "verificationRequired": false,
     "promotionAllowed": "no",
-    "postingLimits": {"daily": 1},
-    "rules": ["Large chest focus", "No selling"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 1
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "not_allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Large chest focus",
+        "No selling"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 1,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 250,
     "successProbability": 58,
     "growthTrend": "steady",
     "modActivity": "high",
     "description": "Big chest appreciation",
-    "tags": ["big", "busty"],
+    "tags": [
+      "big",
+      "busty"
+    ],
     "competitionLevel": "high"
   },
   {
@@ -1028,15 +2159,37 @@
     "category": "natural",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Natural only", "No enhancements"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Natural only",
+        "No enhancements"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 190,
     "successProbability": 65,
     "growthTrend": "steady",
     "modActivity": "medium",
     "description": "Natural body creators",
-    "tags": ["natural", "real"],
+    "tags": [
+      "natural",
+      "real"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -1048,15 +2201,38 @@
     "category": "style",
     "verificationRequired": false,
     "promotionAllowed": "yes",
-    "postingLimits": {"daily": 3},
-    "rules": ["Tattoo visibility", "Ink appreciation"],
-    "bestPostingTimes": ["evening", "night"],
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Tattoo visibility",
+        "Ink appreciation"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening",
+      "night"
+    ],
     "averageUpvotes": 160,
     "successProbability": 70,
     "growthTrend": "rising",
     "modActivity": "low",
     "description": "Tattooed creators",
-    "tags": ["tattoo", "ink"],
+    "tags": [
+      "tattoo",
+      "ink"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -1068,15 +2244,37 @@
     "category": "style",
     "verificationRequired": false,
     "promotionAllowed": "yes",
-    "postingLimits": {"daily": 3},
-    "rules": ["Piercing focus", "Body modification"],
-    "bestPostingTimes": ["night"],
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Piercing focus",
+        "Body modification"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
     "averageUpvotes": 140,
     "successProbability": 72,
     "growthTrend": "steady",
     "modActivity": "low",
     "description": "Pierced creators",
-    "tags": ["piercing", "alt"],
+    "tags": [
+      "piercing",
+      "alt"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -1088,15 +2286,37 @@
     "category": "style",
     "verificationRequired": false,
     "promotionAllowed": "yes",
-    "postingLimits": {"daily": 3},
-    "rules": ["Emo aesthetic", "Scene welcome"],
-    "bestPostingTimes": ["night"],
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Emo aesthetic",
+        "Scene welcome"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
     "averageUpvotes": 130,
     "successProbability": 74,
     "growthTrend": "rising",
     "modActivity": "low",
     "description": "Emo style creators",
-    "tags": ["emo", "scene"],
+    "tags": [
+      "emo",
+      "scene"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -1108,15 +2328,37 @@
     "category": "style",
     "verificationRequired": false,
     "promotionAllowed": "yes",
-    "postingLimits": {"daily": 3},
-    "rules": ["Scene style", "Colorful aesthetic"],
-    "bestPostingTimes": ["night"],
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Scene style",
+        "Colorful aesthetic"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
     "averageUpvotes": 120,
     "successProbability": 75,
     "growthTrend": "steady",
     "modActivity": "low",
     "description": "Scene style creators",
-    "tags": ["scene", "alt"],
+    "tags": [
+      "scene",
+      "alt"
+    ],
     "competitionLevel": "very_low"
   },
   {
@@ -1128,15 +2370,37 @@
     "category": "style",
     "verificationRequired": false,
     "promotionAllowed": "yes",
-    "postingLimits": {"daily": 4},
-    "rules": ["E-girl aesthetic", "Gaming/anime themes"],
-    "bestPostingTimes": ["night"],
+    "postingLimits": {
+      "daily": 4
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "E-girl aesthetic",
+        "Gaming/anime themes"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 4,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
     "averageUpvotes": 150,
     "successProbability": 76,
     "growthTrend": "rising",
     "modActivity": "low",
     "description": "E-girl aesthetic creators",
-    "tags": ["egirl", "gaming"],
+    "tags": [
+      "egirl",
+      "gaming"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -1148,15 +2412,37 @@
     "category": "age",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["College age", "School themes"],
-    "bestPostingTimes": ["night"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "College age",
+        "School themes"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
     "averageUpvotes": 180,
     "successProbability": 60,
     "growthTrend": "steady",
     "modActivity": "medium",
     "description": "College themed content",
-    "tags": ["college", "young"],
+    "tags": [
+      "college",
+      "young"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -1168,15 +2454,37 @@
     "category": "age",
     "verificationRequired": true,
     "promotionAllowed": "no",
-    "postingLimits": {"daily": 1},
-    "rules": ["Age verification required", "18+ only"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 1
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "not_allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Age verification required",
+        "18+ only"
+      ],
+      "verificationRequired": true,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 1,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 150,
     "successProbability": 55,
     "growthTrend": "steady",
     "modActivity": "very_high",
     "description": "Young adult creators",
-    "tags": ["18plus", "young"],
+    "tags": [
+      "18plus",
+      "young"
+    ],
     "competitionLevel": "high"
   },
   {
@@ -1188,15 +2496,37 @@
     "category": "age",
     "verificationRequired": false,
     "promotionAllowed": "yes",
-    "postingLimits": {"daily": 3},
-    "rules": ["Born 2000-2005", "Young adult content"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Born 2000-2005",
+        "Young adult content"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 140,
     "successProbability": 70,
     "growthTrend": "rising",
     "modActivity": "low",
     "description": "2000s born creators",
-    "tags": ["2000s", "young"],
+    "tags": [
+      "2000s",
+      "young"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -1208,15 +2538,37 @@
     "category": "social",
     "verificationRequired": false,
     "promotionAllowed": "yes",
-    "postingLimits": {"daily": 4},
-    "rules": ["Snapchat promotion", "Username sharing"],
-    "bestPostingTimes": ["all_day"],
+    "postingLimits": {
+      "daily": 4
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Snapchat promotion",
+        "Username sharing"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 4,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "all_day"
+    ],
     "averageUpvotes": 100,
     "successProbability": 75,
     "growthTrend": "steady",
     "modActivity": "low",
     "description": "Snapchat promotion",
-    "tags": ["snapchat", "social"],
+    "tags": [
+      "snapchat",
+      "social"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -1228,15 +2580,38 @@
     "category": "social",
     "verificationRequired": false,
     "promotionAllowed": "yes",
-    "postingLimits": {"daily": 3},
-    "rules": ["TikTok creators", "Dance/trend content"],
-    "bestPostingTimes": ["afternoon", "evening"],
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "TikTok creators",
+        "Dance/trend content"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "afternoon",
+      "evening"
+    ],
     "averageUpvotes": 120,
     "successProbability": 72,
     "growthTrend": "rising",
     "modActivity": "low",
     "description": "TikTok creator promotion",
-    "tags": ["tiktok", "social"],
+    "tags": [
+      "tiktok",
+      "social"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -1248,15 +2623,37 @@
     "category": "social",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["IG promotion", "Model content"],
-    "bestPostingTimes": ["afternoon"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "IG promotion",
+        "Model content"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "afternoon"
+    ],
     "averageUpvotes": 150,
     "successProbability": 62,
     "growthTrend": "steady",
     "modActivity": "medium",
     "description": "Instagram model promotion",
-    "tags": ["instagram", "model"],
+    "tags": [
+      "instagram",
+      "model"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -1268,15 +2665,37 @@
     "category": "cam",
     "verificationRequired": false,
     "promotionAllowed": "yes",
-    "postingLimits": {"daily": 4},
-    "rules": ["Cam promotion", "Schedule sharing"],
-    "bestPostingTimes": ["all_day"],
+    "postingLimits": {
+      "daily": 4
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Cam promotion",
+        "Schedule sharing"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 4,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "all_day"
+    ],
     "averageUpvotes": 110,
     "successProbability": 78,
     "growthTrend": "steady",
     "modActivity": "low",
     "description": "Cam performer promotion",
-    "tags": ["cam", "live"],
+    "tags": [
+      "cam",
+      "live"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -1288,15 +2707,37 @@
     "category": "cam",
     "verificationRequired": false,
     "promotionAllowed": "yes",
-    "postingLimits": {"daily": 5},
-    "rules": ["Cam content", "Links allowed"],
-    "bestPostingTimes": ["all_day"],
+    "postingLimits": {
+      "daily": 5
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Cam content",
+        "Links allowed"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 5,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "all_day"
+    ],
     "averageUpvotes": 90,
     "successProbability": 80,
     "growthTrend": "steady",
     "modActivity": "low",
     "description": "Cam site promotion",
-    "tags": ["cam", "streaming"],
+    "tags": [
+      "cam",
+      "streaming"
+    ],
     "competitionLevel": "very_low"
   },
   {
@@ -1308,15 +2749,37 @@
     "category": "dancer",
     "verificationRequired": false,
     "promotionAllowed": "yes",
-    "postingLimits": {"daily": 3},
-    "rules": ["Dancer content", "Stage/pole welcome"],
-    "bestPostingTimes": ["night"],
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Dancer content",
+        "Stage/pole welcome"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
     "averageUpvotes": 120,
     "successProbability": 73,
     "growthTrend": "steady",
     "modActivity": "low",
     "description": "Dancer/stripper content",
-    "tags": ["dancer", "stripper"],
+    "tags": [
+      "dancer",
+      "stripper"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -1328,15 +2791,37 @@
     "category": "dancer",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Pole content", "Athletic focus"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Pole content",
+        "Athletic focus"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 100,
     "successProbability": 68,
     "growthTrend": "steady",
     "modActivity": "medium",
     "description": "Pole dancing content",
-    "tags": ["pole", "dance"],
+    "tags": [
+      "pole",
+      "dance"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -1348,15 +2833,37 @@
     "category": "amateur",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Amateur content", "OC only"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": false,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Amateur content",
+        "OC only"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 200,
     "successProbability": 62,
     "growthTrend": "steady",
     "modActivity": "medium",
     "description": "Homemade amateur content",
-    "tags": ["homemade", "amateur"],
+    "tags": [
+      "homemade",
+      "amateur"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -1368,15 +2875,37 @@
     "category": "amateur",
     "verificationRequired": false,
     "promotionAllowed": "no",
-    "postingLimits": {"daily": 2},
-    "rules": ["Amateur only", "No pro content"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": false,
+      "sellingAllowed": "not_allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Amateur only",
+        "No pro content"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 180,
     "successProbability": 58,
     "growthTrend": "steady",
     "modActivity": "high",
     "description": "Amateur content only",
-    "tags": ["amateur", "real"],
+    "tags": [
+      "amateur",
+      "real"
+    ],
     "competitionLevel": "high"
   },
   {
@@ -1388,15 +2917,37 @@
     "category": "amateur",
     "verificationRequired": false,
     "promotionAllowed": "yes",
-    "postingLimits": {"daily": 3},
-    "rules": ["Homemade content", "Couples welcome"],
-    "bestPostingTimes": ["night"],
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": false,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Homemade content",
+        "Couples welcome"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
     "averageUpvotes": 160,
     "successProbability": 70,
     "growthTrend": "steady",
     "modActivity": "low",
     "description": "Homemade adult content",
-    "tags": ["homemade", "couple"],
+    "tags": [
+      "homemade",
+      "couple"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -1408,15 +2959,37 @@
     "category": "couples",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Couples content", "Both partners visible"],
-    "bestPostingTimes": ["night"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Couples content",
+        "Both partners visible"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
     "averageUpvotes": 170,
     "successProbability": 65,
     "growthTrend": "steady",
     "modActivity": "medium",
     "description": "Couple content",
-    "tags": ["couple", "partners"],
+    "tags": [
+      "couple",
+      "partners"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -1428,15 +3001,37 @@
     "category": "couples",
     "verificationRequired": true,
     "promotionAllowed": "no",
-    "postingLimits": {"daily": 2},
-    "rules": ["Verified couples", "No selling"],
-    "bestPostingTimes": ["night"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "not_allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Verified couples",
+        "No selling"
+      ],
+      "verificationRequired": true,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
     "averageUpvotes": 190,
     "successProbability": 63,
     "growthTrend": "steady",
     "modActivity": "high",
     "description": "Verified couple content",
-    "tags": ["couple", "verified"],
+    "tags": [
+      "couple",
+      "verified"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -1448,15 +3043,37 @@
     "category": "lifestyle",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Lifestyle content", "Respectful"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Lifestyle content",
+        "Respectful"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 150,
     "successProbability": 68,
     "growthTrend": "steady",
     "modActivity": "medium",
     "description": "Hotwife lifestyle",
-    "tags": ["hotwife", "lifestyle"],
+    "tags": [
+      "hotwife",
+      "lifestyle"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -1468,15 +3085,37 @@
     "category": "lifestyle",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Consensual content", "Partner aware"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Consensual content",
+        "Partner aware"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 140,
     "successProbability": 66,
     "growthTrend": "steady",
     "modActivity": "medium",
     "description": "Wife sharing content",
-    "tags": ["sharing", "lifestyle"],
+    "tags": [
+      "sharing",
+      "lifestyle"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -1488,15 +3127,37 @@
     "category": "lifestyle",
     "verificationRequired": false,
     "promotionAllowed": "yes",
-    "postingLimits": {"daily": 3},
-    "rules": ["Swinger lifestyle", "Respectful community"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Swinger lifestyle",
+        "Respectful community"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 120,
     "successProbability": 70,
     "growthTrend": "steady",
     "modActivity": "low",
     "description": "Swinger lifestyle content",
-    "tags": ["swinger", "lifestyle"],
+    "tags": [
+      "swinger",
+      "lifestyle"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -1508,15 +3169,37 @@
     "category": "lifestyle",
     "verificationRequired": false,
     "promotionAllowed": "yes",
-    "postingLimits": {"daily": 3},
-    "rules": ["Lifestyle content", "Consensual"],
-    "bestPostingTimes": ["night"],
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Lifestyle content",
+        "Consensual"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
     "averageUpvotes": 110,
     "successProbability": 72,
     "growthTrend": "steady",
     "modActivity": "low",
     "description": "Alternative lifestyle",
-    "tags": ["lifestyle", "wife"],
+    "tags": [
+      "lifestyle",
+      "wife"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -1528,15 +3211,37 @@
     "category": "lifestyle",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Lifestyle specific", "Consensual only"],
-    "bestPostingTimes": ["night"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Lifestyle specific",
+        "Consensual only"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
     "averageUpvotes": 100,
     "successProbability": 65,
     "growthTrend": "steady",
     "modActivity": "medium",
     "description": "Cuckold lifestyle",
-    "tags": ["cuckold", "lifestyle"],
+    "tags": [
+      "cuckold",
+      "lifestyle"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -1548,15 +3253,37 @@
     "category": "fetish",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Fantasy content", "Role play"],
-    "bestPostingTimes": ["night"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Fantasy content",
+        "Role play"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
     "averageUpvotes": 130,
     "successProbability": 62,
     "growthTrend": "steady",
     "modActivity": "medium",
     "description": "Breeding fantasy content",
-    "tags": ["breeding", "fantasy"],
+    "tags": [
+      "breeding",
+      "fantasy"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -1568,15 +3295,37 @@
     "category": "fetish",
     "verificationRequired": false,
     "promotionAllowed": "yes",
-    "postingLimits": {"daily": 3},
-    "rules": ["Fantasy theme", "Role play content"],
-    "bestPostingTimes": ["night"],
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Fantasy theme",
+        "Role play content"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
     "averageUpvotes": 110,
     "successProbability": 68,
     "growthTrend": "steady",
     "modActivity": "low",
     "description": "Breeding fantasy",
-    "tags": ["breeding", "roleplay"],
+    "tags": [
+      "breeding",
+      "roleplay"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -1588,15 +3337,37 @@
     "category": "content_type",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Specific content type", "OC preferred"],
-    "bestPostingTimes": ["night"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Specific content type",
+        "OC preferred"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
     "averageUpvotes": 150,
     "successProbability": 60,
     "growthTrend": "steady",
     "modActivity": "medium",
     "description": "Specific content type",
-    "tags": ["creampie", "content"],
+    "tags": [
+      "creampie",
+      "content"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -1608,15 +3379,37 @@
     "category": "content_type",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Theme specific", "OC welcome"],
-    "bestPostingTimes": ["night"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Theme specific",
+        "OC welcome"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
     "averageUpvotes": 170,
     "successProbability": 62,
     "growthTrend": "steady",
     "modActivity": "medium",
     "description": "Specific content theme",
-    "tags": ["cum", "content"],
+    "tags": [
+      "cum",
+      "content"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -1628,15 +3421,37 @@
     "category": "content_type",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Specific content", "OC preferred"],
-    "bestPostingTimes": ["night"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Specific content",
+        "OC preferred"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
     "averageUpvotes": 140,
     "successProbability": 60,
     "growthTrend": "steady",
     "modActivity": "medium",
     "description": "Facial content",
-    "tags": ["facial", "content"],
+    "tags": [
+      "facial",
+      "content"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -1648,15 +3463,37 @@
     "category": "content_type",
     "verificationRequired": false,
     "promotionAllowed": "yes",
-    "postingLimits": {"daily": 3},
-    "rules": ["Squirt content", "OC encouraged"],
-    "bestPostingTimes": ["night"],
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Squirt content",
+        "OC encouraged"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
     "averageUpvotes": 160,
     "successProbability": 70,
     "growthTrend": "rising",
     "modActivity": "low",
     "description": "Squirting content",
-    "tags": ["squirt", "content"],
+    "tags": [
+      "squirt",
+      "content"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -1668,15 +3505,37 @@
     "category": "content_type",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Specific content", "Natural only"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Specific content",
+        "Natural only"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 130,
     "successProbability": 65,
     "growthTrend": "steady",
     "modActivity": "medium",
     "description": "Natural wetness content",
-    "tags": ["grool", "natural"],
+    "tags": [
+      "grool",
+      "natural"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -1688,15 +3547,37 @@
     "category": "content_type",
     "verificationRequired": false,
     "promotionAllowed": "yes",
-    "postingLimits": {"daily": 3},
-    "rules": ["Wet spot content", "Clothing focus"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Wet spot content",
+        "Clothing focus"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 90,
     "successProbability": 72,
     "growthTrend": "steady",
     "modActivity": "low",
     "description": "Wet spot content",
-    "tags": ["wetspot", "clothing"],
+    "tags": [
+      "wetspot",
+      "clothing"
+    ],
     "competitionLevel": "very_low"
   },
   {
@@ -1708,15 +3589,37 @@
     "category": "clothing",
     "verificationRequired": false,
     "promotionAllowed": "yes",
-    "postingLimits": {"daily": 3},
-    "rules": ["Panty content", "Selling allowed"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Panty content",
+        "Selling allowed"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 120,
     "successProbability": 70,
     "growthTrend": "steady",
     "modActivity": "low",
     "description": "Panty content and sales",
-    "tags": ["panties", "underwear"],
+    "tags": [
+      "panties",
+      "underwear"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -1728,15 +3631,37 @@
     "category": "selling",
     "verificationRequired": true,
     "promotionAllowed": "yes",
-    "postingLimits": {"daily": 5},
-    "rules": ["Selling platform", "Verification required"],
-    "bestPostingTimes": ["all_day"],
+    "postingLimits": {
+      "daily": 5
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": true,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Selling platform",
+        "Verification required"
+      ],
+      "verificationRequired": true,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 5,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "all_day"
+    ],
     "averageUpvotes": 80,
     "successProbability": 80,
     "growthTrend": "steady",
     "modActivity": "medium",
     "description": "Panty selling marketplace",
-    "tags": ["selling", "panties"],
+    "tags": [
+      "selling",
+      "panties"
+    ],
     "competitionLevel": "very_low"
   },
   {
@@ -1748,15 +3673,37 @@
     "category": "clothing",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Lingerie focus", "Quality content"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Lingerie focus",
+        "Quality content"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 170,
     "successProbability": 64,
     "growthTrend": "steady",
     "modActivity": "medium",
     "description": "Lingerie content",
-    "tags": ["lingerie", "clothing"],
+    "tags": [
+      "lingerie",
+      "clothing"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -1768,15 +3715,37 @@
     "category": "clothing",
     "verificationRequired": false,
     "promotionAllowed": "yes",
-    "postingLimits": {"daily": 3},
-    "rules": ["Stocking/hosiery content", "Legs focus"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Stocking/hosiery content",
+        "Legs focus"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 130,
     "successProbability": 68,
     "growthTrend": "steady",
     "modActivity": "low",
     "description": "Stocking and hosiery content",
-    "tags": ["stockings", "legs"],
+    "tags": [
+      "stockings",
+      "legs"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -1788,15 +3757,37 @@
     "category": "clothing",
     "verificationRequired": false,
     "promotionAllowed": "yes",
-    "postingLimits": {"daily": 3},
-    "rules": ["Thigh high focus", "Socks/stockings"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Thigh high focus",
+        "Socks/stockings"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 120,
     "successProbability": 70,
     "growthTrend": "rising",
     "modActivity": "low",
     "description": "Thigh high content",
-    "tags": ["thighhighs", "socks"],
+    "tags": [
+      "thighhighs",
+      "socks"
+    ],
     "competitionLevel": "low"
   },
   {
@@ -1808,15 +3799,37 @@
     "category": "clothing",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Yoga pants/leggings", "Athletic wear"],
-    "bestPostingTimes": ["afternoon"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Yoga pants/leggings",
+        "Athletic wear"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "afternoon"
+    ],
     "averageUpvotes": 140,
     "successProbability": 62,
     "growthTrend": "steady",
     "modActivity": "medium",
     "description": "Yoga pants and leggings",
-    "tags": ["yogapants", "athletic"],
+    "tags": [
+      "yogapants",
+      "athletic"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -1828,15 +3841,37 @@
     "category": "clothing",
     "verificationRequired": false,
     "promotionAllowed": "no",
-    "postingLimits": {"daily": 1},
-    "rules": ["Yoga pants only", "No nudity"],
-    "bestPostingTimes": ["afternoon"],
+    "postingLimits": {
+      "daily": 1
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "not_allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Yoga pants only",
+        "No nudity"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 1,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "afternoon"
+    ],
     "averageUpvotes": 180,
     "successProbability": 58,
     "growthTrend": "steady",
     "modActivity": "high",
     "description": "Yoga pants appreciation",
-    "tags": ["yogapants", "sfw"],
+    "tags": [
+      "yogapants",
+      "sfw"
+    ],
     "competitionLevel": "high"
   },
   {
@@ -1848,15 +3883,37 @@
     "category": "specific",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Specific focus", "Close-up content"],
-    "bestPostingTimes": ["night"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Specific focus",
+        "Close-up content"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
     "averageUpvotes": 160,
     "successProbability": 63,
     "growthTrend": "steady",
     "modActivity": "medium",
     "description": "Specific body part focus",
-    "tags": ["ass", "closeup"],
+    "tags": [
+      "ass",
+      "closeup"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -1868,15 +3925,37 @@
     "category": "specific",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 2},
-    "rules": ["Specific focus", "Quality content"],
-    "bestPostingTimes": ["night"],
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Specific focus",
+        "Quality content"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
     "averageUpvotes": 190,
     "successProbability": 60,
     "growthTrend": "steady",
     "modActivity": "medium",
     "description": "Specific content focus",
-    "tags": ["pussy", "closeup"],
+    "tags": [
+      "pussy",
+      "closeup"
+    ],
     "competitionLevel": "high"
   },
   {
@@ -1888,15 +3967,37 @@
     "category": "specific",
     "verificationRequired": false,
     "promotionAllowed": "no",
-    "postingLimits": {"daily": 1},
-    "rules": ["High quality only", "Aesthetic focus"],
-    "bestPostingTimes": ["evening"],
+    "postingLimits": {
+      "daily": 1
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "not_allowed",
+      "titleRules": [],
+      "contentRules": [
+        "High quality only",
+        "Aesthetic focus"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 1,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
     "averageUpvotes": 250,
     "successProbability": 55,
     "growthTrend": "steady",
     "modActivity": "very_high",
     "description": "High quality specific content",
-    "tags": ["quality", "aesthetic"],
+    "tags": [
+      "quality",
+      "aesthetic"
+    ],
     "competitionLevel": "very_high"
   }
 ]

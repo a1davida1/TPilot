@@ -4,18 +4,89 @@ import {
   subredditRules,
   type RedditCommunity,
   insertRedditCommunitySchema,
-  type InsertRedditCommunity
+  type InsertRedditCommunity,
+  type RedditCommunityRuleSet,
+  redditCommunityRuleSetSchema,
+  createDefaultRules
 } from '@shared/schema';
 import { eq, ilike, desc, or } from 'drizzle-orm';
 import { lintCaption } from './lib/policy-linter.js';
 
+/**
+ * Normalize and hydrate community rules from database response
+ * Handles backward compatibility with legacy array-based rules
+ */
+function normalizeRules(rawRules: unknown, promotionAllowed?: string, category?: string): RedditCommunityRuleSet {
+  try {
+    // Handle null or undefined
+    if (!rawRules) {
+      return createDefaultRules();
+    }
+    
+    // Handle legacy array-based rules (backward compatibility)
+    if (Array.isArray(rawRules)) {
+      const defaults = createDefaultRules();
+      return {
+        ...defaults,
+        contentRules: rawRules.filter(rule => typeof rule === 'string'),
+        sellingAllowed: inferSellingPolicy(promotionAllowed || 'unknown', category || 'general')
+      };
+    }
+    
+    // Handle object-based rules
+    if (typeof rawRules === 'object') {
+      // Try to parse as structured rules
+      const parsed = redditCommunityRuleSetSchema.parse(rawRules);
+      
+      // If sellingAllowed is unknown, try to infer from promotion flags
+      if (parsed.sellingAllowed === 'unknown' && (promotionAllowed || category)) {
+        parsed.sellingAllowed = inferSellingPolicy(promotionAllowed || 'unknown', category || 'general', parsed);
+      }
+      
+      return parsed;
+    }
+    
+    return createDefaultRules();
+  } catch (error) {
+    console.warn('Failed to parse community rules, using defaults:', error);
+    return createDefaultRules();
+  }
+}
+
+/**
+ * Infer selling policy from promotion flags and category
+ */
+function inferSellingPolicy(promotionAllowed: string, category: string, rules?: RedditCommunityRuleSet): RedditCommunityRuleSet['sellingAllowed'] {
+  // If rules already specify selling policy, use it
+  if (rules?.sellingAllowed && rules.sellingAllowed !== 'unknown') {
+    return rules.sellingAllowed;
+  }
+  
+  // Infer from promotion flags and category
+  if (promotionAllowed === 'yes' || category === 'selling') {
+    return 'allowed';
+  } else if (promotionAllowed === 'limited' || promotionAllowed === 'subtle') {
+    return 'limited';
+  } else if (promotionAllowed === 'no' || promotionAllowed === 'strict') {
+    return 'not_allowed';
+  }
+  
+  return 'unknown';
+}
+
 export async function listCommunities() {
-  return db.select().from(redditCommunities).orderBy(desc(redditCommunities.members));
+  const communities = await db.select().from(redditCommunities).orderBy(desc(redditCommunities.members));
+  
+  // Normalize rules for each community
+  return communities.map(community => ({
+    ...community,
+    rules: normalizeRules(community.rules, community.promotionAllowed, community.category)
+  }));
 }
 
 export async function searchCommunities(query: string) {
   const like = `%${query}%`;
-  return db.select()
+  const communities = await db.select()
     .from(redditCommunities)
     .where(
       or(
@@ -24,6 +95,12 @@ export async function searchCommunities(query: string) {
         ilike(redditCommunities.description, like)
       )
     );
+  
+  // Normalize rules for each community
+  return communities.map(community => ({
+    ...community,
+    rules: normalizeRules(community.rules, community.promotionAllowed, community.category)
+  }));
 }
 
 export async function createCommunity(data: unknown) {
@@ -56,6 +133,8 @@ export async function getCommunityInsights(communityId: string): Promise<{
     .limit(1);
   if (!community) return { bestTimes: [], successTips: [], warnings: [] };
 
+  // Normalize rules
+  const rules = normalizeRules(community.rules, community.promotionAllowed, community.category);
   const successTips: string[] = [];
   const warnings: string[] = [];
 
@@ -64,14 +143,27 @@ export async function getCommunityInsights(communityId: string): Promise<{
   if (community.growthTrend === 'up') successTips.push('Growing community - get in early');
   if (community.competitionLevel === 'low') successTips.push('Low competition - your content will stand out');
 
-  // Basic community-level warnings
-  if (community.verificationRequired) warnings.push('Verification required - complete r/GetVerified');
-  if (community.promotionAllowed === 'no') warnings.push('No promotion allowed - content only');
+  // Rule-based warnings using structured rules
+  if (rules.verificationRequired) warnings.push('Verification required - complete r/GetVerified');
+  if (rules.sellingAllowed === 'not_allowed') warnings.push('No promotion/selling allowed - content only');
+  if (rules.sellingAllowed === 'limited') warnings.push('Limited promotion allowed - check specific rules');
+  if (rules.watermarksAllowed === false) warnings.push('Watermarks not allowed - use clean images');
+  if (rules.minKarma && rules.minKarma > 50) warnings.push(`Requires ${rules.minKarma}+ karma`);
+  if (rules.minAccountAge && rules.minAccountAge > 7) warnings.push(`Account must be ${rules.minAccountAge}+ days old`);
+  if (rules.maxPostsPerDay && rules.maxPostsPerDay <= 1) warnings.push(`Limited to ${rules.maxPostsPerDay} post${rules.maxPostsPerDay === 1 ? '' : 's'} per day`);
+  if (rules.cooldownHours && rules.cooldownHours >= 24) warnings.push(`${rules.cooldownHours}h cooldown between posts`);
+  if (rules.requiresApproval) warnings.push('Posts require mod approval - expect delays');
 
-  // Enhanced rule-based warnings using the new subreddit rules system
+  // Add title and content rule warnings
+  if (rules.titleRules.length > 0) {
+    warnings.push(`Title rules: ${rules.titleRules.slice(0, 2).join(', ')}${rules.titleRules.length > 2 ? '...' : ''}`);
+  }
+  if (rules.contentRules.length > 0) {
+    warnings.push(`Content rules: ${rules.contentRules.slice(0, 2).join(', ')}${rules.contentRules.length > 2 ? '...' : ''}`);
+  }
+
+  // Enhanced rule-based warnings using the policy linter as fallback
   try {
-    // Use policy linter to get comprehensive rule-based warnings
-    // Pass sample content to trigger rule validation
     const lintResult = await lintCaption({
       subreddit: community.name,
       title: 'Sample title for validation',
@@ -83,16 +175,13 @@ export async function getCommunityInsights(communityId: string): Promise<{
       // Filter out generic warnings and add specific ones
       const ruleWarnings = lintResult.warnings.filter(warning => 
         !warning.includes('Sample') && // Remove sample-related warnings
-        !warning.includes('upvote') // Remove generic engagement warnings
+        !warning.includes('upvote') && // Remove generic engagement warnings
+        !warnings.some(existing => existing.includes(warning.slice(0, 20))) // Avoid duplicates
       );
-      warnings.push(...ruleWarnings);
+      warnings.push(...ruleWarnings.slice(0, 3)); // Limit additional warnings
     }
   } catch (error) {
     console.warn('Failed to get enhanced rule insights for community:', community.name, error);
-    
-    // Fallback to legacy rule checking
-    const rules = community.rules as { minKarma?: number } | null;
-    if (rules?.minKarma && rules.minKarma > 50) warnings.push(`Requires ${rules.minKarma}+ karma`);
   }
 
   return { bestTimes: community.bestPostingTimes || [], successTips, warnings };
