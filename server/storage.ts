@@ -856,11 +856,12 @@ export class DatabaseStorage implements IStorage {
 
       if (updates.categoryId !== undefined) {
         const categoryChanged = existingExpense ? existingExpense.categoryId !== updates.categoryId : true;
-
-        if (categoryChanged) {
-          const category = await this.getExpenseCategory(updates.categoryId);
-          if (category) {
-            const categoryDefaults: ExpenseCategoryWithDefaults = category;
+        const category = await this.getExpenseCategory(updates.categoryId);
+        
+        if (category) {
+          const categoryDefaults: ExpenseCategoryWithDefaults = category;
+          
+          if (categoryChanged) {
             updatesToApply = {
               ...updatesToApply,
               deductionPercentage: category.deductionPercentage,
@@ -878,13 +879,13 @@ export class DatabaseStorage implements IStorage {
               };
             }
           }
-        }
 
-        if (hasEmptyBusinessPurpose && categoryDefaults.defaultBusinessPurpose) {
-          updatesToApply = {
-            ...updatesToApply,
-            businessPurpose: categoryDefaults.defaultBusinessPurpose,
-          };
+          if (hasEmptyBusinessPurpose && categoryDefaults.defaultBusinessPurpose) {
+            updatesToApply = {
+              ...updatesToApply,
+              businessPurpose: categoryDefaults.defaultBusinessPurpose,
+            };
+          }
         }
       } else if (hasEmptyBusinessPurpose && existingExpense?.categoryId !== undefined) {
         const category = await this.getExpenseCategory(existingExpense.categoryId);

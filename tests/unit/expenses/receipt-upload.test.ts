@@ -397,6 +397,46 @@ describe('Receipt Upload with ImageShield Protection', () => {
     });
   });
 
+  describe('Business Purpose Updates', () => {
+    test('should restore default business purpose when cleared without category change', async () => {
+      const existingExpense = {
+        id: 42,
+        userId: 1,
+        categoryId: 7,
+      };
+      const categoryWithDefault = {
+        id: 7,
+        name: 'Travel',
+        deductionPercentage: 50,
+        defaultBusinessPurpose: 'Client travel meeting',
+      };
+      const updatedExpense = {
+        ...existingExpense,
+        businessPurpose: categoryWithDefault.defaultBusinessPurpose,
+      };
+
+      mockStorage.getExpense.mockResolvedValueOnce(existingExpense);
+      mockStorage.getExpenseCategory.mockResolvedValueOnce(categoryWithDefault);
+      mockStorage.updateExpense.mockResolvedValueOnce(updatedExpense);
+
+      const response = await request(app)
+        .put('/api/expenses/42')
+        .send({ businessPurpose: '' })
+        .expect(200);
+
+      expect(response.body.businessPurpose).toBe('Client travel meeting');
+      expect(mockStorage.getExpense).toHaveBeenCalledWith(42, 1);
+      expect(mockStorage.getExpenseCategory).toHaveBeenCalledWith(7);
+      expect(mockStorage.updateExpense).toHaveBeenCalledWith(
+        42,
+        1,
+        expect.objectContaining({
+          businessPurpose: 'Client travel meeting',
+        })
+      );
+    });
+  });
+
   describe('Error Handling', () => {
     test('should handle storage errors gracefully', async () => {
       mockStorage.updateExpense.mockRejectedValue(new Error('Database error'));
