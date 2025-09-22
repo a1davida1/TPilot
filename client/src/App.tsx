@@ -221,7 +221,7 @@ function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider defaultTheme="light" storageKey="thottopilot-ui-theme" forcedTheme="light">
+        <ThemeProvider defaultTheme="system" storageKey="thottopilot-ui-theme">
           <TooltipProvider>
             <div className="min-h-screen bg-background text-foreground font-poppins">
               <Toaster />

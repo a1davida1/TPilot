@@ -23,6 +23,16 @@ const initialState: ThemeProviderState = {
 
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState)
 
+const isTheme = (value: string): value is Theme => value === "light" || value === "dark" || value === "system"
+
+const getSystemPreference = () => {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    return "light" as const
+  }
+
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+}
+
 export function ThemeProvider({
   children,
   defaultTheme = "system",
@@ -30,40 +40,95 @@ export function ThemeProvider({
   forcedTheme,
   ...props
 }: ThemeProviderProps) {
-  const [theme, setTheme] = React.useState<Theme>(
-    () => forcedTheme || (typeof localStorage !== 'undefined' ? localStorage.getItem(storageKey) as Theme : null) || defaultTheme
-  )
-  const [resolvedTheme, setResolvedTheme] = React.useState<"dark" | "light">(forcedTheme || "light")
-
-  React.useEffect(() => {
-    const root = window.document.documentElement
-
-    root.classList.remove("light", "dark")
-
-    let systemTheme: "dark" | "light" = "light"
-    
-    if (theme === "system") {
-      systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-        .matches
-        ? "dark"
-        : "light"
+  const readStoredTheme = (): Theme | null => {
+    if (typeof window === "undefined" || !("localStorage" in window)) {
+      return null
     }
 
-    const finalResolvedTheme = forcedTheme || (theme === "system" ? systemTheme : theme)
-    setResolvedTheme(finalResolvedTheme)
-    root.classList.add(finalResolvedTheme)
+    try {
+      const storedValue = window.localStorage.getItem(storageKey)
+
+      if (storedValue && isTheme(storedValue)) {
+        return storedValue
+      }
+    } catch {
+      return null
+    }
+
+    return null
+  }
+
+  const initialTheme = forcedTheme ?? readStoredTheme() ?? defaultTheme
+
+  const [theme, setThemeState] = React.useState<Theme>(initialTheme)
+  const [resolvedTheme, setResolvedTheme] = React.useState<"dark" | "light">(
+    forcedTheme ?? (initialTheme === "system" ? getSystemPreference() : initialTheme)
+  )
+
+  const setTheme = React.useCallback(
+    (value: Theme) => {
+      setThemeState(value)
+
+      if (typeof window === "undefined" || !("localStorage" in window)) {
+        return
+      }
+
+      try {
+        window.localStorage.setItem(storageKey, value)
+      } catch {
+        // Ignore write errors such as private browsing restrictions
+      }
+    },
+    [storageKey]
+  )
+
+  React.useEffect(() => {
+    setResolvedTheme(forcedTheme ?? (theme === "system" ? getSystemPreference() : theme))
   }, [theme, forcedTheme])
 
-  const value = {
-    theme,
-    setTheme: (theme: Theme) => {
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem(storageKey, theme)
-      }
-      setTheme(theme)
-    },
-    resolvedTheme,
-  }
+  React.useEffect(() => {
+    if (typeof document === "undefined") {
+      return
+    }
+
+    const root = document.documentElement
+    root.classList.remove("light", "dark")
+    root.classList.add(resolvedTheme)
+  }, [resolvedTheme])
+
+  React.useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      typeof window.matchMedia !== "function" ||
+      forcedTheme ||
+      theme !== "system"
+    ) {
+      return
+    }
+
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
+
+    const handleChange = (event: MediaQueryListEvent) => {
+      setResolvedTheme(event.matches ? "dark" : "light")
+    }
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", handleChange)
+      return () => mediaQuery.removeEventListener("change", handleChange)
+    }
+
+    mediaQuery.addListener(handleChange)
+    return () => mediaQuery.removeListener(handleChange)
+  }, [theme, forcedTheme])
+
+  const value = React.useMemo(
+    () => ({
+      theme,
+      setTheme,
+      resolvedTheme,
+    }),
+    [theme, setTheme, resolvedTheme]
+  )
 
   return (
     <ThemeProviderContext.Provider {...props} value={value}>
