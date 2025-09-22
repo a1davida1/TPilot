@@ -98,6 +98,12 @@ Compliance: Phased approach - base features without ID verification, gate advanc
 
 ## Recent Changes (September 22, 2025)
 
+### Prompt Field Serialization for Hints (September 22, 2025)
+- ✅ **Hint sanitization**: Applied `serializePromptField` with `{ block: true }` to both initial hints and retry hints in Gemini pipeline to prevent prompt corruption from quotes and control characters
+- ✅ **Comprehensive serialization flow**: Updated `buildUserPrompt` function to serialize combined hints before interpolating them into the `HINT:` line
+- ✅ **Enhanced test coverage**: Added unit tests verifying hints containing quotes and line breaks are properly sanitized and survive the retry flow
+- ✅ **Prompt security**: Ensures malformed hints cannot corrupt Gemini prompts during initial generation or subsequent retry attempts
+
 ### Mandatory Token Enforcement in Pipeline Rewrite (September 22, 2025)
 - ✅ **Enhanced token preservation**: Added `enforceMandatoryTokens()` function to pipeline rewrite system that triggers after every `rankAndSelect` and `runRewrite` call
 - ✅ **Systematic enforcement flow**: Restructured rewrite pipeline to track ranked variants and enforce mandatory token retention immediately after initial selection and during subsequent retries

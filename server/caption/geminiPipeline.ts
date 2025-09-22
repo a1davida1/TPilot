@@ -445,7 +445,8 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
     hintParts.push("Provide five options that vary tone, structure, and specific imagery.");
 
     const combinedHint = hintParts.filter(Boolean).join(" ");
-    lines.push(`HINT: ${combinedHint}`);
+    const serializedHint = serializePromptField(combinedHint, { block: true });
+    lines.push(`HINT:${serializedHint}`);
 
     return lines.join("\n");
   };

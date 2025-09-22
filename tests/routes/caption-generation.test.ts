@@ -469,6 +469,185 @@ describe('Caption Generation', () => {
       expect(secondPrompt).toContain('HINT:You already wrote');
       expect(new Set(result.map(v => v.caption.toLowerCase().slice(0, 80))).size).toBe(5);
     });
+
+    it('sanitizes base hints with quotes and line breaks for Gemini variants', async () => {
+      const variantPayload = [
+        {
+          caption: 'Fresh take on winter vibes with cozy layers',
+          hashtags: ['#winter', '#cozy', '#layers'],
+          safety_level: 'normal',
+          mood: 'confident',
+          style: 'authentic',
+          cta: 'Drop a thought',
+          alt: 'Detailed alt text to satisfy schema enforcement for hint serialization testing.',
+          nsfw: false,
+        },
+        {
+          caption: 'Midnight sparkle energy under city lights tonight',
+          hashtags: ['#midnight', '#sparkle', '#city'],
+          safety_level: 'normal',
+          mood: 'playful',
+          style: 'bold',
+          cta: 'Share your vibe',
+          alt: 'Another richly detailed alt text for validation flow with unique content.',
+          nsfw: false,
+        },
+        {
+          caption: 'Soft lighting meets bold confidence in lace',
+          hashtags: ['#soft', '#bold', '#lace'],
+          safety_level: 'normal',
+          mood: 'empowered',
+          style: 'romantic',
+          cta: 'Tell me your take',
+          alt: 'Alt text describing the confident styling in detail for testing purposes.',
+          nsfw: false,
+        },
+        {
+          caption: 'Velvet mood with playful winks and attitude',
+          hashtags: ['#velvet', '#playful', '#attitude'],
+          safety_level: 'normal',
+          mood: 'flirty',
+          style: 'whimsical',
+          cta: 'Drop a secret emoji',
+          alt: 'Detailed caption-friendly alt text for unique variant coverage testing.',
+          nsfw: false,
+        },
+        {
+          caption: 'Golden hour glow with rose-hued whispers',
+          hashtags: ['#golden', '#glow', '#rose'],
+          safety_level: 'normal',
+          mood: 'romantic',
+          style: 'elegant',
+          cta: 'Share the mood',
+          alt: 'Extended alt content to meet schema standards effortlessly for tests.',
+          nsfw: false,
+        },
+      ];
+
+      const { textModel } = await import('../../server/lib/gemini.js');
+      const textGenerateMock = asMock(textModel.generateContent);
+      textGenerateMock.mockResolvedValue({
+        response: {
+          text: () => JSON.stringify(variantPayload),
+        },
+      });
+
+      const { generateVariants } = await import('../../server/caption/geminiPipeline.js');
+      const hint = 'Keep it "fresh"\nline two';
+      await generateVariants({
+        platform: 'instagram',
+        voice: 'flirty_playful',
+        facts: { objects: ['hint'] },
+        hint,
+      });
+
+      expect(textGenerateMock).toHaveBeenCalledTimes(1);
+      const prompt = textGenerateMock.mock.calls[0][0][0].text as string;
+      const { serializePromptField } = await import('../../server/caption/promptUtils.js');
+      const sanitizedHint = serializePromptField(hint, { block: true });
+      expect(prompt).toContain(`HINT:${sanitizedHint}`);
+      expect(prompt).not.toContain(`HINT:${hint}`);
+    });
+
+    it('preserves sanitized retry hints built from duplicates', async () => {
+      const duplicateCaption = 'Fresh drop "today"';
+      const duplicateVariant = {
+        caption: duplicateCaption,
+        hashtags: ['#gemini', '#retry', '#duplicates'],
+        safety_level: 'normal',
+        mood: 'engaging',
+        style: 'authentic',
+        cta: 'Sound off',
+        alt: 'Long-form alt text to exercise duplicate retry sanitization.',
+        nsfw: false,
+      };
+
+      const duplicateBatch = Array.from({ length: 5 }, () => ({ ...duplicateVariant }));
+
+      const uniqueBatch = [
+        {
+          caption: 'Unique retry caption with winter aesthetics and fresh energy',
+          hashtags: ['#unique', '#retry', '#winter'],
+          safety_level: 'normal',
+          mood: 'engaging',
+          style: 'authentic',
+          cta: 'Sound off',
+          alt: 'Long-form alt text to exercise duplicate retry sanitization first.',
+          nsfw: false,
+        },
+        {
+          caption: 'Bold sunset vibes with dramatic shadows tonight',
+          hashtags: ['#sunset', '#bold', '#dramatic'],
+          safety_level: 'normal',
+          mood: 'confident',
+          style: 'artistic',
+          cta: 'Share your view',
+          alt: 'Long-form alt text to exercise duplicate retry sanitization second.',
+          nsfw: false,
+        },
+        {
+          caption: 'Cozy morning light streaming through vintage windows',
+          hashtags: ['#cozy', '#morning', '#vintage'],
+          safety_level: 'normal',
+          mood: 'peaceful',
+          style: 'nostalgic',
+          cta: 'Tell your story',
+          alt: 'Long-form alt text to exercise duplicate retry sanitization third.',
+          nsfw: false,
+        },
+        {
+          caption: 'Electric neon glow painting the city streets',
+          hashtags: ['#neon', '#electric', '#city'],
+          safety_level: 'normal',
+          mood: 'energetic',
+          style: 'modern',
+          cta: 'Drop your beat',
+          alt: 'Long-form alt text to exercise duplicate retry sanitization fourth.',
+          nsfw: false,
+        },
+        {
+          caption: 'Soft pastel dreams meeting golden hour magic',
+          hashtags: ['#pastel', '#dreams', '#golden'],
+          safety_level: 'normal',
+          mood: 'dreamy',
+          style: 'ethereal',
+          cta: 'Share the magic',
+          alt: 'Long-form alt text to exercise duplicate retry sanitization fifth.',
+          nsfw: false,
+        },
+      ];
+
+      const { textModel } = await import('../../server/lib/gemini.js');
+      const textGenerateMock = asMock(textModel.generateContent);
+      textGenerateMock
+        .mockResolvedValueOnce({ response: { text: () => JSON.stringify(duplicateBatch) } })
+        .mockResolvedValueOnce({ response: { text: () => JSON.stringify(uniqueBatch) } });
+
+      const { generateVariants } = await import('../../server/caption/geminiPipeline.js');
+      const baseHint = 'Line1\nLine2 "quoted"';
+      await generateVariants({
+        platform: 'instagram',
+        voice: 'flirty_playful',
+        facts: { objects: ['retry'] },
+        hint: baseHint,
+      });
+
+      expect(textGenerateMock).toHaveBeenCalledTimes(2);
+      const firstPrompt = textGenerateMock.mock.calls[0][0][0].text as string;
+      const secondPrompt = textGenerateMock.mock.calls[1][0][0].text as string;
+
+      const { serializePromptField } = await import('../../server/caption/promptUtils.js');
+      const sanitizedBaseHint = serializePromptField(baseHint, { block: true });
+      expect(firstPrompt).toContain(`\nHINT:${sanitizedBaseHint}`);
+      expect(firstPrompt).not.toContain('HINT:Line1\nLine2 "quoted"');
+
+      const retryHintRaw = `${baseHint} Need much more variety across tone, structure, and imagery.`;
+      const sanitizedRetryHint = serializePromptField(retryHintRaw, { block: true });
+      expect(secondPrompt).toContain(`\nHINT:${sanitizedRetryHint}`);
+      expect(secondPrompt).not.toContain(
+        'HINT:Line1\nLine2 "quoted" Need much more variety across tone, structure, and imagery.'
+      );
+    });
   });
 
   describe('Text-Only Pipeline', () => {
