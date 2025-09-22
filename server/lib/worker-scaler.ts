@@ -53,6 +53,10 @@ export class WorkerScaler {
       maxConcurrency: 1, // Always single concurrency for batch posts
       scaleUpThreshold: 999, // Never scale up
     },
+    [QUEUE_NAMES.COMMUNITY_SYNC]: {
+      maxConcurrency: 1,
+      scaleUpThreshold: 2,
+    },
   };
 
   public static getInstance(): WorkerScaler {

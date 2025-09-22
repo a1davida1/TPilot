@@ -137,6 +137,7 @@ export class QueueMonitor {
       { name: 'metrics-worker', concurrency: 3 },
       { name: 'ai-promo-worker', concurrency: 1 },
       { name: 'dunning-worker', concurrency: 1 },
+      { name: 'community-sync-worker', concurrency: 1 },
     ];
 
     for (const worker of workers) {

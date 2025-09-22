@@ -13,6 +13,7 @@ export const QUEUE_NAMES = {
   METRICS: 'metrics-queue', 
   AI_PROMO: 'ai-promo-queue',
   DUNNING: 'dunning-queue',
+  COMMUNITY_SYNC: 'community-sync-queue',
 } as const;
 
 export type QueueNames = typeof QUEUE_NAMES[keyof typeof QUEUE_NAMES];
@@ -61,6 +62,11 @@ export interface DunningJobData {
   subscriptionId: number;
   attempt: number;
   maxAttempts?: number;
+}
+
+export interface CommunitySyncJobData {
+  subreddits?: string[];
+  triggeredBy?: string;
 }
 
 // Helper function to add jobs with proper types

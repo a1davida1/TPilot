@@ -3,6 +3,7 @@ import { metricsWorker } from "./metrics-worker.js";
 import { aiPromoWorker } from "./ai-promo-worker.js";
 import { dunningWorker } from "./dunning-worker.js";
 import { batchPostingWorker } from "./batch-posting-worker.js";
+import { communitySyncWorker } from "./community-sync-worker.js";
 import { logger } from "../logger.js";
 
 // Initialize all workers
@@ -24,6 +25,9 @@ export async function initializeWorkers() {
   
   await batchPostingWorker.initialize();
   logger.info('✅ Batch posting worker initialized');
+  
+  await communitySyncWorker.initialize();
+  logger.info('✅ Community sync worker initialized');
 
   const { queueMonitor } = await import("../queue-monitor.js");
   await queueMonitor.startMonitoring(30000);
@@ -39,6 +43,7 @@ export async function shutdownWorkers() {
   await aiPromoWorker.close();
   await dunningWorker.close();
   await batchPostingWorker.close();
+  await communitySyncWorker.close();
   
   logger.info('✅ All workers shut down');
 }
