@@ -53,7 +53,7 @@ type LoggerWarnReturn = ReturnType<LoggerType['warn']>;
 type InfoSpy = SpyInstance<LoggerInfoParams, LoggerInfoReturn>;
 type WarnSpy = SpyInstance<LoggerWarnParams, LoggerWarnReturn>;
 
-type CreateApp = typeof import('../../server/app.js')['createApp'];
+type CreateApp = typeof import('../../server/index.js')['createApp'];
 
 type CreateAppResult = Awaited<ReturnType<CreateApp>>;
 
@@ -106,7 +106,7 @@ beforeAll(async () => {
   process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? 'static-assets-test-session-secret-123456';
   process.env.DATABASE_URL = process.env.DATABASE_URL ?? 'https://example.com/database';
 
-  ({ createApp } = await import('../../server/app.js'));
+  ({ createApp } = await import('../../server/index.js'));
   ({ logger: loggerInstance } = await import('../../server/bootstrap/logger.js'));
 });
 

@@ -5,7 +5,7 @@ import type { Express } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 
-import { createApp } from '../../server/app.js';
+import { createApp } from '../../server/index.js';
 import { db } from '../../server/db.js';
 import { postJobs, users } from '../../shared/schema.js';
 import * as queueModule from '../../server/lib/queue/index.js';

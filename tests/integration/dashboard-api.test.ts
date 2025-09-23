@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import request from 'supertest';
 import type { Express } from 'express';
 import jwt from 'jsonwebtoken';
-import { createApp } from '../../server/app.js';
+import { createApp } from '../../server/index.js';
 import { storage } from '../../server/storage.js';
 
 describe('Dashboard API', () => {

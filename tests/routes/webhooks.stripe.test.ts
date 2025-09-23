@@ -92,7 +92,7 @@ vi.mock('../../server/db.js', () => {
   };
 });
 
-let createApp: typeof import('../../server/app.js')['createApp'];
+let createApp: typeof import('../../server/index.js')['createApp'];
 let apiPrefix: typeof import('../../server/app.js')['API_PREFIX'];
 let stripeInstance: typeof import('../../server/lib/billing/stripe.js')['stripe'];
 
@@ -119,7 +119,7 @@ beforeAll(async () => {
   process.env.JWT_SECRET = process.env.JWT_SECRET ?? 'webhook-test-jwt';
   process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? 'webhook-test-session';
 
-  ({ createApp, API_PREFIX: apiPrefix } = await import('../../server/app.js'));
+  ({ createApp, API_PREFIX: apiPrefix } = await import('../../server/index.js'));
   ({ stripe: stripeInstance } = await import('../../server/lib/billing/stripe.js'));
 });
 
