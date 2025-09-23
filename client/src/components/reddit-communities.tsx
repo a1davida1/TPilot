@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import type { RedditCommunity } from "@shared/schema";
+import type { RedditCommunity, PostingLimits } from "@shared/schema";
 
 export function RedditCommunities() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -119,8 +119,6 @@ export function RedditCommunities() {
         return <Badge className="bg-green-500/20 text-green-400">Allowed</Badge>;
       case 'limited':
         return <Badge className="bg-yellow-500/20 text-yellow-400">Limited</Badge>;
-      case 'subtle':
-        return <Badge className="bg-blue-500/20 text-blue-400">Subtle</Badge>;
       case 'no':
         return <Badge className="bg-red-500/20 text-red-400">Not Allowed</Badge>;
       default:
@@ -226,7 +224,6 @@ export function RedditCommunities() {
               <SelectItem value="all">All Promotion</SelectItem>
               <SelectItem value="yes">Allowed</SelectItem>
               <SelectItem value="limited">Limited</SelectItem>
-              <SelectItem value="subtle">Subtle</SelectItem>
               <SelectItem value="no">Not Allowed</SelectItem>
             </SelectContent>
           </Select>
@@ -318,9 +315,18 @@ export function RedditCommunities() {
                     <TableCell>{getPromotionBadge(community.promotionAllowed)}</TableCell>
                     <TableCell>
                       <div className="text-xs text-gray-400">
-                        {(community.postingLimits as any)?.perDay && `${(community.postingLimits as any).perDay}/day`}
-                        {(community.postingLimits as any)?.daily && `${(community.postingLimits as any).daily}/day`}
-                        {(community.postingLimits as any)?.cooldownHours && ` (${(community.postingLimits as any).cooldownHours}h cooldown)`}
+                        {(() => {
+                          const limits = community.postingLimits as PostingLimits | null;
+                          const postsPerDay = limits?.perDay ?? limits?.daily;
+                          const cooldown = limits?.cooldownHours;
+                          
+                          return (
+                            <>
+                              {postsPerDay && `${postsPerDay}/day`}
+                              {cooldown && ` (${cooldown}h cooldown)`}
+                            </>
+                          );
+                        })()}
                       </div>
                     </TableCell>
                     <TableCell>
