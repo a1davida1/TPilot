@@ -1,6 +1,8 @@
+
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { RedditManager } from '../../../server/lib/reddit.js';
 import type { ShadowbanCheckApiResponse } from '../../../shared/schema.js';
+import type snoowrap from 'snoowrap';
 
 // Test interfaces
 interface MockSubmission {
@@ -30,13 +32,14 @@ global.fetch = mockFetch;
 
 // Mock RedditManager.forUser to return our test instance
 vi.mock('../../../server/lib/reddit.js', async () => {
-  const actual = await vi.importActual('../../../server/lib/reddit.js') as Record<string, unknown>;
+  const actual = await vi.importActual<typeof import('../../../server/lib/reddit.js')>('../../../server/lib/reddit.js');
+  class TestableRedditManager extends actual.RedditManager {
+    static override forUser = vi.fn();
+  }
+
   return {
     ...actual,
-    RedditManager: {
-      ...((actual.RedditManager as Record<string, unknown>) || {}),
-      forUser: vi.fn(),
-    },
+    RedditManager: TestableRedditManager,
   };
 });
 
@@ -48,7 +51,7 @@ describe('RedditManager shadowban detection', () => {
     vi.clearAllMocks();
     
     // Create a test instance with mocked reddit client
-    manager = new (RedditManager as unknown as new (userId: number, client: MockRedditClient) => RedditManager)(testUserId, mockReddit);
+    manager = new RedditManager('mock_access_token', 'mock_refresh_token', testUserId, mockReddit as unknown as snoowrap);
     
     // Mock the getProfile method
     vi.spyOn(manager, 'getProfile').mockResolvedValue({
@@ -68,7 +71,7 @@ describe('RedditManager shadowban detection', () => {
   describe('checkShadowbanStatus', () => {
     it('should return clear status when all submissions are publicly visible', async () => {
       // Mock private submissions (what user sees)
-      const privateSubmissions = [
+      const privateSubmissions: MockSubmission[] = [
         {
           id: 'abc123',
           created_utc: 1640995200,
@@ -85,7 +88,7 @@ describe('RedditManager shadowban detection', () => {
         }
       ];
 
-      const mockUser = {
+      const mockUser: MockRedditUser = {
         getSubmissions: vi.fn().mockResolvedValue(privateSubmissions)
       };
       mockReddit.getMe.mockResolvedValue(mockUser);
@@ -133,7 +136,7 @@ describe('RedditManager shadowban detection', () => {
 
     it('should return suspected status when all submissions are missing from public view', async () => {
       // Mock private submissions
-      const privateSubmissions = [
+      const privateSubmissions: MockSubmission[] = [
         {
           id: 'abc123',
           created_utc: 1640995200,
@@ -150,7 +153,7 @@ describe('RedditManager shadowban detection', () => {
         }
       ];
 
-      const mockUser = {
+      const mockUser: MockRedditUser = {
         getSubmissions: vi.fn().mockResolvedValue(privateSubmissions)
       };
       mockReddit.getMe.mockResolvedValue(mockUser);
@@ -180,7 +183,7 @@ describe('RedditManager shadowban detection', () => {
 
     it('should return suspected status when majority of submissions are missing', async () => {
       // Mock private submissions
-      const privateSubmissions = [
+      const privateSubmissions: MockSubmission[] = [
         {
           id: 'abc123',
           created_utc: 1640995200,
@@ -204,7 +207,7 @@ describe('RedditManager shadowban detection', () => {
         }
       ];
 
-      const mockUser = {
+      const mockUser: MockRedditUser = {
         getSubmissions: vi.fn().mockResolvedValue(privateSubmissions)
       };
       mockReddit.getMe.mockResolvedValue(mockUser);
@@ -244,7 +247,7 @@ describe('RedditManager shadowban detection', () => {
 
     it('should return unknown status when no recent submissions found', async () => {
       // Mock empty private submissions
-      const mockUser = {
+      const mockUser: MockRedditUser = {
         getSubmissions: vi.fn().mockResolvedValue([])
       };
       mockReddit.getMe.mockResolvedValue(mockUser);
@@ -284,7 +287,7 @@ describe('RedditManager shadowban detection', () => {
 
     it('should handle public API fetch errors gracefully', async () => {
       // Mock successful private submissions
-      const privateSubmissions = [
+      const privateSubmissions: MockSubmission[] = [
         {
           id: 'abc123',
           created_utc: 1640995200,
@@ -294,7 +297,7 @@ describe('RedditManager shadowban detection', () => {
         }
       ];
 
-      const mockUser = {
+      const mockUser: MockRedditUser = {
         getSubmissions: vi.fn().mockResolvedValue(privateSubmissions)
       };
       mockReddit.getMe.mockResolvedValue(mockUser);
@@ -326,7 +329,7 @@ describe('RedditManager shadowban detection', () => {
 
     it('should return clear status when few submissions are missing (under threshold)', async () => {
       // Mock private submissions (5 total)
-      const privateSubmissions = Array.from({ length: 5 }, (_, i) => ({
+      const privateSubmissions: MockSubmission[] = Array.from({ length: 5 }, (_, i) => ({
         id: `post${i}`,
         created_utc: 1640995200 - i * 100,
         permalink: `/r/test/comments/post${i}/test_post_${i}/`,
@@ -334,7 +337,7 @@ describe('RedditManager shadowban detection', () => {
         subreddit: { display_name: 'test' }
       }));
 
-      const mockUser = {
+      const mockUser: MockRedditUser = {
         getSubmissions: vi.fn().mockResolvedValue(privateSubmissions)
       };
       mockReddit.getMe.mockResolvedValue(mockUser);
@@ -366,6 +369,7 @@ describe('RedditManager shadowban detection', () => {
       expect(result.evidence.privateCount).toBe(5);
       expect(result.evidence.publicCount).toBe(4);
       expect(result.evidence.missingSubmissionIds).toHaveLength(1);
+      expect(result.evidence.missingSubmissionIds).toContain('post4');
     });
   });
 });

@@ -17,6 +17,7 @@
     "fix-imports": "bash fix-all-imports.sh",
     "lint": "eslint .",
     "test": "vitest run",
+    "backfill:post-rate-limits": "tsx scripts/backfill-post-rate-limits.ts",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "tsx vendor/playwright-test/runner.ts"
   },

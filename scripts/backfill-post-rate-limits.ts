@@ -1,59 +1,123 @@
-import { db } from '../server/db.js';
-import { postRateLimits, users } from '../shared/schema.js';
-import { eq, sql } from 'drizzle-orm';
 
-/**
- * This script creates missing rate limit records for all users in all subreddits
- * they have posted to. This ensures that future rate limit checks work correctly
- * with the updated SafetyManager.recordPost logic.
- */
-async function backfillPostRateLimits(): Promise<void> {
+import { db } from '../server/db.js';
+import { postDuplicates, postRateLimits } from '../shared/schema.js';
+import { and, eq, isNull } from 'drizzle-orm';
+
+const RATE_LIMIT_WINDOW_MS = 24 * 60 * 60 * 1000;
+const BATCH_SIZE = 100;
+
+type RateLimitSeed = {
+  userId: number;
+  subreddit: string;
+  lastPostAt: Date;
+  postCount24h: number;
+};
+
+function createSeedKey(userId: number, subreddit: string): string {
+  return `${userId}:${subreddit}`;
+}
+
+function normalizeDate(value: Date | null): Date {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value;
+  }
+
+  return new Date(0);
+}
+
+export async function backfillPostRateLimits(): Promise<void> {
   console.log('🔄 Starting post rate limits backfill...');
 
-  // Get all distinct user/subreddit combinations that need rate limit records
-  const missingRecords = await db
+  const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MS);
+
+  const duplicates = await db
     .select({
-      userId: users.id,
-      subreddit: sql<string>`'general'`.as('subreddit'),
+      userId: postDuplicates.userId,
+      subreddit: postDuplicates.subreddit,
+      createdAt: postDuplicates.createdAt,
     })
-    .from(users)
+    .from(postDuplicates)
     .leftJoin(
       postRateLimits,
-      eq(users.id, postRateLimits.userId)
+      and(
+        eq(postRateLimits.userId, postDuplicates.userId),
+        eq(postRateLimits.subreddit, postDuplicates.subreddit)
+      )
     )
-    .where(sql`${postRateLimits.id} IS NULL`);
+    .where(isNull(postRateLimits.id));
 
-  if (missingRecords.length === 0) {
+  if (duplicates.length === 0) {
     console.log('✅ No missing rate limit records found. Backfill complete.');
     return;
   }
 
-  console.log(`📊 Found ${missingRecords.length} missing rate limit records to create`);
+  console.log(`📊 Found ${duplicates.length} historical posts missing rate limit coverage`);
 
-  // Create missing records in batches
-  const batchSize = 100;
-  let processedCount = 0;
+  const seeds = new Map<string, RateLimitSeed>();
 
-  for (let i = 0; i < missingRecords.length; i += batchSize) {
-    const batch = missingRecords.slice(i, i + batchSize);
-    
-    const values = batch.map(record => ({
-      userId: record.userId,
-      subreddit: record.subreddit,
-      postCount24h: 0,
-      lastPostAt: new Date(),
-    }));
+  for (const duplicate of duplicates) {
+    const { userId, subreddit, createdAt } = duplicate;
+
+    if (userId === null || subreddit === null) {
+      continue;
+    }
+
+    const key = createSeedKey(userId, subreddit);
+    const postTimestamp = normalizeDate(createdAt);
+
+    const existing = seeds.get(key);
+
+    if (!existing) {
+      seeds.set(key, {
+        userId,
+        subreddit,
+        lastPostAt: postTimestamp,
+        postCount24h: postTimestamp >= windowStart ? 1 : 0,
+      });
+      continue;
+    }
+
+    if (postTimestamp > existing.lastPostAt) {
+      existing.lastPostAt = postTimestamp;
+    }
+
+    if (postTimestamp >= windowStart) {
+      existing.postCount24h += 1;
+    }
+  }
+
+  if (seeds.size === 0) {
+    console.log('✅ No new rate limit seeds required after filtering existing records.');
+    return;
+  }
+
+  const seedArray = Array.from(seeds.values());
+
+  console.log(`🧮 Preparing to insert ${seedArray.length} rate limit records`);
+
+  let processed = 0;
+
+  for (let index = 0; index < seedArray.length; index += BATCH_SIZE) {
+    const batch = seedArray.slice(index, index + BATCH_SIZE);
 
     await db
       .insert(postRateLimits)
-      .values(values)
+      .values(
+        batch.map((seed) => ({
+          userId: seed.userId,
+          subreddit: seed.subreddit,
+          postCount24h: seed.postCount24h,
+          lastPostAt: seed.lastPostAt,
+          updatedAt: seed.lastPostAt,
+        }))
+      )
       .onConflictDoNothing();
 
-    processedCount += batch.length;
-    console.log(`⏳ Processed ${processedCount}/${missingRecords.length} records`);
+    processed += batch.length;
+    console.log(`⏳ Processed ${processed}/${seedArray.length} rate limit seeds`);
   }
 
-  console.log(`✅ Successfully backfilled ${processedCount} rate limit records`);
+  console.log(`✅ Successfully backfilled ${processed} rate limit records`);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

@@ -113,7 +113,7 @@ function resolvePostType(context: PostCheckContext): PostType {
  */
 async function secureFetchImage(imageUrl: string): Promise<Buffer> {
   // Validate URL format
-  let url: URL;
+  let url;
   try {
     url = new URL(imageUrl);
   } catch {
@@ -140,7 +140,7 @@ async function secureFetchImage(imageUrl: string): Promise<Buffer> {
   ];
 
   const hostname = url.hostname.toLowerCase();
-  const isAllowedHost = allowedHosts.some(host => 
+  const isAllowedHost = allowedHosts.some(host =>
     hostname === host || hostname.endsWith('.' + host)
   );
 
@@ -151,10 +151,10 @@ async function secureFetchImage(imageUrl: string): Promise<Buffer> {
   // DNS resolution and IP validation to prevent SSRF
   try {
     const addresses = await lookup(hostname, { all: true });
-    
+
     for (const address of addresses) {
       const ip = address.address;
-      
+
       // Check for private/loopback/link-local IPs (IPv4 and IPv6)
       const forbiddenPatterns = [
         /^127\./,                          // 127.0.0.0/8 (loopback)
@@ -231,14 +231,14 @@ async function secureFetchImage(imageUrl: string): Promise<Buffer> {
     try {
       while (true) {
         const { done, value } = await reader.read();
-        
+
         if (done) break;
-        
+
         totalSize += value.length;
         if (totalSize > maxSize) {
           throw new Error('Image too large - maximum 50MB allowed');
         }
-        
+
         chunks.push(value);
       }
     } finally {
@@ -577,7 +577,7 @@ export class RedditManager {
       // Decrypt tokens
       const accessToken = decrypt(account.oauthToken);
       const refreshToken = account.oauthRefresh ? decrypt(account.oauthRefresh) : '';
-      
+
       if (!accessToken) {
         console.error('Failed to decrypt access token for user:', userId);
         return null;
@@ -682,7 +682,7 @@ export class RedditManager {
       });
 
       let errorMessage = 'Failed to submit post';
-      
+
       // Parse common Reddit API errors
       const errorObj = error as { message?: string };
       if (errorObj.message?.includes('RATELIMIT')) {
@@ -734,7 +734,7 @@ export class RedditManager {
       }
 
       const reddit = await this.initReddit();
-      
+
       // If we have a URL, download it to buffer with security measures
       if (options.imageUrl && !options.imageBuffer) {
         try {
@@ -752,7 +752,7 @@ export class RedditManager {
       // Direct image upload to Reddit
       if (options.imageBuffer || options.imagePath) {
         console.log('Uploading image directly to Reddit (i.redd.it)...');
-        
+
         const subreddit = (reddit as unknown as {
           getSubreddit(name: string): {
             submitImage(input: {
@@ -764,14 +764,14 @@ export class RedditManager {
             }): Promise<{ name?: string; id: string; permalink: string }>;
           };
         }).getSubreddit(options.subreddit);
-        
+
         try {
           // Try direct image upload first
           const imageFile = options.imageBuffer ?? options.imagePath;
           if (!imageFile) {
             throw new Error('No image file or path provided');
           }
-          
+
           const submission = await subreddit.submitImage({
             title: options.title,
             imageFile,
@@ -869,12 +869,12 @@ export class RedditManager {
           }): Promise<{ name?: string; id: string; permalink: string }>;
         };
       }).getSubreddit(options.subreddit);
-      
+
       // Prepare images for gallery
       const galleryImages = await Promise.all(
         options.images.slice(0, 20).map(async (img) => { // Max 20 images
           let imageBuffer = img.buffer;
-          
+
           if (!imageBuffer && img.url) {
             // Security: Use secure fetch with comprehensive SSRF protection
             try {
@@ -883,11 +883,11 @@ export class RedditManager {
               throw new Error(`Invalid gallery image URL: ${fetchError instanceof Error ? fetchError.message : 'Unknown error'}`);
             }
           }
-          
+
           if (!imageBuffer) {
             throw new Error('No image buffer or URL provided for gallery image');
           }
-          
+
           return {
             imageFile: imageBuffer,
             caption: img.caption ?? ''
@@ -926,7 +926,7 @@ export class RedditManager {
           nsfw: options.nsfw
         });
       }
-      
+
       return {
         success: false,
         error: (error as { message?: string }).message ?? 'Failed to submit gallery',
@@ -956,7 +956,7 @@ export class RedditManager {
           }>;
         };
       }).getSubreddit(subredditName).fetch();
-      
+
       return {
         allowsImages: subreddit.allow_images !== false,
         allowsGalleries: subreddit.allow_galleries === true,
@@ -992,7 +992,7 @@ export class RedditManager {
   ): Promise<PostingPermission> {
     const now = context.intendedAt || new Date();
     const normalizedSubreddit = normalizeSubredditName(subreddit);
-    
+
     try {
       // First check eligibility requirements
       const eligibilityCheck = await RedditManager.checkSubredditEligibility(userId, subreddit);
@@ -1053,7 +1053,7 @@ export class RedditManager {
         // Get Reddit profile data for karma and verification status
         let redditKarma: number | undefined;
         let redditVerified: boolean = false;
-        
+
         try {
           const redditManager = await RedditManager.forUser(userId);
           if (redditManager) {
@@ -1148,7 +1148,7 @@ export class RedditManager {
         const cooldownMinutes = deriveCooldownMinutes(rules);
         const queryWindow = Math.max(DAY_IN_MS, (cooldownMinutes || 0) * 60 * 1000);
         const queryStartTime = new Date(now.getTime() - queryWindow);
-        
+
         // Get post history for rate limiting
         const recentPosts = await db
           .select()
@@ -1203,7 +1203,7 @@ export class RedditManager {
 
         if (postsInLast24h >= maxPostsPer24h) {
           reasons.push(`Daily posting limit reached (${maxPostsPer24h} posts per 24 hours)`);
-          
+
           // Calculate when daily limit resets (oldest post + 24h)
           const postsInLast24hSorted = recentPosts
             .filter(post => {
@@ -1213,11 +1213,11 @@ export class RedditManager {
             .map(post => toDate(post.lastPostAt))
             .filter((date): date is Date => !!date)
             .sort((a, b) => a.getTime() - b.getTime());
-          
+
           if (postsInLast24hSorted.length > 0) {
             const oldestPostIn24h = postsInLast24hSorted[0];
             const dailyLimitReset = new Date(oldestPostIn24h.getTime() + DAY_IN_MS);
-            
+
             // nextAllowedPost is the earliest of cooldown end or daily limit reset
             if (!nextAllowedPost || dailyLimitReset < nextAllowedPost) {
               nextAllowedPost = dailyLimitReset;
@@ -1255,9 +1255,9 @@ export class RedditManager {
         nextAllowedPost: undefined,
         evaluatedAt: now,
         postsInLast24h: 0,
-        maxPostsPer24h: communityData?.postingLimits ? 
-          (communityData.postingLimits as any)?.daily || 
-          (communityData.postingLimits as any)?.perDay || 
+        maxPostsPer24h: communityData?.postingLimits ?
+          (communityData.postingLimits as any)?.daily ||
+          (communityData.postingLimits as any)?.perDay ||
           (communityData.postingLimits as any)?.per24h || 3 : 3,
         ruleSummary: rules ? {
           linkPolicy: rules.linkPolicy,
@@ -1349,10 +1349,10 @@ export class RedditManager {
   private async recordSafetySignals(subreddit: string, title: string, body: string): Promise<void> {
     try {
       const normalizedSubreddit = normalizeSubredditName(subreddit);
-      
+
       // Record post using SafetyManager for comprehensive tracking
       await SafetyManager.recordPost(this.userId.toString(), normalizedSubreddit);
-      
+
       // Record duplicate detection data
       await SafetyManager.recordPostForDuplicateDetection(
         this.userId.toString(),
@@ -1360,7 +1360,7 @@ export class RedditManager {
         title,
         body
       );
-      
+
       console.log(`Recorded safety signals for user ${this.userId} in r/${subreddit}`);
     } catch (error) {
       console.error('Failed to record safety signals:', error);
@@ -1448,7 +1448,7 @@ export class RedditManager {
       }).getMe();
 
       const submissions = await user.getSubmissions({ limit: 25 });
-      
+
       return submissions.map(submission => ({
         id: submission.id,
         createdUtc: submission.created_utc,
@@ -1466,10 +1466,11 @@ export class RedditManager {
   /**
    * Get public submissions from Reddit's public JSON API
    */
-  private async getPublicSubmissions(username: string): Promise<ShadowbanSubmissionSummary[]> {
+  private async getPublicSubmissions(username: string): Promise<{ submissions: ShadowbanSubmissionSummary[]; error?: string }> {
     try {
       const url = `https://www.reddit.com/user/${username}/submitted.json?limit=25`;
-      
+
+
       const response = await fetch(url, {
         headers: {
           'User-Agent': REDDIT_USER_AGENT
@@ -1477,7 +1478,10 @@ export class RedditManager {
       });
 
       if (!response.ok) {
-        throw new Error(`Reddit API returned ${response.status}: ${response.statusText}`);
+        return {
+          submissions: [],
+          error: `Reddit API returned ${response.status}: ${response.statusText}`,
+        };
       }
 
       const data = await response.json() as {
@@ -1494,7 +1498,7 @@ export class RedditManager {
         };
       };
 
-      return data.data.children.map(child => ({
+      const submissions = data.data.children.map(child => ({
         id: child.data.id,
         createdUtc: child.data.created_utc,
         permalink: child.data.permalink,
@@ -1502,9 +1506,15 @@ export class RedditManager {
         subreddit: child.data.subreddit
       }));
 
+      return { submissions };
+
     } catch (error) {
       console.error('Failed to fetch public submissions:', error);
-      return [];
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error fetching public submissions';
+      return {
+        submissions: [],
+        error: errorMessage,
+      };
     }
   }
 
@@ -1541,7 +1551,7 @@ export class RedditManager {
 
       // Get recent submissions from user's profile (authenticated view)
       const recentSubmissions = await this.reddit.getUser(profile.username).getSubmissions({ limit: 25 });
-      
+
       if (!recentSubmissions || recentSubmissions.length === 0) {
         return {
           isShadowbanned: false,
@@ -1555,12 +1565,24 @@ export class RedditManager {
       }
 
       // Get public submissions for comparison
-      const publicSubmissions = await this.getPublicSubmissions(profile.username);
-      
+      const publicSubmissionsResult = await this.getPublicSubmissions(profile.username);
+      if (publicSubmissionsResult.error) {
+        return {
+          isShadowbanned: false,
+          statusMessage: 'Error fetching public submissions',
+          checkedAt: new Date().toISOString(),
+          publicCount: 0,
+          totalSelfPosts: recentSubmissions.length,
+          hiddenPosts: [],
+          error: publicSubmissionsResult.error
+        };
+      }
+      const publicSubmissions = publicSubmissionsResult.submissions;
+
       // Create sets for easy comparison
       const selfPostIds = new Set(recentSubmissions.map((sub: any) => sub.id));
       const publicPostIds = new Set(publicSubmissions.map(sub => sub.id));
-      
+
       // Find hidden posts (in self view but not in public view)
       const hiddenPosts = recentSubmissions
         .filter((sub: any) => !publicPostIds.has(sub.id))
@@ -1671,14 +1693,14 @@ export async function getUserRedditCommunityEligibility(
 export function getRedditAuthUrl(state: string): string {
   // Always use a consistent redirect URI
   let redirectUri = process.env.REDDIT_REDIRECT_URI;
-  
+
   if (!redirectUri) {
     // Use the primary domain from REPLIT_DOMAINS for consistency
     const domain = process.env.REPLIT_DOMAINS?.split(',')[0] || 'thottopilot.com';
     const protocol = domain.includes('localhost') ? 'http' : 'https';
     redirectUri = `${protocol}://${domain}/api/reddit/callback`;
   }
-  
+
   console.log('Reddit OAuth redirect URI (auth):', redirectUri);
 
   const baseUrl = 'https://www.reddit.com/api/v1/authorize';
@@ -1704,14 +1726,14 @@ export async function exchangeRedditCode(code: string): Promise<{
 }> {
   // Always use a consistent redirect URI (must match exactly)
   let redirectUri = process.env.REDDIT_REDIRECT_URI;
-  
+
   if (!redirectUri) {
     // Use the primary domain from REPLIT_DOMAINS for consistency
     const domain = process.env.REPLIT_DOMAINS?.split(',')[0] || 'thottopilot.com';
     const protocol = domain.includes('localhost') ? 'http' : 'https';
     redirectUri = `${protocol}://${domain}/api/reddit/callback`;
   }
-  
+
   console.log('Reddit OAuth redirect URI (exchange):', redirectUri);
 
   try {

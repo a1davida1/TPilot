@@ -355,6 +355,15 @@ export default function RedditPostingPage() {
     ? new Date(shadowbanStatus.evidence.checkedAt).toLocaleString()
     : undefined;
 
+  const hiddenSubmissions = useMemo<ShadowbanSubmissionSummary[]>(() => {
+    if (!shadowbanStatus) {
+      return [];
+    }
+
+    const missingIds = new Set(shadowbanStatus.evidence.missingSubmissionIds);
+    return shadowbanStatus.evidence.privateSubmissions.filter(submission => missingIds.has(submission.id));
+  }, [shadowbanStatus]);
+
   const selectedAssets = mediaAssets.filter((asset) => selectedMediaIds.includes(asset.id));
 
   // Sort communities by eligibility and karma requirements
@@ -838,10 +847,42 @@ export default function RedditPostingPage() {
                         
                         {shadowbanStatus.status === 'suspected' && (
                           <Alert className="border-red-200 bg-red-50">
-                            <AlertTriangle className="h-4 w-4" />
-                            <AlertDescription className="text-red-700 text-sm">
-                              Some of your posts may not be visible to other users. Consider contacting Reddit support or waiting before posting again.
-                            </AlertDescription>
+                            <AlertTriangle className="h-4 w-4 text-red-600" />
+                            <div className="space-y-2">
+                              <AlertDescription className="text-red-700 text-sm">
+                                Some of your recent submissions are hidden from public listings. Reduce posting activity until visibility recovers.
+                              </AlertDescription>
+                              <ul className="list-disc list-inside text-xs text-red-700 space-y-1">
+                                <li>Pause scheduled Reddit posts for at least 24 hours to avoid additional visibility penalties.</li>
+                                <li>Review subreddit guidelines and adjust queued content to ensure it aligns with community rules.</li>
+                                <li>Reach out to subreddit moderators or Reddit Support if the issue persists for more than a day.</li>
+                              </ul>
+                              {hiddenSubmissions.length > 0 && (
+                                <div className="rounded border border-red-200 bg-white/70 p-2">
+                                  <p className="text-xs font-semibold text-red-700">Hidden submissions</p>
+                                  <ul className="mt-1 space-y-1">
+                                    {hiddenSubmissions.map((submission) => {
+                                      const permalink = submission.permalink && submission.permalink.startsWith('http')
+                                        ? submission.permalink
+                                        : `https://www.reddit.com${submission.permalink ?? ''}`;
+                                      return (
+                                        <li key={submission.id}>
+                                          <a
+                                            href={permalink}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-1 text-xs text-red-600 underline"
+                                          >
+                                            <Eye className="h-3 w-3" />
+                                            {submission.title ?? submission.id}
+                                          </a>
+                                        </li>
+                                      );
+                                    })}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
                           </Alert>
                         )}
                       </div>

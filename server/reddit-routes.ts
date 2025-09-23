@@ -260,6 +260,46 @@ export function registerRedditRoutes(app: Express) {
     }
   });
 
+  app.get('/api/reddit/shadowban-status', rateLimit, authenticateToken, async (req: AuthRequest, res) => {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const fallbackEvidence: ShadowbanCheckApiResponse['evidence'] = {
+      username: 'unknown',
+      checkedAt: new Date().toISOString(),
+      privateCount: 0,
+      publicCount: 0,
+      privateSubmissions: [],
+      publicSubmissions: [],
+      missingSubmissionIds: [],
+    };
+
+    try {
+      const redditManager = await RedditManager.forUser(userId);
+
+      if (!redditManager) {
+        return res.json({
+          status: 'unknown' as const,
+          reason: 'No active Reddit account connected.',
+          evidence: fallbackEvidence,
+        });
+      }
+
+      const status = await redditManager.checkShadowbanStatus();
+      return res.json(status);
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Shadowban status check failed', { userId, error: err.message, stack: err.stack });
+      return res.status(500).json({
+        error: 'Failed to check Reddit shadowban status',
+        details: err.message,
+      });
+    }
+  });
+
   // Disconnect Reddit account
   app.delete('/api/reddit/accounts/:accountId', authenticateToken, async (req: AuthRequest, res) => {
     try {

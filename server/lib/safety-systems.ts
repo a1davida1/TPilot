@@ -153,6 +153,7 @@ export class SafetyManager {
           subreddit,
           postCount24h: 1,
           lastPostAt: now,
+          updatedAt: now,
         })
         .onConflictDoUpdate({
           target: [postRateLimits.userId, postRateLimits.subreddit],
@@ -212,7 +213,7 @@ export class SafetyManager {
     if (duplicate) {
       // Check if it's the same subreddit (more strict) or different (warning)
       const isSameSubreddit = duplicate.subreddit === subreddit;
-      
+
       if (isSameSubreddit) {
         return {
           isDuplicate: true,
@@ -388,7 +389,7 @@ export class SafetyManager {
 
     // Simple check for now
     const stats = await this.getUserPostingStats(userId);
-    
+
     if (stats.postsLast24h > env.MAX_POSTS_PER_SUBREDDIT_24H * 3) {
       violations.push('Excessive posting detected');
       restrictions.push('Reduced posting frequency');
