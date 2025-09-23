@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
-import request from 'supertest';
+import request, { Test } from 'supertest';
 import type { Express } from 'express';
 import jwt from 'jsonwebtoken';
 import { eq } from 'drizzle-orm';
@@ -7,7 +7,7 @@ import { eq } from 'drizzle-orm';
 import { createApp } from '../../server/app.js';
 import { storage } from '../../server/storage.js';
 import { db } from '../../server/db.js';
-import { postJobs, type InsertUser } from '@shared/schema';
+import { postJobs, type InsertUser } from '../../shared/schema.js';
 import * as queueModule from '../../server/lib/queue/index.js';
 import { PostScheduler } from '../../server/lib/scheduling.js';
 

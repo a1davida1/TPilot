@@ -1086,93 +1086,6 @@ export class RedditManager {
   }
 
   /**
-   * Check shadowban status by comparing private vs public submission feeds
-   */
-  async checkShadowbanStatus(): Promise<ShadowbanCheckApiResponse> {
-    try {
-      console.log(`Checking shadowban status for user ${this.userId}`);
-      
-      // Get user profile for username
-      const profile = await this.getProfile();
-      if (!profile) {
-        throw new Error('Unable to fetch Reddit profile for shadowban check');
-      }
-
-      const username = profile.username;
-      const checkedAt = new Date().toISOString();
-
-      // Get private submissions from authenticated API (last 25 posts)
-      const privateSubmissions = await this.getPrivateSubmissions();
-      
-      // Get public submissions from Reddit's public JSON API
-      const publicSubmissions = await this.getPublicSubmissions(username);
-      
-      // Compare submissions to find missing ones (potential shadowban evidence)
-      const privateIds = new Set(privateSubmissions.map(s => s.id));
-      const publicIds = new Set(publicSubmissions.map(s => s.id));
-      
-      const missingSubmissionIds = Array.from(privateIds).filter(id => !publicIds.has(id));
-      
-      // Determine shadowban status
-      let status: ShadowbanStatusType = 'unknown';
-      let reason: string | undefined;
-
-      if (privateSubmissions.length === 0) {
-        status = 'unknown';
-        reason = 'No recent submissions found to analyze';
-      } else if (missingSubmissionIds.length === 0) {
-        status = 'clear';
-        reason = 'All recent submissions are publicly visible';
-      } else if (missingSubmissionIds.length === privateSubmissions.length) {
-        status = 'suspected';
-        reason = 'All recent submissions are missing from public view';
-      } else if (missingSubmissionIds.length >= privateSubmissions.length * 0.5) {
-        status = 'suspected';
-        reason = `${missingSubmissionIds.length} of ${privateSubmissions.length} recent submissions are missing from public view`;
-      } else {
-        status = 'clear';
-        reason = `Most submissions are publicly visible (${privateSubmissions.length - missingSubmissionIds.length}/${privateSubmissions.length})`;
-      }
-
-      const evidence: ShadowbanEvidenceResponse = {
-        username,
-        checkedAt,
-        privateCount: privateSubmissions.length,
-        publicCount: publicSubmissions.length,
-        privateSubmissions,
-        publicSubmissions,
-        missingSubmissionIds
-      };
-
-      console.log(`Shadowban check completed for ${username}: ${status} (${missingSubmissionIds.length} missing submissions)`);
-
-      return {
-        status,
-        reason,
-        evidence
-      };
-
-    } catch (error) {
-      console.error('Shadowban check failed:', error);
-      
-      // Return unknown status with error info
-      return {
-        status: 'unknown',
-        reason: error instanceof Error ? error.message : 'Unknown error during shadowban check',
-        evidence: {
-          username: 'unknown',
-          checkedAt: new Date().toISOString(),
-          privateCount: 0,
-          publicCount: 0,
-          privateSubmissions: [],
-          publicSubmissions: [],
-          missingSubmissionIds: []
-        }
-      };
-    }
-  }
-
-  /**
    * Get private submissions from authenticated Reddit API
    */
   private async getPrivateSubmissions(): Promise<ShadowbanSubmissionSummary[]> {
@@ -1297,7 +1210,7 @@ export class RedditManager {
       }
 
       // Get public submissions for comparison
-      const publicSubmissions = await this.fetchPublicSubmissions(profile.username);
+      const publicSubmissions = await this.getPublicSubmissions(profile.username);
       
       // Create sets for easy comparison
       const selfPostIds = new Set(recentSubmissions.map((sub: any) => sub.id));
