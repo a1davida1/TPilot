@@ -1,5 +1,4 @@
 import type { Express } from "express";
-import { z } from "zod";
 import { db } from "./db.js";
 import { storage } from "./storage.js";
 import { AiService } from "./lib/ai-service.js";
@@ -16,7 +15,7 @@ import { postJobs, subscriptions, mediaAssets, creatorAccounts, users, userSampl
 import { eq, desc, sql } from "drizzle-orm";
 import multer from "multer";
 import type { Request, Response, NextFunction } from 'express';
-import { authenticateToken } from './middleware/auth.js';
+import { authenticateToken, type AuthRequest } from './middleware/auth.js';
 
 interface PostingJobPayload {
   userId: number;
@@ -49,10 +48,10 @@ const upload = multer({
 });
 
 export function registerApiRoutes(app: Express) {
-  
+
   const aiServiceBreaker = new CircuitBreaker(AiService.generateContent);
   const enhancedContentBreaker = new CircuitBreaker(generateEnhancedContent);
-  
+
   // AI Content Generation
   app.post('/api/ai/generate', authenticateToken, async (req: Request, res, next: NextFunction) => {
     try {
@@ -124,7 +123,7 @@ export function registerApiRoutes(app: Express) {
       if (!req.user?.id) {
         return res.status(401).json({ error: 'Authentication required' });
       }
-      
+
       const userId = req.user.id;
       const applyWatermark = req.body.watermark === 'true';
 
@@ -147,11 +146,11 @@ export function registerApiRoutes(app: Express) {
   app.get('/api/media', authenticateToken, async (req: Request, res) => {
     try {
       const user = req.user;
-      
+
       if (!user?.id) {
         return res.status(401).json({ error: 'Authentication required' });
       }
-      
+
       const userId = user.id;
       const limit = parseInt(req.query.limit as string) || 20;
 
@@ -167,16 +166,16 @@ export function registerApiRoutes(app: Express) {
   app.delete('/api/media/:id', authenticateToken, async (req: Request, res) => {
     try {
       const user = req.user;
-      
+
       if (!user?.id) {
         return res.status(401).json({ error: 'Authentication required' });
       }
-      
+
       const userId = user.id;
       const mediaId = parseInt(req.params.id);
 
       const success = await MediaManager.deleteAsset(mediaId, userId);
-      
+
       if (success) {
         res.json({ success: true });
       } else {
@@ -210,7 +209,7 @@ export function registerApiRoutes(app: Express) {
   });
 
   // Schedule Post
-  app.post('/api/posts/schedule', authenticateToken, async (req, res) => {
+  app.post('/api/posts/schedule', authenticateToken, async (req: AuthRequest, res) => {
     try {
       const schema = z.object({
         subreddit: z.string(),
@@ -222,11 +221,11 @@ export function registerApiRoutes(app: Express) {
 
       const data = schema.parse(req.body);
       const user = req.user;
-      
+
       if (!user?.id) {
         return res.status(401).json({ error: 'Authentication required' });
       }
-      
+
       const userId = user.id;
 
       // Schedule the post
@@ -271,11 +270,11 @@ export function registerApiRoutes(app: Express) {
   app.get('/api/posts/scheduled', async (req, res) => {
     try {
       const user = req.user;
-      
+
       if (!user?.id) {
         return res.status(401).json({ error: 'Authentication required' });
       }
-      
+
       const userId = user.id;
 
       const jobs = await db
@@ -296,11 +295,11 @@ export function registerApiRoutes(app: Express) {
   app.post('/api/billing/payment-link', async (req, res) => {
     try {
       const user = req.user;
-      
+
       if (!user?.id) {
         return res.status(401).json({ error: 'Authentication required' });
       }
-      
+
       const userId = user.id;
       const plan = req.body.plan || 'pro';
 
@@ -325,7 +324,7 @@ export function registerApiRoutes(app: Express) {
   app.post('/api/billing/webhook', async (req, res) => {
     try {
       const result = await CCBillProcessor.handleWebhook(req.body);
-      
+
       if (result.success) {
         res.status(200).json({ message: 'Webhook processed' });
       } else {
@@ -341,11 +340,11 @@ export function registerApiRoutes(app: Express) {
   app.get('/api/subscription', authenticateToken, async (req: Request, res) => {
     try {
       const user = req.user;
-      
+
       if (!user?.id) {
         return res.status(401).json({ error: 'Authentication required' });
       }
-      
+
       const userId = user.id;
 
       // Check if user is admin first - only check verified admin status
@@ -377,11 +376,11 @@ export function registerApiRoutes(app: Express) {
   app.get('/api/reddit/account/:accountId/info', async (req, res) => {
     try {
       const user = req.user;
-      
+
       if (!user?.id) {
         return res.status(401).json({ error: 'Authentication required' });
       }
-      
+
       const userId = user.id;
       const accountId = parseInt(req.params.accountId);
 
@@ -413,13 +412,13 @@ export function registerApiRoutes(app: Express) {
   app.get('/api/storage/usage', authenticateToken, async (req: Request, res) => {
     try {
       const user = req.user;
-      
+
       if (!user?.id) {
         return res.status(401).json({ error: 'Authentication required' });
       }
-      
+
       const userId = user.id;
-      
+
       const usage = await MediaManager.getUserStorageUsage(userId);
       res.json(usage);
     } catch (error: unknown) {
@@ -465,11 +464,11 @@ export function registerApiRoutes(app: Express) {
   app.get('/api/ai/history', async (req, res) => {
     try {
       const user = req.user;
-      
+
       if (!user?.id) {
         return res.status(401).json({ error: 'Authentication required' });
       }
-      
+
       const userId = user.id;
       const limit = parseInt(req.query.limit as string) || 20;
 

@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/u
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Calendar, Clock, AlertCircle, CheckCircle2, XCircle, Calendar as CalendarIcon } from 'lucide-react';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, type ApiError } from '@/lib/queryClient';
 
 interface PostJob {
   id: number;
@@ -30,6 +30,14 @@ interface SchedulePostForm {
   body: string;
   mediaKey?: string;
   scheduledAt?: string;
+}
+
+function isApiError(error: unknown): error is ApiError {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+
+  return 'status' in error && 'statusText' in error;
 }
 
 export default function PostScheduler() {
@@ -64,10 +72,23 @@ export default function PostScheduler() {
       });
     },
     onError: (error: unknown) => {
-      const errorMessage = error instanceof Error ? error.message : "Please check your input and try again";
+      let toastTitle = "Failed to schedule post";
+      let description = "Please check your input and try again";
+
+      if (isApiError(error)) {
+        if (error.isAuthError) {
+          toastTitle = "Authentication required";
+          description = error.userMessage ?? "Please log in to schedule posts.";
+        } else {
+          description = error.userMessage ?? error.message;
+        }
+      } else if (error instanceof Error) {
+        description = error.message;
+      }
+
       toast({
-        title: "Failed to schedule post",
-        description: errorMessage,
+        title: toastTitle,
+        description,
         variant: "destructive",
       });
     },
