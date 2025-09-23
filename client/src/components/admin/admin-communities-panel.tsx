@@ -32,7 +32,10 @@ import {
   useCreateCommunity,
   useUpdateCommunity,
   useDeleteCommunity,
+  GROWTH_TRENDS,
+  GROWTH_TREND_LABELS,
 } from '@/hooks/use-admin-communities';
+import type { RedditCommunitySellingPolicy } from '@shared/schema';
 import { cn } from '@/lib/utils';
 import { CheckCircle, Edit2, Loader2, PlusCircle, ShieldAlert, Trash2 } from 'lucide-react';
 
@@ -40,6 +43,7 @@ interface AdminCommunitiesPanelProps {
   canManage: boolean;
 }
 
+type SellingRuleOption = 'unspecified' | RedditCommunitySellingPolicy;
 type TriState = 'unspecified' | 'allowed' | 'disallowed';
 
 interface CommunityFormState {
@@ -57,7 +61,7 @@ interface CommunityFormState {
   rulesMinKarma: string;
   rulesMinAccountAge: string;
   rulesWatermarksAllowed: TriState;
-  rulesSellingAllowed: TriState;
+  rulesSellingAllowed: SellingRuleOption;
   rulesTitleRules: string;
   rulesContentRules: string;
   rulesLinkRestrictions: string;
@@ -140,12 +144,7 @@ function communityToForm(community: AdminCommunity): CommunityFormState {
         : community.rules?.watermarksAllowed === false
           ? 'disallowed'
           : 'unspecified',
-    rulesSellingAllowed:
-      community.rules?.sellingAllowed === true
-        ? 'allowed'
-        : community.rules?.sellingAllowed === false
-          ? 'disallowed'
-          : 'unspecified',
+    rulesSellingAllowed: community.rules?.sellingAllowed ?? 'unspecified',
     rulesTitleRules: (community.rules?.titleRules ?? []).join('\n'),
     rulesContentRules: (community.rules?.contentRules ?? []).join('\n'),
     rulesLinkRestrictions: (community.rules?.linkRestrictions ?? []).join('\n'),
@@ -200,12 +199,7 @@ function formToPayload(form: CommunityFormState): CommunityPayload {
       : form.rulesWatermarksAllowed === 'disallowed'
         ? false
         : undefined;
-  const sellingAllowed =
-    form.rulesSellingAllowed === 'allowed'
-      ? true
-      : form.rulesSellingAllowed === 'disallowed'
-        ? false
-        : undefined;
+  const sellingAllowed = form.rulesSellingAllowed === 'unspecified' ? undefined : form.rulesSellingAllowed;
 
   const rules = {
     ...(rulesMinKarma !== undefined ? { minKarma: rulesMinKarma } : {}),
@@ -254,11 +248,15 @@ function RuleSummary({ community }: { community: AdminCommunity }) {
   if (community.rules?.watermarksAllowed === false) {
     ruleItems.push('No watermarks');
   }
-  if (community.rules?.sellingAllowed === true) {
+  const sellingPolicy = community.rules?.sellingAllowed;
+  if (sellingPolicy === 'allowed') {
     ruleItems.push('Selling allowed');
-  }
-  if (community.rules?.sellingAllowed === false) {
+  } else if (sellingPolicy === 'limited') {
+    ruleItems.push('Limited selling');
+  } else if (sellingPolicy === 'not_allowed') {
     ruleItems.push('No selling');
+  } else if (sellingPolicy === 'unknown') {
+    ruleItems.push('Selling policy unknown');
   }
   if ((community.rules?.titleRules?.length ?? 0) > 0) {
     ruleItems.push(`${community.rules?.titleRules?.length ?? 0} title rules`);
@@ -723,7 +721,7 @@ export function AdminCommunitiesPanel({ canManage }: AdminCommunitiesPanelProps)
                   <Label htmlFor="rulesSellingAllowed">Selling</Label>
                   <Select
                     value={formState.rulesSellingAllowed}
-                    onValueChange={(value) => setFormState(prev => ({ ...prev, rulesSellingAllowed: value as TriState }))}
+                    onValueChange={(value) => setFormState(prev => ({ ...prev, rulesSellingAllowed: value as SellingRuleOption }))}
                   >
                     <SelectTrigger data-testid="select-rules-selling-allowed">
                       <SelectValue />
@@ -731,7 +729,9 @@ export function AdminCommunitiesPanel({ canManage }: AdminCommunitiesPanelProps)
                     <SelectContent>
                       <SelectItem value="unspecified">Unspecified</SelectItem>
                       <SelectItem value="allowed">Allowed</SelectItem>
-                      <SelectItem value="disallowed">Not allowed</SelectItem>
+                      <SelectItem value="limited">Limited</SelectItem>
+                      <SelectItem value="not_allowed">Not Allowed</SelectItem>
+                      <SelectItem value="unknown">Unknown</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -828,10 +828,11 @@ export function AdminCommunitiesPanel({ canManage }: AdminCommunitiesPanelProps)
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="growing">Growing</SelectItem>
-                      <SelectItem value="stable">Stable</SelectItem>
-                      <SelectItem value="declining">Declining</SelectItem>
-                      <SelectItem value="unknown">Unknown</SelectItem>
+                      {GROWTH_TRENDS.map(trend => (
+                        <SelectItem key={trend} value={trend}>
+                          {GROWTH_TREND_LABELS[trend]}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

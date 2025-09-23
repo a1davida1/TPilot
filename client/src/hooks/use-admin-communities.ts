@@ -1,16 +1,26 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
+import type { RedditCommunitySellingPolicy } from '@shared/schema';
+import { 
+  type GrowthTrend,
+  GROWTH_TRENDS,
+  GROWTH_TREND_LABELS,
+  getGrowthTrendLabel
+} from '@shared/growth-trends';
 
 export type PromotionPolicy = 'yes' | 'no' | 'limited' | 'subtle' | 'strict' | 'unknown';
-export type GrowthTrend = 'growing' | 'stable' | 'declining' | 'unknown';
+// GrowthTrend type imported from @shared/growth-trends - uses canonical values: 'up' | 'stable' | 'down'
 export type ActivityLevel = 'low' | 'medium' | 'high' | 'unknown';
 export type CompetitionLevel = 'low' | 'medium' | 'high' | 'unknown';
+
+// Re-export growth trend constants and labels for use by components
+export { GROWTH_TRENDS, GROWTH_TREND_LABELS, getGrowthTrendLabel };
 
 export interface CommunityRules {
   minKarma?: number;
   minAccountAge?: number;
   watermarksAllowed?: boolean;
-  sellingAllowed?: boolean;
+  sellingAllowed?: RedditCommunitySellingPolicy;
   titleRules?: string[];
   contentRules?: string[];
   linkRestrictions?: string[];

@@ -120,7 +120,7 @@ describe('RedditPosting community picker', () => {
         rules: {
           minKarma: 500,
           minAccountAge: 60,
-          sellingAllowed: true,
+          sellingAllowed: 'allowed',
           watermarksAllowed: true,
         },
       },
@@ -139,7 +139,7 @@ describe('RedditPosting community picker', () => {
         rules: {
           minKarma: 800,
           minAccountAge: 90,
-          sellingAllowed: true,
+          sellingAllowed: 'allowed',
           watermarksAllowed: false,
         },
       },
@@ -158,7 +158,7 @@ describe('RedditPosting community picker', () => {
         rules: {
           minKarma: 5000,
           minAccountAge: 365,
-          sellingAllowed: false,
+          sellingAllowed: 'not_allowed',
           watermarksAllowed: false,
         },
       },

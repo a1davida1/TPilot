@@ -117,14 +117,14 @@ describe('Reddit Communities Rules Unit Tests', () => {
       const result = normalizeRules(legacyRules, 'no', 'gonewild');
       
       expect(result.contentRules).toEqual(legacyRules);
-      expect(result.sellingAllowed).toBe('no'); // Inferred from promotion='no'
+      expect(result.sellingAllowed).toBe('not_allowed'); // Inferred from promotion='no'
       expect(result.titleRules).toEqual([]);
       expect(result.verificationRequired).toBe(false); // Default value
       
       // Test empty legacy rules
       const emptyResult = normalizeRules([], 'yes', 'selling');
       expect(emptyResult.contentRules).toEqual([]);
-      expect(emptyResult.sellingAllowed).toBe('yes'); // Inferred from promotion='yes'
+      expect(emptyResult.sellingAllowed).toBe('allowed'); // Inferred from promotion='yes'
       
       // Test null rules
       const nullResult = normalizeRules(null, 'limited', 'general');
@@ -134,17 +134,17 @@ describe('Reddit Communities Rules Unit Tests', () => {
 
     it('should properly infer selling policy from promotion flags and category', async () => {
       // Test various promotion/category combinations using inferSellingPolicy directly
-      expect(inferSellingPolicy('yes', 'general')).toBe('yes');
-      expect(inferSellingPolicy('no', 'general')).toBe('no');
+      expect(inferSellingPolicy('yes', 'general')).toBe('allowed');
+      expect(inferSellingPolicy('no', 'general')).toBe('not_allowed');
       expect(inferSellingPolicy('limited', 'general')).toBe('limited');
       expect(inferSellingPolicy('subtle', 'general')).toBe('limited');
-      expect(inferSellingPolicy('unknown', 'selling')).toBe('yes');
+      expect(inferSellingPolicy('unknown', 'selling')).toBe('allowed');
       expect(inferSellingPolicy('unknown', 'gonewild')).toBe(undefined);
       
       // Test with normalizeRules to verify integration
       const rules = { sellingAllowed: 'unknown' };
       expect(normalizeRules(rules, 'yes', 'general').sellingAllowed).toBe('unknown'); // Rules already specify policy
-      expect(normalizeRules({}, 'yes', 'general').sellingAllowed).toBe('yes'); // Empty rules, infer from flags
+      expect(normalizeRules({}, 'yes', 'general').sellingAllowed).toBe('allowed'); // Empty rules, infer from flags
     });
 
     it('should derive insights warnings from structured rules', async () => {

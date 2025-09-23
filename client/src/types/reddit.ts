@@ -22,6 +22,8 @@ export interface RedditAccount {
   accountAgeDays?: number;
 }
 
+import type { RedditCommunitySellingPolicy } from '@shared/schema';
+
 export interface SubredditCommunity {
   id: string;
   name: string;
@@ -38,7 +40,7 @@ export interface SubredditCommunity {
     minKarma?: number;
     minAccountAge?: number;
     watermarksAllowed?: boolean;
-    sellingAllowed?: boolean;
+    sellingAllowed?: RedditCommunitySellingPolicy;
     titleRules?: string[];
     contentRules?: string[];
   };

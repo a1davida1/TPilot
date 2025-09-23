@@ -30,7 +30,8 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import type { RedditCommunity, PostingLimits } from "@shared/schema";
+import type { RedditCommunity, PostingLimits, RedditCommunitySellingPolicy } from "@shared/schema";
+import { GROWTH_TRENDS, GROWTH_TREND_LABELS, getGrowthTrendLabel, growthTrendSchema } from "@shared/growth-trends";
 import { z } from "zod";
 
 export function RedditCommunities() {
@@ -52,11 +53,18 @@ export function RedditCommunities() {
     verificationRequired: z.boolean(),
     promotionAllowed: z.enum(['yes', 'limited', 'no']),
     postingLimits: z.any().nullable().optional(),
-    rules: z.any().optional(),
+    rules: z.object({
+      sellingAllowed: z.enum(['allowed', 'limited', 'not_allowed', 'unknown']).optional(),
+      watermarksAllowed: z.boolean().optional(),
+      minKarma: z.number().optional(),
+      minAccountAge: z.number().optional(),
+      titleRules: z.array(z.string()).optional(),
+      contentRules: z.array(z.string()).optional()
+    }).optional(),
     bestPostingTimes: z.array(z.string()).optional(),
     averageUpvotes: z.number().nullable().optional(),
     successProbability: z.number().nullable().optional(),
-    growthTrend: z.enum(['up', 'down', 'stable']).nullable().optional(),
+    growthTrend: growthTrendSchema.optional(),
     modActivity: z.enum(['active', 'moderate', 'inactive']).nullable().optional(),
     description: z.string().nullable().optional(),
     tags: z.array(z.string()).optional(),
@@ -158,6 +166,21 @@ export function RedditCommunities() {
         return <Badge className="bg-red-500/20 text-red-400">Not Allowed</Badge>;
       default:
         return null;
+    }
+  };
+
+  const getSellingPolicyBadge = (policy: RedditCommunitySellingPolicy | undefined) => {
+    switch (policy) {
+      case 'allowed':
+        return <Badge className="bg-green-500/20 text-green-400">Selling allowed</Badge>;
+      case 'limited':
+        return <Badge className="bg-yellow-500/20 text-yellow-400">Limited selling</Badge>;
+      case 'not_allowed':
+        return <Badge className="bg-red-500/20 text-red-400">No selling</Badge>;
+      case 'unknown':
+        return <Badge className="bg-gray-500/20 text-gray-400">Selling policy unknown</Badge>;
+      default:
+        return <Badge className="bg-gray-500/20 text-gray-400">Selling policy unknown</Badge>;
     }
   };
 
@@ -408,7 +431,16 @@ export function RedditCommunities() {
                                 {community.rules.minKarma && <p>• Min Karma: {community.rules.minKarma}</p>}
                                 {community.rules.minAccountAge && <p>• Min Account Age: {community.rules.minAccountAge} days</p>}
                                 <p>• Watermarks: {community.rules.watermarksAllowed ? '✓ Allowed' : '✗ Not Allowed'}</p>
-                                <p>• Selling: {community.rules.sellingAllowed === 'yes' ? '✓ Allowed' : community.rules.sellingAllowed === 'limited' ? '⚠ Limited' : '✗ Not Allowed'}</p>
+                                <p>• Selling: {(() => {
+                                  const policy = community.rules?.sellingAllowed;
+                                  switch (policy) {
+                                    case 'allowed': return '✓ Allowed';
+                                    case 'limited': return '⚠ Limited';
+                                    case 'not_allowed': return '✗ Not Allowed';
+                                    case 'unknown': return '? Unknown';
+                                    default: return '? Unknown';
+                                  }
+                                })()}</p>
                               </div>
                             </div>
 
@@ -417,7 +449,7 @@ export function RedditCommunities() {
                               <div className="space-y-1 text-xs text-gray-400">
                                 <p>• Success Rate: <span className={getSuccessProbabilityColor(community.successProbability)}>{community.successProbability}%</span></p>
                                 <p>• Competition: <span className={community.competitionLevel === 'low' ? 'text-green-400' : community.competitionLevel === 'medium' ? 'text-yellow-400' : 'text-red-400'}>{community.competitionLevel}</span></p>
-                                <p>• Growth: <span className={community.growthTrend === 'up' ? 'text-green-400' : community.growthTrend === 'stable' ? 'text-yellow-400' : 'text-red-400'}>{community.growthTrend}</span></p>
+                                <p>• Growth: <span className={community.growthTrend === 'up' ? 'text-green-400' : community.growthTrend === 'stable' ? 'text-yellow-400' : 'text-red-400'}>{getGrowthTrendLabel(community.growthTrend)}</span></p>
                                 <p>• Mod Activity: <span className={community.modActivity === 'high' ? 'text-red-400' : community.modActivity === 'medium' ? 'text-yellow-400' : 'text-green-400'}>{community.modActivity}</span></p>
                               </div>
                             </div>

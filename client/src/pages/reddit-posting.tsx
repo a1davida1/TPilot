@@ -55,7 +55,8 @@ import {
 import { MediaLibrarySelector } from '@/components/MediaLibrarySelector';
 import type { 
   ShadowbanStatusType, 
-  ShadowbanCheckApiResponse 
+  ShadowbanCheckApiResponse,
+  RedditCommunitySellingPolicy 
 } from '@shared/schema';
 
 function isApiError(error: unknown): error is ApiError {
@@ -88,7 +89,7 @@ interface SubredditCommunity {
     minKarma?: number;
     minAccountAge?: number;
     watermarksAllowed?: boolean;
-    sellingAllowed?: boolean;
+    sellingAllowed?: RedditCommunitySellingPolicy;
     titleRules?: string[];
     contentRules?: string[];
   };
@@ -203,10 +204,15 @@ function checkCommunityEligibility(
   }
 
   // Include selling and watermark restrictions in eligibility
-  if (community.rules?.sellingAllowed === false) {
+  if (community.rules?.sellingAllowed === 'not_allowed') {
     badges.sellingOk = false;
     reasons.push('Selling not allowed in this community');
     isEligible = false;
+  }
+  
+  if (community.rules?.sellingAllowed === 'unknown') {
+    badges.sellingOk = false;
+    reasons.push('Selling policy unclear - check community rules');
   }
 
   if (community.rules?.watermarksAllowed === false) {
@@ -1033,17 +1039,38 @@ export default function RedditPostingPage() {
                             </Badge>
                           )}
                           
-                          {selectedCommunity.rules?.sellingAllowed !== false ? (
-                            <Badge variant="secondary" className="text-green-700 bg-green-50 border-green-200">
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                              Selling OK
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-orange-700 bg-orange-50 border-orange-200">
-                              <AlertTriangle className="h-3 w-3 mr-1" />
-                              No Selling
-                            </Badge>
-                          )}
+                          {(() => {
+                            const policy = selectedCommunity.rules?.sellingAllowed;
+                            if (policy === 'allowed') {
+                              return (
+                                <Badge variant="secondary" className="text-green-700 bg-green-50 border-green-200">
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Selling OK
+                                </Badge>
+                              );
+                            } else if (policy === 'limited') {
+                              return (
+                                <Badge variant="outline" className="text-yellow-700 bg-yellow-50 border-yellow-200">
+                                  <AlertTriangle className="h-3 w-3 mr-1" />
+                                  Limited Selling
+                                </Badge>
+                              );
+                            } else if (policy === 'not_allowed') {
+                              return (
+                                <Badge variant="outline" className="text-red-700 bg-red-50 border-red-200">
+                                  <XCircle className="h-3 w-3 mr-1" />
+                                  No Selling
+                                </Badge>
+                              );
+                            } else {
+                              return (
+                                <Badge variant="outline" className="text-gray-700 bg-gray-50 border-gray-200">
+                                  <AlertTriangle className="h-3 w-3 mr-1" />
+                                  Selling Unknown
+                                </Badge>
+                              );
+                            }
+                          })()}
                           
                           {selectedCommunity.rules?.watermarksAllowed !== false ? (
                             <Badge variant="secondary" className="text-green-700 bg-green-50 border-green-200">
@@ -1351,9 +1378,20 @@ export default function RedditPostingPage() {
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">Selling:</span>
-                          <Badge variant={selectedCommunity.rules.sellingAllowed ? 'default' : 'destructive'} className="text-xs">
-                            {selectedCommunity.rules.sellingAllowed ? 'Allowed' : 'Not Allowed'}
-                          </Badge>
+                          {(() => {
+                            const policy = selectedCommunity.rules.sellingAllowed;
+                            switch (policy) {
+                              case 'allowed':
+                                return <Badge variant="default" className="text-xs">Allowed</Badge>;
+                              case 'limited':
+                                return <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-800">Limited</Badge>;
+                              case 'not_allowed':
+                                return <Badge variant="destructive" className="text-xs">Not Allowed</Badge>;
+                              case 'unknown':
+                              default:
+                                return <Badge variant="outline" className="text-xs bg-gray-100 text-gray-800">Unknown</Badge>;
+                            }
+                          })()}
                         </div>
                       </div>
                     </div>

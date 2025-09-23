@@ -491,8 +491,8 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
   // Analytics routes
   app.use('/api/analytics', analyticsRouter);
   
-  // Admin communities routes
-  app.use('/api/admin/communities', adminCommunitiesRouter);
+  // Admin communities routes (mounted at reddit path for client compatibility)
+  app.use('/api/reddit/communities', adminCommunitiesRouter);
   
   // Social auth routes
   app.get('/api/auth/google', socialAuthRoutes.googleAuth);

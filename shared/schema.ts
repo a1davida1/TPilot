@@ -2,6 +2,7 @@ import { pgTable, serial, varchar, text, integer, timestamp, jsonb, boolean, uni
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
+import { growthTrendSchema, type GrowthTrend } from "./growth-trends.js";
 
 // ==========================================
 // PROTECTION LEVEL VALIDATION SCHEMAS
@@ -239,7 +240,10 @@ export type RuleAllowance = z.infer<typeof ruleAllowanceSchema>;
 // CANONICAL REDDIT COMMUNITY ENUMS
 // ==========================================
 
-export const promotionAllowedSchema = z.enum(['yes', 'limited', 'no']);
+export const redditCommunitySellingPolicySchema = z.enum(['allowed', 'limited', 'not_allowed', 'unknown']);
+export type RedditCommunitySellingPolicy = z.infer<typeof redditCommunitySellingPolicySchema>;
+
+export const promotionAllowedSchema = z.enum(['yes', 'no', 'limited', 'subtle', 'strict', 'unknown']);
 export type PromotionAllowed = z.infer<typeof promotionAllowedSchema>;
 
 export const categorySchema = z.enum([
@@ -253,10 +257,9 @@ export type Category = z.infer<typeof categorySchema>;
 export const competitionLevelSchema = z.enum(['low', 'medium', 'high']).nullable();
 export type CompetitionLevel = z.infer<typeof competitionLevelSchema>;
 
-export const growthTrendSchema = z.enum(['up', 'down', 'stable']).nullable();
-export type GrowthTrend = z.infer<typeof growthTrendSchema>;
+// Growth trend schema and type are imported from ./growth-trends.js
 
-export const modActivitySchema = z.enum(['active', 'moderate', 'inactive']).nullable();
+export const modActivitySchema = z.enum(['low', 'medium', 'high', 'unknown']).nullable();
 export type ModActivity = z.infer<typeof modActivitySchema>;
 
 export const redditCommunityRuleSetSchema = z.object({
@@ -264,7 +267,7 @@ export const redditCommunityRuleSetSchema = z.object({
   minAccountAge: z.number().nullable().optional(), // in days (legacy)
   minAccountAgeDays: z.number().nullable().optional(), // in days (new)
   watermarksAllowed: z.boolean().nullable().optional(),
-  sellingAllowed: ruleAllowanceSchema.optional(),
+  sellingAllowed: redditCommunitySellingPolicySchema.optional(),
   promotionalLinksAllowed: ruleAllowanceSchema.optional(),
   titleRules: z.array(z.string()).optional().default([]),
   contentRules: z.array(z.string()).optional().default([]),

@@ -1,11 +1,12 @@
 /* eslint-env node, jest */
 import { describe, test, expect } from 'vitest';
 import request from 'supertest';
-import { app } from '../../server/index';
+import { createApp } from '../../server/app';
 
 describe('Reddit Communities Schema Integration', () => {
 
   test('should return communities with structured rules schema from seeded data', async () => {
+    const { app } = await createApp();
     const response = await request(app)
       .get('/api/reddit/communities')
       .expect(200);
@@ -30,7 +31,7 @@ describe('Reddit Communities Schema Integration', () => {
 
     // Test that sellingAllowed uses the new enum values (not boolean)
     if (community.rules.sellingAllowed !== undefined) {
-      expect(['yes', 'limited', 'no']).toContain(community.rules.sellingAllowed);
+      expect(['allowed', 'limited', 'not_allowed', 'unknown']).toContain(community.rules.sellingAllowed);
     }
 
     // Test that promotionalLinksAllowed uses enum values if present
@@ -56,6 +57,7 @@ describe('Reddit Communities Schema Integration', () => {
   });
 
   test('should validate schema consistency across multiple communities', async () => {
+    const { app } = await createApp();
     const response = await request(app)
       .get('/api/reddit/communities')
       .expect(200);
@@ -75,7 +77,7 @@ describe('Reddit Communities Schema Integration', () => {
       // sellingAllowed should be enum if present, not boolean
       if (community.rules.sellingAllowed !== undefined) {
         expect(typeof community.rules.sellingAllowed).toBe('string');
-        expect(['yes', 'limited', 'no']).toContain(community.rules.sellingAllowed);
+        expect(['allowed', 'limited', 'not_allowed', 'unknown']).toContain(community.rules.sellingAllowed);
       }
 
       // Ensure watermarksAllowed stays boolean (not affected by our enum changes)
@@ -86,6 +88,7 @@ describe('Reddit Communities Schema Integration', () => {
   });
 
   test('should ensure new schema fields are properly serialized', async () => {
+    const { app } = await createApp();
     const response = await request(app)
       .get('/api/reddit/communities?category=general')
       .expect(200);

@@ -65,7 +65,7 @@ function resolveJwtSecret(): string | undefined {
   return undefined;
 }
 
-interface AdminRequest extends express.Request {
+export interface AdminRequest extends express.Request {
   user?: User;
 }
 
@@ -78,56 +78,74 @@ function ensureAdminId(req: AdminRequest, res: express.Response): number | undef
   return adminId;
 }
 
-export function setupAdminRoutes(app: Express) {
-  // Admin middleware to check if user is admin
-  const requireAdmin = (req: AdminRequest & { isAuthenticated?: () => boolean }, res: express.Response, next: express.NextFunction) => {
-    const jwtSecret = resolveJwtSecret();
-
-    if (!jwtSecret) {
-      return res.status(500).json({ message: MISSING_JWT_SECRET_MESSAGE });
-    }
-
-    // Check if user is authenticated via session OR JWT
-    let user: unknown = null;
-    let token: string | null = null;
+// Exported admin middleware to check if user is admin
+export const requireAdmin = (req: AdminRequest & { isAuthenticated?: () => boolean }, res: express.Response, next: express.NextFunction) => {
+  // Check if user is authenticated via session OR JWT
+  let user: unknown = null;
+  let token: string | null = null;
+  
+  // Try session-based authentication first (preferred for admin routes)
+  if (req.isAuthenticated && req.isAuthenticated()) {
+    user = req.user;
+  }
+  // Try cookie-based authentication 
+  else if (req.cookies && req.cookies.authToken) {
+    token = req.cookies.authToken;
+  }
+  // Fallback to Bearer token authentication  
+  else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+    token = req.headers.authorization.substring(7);
+  }
+  
+  // If we have a token, verify it (only check JWT_SECRET for actual JWT tokens)
+  if (token) {
+    // Only require JWT_SECRET for Bearer tokens, not cookie tokens (which may be session-based)
+    const isFromBearerHeader = req.headers.authorization && req.headers.authorization.startsWith('Bearer ');
     
-    // Try cookie-based authentication first (preferred)
-    if (req.cookies && req.cookies.authToken) {
-      token = req.cookies.authToken;
-    }
-    // Fallback to Bearer token authentication  
-    else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
-      token = req.headers.authorization.substring(7);
-    }
-    // Also try session-based authentication
-    else if (req.isAuthenticated && req.isAuthenticated()) {
-      user = req.user;
-    }
-    
-    // If we have a token, verify it
-    if (token) {
+    if (isFromBearerHeader) {
+      const jwtSecret = resolveJwtSecret();
+      
+      if (!jwtSecret) {
+        return res.status(500).json({ message: MISSING_JWT_SECRET_MESSAGE });
+      }
+      
       try {
         const decoded = jwt.verify(token, jwtSecret) as { id: number; username?: string; isAdmin?: boolean; iat: number; exp: number };
         user = decoded;
       } catch (error) {
         // JWT is invalid, user remains null
       }
+    } else {
+      // For cookie tokens, try JWT verification but don't fail if JWT_SECRET is missing (dev environment)
+      const jwtSecret = resolveJwtSecret();
+      
+      if (jwtSecret) {
+        try {
+          const decoded = jwt.verify(token, jwtSecret) as { id: number; username?: string; isAdmin?: boolean; iat: number; exp: number };
+          user = decoded;
+        } catch (error) {
+          // JWT is invalid, user remains null - continue to session auth fallback
+        }
+      }
     }
+  }
 
-    if (!user) {
-      return res.status(401).json({ message: 'Admin access required' });
-    }
+  if (!user) {
+    return res.status(401).json({ message: 'Admin access required' });
+  }
 
-    // Check if user has verified admin privileges
-    const typedUser = user as { id: number; username?: string | null; isAdmin?: boolean | null; role?: string | null };
-    if (!typedUser.isAdmin && typedUser.role !== 'admin') {
-      return res.status(403).json({ message: 'Admin access required' });
-    }
+  // Check if user has verified admin privileges
+  const typedUser = user as { id: number; username?: string | null; isAdmin?: boolean | null; role?: string | null };
+  if (!typedUser.isAdmin && typedUser.role !== 'admin') {
+    return res.status(403).json({ message: 'Admin access required' });
+  }
 
-    // Set user on request for later use
-    req.user = user as User;
-    next();
-  };
+  // Set user on request for later use
+  req.user = user as User;
+  next();
+};
+
+export function setupAdminRoutes(app: Express) {
 
   // Reset user password (Admin only)
   app.post('/api/admin/reset-password', requireAdmin, async (req, res) => {

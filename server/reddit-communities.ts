@@ -6,9 +6,11 @@ import {
   insertRedditCommunitySchema,
   type InsertRedditCommunity,
   type RedditCommunityRuleSet,
+  type RedditCommunitySellingPolicy,
   redditCommunityRuleSetSchema,
   createDefaultRules
 } from '@shared/schema';
+import { type GrowthTrend, isValidGrowthTrend, getGrowthTrendLabel } from '@shared/growth-trends';
 import { eq, ilike, desc, or } from 'drizzle-orm';
 import { lintCaption } from './lib/policy-linter.js';
 
@@ -130,7 +132,7 @@ export function normalizeRules(rawRules: unknown, promotionAllowed?: string, cat
 /**
  * Infer selling policy from promotion flags and category
  */
-export function inferSellingPolicy(promotionAllowed: string, category: string, rules?: RedditCommunityRuleSet): RedditCommunityRuleSet['sellingAllowed'] {
+export function inferSellingPolicy(promotionAllowed: string, category: string, rules?: RedditCommunityRuleSet): RedditCommunitySellingPolicy | undefined {
   // If rules already specify selling policy, use it
   if (rules && 'sellingAllowed' in rules && rules.sellingAllowed) {
     return rules.sellingAllowed;
@@ -138,14 +140,14 @@ export function inferSellingPolicy(promotionAllowed: string, category: string, r
   
   // Infer from promotion flags and category
   if (promotionAllowed === 'yes' || category === 'selling') {
-    return 'yes';
+    return 'allowed';
   } else if (promotionAllowed === 'limited' || promotionAllowed === 'subtle') {
     return 'limited';
   } else if (promotionAllowed === 'no' || promotionAllowed === 'strict') {
-    return 'no';
+    return 'not_allowed';
   }
   
-  return undefined;
+  return 'unknown';
 }
 
 export function normalizeCommunityRecord(community: RedditCommunity): NormalizedRedditCommunity {
@@ -215,13 +217,14 @@ export async function getCommunityInsights(communityId: string): Promise<{
 
   // Basic success indicators
   if ((community.successProbability ?? 0) > 85) successTips.push('High success rate - great choice');
-  if (community.growthTrend === 'up') successTips.push('Growing community - get in early');
+  if (community.growthTrend === 'up') successTips.push(`${getGrowthTrendLabel('up')} community - get in early`);
   if (community.competitionLevel === 'low') successTips.push('Low competition - your content will stand out');
 
   // Rule-based warnings using structured rules with safe null checks
   if (rules?.verificationRequired) warnings.push('Verification required - complete r/GetVerified');
-  if (rules?.sellingAllowed === 'no') warnings.push('No promotion/selling allowed - content only');
+  if (rules?.sellingAllowed === 'not_allowed') warnings.push('No promotion/selling allowed - content only');
   if (rules?.sellingAllowed === 'limited') warnings.push('Limited promotion allowed - check specific rules');
+  if (rules?.sellingAllowed === 'unknown') warnings.push('Selling policy unclear - check community rules');
   if (rules?.watermarksAllowed === false) warnings.push('Watermarks not allowed - use clean images');
   if (rules?.minKarma && rules.minKarma > 50) warnings.push(`Requires ${rules.minKarma}+ karma`);
   if (rules?.minAccountAge && rules.minAccountAge > 7) warnings.push(`Account must be ${rules.minAccountAge}+ days old`);
