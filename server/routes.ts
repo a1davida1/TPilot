@@ -120,7 +120,7 @@ function registerProResourcesRoutes(app: Express) {
       }
 
       const userTier = await getUserTier(req.user);
-      
+
       // Only pro/premium users get access
       if (userTier === 'free' || userTier === 'starter') {
         return res.status(403).json({
@@ -133,7 +133,7 @@ function registerProResourcesRoutes(app: Express) {
       const availablePerks = userTier === 'premium'
         ? getAvailablePerks('pro')
         : getAvailablePerks(userTier);
-      
+
       res.json({
         perks: availablePerks,
         accessGranted: true
@@ -171,13 +171,13 @@ function registerProResourcesRoutes(app: Express) {
         ? getAvailablePerks('pro')
         : getAvailablePerks(userTier);
       const perk = availablePerks.find(p => p.id === perkId);
-      
+
       if (!perk) {
         return res.status(404).json({ message: "Perk not found or not accessible" });
       }
 
       const instructions = getSignupInstructions(perkId);
-      
+
       res.json({
         instructions
       });
@@ -211,6 +211,7 @@ import { getRandomTemplates, addWatermark, getTemplateByMood } from "./content-t
 import { generateAdvancedContent, type ContentParameters } from "./advanced-content-generator.js";
 // Reddit communities now handled in reddit-routes.ts
 import { getAvailablePerks, getPerksByCategory, getSignupInstructions, realProPerks } from "./pro-perks.js";
+import { ReferralManager } from "./referral-manager.js";
 
 // API route modules
 import { registerApiRoutes } from "./api-routes.js";
@@ -292,20 +293,53 @@ interface PhotoInstructionsResult {
   technicalSettings?: string;
 }
 
+// ==========================================
+// PRO PERKS HELPER FUNCTIONS
+// ==========================================
+const deriveSharePercentage = (perk: ProPerk): number => {
+    if (!perk.commissionRate) {
+      return 20;
+    }
+
+    const percentMatches = Array.from(perk.commissionRate.matchAll(/(\d+(?:\.\d+)?)\s*%/g));
+    if (percentMatches.length === 0) {
+      return 20;
+    }
+
+    const numericPercents = percentMatches
+      .map(match => Number.parseFloat(match[1]))
+      .filter((value): value is number => Number.isFinite(value));
+
+    if (numericPercents.length === 0) {
+      return 20;
+    }
+
+    const normalizedPercents = numericPercents.map(value => {
+      const rounded = Math.round(value);
+      if (Number.isNaN(rounded)) {
+        return 20;
+      }
+      return Math.min(100, Math.max(1, rounded));
+    });
+
+    return Math.max(...normalizedPercents);
+  };
+
+
 export async function registerRoutes(app: Express, apiPrefix: string = '/api'): Promise<Server> {
   // ==========================================
   // VALIDATE ENVIRONMENT & APPLY SECURITY
   // ==========================================
-  
+
   // Set trust proxy securely for rate limiters
   app.set('trust proxy', (ip: string) => {
     // Trust localhost and private network ranges
     return ['127.0.0.1', '::1'].includes(ip) || ip.startsWith('10.') || ip.startsWith('192.168.');
   });
-  
+
   // Validate required environment variables first
   validateEnvironment();
-  
+
   // Log IPs first so downstream middleware can use req.userIP
   app.use(ipLoggingMiddleware);
   app.use(securityMiddleware);
@@ -372,7 +406,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
       sameSite: 'strict'
     }
   }) as unknown as express.RequestHandler;
-  
+
   // CSRF error handling middleware
   app.use((err: unknown, req: express.Request, res: express.Response, next: express.NextFunction) => {
     if (err instanceof Error && (err as { code?: string }).code === 'EBADCSRFTOKEN') {
@@ -390,10 +424,10 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
     }
     next(err);
   });
-  
+
   // Apply CSRF protection to sensitive state-changing routes
   // Note: JWT-based routes rely on token authentication instead of CSRF
-  
+
   // CSRF-protected routes (session-based and sensitive operations)
   const csrfProtectedRoutes = [
     '/api/auth/verify-email',
@@ -409,7 +443,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
     '/api/account/delete',
     '/api/account/update-preferences'
   ];
-  
+
   // Apply CSRF protection to sensitive routes
   csrfProtectedRoutes.forEach(route => {
     if (route.includes('*')) {
@@ -421,7 +455,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
       app.use(route, csrfProtection);
     }
   });
-  
+
   // CSRF token endpoint
   app.get('/api/csrf-token', csrfProtection, (req, res) => {
     res.json({ csrfToken: req.csrfToken() });
@@ -430,24 +464,24 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
   // ==========================================
   // AUTHENTICATION SETUP
   // ==========================================
-  
+
   // Setup authentication
   setupAuth(app);
   setupAdminRoutes(app);
-  
+
   // Configure social authentication
   configureSocialAuth();
 
   // ==========================================
   // ROUTE REGISTRATION
   // ==========================================
-  
+
   // Authentication routes - handled by setupAuth() in server/auth.ts
   // app.use('/api/auth', authRoutes); // Removed - duplicate auth system
-  
+
   // Upload routes
   app.use('/api/upload', uploadRoutes);
-  
+
   // Media routes
   app.use('/api/media', mediaRoutes);
 
@@ -456,10 +490,10 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
 
   // Referral routes
   app.use('/api/referral', referralRouter);
-  
+
   // Admin communities routes (mounted at reddit path for client compatibility)
   app.use('/api/reddit/communities', adminCommunitiesRouter);
-  
+
   // Social auth routes
   app.get('/api/auth/google', socialAuthRoutes.googleAuth);
   app.get('/api/auth/google/callback', socialAuthRoutes.googleCallback);
@@ -474,7 +508,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
   // ==========================================
   // STRIPE PAYMENT ENDPOINTS
   // ==========================================
-  
+
   // Create subscription payment intent
   app.post("/api/create-subscription", authenticateToken, async (req: AuthRequest, res) => {
     try {
@@ -489,7 +523,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
       }
 
       const { plan, amount } = req.body;
-      
+
       // Validate plan and amount
       if (!plan || !amount) {
         return res.status(400).json({ message: "Plan and amount are required" });
@@ -513,7 +547,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
           }
         });
         customerId = customer.id;
-        
+
         // Save customer ID to database
         await storage.updateUser(req.user.id, { stripeCustomerId: customerId });
       }
@@ -572,7 +606,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
       }
 
       const user = await storage.getUser(req.user.id);
-      
+
       if (!user?.stripeCustomerId) {
         return res.json({ hasSubscription: false, plan: 'free' });
       }
@@ -587,7 +621,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
       if (subscriptions.data.length > 0) {
         const subscription = subscriptions.data[0];
         const plan = subscription.metadata?.plan || 'pro';
-        
+
         return res.json({
           hasSubscription: true,
           plan,
@@ -615,7 +649,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
       }
 
       const { subscriptionId } = req.body;
-      
+
       if (!subscriptionId) {
         return res.status(400).json({ message: "Subscription ID required" });
       }
@@ -638,10 +672,10 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
   // ==========================================
   // CONTENT GENERATION ENDPOINTS
   // ==========================================
-  
+
   const generateContentBreaker = new CircuitBreaker(generateContent);
   const unifiedBreaker = new CircuitBreaker(generateUnifiedAIContent);
-  
+
   // Generate content with rate limiting
   app.post("/api/generate-content", generationLimiter, authenticateToken, async (req: AuthRequest, res, next) => {
     if (!req.user?.id) {
@@ -800,7 +834,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
       const todayGenerations = generations.filter((g: ContentGeneration) => 
         g.createdAt && new Date(g.createdAt).toDateString() === today.toDateString()
       );
-      
+
       const stats = {
         total: generations.length,
         today: todayGenerations.length,
@@ -856,7 +890,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
 
       const limit = parseInt(req.query.limit as string) || 20;
       const history = await storage.getGenerationsByUserId(req.user.id);
-      
+
       // Limit results and format for frontend
       const formattedHistory = history.slice(0, limit).map(gen => ({
         ...gen,
@@ -874,16 +908,16 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
   // ==========================================
   // REGISTER EXISTING ROUTE MODULES
   // ==========================================
-  
+
   // Register new enterprise API routes
   registerApiRoutes(app);
-  
+
   // Register Policy Routes
   registerPolicyRoutes(app);
-  
+
   // Register Reddit Routes  
   registerRedditRoutes(app);
-  
+
   // Register Analytics Routes
   registerAnalyticsRoutes(app);
 
@@ -909,7 +943,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
   // ==========================================
   // CONTENT GENERATIONS HISTORY API
   // ==========================================
-  
+
   // Get user's content generation history
   app.get('/api/content-generations', authenticateToken, async (req: AuthRequest, res) => {
     try {
@@ -969,7 +1003,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
   // ==========================================
   // PRODUCTION API ENDPOINTS - REAL IMPLEMENTATIONS
   // ==========================================
-  
+
   // DISABLED - Using MediaManager endpoint from api-routes.ts instead
   // This endpoint was conflicting with the proper implementation that uses MediaManager
   /*
@@ -979,7 +1013,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
       if (!userId) {
         return res.status(401).json({ message: 'Authentication required' });
       }
-      
+
       const images = await storage.getUserImages(userId);
       res.json(images);
     } catch (error) {
@@ -997,7 +1031,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
       if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
       }
-      
+
       const imageData = await storage.createUserImage({
         userId: req.user.id,
         filename: req.file.filename,
@@ -1010,7 +1044,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
           uploadedAt: new Date().toISOString()
         }
       });
-      
+
       res.json(imageData);
     } catch (error) {
       logger.error('Upload failed:', error);
@@ -1025,17 +1059,17 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
     try {
       const imageId = parseInt(req.params.id);
       const userId = req.user.id;
-      
+
       const image = await storage.getUserImage(imageId, userId);
       if (!image) {
         return res.status(404).json({ message: 'Image not found' });
       }
-      
+
       const filePath = path.join(process.cwd(), 'uploads', image.filename);
       await fs.unlink(filePath).catch(() => {});
-      
+
       await storage.deleteUserImage(imageId, userId);
-      
+
       res.json({ success: true, message: 'Media deleted' });
     } catch (error) {
       logger.error('Failed to delete media:', error);
@@ -1052,19 +1086,19 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
       }
       const userId = req.user.id;
       const images = await storage.getUserImages(userId);
-      
+
       let totalBytes = 0;
       for (const image of images) {
         totalBytes += image.size || 0;
       }
-      
+
       const userTier = req.user.tier || 'free';
       const quotaBytes = {
         free: 100 * 1024 * 1024,
         starter: 500 * 1024 * 1024,
         pro: 5 * 1024 * 1024 * 1024
       }[userTier] || 100 * 1024 * 1024;
-      
+
       res.json({
         usedBytes: totalBytes,
         quotaBytes: quotaBytes,
@@ -1085,7 +1119,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
   app.post('/api/ai/generate', authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       const { prompt, platforms, styleHints, variants } = req.body;
-      
+
       const results = await Promise.all(
         platforms.map(async (platform: string) => {
           const generated = await generateUnifiedAIContent({
@@ -1097,7 +1131,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
             includePromotion: false,
             customInstructions: prompt
           });
-          
+
           return {
             platform,
             titles: generated.titles,
@@ -1109,7 +1143,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
           };
         })
       );
-      
+
       if (req.user?.id) {
         for (const result of results) {
           await storage.createContentGeneration({
@@ -1124,7 +1158,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
           });
         }
       }
-      
+
       res.json({
         content: results,
         tokensUsed: results.length * 250,
@@ -1173,7 +1207,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
         return res.status(401).json({ message: "Authentication required" });
       }
       const preferences = await storage.getUserPreferences(req.user.id);
-      
+
       res.json(preferences || {
         theme: 'light',
         notifications: true,
@@ -1209,7 +1243,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
         return res.status(401).json({ message: "Authentication required" });
       }
       const user = await storage.getUser(req.user.id);
-      
+
       if (!user?.stripeCustomerId || !stripe) {
         return res.json({
           subscription: null,
@@ -1217,13 +1251,13 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
           tier: user?.tier || 'free'
         });
       }
-      
+
       const subscriptions = await stripe.subscriptions.list({
         customer: user.stripeCustomerId,
         status: 'active',
         limit: 1
       });
-      
+
       if (subscriptions.data.length > 0) {
         const sub = subscriptions.data[0];
         return res.json({
@@ -1239,7 +1273,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
           tier: user.tier || 'free'
         });
       }
-      
+
       res.json({
         subscription: null,
         isPro: false,
@@ -1258,7 +1292,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
         return res.status(401).json({ message: "Authentication required" });
       }
       const { platform, content, title, subreddit } = req.body;
-      
+
       const post = await storage.createSocialMediaPost({
         userId: req.user.id,
         platform: platform,
@@ -1266,7 +1300,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
         accountId: req.user.id,
         status: 'draft'
       });
-      
+
       res.json({ 
         success: true, 
         postId: post.id,
@@ -1290,7 +1324,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
         platform: req.query.platform as string,
         status: req.query.status as string
       });
-      
+
       res.json(posts);
     } catch (error) {
       logger.error('Failed to fetch posts:', error);
@@ -1338,7 +1372,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
   // ==========================================
   // ERROR HANDLER (MUST BE LAST)
   // ==========================================
-  
+
   // Handle 404s for API routes specifically
   app.use('/api/*', (req, res) => {
     res.status(404).json({ message: `API endpoint not found: ${req.path}` });
@@ -1353,14 +1387,14 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
     if (req.path.startsWith('/api/') || req.path.startsWith('/auth/') || req.path.startsWith('/webhook/') || req.path.startsWith('/assets/')) {
       return next();
     }
-    
+
     // For SPA, always serve index.html for non-asset requests
     import('url').then(({ fileURLToPath }) => {
       import('path').then((path) => {
         import('fs').then((fs) => {
           const __dirname = path.dirname(fileURLToPath(import.meta.url));
           const clientPath = path.join(__dirname, '..', 'client');
-          
+
           if (fs.existsSync(path.join(clientPath, 'index.html'))) {
             res.sendFile(path.join(clientPath, 'index.html'));
           } else {

@@ -38,7 +38,7 @@ export function setupAuth(app: Express) {
       if (existingUserByUsername) {
         return res.status(400).json({ message: 'Username already exists' });
       }
-      
+
       const existingUserByEmail = await storage.getUserByEmail(email);
       if (existingUserByEmail) {
         return res.status(400).json({ message: 'Email already exists' });
@@ -58,11 +58,11 @@ export function setupAuth(app: Express) {
       // For development, provide immediate authentication
       // For production, require email verification
       const isDevelopment = process.env.NODE_ENV === 'development';
-      
+
       if (isDevelopment) {
         // Automatically verify email in development
         await storage.updateUserEmailVerified(user.id, true);
-        
+
         // Generate JWT token for immediate authentication
         const token = jwt.sign(
           {
@@ -135,16 +135,16 @@ export function setupAuth(app: Express) {
           }
         });
       }
-      
+
       // Track signup metrics
       authMetrics.track('signup', true, Date.now() - startTime);
-      
+
     } catch (error) {
       safeLog('error', 'Authentication signup failed', { error: (error as Error).message });
-      
+
       // Track failed signup
       authMetrics.track('signup', false, Date.now() - startTime, (error as Error).message);
-      
+
       res.status(500).json({ message: 'Error creating user' });
     }
   });
@@ -230,29 +230,29 @@ export function setupAuth(app: Express) {
           role: user.role
         }
       });
-      
+
       // Track successful login metrics
       authMetrics.track('login', true, Date.now() - startTime);
-      
+
     } catch (error) {
       safeLog('error', 'Authentication login failed', { error: (error as Error).message });
-      
+
       // Track failed login metrics
       authMetrics.track('login', false, Date.now() - startTime, (error as Error).message);
-      
+
       res.status(500).json({ message: 'Error logging in' });
     }
   });
 
   // When ready to implement, use proper OAuth libraries and security practices
-  
+
   // Note: Resend verification email route is defined at line 812 with proper rate limiting
 
   // Password reset request
   app.post('/api/auth/forgot-password', passwordResetLimiter, async (req, res) => {
     try {
       const { email } = req.body;
-      
+
       logger.info('Password reset workflow started', {
         email: email ? email.replace(/(.{2})(.*)(@.*)/, '$1***$3') : 'No email',
         requestIP: req.ip || 'Unknown',
@@ -260,7 +260,7 @@ export function setupAuth(app: Express) {
         emailServiceReady: emailService.isEmailServiceConfigured,
         timestamp: new Date().toISOString()
       });
-      
+
       if (!email) {
         logger.warn('Password reset failed: No email provided');
         return res.status(400).json({ message: 'Email is required' });
@@ -269,7 +269,7 @@ export function setupAuth(app: Express) {
       // Find user by email
       logger.debug('Looking up user by email');
       const user = await storage.getUserByEmail(email);
-      
+
       if (!user) {
         logger.warn('User not found for password reset (returning generic message for security)', {
           email: email.replace(/(.{2})(.*)(@.*)/, '$1***$3')
@@ -283,29 +283,29 @@ export function setupAuth(app: Express) {
         userId: user.id,
         emailVerified: user.emailVerified || false
       });
-      
+
       // Send password reset email
       if (user.email) {
         logger.info('Preparing to send password reset email', {
           to: user.email.replace(/(.{2})(.*)(@.*)/, '$1***$3'),
           username: user.username
         });
-        
+
         // Generate JWT token for password reset (not database token)
         const resetToken = jwt.sign(
           { email: user.email },
           JWT_SECRET_VALIDATED,
           { expiresIn: '1h' }
         );
-        
+
         // Send password reset email with JWT token
         await emailService.sendPasswordResetEmail(user.email, user.username, resetToken);
-        
+
         logger.info('Password reset email sent successfully - check email service logs for delivery status');
       }
 
       logger.info('Password reset request completed - returning generic success message for security');
-      
+
       res.json({ message: 'If the email exists, a reset link has been sent' });
     } catch (error) {
       logger.error('Password reset error', {
@@ -314,7 +314,7 @@ export function setupAuth(app: Express) {
         email: req.body?.email ? req.body.email.replace(/(.{2})(.*)(@.*)/, '$1***$3') : 'No email',
         timestamp: new Date().toISOString()
       });
-      
+
       safeLog('error', 'Password reset request failed', { error: (error as Error).message });
       res.status(500).json({ message: 'Error processing password reset' });
     }
@@ -332,7 +332,7 @@ export function setupAuth(app: Express) {
       node_env: process.env.NODE_ENV || 'not set',
       deployment: process.env.REPLIT_DEPLOYMENT || 'not set'
     };
-    
+
     logger.info('Email service status check', status);
     res.json(status);
   });
@@ -346,18 +346,18 @@ export function setupAuth(app: Express) {
       token = extractAuthToken(req);
 
       if (!token) {
-        return res.status(401).json({ message: 'Access token required' });
+        return res.status(401).json({ error: 'Access token required' });
       }
-        
+
       try {
         const decoded = jwt.verify(token, JWT_SECRET_VALIDATED) as { userId?: number; id?: number; isAdmin?: boolean; };
-        
+
         // Verify admin status through database lookup only
-        
+
         // Regular user lookup
         const userId = decoded.userId || decoded.id;
         if (!userId) {
-          return res.status(401).json({ message: 'Invalid token: missing user ID' });
+          return res.status(401).json({ error: 'Invalid token: missing user ID' });
         }
         const user = await storage.getUser(userId);
         if (user) {
@@ -370,10 +370,10 @@ export function setupAuth(app: Express) {
           });
         }
 
-        return res.status(404).json({ message: 'User not found' });
+        return res.status(404).json({ error: 'User not found' });
       } catch (jwtError) {
         safeLog('error', 'JWT verification failed', { error: (jwtError as Error).message });
-        return res.status(401).json({ message: 'Invalid token' });
+        return res.status(401).json({ error: 'Invalid token' });
       }
     } catch (error) {
       safeLog('error', 'Get user failed', { error: (error as Error).message });
@@ -396,7 +396,7 @@ export function setupAuth(app: Express) {
 
       const user = await storage.getUser(userId);
       if (!user) {
-        return res.status(404).json({ message: 'User not found' });
+        return res.status(404).json({ error: 'User not found' });
       }
 
       // Verify current password
@@ -457,7 +457,7 @@ export function setupAuth(app: Express) {
   app.get('/api/auth/verify-email', async (req, res) => {
     try {
       const { token } = req.query;
-      
+
       // Determine preferred response type: prioritize HTML for browsers, JSON for APIs
       const preferredType = req.accepts(['html', 'json']);
       const isJsonResponse = preferredType === 'json' || 
@@ -465,7 +465,7 @@ export function setupAuth(app: Express) {
                             req.headers['user-agent']?.includes('superagent') || // supertest uses superagent
                             req.headers['user-agent']?.includes('node-fetch') ||
                             req.headers['user-agent']?.includes('node'); // Node.js test runner
-      
+
       logger.info('📧 EMAIL VERIFICATION WORKFLOW STARTED', {
         token: token ? `${String(token).substring(0, 8)}...` : 'No token',
         origin: req.headers.origin || 'Unknown',
@@ -473,12 +473,12 @@ export function setupAuth(app: Express) {
         preferredType: preferredType,
         timestamp: new Date().toISOString()
       });
-      
+
       // Check for missing or empty token
       if (!token || token === '') {
         logger.warn('❌ EMAIL VERIFICATION FAILED: No token provided');
         if (isJsonResponse) {
-          return res.status(400).json({ message: 'Token is required' });
+          return res.status(400).json({ error: 'Token is required' });
         }
         return res.redirect(`${FRONTEND_URL}/email-verification?error=token_required`);
       }
@@ -486,23 +486,23 @@ export function setupAuth(app: Express) {
       // Get the verification token from database
       logger.debug('🔍 Looking up token in database...');
       const verificationToken = await storage.getVerificationToken(token as string);
-      
+
       if (!verificationToken) {
         logger.warn('❌ EMAIL VERIFICATION FAILED: Token not found in database', {
           token: `${String(token).substring(0, 8)}...`
         });
         if (isJsonResponse) {
-          return res.status(400).json({ message: 'Invalid or expired token' });
+          return res.status(400).json({ error: 'Invalid or expired token' });
         }
         return res.redirect(`${FRONTEND_URL}/email-verification?error=invalid_token`);
       }
-      
+
       logger.debug('✅ Token found', {
         userId: verificationToken.userId,
         created: 'N/A',
         expires: new Date(verificationToken.expiresAt).toISOString()
       });
-      
+
       // Check if token is expired
       if (new Date(verificationToken.expiresAt) < new Date()) {
         logger.warn('❌ EMAIL VERIFICATION FAILED: Token expired', {
@@ -511,7 +511,7 @@ export function setupAuth(app: Express) {
         });
         await storage.deleteVerificationToken(token as string);
         if (isJsonResponse) {
-          return res.status(400).json({ message: 'Invalid or expired token' });
+          return res.status(400).json({ error: 'Invalid or expired token' });
         }
         return res.redirect(`${FRONTEND_URL}/email-verification?error=token_expired`);
       }
@@ -520,7 +520,7 @@ export function setupAuth(app: Express) {
       logger.debug('📝 Updating user email verification status...');
       await storage.updateUserEmailVerified(verificationToken.userId, true);
       logger.debug('✅ User email marked as verified');
-      
+
       // Get user data for email
       logger.debug('🔍 Fetching user data...');
       const user = await storage.getUser(verificationToken.userId);
@@ -528,43 +528,43 @@ export function setupAuth(app: Express) {
         username: user?.username || 'Unknown',
         email: user?.email ? user.email.replace(/(.{2})(.*)(@.*)/, '$1***$3') : 'No email'
       });
-      
+
       // Send welcome email
       if (user?.email && user?.username) {
         logger.debug('📧 Sending welcome email...');
         await emailService.sendWelcomeEmail(user.email, user.username);
         logger.debug('✅ Welcome email sent successfully');
       }
-      
+
       // Delete the used token
       logger.debug('🗑️ Deleting used verification token...');
       await storage.deleteVerificationToken(token as string);
       logger.debug('✅ Token deleted successfully');
-      
+
       logger.info('✅ EMAIL VERIFICATION SUCCESSFUL', {
         user: user?.username || 'Unknown',
         email: user?.email ? user.email.replace(/(.{2})(.*)(@.*)/, '$1***$3') : 'No email',
         responseMode: isJsonResponse ? 'JSON' : 'REDIRECT'
       });
-      
+
       // Return appropriate response based on mode
       if (isJsonResponse) {
         return res.status(200).json({ message: 'Email verified successfully' });
       }
-      
+
       // Redirect to email verification page with success message
       const redirectUrl = `${FRONTEND_URL}/email-verification?verified=true&email=${encodeURIComponent(user?.email || '')}`;
       res.redirect(redirectUrl);
-      
+
     } catch (error) {
       logger.error('❌ EMAIL VERIFICATION ERROR', {
         error: (error as Error).message,
         stack: (error as Error).stack?.split('\n')[1]?.trim() || 'No stack trace',
         time: new Date().toISOString()
       });
-      
+
       safeLog('error', 'Email verification error:', { error: (error as Error).message });
-      
+
       // Determine response mode from earlier logic
       const preferredTypeError = req.accepts(['html', 'json']);
       const isJsonResponseError = preferredTypeError === 'json' || 
@@ -572,9 +572,9 @@ export function setupAuth(app: Express) {
                                  req.headers['user-agent']?.includes('superagent') ||
                                  req.headers['user-agent']?.includes('node-fetch') ||
                                  req.headers['user-agent']?.includes('node');
-      
+
       if (isJsonResponseError) {
-        return res.status(500).json({ message: 'Error verifying email' });
+        return res.status(500).json({ error: 'Error verifying email' });
       }
       res.redirect(`${FRONTEND_URL}/email-verification?error=verification_failed`);
     }
@@ -594,40 +594,40 @@ export function setupAuth(app: Express) {
           error: (jwtError as Error).message,
           tokenLength: token.length
         });
-        return res.status(400).json({ message: 'Invalid or expired reset token' });
+        return res.status(400).json({ error: 'Invalid or expired reset token' });
       }
-      
+
       // Extract email from JWT payload
       const { email } = decoded;
       if (!email) {
-        return res.status(400).json({ message: 'Invalid token format' });
+        return res.status(400).json({ error: 'Invalid token format' });
       }
 
       // Find user by email
       const user = await storage.getUserByEmail(email);
       if (!user) {
-        return res.status(400).json({ message: 'User not found' });
+        return res.status(400).json({ error: 'User not found' });
       }
 
       // Hash the new password
       const hashedPassword = await bcrypt.hash(newPassword, 10);
-      
+
       // Update password, mark email as verified, and clear temporary password flag
       await storage.updateUserPassword(user.id, hashedPassword);
       await storage.updateUserEmailVerified(user.id, true);
       await storage.updateUser(user.id, { mustChangePassword: false });
-      
+
       logger.info('Password reset successful', {
         userId: user.id,
         username: user.username,
         email: email.replace(/(.{2})(.*)(@.*)/, '$1***$3')
       });
-      
+
       res.json({ message: 'Password reset successful' });
-      
+
     } catch (error) {
       safeLog('error', 'Password reset error:', { error: (error as Error).message });
-      res.status(400).json({ message: 'Invalid or expired token' });
+      res.status(400).json({ error: 'Invalid or expired token' });
     }
   });
 
@@ -636,43 +636,43 @@ export function setupAuth(app: Express) {
   app.post('/api/auth/verify-reset-token', passwordResetLimiter, async (req, res) => {
     try {
       const { token } = req.body;
-      
+
       if (!token) {
         return res.status(400).json({ message: 'Token required' });
       }
-      
+
       // Decode the token (it might be URL encoded from the frontend)
       const decodedToken = decodeURIComponent(token);
-      
+
       // Check if it's a JWT token or database token
       try {
         // Try JWT first (from forgot-password flow)
         const decoded = jwt.verify(decodedToken, JWT_SECRET_VALIDATED) as any;
-        
+
         if (decoded.type !== 'password-reset') {
           return res.status(400).json({ message: 'Invalid token type' });
         }
-        
+
         res.json({ valid: true, email: decoded.email });
       } catch (jwtError) {
         // If JWT fails, try database token (from verification flow)
         const resetToken = await storage.getVerificationToken(decodedToken);
-        
+
         if (!resetToken) {
           return res.status(400).json({ message: 'Invalid token' });
         }
-        
+
         // Check if token is expired
         if (new Date(resetToken.expiresAt) < new Date()) {
           return res.status(400).json({ message: 'Token has expired' });
         }
-        
+
         // Get user email for response
         const user = await storage.getUser(resetToken.userId);
         if (!user) {
           return res.status(400).json({ message: 'Invalid token' });
         }
-        
+
         res.json({ valid: true, email: user.email });
       }
     } catch (error) {
@@ -687,46 +687,47 @@ export function setupAuth(app: Express) {
     try {
       // Check authentication from JWT cookie or token
       const token = extractAuthToken(req);
-      
+
       if (!token) {
-        return res.status(401).json({ message: 'Authentication required' });
+        return res.status(401).json({ error: 'Authentication required' });
       }
-      
+
       let userId: number;
       try {
-        const decoded = jwt.verify(token, JWT_SECRET_VALIDATED) as { userId?: number; id?: number; isAdmin?: boolean; };
+        const decoded = jwt.verify(token, JWT_SECRET_VALIDATED) as { userId?: number; id?: number; isAdmin?: boolean; role?: string };
         const decodedUserId = decoded.userId || decoded.id;
         if (!decodedUserId) {
-          return res.status(401).json({ message: 'Invalid token: missing user ID' });
+          return res.status(401).json({ error: 'Invalid token: missing user ID' });
         }
         userId = decodedUserId;
       } catch (jwtError) {
-        return res.status(401).json({ message: 'Invalid authentication token' });
+        safeLog('error', 'JWT verification failed during delete account', { error: (jwtError as Error).message });
+        return res.status(401).json({ error: 'Invalid authentication token' });
       }
-      
+
       const { password } = req.body;
-      
+
       if (!password) {
-        return res.status(400).json({ message: 'Password verification required' });
+        return res.status(400).json({ error: 'Password verification required' });
       }
-      
+
       const user = await storage.getUser(userId);
       if (!user) {
-        return res.status(404).json({ message: 'User not found' });
+        return res.status(404).json({ error: 'User not found' });
       }
-      
+
       // Verify password before deletion
       const validPassword = await bcrypt.compare(password, user.password);
       if (!validPassword) {
-        return res.status(400).json({ message: 'Password verification failed' });
+        return res.status(400).json({ error: 'Password verification failed' });
       }
-      
+
       // Hard delete for now (soft delete requires schema changes)
       await storage.deleteUser(userId);
-      
+
       // Clear auth cookie
       res.clearCookie('authToken');
-      
+
       res.json({ message: 'Account deleted successfully' });
     } catch (error) {
       safeLog('error', 'Delete account error:', { error: (error as Error).message });
@@ -739,25 +740,25 @@ export function setupAuth(app: Express) {
     try {
       // Check if user is authenticated
       const token = extractAuthToken(req);
-      
+
       if (!token) {
         return res.status(401).json({ error: 'Authentication required' });
       }
-      
+
       // Verify token and check admin status
       try {
-        const decoded = jwt.verify(token, JWT_SECRET_VALIDATED) as { userId?: number; id?: number; isAdmin?: boolean; role?: string; };
+        const decoded = jwt.verify(token, JWT_SECRET_VALIDATED) as { userId?: number; id?: number; isAdmin?: boolean; role?: string };
         if (!decoded.isAdmin && decoded.role !== 'admin') {
           return res.status(403).json({ error: 'Admin access required' });
         }
       } catch {
         return res.status(401).json({ error: 'Invalid authentication token' });
       }
-      
+
       // Get metrics summary
       const metrics = authMetrics.getSummary(24);
       const recentEvents = authMetrics.getRecentEvents(20);
-      
+
       res.json({
         summary: metrics,
         recentEvents
@@ -772,14 +773,14 @@ export function setupAuth(app: Express) {
   app.post('/api/auth/resend-verification', verificationLimiter, async (req, res) => {
     try {
       const { email } = req.body;
-      
+
       if (!email) {
-        return res.status(400).json({ message: 'Email required' });
+        return res.status(400).json({ error: 'Email required' });
       }
 
       // Find user
       const user = await storage.getUserByEmail(email);
-      
+
       if (!user) {
         // Don't reveal if email exists or not for security
         return res.json({ message: 'If that email exists, we sent a verification link' });
@@ -787,7 +788,7 @@ export function setupAuth(app: Express) {
 
       // Check if already verified
       if (user.emailVerified) {
-        return res.status(400).json({ message: 'Email already verified' });
+        return res.status(400).json({ error: 'Email already verified' });
       }
 
       // Generate new verification token

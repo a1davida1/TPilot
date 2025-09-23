@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CaptionPreview } from "./CaptionPreview";
 import { Loader2, Sparkles, Upload, AlertCircle, Image as ImageIcon } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { apiRequest, type ApiError } from "@/lib/queryClient";
 import { getErrorMessage } from "@/utils/errorHelpers";
 
 const PLATFORMS = [
@@ -25,6 +26,17 @@ const VOICES = [
   { value: "gym_energy", label: "Gym Energy" },
   { value: "cozy_girl", label: "Cozy Girl" }
 ];
+
+function isApiError(error: unknown): error is ApiError {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "status" in error &&
+    typeof (error as { status: unknown }).status === "number" &&
+    "statusText" in error &&
+    typeof (error as { statusText: unknown }).statusText === "string"
+  );
+}
 
 export function GeminiCaptionGenerator() {
   const [imageUrl, setImageUrl] = useState("");
@@ -70,23 +82,13 @@ export function GeminiCaptionGenerator() {
     setCaptionData(null);
 
     try {
-      const response = await fetch('/api/caption/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          imageUrl,
-          platform,
-          voice
-        })
+      const response = await apiRequest('POST', '/api/caption/generate', {
+        imageUrl,
+        platform,
+        voice
       });
 
       const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Generation failed');
-      }
 
       setCaptionData(result);
       toast({
@@ -95,8 +97,10 @@ export function GeminiCaptionGenerator() {
       });
     } catch (err: unknown) {
       console.error('Generation error:', err);
-      const message = getErrorMessage(err);
-      setError(message || 'Failed to generate caption');
+      const message = isApiError(err)
+        ? err.userMessage ?? err.message ?? 'Failed to generate caption'
+        : getErrorMessage(err);
+      setError(message);
       toast({
         title: "Generation failed",
         description: message || 'Please try again',

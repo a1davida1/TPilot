@@ -310,14 +310,14 @@ describe('Admin Communities Routes', () => {
   describe('Authentication and Authorization', () => {
     it('should return 401 when no authentication token is provided', async () => {
       mockAuthenticateToken.mockImplementation((req: any, res: any, next: any) => {
-        res.status(401).json({ message: 'Access token required' });
+        res.status(401).json({ error: 'Access token required' });
       });
 
       const response = await request
         .get('/api/admin/communities')
         .expect(401);
 
-      expect(response.body.message).toBe('Access token required');
+      expect(response.body.error).toBe('Access token required');
     });
 
     it('should return 403 when user is not admin', async () => {

@@ -4,7 +4,7 @@
  */
 
 import { db } from '../db';
-import { users, referralRewards } from '@shared/schema';
+import { users, referralRewards, referralCodes } from '@shared/schema';
 import { eq, sql } from 'drizzle-orm';
 import { customAlphabet } from 'nanoid';
 // TODO: implement real notification service
@@ -39,7 +39,7 @@ export class ReferralManager {
 
     while (attempts < maxAttempts) {
       const code = generateReferralCode();
-      
+
       // Check if code already exists
       const existing = await db
         .select({ id: users.id })
@@ -94,17 +94,28 @@ export class ReferralManager {
   }> {
     try {
       // Find the referrer
-      const [referrer] = await db
-        .select({ id: users.id, subscriptionStatus: users.subscriptionStatus })
-        .from(users)
-        .where(eq(users.referralCodeId, parseInt(referralCode)));
+      const [codeRecord] = await db
+        .select({
+          id: referralCodes.id,
+          ownerId: referralCodes.ownerId,
+        })
+        .from(referralCodes)
+        .where(eq(referralCodes.code, referralCode))
+        .limit(1);
 
-      if (!referrer) {
+      if (!codeRecord?.ownerId) {
         return {
           success: false,
           error: 'Invalid referral code',
         };
       }
+
+      const [referrer] = await db
+        .select({ id: users.id, subscriptionStatus: users.subscriptionStatus })
+        .from(users)
+        .where(eq(users.id, codeRecord.ownerId))
+        .limit(1);
+
 
       // Check if new user is trying to refer themselves
       if (referrer.id === newUserId) {

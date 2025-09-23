@@ -47,7 +47,7 @@ export const authenticateToken = async (req: AuthRequest, res: express.Response,
   // Try JWT token first
   if (token) {
     if (await isTokenBlacklisted(token)) {
-      return res.status(401).json({ message: 'Token revoked' });
+      return res.status(401).json({ error: 'Token revoked' });
     }
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as { userId?: number; id?: number; email?: string; isAdmin?: boolean; username?: string; role?: string; tier?: string; iat: number; exp: number };
@@ -58,20 +58,20 @@ export const authenticateToken = async (req: AuthRequest, res: express.Response,
       // For regular users, fetch from database
       const userId = decoded.userId || decoded.id;
       if (!userId) {
-        return res.status(401).json({ message: 'Invalid token: missing user ID' });
+        return res.status(401).json({ error: 'Invalid token: missing user ID' });
       }
 
       const [user] = await db.select().from(users).where(eq(users.id, userId));
 
       if (!user) {
-        return res.status(401).json({ message: 'User not found' });
+        return res.status(401).json({ error: 'User not found' });
       }
 
       req.user = user;
       return next();
     } catch (error) {
       logger.error('Auth error:', error);
-      return res.status(403).json({ message: 'Invalid token' });
+      return res.status(401).json({ error: 'Invalid token' });
     }
   }
 
@@ -81,7 +81,7 @@ export const authenticateToken = async (req: AuthRequest, res: express.Response,
     return next();
   }
 
-  return res.status(401).json({ message: 'Access token required' });
+  return res.status(401).json({ error: 'Access token required' });
 };
 
 export const createToken = (user: UserType): string => {
