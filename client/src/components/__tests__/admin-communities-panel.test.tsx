@@ -96,7 +96,7 @@ describe('AdminCommunitiesPanel', () => {
     
     // Mock fetch for community list
     global.fetch = vi.fn().mockImplementation((url: string) => {
-      if (url.includes('/api/admin/communities')) {
+      if (url.includes('/api/reddit/communities')) {
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve(mockCommunities),
@@ -158,7 +158,7 @@ describe('AdminCommunitiesPanel', () => {
       fireEvent.change(searchInput, { target: { value: 'photography' } });
 
       await waitFor(() => {
-        expect(fetch).toHaveBeenCalledWith('/api/admin/communities?search=photography');
+        expect(fetch).toHaveBeenCalledWith('/api/reddit/communities?search=photography');
       });
     });
 
@@ -228,7 +228,7 @@ describe('AdminCommunitiesPanel', () => {
       fireEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(mockApiRequest).toHaveBeenCalledWith('POST', '/api/admin/communities', expect.objectContaining({
+        expect(mockApiRequest).toHaveBeenCalledWith('POST', '/api/reddit/communities', expect.objectContaining({
           name: 'testcommunity',
           displayName: 'Test Community',
           category: 'test',
@@ -278,7 +278,7 @@ describe('AdminCommunitiesPanel', () => {
       fireEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(mockApiRequest).toHaveBeenCalledWith('PUT', '/api/admin/communities/test_community_1', expect.objectContaining({
+        expect(mockApiRequest).toHaveBeenCalledWith('PUT', '/api/reddit/communities/test_community_1', expect.objectContaining({
           members: 600000,
         }));
       });
@@ -302,7 +302,7 @@ describe('AdminCommunitiesPanel', () => {
       fireEvent.click(confirmButton);
 
       await waitFor(() => {
-        expect(mockApiRequest).toHaveBeenCalledWith('DELETE', '/api/admin/communities/test_community_1');
+        expect(mockApiRequest).toHaveBeenCalledWith('DELETE', '/api/reddit/communities/test_community_1');
       });
     });
   });

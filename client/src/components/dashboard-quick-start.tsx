@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -50,6 +50,11 @@ interface RedditConnectResponse {
 interface RedditSubmitResponse {
   success?: boolean;
   error?: string;
+}
+
+interface RedditAccountSummary {
+  platform: string;
+  username: string;
 }
 
 interface QuickStartModalProps {
@@ -141,6 +146,20 @@ export function QuickStartModal({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
 
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const pollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const clearConnectionMonitors = () => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+    if (pollTimeoutRef.current) {
+      clearTimeout(pollTimeoutRef.current);
+      pollTimeoutRef.current = null;
+    }
+  };
+
   useEffect(() => {
     if (!open) {
       return;
@@ -151,6 +170,9 @@ export function QuickStartModal({
     setSubmitError(null);
     setIsSubmitting(false);
     setIsConnecting(false);
+    if (isRedditConnected) {
+      clearConnectionMonitors();
+    }
   }, [open, initialStep, isRedditConnected]);
 
   // Initialize default template separately to avoid step reset
@@ -190,27 +212,76 @@ export function QuickStartModal({
 
     setIsConnecting(true);
     setConnectionInitiated(true);
+    clearConnectionMonitors();
 
     try {
       const response = await apiRequest("GET", "/api/reddit/connect");
       const data = await response.json() as RedditConnectResponse;
-      
+
       if (data.authUrl) {
         window.open(data.authUrl, "_blank");
         toast({
           title: "Reddit Authorization",
           description: "Complete the authorization in the new window, then return here.",
         });
-        // Simulate connection success for the flow
-        setTimeout(() => {
-          setConnected(true);
+        let lastErrorMessage =
+          "We couldn't detect a connected Reddit account. Please finish the Reddit authorization window.";
+
+        const verifyConnection = async () => {
+          try {
+            const accountsResponse = await apiRequest("GET", "/api/reddit/accounts");
+            const accountsRaw = await accountsResponse.json() as unknown;
+
+            if (!Array.isArray(accountsRaw)) {
+              lastErrorMessage = "Unexpected response while verifying Reddit accounts.";
+              return;
+            }
+
+            const accounts = accountsRaw as RedditAccountSummary[];
+            const hasRedditAccount = accounts.some(account => account.platform === "reddit");
+
+            if (hasRedditAccount) {
+              clearConnectionMonitors();
+              setConnected(true);
+              setIsConnecting(false);
+              toast({
+                title: "Reddit account connected",
+                description: "You're ready to continue the quick start.",
+              });
+              onConnected?.();
+            } else {
+              lastErrorMessage =
+                "No Reddit account detected yet. Complete the authorization window to continue.";
+            }
+          } catch (verificationError) {
+            if (verificationError instanceof Error) {
+              lastErrorMessage = verificationError.message;
+            } else {
+              lastErrorMessage = "Failed to verify Reddit connection.";
+            }
+          }
+        };
+
+        pollIntervalRef.current = setInterval(() => {
+          void verifyConnection();
+        }, 3000);
+
+        pollTimeoutRef.current = setTimeout(() => {
+          clearConnectionMonitors();
           setIsConnecting(false);
-          onConnected?.();
-        }, 2000);
+          toast({
+            title: "Waiting for Reddit authorization",
+            description: lastErrorMessage,
+            variant: "destructive",
+          });
+        }, 60000);
+
+        void verifyConnection();
       } else {
         throw new Error(data.message || "Failed to get authorization URL");
       }
     } catch (error) {
+      clearConnectionMonitors();
       toast({
         title: "Connection Error",
         description: error instanceof Error ? error.message : "Failed to connect to Reddit",
@@ -224,12 +295,12 @@ export function QuickStartModal({
     if (isLastStep) {
       return;
     }
-    
+
     // Report milestone completion before moving to next step
     if (currentStep === 'subreddit' && selectedTemplateId) {
       onSelectedCommunity?.();
     }
-    
+
     const nextIndex = currentStepIndex + 1;
     if (nextIndex < QUICK_START_STEPS.length) {
       setCurrentStep(QUICK_START_STEPS[nextIndex]);
@@ -240,7 +311,7 @@ export function QuickStartModal({
     if (isFirstStep) {
       return;
     }
-    
+
     const prevIndex = currentStepIndex - 1;
     if (prevIndex >= 0) {
       setCurrentStep(QUICK_START_STEPS[prevIndex]);
@@ -273,7 +344,7 @@ export function QuickStartModal({
       });
 
       const data = await response.json() as RedditSubmitResponse;
-      
+
       if (data.success) {
         toast({
           title: "Post Submitted!",

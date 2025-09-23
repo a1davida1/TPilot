@@ -78,7 +78,7 @@ export interface CommunityFilters {
 
 export function useAdminCommunities(filters?: CommunityFilters) {
   const queryParams = new URLSearchParams();
-  
+
   if (filters?.search) {
     queryParams.set('search', filters.search);
   }
@@ -93,7 +93,7 @@ export function useAdminCommunities(filters?: CommunityFilters) {
   }
 
   const queryString = queryParams.toString();
-  const url = `/api/admin/communities${queryString ? `?${queryString}` : ''}`;
+  const url = `/api/reddit/communities${queryString ? `?${queryString}` : ''}`;
 
   return useQuery<AdminCommunity[]>({
     queryKey: ['admin-communities', filters],
@@ -106,10 +106,10 @@ export function useAdminCommunities(filters?: CommunityFilters) {
 
 export function useCreateCommunity() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (payload: CommunityPayload) => 
-      apiRequest('POST', '/api/admin/communities', payload),
+      apiRequest('POST', '/api/reddit/communities', payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-communities'] });
     },
@@ -118,10 +118,10 @@ export function useCreateCommunity() {
 
 export function useUpdateCommunity() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: CommunityPayload }) => 
-      apiRequest('PUT', `/api/admin/communities/${id}`, payload),
+      apiRequest('PUT', `/api/reddit/communities/${id}`, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-communities'] });
     },
@@ -130,10 +130,10 @@ export function useUpdateCommunity() {
 
 export function useDeleteCommunity() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (id: string) => 
-      apiRequest('DELETE', `/api/admin/communities/${id}`),
+      apiRequest('DELETE', `/api/reddit/communities/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-communities'] });
     },

@@ -213,9 +213,35 @@ describe("ModernDashboard quick start", () => {
 
   it("walks through the quick start flow and submits a Reddit post", async () => {
     mockedAuthUser = null;
-    apiRequestMock.mockResolvedValueOnce({
-      json: async () => ({ authUrl: "https://reddit.com/auth" }),
-    } as Response);
+    apiRequestMock.mockImplementation((method: string, url: string) => {
+      if (url === "/api/reddit/connect") {
+        return Promise.resolve({
+          json: async () => ({ authUrl: "https://reddit.com/auth" }),
+        } as Response);
+      }
+
+      if (url === "/api/reddit/accounts") {
+        return Promise.resolve({
+          json: async () => [
+            {
+              id: 101,
+              platform: "reddit",
+              handle: "creator",
+              status: "ready",
+              createdAt: "2024-01-01T00:00:00.000Z",
+            },
+          ],
+        } as Response);
+      }
+
+      if (url === "/api/reddit/submit") {
+        return Promise.resolve({
+          json: async () => ({ success: true }),
+        } as Response);
+      }
+
+      return Promise.reject(new Error(`Unhandled url: ${url}`));
+    });
 
     const onOpenChange = vi.fn();
     render(
@@ -235,9 +261,16 @@ describe("ModernDashboard quick start", () => {
       return true;
     });
 
-    apiRequestMock.mockResolvedValueOnce({
-      json: async () => ({ success: true }),
-    } as Response);
+    await waitFor(() => {
+      expect(apiRequestMock).toHaveBeenCalledWith("GET", "/api/reddit/accounts");
+      return true;
+    });
+
+    await waitFor(() => {
+      const continueButton = getButtonByText(/^Continue$/i);
+      expect(continueButton.disabled).toBe(false);
+      return true;
+    });
 
     click(getButtonByText(/^Continue$/i));
     expect(await findByText(/Choose a subreddit/i)).toBeTruthy();

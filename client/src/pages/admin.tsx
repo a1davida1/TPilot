@@ -71,6 +71,7 @@ interface User {
   createdAt?: string;
   lastLoginAt?: string;
   contentCount?: number;
+  isAdmin?: boolean;
 }
 
 interface UserActionData {
@@ -177,7 +178,7 @@ export function AdminDashboard() {
       let endpoint = '/api/admin/user-action';
       if (data.action === 'reset-password') endpoint = '/api/admin/reset-password';
       else if (data.action === 'tier-management') endpoint = '/api/admin/upgrade-user';
-      
+
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 
@@ -582,7 +583,7 @@ export function AdminDashboard() {
 
         {/* Communities Tab */}
         <TabsContent value="communities" className="space-y-6">
-          <AdminCommunitiesPanel canManage={user?.isAdmin || false} />
+          <AdminCommunitiesPanel canManage={Boolean(user?.isAdmin)} />
         </TabsContent>
 
         {/* Compliance Tab */}
@@ -661,7 +662,7 @@ export function AdminDashboard() {
                     {(systemHealth as any)?.services?.email ? 'Configured' : 'Not Set'}
                   </Badge>
                 </div>
-                
+
                 {/* Performance Metrics */}
                 <div className="mt-6 p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg">
                   <h4 className="text-sm font-medium text-gray-900 mb-3">Performance Metrics</h4>
@@ -699,7 +700,7 @@ export function AdminDashboard() {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card className="bg-white border-gray-200 shadow-lg">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -711,7 +712,7 @@ export function AdminDashboard() {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card className="bg-white border-gray-200 shadow-lg">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -955,7 +956,7 @@ export function AdminDashboard() {
                     <span className="text-sm">Overall Progress</span>
                     <span className="text-2xl font-bold text-purple-400">{(completeness as any)?.completionPercentage || 0}%</span>
                   </div>
-                  
+
                   <div className="space-y-3">
                     <div className="space-y-2">
                       <h4 className="text-sm font-medium text-purple-300">Core Features</h4>
@@ -969,7 +970,7 @@ export function AdminDashboard() {
                         </div>
                       ))}
                     </div>
-                    
+
                     <div className="space-y-2">
                       <h4 className="text-sm font-medium text-blue-300">Advanced Features</h4>
                       {Object.entries((completeness as any)?.features || {}).map(([key, value]) => (
@@ -982,7 +983,7 @@ export function AdminDashboard() {
                         </div>
                       ))}
                     </div>
-                    
+
                     <div className="space-y-2">
                       <h4 className="text-sm font-medium text-green-300">Integrations</h4>
                       {Object.entries((completeness as any)?.integrations || {}).map(([key, value]) => (
@@ -999,7 +1000,7 @@ export function AdminDashboard() {
                 </div>
               </CardContent>
             </Card>
-            
+
             {/* Quick Actions */}
             <Card className="bg-white border-gray-200 shadow-lg">
               <CardHeader>
@@ -1020,7 +1021,7 @@ export function AdminDashboard() {
                     <Users className="h-4 w-4 mr-2" />
                     Manage Users
                   </Button>
-                  
+
                   <Button 
                     className="w-full justify-start bg-green-100 hover:bg-green-200 border-green-300 text-green-800"
                     onClick={() => {
@@ -1033,7 +1034,7 @@ export function AdminDashboard() {
                     <DollarSign className="h-4 w-4 mr-2" />
                     Revenue Reports
                   </Button>
-                  
+
                   <Button 
                     className="w-full justify-start bg-purple-100 hover:bg-purple-200 border-purple-300 text-purple-800"
                     onClick={() => {
@@ -1046,7 +1047,7 @@ export function AdminDashboard() {
                     <Activity className="h-4 w-4 mr-2" />
                     System Health
                   </Button>
-                  
+
                   <Button 
                     className="w-full justify-start bg-pink-100 hover:bg-pink-200 border-pink-300 text-pink-800"
                     onClick={() => {
@@ -1078,7 +1079,7 @@ export function AdminDashboard() {
                  actionType.toUpperCase()} - {selectedUser.username}
               </DialogTitle>
             </DialogHeader>
-            
+
             <div className="space-y-4">
               {actionType === 'user-details' && (
                 <div className="space-y-3">
@@ -1096,7 +1097,7 @@ export function AdminDashboard() {
                   </div>
                 </div>
               )}
-              
+
               {actionType === 'tier-management' && (
                 <div className="space-y-3">
                   <div className="space-y-2">
@@ -1116,7 +1117,7 @@ export function AdminDashboard() {
                   </div>
                 </div>
               )}
-              
+
               {actionType === 'reset-password' && (
                 <div className="space-y-4">
                   <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
@@ -1149,7 +1150,7 @@ export function AdminDashboard() {
                   )}
                 </div>
               )}
-              
+
               <div className="flex gap-2 justify-end pt-4">
                 <Button variant="outline" onClick={() => { setSelectedUser(null); setActionType(null); setReason(''); setTempPassword(''); }}>
                   {actionType === 'user-details' ? 'Close' : 'Cancel'}
