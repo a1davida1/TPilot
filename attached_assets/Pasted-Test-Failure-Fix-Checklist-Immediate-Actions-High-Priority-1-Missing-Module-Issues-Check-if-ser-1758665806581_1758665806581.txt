@@ -1,0 +1,76 @@
+Test Failure Fix Checklist
+Immediate Actions (High Priority)
+1. Missing Module Issues
+
+ Check if server/caption/rankingGuards.js exists
+ Check if server/caption/stylePack.js exists
+ Update import paths or create missing files
+ Verify all TypeScript compilation is working
+
+2. Database Mock Setup
+typescript// Add to your test setup files
+beforeEach(() => {
+  // Reset all mocks
+  vi.clearAllMocks();
+  
+  // Setup database mock
+  mockDb.execute.mockResolvedValue([]);
+  mockDb.insert.mockReturnValue({
+    values: vi.fn().mockReturnValue({
+      returning: vi.fn().mockResolvedValue([])
+    })
+  });
+});
+3. Environment Variables
+Create .env.test file:
+envE2E_ADMIN_EMAIL=test@example.com
+JWT_SECRET=test-jwt-secret
+NEON_DATABASE_URL=test-db-url
+4. Authentication Mock Setup
+typescript// In test setup
+vi.mock('../path/to/auth', () => ({
+  verifyToken: vi.fn().mockResolvedValue({ userId: 1, tier: 'pro' }),
+  requireAuth: (req, res, next) => {
+    req.user = { id: 1, tier: 'pro' };
+    next();
+  }
+}));
+Medium Priority Fixes
+5. API Response Structure Issues
+Many tests expect response.body.success but it's undefined. Update your API handlers to return consistent structures:
+typescript// Ensure API responses follow this pattern
+res.json({
+  success: true,
+  data: result,
+  message: "Operation completed"
+});
+6. Mock Function Setup
+For storage tests, ensure proper mock setup:
+typescriptconst mockStorage = {
+  getUserById: vi.fn(),
+  createUser: vi.fn(),
+  updateUser: vi.fn()
+};
+
+// Before each test
+beforeEach(() => {
+  mockStorage.getUserById.mockResolvedValue(mockUser);
+});
+7. React Query Mock Issues
+typescriptvi.mock("@tanstack/react-query", async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    QueryClient: vi.fn(() => ({
+      invalidateQueries: vi.fn(),
+      setQueryData: vi.fn()
+    }))
+  };
+});
+Low Priority (Can Be Addressed Later)
+8. Content Validation Tests
+These are failing due to business logic changes - review and update test expectations.
+9. Schema Validation
+Update tests to match current data schemas.
+10. Rate Limiting Tests
+Mock rate limiting properly or adjust test expectations.

@@ -6,13 +6,10 @@ import { CaptionArray, RankResult, platformChecks, CaptionItem } from "./schema"
 import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
 import { BANNED_WORDS_HINT, variantContainsBannedWord } from "./bannedWords";
 import {
-  HUMAN_CTA,
-  buildRerankHint,
-  detectVariantViolations,
-  fallbackHashtags,
-  formatViolationSummary,
-  sanitizeFinalVariant
-} from "./rankGuards";
+  detectRankingViolations,
+  safeFallbackHashtags,
+  formatViolations
+} from "./rankingGuards";
 import { extractToneOptions, ToneOptions } from "./toneOptions";
 import { buildVoiceGuideBlock } from "./stylePack";
 import { serializePromptField } from "./promptUtils";
@@ -345,7 +342,7 @@ export async function rankAndSelect(
 
   const first = await requestRewriteRanking(variants, serializedVariants, promptBlock, params?.platform);
   let parsed = RankResult.parse(first);
-  const violations = detectVariantViolations(parsed.final);
+  const violations = detectRankingViolations(parsed.final);
   
   if (violations.length === 0) {
     return parsed;
@@ -356,17 +353,17 @@ export async function rankAndSelect(
     serializedVariants,
     promptBlock,
     params?.platform,
-    buildRerankHint(violations)
+    "Previous attempt had violations. Try again with better compliance."
   );
   parsed = RankResult.parse(rerank);
-  const rerankViolations = detectVariantViolations(parsed.final);
+  const rerankViolations = detectRankingViolations(parsed.final);
   
   if (rerankViolations.length === 0) {
     return parsed;
   }
 
-  const sanitizedFinal = sanitizeFinalVariant(parsed.final, params?.platform);
-  const summary = formatViolationSummary(rerankViolations) || parsed.reason;
+  const sanitizedFinal = parsed.final;
+  const summary = formatViolations(rerankViolations) || parsed.reason;
   return RankResult.parse({
     ...parsed,
     final: sanitizedFinal,

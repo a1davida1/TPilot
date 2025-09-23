@@ -210,8 +210,8 @@ import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage.js";
 import { getRandomTemplates, addWatermark, getTemplateByMood } from "./content-templates.js";
 import { generateAdvancedContent, type ContentParameters } from "./advanced-content-generator.js";
 // Reddit communities now handled in reddit-routes.ts
-import { getAvailablePerks, getPerksByCategory, getSignupInstructions, realProPerks } from "./pro-perks.js";
-import { ReferralManager } from "./referral-manager.js";
+import { getAvailablePerks, getPerksByCategory, getSignupInstructions, realProPerks, type ProPerk } from "./pro-perks.js";
+// import { ReferralManager } from "./referral-manager.js"; // TODO: Create referral manager
 
 // API route modules
 import { registerApiRoutes } from "./api-routes.js";
@@ -307,7 +307,7 @@ const deriveSharePercentage = (perk: ProPerk): number => {
     }
 
     const numericPercents = percentMatches
-      .map(match => Number.parseFloat(match[1]))
+      .map((match: RegExpMatchArray) => Number.parseFloat(match[1]))
       .filter((value): value is number => Number.isFinite(value));
 
     if (numericPercents.length === 0) {

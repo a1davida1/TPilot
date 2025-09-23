@@ -30,16 +30,48 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import {
-  modActivitySchema,
-  type ModActivity,
-  type PostingLimits,
-  type RedditCommunity,
-  type RedditCommunitySellingPolicy
-} from "@shared/schema";
-import { GROWTH_TRENDS, GROWTH_TREND_LABELS, getGrowthTrendLabel, growthTrendSchema } from "@shared/growth-trends";
-import type { GrowthTrend } from "@shared/growth-trends";
-import { z } from "zod";
+
+type RuleAllowance = 'yes' | 'limited' | 'no';
+
+interface RedditCommunity {
+  id: string;
+  name: string;
+  displayName: string;
+  members: number;
+  engagementRate: number;
+  category: 'premium' | 'general' | 'niche' | 'fetish' | 'verification' | 'gonewild' | 'selling';
+  verificationRequired: boolean;
+  promotionAllowed: 'yes' | 'limited' | 'subtle' | 'no';
+  postingLimits?: {
+    perDay?: number;
+    perWeek?: number;
+    cooldownHours?: number;
+    daily?: number;
+    weekly?: number;
+  };
+  rules?: {
+    minKarma?: number;
+    minAccountAge?: number;
+    minAccountAgeDays?: number;
+    watermarksAllowed?: boolean;
+    sellingAllowed?: RuleAllowance;
+    promotionalLinksAllowed?: RuleAllowance;
+    bannedContent?: string[];
+    formattingRequirements?: string[];
+    titleRules?: string[];
+    contentRules?: string[];
+    requiresOriginalContent?: boolean;
+    notes?: string[];
+  };
+  bestPostingTimes: string[];
+  averageUpvotes: number;
+  successProbability: number;
+  growthTrend: 'up' | 'stable' | 'down';
+  modActivity: 'high' | 'medium' | 'low';
+  description: string;
+  tags: string[];
+  competitionLevel: 'low' | 'medium' | 'high';
+}
 
 export function RedditCommunities() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -49,71 +81,50 @@ export function RedditCommunities() {
   const [filterVerification, setFilterVerification] = useState<string>('all');
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
-  // Client validation schema - server enforces canonical enums and validation
-  const RedditCommunityArraySchema = z.array(z.object({
-    id: z.string(),
-    name: z.string(),
-    displayName: z.string(),
-    members: z.number(),
-    engagementRate: z.number(),
-    category: z.enum(['age', 'amateur', 'appearance', 'body_type', 'cam', 'clothing', 'comparison', 'content_type', 'cosplay', 'couples', 'dancer', 'ethnicity', 'fetish', 'fitness', 'gaming', 'general', 'gonewild', 'lifestyle', 'natural', 'niche', 'reveal', 'selling', 'social', 'specific', 'style', 'theme']),
-    verificationRequired: z.boolean(),
-    promotionAllowed: z.enum(['yes', 'limited', 'no']),
-    postingLimits: z.any().nullable().optional(),
-    rules: z.object({
-      sellingAllowed: z.enum(['allowed', 'limited', 'not_allowed', 'unknown']).optional(),
-      watermarksAllowed: z.boolean().optional(),
-      minKarma: z.number().optional(),
-      minAccountAge: z.number().optional(),
-      titleRules: z.array(z.string()).optional(),
-      contentRules: z.array(z.string()).optional()
-    }).optional(),
-    bestPostingTimes: z.array(z.string()).optional(),
-    averageUpvotes: z.number().nullable().optional(),
-    successProbability: z.number().nullable().optional(),
-    growthTrend: growthTrendSchema.optional(),
-    modActivity: z.enum(['active', 'moderate', 'inactive']).nullable().optional(),
-    description: z.string().nullable().optional(),
-    tags: z.array(z.string()).optional(),
-    competitionLevel: z.enum(['low', 'medium', 'high']).nullable().optional()
-  }));
-
-  // Fetch communities data with runtime validation
+  // Fetch communities data
   const { data: communities = [], isLoading } = useQuery({
     queryKey: ['/api/reddit/communities', filterCategory, searchTerm],
-    queryFn: async (): Promise<RedditCommunity[]> => {
+    queryFn: async () => {
       const params = new URLSearchParams();
       if (filterCategory !== 'all') params.append('category', filterCategory);
       if (searchTerm) params.append('search', searchTerm);
 
       const response = await apiRequest('GET', `/api/reddit/communities?${params.toString()}`);
-      const rawData = await response.json();
-
-      // Runtime validation using inline canonical schema structure
-      // Note: Server enforces full canonical validation with proper enums
-      try {
-        const validatedData = RedditCommunityArraySchema.parse(rawData);
-        return validatedData as RedditCommunity[];
-      } catch (parseError) {
-        console.error('API response validation failed:', parseError);
-        throw new Error('Invalid API response format');
-      }
+      return response.json();
     },
     retry: false
   });
 
   const displayCommunities = communities;
 
+  const formatAllowance = (value?: RuleAllowance) => {
+    switch (value) {
+      case 'yes':
+        return 'Allowed';
+      case 'limited':
+        return 'Limited';
+      case 'no':
+        return 'Not allowed';
+      default:
+        return undefined;
+    }
+  };
+
+  const formatBoolean = (value?: boolean) => {
+    if (typeof value !== 'boolean') return undefined;
+    return value ? 'Allowed' : 'Not allowed';
+  };
+
   // Filter and sort communities
   const filteredCommunities = useMemo(() => {
     let filtered = Array.isArray(displayCommunities) ? [...displayCommunities] : [];
 
-    // Search filter with safe nullable field handling
+    // Search filter
     if (searchTerm) {
       filtered = filtered.filter(c => 
         c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (c.description ?? '').toLowerCase().includes(searchTerm.toLowerCase())
+        c.description.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -176,7 +187,7 @@ export function RedditCommunities() {
     }
   };
 
-  const getSellingPolicyBadge = (policy: RedditCommunitySellingPolicy | undefined) => {
+  const getSellingPolicyBadge = (policy: string | undefined) => {
     switch (policy) {
       case 'allowed':
         return <Badge className="bg-green-500/20 text-green-400">Selling allowed</Badge>;
@@ -235,7 +246,7 @@ export function RedditCommunities() {
     return 'text-red-400';
   };
 
-  const getGrowthTrendIcon = (trend: GrowthTrend | undefined) => {
+  const getGrowthTrendIcon = (trend: string | undefined) => {
     switch (trend) {
       case 'up':
         return <TrendingUp className="h-3 w-3 text-green-400" />;
@@ -249,7 +260,7 @@ export function RedditCommunities() {
   };
 
   // Helper to display mod activity with appropriate styling
-  const getModActivityDisplay = (modActivity: ModActivity | null | undefined) => {
+  const getModActivityDisplay = (modActivity: string | null | undefined) => {
     switch (modActivity) {
       case 'active':
         return { label: 'Active', className: 'text-green-400' };
@@ -419,7 +430,7 @@ export function RedditCommunities() {
                       <TableCell>
                         <div className="text-xs text-gray-400">
                           {(() => {
-                            const limits = community.postingLimits as PostingLimits | null;
+                            const limits = community.postingLimits as any | null;
                             const postsPerDay = limits?.perDay ?? limits?.daily;
                             const cooldown = limits?.cooldownHours;
 
@@ -475,7 +486,7 @@ export function RedditCommunities() {
                                 <div className="space-y-1 text-xs text-gray-400">
                                   <p>• Success Rate: <span className={getSuccessProbabilityColor(community.successProbability)}>{community.successProbability !== null && community.successProbability !== undefined ? `${community.successProbability}%` : 'N/A'}</span></p>
                                   <p>• Competition: <span className={community.competitionLevel === 'low' ? 'text-green-400' : community.competitionLevel === 'medium' ? 'text-yellow-400' : 'text-red-400'}>{community.competitionLevel ?? 'Unknown'}</span></p>
-                                  <p>• Growth: <span className={community.growthTrend === 'up' ? 'text-green-400' : community.growthTrend === 'stable' ? 'text-yellow-400' : 'text-red-400'}>{community.growthTrend ? getGrowthTrendLabel(community.growthTrend) : 'Unknown'}</span></p>
+                                  <p>• Growth: <span className={community.growthTrend === 'up' ? 'text-green-400' : community.growthTrend === 'stable' ? 'text-yellow-400' : 'text-red-400'}>{community.growthTrend || 'Unknown'}</span></p>
                                   <p>
                                     • Mod Activity: <span className={modActivityDisplay.className}>{modActivityDisplay.label}</span>
                                   </p>
