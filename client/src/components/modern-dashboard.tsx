@@ -1154,7 +1154,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
         onOpenChange={setQuickStartOpen}
         initialStep={quickStartStep}
         isRedditConnected={isRedditConnected}
-        onNavigate={setLocation}
+        onNavigate={() => setLocation("/reddit")}
         onConnected={handleQuickStartConnected}
         onSelectedCommunity={handleQuickStartSelectedCommunity}
         onPosted={handleQuickStartPosted}

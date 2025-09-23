@@ -26,6 +26,7 @@ import {
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
+  ExternalLink,
   Globe,
   Loader2,
   Sparkles,
@@ -40,6 +41,17 @@ interface QuickStartTemplate {
   body: string;
   isNsfw: boolean;
   description: string;
+}
+
+interface QuickStartModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  initialStep: QuickStartStep;
+  isRedditConnected?: boolean;
+  onNavigate?: () => void;
+  onConnected?: () => void;
+  onSelectedCommunity?: () => void;
+  onPosted?: () => void;
 }
 
 interface RedditConnectResponse {

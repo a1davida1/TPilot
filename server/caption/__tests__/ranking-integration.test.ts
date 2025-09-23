@@ -117,7 +117,7 @@ describe.each(scenarios)('Ranking Integration Tests ($label)', ({ applyGeminiMoc
       expect(result.final.hashtags).not.toContain('#creative');
       
       // Should have called textModel twice (initial + rerank)
-      expect(textModel).toHaveBeenCalledTimes(2);
+      expect(textModelMock).toHaveBeenCalledTimes(2);
     });
 
     it('should sanitize final output when rerank also fails', async () => {
@@ -132,7 +132,7 @@ describe.each(scenarios)('Ranking Integration Tests ($label)', ({ applyGeminiMoc
         reason: "Engaging content"
       });
 
-      (textModel as any)
+      (textModelMock as any)
         .mockResolvedValueOnce(mockBannedResponse)  // First attempt
         .mockResolvedValueOnce(mockBannedResponse); // Rerank also fails
 
@@ -170,7 +170,7 @@ describe.each(scenarios)('Ranking Integration Tests ($label)', ({ applyGeminiMoc
         reason: "Clean, authentic content"
       });
 
-      (textModel as any).mockResolvedValueOnce(mockCleanResponse);
+      (textModelMock as any).mockResolvedValueOnce(mockCleanResponse);
 
       const variants: CaptionItemType[] = [
         {
@@ -193,7 +193,7 @@ describe.each(scenarios)('Ranking Integration Tests ($label)', ({ applyGeminiMoc
       expect(result.reason).toBe("Clean, authentic content");
       
       // Should only call textModel once
-      expect(textModel).toHaveBeenCalledTimes(1);
+      expect(textModelMock).toHaveBeenCalledTimes(1);
     });
 
     it('should apply platform-specific hashtag limits', async () => {
@@ -207,7 +207,7 @@ describe.each(scenarios)('Ranking Integration Tests ($label)', ({ applyGeminiMoc
         reason: "Good content"
       });
 
-      (textModel as any).mockResolvedValueOnce(mockResponse);
+      (textModelMock as any).mockResolvedValueOnce(mockResponse);
 
       const variants: CaptionItemType[] = [
         {
@@ -238,7 +238,7 @@ describe.each(scenarios)('Ranking Integration Tests ($label)', ({ applyGeminiMoc
         reason: "Good content"
       });
 
-      (textModel as any).mockResolvedValueOnce(mockResponse);
+      (textModelMock as any).mockResolvedValueOnce(mockResponse);
 
       const variants: CaptionItemType[] = [
         {
