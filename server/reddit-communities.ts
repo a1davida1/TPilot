@@ -98,7 +98,7 @@ function normalizeRules(rawRules: unknown, promotionAllowed?: string, category?:
       return {
         ...defaults,
         contentRules: rawRules.filter(rule => typeof rule === 'string'),
-        sellingAllowed: inferSellingPolicy(promotionAllowed || 'unknown', category || 'general')
+        sellingAllowed: inferSellingPolicy(promotionAllowed || 'no', category || 'general')
       };
     }
     
@@ -107,9 +107,9 @@ function normalizeRules(rawRules: unknown, promotionAllowed?: string, category?:
       // Try to parse as structured rules
       const parsed = redditCommunityRuleSetSchema.parse(rawRules);
       
-      // If sellingAllowed is unknown, try to infer from promotion flags
-      if (parsed.sellingAllowed === 'unknown' && (promotionAllowed || category)) {
-        parsed.sellingAllowed = inferSellingPolicy(promotionAllowed || 'unknown', category || 'general', parsed);
+      // If sellingAllowed is undefined/null, try to infer from promotion flags
+      if (!parsed.sellingAllowed && (promotionAllowed || category)) {
+        parsed.sellingAllowed = inferSellingPolicy(promotionAllowed || 'no', category || 'general', parsed);
       }
       
       return parsed;
@@ -127,20 +127,20 @@ function normalizeRules(rawRules: unknown, promotionAllowed?: string, category?:
  */
 function inferSellingPolicy(promotionAllowed: string, category: string, rules?: RedditCommunityRuleSet): RedditCommunityRuleSet['sellingAllowed'] {
   // If rules already specify selling policy, use it
-  if (rules?.sellingAllowed && rules.sellingAllowed !== 'unknown') {
+  if (rules?.sellingAllowed) {
     return rules.sellingAllowed;
   }
   
   // Infer from promotion flags and category
   if (promotionAllowed === 'yes' || category === 'selling') {
-    return 'allowed';
+    return 'yes';
   } else if (promotionAllowed === 'limited' || promotionAllowed === 'subtle') {
     return 'limited';
   } else if (promotionAllowed === 'no' || promotionAllowed === 'strict') {
-    return 'not_allowed';
+    return 'no';
   }
   
-  return 'unknown';
+  return undefined;
 }
 
 export function normalizeCommunityRecord(community: RedditCommunity): NormalizedRedditCommunity {
@@ -215,7 +215,7 @@ export async function getCommunityInsights(communityId: string): Promise<{
 
   // Rule-based warnings using structured rules
   if (rules.verificationRequired) warnings.push('Verification required - complete r/GetVerified');
-  if (rules.sellingAllowed === 'not_allowed') warnings.push('No promotion/selling allowed - content only');
+  if (rules.sellingAllowed === 'no') warnings.push('No promotion/selling allowed - content only');
   if (rules.sellingAllowed === 'limited') warnings.push('Limited promotion allowed - check specific rules');
   if (rules.watermarksAllowed === false) warnings.push('Watermarks not allowed - use clean images');
   if (rules.minKarma && rules.minKarma > 50) warnings.push(`Requires ${rules.minKarma}+ karma`);

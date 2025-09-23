@@ -232,32 +232,58 @@ export const postJobs = pgTable("post_jobs", {
 // REDDIT COMMUNITY RULE SCHEMAS
 // ==========================================
 
+export const ruleAllowanceSchema = z.enum(['yes', 'limited', 'no']);
+export type RuleAllowance = z.infer<typeof ruleAllowanceSchema>;
+
 export const redditCommunityRuleSetSchema = z.object({
-  minKarma: z.number().nullable().default(null),
-  minAccountAge: z.number().nullable().default(null), // in days
-  watermarksAllowed: z.boolean().nullable().default(null),
-  sellingAllowed: z.enum(['allowed', 'limited', 'not_allowed', 'unknown']).default('unknown'),
-  titleRules: z.array(z.string()).default([]),
-  contentRules: z.array(z.string()).default([]),
-  verificationRequired: z.boolean().default(false),
-  requiresApproval: z.boolean().default(false),
-  nsfwRequired: z.boolean().default(false),
-  maxPostsPerDay: z.number().nullable().default(null),
-  cooldownHours: z.number().nullable().default(null)
-});
+  minKarma: z.number().nullable().optional(),
+  minAccountAge: z.number().nullable().optional(), // in days (legacy)
+  minAccountAgeDays: z.number().nullable().optional(), // in days (new)
+  watermarksAllowed: z.boolean().nullable().optional(),
+  sellingAllowed: ruleAllowanceSchema.optional(),
+  promotionalLinksAllowed: ruleAllowanceSchema.optional(),
+  titleRules: z.array(z.string()).optional().default([]),
+  contentRules: z.array(z.string()).optional().default([]),
+  bannedContent: z.array(z.string()).optional().default([]),
+  formattingRequirements: z.array(z.string()).optional().default([]),
+  notes: z.array(z.string()).optional().default([]),
+  verificationRequired: z.boolean().optional(),
+  requiresApproval: z.boolean().optional(),
+  requiresOriginalContent: z.boolean().optional(),
+  nsfwRequired: z.boolean().optional(),
+  maxPostsPerDay: z.number().nullable().optional(),
+  cooldownHours: z.number().nullable().optional()
+}).optional();
 
 export type RedditCommunityRuleSet = z.infer<typeof redditCommunityRuleSetSchema>;
+
+// Posting limits schema
+export const postingLimitsSchema = z.object({
+  perDay: z.number().nullable().optional(),
+  perWeek: z.number().nullable().optional(),
+  daily: z.number().nullable().optional(), // legacy support
+  weekly: z.number().nullable().optional(), // legacy support
+  cooldownHours: z.number().nullable().optional()
+}).nullable().optional();
+
+export type PostingLimits = z.infer<typeof postingLimitsSchema>;
 
 // Default rule set factory
 export const createDefaultRules = (): RedditCommunityRuleSet => ({
   minKarma: null,
   minAccountAge: null,
+  minAccountAgeDays: null,
   watermarksAllowed: null,
-  sellingAllowed: 'unknown',
+  sellingAllowed: undefined,
+  promotionalLinksAllowed: undefined,
   titleRules: [],
   contentRules: [],
+  bannedContent: [],
+  formattingRequirements: [],
+  notes: [],
   verificationRequired: false,
   requiresApproval: false,
+  requiresOriginalContent: false,
   nsfwRequired: false,
   maxPostsPerDay: null,
   cooldownHours: null
