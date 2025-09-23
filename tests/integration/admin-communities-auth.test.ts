@@ -1,6 +1,7 @@
-import { describe, test, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
+
+import { describe, test, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
 import express from 'express';
-import session from 'express-session';
+import session, { type Session, type SessionData } from 'express-session';
 import cookieParser from 'cookie-parser';
 import request from 'supertest';
 import { adminCommunitiesRouter } from '../../server/routes/admin-communities.js';
@@ -29,7 +30,7 @@ vi.mock('../../server/reddit-communities.js', () => ({
       bestPostingTimes: ['9:00', '15:00', '21:00']
     }
   ]),
-  createCommunity: vi.fn().mockImplementation((data) => Promise.resolve({
+  createCommunity: vi.fn().mockImplementation((data: Record<string, unknown>) => Promise.resolve({
     id: '2',
     ...data,
     rules: { allowedTypes: ['text'], maxPostsPerDay: 5 },
@@ -43,15 +44,15 @@ vi.mock('../../server/reddit-communities.js', () => ({
     growthTrend: 'stable',
     bestPostingTimes: ['12:00']
   })),
-  updateCommunity: vi.fn().mockImplementation((id, data) => Promise.resolve({
+  updateCommunity: vi.fn().mockImplementation((id: string, data: Record<string, unknown>) => Promise.resolve({
     id,
     ...data,
-    rules: data.rules || { allowedTypes: ['text'], maxPostsPerDay: 5 },
+    rules: data.rules ?? { allowedTypes: ['text'], maxPostsPerDay: 5 },
     engagementRate: 0.6,
     postingLimits: { maxPerDay: 5, minInterval: 120 },
     averageUpvotes: 120,
     modActivity: 'moderate',
-    tags: data.tags || [],
+    tags: data.tags ?? [],
     successProbability: 0.65,
     competitionLevel: 'medium',
     growthTrend: 'stable',
@@ -63,16 +64,63 @@ vi.mock('../../server/reddit-communities.js', () => ({
 // Mock the schema
 vi.mock('@shared/schema', () => ({
   insertRedditCommunitySchema: {
-    parse: vi.fn().mockImplementation((data) => data),
+    parse: vi.fn().mockImplementation((data: unknown) => data),
     partial: vi.fn().mockReturnValue({
-      parse: vi.fn().mockImplementation((data) => data)
+      parse: vi.fn().mockImplementation((data: unknown) => data)
     })
   }
 }));
 
+type AdminSessionUser = {
+  id: number;
+  username: string;
+  email: string;
+  isAdmin: boolean;
+  role: string;
+  tier: string;
+};
+
+type RequestWithSession = express.Request & {
+  session?: Session & Partial<SessionData> & { user?: AdminSessionUser };
+  user?: AdminSessionUser;
+  isAuthenticated?: () => boolean;
+};
+
 describe('Admin Communities Authentication Integration', () => {
   let app: express.Application;
-  let agent: request.SuperAgentTest;
+  let agent: request.SuperAgentTest | undefined;
+
+  const adminUser: AdminSessionUser = {
+    id: 1,
+    username: 'admin',
+    email: 'admin@test.com',
+    isAdmin: true,
+    role: 'admin',
+    tier: 'pro'
+  };
+
+  const nonAdminUser: AdminSessionUser = {
+    id: 2,
+    username: 'member',
+    email: 'member@test.com',
+    isAdmin: false,
+    role: 'member',
+    tier: 'starter'
+  };
+
+  const loginAs = async (user: AdminSessionUser) => {
+    if (!agent) {
+      throw new Error('Agent not initialized');
+    }
+    await agent.post('/test/login').send(user).expect(204);
+  };
+
+  const logout = async () => {
+    if (!agent) {
+      return;
+    }
+    await agent.post('/test/logout').send({}).expect(204);
+  };
 
   beforeAll(async () => {
     // Create Express app with session middleware (similar to production setup)
@@ -85,33 +133,64 @@ describe('Admin Communities Authentication Integration', () => {
       secret: 'test-session-secret',
       resave: false,
       saveUninitialized: false,
-      cookie: { 
-        secure: false, // Allow non-HTTPS in tests
+      cookie: {
+        secure: false,
         httpOnly: true,
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+        maxAge: 24 * 60 * 60 * 1000
       }
     }));
 
-    // Mock authentication by adding user to session
-    app.use('/api/reddit/communities', (req: any, res, next) => {
-      // Simulate authenticated admin user in session
-      req.user = {
-        id: 1,
-        username: 'admin',
-        email: 'admin@test.com',
-        isAdmin: true,
-        role: 'admin',
-        tier: 'pro'
-      };
-      
-      // Mock isAuthenticated function for Passport.js compatibility
-      req.isAuthenticated = () => true;
-      
+    const redditCommunities = await import('../../server/reddit-communities.js');
+
+    app.use((req, _res, next) => {
+      const requestWithSession = req as RequestWithSession;
+      const sessionUser = requestWithSession.session?.user;
+      requestWithSession.isAuthenticated = () => Boolean(sessionUser);
+      if (sessionUser) {
+        requestWithSession.user = sessionUser;
+      }
       next();
     });
 
     // Mount admin communities router
-    app.use('/api/reddit/communities', adminCommunitiesRouter);
+    app.get('/api/reddit/communities', async (_req, res) => {
+      const communities = await redditCommunities.listCommunities();
+      res.json(communities);
+    });
+
+    app.post('/test/login', (req, res) => {
+      const requestWithSession = req as RequestWithSession;
+      const sessionInstance = requestWithSession.session;
+
+      if (!sessionInstance) {
+        res.status(500).json({ message: 'Session not initialized' });
+        return;
+      }
+
+      const sessionUser = req.body as AdminSessionUser;
+      sessionInstance.user = sessionUser;
+      res.status(204).send();
+    });
+
+    app.post('/test/logout', (req, res) => {
+      const requestWithSession = req as RequestWithSession;
+      const sessionInstance = requestWithSession.session;
+
+      if (!sessionInstance) {
+        res.status(204).send();
+        return;
+      }
+
+      sessionInstance.destroy(error => {
+        if (error) {
+          res.status(500).json({ message: 'Failed to destroy session' });
+          return;
+        }
+        res.status(204).send();
+      });
+    });
+
+    app.use('/api/admin/communities', adminCommunitiesRouter);
 
     // Create persistent agent for session cookie handling
     agent = request.agent(app);
@@ -121,12 +200,16 @@ describe('Admin Communities Authentication Integration', () => {
     vi.clearAllMocks();
   });
 
+  afterEach(async () => {
+    await logout();
+  });
+
   afterAll(() => {
     vi.restoreAllMocks();
   });
 
-  test('should list communities without Authorization header (session auth)', async () => {
-    const response = await agent
+  test('allows anonymous access to reddit communities listing', async () => {
+    const response = await request(app)
       .get('/api/reddit/communities')
       .expect(200);
 
@@ -140,7 +223,66 @@ describe('Admin Communities Authentication Integration', () => {
     });
   });
 
-  test('should create community without Authorization header (session auth)', async () => {
+  test('rejects admin communities access without authentication', async () => {
+    await request(app)
+      .get('/api/admin/communities')
+      .expect(401);
+  });
+
+  test('rejects admin communities access for non-admin users', async () => {
+    await loginAs(nonAdminUser);
+
+    if (!agent) {
+      throw new Error('Agent not initialized');
+    }
+
+    await agent
+      .get('/api/admin/communities')
+      .expect(403);
+  });
+
+  test('rejects admin community modifications without authentication', async () => {
+    await request(app)
+      .post('/api/admin/communities')
+      .send({ name: 'unauthorized' })
+      .expect(401);
+
+    await request(app)
+      .put('/api/admin/communities/1')
+      .send({ displayName: 'Unauthorized' })
+      .expect(401);
+
+    await request(app)
+      .delete('/api/admin/communities/1')
+      .expect(401);
+  });
+
+  test('lists communities for authenticated admin user', async () => {
+    await loginAs(adminUser);
+
+    if (!agent) {
+      throw new Error('Agent not initialized');
+    }
+
+    const response = await agent
+      .get('/api/admin/communities')
+      .expect(200);
+
+    expect(Array.isArray(response.body)).toBe(true);
+    expect(response.body[0]).toMatchObject({
+      id: '1',
+      name: 'test_community',
+      displayName: 'Test Community'
+    });
+  });
+
+  test('creates community for authenticated admin user', async () => {
+    await loginAs(adminUser);
+
+    if (!agent) {
+      throw new Error('Agent not initialized');
+    }
+
     const newCommunity = {
       name: 'new_community',
       displayName: 'New Community',
@@ -152,7 +294,7 @@ describe('Admin Communities Authentication Integration', () => {
     };
 
     const response = await agent
-      .post('/api/reddit/communities')
+      .post('/api/admin/communities')
       .send(newCommunity)
       .expect(201);
 
@@ -163,14 +305,20 @@ describe('Admin Communities Authentication Integration', () => {
     });
   });
 
-  test('should update community without Authorization header (session auth)', async () => {
+  test('updates community for authenticated admin user', async () => {
+    await loginAs(adminUser);
+
+    if (!agent) {
+      throw new Error('Agent not initialized');
+    }
+
     const updateData = {
       displayName: 'Updated Community',
       description: 'Updated description'
     };
 
     const response = await agent
-      .put('/api/reddit/communities/1')
+      .put('/api/admin/communities/1')
       .send(updateData)
       .expect(200);
 
@@ -181,49 +329,51 @@ describe('Admin Communities Authentication Integration', () => {
     });
   });
 
-  test('should delete community without Authorization header (session auth)', async () => {
-    await agent
-      .delete('/api/reddit/communities/1')
+  test('deletes community for authenticated admin user', async () => {
+    await loginAs(adminUser);
+
+    if (!agent) {
+      throw new Error('Agent not initialized');
+    }
+
+    const response = await agent
+      .delete('/api/admin/communities/1')
       .expect(200);
 
-    expect(response => {
-      expect(response.body.message).toBe('Community deleted successfully');
-    });
+    expect(response.body.message).toBe('Community deleted successfully');
   });
 
-  test('should handle non-existent community update gracefully', async () => {
+  test('handles non-existent community update gracefully', async () => {
     const { updateCommunity } = await import('../../server/reddit-communities.js');
     vi.mocked(updateCommunity).mockResolvedValueOnce(undefined);
+
+    await loginAs(adminUser);
+
+    if (!agent) {
+      throw new Error('Agent not initialized');
+    }
 
     const updateData = { displayName: 'Does Not Exist' };
 
     await agent
-      .put('/api/reddit/communities/999')
+      .put('/api/admin/communities/999')
       .send(updateData)
       .expect(404);
   });
 
-  test('should handle non-existent community deletion gracefully', async () => {
+  test('handles non-existent community deletion gracefully', async () => {
     const { listCommunities } = await import('../../server/reddit-communities.js');
     // Mock empty communities list to simulate non-existent community
     vi.mocked(listCommunities).mockResolvedValueOnce([]);
 
+    await loginAs(adminUser);
+
+    if (!agent) {
+      throw new Error('Agent not initialized');
+    }
+
     await agent
-      .delete('/api/reddit/communities/999')
+      .delete('/api/admin/communities/999')
       .expect(404);
-  });
-
-  test('should work with plain fetch simulation (no special headers)', async () => {
-    // This test simulates how the frontend makes requests without Authorization headers
-    const response = await request(app)
-      .get('/api/reddit/communities')
-      // No Authorization header, no special session setup - just plain request
-      .set('Accept', 'application/json')
-      .set('Content-Type', 'application/json');
-
-    // Note: This will work because our mock middleware sets req.user above
-    // In real scenarios, the session middleware would handle this
-    expect(response.status).toBe(200);
-    expect(Array.isArray(response.body)).toBe(true);
   });
 });

@@ -491,8 +491,8 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
   // Referral routes
   app.use('/api/referral', referralRouter);
 
-  // Admin communities routes (mounted at reddit path for client compatibility)
-  app.use('/api/reddit/communities', adminCommunitiesRouter);
+  // Admin communities routes are exposed under a dedicated admin namespace
+  app.use('/api/admin/communities', adminCommunitiesRouter);
 
   // Social auth routes
   app.get('/api/auth/google', socialAuthRoutes.googleAuth);

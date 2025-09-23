@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,22 +23,35 @@ interface GenerateContentVariables {
   allowsPromotion?: "none" | "subtle" | "direct";
 }
 
-interface UnifiedAIResponse {
-  titles: string[];
-  content: string;
-  photoInstructions: {
-    lighting: string;
-    cameraAngle: string;
-    composition: string;
-    styling: string;
-    mood: string;
-    technicalSettings: string;
-  };
+// Assuming GeneratedContent is defined elsewhere and matches the structure of UnifiedAIResponse or similar
+interface GeneratedContent {
+  titles?: string[] | string;
+  content?: string;
+  photoInstructions?:
+    | {
+        lighting: string;
+        cameraAngle: string;
+        composition: string;
+        styling: string;
+        mood: string;
+        technicalSettings: string;
+      }
+    | string;
   hashtags?: string[];
   caption?: string;
+  id?: number;
+  userId?: number;
+  platform?: string;
+  style?: string;
+  theme?: string;
+  prompt?: string;
+  subreddit?: string;
+  allowsPromotion?: boolean;
+  generationType?: string;
+  createdAt?: Date | string;
 }
 
-const photoInstructionFields: Array<{ key: keyof UnifiedAIResponse["photoInstructions"]; label: string }> = [
+const photoInstructionFields: Array<{ key: keyof ContentGeneration["photoInstructions"]; label: string }> = [
   { key: "lighting", label: "Lighting" },
   { key: "cameraAngle", label: "Camera Angle" },
   { key: "composition", label: "Composition" },
@@ -69,10 +81,10 @@ interface EnhancedAIGeneratorProps {
   canGenerate?: boolean;
 }
 
-export function EnhancedAIGenerator({ 
-  onContentGenerated, 
+export function EnhancedAIGenerator({
+  onContentGenerated,
   userTier = "guest",
-  canGenerate = true 
+  canGenerate = true
 }: EnhancedAIGeneratorProps) {
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
@@ -82,7 +94,7 @@ export function EnhancedAIGenerator({
   const [photoType, setPhotoType] = useState<string>("selfie");
   const [tone, setTone] = useState<string>("confident");
   const [customPrompt, setCustomPrompt] = useState<string>("");
-  const [generatedContent, setGeneratedContent] = useState<UnifiedAIResponse | null>(null);
+  const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
   const [copiedItem, setCopiedItem] = useState<string | null>(null);
 
   const isGuestMode = !isAuthenticated || userTier === 'guest';
@@ -104,67 +116,167 @@ export function EnhancedAIGenerator({
 
   const currentTierConfig = tierConfig[userTier as keyof typeof tierConfig] || tierConfig.guest;
 
-  const generateContentMutation = useMutation<UnifiedAIResponse, Error, GenerateContentVariables>({
-    mutationFn: async (variables) => {
-      const response = await apiRequest("POST", "/api/generate", variables);
-      if (!response.ok) {
-        throw new Error("Failed to generate content");
+  const basePhotoInstructions: ContentGeneration["photoInstructions"] = {
+    lighting: "Soft natural lighting",
+    cameraAngle: "Eye-level framing",
+    composition: "Balanced composition highlighting the subject",
+    styling: "Signature outfit and accessories",
+    mood: "Confident and inviting",
+    technicalSettings: "Auto settings"
+  };
+
+  const normalizePhotoInstructions = (
+    instructions: GeneratedContent["photoInstructions"]
+  ): ContentGeneration["photoInstructions"] => {
+    if (instructions && typeof instructions === "object" && !Array.isArray(instructions)) {
+      const typedInstructions = instructions as Record<string, unknown>;
+
+      return {
+        lighting:
+          typeof typedInstructions.lighting === "string" && typedInstructions.lighting.trim().length > 0
+            ? typedInstructions.lighting
+            : basePhotoInstructions.lighting,
+        cameraAngle:
+          typeof typedInstructions.cameraAngle === "string" && typedInstructions.cameraAngle.trim().length > 0
+            ? typedInstructions.cameraAngle
+            : basePhotoInstructions.cameraAngle,
+        composition:
+          typeof typedInstructions.composition === "string" && typedInstructions.composition.trim().length > 0
+            ? typedInstructions.composition
+            : basePhotoInstructions.composition,
+        styling:
+          typeof typedInstructions.styling === "string" && typedInstructions.styling.trim().length > 0
+            ? typedInstructions.styling
+            : basePhotoInstructions.styling,
+        mood:
+          typeof typedInstructions.mood === "string" && typedInstructions.mood.trim().length > 0
+            ? typedInstructions.mood
+            : basePhotoInstructions.mood,
+        technicalSettings:
+          typeof typedInstructions.technicalSettings === "string" && typedInstructions.technicalSettings.trim().length > 0
+            ? typedInstructions.technicalSettings
+            : basePhotoInstructions.technicalSettings
+      };
+    }
+
+    if (typeof instructions === "string" && instructions.trim().length > 0) {
+      return {
+        ...basePhotoInstructions,
+        composition: instructions,
+        mood: instructions
+      };
+    }
+
+    return basePhotoInstructions;
+  };
+
+  const normalizeTitles = (titles: unknown): string[] => {
+    if (Array.isArray(titles)) {
+      const filtered = titles.filter((title): title is string => typeof title === "string" && title.trim().length > 0);
+      if (filtered.length > 0) {
+        return filtered;
       }
-      return (await response.json()) as UnifiedAIResponse;
+    }
+
+    if (typeof titles === "string" && titles.trim().length > 0) {
+      return [titles];
+    }
+
+    return ["Generated content ready to share"];
+  };
+
+  const generateContentMutation = useMutation<GeneratedContent, Error, GenerateContentVariables>({
+    mutationFn: async (data) => {
+      const effectivePrompt = data.customPrompt || data.prompt || "";
+      const response = await apiRequest("POST", "/api/generate-unified", {
+        mode: "text",
+        platform: data.platform || "reddit",
+        style: data.style || "confident",
+        theme: data.theme || "general",
+        prompt: effectivePrompt,
+        customInstructions: effectivePrompt,
+        includePromotion:
+          typeof data.includePromotion === "boolean"
+            ? data.includePromotion
+            : data.allowsPromotion !== "none"
+      });
+      return (await response.json()) as GeneratedContent;
     },
     onSuccess: (data, variables) => {
-      const fallbackTitle = data.caption?.trim() || data.titles?.[0] || "AI Generated Content";
-      const normalizedTitles = data.titles && data.titles.length > 0 ? data.titles : [fallbackTitle];
-      const primaryContent = data.content?.trim() ? data.content : data.caption ?? fallbackTitle;
-      const sanitizedHashtags = data.hashtags
-        ?.map((tag) => tag.trim())
-        .filter((tag) => tag.length > 0);
-      const safePhotoInstructions = {
-        lighting: data.photoInstructions?.lighting || "Use warm, soft lighting that flatters skin tones.",
-        cameraAngle: data.photoInstructions?.cameraAngle || "Shoot at eye level or slightly above for a confident look.",
-        composition: data.photoInstructions?.composition || "Center yourself and keep the framing clean.",
-        styling: data.photoInstructions?.styling || "Match wardrobe and props to the vibe of the caption.",
-        mood: data.photoInstructions?.mood || "Project confidence with relaxed, inviting expressions.",
-        technicalSettings: data.photoInstructions?.technicalSettings || "Auto settings are fine; prioritize clear focus."
-      };
+      setGeneratedContent(data);
 
-      const normalizedResponse: UnifiedAIResponse = {
+      const candidate = data as Record<string, unknown>;
+      const normalizedTitles = normalizeTitles(candidate.titles ?? data.titles);
+      const normalizedPhotoInstructions = normalizePhotoInstructions(data.photoInstructions);
+      const rawId = candidate.id;
+      const id = typeof rawId === "number" ? rawId : Date.now();
+      const rawUserId = candidate.userId;
+      const userId = typeof rawUserId === "number" ? rawUserId : null;
+      const rawCreatedAt = candidate.createdAt;
+      const createdAt =
+        rawCreatedAt instanceof Date
+          ? rawCreatedAt
+          : typeof rawCreatedAt === "string" && rawCreatedAt.trim().length > 0
+            ? new Date(rawCreatedAt)
+            : new Date();
+      const resolvedPlatform =
+        (typeof candidate.platform === "string" && candidate.platform.trim().length > 0
+          ? candidate.platform
+          : variables?.platform) || photoType;
+      const resolvedStyle =
+        (typeof candidate.style === "string" && candidate.style.trim().length > 0
+          ? candidate.style
+          : variables?.style) || tone;
+      const resolvedTheme =
+        (typeof candidate.theme === "string" && candidate.theme.trim().length > 0
+          ? candidate.theme
+          : variables?.theme) || photoType;
+      const contentText =
+        typeof data.content === "string" && data.content.trim().length > 0
+          ? data.content
+          : "Content generated successfully. Customize before sharing.";
+      const candidatePrompt = candidate.prompt;
+      const resolvedPrompt =
+        typeof candidatePrompt === "string" && candidatePrompt.trim().length > 0
+          ? candidatePrompt
+          : variables?.customPrompt || variables?.prompt || (customPrompt.trim().length > 0 ? customPrompt : null);
+      const candidateSubreddit = candidate.subreddit;
+      const resolvedSubreddit =
+        typeof candidateSubreddit === "string" && candidateSubreddit.trim().length > 0
+          ? candidateSubreddit
+          : variables?.subreddit || (subreddit.trim().length > 0 ? subreddit : null);
+      const candidateAllowsPromotion = candidate.allowsPromotion;
+      const resolvedAllowsPromotion =
+        typeof candidateAllowsPromotion === "boolean"
+          ? candidateAllowsPromotion
+          : Boolean(variables?.includePromotion ?? (typeof variables?.allowsPromotion === "string" ? variables.allowsPromotion !== "none" : false));
+      const candidateGenerationType = candidate.generationType;
+      const generationType =
+        typeof candidateGenerationType === "string" && candidateGenerationType.trim().length > 0
+          ? candidateGenerationType
+          : "ai";
+
+      const structuredGeneration: ContentGeneration = {
+        id,
+        userId,
+        platform: resolvedPlatform,
+        style: resolvedStyle,
+        theme: resolvedTheme,
         titles: normalizedTitles,
-        content: primaryContent,
-        photoInstructions: safePhotoInstructions,
-        caption: data.caption?.trim() || undefined,
-        hashtags: sanitizedHashtags && sanitizedHashtags.length > 0 ? sanitizedHashtags : undefined
+        content: contentText,
+        photoInstructions: normalizedPhotoInstructions,
+        prompt: resolvedPrompt || null,
+        subreddit: resolvedSubreddit || null,
+        allowsPromotion: resolvedAllowsPromotion,
+        generationType,
+        createdAt
       };
 
-      setGeneratedContent(normalizedResponse);
-
-      const allowsPromotionValue =
-        typeof variables.includePromotion === "boolean"
-          ? variables.includePromotion
-          : variables.allowsPromotion !== "none";
-
-      // Transform the API response to match ContentGeneration interface for the callback
-      const transformedContent: ContentGeneration = {
-        id: 0, // Will be set by database
-        userId: 0, // Will be set by database
-        platform: variables.platform || "reddit",
-        style: variables.style || "confident",
-        theme: variables.theme || "general",
-        titles: normalizedResponse.titles,
-        content: normalizedResponse.content,
-        photoInstructions: normalizedResponse.photoInstructions,
-        prompt: variables.customPrompt || variables.prompt || "",
-        subreddit: variables.subreddit,
-        allowsPromotion: allowsPromotionValue,
-        generationType: "ai",
-        createdAt: new Date(),
-      };
-
-      onContentGenerated(transformedContent);
+      onContentGenerated(structuredGeneration);
 
       toast({
         title: "Content Generated Successfully!",
-        description: normalizedResponse.caption ?? normalizedResponse.titles[0] ?? "Your AI content is ready."
+        description: structuredGeneration.titles[0] || "Your AI content is ready."
       });
 
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
@@ -351,7 +463,7 @@ export function EnhancedAIGenerator({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => copyToClipboard(generatedContent.content, "Content")}
+                  onClick={() => copyToClipboard(generatedContent.content ?? "", "Content")}
                   className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-orange-600"
                 >
                   <Copy className="h-3 w-3" />
