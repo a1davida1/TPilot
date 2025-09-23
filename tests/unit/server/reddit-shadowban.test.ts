@@ -2,6 +2,23 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { RedditManager } from '../../../server/lib/reddit.js';
 import type { ShadowbanCheckApiResponse } from '@shared/schema';
 
+// Test interfaces
+interface MockSubmission {
+  id: string;
+  created_utc: number;
+  permalink: string;
+  title: string;
+  subreddit: { display_name: string };
+}
+
+interface MockRedditUser {
+  getSubmissions: () => Promise<MockSubmission[]>;
+}
+
+interface MockRedditClient {
+  getMe: () => Promise<MockRedditUser>;
+}
+
 // Mock snoowrap
 const mockReddit = {
   getMe: vi.fn(),
@@ -13,11 +30,11 @@ global.fetch = mockFetch;
 
 // Mock RedditManager.forUser to return our test instance
 vi.mock('../../../server/lib/reddit.js', async () => {
-  const actual = await vi.importActual('../../../server/lib/reddit.js') as any;
+  const actual = await vi.importActual('../../../server/lib/reddit.js') as Record<string, unknown>;
   return {
     ...actual,
     RedditManager: {
-      ...actual.RedditManager,
+      ...((actual.RedditManager as Record<string, unknown>) || {}),
       forUser: vi.fn(),
     },
   };
@@ -31,7 +48,7 @@ describe('RedditManager shadowban detection', () => {
     vi.clearAllMocks();
     
     // Create a test instance with mocked reddit client
-    manager = new (RedditManager as any)(testUserId, mockReddit);
+    manager = new (RedditManager as unknown as new (userId: number, client: MockRedditClient) => RedditManager)(testUserId, mockReddit);
     
     // Mock the getProfile method
     vi.spyOn(manager, 'getProfile').mockResolvedValue({

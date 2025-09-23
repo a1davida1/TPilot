@@ -3,9 +3,14 @@ import { initializeQueue, closeQueue } from '../../../server/lib/queue-factory.j
 import { initializeWorkers } from '../../../server/lib/workers/index.js';
 import { logger } from '../../../server/lib/logger.js';
 
+// Test interfaces
+interface LogCall {
+  [index: number]: unknown;
+}
+
 // Mock logging methods
 const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-const infoSpy = vi.spyOn(logger, 'info').mockImplementation(() => undefined as any);
+const infoSpy = vi.spyOn(logger, 'info').mockImplementation(() => logger);
 
 describe('Worker Queue Initialization', () => {
   beforeEach(async () => {
@@ -36,9 +41,10 @@ describe('Worker Queue Initialization', () => {
       await initializeQueue();
 
       // Should log which queue backend is being used
-      const hasQueueLog = logSpy.mock.calls.some(([msg]: any[]) => 
-        typeof msg === 'string' && msg.includes('queue backend')
-      );
+      const hasQueueLog = logSpy.mock.calls.some((call) => {
+        const [msg] = call;
+        return typeof msg === 'string' && msg.includes('queue backend');
+      });
       expect(logSpy).toHaveBeenCalled();
     });
   });
@@ -49,7 +55,7 @@ describe('Worker Queue Initialization', () => {
 
       // Should log initialization progress
       const infoCalls = infoSpy.mock.calls.flat();
-      const hasWorkerLog = infoCalls.some((call: any) =>
+      const hasWorkerLog = infoCalls.some((call: unknown) =>
         typeof call === 'string' && call.includes('worker initialized')
       );
       expect(infoSpy).toHaveBeenCalled();

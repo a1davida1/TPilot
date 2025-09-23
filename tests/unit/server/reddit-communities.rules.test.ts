@@ -3,6 +3,34 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+// Test interfaces
+interface TestCommunityRules {
+  sellingAllowed?: string;
+  watermarksAllowed?: boolean;
+  titleRules?: string[];
+  contentRules?: string[];
+  verificationRequired?: boolean;
+  minKarma?: number;
+  minAccountAge?: number;
+  requiresApproval?: boolean;
+  nsfwRequired?: boolean;
+  maxPostsPerDay?: number;
+  cooldownHours?: number;
+}
+
+interface TestCommunity {
+  id: string;
+  name?: string;
+  displayName?: string;
+  category?: string;
+  promotionAllowed?: string;
+  successProbability?: number;
+  growthTrend?: string;
+  competitionLevel?: string;
+  bestPostingTimes?: string[];
+  rules: TestCommunityRules;
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -36,7 +64,7 @@ describe('Reddit Communities Rules Unit Tests', () => {
       expect(fullSeed.length).toBeGreaterThan(0);
       
       // Verify structured rule format in regular seed
-      regularSeed.forEach((community: any) => {
+      regularSeed.forEach((community: TestCommunity) => {
         expect(community).toHaveProperty('rules');
         expect(typeof community.rules).toBe('object');
         expect(community.rules).toHaveProperty('sellingAllowed');
@@ -48,7 +76,7 @@ describe('Reddit Communities Rules Unit Tests', () => {
       });
       
       // Verify structured rule format in full seed
-      fullSeed.forEach((community: any) => {
+      fullSeed.forEach((community: TestCommunity) => {
         expect(community).toHaveProperty('rules');
         expect(typeof community.rules).toBe('object');
         expect(community.rules).toHaveProperty('sellingAllowed');
@@ -60,18 +88,18 @@ describe('Reddit Communities Rules Unit Tests', () => {
       });
       
       // Test specific communities from different seeds
-      const gonewild = fullSeed.find((c: any) => c.id === 'gonewild');
+      const gonewild = fullSeed.find((c: TestCommunity) => c.id === 'gonewild');
       expect(gonewild).toBeDefined();
       expect(gonewild.rules.sellingAllowed).toBe('not_allowed');
       expect(gonewild.rules.watermarksAllowed).toBe(false);
       expect(gonewild.rules.verificationRequired).toBe(true);
       
-      const onlyfans = fullSeed.find((c: any) => c.id === 'onlyfans');
+      const onlyfans = fullSeed.find((c: TestCommunity) => c.id === 'onlyfans');
       expect(onlyfans).toBeDefined();
       expect(onlyfans.rules.sellingAllowed).toBe('allowed');
       expect(onlyfans.rules.watermarksAllowed).toBe(true);
       
-      const fitness = regularSeed.find((c: any) => c.id === 'fitness');
+      const fitness = regularSeed.find((c: TestCommunity) => c.id === 'fitness');
       expect(fitness).toBeDefined();
       expect(fitness.rules.minKarma).toBe(100);
       expect(fitness.rules.minAccountAge).toBe(30);
@@ -87,7 +115,7 @@ describe('Reddit Communities Rules Unit Tests', () => {
       const testModule = `
         import { normalizeRules } from '../../../server/reddit-communities.ts';
         
-        export function testNormalizeRules(rawRules, promotionAllowed, category) {
+        export function testNormalizeRules(rawRules: unknown, promotionAllowed: string, category: string) {
           return normalizeRules(rawRules, promotionAllowed, category);
         }
       `;
@@ -131,7 +159,7 @@ describe('Reddit Communities Rules Unit Tests', () => {
       const testModule = `
         import { normalizeRules } from '../../../server/reddit-communities.ts';
         
-        export function testSellingPolicyInference(promotionAllowed, category) {
+        export function testSellingPolicyInference(promotionAllowed: string, category: string) {
           const rules = { sellingAllowed: 'unknown' };
           return normalizeRules(rules, promotionAllowed, category);
         }
@@ -190,7 +218,7 @@ describe('Reddit Communities Rules Unit Tests', () => {
       const testModule = `
         import { normalizeRules } from '../../../server/reddit-communities.ts';
         
-        export function testInsightsFromRules(community) {
+        export function testInsightsFromRules(community: TestCommunity) {
           const rules = normalizeRules(community.rules, community.promotionAllowed, community.category);
           const warnings = [];
           

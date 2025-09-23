@@ -1,13 +1,18 @@
 import { describe, expect, test } from "vitest";
 import { deriveStripeConfig, stripeErrorMessages } from "../../../server/payments/stripe-config.ts";
 
+// Test interfaces
+interface MockLogger {
+  error: (message: string) => MockLogger;
+}
+
 describe("deriveStripeConfig", () => {
   test("returns null when secret key is absent", () => {
     const errors: string[] = [];
-    const logger = {
-      error(message: string): any {
+    const logger: MockLogger = {
+      error(message: string): MockLogger {
         errors.push(message);
-        return {} as any;
+        return this;
       },
     };
 
@@ -22,10 +27,10 @@ describe("deriveStripeConfig", () => {
 
   test("returns configuration when key and version are valid", () => {
     const errors: string[] = [];
-    const logger = {
-      error(message: string): any {
+    const logger: MockLogger = {
+      error(message: string): MockLogger {
         errors.push(message);
-        return {} as any;
+        return this;
       },
     };
 
@@ -46,10 +51,10 @@ describe("deriveStripeConfig", () => {
 
   test("throws when secret key exists but version is missing", () => {
     const errors: string[] = [];
-    const logger = {
-      error(message: string): any {
+    const logger: MockLogger = {
+      error(message: string): MockLogger {
         errors.push(message);
-        return {} as any;
+        return this;
       },
     };
 
@@ -67,10 +72,10 @@ describe("deriveStripeConfig", () => {
 
   test("throws when version format is invalid", () => {
     const errors: string[] = [];
-    const logger = {
-      error(message: string): any {
+    const logger: MockLogger = {
+      error(message: string): MockLogger {
         errors.push(message);
-        return {} as any;
+        return this;
       },
     };
 
@@ -89,7 +94,7 @@ describe("deriveStripeConfig", () => {
   });
 
   test("accepts valid date formats", () => {
-    const logger = { error: (): any => ({} as any) };
+    const logger: MockLogger = { error: function(): MockLogger { return this; } };
     const validVersions = ["2023-10-16", "2024-01-01", "2025-12-31"];
 
     for (const version of validVersions) {
