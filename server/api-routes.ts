@@ -371,34 +371,7 @@ export function registerApiRoutes(app: Express) {
     }
   });
 
-  // Reddit Account Management
-  app.get('/api/reddit/accounts', authenticateToken, async (req: Request, res) => {
-    try {
-      const user = req.user;
-      
-      if (!user?.id) {
-        return res.status(401).json({ error: 'Authentication required' });
-      }
-      
-      const userId = user.id;
-
-      const accounts = await db
-        .select()
-        .from(creatorAccounts)
-        .where(eq(creatorAccounts.userId, userId));
-
-      res.json(accounts.map(acc => ({
-        id: acc.id,
-        platform: acc.platform,
-        handle: acc.handle,
-        status: acc.status,
-        createdAt: acc.createdAt,
-      })));
-    } catch (error: unknown) {
-      console.error('Failed to get Reddit accounts:', error);
-      res.status(500).json({ error: getErrorMessage(error) });
-    }
-  });
+  // Reddit Account Management - REMOVED: Duplicate endpoint, proper implementation is in reddit-routes.ts
 
   // Reddit Account Info
   app.get('/api/reddit/account/:accountId/info', async (req, res) => {

@@ -21,6 +21,7 @@ import { uploadRoutes, applyImageShieldProtection, protectionPresets } from "./r
 import { mediaRoutes } from "./routes/media.js";
 import { analyticsRouter } from "./routes/analytics.js";
 import { registerExpenseRoutes } from "./expense-routes.js";
+import { adminCommunitiesRouter } from "./routes/admin-communities.js";
 
 // Core imports
 import { storage } from "./storage.js";
@@ -489,6 +490,9 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
 
   // Analytics routes
   app.use('/api/analytics', analyticsRouter);
+  
+  // Admin communities routes
+  app.use('/api/admin/communities', adminCommunitiesRouter);
   
   // Social auth routes
   app.get('/api/auth/google', socialAuthRoutes.googleAuth);

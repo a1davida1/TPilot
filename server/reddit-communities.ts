@@ -28,6 +28,10 @@ export interface CommunityRules {
   verificationRequired?: boolean;
 }
 
+export type NormalizedRedditCommunity = Omit<RedditCommunity, 'rules'> & {
+  rules: RedditCommunityRuleSet;
+};
+
 /**
  * Parse community rules from the database response
  * Handles both legacy column-level rules and new structured rules
@@ -139,17 +143,19 @@ function inferSellingPolicy(promotionAllowed: string, category: string, rules?: 
   return 'unknown';
 }
 
-export async function listCommunities() {
-  const communities = await db.select().from(redditCommunities).orderBy(desc(redditCommunities.members));
-  
-  // Normalize rules for each community
-  return communities.map(community => ({
+export function normalizeCommunityRecord(community: RedditCommunity): NormalizedRedditCommunity {
+  return {
     ...community,
     rules: normalizeRules(community.rules, community.promotionAllowed, community.category)
-  }));
+  };
 }
 
-export async function searchCommunities(query: string) {
+export async function listCommunities(): Promise<NormalizedRedditCommunity[]> {
+  const communities = await db.select().from(redditCommunities).orderBy(desc(redditCommunities.members));
+  return communities.map(normalizeCommunityRecord);
+}
+
+export async function searchCommunities(query: string): Promise<NormalizedRedditCommunity[]> {
   const like = `%${query}%`;
   const communities = await db.select()
     .from(redditCommunities)
@@ -161,25 +167,24 @@ export async function searchCommunities(query: string) {
       )
     );
   
-  // Normalize rules for each community
-  return communities.map(community => ({
-    ...community,
-    rules: normalizeRules(community.rules, community.promotionAllowed, community.category)
-  }));
+  return communities.map(normalizeCommunityRecord);
 }
 
-export async function createCommunity(data: unknown) {
+export async function createCommunity(data: unknown): Promise<NormalizedRedditCommunity> {
   const value: InsertRedditCommunity = insertRedditCommunitySchema.parse(data) as InsertRedditCommunity;
   const [row] = await db.insert(redditCommunities).values(value).returning();
-  return row;
+  if (!row) {
+    throw new Error('Failed to insert community');
+  }
+  return normalizeCommunityRecord(row);
 }
 
-export async function updateCommunity(id: string, data: unknown) {
+export async function updateCommunity(id: string, data: unknown): Promise<NormalizedRedditCommunity | undefined> {
   const value: Partial<InsertRedditCommunity> = insertRedditCommunitySchema
     .partial()
     .parse(data) as Partial<InsertRedditCommunity>;
   const [row] = await db.update(redditCommunities).set(value).where(eq(redditCommunities.id, id)).returning();
-  return row;
+  return row ? normalizeCommunityRecord(row) : undefined;
 }
 
 export async function deleteCommunity(id: string) {
