@@ -137,7 +137,8 @@ Compliance: Phased approach - base features without ID verification, gate advanc
 
 ### Typed StorageMock Helper Implementation (September 23, 2025)
 - ✅ **Strongly-typed mock factory**: Replaced loosely-typed `Record<keyof IStorage, MockedFunction<any>>` with mapped type `StorageMock` that preserves exact method signatures
-- ✅ **Type-safe mock generation**: Added reusable `make<K extends keyof IStorage>()` factory that creates `MockInstance<IStorage[K]>` with proper parameter and return types
+- ✅ **Type-safe mock generation**: Added reusable `mock<K extends keyof IStorage>()` factory that creates `MockedFunction<IStorage[K]>` with proper parameter and return types
 - ✅ **Enhanced compiler enforcement**: Every mocked storage method now mirrors true IStorage signatures, eliminating `as any` casts and preventing incorrect call shapes
+- ✅ **Test type improvements**: Updated expense operations tests to use proper `IStorage` typing instead of `any`, improving type safety across the test suite
 - ✅ **Backward compatibility**: All existing tests continue to pass (16/16 tests successful) while gaining stronger type safety
 - ✅ **Developer experience**: TypeScript compiler now catches storage mock usage errors at compile time instead of runtime

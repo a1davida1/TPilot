@@ -1,11 +1,9 @@
-import { vi, type MockInstance } from 'vitest';
+import { vi, type MockedFunction } from 'vitest';
 import type { IStorage } from '../../server/storage';
 
-type StorageMock = {
-  [K in keyof IStorage]: MockInstance<IStorage[K]>;
-};
+type StorageMock = { [K in keyof IStorage]: MockedFunction<IStorage[K]> };
 
-const make = <K extends keyof IStorage>(_key: K): StorageMock[K] => vi.fn<IStorage[K]>();
+const mock = <K extends keyof IStorage>() => vi.fn<IStorage[K]>();
 
 /**
  * Creates a complete mock of the storage interface with all methods
@@ -14,97 +12,97 @@ const make = <K extends keyof IStorage>(_key: K): StorageMock[K] => vi.fn<IStora
 export function buildStorageMock(): StorageMock {
   return {
     // User operations
-    getUser: make('getUser'),
-    getUserById: make('getUserById'),
-    getAllUsers: make('getAllUsers'),
-    getUserByUsername: make('getUserByUsername'),
-    getUserByEmail: make('getUserByEmail'),
-    createUser: make('createUser'),
-    updateUserTier: make('updateUserTier'),
-    updateUser: make('updateUser'),
-    updateUserProfile: make('updateUserProfile'),
-    updateUserPassword: make('updateUserPassword'),
-    updateUserEmailVerified: make('updateUserEmailVerified'),
-    createVerificationToken: make('createVerificationToken'),
-    getVerificationToken: make('getVerificationToken'),
-    deleteVerificationToken: make('deleteVerificationToken'),
-    deleteUser: make('deleteUser'),
+    getUser: mock<'getUser'>(),
+    getUserById: mock<'getUserById'>(),
+    getAllUsers: mock<'getAllUsers'>(),
+    getUserByUsername: mock<'getUserByUsername'>(),
+    getUserByEmail: mock<'getUserByEmail'>(),
+    createUser: mock<'createUser'>(),
+    updateUserTier: mock<'updateUserTier'>(),
+    updateUser: mock<'updateUser'>(),
+    updateUserProfile: mock<'updateUserProfile'>(),
+    updateUserPassword: mock<'updateUserPassword'>(),
+    updateUserEmailVerified: mock<'updateUserEmailVerified'>(),
+    createVerificationToken: mock<'createVerificationToken'>(),
+    getVerificationToken: mock<'getVerificationToken'>(),
+    deleteVerificationToken: mock<'deleteVerificationToken'>(),
+    deleteUser: mock<'deleteUser'>(),
 
     // Generation operations
-    createGeneration: make('createGeneration'),
-    getGenerationsByUserId: make('getGenerationsByUserId'),
-    createContentGeneration: make('createContentGeneration'),
-    getUserContentGenerations: make('getUserContentGenerations'),
-    getContentGenerationCount: make('getContentGenerationCount'),
-    getContentGenerationStats: make('getContentGenerationStats'),
-    getLastGenerated: make('getLastGenerated'),
+    createGeneration: mock<'createGeneration'>(),
+    getGenerationsByUserId: mock<'getGenerationsByUserId'>(),
+    createContentGeneration: mock<'createContentGeneration'>(),
+    getUserContentGenerations: mock<'getUserContentGenerations'>(),
+    getContentGenerationCount: mock<'getContentGenerationCount'>(),
+    getContentGenerationStats: mock<'getContentGenerationStats'>(),
+    getLastGenerated: mock<'getLastGenerated'>(),
 
     // Revenue operations
-    getRevenue: make('getRevenue'),
+    getRevenue: mock<'getRevenue'>(),
 
     // Preference operations
-    getUserPreferences: make('getUserPreferences'),
-    updateUserPreferences: make('updateUserPreferences'),
+    getUserPreferences: mock<'getUserPreferences'>(),
+    updateUserPreferences: mock<'updateUserPreferences'>(),
 
     // Image operations
-    createUserImage: make('createUserImage'),
-    getUserImages: make('getUserImages'),
-    getUserImage: make('getUserImage'),
-    updateUserImage: make('updateUserImage'),
-    deleteUserImage: make('deleteUserImage'),
+    createUserImage: mock<'createUserImage'>(),
+    getUserImages: mock<'getUserImages'>(),
+    getUserImage: mock<'getUserImage'>(),
+    updateUserImage: mock<'updateUserImage'>(),
+    deleteUserImage: mock<'deleteUserImage'>(),
 
     // Streak operations
-    calculateDailyStreak: make('calculateDailyStreak'),
+    calculateDailyStreak: mock<'calculateDailyStreak'>(),
 
     // Admin operations
-    getTotalUserCount: make('getTotalUserCount'),
-    getActiveUserCount: make('getActiveUserCount'),
-    getTotalContentGenerated: make('getTotalContentGenerated'),
-    getSubscriptionCounts: make('getSubscriptionCounts'),
+    getTotalUserCount: mock<'getTotalUserCount'>(),
+    getActiveUserCount: mock<'getActiveUserCount'>(),
+    getTotalContentGenerated: mock<'getTotalContentGenerated'>(),
+    getSubscriptionCounts: mock<'getSubscriptionCounts'>(),
 
     // Generation limit operations
-    getDailyGenerationCount: make('getDailyGenerationCount'),
+    getDailyGenerationCount: mock<'getDailyGenerationCount'>(),
 
     // Expense operations
-    createExpenseCategory: make('createExpenseCategory'),
-    getExpenseCategories: make('getExpenseCategories'),
-    getExpenseCategory: make('getExpenseCategory'),
-    updateExpenseCategory: make('updateExpenseCategory'),
-    deleteExpenseCategory: make('deleteExpenseCategory'),
+    createExpenseCategory: mock<'createExpenseCategory'>(),
+    getExpenseCategories: mock<'getExpenseCategories'>(),
+    getExpenseCategory: mock<'getExpenseCategory'>(),
+    updateExpenseCategory: mock<'updateExpenseCategory'>(),
+    deleteExpenseCategory: mock<'deleteExpenseCategory'>(),
 
-    createExpense: make('createExpense'),
-    getUserExpenses: make('getUserExpenses'),
-    getExpense: make('getExpense'),
-    updateExpense: make('updateExpense'),
-    deleteExpense: make('deleteExpense'),
-    getExpensesByCategory: make('getExpensesByCategory'),
-    getExpensesByDateRange: make('getExpensesByDateRange'),
-    getExpenseTotals: make('getExpenseTotals'),
+    createExpense: mock<'createExpense'>(),
+    getUserExpenses: mock<'getUserExpenses'>(),
+    getExpense: mock<'getExpense'>(),
+    updateExpense: mock<'updateExpense'>(),
+    deleteExpense: mock<'deleteExpense'>(),
+    getExpensesByCategory: mock<'getExpensesByCategory'>(),
+    getExpensesByDateRange: mock<'getExpensesByDateRange'>(),
+    getExpenseTotals: mock<'getExpenseTotals'>(),
 
-    getTaxDeductionInfo: make('getTaxDeductionInfo'),
-    getTaxDeductionInfoByCategory: make('getTaxDeductionInfoByCategory'),
-    createTaxDeductionInfo: make('createTaxDeductionInfo'),
+    getTaxDeductionInfo: mock<'getTaxDeductionInfo'>(),
+    getTaxDeductionInfoByCategory: mock<'getTaxDeductionInfoByCategory'>(),
+    createTaxDeductionInfo: mock<'createTaxDeductionInfo'>(),
 
     // Social Media operations
-    createSocialMediaAccount: make('createSocialMediaAccount'),
-    getUserSocialMediaAccounts: make('getUserSocialMediaAccounts'),
-    getSocialMediaAccount: make('getSocialMediaAccount'),
-    updateSocialMediaAccount: make('updateSocialMediaAccount'),
-    deleteSocialMediaAccount: make('deleteSocialMediaAccount'),
+    createSocialMediaAccount: mock<'createSocialMediaAccount'>(),
+    getUserSocialMediaAccounts: mock<'getUserSocialMediaAccounts'>(),
+    getSocialMediaAccount: mock<'getSocialMediaAccount'>(),
+    updateSocialMediaAccount: mock<'updateSocialMediaAccount'>(),
+    deleteSocialMediaAccount: mock<'deleteSocialMediaAccount'>(),
 
-    createSocialMediaPost: make('createSocialMediaPost'),
-    getUserSocialMediaPosts: make('getUserSocialMediaPosts'),
-    getSocialMediaPost: make('getSocialMediaPost'),
-    updateSocialMediaPost: make('updateSocialMediaPost'),
-    deleteSocialMediaPost: make('deleteSocialMediaPost'),
+    createSocialMediaPost: mock<'createSocialMediaPost'>(),
+    getUserSocialMediaPosts: mock<'getUserSocialMediaPosts'>(),
+    getSocialMediaPost: mock<'getSocialMediaPost'>(),
+    updateSocialMediaPost: mock<'updateSocialMediaPost'>(),
+    deleteSocialMediaPost: mock<'deleteSocialMediaPost'>(),
 
-    createPlatformEngagement: make('createPlatformEngagement'),
-    getPlatformEngagement: make('getPlatformEngagement'),
+    createPlatformEngagement: mock<'createPlatformEngagement'>(),
+    getPlatformEngagement: mock<'getPlatformEngagement'>(),
 
-    createPostSchedule: make('createPostSchedule'),
-    getUserScheduledPosts: make('getUserScheduledPosts'),
-    getPostSchedule: make('getPostSchedule'),
-    updatePostSchedule: make('updatePostSchedule'),
-    deletePostSchedule: make('deletePostSchedule')
+    createPostSchedule: mock<'createPostSchedule'>(),
+    getUserScheduledPosts: mock<'getUserScheduledPosts'>(),
+    getPostSchedule: mock<'getPostSchedule'>(),
+    updatePostSchedule: mock<'updatePostSchedule'>(),
+    deletePostSchedule: mock<'deletePostSchedule'>()
   };
 }

@@ -1,6 +1,7 @@
 /* eslint-env node, jest */
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 import type { InsertExpense } from '../../../shared/schema.js';
+import type { IStorage } from '../../../server/storage';
 import { buildStorageMock } from '../../_helpers/buildStorageMock.js';
 
 // Mock the storage module
@@ -13,7 +14,7 @@ vi.mock('../../../server/storage.ts', () => ({
 describe('Expense Operations Unit Tests', () => {
   const userId = 123;
   const categoryId = 1;
-  let storage: any;
+  let storage: IStorage;
 
   beforeAll(async () => {
     vi.resetModules();
