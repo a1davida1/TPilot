@@ -315,7 +315,11 @@ export function registerRedditRoutes(app: Express) {
         .limit(1);
 
       if (accounts.length === 0) {
-        return res.status(404).json({ error: 'No active Reddit account found' });
+        return res.status(200).json({
+          connected: false,
+          profile: null,
+          message: 'No active Reddit account found'
+        });
       }
 
       const account = accounts[0];
@@ -360,7 +364,10 @@ export function registerRedditRoutes(app: Express) {
           }
         });
       } else {
-        res.json({ connected: false });
+        res.json({
+          connected: false,
+          profile: null
+        });
       }
 
     } catch (error) {

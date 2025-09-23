@@ -113,18 +113,24 @@ async function configureStaticAssets(
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
   const fs = await import('fs');
 
-  const candidateClientPaths = [
+  const candidateClientPaths: string[] = [
     path.resolve(__dirname, '..', '..', 'dist', 'client'),
     path.resolve(__dirname, '..', 'client', 'dist'),
-    path.resolve(__dirname, '..', 'client'),
   ];
 
+  if (enableVite) {
+    candidateClientPaths.push(path.resolve(__dirname, '..', 'client'));
+  }
+
   let clientPath: string | null = null;
+
+  const missingIndexPaths: string[] = [];
 
   for (const candidate of candidateClientPaths) {
     const indexPath = path.join(candidate, 'index.html');
     if (!fs.existsSync(indexPath)) {
-      logger.warn(`Client build not found at ${indexPath}`);
+      missingIndexPaths.push(indexPath);
+      logger.debug(`Client build candidate missing index at ${indexPath}`);
       continue;
     }
 
@@ -134,14 +140,20 @@ async function configureStaticAssets(
   }
 
   if (!clientPath) {
+    if (missingIndexPaths.length > 0) {
+      const missingDescriptions = missingIndexPaths
+        .map((missingPath) => `Client build not found at ${missingPath}`)
+        .join('; ');
+      logger.warn(missingDescriptions);
+    }
     if (process.env.NODE_ENV === 'production') {
       logger.error('CRITICAL: Production build missing client files!');
     }
-    logger.error('Unable to locate compiled client assets in any known directory.');
-    
+    logger.error('Client build not found; unable to locate compiled client assets in any known directory.');
+
     // Return a 404 handler for all static file requests instead of crashing
     app.get('*', (req, res) => {
-      res.status(404).send('Application build not found - static assets unavailable');
+      res.status(404).send('Client build not found - static assets unavailable');
     });
     return;
   }

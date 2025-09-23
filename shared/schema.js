@@ -1,5 +1,123 @@
 import { pgTable, serial, varchar, text, integer, timestamp, jsonb, boolean, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
+
+// ==========================================
+// REDDIT COMMUNITY RULE SCHEMAS
+// ==========================================
+
+export const ruleAllowanceSchema = z.enum(['yes', 'limited', 'no']);
+
+export const redditCommunitySellingPolicySchema = z.enum(['allowed', 'limited', 'not_allowed', 'unknown']);
+
+export const promotionAllowedSchema = z.enum(['yes', 'no', 'limited', 'subtle', 'strict', 'unknown']);
+
+export const categorySchema = z.enum([
+    'age', 'amateur', 'appearance', 'body_type', 'cam', 'clothing', 'comparison',
+    'content_type', 'cosplay', 'couples', 'dancer', 'ethnicity', 'fetish',
+    'fitness', 'gaming', 'general', 'gonewild', 'lifestyle', 'natural',
+    'niche', 'reveal', 'selling', 'social', 'specific', 'style', 'theme'
+]);
+
+export const competitionLevelSchema = z.enum(['low', 'medium', 'high']).nullable();
+
+export const modActivitySchema = z.enum(['low', 'medium', 'high', 'unknown']).nullable();
+
+const growthTrendSchema = z.enum(['up', 'stable', 'down']).nullable();
+
+export const redditCommunityRuleSetSchema = z.object({
+    minKarma: z.number().nullable().optional(),
+    minAccountAge: z.number().nullable().optional(),
+    minAccountAgeDays: z.number().nullable().optional(),
+    watermarksAllowed: z.boolean().nullable().optional(),
+    sellingAllowed: redditCommunitySellingPolicySchema.optional(),
+    promotionalLinksAllowed: ruleAllowanceSchema.optional(),
+    titleRules: z.array(z.string()).optional().default([]),
+    contentRules: z.array(z.string()).optional().default([]),
+    bannedContent: z.array(z.string()).optional().default([]),
+    formattingRequirements: z.array(z.string()).optional().default([]),
+    notes: z.string().optional(),
+    verificationRequired: z.boolean().optional(),
+    requiresApproval: z.boolean().optional(),
+    requiresOriginalContent: z.boolean().optional(),
+    nsfwRequired: z.boolean().optional(),
+    maxPostsPerDay: z.number().nullable().optional(),
+    cooldownHours: z.number().nullable().optional()
+}).optional();
+
+export const postingLimitsSchema = z.object({
+    perDay: z.number().nullable().optional(),
+    perWeek: z.number().nullable().optional(),
+    daily: z.number().nullable().optional(),
+    weekly: z.number().nullable().optional(),
+    cooldownHours: z.number().nullable().optional()
+}).nullable().optional();
+
+export const redditCommunityZodSchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    displayName: z.string(),
+    members: z.number(),
+    engagementRate: z.number(),
+    category: categorySchema,
+    verificationRequired: z.boolean(),
+    promotionAllowed: promotionAllowedSchema,
+    postingLimits: postingLimitsSchema,
+    rules: redditCommunityRuleSetSchema,
+    bestPostingTimes: z.array(z.string()).optional(),
+    averageUpvotes: z.number().nullable().optional(),
+    successProbability: z.number().nullable().optional(),
+    growthTrend: growthTrendSchema.optional(),
+    modActivity: modActivitySchema.optional(),
+    description: z.string().nullable().optional(),
+    tags: z.array(z.string()).optional(),
+    competitionLevel: competitionLevelSchema.optional()
+});
+
+export const redditCommunityArrayZodSchema = z.array(redditCommunityZodSchema);
+
+export const createDefaultRules = () => ({
+    minKarma: null,
+    minAccountAge: null,
+    minAccountAgeDays: null,
+    watermarksAllowed: null,
+    sellingAllowed: undefined,
+    promotionalLinksAllowed: undefined,
+    titleRules: [],
+    contentRules: [],
+    bannedContent: [],
+    formattingRequirements: [],
+    notes: undefined,
+    verificationRequired: false,
+    requiresApproval: false,
+    requiresOriginalContent: false,
+    nsfwRequired: false,
+    maxPostsPerDay: null,
+    cooldownHours: null
+});
+
+export const redditCommunities = pgTable("reddit_communities", {
+    id: varchar("id", { length: 100 }).primaryKey(),
+    name: varchar("name", { length: 255 }).notNull(),
+    displayName: varchar("display_name", { length: 255 }).notNull(),
+    members: integer("members").notNull(),
+    engagementRate: integer("engagement_rate").notNull(),
+    category: varchar("category", { length: 50 }).notNull(),
+    verificationRequired: boolean("verification_required").default(false).notNull(),
+    promotionAllowed: varchar("promotion_allowed", { length: 20 }).default("no").notNull(),
+    postingLimits: jsonb("posting_limits"),
+    rules: jsonb("rules"),
+    bestPostingTimes: jsonb("best_posting_times"),
+    averageUpvotes: integer("average_upvotes"),
+    successProbability: integer("success_probability"),
+    growthTrend: varchar("growth_trend", { length: 20 }),
+    modActivity: varchar("mod_activity", { length: 20 }),
+    description: text("description"),
+    tags: jsonb("tags"),
+    competitionLevel: varchar("competition_level", { length: 20 })
+});
+
+export const insertRedditCommunitySchema = createInsertSchema(redditCommunities);
 export const users = pgTable("users", {
     id: serial("id").primaryKey(),
     username: varchar("username", { length: 255 }).unique().notNull(),
