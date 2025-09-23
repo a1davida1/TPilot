@@ -235,6 +235,30 @@ export const postJobs = pgTable("post_jobs", {
 export const ruleAllowanceSchema = z.enum(['yes', 'limited', 'no']);
 export type RuleAllowance = z.infer<typeof ruleAllowanceSchema>;
 
+// ==========================================
+// CANONICAL REDDIT COMMUNITY ENUMS
+// ==========================================
+
+export const promotionAllowedSchema = z.enum(['yes', 'limited', 'no']);
+export type PromotionAllowed = z.infer<typeof promotionAllowedSchema>;
+
+export const categorySchema = z.enum([
+  'age', 'amateur', 'appearance', 'body_type', 'cam', 'clothing', 'comparison',
+  'content_type', 'cosplay', 'couples', 'dancer', 'ethnicity', 'fetish',
+  'fitness', 'gaming', 'general', 'gonewild', 'lifestyle', 'natural',
+  'niche', 'reveal', 'selling', 'social', 'specific', 'style', 'theme'
+]);
+export type Category = z.infer<typeof categorySchema>;
+
+export const competitionLevelSchema = z.enum(['low', 'medium', 'high']).nullable();
+export type CompetitionLevel = z.infer<typeof competitionLevelSchema>;
+
+export const growthTrendSchema = z.enum(['up', 'down', 'stable']).nullable();
+export type GrowthTrend = z.infer<typeof growthTrendSchema>;
+
+export const modActivitySchema = z.enum(['active', 'moderate', 'inactive']).nullable();
+export type ModActivity = z.infer<typeof modActivitySchema>;
+
 export const redditCommunityRuleSetSchema = z.object({
   minKarma: z.number().nullable().optional(),
   minAccountAge: z.number().nullable().optional(), // in days (legacy)
@@ -267,6 +291,35 @@ export const postingLimitsSchema = z.object({
 }).nullable().optional();
 
 export type PostingLimits = z.infer<typeof postingLimitsSchema>;
+
+// ==========================================
+// CANONICAL REDDIT COMMUNITY ZOD SCHEMA
+// ==========================================
+
+export const redditCommunityZodSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  displayName: z.string(),
+  members: z.number(),
+  engagementRate: z.number(),
+  category: categorySchema,
+  verificationRequired: z.boolean(),
+  promotionAllowed: promotionAllowedSchema,
+  postingLimits: postingLimitsSchema,
+  rules: redditCommunityRuleSetSchema,
+  bestPostingTimes: z.array(z.string()).optional(),
+  averageUpvotes: z.number().nullable().optional(),
+  successProbability: z.number().nullable().optional(),
+  growthTrend: growthTrendSchema.optional(),
+  modActivity: modActivitySchema.optional(),
+  description: z.string().nullable().optional(),
+  tags: z.array(z.string()).optional(),
+  competitionLevel: competitionLevelSchema.optional()
+});
+
+export const redditCommunityArrayZodSchema = z.array(redditCommunityZodSchema);
+
+export type RedditCommunityZod = z.infer<typeof redditCommunityZodSchema>;
 
 // Default rule set factory
 export const createDefaultRules = (): RedditCommunityRuleSet => ({
