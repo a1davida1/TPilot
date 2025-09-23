@@ -30,6 +30,177 @@ export interface PostCheckContext {
   intendedAt?: Date;
   title?: string;
   body?: string;
+  url?: string;
+  nsfw?: boolean;
+  postType?: PostType;
+}
+
+type PostType = 'text' | 'link' | 'image' | 'gallery' | 'video';
+
+interface AccountMetadata {
+  karma?: number;
+  verified?: boolean;
+  [key: string]: unknown;
+}
+
+interface RulePredicateInput {
+  subreddit: string;
+  community?: {
+    name: string;
+    verificationRequired?: boolean;
+    promotionAllowed?: string;
+    postingLimits?: unknown;
+    rules?: unknown;
+  };
+  accountMetadata: AccountMetadata;
+  context: PostCheckContext;
+}
+
+interface RulePredicateResult {
+  allowed: boolean;
+  reason?: string;
+}
+
+type RulePredicate = (input: RulePredicateInput) => RulePredicateResult;
+
+// Helper functions for rule predicates
+function hasExternalLink(context: PostCheckContext): boolean {
+  if (context.url && context.url.trim().length > 0) {
+    return true;
+  }
+  const body = context.body ?? '';
+  return /https?:\/\//i.test(body) || /www\./i.test(body);
+}
+
+function extractMinKarma(postingLimits: unknown): number | undefined {
+  if (!postingLimits || typeof postingLimits !== 'object') {
+    return undefined;
+  }
+  const limits = postingLimits as Record<string, unknown>;
+  const candidates = [
+    limits.minKarma,
+    limits.minTotalKarma,
+    limits.minimumKarma,
+  ];
+  for (const candidate of candidates) {
+    if (typeof candidate === 'number' && Number.isFinite(candidate)) {
+      return candidate;
+    }
+  }
+  return undefined;
+}
+
+function combineContentSegments(...segments: Array<string | undefined>): string {
+  return segments
+    .map(segment => (typeof segment === 'string' ? segment.trim() : ''))
+    .filter(segment => segment.length > 0)
+    .join('\n');
+}
+
+function resolvePostType(context: PostCheckContext): PostType {
+  if (context.postType) {
+    return context.postType;
+  }
+  if (context.url && context.url.length > 0) {
+    return 'link';
+  }
+  return 'text';
+}
+
+// Base rule predicates that apply to all subreddits
+const BASE_RULE_PREDICATES: RulePredicate[] = [
+  ({ community, accountMetadata }) => {
+    if (!community?.verificationRequired) {
+      return { allowed: true };
+    }
+    if (accountMetadata.verified) {
+      return { allowed: true };
+    }
+    return {
+      allowed: false,
+      reason: `r/${community.name} requires a verified Reddit account before posting.`,
+    };
+  },
+  ({ community, accountMetadata }) => {
+    if (!community) {
+      return { allowed: true };
+    }
+    const minKarma = extractMinKarma(community.postingLimits);
+    if (typeof minKarma !== 'number') {
+      return { allowed: true };
+    }
+    const currentKarma = typeof accountMetadata.karma === 'number' ? accountMetadata.karma : 0;
+    if (currentKarma >= minKarma) {
+      return { allowed: true };
+    }
+    return {
+      allowed: false,
+      reason: `You need at least ${minKarma} karma to post in r/${community.name}. Your account currently has ${currentKarma}.`,
+    };
+  },
+  ({ community, context }) => {
+    if (!community) {
+      return { allowed: true };
+    }
+    if (community.promotionAllowed === 'no' && hasExternalLink(context)) {
+      return {
+        allowed: false,
+        reason: `r/${community.name} does not allow promotional or external links in submissions.`,
+      };
+    }
+    return { allowed: true };
+  },
+];
+
+// Subreddit-specific rule predicates
+const SUBREDDIT_RULE_PREDICATES: Record<string, RulePredicate[]> = {
+  gonewild: [
+    ({ context, subreddit }) => {
+      if (context.nsfw) {
+        return { allowed: true };
+      }
+      return {
+        allowed: false,
+        reason: `r/${subreddit} requires posts to be marked as NSFW. Please enable the NSFW flag before posting.`
+      };
+    },
+  ],
+  realgirls: [
+    ({ context, community }) => {
+      if (!community) {
+        return { allowed: true };
+      }
+      if (community.promotionAllowed === 'no' && hasExternalLink(context)) {
+        return {
+          allowed: false,
+          reason: `r/${community.name} does not allow external links or self-promotion content.`
+        };
+      }
+      return { allowed: true };
+    },
+  ],
+};
+
+// Evaluate all rule predicates for a given input
+function evaluateRulePredicates(input: RulePredicateInput): RulePredicateResult | undefined {
+  for (const predicate of BASE_RULE_PREDICATES) {
+    const result = predicate(input);
+    if (!result.allowed) {
+      return result;
+    }
+  }
+
+  const subredditPredicates = SUBREDDIT_RULE_PREDICATES[input.subreddit];
+  if (subredditPredicates) {
+    for (const predicate of subredditPredicates) {
+      const result = predicate(input);
+      if (!result.allowed) {
+        return result;
+      }
+    }
+  }
+
+  return undefined;
 }
 
 function getEnvOrDefault(name: string, defaultValue?: string): string {
@@ -326,13 +497,9 @@ export class RedditManager {
         });
       }
 
-      // Update rate limiting
-      await this.updateRateLimit({
-        subreddit: options.subreddit,
-        postId: submission.id,
-        title: options.title,
-        body: options.body || options.url || '',
-      });
+      // Record safety signals after successful submission
+      const duplicateBody = combineContentSegments(options.body, options.url);
+      await this.recordSafetySignals(options.subreddit, options.title, duplicateBody);
 
       console.log('Reddit submission succeeded:', {
         userId: this.userId,
@@ -462,13 +629,8 @@ export class RedditManager {
             sendReplies: true,
           });
 
-          // Update rate limiting after successful submission
-          await this.updateRateLimit({
-            subreddit: options.subreddit,
-            postId: submission.name || submission.id,
-            title: options.title,
-            body: options.imageUrl || '',
-          });
+          // Record safety signals after successful submission
+          await this.recordSafetySignals(options.subreddit, options.title, options.imageUrl || '');
 
           return {
             success: true,
@@ -598,13 +760,8 @@ export class RedditManager {
         sendReplies: true
       });
 
-      // Update rate limiting after successful submission
-      await this.updateRateLimit({
-        subreddit: options.subreddit,
-        postId: submission.name || submission.id,
-        title: options.title,
-        body: gallerySummary,
-      });
+      // Record safety signals after successful submission
+      await this.recordSafetySignals(options.subreddit, options.title, gallerySummary);
 
       return {
         success: true,
@@ -746,6 +903,56 @@ export class RedditManager {
           reasons.push(...safetyCheck.issues);
         }
         warnings.push(...safetyCheck.warnings);
+      }
+
+      // Evaluate rule predicates with account metadata
+      if (communityData) {
+        // Get Reddit profile data for karma and verification status
+        let redditKarma: number | undefined;
+        let redditVerified: boolean = false;
+        
+        try {
+          const redditManager = await RedditManager.forUser(userId);
+          if (redditManager) {
+            const profile = await redditManager.getProfile();
+            if (profile) {
+              redditKarma = profile.karma;
+              redditVerified = profile.verified;
+            }
+          }
+        } catch (error) {
+          console.warn('Failed to get Reddit profile for rule evaluation:', error);
+        }
+
+        const accountMetadata: AccountMetadata = {
+          karma: redditKarma,
+          verified: redditVerified || userData?.emailVerified || false,
+        };
+
+        // Build rule predicate input
+        const ruleInput: RulePredicateInput = {
+          subreddit: normalizedSubreddit,
+          community: {
+            name: communityData.name,
+            verificationRequired: communityData.verificationRequired || false,
+            promotionAllowed: communityData.promotionAllowed || 'unknown',
+            postingLimits: communityData.postingLimits,
+            rules: communityData.rules,
+          },
+          accountMetadata,
+          context: {
+            ...context,
+            url: context.url,
+            nsfw: context.nsfw || false,
+            postType: resolvePostType(context),
+          },
+        };
+
+        // Evaluate all rule predicates
+        const ruleFailure = evaluateRulePredicates(ruleInput);
+        if (ruleFailure && !ruleFailure.allowed) {
+          reasons.push(ruleFailure.reason || 'Rule violation detected');
+        }
       }
 
       // Check community-specific requirements
@@ -994,16 +1201,11 @@ export class RedditManager {
   }
 
   /**
-   * Update rate limiting after successful post
+   * Record safety signals after successful post
    */
-  private async updateRateLimit(options: { 
-    subreddit: string; 
-    postId: string;
-    title: string;
-    body: string;
-  }): Promise<void> {
+  private async recordSafetySignals(subreddit: string, title: string, body: string): Promise<void> {
     try {
-      const normalizedSubreddit = normalizeSubredditName(options.subreddit);
+      const normalizedSubreddit = normalizeSubredditName(subreddit);
       
       // Record post using SafetyManager for comprehensive tracking
       await SafetyManager.recordPost(this.userId.toString(), normalizedSubreddit);
@@ -1012,13 +1214,13 @@ export class RedditManager {
       await SafetyManager.recordPostForDuplicateDetection(
         this.userId.toString(),
         normalizedSubreddit,
-        options.title,
-        options.body
+        title,
+        body
       );
       
-      console.log(`Updated rate limit and recorded post for user ${this.userId} in r/${options.subreddit}`);
+      console.log(`Recorded safety signals for user ${this.userId} in r/${subreddit}`);
     } catch (error) {
-      console.error('Failed to update rate limit:', error);
+      console.error('Failed to record safety signals:', error);
     }
   }
 
