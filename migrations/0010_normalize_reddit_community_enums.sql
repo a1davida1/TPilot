@@ -20,4 +20,15 @@ SET competition_level = CASE
     WHEN mod_activity ILIKE '%medium%' THEN 'medium'
     WHEN mod_activity ILIKE '%low%' THEN 'low'
     ELSE 'unknown'
+  END,
+    growth_trend = CASE
+    WHEN growth_trend IS NULL THEN NULL
+    WHEN lower(growth_trend) IN ('up', 'stable', 'down') THEN lower(growth_trend)
+    WHEN lower(growth_trend) = 'rising' THEN 'up'
+    WHEN lower(growth_trend) = 'steady' THEN 'stable'
+    WHEN lower(growth_trend) = 'declining' THEN 'down'
+    WHEN lower(growth_trend) = 'falling' THEN 'down'
+    WHEN growth_trend ILIKE '%up%' OR growth_trend ILIKE '%rising%' THEN 'up'
+    WHEN growth_trend ILIKE '%down%' OR growth_trend ILIKE '%declining%' THEN 'down'
+    ELSE 'stable'
   END;
