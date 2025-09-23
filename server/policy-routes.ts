@@ -1,9 +1,5 @@
-import type { Express, Request, Response } from "express";
-
-type AuthenticatedRequest = Request & {
-  session?: { userId?: number };
-  user?: { id?: number };
-};
+import type { Express, Response } from "express";
+import { authenticateToken, type AuthRequest } from "./middleware/auth.js";
 import { lintCaption } from "./lib/policy-linter.js";
 import { getPreviewStats, checkPreviewGate } from "./lib/preview-gate.js";
 import { db } from "./db.js";
@@ -21,10 +17,10 @@ const previewRequestSchema = z.object({
 
 export function registerPolicyRoutes(app: Express) {
   // POST /api/preview - Lint content and store preview
-  app.post("/api/preview", async (req: AuthenticatedRequest, res: Response) => {
+  app.post("/api/preview", authenticateToken, async (req: AuthRequest, res: Response) => {
     try {
-      // Authentication check - get userId from session or auth middleware
-      const userId = req.session?.userId ?? req.user?.id;
+      // Authentication check - rely on authenticateToken to populate req.user
+      const userId = req.user?.id;
       if (!userId) {
         return res.status(401).json({ message: 'Authentication required' });
       }
@@ -76,10 +72,10 @@ export function registerPolicyRoutes(app: Express) {
   });
 
   // GET /api/user/previewStats - Get user's preview gate status
-  app.get("/api/user/previewStats", async (req: AuthenticatedRequest, res: Response) => {
+  app.get("/api/user/previewStats", authenticateToken, async (req: AuthRequest, res: Response) => {
     try {
-      // Authentication check - get userId from session or auth middleware
-      const userId = req.session?.userId ?? req.user?.id;
+      // Authentication check - rely on authenticateToken to populate req.user
+      const userId = req.user?.id;
       if (!userId) {
         return res.status(401).json({ message: 'Authentication required' });
       }
@@ -96,10 +92,10 @@ export function registerPolicyRoutes(app: Express) {
   });
 
   // GET /api/policy/gate/check - Check if user can queue posts
-  app.get("/api/policy/gate/check", async (req: AuthenticatedRequest, res: Response) => {
+  app.get("/api/policy/gate/check", authenticateToken, async (req: AuthRequest, res: Response) => {
     try {
-      // Authentication check - get userId from session or auth middleware
-      const userId = req.session?.userId ?? req.user?.id;
+      // Authentication check - rely on authenticateToken to populate req.user
+      const userId = req.user?.id;
       if (!userId) {
         return res.status(401).json({ message: 'Authentication required' });
       }

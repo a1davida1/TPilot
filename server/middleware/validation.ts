@@ -129,12 +129,11 @@ export const usernameSchema = z.string()
 
 // Password validation with strength requirements
 export const passwordSchema = z.string()
-  .min(12, 'Password must be at least 12 characters')
+  .min(8, 'Password must be at least 8 characters')
   .max(128, 'Password must be less than 128 characters')
   .regex(/[A-Z]/, 'Must contain uppercase')
   .regex(/[a-z]/, 'Must contain lowercase')
-  .regex(/[0-9]/, 'Must contain number')
-  .regex(/[^A-Za-z0-9]/, 'Must contain special character');
+  .regex(/[0-9]/, 'Must contain number');
 
 // Pagination validation
 export const paginationSchema = z.object({
