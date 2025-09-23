@@ -1,0 +1,392 @@
+Update API endpoints in admin-communities
+Sep 23 · a1davida1/TPilot · main
++10-10
+1. Edit `client/src/hooks/use-admin-communities.ts` so every fetch/mutation URL (`GET`, `POST`, `PUT`, `DELETE`) uses `/api/reddit/communities` instead of `/api/admin/communities`.
+2. Update `client/src/components/__tests__/admin-communities-panel.test.tsx` so the mocked `fetch` handler and all expectations assert against `/api/reddit/communities`.
+3. Run `npm test -- admin-communities-panel` (or the full suite) to confirm the hook and component tests still pass.
+
+Summary
+
+    Pointed the admin communities hook at the /api/reddit/communities endpoints for list, create, update, and delete requests so the client now talks to the reddit namespace APIs.
+
+Updated the admin communities panel unit test mocks and expectations to assert against the new reddit endpoints, keeping the test suite aligned with the hook changes.
+
+Switched a temporary variable in the policy linter to const, clearing the remaining eslint error so linting can succeed after our changes.
+
+Testing
+
+    ✅ npm run lint -- --quiet
+
+⚠️ npm test -- admin-communities-panel.test.tsx *(fails: vitest cannot resolve the missing @testing-library/react package in this environment)*
+
+
+client/src/components/__tests__/admin-communities-panel.test.tsx
++5-5
+@@ -74,51 +74,51 @@ const mockCommunities = [
+
+function createTestQueryClient() {
+  return new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+}
+
+function renderWithProviders(component: React.ReactElement) {
+  const queryClient = createTestQueryClient();
+  return render(
+    <QueryClientProvider client={queryClient}>
+      {component}
+    </QueryClientProvider>
+  );
+}
+
+describe('AdminCommunitiesPanel', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    
+    // Mock fetch for community list
+    global.fetch = vi.fn().mockImplementation((url: string) => {
+      if (url.includes('/api/admin/communities')) {
+      if (url.includes('/api/reddit/communities')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockCommunities),
+        });
+      }
+      return Promise.reject(new Error('Unknown URL'));
+    });
+  });
+
+  describe('Rendering and Basic Functionality', () => {
+    it('should render the communities panel with search and filters', async () => {
+      renderWithProviders(<AdminCommunitiesPanel canManage={true} />);
+
+      expect(screen.getByTestId('admin-communities-panel')).toBeInTheDocument();
+      expect(screen.getByText('Reddit Communities')).toBeInTheDocument();
+      expect(screen.getByText('Manage the subreddit directory and community rules')).toBeInTheDocument();
+      
+      // Check for filter elements
+      expect(screen.getByTestId('input-search')).toBeInTheDocument();
+      expect(screen.getByTestId('select-category')).toBeInTheDocument();
+      expect(screen.getByTestId('select-promotion')).toBeInTheDocument();
+      expect(screen.getByTestId('select-verification')).toBeInTheDocument();
+    });
+
+    it('should show create button when canManage is true', () => {
+@@ -136,51 +136,51 @@ describe('AdminCommunitiesPanel', () => {
+
+      await waitFor(() => {
+        expect(screen.getByTestId('row-community-test_community_1')).toBeInTheDocument();
+        expect(screen.getByTestId('row-community-test_community_2')).toBeInTheDocument();
+      });
+
+      expect(screen.getByText('Gone Wild')).toBeInTheDocument();
+      expect(screen.getByText('r/gonewild')).toBeInTheDocument();
+      expect(screen.getByText('Photography')).toBeInTheDocument();
+      expect(screen.getByText('r/photography')).toBeInTheDocument();
+    });
+  });
+
+  describe('Filtering Functionality', () => {
+    it('should filter communities by search term', async () => {
+      renderWithProviders(<AdminCommunitiesPanel canManage={true} />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('row-community-test_community_1')).toBeInTheDocument();
+      });
+
+      const searchInput = screen.getByTestId('input-search');
+      fireEvent.change(searchInput, { target: { value: 'photography' } });
+
+      await waitFor(() => {
+        expect(fetch).toHaveBeenCalledWith('/api/admin/communities?search=photography');
+        expect(fetch).toHaveBeenCalledWith('/api/reddit/communities?search=photography');
+      });
+    });
+
+    it('should filter communities by category', async () => {
+      renderWithProviders(<AdminCommunitiesPanel canManage={true} />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('row-community-test_community_1')).toBeInTheDocument();
+      });
+
+      const categorySelect = screen.getByTestId('select-category');
+      fireEvent.click(categorySelect);
+      
+      // Note: This test would need more specific implementation
+      // depending on how the Select component works in your setup
+    });
+
+    it('should filter communities by promotion policy', async () => {
+      renderWithProviders(<AdminCommunitiesPanel canManage={true} />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('row-community-test_community_1')).toBeInTheDocument();
+      });
+
+      const promotionSelect = screen.getByTestId('select-promotion');
+@@ -206,125 +206,125 @@ describe('AdminCommunitiesPanel', () => {
+      
+      renderWithProviders(<AdminCommunitiesPanel canManage={true} />);
+
+      // Open create dialog
+      const createButton = screen.getByTestId('button-create');
+      fireEvent.click(createButton);
+
+      // Fill in required fields
+      const nameInput = screen.getByTestId('input-name');
+      const displayNameInput = screen.getByTestId('input-display-name');
+      const categoryInput = screen.getByTestId('input-category');
+      const membersInput = screen.getByTestId('input-members');
+      const engagementRateInput = screen.getByTestId('input-engagement-rate');
+
+      fireEvent.change(nameInput, { target: { value: 'testcommunity' } });
+      fireEvent.change(displayNameInput, { target: { value: 'Test Community' } });
+      fireEvent.change(categoryInput, { target: { value: 'test' } });
+      fireEvent.change(membersInput, { target: { value: '1000' } });
+      fireEvent.change(engagementRateInput, { target: { value: '0.02' } });
+
+      // Submit form
+      const submitButton = screen.getByTestId('button-submit');
+      fireEvent.click(submitButton);
+
+      await waitFor(() => {
+        expect(mockApiRequest).toHaveBeenCalledWith('POST', '/api/admin/communities', expect.objectContaining({
+        expect(mockApiRequest).toHaveBeenCalledWith('POST', '/api/reddit/communities', expect.objectContaining({
+          name: 'testcommunity',
+          displayName: 'Test Community',
+          category: 'test',
+          members: 1000,
+          engagementRate: 0.02,
+        }));
+      });
+    });
+
+    it('should open edit dialog when edit button is clicked', async () => {
+      renderWithProviders(<AdminCommunitiesPanel canManage={true} />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('row-community-test_community_1')).toBeInTheDocument();
+      });
+
+      const editButton = screen.getByTestId('button-edit-test_community_1');
+      fireEvent.click(editButton);
+
+      expect(screen.getByText('Edit Community')).toBeInTheDocument();
+      expect(screen.getByText('Update the community information and rules.')).toBeInTheDocument();
+      
+      // Check that form is pre-populated
+      expect(screen.getByDisplayValue('gonewild')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('Gone Wild')).toBeInTheDocument();
+    });
+
+    it('should call update API when edit form is submitted', async () => {
+      mockApiRequest.mockResolvedValue({ ok: true });
+      
+      renderWithProviders(<AdminCommunitiesPanel canManage={true} />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('row-community-test_community_1')).toBeInTheDocument();
+      });
+
+      // Open edit dialog
+      const editButton = screen.getByTestId('button-edit-test_community_1');
+      fireEvent.click(editButton);
+
+      // Modify a field
+      const membersInput = screen.getByTestId('input-members');
+      fireEvent.change(membersInput, { target: { value: '600000' } });
+
+      // Submit form
+      const submitButton = screen.getByTestId('button-submit');
+      fireEvent.click(submitButton);
+
+      await waitFor(() => {
+        expect(mockApiRequest).toHaveBeenCalledWith('PUT', '/api/admin/communities/test_community_1', expect.objectContaining({
+        expect(mockApiRequest).toHaveBeenCalledWith('PUT', '/api/reddit/communities/test_community_1', expect.objectContaining({
+          members: 600000,
+        }));
+      });
+    });
+
+    it('should call delete API when delete is confirmed', async () => {
+      mockApiRequest.mockResolvedValue({ ok: true });
+      
+      renderWithProviders(<AdminCommunitiesPanel canManage={true} />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('row-community-test_community_1')).toBeInTheDocument();
+      });
+
+      // Click delete button
+      const deleteButton = screen.getByTestId('button-delete-test_community_1');
+      fireEvent.click(deleteButton);
+
+      // Confirm deletion in alert dialog
+      const confirmButton = screen.getByText('Delete');
+      fireEvent.click(confirmButton);
+
+      await waitFor(() => {
+        expect(mockApiRequest).toHaveBeenCalledWith('DELETE', '/api/admin/communities/test_community_1');
+        expect(mockApiRequest).toHaveBeenCalledWith('DELETE', '/api/reddit/communities/test_community_1');
+      });
+    });
+  });
+
+  describe('Form Validation', () => {
+    it('should show error when required fields are missing', async () => {
+      renderWithProviders(<AdminCommunitiesPanel canManage={true} />);
+
+      // Open create dialog
+      const createButton = screen.getByTestId('button-create');
+      fireEvent.click(createButton);
+
+      // Try to submit without filling required fields
+      const submitButton = screen.getByTestId('button-submit');
+      fireEvent.click(submitButton);
+
+      // Should not call API
+      expect(mockApiRequest).not.toHaveBeenCalled();
+    });
+
+    it('should validate numeric fields', async () => {
+      renderWithProviders(<AdminCommunitiesPanel canManage={true} />);
+
+      // Open create dialog
+      const createButton = screen.getByTestId('button-create');
+client/src/hooks/use-admin-communities.ts
++4-4
+@@ -71,71 +71,71 @@ export interface CommunityPayload {
+
+export interface CommunityFilters {
+  search?: string;
+  category?: string;
+  promotionAllowed?: PromotionPolicy | 'all';
+  verificationRequired?: 'all' | 'required' | 'not-required';
+}
+
+export function useAdminCommunities(filters?: CommunityFilters) {
+  const queryParams = new URLSearchParams();
+  
+  if (filters?.search) {
+    queryParams.set('search', filters.search);
+  }
+  if (filters?.category && filters.category !== 'all') {
+    queryParams.set('category', filters.category);
+  }
+  if (filters?.promotionAllowed && filters.promotionAllowed !== 'all') {
+    queryParams.set('promotionAllowed', filters.promotionAllowed);
+  }
+  if (filters?.verificationRequired && filters.verificationRequired !== 'all') {
+    queryParams.set('verificationRequired', filters.verificationRequired === 'required' ? 'true' : 'false');
+  }
+
+  const queryString = queryParams.toString();
+  const url = `/api/admin/communities${queryString ? `?${queryString}` : ''}`;
+  const url = `/api/reddit/communities${queryString ? `?${queryString}` : ''}`;
+
+  return useQuery<AdminCommunity[]>({
+    queryKey: ['admin-communities', filters],
+    queryFn: () => fetch(url).then(res => {
+      if (!res.ok) throw new Error('Failed to fetch communities');
+      return res.json();
+    }),
+  });
+}
+
+export function useCreateCommunity() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (payload: CommunityPayload) => 
+      apiRequest('POST', '/api/admin/communities', payload),
+      apiRequest('POST', '/api/reddit/communities', payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-communities'] });
+    },
+  });
+}
+
+export function useUpdateCommunity() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: CommunityPayload }) => 
+      apiRequest('PUT', `/api/admin/communities/${id}`, payload),
+      apiRequest('PUT', `/api/reddit/communities/${id}`, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-communities'] });
+    },
+  });
+}
+
+export function useDeleteCommunity() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (id: string) => 
+      apiRequest('DELETE', `/api/admin/communities/${id}`),
+      apiRequest('DELETE', `/api/reddit/communities/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-communities'] });
+    },
+  });
+}
+server/lib/policy-linter.ts
++1-1
+@@ -80,51 +80,51 @@ const DEFAULT_RULES: RuleSpec = {
+  flairRequired: false, // Varies by subreddit
+  manualFlags: {} // Only warn when communities explicitly specify requirements
+};
+
+/**
+ * Coerce stored rule spec to ensure it has proper structure
+ */
+function coerceRuleSpec(rawRules: any): RuleSpec {
+  // Handle legacy test format
+  if ('titleRegex' in rawRules || 'prohibitedLinks' in rawRules || 'maxLength' in rawRules || 'minLength' in rawRules) {
+    const testRules = rawRules as TestRuleSpec;
+    return {
+      bannedWords: testRules.bannedWords || [],
+      titleRegexes: testRules.titleRegex || [],
+      bodyRegexes: testRules.prohibitedLinks || [],
+      maxTitleLength: testRules.maxLength,
+      maxBodyLength: testRules.maxLength,
+      requiredTags: [], // Remove context-dependent logic - will be handled in linter
+      linkPolicy: 'one-link',
+      flairRequired: false,
+    };
+  }
+
+  // Handle new RuleSpec format or ensure it has proper structure
+  const spec = rawRules as RuleSpec;
+  let result: RuleSpec = {
+  const result: RuleSpec = {
+    bannedWords: spec.bannedWords || [],
+    titleRegexes: spec.titleRegexes || [],
+    bodyRegexes: spec.bodyRegexes || [],
+    flairRequired: spec.flairRequired || false,
+    linkPolicy: spec.linkPolicy || 'one-link',
+    requiredTags: spec.requiredTags || [],
+    maxTitleLength: spec.maxTitleLength,
+    maxBodyLength: spec.maxBodyLength,
+    manualFlags: spec.manualFlags || {},
+    wikiNotes: spec.wikiNotes || [],
+    source: spec.source,
+    overrides: spec.overrides,
+  };
+
+  // Apply overrides if present (merge overrides onto base spec)
+  if (spec.overrides) {
+    Object.keys(spec.overrides).forEach(key => {
+      const overrideValue = (spec.overrides as any)?.[key];
+      if (overrideValue !== undefined && overrideValue !== null) {
+        (result as any)[key] = overrideValue;
+      }
+    });
+  }
+
+  return result;

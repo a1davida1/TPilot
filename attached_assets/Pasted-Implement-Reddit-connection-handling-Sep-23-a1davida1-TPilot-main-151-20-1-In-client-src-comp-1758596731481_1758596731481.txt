@@ -1,0 +1,512 @@
+Implement Reddit connection handling
+Sep 23 · a1davida1/TPilot · main
++151-20
+1. In `client/src/components/dashboard-quick-start.tsx`, import `useCallback`/`useRef`, add interval/timeout refs, and implement `clearConnectionMonitors`.
+2. On connect, call `/api/reddit/connect`, open the auth window, then poll `/api/reddit/accounts` until a Reddit account is detected; set `connected` and fire `onConnected` only when the poll succeeds, otherwise toast an error after a timeout.
+3. Ensure effects reset/cleanup timers when the modal closes or unmounts and that `isRedditConnected` props sync state without resetting progress mid-flow.
+4. Adjust `client/src/components/__tests__/modern-dashboard.test.tsx` so the mock API provides `/api/reddit/accounts` data, waits for the poll, and verifies the Continue button enables before advancing.
+
+Summary
+
+    Reworked QuickStartModal to define Reddit account typing, timer refs, and helper utilities so the connect step polls /api/reddit/accounts, clears intervals/timeouts on close, respects isRedditConnected without resetting progress, and finalizes the flow only when an account is detected.
+
+Refreshed the modern dashboard quick start test to mock both the connect and accounts endpoints, wait for the polling loop to resolve, and assert the Continue button enables before advancing through the flow.
+
+Promoted the policy linter’s aggregated rule object to a const so linting passes without mutation warnings.
+
+Testing
+
+    ✅ npm run lint -- --quiet
+
+❌ npm test *(fails because the existing vitest suite surfaces numerous unrelated integration/unit regressions; the run was stopped after confirming the updated quick start path executed before inherited failures dominated the output)*
+
+
+client/src/components/__tests__/modern-dashboard.test.tsx
++35-7
+@@ -191,74 +191,102 @@ describe("ModernDashboard quick start", () => {
+    };
+    window.open = vi.fn() as unknown as typeof window.open;
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  afterAll(() => {
+    window.open = originalWindowOpen;
+  });
+
+  it("opens the quick start modal when Quick Action is clicked", async () => {
+    render(<ModernDashboard isRedditConnected user={{ id: 2, username: "Beta" }} />);
+
+    const quickActionButton = getButtonByText(/Quick Action/i);
+    click(quickActionButton);
+
+    const dialog = await findByTestId("quick-start-dialog");
+    expect(dialog).toBeTruthy();
+    expect(await findByText(/Choose a subreddit/i)).toBeTruthy();
+  });
+
+  it("walks through the quick start flow and submits a Reddit post", async () => {
+    mockedAuthUser = null;
+    apiRequestMock.mockResolvedValueOnce({
+      json: async () => ({ authUrl: "https://reddit.com/auth" }),
+    } as Response);
+    apiRequestMock.mockImplementation((method: string, url: string) => {
+      if (method === "GET" && url === "/api/reddit/connect") {
+        return Promise.resolve({
+          json: async () => ({ authUrl: "https://reddit.com/auth" }),
+        } as Response);
+      }
+      if (method === "GET" && url === "/api/reddit/accounts") {
+        return Promise.resolve({
+          json: async () => [
+            {
+              id: 21,
+              username: "creator",
+              isActive: true,
+              connectedAt: new Date().toISOString(),
+              karma: 0,
+              verified: false,
+            },
+          ],
+        } as Response);
+      }
+      if (method === "POST" && url === "/api/reddit/submit") {
+        return Promise.resolve({
+          json: async () => ({ success: true }),
+        } as Response);
+      }
+      throw new Error(`Unexpected apiRequest call: ${method} ${url}`);
+    });
+
+    const onOpenChange = vi.fn();
+    render(
+      <QuickStartModal
+        open
+        onOpenChange={onOpenChange}
+        initialStep="connect"
+        isRedditConnected={false}
+        onNavigate={setLocationMock}
+      />,
+    );
+
+    const continueButton = getButtonByText(/^Continue$/i);
+    expect(continueButton.disabled).toBe(true);
+
+    click(getButtonByText(/Connect Reddit/i));
+
+    await waitFor(() => {
+      expect(apiRequestMock).toHaveBeenCalledWith("GET", "/api/reddit/connect");
+      expect(apiRequestMock).toHaveBeenCalledWith("GET", "/api/reddit/accounts");
+      const nextButton = getButtonByText(/^Continue$/i);
+      if (nextButton.disabled) {
+        throw new Error("Continue button is still disabled");
+      }
+      return true;
+    });
+
+    apiRequestMock.mockResolvedValueOnce({
+      json: async () => ({ success: true }),
+    } as Response);
+
+    click(getButtonByText(/^Continue$/i));
+    expect(await findByText(/Choose a subreddit/i)).toBeTruthy();
+
+    click(getButtonByText(/^Continue$/i));
+    expect(await findByText(/Generate your copy/i)).toBeTruthy();
+
+    click(getButtonByText(/Review post/i));
+    expect(await findByText(/Confirm your Reddit post/i)).toBeTruthy();
+
+    click(getButtonByText(/Confirm & post/i));
+
+    await waitFor(() => {
+      expect(apiRequestMock).toHaveBeenLastCalledWith(
+        "POST",
+        "/api/reddit/submit",
+        expect.objectContaining({ subreddit: "gonewild" }),
+      );
+      return true;
+    });
+
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+});
+client/src/components/dashboard-quick-start.tsx
++115-12
+import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { cn } from "@/lib/utils";
+import {
+  ArrowLeft,
+@@ -30,50 +30,75 @@ import {
+  Loader2,
+  Sparkles,
+} from "lucide-react";
+
+type QuickStartStep = "connect" | "subreddit" | "copy" | "confirm";
+
+interface QuickStartTemplate {
+  id: string;
+  subreddit: string;
+  title: string;
+  body: string;
+  isNsfw: boolean;
+  description: string;
+}
+
+interface RedditConnectResponse {
+  authUrl?: string;
+  message?: string;
+}
+
+interface RedditSubmitResponse {
+  success?: boolean;
+  error?: string;
+}
+
+interface RedditAccount {
+  id: number;
+  username: string;
+  isActive: boolean;
+  connectedAt: string;
+  karma: number;
+  verified: boolean;
+}
+
+const POLL_INTERVAL_MS = 2000;
+const POLL_TIMEOUT_MS = 60000;
+
+function isRedditAccountList(value: unknown): value is RedditAccount[] {
+  return (
+    Array.isArray(value) &&
+    value.every((account) => {
+      if (account === null || typeof account !== "object") {
+        return false;
+      }
+      const candidate = account as Partial<RedditAccount>;
+      return typeof candidate.id === "number" && typeof candidate.username === "string";
+    })
+  );
+}
+
+interface QuickStartModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  initialStep: QuickStartStep;
+  isRedditConnected?: boolean;
+  onNavigate?: (path: string) => void;
+  onConnected?: () => void;
+  onSelectedCommunity?: () => void;
+  onPosted?: () => void;
+}
+
+const QUICK_START_TEMPLATES: QuickStartTemplate[] = [
+  {
+    id: "gonewild",
+    subreddit: "gonewild",
+    title: "Feeling cute today [F]",
+    body: "Hope you enjoy! More content on my profile 💕",
+    isNsfw: true,
+    description: "High engagement NSFW community for confident self portraits.",
+  },
+  {
+    id: "onlyfans101",
+    subreddit: "onlyfans101",
+    title: "New content just dropped! 🔥",
+    body: "Check out my latest photos and videos! Link in bio 💋",
+@@ -118,127 +143,205 @@ const STEP_DETAILS: Record<QuickStartStep, { title: string; description: string
+
+function getTemplateById(id: string | undefined): QuickStartTemplate | undefined {
+  return QUICK_START_TEMPLATES.find((template) => template.id === id);
+}
+
+export function QuickStartModal({
+  open,
+  onOpenChange,
+  initialStep,
+  isRedditConnected = false,
+  onNavigate,
+  onConnected,
+  onSelectedCommunity,
+  onPosted,
+}: QuickStartModalProps) {
+  const { toast } = useToast();
+  const [currentStep, setCurrentStep] = useState<QuickStartStep>(initialStep);
+  const [connected, setConnected] = useState<boolean>(isRedditConnected);
+  const [connectionInitiated, setConnectionInitiated] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  const [postTitle, setPostTitle] = useState("");
+  const [postBody, setPostBody] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const connectionCompletedRef = useRef(false);
+
+  const clearConnectionMonitors = useCallback(() => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+    if (pollTimeoutRef.current) {
+      clearTimeout(pollTimeoutRef.current);
+      pollTimeoutRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!open) {
+      clearConnectionMonitors();
+      setConnectionInitiated(false);
+      setIsConnecting(false);
+      return;
+    }
+    setCurrentStep(initialStep);
+    setConnected(isRedditConnected);
+    setConnectionInitiated(false);
+    setSubmitError(null);
+    setIsSubmitting(false);
+    setIsConnecting(false);
+  }, [open, initialStep, isRedditConnected]);
+    setConnectionInitiated(false);
+  }, [open, initialStep, clearConnectionMonitors]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    if (connectionInitiated) {
+      return;
+    }
+    setConnected(isRedditConnected);
+  }, [isRedditConnected, connectionInitiated, open]);
+
+  useEffect(() => () => {
+    clearConnectionMonitors();
+  }, [clearConnectionMonitors]);
+
+  // Initialize default template separately to avoid step reset
+  useEffect(() => {
+    if (open && QUICK_START_TEMPLATES.length > 0 && !selectedTemplateId) {
+      setSelectedTemplateId(QUICK_START_TEMPLATES[0].id);
+      setPostTitle(QUICK_START_TEMPLATES[0].title);
+      setPostBody(QUICK_START_TEMPLATES[0].body);
+    }
+  }, [open, selectedTemplateId]);
+
+  const selectedTemplate = useMemo(() => getTemplateById(selectedTemplateId), [selectedTemplateId]);
+
+  const currentStepIndex = QUICK_START_STEPS.indexOf(currentStep);
+  const isFirstStep = currentStepIndex === 0;
+  const isLastStep = currentStepIndex === QUICK_START_STEPS.length - 1;
+
+  const canProceed = useMemo(() => {
+    switch (currentStep) {
+      case "connect":
+        return connected;
+      case "subreddit":
+        return selectedTemplateId !== "";
+      case "copy":
+        return postTitle.trim() !== "" && postBody.trim() !== "";
+      case "confirm":
+        return true;
+      default:
+        return false;
+    }
+  }, [currentStep, connected, selectedTemplateId, postTitle, postBody]);
+
+  const handleConnect = async () => {
+    if (connected) {
+    if (connected || isConnecting) {
+      return;
+    }
+
+    setIsConnecting(true);
+    setConnectionInitiated(true);
+    connectionCompletedRef.current = false;
+
+    const finishConnection = () => {
+      if (connectionCompletedRef.current) {
+        return true;
+      }
+      connectionCompletedRef.current = true;
+      clearConnectionMonitors();
+      setConnected(true);
+      setIsConnecting(false);
+      setConnectionInitiated(false);
+      onConnected?.();
+      return true;
+    };
+
+    const checkForAccount = async (): Promise<boolean> => {
+      if (connectionCompletedRef.current) {
+        return false;
+      }
+      try {
+        const response = await apiRequest("GET", "/api/reddit/accounts");
+        const data = (await response.json()) as unknown;
+        if (isRedditAccountList(data) && data.length > 0) {
+          return finishConnection();
+        }
+      } catch (pollError) {
+        console.error("Reddit account poll failed", pollError);
+      }
+      return false;
+    };
+
+    try {
+      const response = await apiRequest("GET", "/api/reddit/connect");
+      const data = await response.json() as RedditConnectResponse;
+      
+
+      if (data.authUrl) {
+        window.open(data.authUrl, "_blank");
+        toast({
+          title: "Reddit Authorization",
+          description: "Complete the authorization in the new window, then return here.",
+        });
+        // Simulate connection success for the flow
+        setTimeout(() => {
+          setConnected(true);
+        clearConnectionMonitors();
+
+        const initialCheckSucceeded = await checkForAccount();
+        if (initialCheckSucceeded) {
+          return;
+        }
+
+        pollIntervalRef.current = setInterval(() => {
+          void checkForAccount();
+        }, POLL_INTERVAL_MS);
+
+        pollTimeoutRef.current = setTimeout(() => {
+          connectionCompletedRef.current = true;
+          clearConnectionMonitors();
+          setIsConnecting(false);
+          onConnected?.();
+        }, 2000);
+          setConnectionInitiated(false);
+          toast({
+            title: "Connection Timeout",
+            description: "We couldn't verify your Reddit connection. Please try again.",
+            variant: "destructive",
+          });
+        }, POLL_TIMEOUT_MS);
+      } else {
+        throw new Error(data.message || "Failed to get authorization URL");
+      }
+    } catch (error) {
+      clearConnectionMonitors();
+      setIsConnecting(false);
+      setConnectionInitiated(false);
+      toast({
+        title: "Connection Error",
+        description: error instanceof Error ? error.message : "Failed to connect to Reddit",
+        variant: "destructive",
+      });
+      setIsConnecting(false);
+    }
+  };
+
+  const handleNext = () => {
+    if (isLastStep) {
+      return;
+    }
+    
+    // Report milestone completion before moving to next step
+    if (currentStep === 'subreddit' && selectedTemplateId) {
+      onSelectedCommunity?.();
+    }
+    
+    const nextIndex = currentStepIndex + 1;
+    if (nextIndex < QUICK_START_STEPS.length) {
+      setCurrentStep(QUICK_START_STEPS[nextIndex]);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (isFirstStep) {
+      return;
+    }
+    
+    const prevIndex = currentStepIndex - 1;
+server/lib/policy-linter.ts
++1-1
+@@ -80,51 +80,51 @@ const DEFAULT_RULES: RuleSpec = {
+  flairRequired: false, // Varies by subreddit
+  manualFlags: {} // Only warn when communities explicitly specify requirements
+};
+
+/**
+ * Coerce stored rule spec to ensure it has proper structure
+ */
+function coerceRuleSpec(rawRules: any): RuleSpec {
+  // Handle legacy test format
+  if ('titleRegex' in rawRules || 'prohibitedLinks' in rawRules || 'maxLength' in rawRules || 'minLength' in rawRules) {
+    const testRules = rawRules as TestRuleSpec;
+    return {
+      bannedWords: testRules.bannedWords || [],
+      titleRegexes: testRules.titleRegex || [],
+      bodyRegexes: testRules.prohibitedLinks || [],
+      maxTitleLength: testRules.maxLength,
+      maxBodyLength: testRules.maxLength,
+      requiredTags: [], // Remove context-dependent logic - will be handled in linter
+      linkPolicy: 'one-link',
+      flairRequired: false,
+    };
+  }
+
+  // Handle new RuleSpec format or ensure it has proper structure
+  const spec = rawRules as RuleSpec;
+  let result: RuleSpec = {
+  const result: RuleSpec = {
+    bannedWords: spec.bannedWords || [],
+    titleRegexes: spec.titleRegexes || [],
+    bodyRegexes: spec.bodyRegexes || [],
+    flairRequired: spec.flairRequired || false,
+    linkPolicy: spec.linkPolicy || 'one-link',
+    requiredTags: spec.requiredTags || [],
+    maxTitleLength: spec.maxTitleLength,
+    maxBodyLength: spec.maxBodyLength,
+    manualFlags: spec.manualFlags || {},
+    wikiNotes: spec.wikiNotes || [],
+    source: spec.source,
+    overrides: spec.overrides,
+  };
+
+  // Apply overrides if present (merge overrides onto base spec)
+  if (spec.overrides) {
+    Object.keys(spec.overrides).forEach(key => {
+      const overrideValue = (spec.overrides as any)?.[key];
+      if (overrideValue !== undefined && overrideValue !== null) {
+        (result as any)[key] = overrideValue;
+      }
+    });
+  }
+
+  return result;
