@@ -262,6 +262,46 @@ export type CompetitionLevel = z.infer<typeof competitionLevelSchema>;
 export const modActivitySchema = z.enum(['low', 'medium', 'high', 'unknown']).nullable();
 export type ModActivity = z.infer<typeof modActivitySchema>;
 
+// ==========================================
+// CANONICALIZATION FUNCTIONS
+// ==========================================
+
+/**
+ * Canonicalize competitionLevel to valid enum values
+ */
+export function canonicalizeCompetitionLevel(value: string | null | undefined): CompetitionLevel {
+  if (!value) return null;
+  
+  const lowered = value.toLowerCase();
+  
+  if (lowered === 'low' || lowered === 'very_low') return 'low';
+  if (lowered === 'medium') return 'medium';
+  if (lowered === 'high' || lowered === 'very_high') return 'high';
+  if (lowered.includes('high')) return 'high';
+  if (lowered.includes('low')) return 'low';
+  
+  return 'medium'; // default fallback
+}
+
+/**
+ * Canonicalize modActivity to valid enum values
+ */
+export function canonicalizeModActivity(value: string | null | undefined): ModActivity {
+  if (!value) return null;
+  
+  const lowered = value.toLowerCase();
+  
+  if (lowered === 'low' || lowered === 'very_low') return 'low';
+  if (lowered === 'medium') return 'medium';
+  if (lowered === 'high' || lowered === 'very_high') return 'high';
+  if (lowered === 'unknown') return 'unknown';
+  if (lowered.includes('high')) return 'high';
+  if (lowered.includes('medium')) return 'medium';
+  if (lowered.includes('low')) return 'low';
+  
+  return 'unknown'; // default fallback
+}
+
 // Nested rule structure schemas
 export const eligibilityRulesSchema = z.object({
   minKarma: z.number().nullable().optional(),

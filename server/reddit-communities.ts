@@ -11,7 +11,9 @@ import {
   redditCommunityRuleSetSchema,
   createDefaultRules,
   normalizeRulesToStructured,
-  inferSellingPolicyFromRules
+  inferSellingPolicyFromRules,
+  canonicalizeCompetitionLevel,
+  canonicalizeModActivity
 } from '@shared/schema';
 import { type GrowthTrend, isValidGrowthTrend, getGrowthTrendLabel } from '@shared/growth-trends';
 import { eq, ilike, desc, or } from 'drizzle-orm';
@@ -181,7 +183,9 @@ export function inferSellingPolicy(promotionAllowed: string, category: string, r
 export function normalizeCommunityRecord(community: RedditCommunity): NormalizedRedditCommunity {
   return {
     ...community,
-    rules: normalizeRules(community.rules, community.promotionAllowed, community.category)
+    rules: normalizeRules(community.rules, community.promotionAllowed, community.category),
+    competitionLevel: canonicalizeCompetitionLevel(community.competitionLevel),
+    modActivity: canonicalizeModActivity(community.modActivity)
   };
 }
 
