@@ -31,7 +31,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import type { RedditCommunity, PostingLimits } from "@shared/schema";
-import { z } from "zod";
+import { redditCommunityArrayZodSchema } from "@shared/schema";
 
 export function RedditCommunities() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -41,29 +41,7 @@ export function RedditCommunities() {
   const [filterVerification, setFilterVerification] = useState<string>('all');
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
-  // Client-side runtime validation schema
-  const RedditCommunitySchema = z.object({
-    id: z.string(),
-    name: z.string(),
-    displayName: z.string(),
-    members: z.number(),
-    engagementRate: z.number(),
-    category: z.string(),
-    verificationRequired: z.boolean(),
-    promotionAllowed: z.enum(['yes', 'limited', 'no']),
-    postingLimits: z.any().nullable().optional(),
-    rules: z.any().optional(),
-    bestPostingTimes: z.array(z.string()).optional(),
-    averageUpvotes: z.number().nullable().optional(),
-    successProbability: z.number().nullable().optional(),
-    growthTrend: z.string().nullable().optional(),
-    modActivity: z.string().nullable().optional(),
-    description: z.string().nullable().optional(),
-    tags: z.array(z.string()).optional(),
-    competitionLevel: z.string().nullable().optional()
-  });
-
-  const RedditCommunityArraySchema = z.array(RedditCommunitySchema);
+  // Using canonical shared Zod schema for end-to-end type safety
 
   // Fetch communities data with runtime validation
   const { data: communities = [], isLoading } = useQuery({
@@ -76,9 +54,9 @@ export function RedditCommunities() {
       const response = await apiRequest('GET', `/api/reddit/communities?${params.toString()}`);
       const rawData = await response.json();
       
-      // Runtime validation to ensure API response matches expected schema
+      // Runtime validation using canonical shared schema
       try {
-        const validatedData = RedditCommunityArraySchema.parse(rawData);
+        const validatedData = redditCommunityArrayZodSchema.parse(rawData);
         return validatedData as RedditCommunity[];
       } catch (parseError) {
         console.error('API response validation failed:', parseError);
