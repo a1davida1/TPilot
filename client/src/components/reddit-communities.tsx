@@ -30,49 +30,7 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-
-interface RedditCommunity {
-  id: string;
-  name: string;
-  displayName: string;
-  members: number;
-  engagementRate: number;
-  category: 'premium' | 'general' | 'niche' | 'fetish' | 'verification' | 'gonewild' | 'selling';
-  verificationRequired: boolean;
-  promotionAllowed: 'yes' | 'limited' | 'subtle' | 'no';
-  postingLimits: {
-    perDay?: number;
-    perWeek?: number;
-    cooldownHours?: number;
-  };
-  rules: {
-    minKarma?: number;
-    minAccountAge?: number;
-    watermarksAllowed?: boolean;
-    sellingAllowed?: 'yes' | 'limited' | 'no';
-    titleRules?: string[];
-    contentRules?: string[];
-    verificationRequired?: boolean;
-    requiresApproval?: boolean;
-    nsfwRequired?: boolean;
-    maxPostsPerDay?: number;
-    cooldownHours?: number;
-    minAccountAgeDays?: number;
-    requiresOriginalContent?: boolean;
-    promotionalLinksAllowed?: 'yes' | 'limited' | 'no';
-    bannedContent?: string[];
-    formattingRequirements?: string[];
-    notes?: string;
-  };
-  bestPostingTimes: string[];
-  averageUpvotes: number;
-  successProbability: number;
-  growthTrend: 'up' | 'stable' | 'down';
-  modActivity: 'high' | 'medium' | 'low';
-  description: string;
-  tags: string[];
-  competitionLevel: 'low' | 'medium' | 'high';
-}
+import type { RedditCommunity } from "@shared/schema";
 
 export function RedditCommunities() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -83,7 +41,7 @@ export function RedditCommunities() {
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
   // Fetch communities data
-  const { data: communities = [], isLoading } = useQuery({
+  const { data: communities = [], isLoading } = useQuery<RedditCommunity[]>({
     queryKey: ['/api/reddit/communities', filterCategory, searchTerm],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -171,16 +129,40 @@ export function RedditCommunities() {
   };
 
   const getCategoryBadge = (category: string) => {
-    const colors = {
+    const colors: Record<string, string> = {
+      // Primary categories
       premium: 'bg-purple-500/20 text-purple-400',
       gonewild: 'bg-pink-500/20 text-pink-400',
       general: 'bg-blue-500/20 text-blue-400',
       niche: 'bg-cyan-500/20 text-cyan-400',
       fetish: 'bg-orange-500/20 text-orange-400',
       selling: 'bg-green-500/20 text-green-400',
-      verification: 'bg-yellow-500/20 text-yellow-400'
+      verification: 'bg-yellow-500/20 text-yellow-400',
+      
+      // Additional categories from seed data
+      amateur: 'bg-blue-400/20 text-blue-300',
+      age: 'bg-indigo-500/20 text-indigo-400',
+      appearance: 'bg-rose-500/20 text-rose-400',
+      body_type: 'bg-pink-400/20 text-pink-300',
+      cam: 'bg-purple-400/20 text-purple-300',
+      clothing: 'bg-teal-500/20 text-teal-400',
+      comparison: 'bg-slate-500/20 text-slate-400',
+      content_type: 'bg-amber-500/20 text-amber-400',
+      cosplay: 'bg-violet-500/20 text-violet-400',
+      couples: 'bg-red-500/20 text-red-400',
+      dancer: 'bg-fuchsia-500/20 text-fuchsia-400',
+      ethnicity: 'bg-emerald-500/20 text-emerald-400',
+      fitness: 'bg-lime-500/20 text-lime-400',
+      gaming: 'bg-sky-500/20 text-sky-400',
+      lifestyle: 'bg-zinc-500/20 text-zinc-400',
+      natural: 'bg-green-400/20 text-green-300',
+      reveal: 'bg-orange-400/20 text-orange-300',
+      social: 'bg-blue-300/20 text-blue-200',
+      specific: 'bg-gray-500/20 text-gray-400',
+      style: 'bg-cyan-400/20 text-cyan-300',
+      theme: 'bg-purple-300/20 text-purple-200'
     };
-    return <Badge className={colors[category as keyof typeof colors] || 'bg-gray-500/20 text-gray-400'}>{category}</Badge>;
+    return <Badge className={colors[category] || 'bg-gray-500/20 text-gray-400'}>{category}</Badge>;
   };
 
   const getSuccessProbabilityColor = (probability: number) => {
@@ -336,8 +318,9 @@ export function RedditCommunities() {
                     <TableCell>{getPromotionBadge(community.promotionAllowed)}</TableCell>
                     <TableCell>
                       <div className="text-xs text-gray-400">
-                        {community.postingLimits.perDay && `${community.postingLimits.perDay}/day`}
-                        {community.postingLimits.cooldownHours && ` (${community.postingLimits.cooldownHours}h cooldown)`}
+                        {(community.postingLimits as any)?.perDay && `${(community.postingLimits as any).perDay}/day`}
+                        {(community.postingLimits as any)?.daily && `${(community.postingLimits as any).daily}/day`}
+                        {(community.postingLimits as any)?.cooldownHours && ` (${(community.postingLimits as any).cooldownHours}h cooldown)`}
                       </div>
                     </TableCell>
                     <TableCell>
