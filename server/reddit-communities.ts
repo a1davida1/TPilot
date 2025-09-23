@@ -41,9 +41,9 @@ export function parseCommunityRules(community: RedditCommunity): CommunityRules 
   const structuredRules = normalizeRules(community.rules, community.promotionAllowed, community.category);
   
   return {
-    minKarma: structuredRules.minKarma,
-    minAccountAge: structuredRules.minAccountAge,
-    verificationRequired: columnLevelVerification || structuredRules.verificationRequired
+    minKarma: structuredRules?.minKarma ?? null,
+    minAccountAge: structuredRules?.minAccountAge ?? null,
+    verificationRequired: columnLevelVerification || (structuredRules?.verificationRequired ?? false)
   };
 }
 
@@ -85,7 +85,7 @@ export async function getEligibleCommunitiesForUser(criteria: CommunityEligibili
  * Normalize and hydrate community rules from database response
  * Handles backward compatibility with legacy array-based rules
  */
-function normalizeRules(rawRules: unknown, promotionAllowed?: string, category?: string): RedditCommunityRuleSet {
+export function normalizeRules(rawRules: unknown, promotionAllowed?: string, category?: string): RedditCommunityRuleSet {
   try {
     // Handle null or undefined
     if (!rawRules) {
@@ -98,9 +98,9 @@ function normalizeRules(rawRules: unknown, promotionAllowed?: string, category?:
       return {
         ...defaults,
         contentRules: rawRules.filter(rule => typeof rule === 'string'),
-        titleRules: defaults.titleRules || [],
-        bannedContent: defaults.bannedContent || [],
-        formattingRequirements: defaults.formattingRequirements || [],
+        titleRules: defaults?.titleRules || [],
+        bannedContent: defaults?.bannedContent || [],
+        formattingRequirements: defaults?.formattingRequirements || [],
         sellingAllowed: inferSellingPolicy(promotionAllowed || 'no', category || 'general')
       };
     }
@@ -130,9 +130,9 @@ function normalizeRules(rawRules: unknown, promotionAllowed?: string, category?:
 /**
  * Infer selling policy from promotion flags and category
  */
-function inferSellingPolicy(promotionAllowed: string, category: string, rules?: RedditCommunityRuleSet): RedditCommunityRuleSet['sellingAllowed'] {
+export function inferSellingPolicy(promotionAllowed: string, category: string, rules?: RedditCommunityRuleSet): RedditCommunityRuleSet['sellingAllowed'] {
   // If rules already specify selling policy, use it
-  if (rules?.sellingAllowed) {
+  if (rules && 'sellingAllowed' in rules && rules.sellingAllowed) {
     return rules.sellingAllowed;
   }
   

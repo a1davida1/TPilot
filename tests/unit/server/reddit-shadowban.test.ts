@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { RedditManager } from '../../../server/lib/reddit.js';
-import type { ShadowbanCheckApiResponse } from '@shared/schema';
+import type { ShadowbanCheckApiResponse } from '../../../shared/schema.js';
 
 // Test interfaces
 interface MockSubmission {

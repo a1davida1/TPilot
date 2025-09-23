@@ -1,0 +1,5918 @@
+
+Define and implement canonical enum
+Sep 22
+·
+a1davida1/TPilot
+·
+main
+·
++455
+-270
+
+Archive
+
+Share
+
+Create PR
+
+
+1. Decide on a canonical enum (e.g., `'up' | 'stable' | 'down'`) and update the Zod/Drizzle schema plus the seed/sync data generators in `server/seeds/reddit-communities*.json` and `server/scripts/sync-reddit-communities.ts` to emit only those values.
+2. Adjust the client types in `client/src/hooks/use-admin-communities.ts` (and related components like `client/src/components/reddit-communities.tsx`) to match the canonical set and map them to human-readable labels/colors where needed.
+3. Update `getCommunityInsights` in `server/reddit-communities.ts` to consume the normalized enum (e.g., treat `'up'`/`'growing'` consistently), and extend unit coverage in `tests/unit/server/reddit-communities.rules.test.ts` to assert the heuristic behavior for each growth bucket.
+Copy
+Summary
+
+Reworked the reddit community rules unit tests to avoid any, hoist deterministic mocks for the database, policy linter, and shared schema, keeping the suite hermetic against external modules.
+
+Added a dedicated growth-trend heuristic suite that seeds mocked communities and asserts the success tip / warning behavior for upward, stable, declining, and unspecified trends.
+
+Testing
+
+✅ npm run lint -- --quiet
+
+✅ npm test -- --run tests/unit/server/reddit-communities.rules.test.ts
+
+
+Files (12)
+
+client/src/components/__tests__/admin-communities-panel.test.tsx
++1
+-1
+
+client/src/components/admin/admin-communities-panel.tsx
++7
+-4
+
+client/src/components/enhanced-ai-generator.tsx
++3
+-6
+
+client/src/components/reddit-communities.tsx
++36
+-18
+
+client/src/hooks/use-admin-communities.ts
++3
+-1
+
+server/reddit-communities.ts
++30
+-4
+
+server/scripts/sync-reddit-communities.ts
++39
+-2
+
+server/seeds/reddit-communities-full.json
++95
+-95
+
+server/seeds/reddit-communities.json
++41
+-12
+
+shared/growth-trends.ts
+New
+
+shared/schema.ts
++5
+-2
+
+tests/unit/server/reddit-communities.rules.test.ts
++186
+-125
+
+
+
+Ask
+
+Code
+Diff
+Logs
+
+client/src/components/__tests__/admin-communities-panel.test.tsx
++1
+-1
+
+@@ -42,51 +42,51 @@ const mockCommunities = [
+    averageUpvotes: 150,
+    successProbability: 75.5,
+    growthTrend: 'stable' as const,
+    modActivity: 'high' as const,
+    description: 'Adult content community',
+    tags: ['adult', 'verification'],
+    competitionLevel: 'high' as const,
+  },
+  {
+    id: 'test_community_2',
+    name: 'photography',
+    displayName: 'Photography',
+    category: 'creative',
+    members: 250000,
+    engagementRate: 0.03,
+    verificationRequired: false,
+    promotionAllowed: 'yes' as const,
+    postingLimits: null,
+    rules: {
+      minKarma: 50,
+      contentRules: ['Original work only'],
+    },
+    bestPostingTimes: ['afternoon'],
+    averageUpvotes: 75,
+    successProbability: 60,
+    growthTrend: 'growing' as const,
+    growthTrend: 'up' as const,
+    modActivity: 'medium' as const,
+    description: 'Photography enthusiasts',
+    tags: ['creative', 'art'],
+    competitionLevel: 'medium' as const,
+  },
+];
+
+function createTestQueryClient() {
+  return new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+}
+
+function renderWithProviders(component: React.ReactElement) {
+  const queryClient = createTestQueryClient();
+  return render(
+    <QueryClientProvider client={queryClient}>
+      {component}
+    </QueryClientProvider>
+  );
+}
+
+client/src/components/admin/admin-communities-panel.tsx
++7
+-4
+
+@@ -6,50 +6,52 @@ import {
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import {
+  type AdminCommunity,
+  type CommunityPayload,
+  type PromotionPolicy,
+  type GrowthTrend,
+  type ActivityLevel,
+  type CompetitionLevel,
+  GROWTH_TRENDS,
+  GROWTH_TREND_LABELS,
+  useAdminCommunities,
+  useCreateCommunity,
+  useUpdateCommunity,
+  useDeleteCommunity,
+} from '@/hooks/use-admin-communities';
+import { cn } from '@/lib/utils';
+import { CheckCircle, Edit2, Loader2, PlusCircle, ShieldAlert, Trash2 } from 'lucide-react';
+
+interface AdminCommunitiesPanelProps {
+  canManage: boolean;
+}
+
+type TriState = 'unspecified' | 'allowed' | 'disallowed';
+
+interface CommunityFormState {
+  id: string;
+  name: string;
+  displayName: string;
+  category: string;
+  members: string;
+  engagementRate: string;
+  verificationRequired: boolean;
+  promotionAllowed: PromotionPolicy;
+  postingLimitsPerDay: string;
+  postingLimitsPerWeek: string;
+@@ -806,54 +808,55 @@ export function AdminCommunitiesPanel({ canManage }: AdminCommunitiesPanelProps)
+                    data-testid="input-average-upvotes"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="successProbability">Success Probability (%)</Label>
+                  <Input
+                    id="successProbability"
+                    type="number"
+                    step="0.01"
+                    placeholder="e.g., 75.5"
+                    value={formState.successProbability}
+                    onChange={(e) => setFormState(prev => ({ ...prev, successProbability: e.target.value }))}
+                    data-testid="input-success-probability"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="growthTrend">Growth Trend</Label>
+                  <Select
+                    value={formState.growthTrend}
+                    onValueChange={(value) => setFormState(prev => ({ ...prev, growthTrend: value as GrowthTrend }))}
+                  >
+                    <SelectTrigger data-testid="select-growth-trend">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="growing">Growing</SelectItem>
+                      <SelectItem value="stable">Stable</SelectItem>
+                      <SelectItem value="declining">Declining</SelectItem>
+                      <SelectItem value="unknown">Unknown</SelectItem>
+                      {GROWTH_TRENDS.map(trend => (
+                        <SelectItem key={trend} value={trend}>
+                          {GROWTH_TREND_LABELS[trend]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="competitionLevel">Competition Level</Label>
+                  <Select
+                    value={formState.competitionLevel}
+                    onValueChange={(value) => setFormState(prev => ({ ...prev, competitionLevel: value as CompetitionLevel }))}
+                  >
+                    <SelectTrigger data-testid="select-competition-level">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="unknown">Unknown</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+client/src/components/enhanced-ai-generator.tsx
++3
+-6
+
+` tags.
+
+<replit_final_file>
+import React, { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { apiRequest, type ApiError } from "@/lib/queryClient";
+import type { ContentGeneration } from "@shared/schema";
+import { Sparkles, Brain, RefreshCw, Settings, Copy, Hash } from "lucide-react";
+
+// Define types for mutation variables and response
+interface GenerateContentVariables {
+  platform?: string;
+  style?: string;
+  theme?: string;
+  subreddit?: string;
+  customPrompt?: string;
+  prompt?: string;
+  includePromotion?: boolean;
+  allowsPromotion?: "none" | "subtle" | "direct";
+}
+
+@@ -167,56 +164,56 @@ export function EnhancedAIGenerator({
+      toast({
+        title: "Content Generated Successfully!",
+        description: normalizedResponse.caption ?? normalizedResponse.titles[0] ?? "Your AI content is ready."
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Generation Failed",
+        description: error.message || "Failed to generate content. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleGenerate = () => {
+    generateContentMutation.mutate({
+      platform: "reddit",
+      style: tone,
+      theme: photoType,
+      customPrompt: customPrompt.trim() || undefined,
+    });
+  };
+
+  const copyToClipboard = async (text: string, type: string) => {
+  const copyToClipboard = async (text: string, itemType: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedItem(type);
+      setCopiedItem(itemType);
+      toast({
+        title: `${type} copied!`,
+        title: `${itemType} copied!`,
+        description: "Content copied to clipboard",
+      });
+      setTimeout(() => setCopiedItem(null), 2000);
+    } catch (error) {
+      toast({
+        title: "Copy failed",
+        description: "Unable to copy to clipboard",
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center">
+              <Brain className="mr-2 h-5 w-5 text-orange-500" />
+              <span className="bg-gradient-to-r from-orange-500 via-amber-500 to-red-500 bg-clip-text text-transparent">
+                Enhanced AI Generator
+              </span>
+            </div>
+          </div>
+          {isGuestMode && (
+client/src/components/reddit-communities.tsx
++36
+-18
+
+import React, { useState, useMemo } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { 
+  Users, 
+  TrendingUp, 
+  Shield, 
+  Megaphone, 
+import {
+  Users,
+  TrendingUp,
+  Shield,
+  Megaphone,
+  Search,
+  ChevronUp,
+  ChevronDown,
+  CheckCircle,
+  XCircle,
+} from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { type GrowthTrend, GROWTH_TREND_LABELS } from "@shared/growth-trends";
+
+interface RedditCommunity {
+  id: string;
+  name: string;
+  displayName: string;
+  members: number;
+  engagementRate: number;
+  category: 'premium' | 'general' | 'niche' | 'fetish' | 'verification' | 'gonewild' | 'selling';
+  verificationRequired: boolean;
+  promotionAllowed: 'yes' | 'limited' | 'subtle' | 'no';
+  postingLimits: {
+    perDay?: number;
+    perWeek?: number;
+    cooldownHours?: number;
+  };
+  rules: {
+    minKarma?: number;
+    minAccountAge?: number;
+    watermarksAllowed?: boolean;
+    sellingAllowed?: boolean;
+    titleRules?: string[];
+    contentRules?: string[];
+  };
+  bestPostingTimes: string[];
+  averageUpvotes: number;
+  successProbability: number;
+  growthTrend: 'up' | 'stable' | 'down';
+  growthTrend: GrowthTrend | null;
+  modActivity: 'high' | 'medium' | 'low';
+  description: string;
+  tags: string[];
+  competitionLevel: 'low' | 'medium' | 'high';
+}
+
+export function RedditCommunities() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState<'members' | 'engagement' | 'upvotes' | 'name' | 'success'>('success');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [filterPromotion, setFilterPromotion] = useState<string>('all');
+  const [filterVerification, setFilterVerification] = useState<string>('all');
+  const [expandedRow, setExpandedRow] = useState<string | null>(null);
+
+  // Fetch communities data
+  const { data: communities = [], isLoading } = useQuery({
+    queryKey: ['/api/reddit/communities', filterCategory, searchTerm],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (filterCategory !== 'all') params.append('category', filterCategory);
+      if (searchTerm) params.append('search', searchTerm);
+
+      const response = await apiRequest('GET', `/api/reddit/communities?${params.toString()}`);
+      return response.json();
+    },
+@@ -156,59 +157,71 @@ export function RedditCommunities() {
+        return <Badge className="bg-red-500/20 text-red-400">Not Allowed</Badge>;
+      default:
+        return null;
+    }
+  };
+
+  const getCategoryBadge = (category: string) => {
+    const colors = {
+      premium: 'bg-purple-500/20 text-purple-400',
+      gonewild: 'bg-pink-500/20 text-pink-400',
+      general: 'bg-blue-500/20 text-blue-400',
+      niche: 'bg-cyan-500/20 text-cyan-400',
+      fetish: 'bg-orange-500/20 text-orange-400',
+      selling: 'bg-green-500/20 text-green-400',
+      verification: 'bg-yellow-500/20 text-yellow-400'
+    };
+    return <Badge className={colors[category as keyof typeof colors] || 'bg-gray-500/20 text-gray-400'}>{category}</Badge>;
+  };
+
+  const getSuccessProbabilityColor = (probability: number) => {
+    if (probability >= 85) return 'text-green-400';
+    if (probability >= 70) return 'text-yellow-400';
+    return 'text-red-400';
+  };
+
+  const getGrowthTrendIcon = (trend: string) => {
+    switch (trend) {
+      case 'up':
+        return <TrendingUp className="h-3 w-3 text-green-400" />;
+      case 'down':
+        return <ChevronDown className="h-3 w-3 text-red-400" />;
+      default:
+        return <div className="h-3 w-3 bg-gray-400 rounded-full" />;
+    }
+  const growthTrendColorMap: Record<GrowthTrend, string> = {
+    up: 'text-green-400',
+    stable: 'text-yellow-400',
+    down: 'text-red-400'
+  };
+
+  const getGrowthTrendClass = (trend: GrowthTrend | null) => {
+    if (!trend) return 'text-gray-400';
+    return growthTrendColorMap[trend];
+  };
+
+  const getGrowthTrendIcon = (trend: GrowthTrend | null) => {
+    if (trend === 'up') return <TrendingUp className="h-3 w-3 text-green-400" />;
+    if (trend === 'down') return <ChevronDown className="h-3 w-3 text-red-400" />;
+    if (trend === 'stable') return <ChevronUp className="h-3 w-3 rotate-90 text-yellow-400" />;
+    return <div className="h-3 w-3 bg-gray-400 rounded-full" />;
+  };
+
+  const getGrowthTrendLabel = (trend: GrowthTrend | null) => {
+    if (!trend) return 'Unspecified';
+    return GROWTH_TREND_LABELS[trend];
+  };
+
+  return (
+    <Card className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-pink-200/50 dark:border-pink-500/20 shadow-xl">
+      <CardHeader>
+        <CardTitle className="text-2xl bg-gradient-to-r from-pink-600 via-rose-500 to-purple-600 dark:from-pink-400 dark:via-rose-400 dark:to-purple-400 bg-clip-text text-transparent">
+          Reddit Communities Database
+        </CardTitle>
+        <p className="text-sm text-gray-600 dark:text-gray-300">
+          100+ communities with success probability scoring, growth trends, and intelligent recommendations
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Filters and Search */}
+        <div className="flex flex-col lg:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-white/60 dark:bg-gray-800/60 border-pink-200 dark:border-pink-500/30 focus:border-pink-400 dark:focus:border-pink-400"
+            />
+          </div>
+          
+          <Select value={filterCategory} onValueChange={setFilterCategory}>
+@@ -283,51 +296,56 @@ export function RedditCommunities() {
+            </TableHeader>
+            <TableBody>
+              {filteredCommunities.map((community) => (
+                <React.Fragment key={community.id}>
+                  <TableRow 
+                    className="border-purple-500/10 hover:bg-purple-500/5 cursor-pointer"
+                    onClick={() => setExpandedRow(expandedRow === community.id ? null : community.id)}
+                  >
+                    <TableCell>
+                      <div>
+                        <p className="font-medium text-white">{community.name}</p>
+                        <p className="text-xs text-gray-400">{community.displayName}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Users className="h-4 w-4 text-gray-400" />
+                        <span className="text-gray-300">{formatNumber(community.members)}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <span className={`font-medium ${getSuccessProbabilityColor(community.successProbability)}`}>
+                          {community.successProbability}%
+                        </span>
+                        {getGrowthTrendIcon(community.growthTrend)}
+                        <div className="flex items-center gap-1">
+                          {getGrowthTrendIcon(community.growthTrend)}
+                          <span className={`text-xs ${getGrowthTrendClass(community.growthTrend)}`}>
+                            {getGrowthTrendLabel(community.growthTrend)}
+                          </span>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <TrendingUp className="h-4 w-4 text-green-400" />
+                        <span className="text-gray-300">{community.engagementRate}%</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>{getCategoryBadge(community.category)}</TableCell>
+                    <TableCell>
+                      {community.verificationRequired ? (
+                        <CheckCircle className="h-4 w-4 text-green-400" />
+                      ) : (
+                        <XCircle className="h-4 w-4 text-gray-400" />
+                      )}
+                    </TableCell>
+                    <TableCell>{getPromotionBadge(community.promotionAllowed)}</TableCell>
+                    <TableCell>
+                      <div className="text-xs text-gray-400">
+                        {community.postingLimits.perDay && `${community.postingLimits.perDay}/day`}
+                        {community.postingLimits.cooldownHours && ` (${community.postingLimits.cooldownHours}h cooldown)`}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Button 
+@@ -341,51 +359,51 @@ export function RedditCommunities() {
+                  </TableRow>
+                  
+                  {/* Expanded Details Row */}
+                  {expandedRow === community.id && (
+                    <TableRow>
+                      <TableCell colSpan={8} className="bg-gray-800/30">
+                        <div className="p-4 space-y-4">
+                          <p className="text-sm text-gray-300">{community.description}</p>
+                          
+                          <div className="grid md:grid-cols-4 gap-4">
+                            <div>
+                              <h4 className="text-sm font-semibold text-purple-300 mb-2">Requirements</h4>
+                              <div className="space-y-1 text-xs text-gray-400">
+                                {community.rules.minKarma && <p>• Min Karma: {community.rules.minKarma}</p>}
+                                {community.rules.minAccountAge && <p>• Min Account Age: {community.rules.minAccountAge} days</p>}
+                                <p>• Watermarks: {community.rules.watermarksAllowed ? '✓ Allowed' : '✗ Not Allowed'}</p>
+                                <p>• Selling: {community.rules.sellingAllowed ? '✓ Allowed' : '✗ Not Allowed'}</p>
+                              </div>
+                            </div>
+
+                            <div>
+                              <h4 className="text-sm font-semibold text-purple-300 mb-2">Intelligence</h4>
+                              <div className="space-y-1 text-xs text-gray-400">
+                                <p>• Success Rate: <span className={getSuccessProbabilityColor(community.successProbability)}>{community.successProbability}%</span></p>
+                                <p>• Competition: <span className={community.competitionLevel === 'low' ? 'text-green-400' : community.competitionLevel === 'medium' ? 'text-yellow-400' : 'text-red-400'}>{community.competitionLevel}</span></p>
+                                <p>• Growth: <span className={community.growthTrend === 'up' ? 'text-green-400' : community.growthTrend === 'stable' ? 'text-yellow-400' : 'text-red-400'}>{community.growthTrend}</span></p>
+                                <p>• Growth: <span className={getGrowthTrendClass(community.growthTrend)}>{getGrowthTrendLabel(community.growthTrend)}</span></p>
+                                <p>• Mod Activity: <span className={community.modActivity === 'high' ? 'text-red-400' : community.modActivity === 'medium' ? 'text-yellow-400' : 'text-green-400'}>{community.modActivity}</span></p>
+                              </div>
+                            </div>
+                            
+                            <div>
+                              <h4 className="text-sm font-semibold text-purple-300 mb-2">Best Posting Times</h4>
+                              <div className="space-y-1 text-xs text-gray-400">
+                                {community.bestPostingTimes.slice(0, 3).map((time: string, idx: number) => (
+                                  <p key={idx}>• {time}</p>
+                                ))}
+                              </div>
+                            </div>
+                            
+                            <div>
+                              <h4 className="text-sm font-semibold text-purple-300 mb-2">Performance</h4>
+                              <div className="space-y-1 text-xs text-gray-400">
+                                <p>• Avg Upvotes: {community.averageUpvotes.toLocaleString()}</p>
+                                <p>• Engagement Rate: {community.engagementRate}%</p>
+                                <p>• Total Members: {community.members.toLocaleString()}</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Rules and Tags */}
+                          <div className="grid md:grid-cols-2 gap-4 mt-4">
+client/src/hooks/use-admin-communities.ts
++3
+-1
+
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
+import { type GrowthTrend, GROWTH_TRENDS, GROWTH_TREND_LABELS } from '@shared/growth-trends';
+
+export type PromotionPolicy = 'yes' | 'no' | 'limited' | 'subtle' | 'strict' | 'unknown';
+export type GrowthTrend = 'growing' | 'stable' | 'declining' | 'unknown';
+export type ActivityLevel = 'low' | 'medium' | 'high' | 'unknown';
+export type CompetitionLevel = 'low' | 'medium' | 'high' | 'unknown';
+
+export interface CommunityRules {
+  minKarma?: number;
+  minAccountAge?: number;
+  watermarksAllowed?: boolean;
+  sellingAllowed?: boolean;
+  titleRules?: string[];
+  contentRules?: string[];
+  linkRestrictions?: string[];
+  verificationRequired?: boolean;
+  requiresApproval?: boolean;
+  nsfwRequired?: boolean;
+  maxPostsPerDay?: number;
+  cooldownHours?: number;
+}
+
+export interface PostingLimits {
+  perDay?: number;
+  perWeek?: number;
+  cooldownHours?: number;
+}
+
+export interface AdminCommunity {
+@@ -54,50 +54,52 @@ export interface CommunityPayload {
+  displayName: string;
+  category: string;
+  members: number;
+  engagementRate: number;
+  verificationRequired: boolean;
+  promotionAllowed: PromotionPolicy;
+  postingLimits?: PostingLimits | null;
+  rules?: Partial<CommunityRules> | null;
+  bestPostingTimes?: string[] | null;
+  averageUpvotes?: number | null;
+  successProbability?: number | null;
+  growthTrend?: GrowthTrend;
+  modActivity?: ActivityLevel;
+  description?: string | null;
+  tags?: string[] | null;
+  competitionLevel?: CompetitionLevel;
+}
+
+export interface CommunityFilters {
+  search?: string;
+  category?: string;
+  promotionAllowed?: PromotionPolicy | 'all';
+  verificationRequired?: 'all' | 'required' | 'not-required';
+}
+
+export { GROWTH_TRENDS, GROWTH_TREND_LABELS };
+
+export function useAdminCommunities(filters?: CommunityFilters) {
+  const queryParams = new URLSearchParams();
+
+  if (filters?.search) {
+    queryParams.set('search', filters.search);
+  }
+  if (filters?.category && filters.category !== 'all') {
+    queryParams.set('category', filters.category);
+  }
+  if (filters?.promotionAllowed && filters.promotionAllowed !== 'all') {
+    queryParams.set('promotionAllowed', filters.promotionAllowed);
+  }
+  if (filters?.verificationRequired && filters.verificationRequired !== 'all') {
+    queryParams.set('verificationRequired', filters.verificationRequired === 'required' ? 'true' : 'false');
+  }
+
+  const queryString = queryParams.toString();
+  const url = `/api/reddit/communities${queryString ? `?${queryString}` : ''}`;
+
+  return useQuery<AdminCommunity[]>({
+    queryKey: ['admin-communities', filters],
+    queryFn: () => fetch(url).then(res => {
+      if (!res.ok) throw new Error('Failed to fetch communities');
+      return res.json();
+    }),
+server/reddit-communities.ts
++30
+-4
+
+import { db } from './db.js';
+import {
+  redditCommunities,
+  subredditRules,
+  type RedditCommunity,
+  insertRedditCommunitySchema,
+  type InsertRedditCommunity,
+  type RedditCommunityRuleSet,
+  redditCommunityRuleSetSchema,
+  createDefaultRules
+} from '@shared/schema';
+import { type GrowthTrend } from '@shared/growth-trends';
+import { eq, ilike, desc, or } from 'drizzle-orm';
+import { lintCaption } from './lib/policy-linter.js';
+
+// ==========================================
+// ELIGIBILITY TYPES AND INTERFACES
+// ==========================================
+
+export interface CommunityEligibilityCriteria {
+  karma?: number;
+  accountAgeDays?: number;
+  verified: boolean;
+}
+
+export interface CommunityRules {
+  minKarma?: number | null;
+  minAccountAge?: number | null;
+  verificationRequired?: boolean;
+}
+
+export type NormalizedRedditCommunity = Omit<RedditCommunity, 'rules'> & {
+export type NormalizedRedditCommunity = Omit<RedditCommunity, 'rules' | 'growthTrend'> & {
+  rules: RedditCommunityRuleSet;
+  growthTrend: GrowthTrend | null;
+};
+
+export function normalizeGrowthTrend(value: unknown): GrowthTrend | null {
+  if (!value || typeof value !== 'string') return null;
+  const normalized = value.toLowerCase();
+
+  if (['up', 'rising', 'growing', 'increase', 'increasing'].includes(normalized)) {
+    return 'up';
+  }
+
+  if (['down', 'declining', 'falling', 'decreasing', 'shrinking'].includes(normalized)) {
+    return 'down';
+  }
+
+  if (['stable', 'steady', 'flat', 'neutral', 'unchanged'].includes(normalized)) {
+    return 'stable';
+  }
+
+  return null;
+}
+
+/**
+ * Parse community rules from the database response
+ * Handles both legacy column-level rules and new structured rules
+ */
+export function parseCommunityRules(community: RedditCommunity): CommunityRules {
+  const columnLevelVerification = community.verificationRequired;
+  const structuredRules = normalizeRules(community.rules, community.promotionAllowed, community.category);
+  
+  return {
+    minKarma: structuredRules.minKarma,
+    minAccountAge: structuredRules.minAccountAge,
+    verificationRequired: columnLevelVerification || structuredRules.verificationRequired
+  };
+}
+
+/**
+ * Filter communities based on user eligibility criteria
+ */
+export async function getEligibleCommunitiesForUser(criteria: CommunityEligibilityCriteria): Promise<RedditCommunity[]> {
+  // Get all communities
+  const allCommunities = await listCommunities();
+  
+  // Filter based on eligibility criteria
+  return allCommunities.filter(community => {
+    const rules = parseCommunityRules(community);
+@@ -63,51 +84,51 @@ export async function getEligibleCommunitiesForUser(criteria: CommunityEligibili
+      if (criteria.karma === undefined || criteria.karma < rules.minKarma) {
+        return false;
+      }
+    }
+    
+    // Check minimum account age requirement
+    if (rules.minAccountAge !== null && rules.minAccountAge !== undefined) {
+      if (criteria.accountAgeDays === undefined || criteria.accountAgeDays < rules.minAccountAge) {
+        return false;
+      }
+    }
+    
+    // Check verification requirement
+    if (rules.verificationRequired && !criteria.verified) {
+      return false;
+    }
+    
+    return true;
+  });
+}
+
+/**
+ * Normalize and hydrate community rules from database response
+ * Handles backward compatibility with legacy array-based rules
+ */
+function normalizeRules(rawRules: unknown, promotionAllowed?: string, category?: string): RedditCommunityRuleSet {
+export function normalizeRules(rawRules: unknown, promotionAllowed?: string, category?: string): RedditCommunityRuleSet {
+  try {
+    // Handle null or undefined
+    if (!rawRules) {
+      return createDefaultRules();
+    }
+    
+    // Handle legacy array-based rules (backward compatibility)
+    if (Array.isArray(rawRules)) {
+      const defaults = createDefaultRules();
+      return {
+        ...defaults,
+        contentRules: rawRules.filter(rule => typeof rule === 'string'),
+        sellingAllowed: inferSellingPolicy(promotionAllowed || 'unknown', category || 'general')
+      };
+    }
+    
+    // Handle object-based rules
+    if (typeof rawRules === 'object') {
+      // Try to parse as structured rules
+      const parsed = redditCommunityRuleSetSchema.parse(rawRules);
+      
+      // If sellingAllowed is unknown, try to infer from promotion flags
+      if (parsed.sellingAllowed === 'unknown' && (promotionAllowed || category)) {
+        parsed.sellingAllowed = inferSellingPolicy(promotionAllowed || 'unknown', category || 'general', parsed);
+      }
+@@ -124,51 +145,52 @@ function normalizeRules(rawRules: unknown, promotionAllowed?: string, category?:
+
+/**
+ * Infer selling policy from promotion flags and category
+ */
+function inferSellingPolicy(promotionAllowed: string, category: string, rules?: RedditCommunityRuleSet): RedditCommunityRuleSet['sellingAllowed'] {
+  // If rules already specify selling policy, use it
+  if (rules?.sellingAllowed && rules.sellingAllowed !== 'unknown') {
+    return rules.sellingAllowed;
+  }
+  
+  // Infer from promotion flags and category
+  if (promotionAllowed === 'yes' || category === 'selling') {
+    return 'allowed';
+  } else if (promotionAllowed === 'limited' || promotionAllowed === 'subtle') {
+    return 'limited';
+  } else if (promotionAllowed === 'no' || promotionAllowed === 'strict') {
+    return 'not_allowed';
+  }
+  
+  return 'unknown';
+}
+
+export function normalizeCommunityRecord(community: RedditCommunity): NormalizedRedditCommunity {
+  return {
+    ...community,
+    rules: normalizeRules(community.rules, community.promotionAllowed, community.category)
+    rules: normalizeRules(community.rules, community.promotionAllowed, community.category),
+    growthTrend: normalizeGrowthTrend(community.growthTrend)
+  };
+}
+
+export async function listCommunities(): Promise<NormalizedRedditCommunity[]> {
+  const communities = await db.select().from(redditCommunities).orderBy(desc(redditCommunities.members));
+  return communities.map(normalizeCommunityRecord);
+}
+
+export async function searchCommunities(query: string): Promise<NormalizedRedditCommunity[]> {
+  const like = `%${query}%`;
+  const communities = await db.select()
+    .from(redditCommunities)
+    .where(
+      or(
+        ilike(redditCommunities.name, like),
+        ilike(redditCommunities.displayName, like),
+        ilike(redditCommunities.description, like)
+      )
+    );
+  
+  return communities.map(normalizeCommunityRecord);
+}
+
+export async function createCommunity(data: unknown): Promise<NormalizedRedditCommunity> {
+  const value: InsertRedditCommunity = insertRedditCommunitySchema.parse(data) as InsertRedditCommunity;
+@@ -186,53 +208,57 @@ export async function updateCommunity(id: string, data: unknown): Promise<Normal
+  const [row] = await db.update(redditCommunities).set(value).where(eq(redditCommunities.id, id)).returning();
+  return row ? normalizeCommunityRecord(row) : undefined;
+}
+
+export async function deleteCommunity(id: string) {
+  await db.delete(redditCommunities).where(eq(redditCommunities.id, id));
+}
+
+export async function getCommunityInsights(communityId: string): Promise<{
+  bestTimes: string[];
+  successTips: string[];
+  warnings: string[];
+}> {
+  const [community] = await db
+    .select()
+    .from(redditCommunities)
+    .where(eq(redditCommunities.id, communityId))
+    .limit(1);
+  if (!community) return { bestTimes: [], successTips: [], warnings: [] };
+
+  // Normalize rules
+  const rules = normalizeRules(community.rules, community.promotionAllowed, community.category);
+  const successTips: string[] = [];
+  const warnings: string[] = [];
+
+  const growthTrend = normalizeGrowthTrend(community.growthTrend);
+
+  // Basic success indicators
+  if ((community.successProbability ?? 0) > 85) successTips.push('High success rate - great choice');
+  if (community.growthTrend === 'up') successTips.push('Growing community - get in early');
+  if (growthTrend === 'up') successTips.push('Growing community - get in early');
+  if (growthTrend === 'stable') successTips.push('Stable community - consistent engagement levels');
+  if (growthTrend === 'down') warnings.push('Declining engagement - performance may be lower');
+  if (community.competitionLevel === 'low') successTips.push('Low competition - your content will stand out');
+
+  // Rule-based warnings using structured rules
+  if (rules.verificationRequired) warnings.push('Verification required - complete r/GetVerified');
+  if (rules.sellingAllowed === 'not_allowed') warnings.push('No promotion/selling allowed - content only');
+  if (rules.sellingAllowed === 'limited') warnings.push('Limited promotion allowed - check specific rules');
+  if (rules.watermarksAllowed === false) warnings.push('Watermarks not allowed - use clean images');
+  if (rules.minKarma && rules.minKarma > 50) warnings.push(`Requires ${rules.minKarma}+ karma`);
+  if (rules.minAccountAge && rules.minAccountAge > 7) warnings.push(`Account must be ${rules.minAccountAge}+ days old`);
+  if (rules.maxPostsPerDay && rules.maxPostsPerDay <= 1) warnings.push(`Limited to ${rules.maxPostsPerDay} post${rules.maxPostsPerDay === 1 ? '' : 's'} per day`);
+  if (rules.cooldownHours && rules.cooldownHours >= 24) warnings.push(`${rules.cooldownHours}h cooldown between posts`);
+  if (rules.requiresApproval) warnings.push('Posts require mod approval - expect delays');
+
+  // Add title and content rule warnings
+  if (rules.titleRules.length > 0) {
+    warnings.push(`Title rules: ${rules.titleRules.slice(0, 2).join(', ')}${rules.titleRules.length > 2 ? '...' : ''}`);
+  }
+  if (rules.contentRules.length > 0) {
+    warnings.push(`Content rules: ${rules.contentRules.slice(0, 2).join(', ')}${rules.contentRules.length > 2 ? '...' : ''}`);
+  }
+
+  // Enhanced rule-based warnings using the policy linter as fallback
+  try {
+    const lintResult = await lintCaption({
+      subreddit: community.name,
+server/scripts/sync-reddit-communities.ts
++39
+-2
+
+import snoowrap from 'snoowrap';
+import { z } from 'zod';
+import { db } from '../db.js';
+import { redditCommunities, insertRedditCommunitySchema, InsertRedditCommunity } from '@shared/schema';
+import { logger } from '../lib/logger.js';
+import { type GrowthTrend } from '@shared/growth-trends';
+
+// Environment validation schema
+const envSchema = z.object({
+  REDDIT_CLIENT_ID: z.string().min(1, 'REDDIT_CLIENT_ID is required'),
+  REDDIT_CLIENT_SECRET: z.string().min(1, 'REDDIT_CLIENT_SECRET is required'),
+  REDDIT_USER_AGENT: z.string().min(1, 'REDDIT_USER_AGENT is required'),
+  REDDIT_USERNAME: z.string().optional(),
+  REDDIT_PASSWORD: z.string().optional(),
+  REDDIT_REFRESH_TOKEN: z.string().optional(),
+}).refine(
+  (data) => data.REDDIT_REFRESH_TOKEN || (data.REDDIT_USERNAME && data.REDDIT_PASSWORD),
+  {
+    message: 'Either REDDIT_REFRESH_TOKEN or both REDDIT_USERNAME and REDDIT_PASSWORD are required',
+  }
+);
+
+// Sync configuration schema
+const syncConfigSchema = z.object({
+  subreddits: z.array(z.string()).optional(),
+  runId: z.string().optional(),
+});
+
+// Default subreddits to sync if none provided - configurable via environment
+const DEFAULT_SUBREDDITS = process.env.DEFAULT_SYNC_SUBREDDITS?.split(',') || [
+  'photography',
+  'earthporn',
+  'naturephotography',
+  'art',
+  'drawing',
+  'digitalart',
+  'itookapicture',
+  'pics',
+  'mildlyinteresting'
+];
+
+interface SyncResult {
+  processed: number;
+  succeeded: number;
+  failed: number;
+  errors: string[];
+}
+
+/**
+ * Normalize subreddit data for database insertion
+ */
+function determineGrowthTrend(args: {
+  engagementRate: number;
+  postFrequency: number;
+  successProbability: number;
+  activeUsers: number;
+  subscribers: number;
+}): GrowthTrend {
+  const { engagementRate, postFrequency, successProbability, activeUsers, subscribers } = args;
+  const activeRatio = subscribers > 0 ? activeUsers / subscribers : 0;
+
+  if (
+    engagementRate >= 12 ||
+    postFrequency >= 20 ||
+    successProbability >= 75 ||
+    activeRatio >= 0.15
+  ) {
+    return 'up';
+  }
+
+  if (
+    engagementRate <= 3 ||
+    postFrequency <= 3 ||
+    successProbability <= 35 ||
+    activeRatio <= 0.05
+  ) {
+    return 'down';
+  }
+
+  return 'stable';
+}
+
+function normalizeSubredditData(subreddit: any, engagementMetrics: any) {
+  const name = subreddit.display_name?.toLowerCase() || '';
+  const displayName = subreddit.display_name || '';
+  const description = subreddit.public_description || subreddit.description || '';
+  
+  // Calculate basic engagement score
+  const subscribers = subreddit.subscribers || 0;
+  const activeUsers = subreddit.active_user_count || 0;
+  const engagementRate = subscribers > 0 ? Math.min((activeUsers / subscribers) * 100, 100) : 0;
+  
+  // Determine promotion rules based on subreddit settings
+  let promotionAllowed: 'yes' | 'no' | 'limited' = 'limited';
+  if (subreddit.subreddit_type === 'private' || subreddit.subreddit_type === 'restricted') {
+    promotionAllowed = 'no';
+  } else if (description.toLowerCase().includes('no selling') || description.toLowerCase().includes('no promotion')) {
+    promotionAllowed = 'no';
+  } else if (description.toLowerCase().includes('sellers welcome') || description.toLowerCase().includes('promotion allowed')) {
+    promotionAllowed = 'yes';
+  }
+
+  // Determine verification requirements
+  const verificationRequired = description.toLowerCase().includes('verified') || 
+                               description.toLowerCase().includes('verification') ||
+                               name.includes('verified');
+
+  // Calculate success probability heuristic
+  let successProbability = 50; // Base probability
+  if (engagementRate > 10) successProbability += 20;
+  if (subscribers > 100000) successProbability += 10;
+  if (subscribers < 10000) successProbability -= 10;
+  if (promotionAllowed === 'yes') successProbability += 15;
+  if (promotionAllowed === 'no') successProbability -= 25;
+  if (verificationRequired) successProbability -= 10;
+  successProbability = Math.max(0, Math.min(100, successProbability));
+
+  // Determine competition level
+  let competitionLevel: 'low' | 'medium' | 'high' = 'medium';
+  if (subscribers < 50000) competitionLevel = 'low';
+  else if (subscribers > 500000) competitionLevel = 'high';
+
+  // Growth trend (simplified - in reality would compare historical data)
+  const growthTrend: 'up' | 'down' | 'stable' = 'stable';
+  const growthTrend = determineGrowthTrend({
+    engagementRate: Math.round(engagementRate),
+    postFrequency: engagementMetrics.postFrequency ?? 0,
+    successProbability: Math.round(successProbability),
+    activeUsers,
+    subscribers,
+  });
+
+  return {
+    id: name, // Use name as primary key
+    name,
+    displayName,
+    description,
+    members: subscribers,
+    category: subreddit.subreddit_type || 'public',
+    rules: [], // Rules would be fetched separately
+    engagementRate: Math.round(engagementRate),
+    successProbability: Math.round(successProbability),
+    competitionLevel,
+    growthTrend,
+    verificationRequired,
+    promotionAllowed,
+    averageUpvotes: engagementMetrics.avgUpvotes,
+    postingLimits: null,
+    bestPostingTimes: null,
+    modActivity: null,
+    tags: null,
+  };
+}
+
+/**
+ * Calculate engagement metrics for a subreddit
+server/seeds/reddit-communities-full.json
++95
+-95
+
+@@ -13,3991 +13,3991 @@
+      "weekly": 10
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": false,
+      "sellingAllowed": "not_allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Verification required",
+        "No selling",
+        "OC only"
+      ],
+      "verificationRequired": true,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening",
+      "night"
+    ],
+    "averageUpvotes": 500,
+    "successProbability": 65,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "high",
+    "description": "Share your wild side",
+    "tags": [
+      "amateur",
+      "verified"
+    ],
+    "competitionLevel": "high"
+  },
+  {
+    "id": "realgirls",
+    "name": "RealGirls",
+    "displayName": "Real Girls",
+    "members": 2800000,
+    "engagementRate": 10,
+    "category": "amateur",
+    "verificationRequired": false,
+    "promotionAllowed": "no",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": false,
+      "sellingAllowed": "not_allowed",
+      "titleRules": [],
+      "contentRules": [
+        "No selling",
+        "Amateur only"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 400,
+    "successProbability": 60,
+    "growthTrend": "rising",
+    "growthTrend": "up",
+    "modActivity": "medium",
+    "description": "Real amateur content",
+    "tags": [
+      "amateur"
+    ],
+    "competitionLevel": "high"
+  },
+  {
+    "id": "onlyfans",
+    "name": "OnlyFans",
+    "displayName": "OnlyFans",
+    "members": 850000,
+    "engagementRate": 15,
+    "category": "selling",
+    "verificationRequired": false,
+    "promotionAllowed": "yes",
+    "postingLimits": {
+      "daily": 5
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": true,
+      "sellingAllowed": "allowed",
+      "titleRules": [
+        "Must follow format"
+      ],
+      "contentRules": [
+        "Promotional content allowed"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 5,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "afternoon",
+      "evening"
+    ],
+    "averageUpvotes": 150,
+    "successProbability": 75,
+    "growthTrend": "rising",
+    "growthTrend": "up",
+    "modActivity": "low",
+    "description": "OnlyFans promotion",
+    "tags": [
+      "promotion",
+      "selling"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "onlyfansgirls101",
+    "name": "OnlyFansGirls101",
+    "displayName": "OnlyFans Girls 101",
+    "members": 620000,
+    "engagementRate": 18,
+    "category": "selling",
+    "verificationRequired": false,
+    "promotionAllowed": "yes",
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": true,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "One post per day",
+        "Direct links allowed"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "afternoon"
+    ],
+    "averageUpvotes": 200,
+    "successProbability": 80,
+    "growthTrend": "rising",
+    "growthTrend": "up",
+    "modActivity": "low",
+    "description": "OnlyFans creator promotion",
+    "tags": [
+      "promotion",
+      "onlyfans"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "petitegonewild",
+    "name": "PetiteGoneWild",
+    "displayName": "Petite Gone Wild",
+    "members": 1500000,
+    "engagementRate": 14,
+    "category": "body_type",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Petite only",
+        "Limited selling"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening",
+      "night"
+    ],
+    "averageUpvotes": 350,
+    "successProbability": 70,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "medium",
+    "description": "Petite content creators",
+    "tags": [
+      "petite",
+      "body_type"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "asiansgonewild",
+    "name": "AsiansGoneWild",
+    "displayName": "Asians Gone Wild",
+    "members": 1300000,
+    "engagementRate": 13,
+    "category": "ethnicity",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Asian creators only",
+        "Respectful comments"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 300,
+    "successProbability": 68,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "high",
+    "description": "Asian content creators",
+    "tags": [
+      "asian",
+      "ethnicity"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "thick",
+    "name": "thick",
+    "displayName": "Thick",
+    "members": 980000,
+    "engagementRate": 11,
+    "category": "body_type",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Thick/curvy content",
+        "Body positive"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "afternoon",
+      "evening"
+    ],
+    "averageUpvotes": 250,
+    "successProbability": 65,
+    "growthTrend": "rising",
+    "growthTrend": "up",
+    "modActivity": "low",
+    "description": "Thick and curvy creators",
+    "tags": [
+      "thick",
+      "curvy"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "pawg",
+    "name": "pawg",
+    "displayName": "PAWG",
+    "members": 870000,
+    "engagementRate": 12,
+    "category": "body_type",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Theme specific content only"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 280,
+    "successProbability": 66,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "medium",
+    "description": "Specific body type content",
+    "tags": [
+      "body_type"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "latinas",
+    "name": "latinas",
+    "displayName": "Latinas",
+    "members": 750000,
+    "engagementRate": 11,
+    "category": "ethnicity",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Latina creators",
+        "Respectful content"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 220,
+    "successProbability": 64,
+    "growthTrend": "rising",
+    "growthTrend": "up",
+    "modActivity": "medium",
+    "description": "Latina content creators",
+    "tags": [
+      "latina",
+      "ethnicity"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "onlyfanspromote",
+    "name": "OnlyFansPromote",
+    "displayName": "OnlyFans Promote",
+    "members": 450000,
+    "engagementRate": 20,
+    "category": "selling",
+    "verificationRequired": false,
+    "promotionAllowed": "yes",
+    "postingLimits": {
+      "daily": 5
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": true,
+      "sellingAllowed": "allowed",
+      "titleRules": [
+        "Follow title format"
+      ],
+      "contentRules": [
+        "Promotion allowed"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 5,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "all_day"
+    ],
+    "averageUpvotes": 100,
+    "successProbability": 85,
+    "growthTrend": "rising",
+    "growthTrend": "up",
+    "modActivity": "low",
+    "description": "Dedicated promotion space",
+    "tags": [
+      "promotion",
+      "selling"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "gonewildcurvy",
+    "name": "GoneWildCurvy",
+    "displayName": "Gone Wild Curvy",
+    "members": 680000,
+    "engagementRate": 10,
+    "category": "body_type",
+    "verificationRequired": false,
+    "promotionAllowed": "no",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "not_allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Curvy content only",
+        "No selling"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 200,
+    "successProbability": 62,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "medium",
+    "description": "Curvy content creators",
+    "tags": [
+      "curvy",
+      "body_type"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "collegesluts",
+    "name": "collegesluts",
+    "displayName": "College Theme",
+    "members": 1200000,
+    "engagementRate": 9,
+    "category": "theme",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "College age theme",
+        "Limited promotion"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
+    "averageUpvotes": 300,
+    "successProbability": 60,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "high",
+    "description": "College themed content",
+    "tags": [
+      "college",
+      "theme"
+    ],
+    "competitionLevel": "high"
+  },
+  {
+    "id": "adorableporn",
+    "name": "adorableporn",
+    "displayName": "Adorable Content",
+    "members": 920000,
+    "engagementRate": 8,
+    "category": "style",
+    "verificationRequired": false,
+    "promotionAllowed": "no",
+    "postingLimits": {
+      "daily": 1
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "not_allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Cute/adorable theme",
+        "No direct selling"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 1,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "afternoon"
+    ],
+    "averageUpvotes": 250,
+    "successProbability": 58,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "medium",
+    "description": "Cute and adorable content",
+    "tags": [
+      "cute",
+      "style"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "biggerthanyouthought",
+    "name": "BiggerThanYouThought",
+    "displayName": "Bigger Than You Thought",
+    "members": 1100000,
+    "engagementRate": 10,
+    "category": "reveal",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 1
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Reveal content only",
+        "OC preferred"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 1,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 400,
+    "successProbability": 55,
+    "growthTrend": "rising",
+    "growthTrend": "up",
+    "modActivity": "medium",
+    "description": "Reveal style content",
+    "tags": [
+      "reveal",
+      "surprise"
+    ],
+    "competitionLevel": "high"
+  },
+  {
+    "id": "bustypetite",
+    "name": "BustyPetite",
+    "displayName": "Busty Petite",
+    "members": 1400000,
+    "engagementRate": 11,
+    "category": "body_type",
+    "verificationRequired": false,
+    "promotionAllowed": "no",
+    "postingLimits": {
+      "daily": 1
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "not_allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Specific body type",
+        "No selling"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 1,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 350,
+    "successProbability": 60,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "high",
+    "description": "Specific body type content",
+    "tags": [
+      "petite",
+      "busty"
+    ],
+    "competitionLevel": "high"
+  },
+  {
+    "id": "nsfw",
+    "name": "nsfw",
+    "displayName": "NSFW",
+    "members": 2500000,
+    "engagementRate": 7,
+    "category": "general",
+    "verificationRequired": false,
+    "promotionAllowed": "no",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "not_allowed",
+      "titleRules": [],
+      "contentRules": [
+        "General NSFW",
+        "No spam"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 200,
+    "successProbability": 50,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "medium",
+    "description": "General NSFW content",
+    "tags": [
+      "general"
+    ],
+    "competitionLevel": "very_high"
+  },
+  {
+    "id": "milf",
+    "name": "milf",
+    "displayName": "MILF",
+    "members": 820000,
+    "engagementRate": 10,
+    "category": "age",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Age appropriate content",
+        "Respectful"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "afternoon",
+      "evening"
+    ],
+    "averageUpvotes": 250,
+    "successProbability": 65,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "medium",
+    "description": "Mature content creators",
+    "tags": [
+      "mature",
+      "milf"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "gonewild30plus",
+    "name": "gonewild30plus",
+    "displayName": "Gone Wild 30+",
+    "members": 750000,
+    "engagementRate": 12,
+    "category": "age",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "30+ creators only",
+        "Age verification"
+      ],
+      "verificationRequired": true,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 280,
+    "successProbability": 70,
+    "growthTrend": "rising",
+    "growthTrend": "up",
+    "modActivity": "medium",
+    "description": "30+ content creators",
+    "tags": [
+      "mature",
+      "30plus"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "altgonewild",
+    "name": "altgonewild",
+    "displayName": "Alt Gone Wild",
+    "members": 580000,
+    "engagementRate": 13,
+    "category": "style",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Alternative style",
+        "Tattoos/piercings welcome"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
+    "averageUpvotes": 220,
+    "successProbability": 68,
+    "growthTrend": "rising",
+    "growthTrend": "up",
+    "modActivity": "low",
+    "description": "Alternative style creators",
+    "tags": [
+      "alt",
+      "tattoo",
+      "piercing"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "workgonewild",
+    "name": "workgonewild",
+    "displayName": "Work Gone Wild",
+    "members": 520000,
+    "engagementRate": 9,
+    "category": "theme",
+    "verificationRequired": false,
+    "promotionAllowed": "no",
+    "postingLimits": {
+      "daily": 1
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "not_allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Work themed",
+        "No identifying info"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 1,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "afternoon"
+    ],
+    "averageUpvotes": 180,
+    "successProbability": 55,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "high",
+    "description": "Work themed content",
+    "tags": [
+      "work",
+      "theme"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "onoff",
+    "name": "OnOff",
+    "displayName": "On/Off",
+    "members": 890000,
+    "engagementRate": 10,
+    "category": "comparison",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 1
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [
+        "Before/after format"
+      ],
+      "contentRules": [
+        "Two images required"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 1,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 300,
+    "successProbability": 60,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "medium",
+    "description": "On/Off comparison content",
+    "tags": [
+      "comparison",
+      "onoff"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "tittydrop",
+    "name": "TittyDrop",
+    "displayName": "TittyDrop",
+    "members": 750000,
+    "engagementRate": 11,
+    "category": "reveal",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 1
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Drop/reveal content",
+        "Video preferred"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 1,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 320,
+    "successProbability": 58,
+    "growthTrend": "rising",
+    "growthTrend": "up",
+    "modActivity": "low",
+    "description": "Drop/reveal content",
+    "tags": [
+      "reveal",
+      "drop"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "freeuse",
+    "name": "freeuse",
+    "displayName": "Free Use",
+    "members": 420000,
+    "engagementRate": 8,
+    "category": "fetish",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 1
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Theme specific",
+        "Consensual content"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 1,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
+    "averageUpvotes": 150,
+    "successProbability": 52,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "high",
+    "description": "Specific theme content",
+    "tags": [
+      "fetish",
+      "theme"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "gothsluts",
+    "name": "gothsluts",
+    "displayName": "Goth Style",
+    "members": 380000,
+    "engagementRate": 14,
+    "category": "style",
+    "verificationRequired": false,
+    "promotionAllowed": "yes",
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Goth aesthetic",
+        "Promotion allowed"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
+    "averageUpvotes": 200,
+    "successProbability": 72,
+    "growthTrend": "rising",
+    "growthTrend": "up",
+    "modActivity": "low",
+    "description": "Goth style creators",
+    "tags": [
+      "goth",
+      "alt"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "palegirls",
+    "name": "palegirls",
+    "displayName": "Pale Girls",
+    "members": 450000,
+    "engagementRate": 10,
+    "category": "appearance",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Pale skin appreciation",
+        "Body positive"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 180,
+    "successProbability": 65,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "medium",
+    "description": "Pale skin creators",
+    "tags": [
+      "pale",
+      "appearance"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "redheads",
+    "name": "redheads",
+    "displayName": "Redheads",
+    "members": 520000,
+    "engagementRate": 11,
+    "category": "appearance",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Natural or dyed redheads",
+        "Hair visible"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 210,
+    "successProbability": 67,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "low",
+    "description": "Redhead creators",
+    "tags": [
+      "redhead",
+      "hair"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "blonde",
+    "name": "Blonde",
+    "displayName": "Blonde",
+    "members": 480000,
+    "engagementRate": 9,
+    "category": "appearance",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Blonde hair",
+        "Natural or dyed"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "afternoon"
+    ],
+    "averageUpvotes": 170,
+    "successProbability": 63,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "low",
+    "description": "Blonde creators",
+    "tags": [
+      "blonde",
+      "hair"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "brunette",
+    "name": "Brunette",
+    "displayName": "Brunette",
+    "members": 460000,
+    "engagementRate": 9,
+    "category": "appearance",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Brunette hair",
+        "Hair visible"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 165,
+    "successProbability": 62,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "low",
+    "description": "Brunette creators",
+    "tags": [
+      "brunette",
+      "hair"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "feet",
+    "name": "feet",
+    "displayName": "Feet",
+    "members": 380000,
+    "engagementRate": 15,
+    "category": "fetish",
+    "verificationRequired": false,
+    "promotionAllowed": "yes",
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Feet content",
+        "Selling allowed"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "all_day"
+    ],
+    "averageUpvotes": 120,
+    "successProbability": 75,
+    "growthTrend": "rising",
+    "growthTrend": "up",
+    "modActivity": "low",
+    "description": "Feet content creators",
+    "tags": [
+      "feet",
+      "fetish"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "feetpics",
+    "name": "FeetPics",
+    "displayName": "Feet Pics",
+    "members": 290000,
+    "engagementRate": 16,
+    "category": "fetish",
+    "verificationRequired": false,
+    "promotionAllowed": "yes",
+    "postingLimits": {
+      "daily": 5
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Feet focus",
+        "Selling welcome"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 5,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "all_day"
+    ],
+    "averageUpvotes": 100,
+    "successProbability": 78,
+    "growthTrend": "rising",
+    "growthTrend": "up",
+    "modActivity": "low",
+    "description": "Feet picture sales",
+    "tags": [
+      "feet",
+      "selling"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "bdsm",
+    "name": "BDSM",
+    "displayName": "BDSM",
+    "members": 450000,
+    "engagementRate": 10,
+    "category": "fetish",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Safe, sane, consensual",
+        "Educational welcome"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
+    "averageUpvotes": 160,
+    "successProbability": 60,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "high",
+    "description": "BDSM content and education",
+    "tags": [
+      "bdsm",
+      "kink"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "femdom",
+    "name": "FemDom",
+    "displayName": "FemDom",
+    "members": 320000,
+    "engagementRate": 12,
+    "category": "fetish",
+    "verificationRequired": false,
+    "promotionAllowed": "yes",
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Female domination theme",
+        "Respectful"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
+    "averageUpvotes": 140,
+    "successProbability": 70,
+    "growthTrend": "rising",
+    "growthTrend": "up",
+    "modActivity": "medium",
+    "description": "Female domination content",
+    "tags": [
+      "femdom",
+      "domme"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "findom",
+    "name": "FinDom",
+    "displayName": "Financial Domination",
+    "members": 180000,
+    "engagementRate": 18,
+    "category": "fetish",
+    "verificationRequired": false,
+    "promotionAllowed": "yes",
+    "postingLimits": {
+      "daily": 5
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Financial domination",
+        "Clear terms"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 5,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "all_day"
+    ],
+    "averageUpvotes": 80,
+    "successProbability": 82,
+    "growthTrend": "rising",
+    "growthTrend": "up",
+    "modActivity": "low",
+    "description": "Financial domination",
+    "tags": [
+      "findom",
+      "fetish"
+    ],
+    "competitionLevel": "very_low"
+  },
+  {
+    "id": "cosplaygirls",
+    "name": "cosplaygirls",
+    "displayName": "Cosplay Girls",
+    "members": 680000,
+    "engagementRate": 9,
+    "category": "cosplay",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Cosplay content",
+        "Credit characters"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "afternoon",
+      "evening"
+    ],
+    "averageUpvotes": 200,
+    "successProbability": 62,
+    "growthTrend": "rising",
+    "growthTrend": "up",
+    "modActivity": "medium",
+    "description": "Cosplay creators",
+    "tags": [
+      "cosplay",
+      "costume"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "nsfwcosplay",
+    "name": "NSFWcosplay",
+    "displayName": "NSFW Cosplay",
+    "members": 420000,
+    "engagementRate": 11,
+    "category": "cosplay",
+    "verificationRequired": false,
+    "promotionAllowed": "yes",
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Adult cosplay",
+        "Character names required"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 180,
+    "successProbability": 68,
+    "growthTrend": "rising",
+    "growthTrend": "up",
+    "modActivity": "low",
+    "description": "Adult cosplay content",
+    "tags": [
+      "cosplay",
+      "nsfw"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "geekygirls",
+    "name": "geekygirls",
+    "displayName": "Geeky Girls",
+    "members": 350000,
+    "engagementRate": 10,
+    "category": "niche",
+    "verificationRequired": false,
+    "promotionAllowed": "yes",
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Geek culture theme",
+        "Gaming/anime welcome"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 150,
+    "successProbability": 70,
+    "growthTrend": "rising",
+    "growthTrend": "up",
+    "modActivity": "low",
+    "description": "Geeky content creators",
+    "tags": [
+      "geek",
+      "nerd"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "gamergirls",
+    "name": "GamerGirls",
+    "displayName": "Gamer Girls",
+    "members": 380000,
+    "engagementRate": 8,
+    "category": "gaming",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Gaming related",
+        "Setup pics welcome"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
+    "averageUpvotes": 140,
+    "successProbability": 58,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "medium",
+    "description": "Gaming content creators",
+    "tags": [
+      "gaming",
+      "gamer"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "fitgirls",
+    "name": "FitGirls",
+    "displayName": "Fit Girls",
+    "members": 520000,
+    "engagementRate": 9,
+    "category": "fitness",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Fitness focus",
+        "Workout content"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "morning",
+      "afternoon"
+    ],
+    "averageUpvotes": 170,
+    "successProbability": 60,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "medium",
+    "description": "Fitness content creators",
+    "tags": [
+      "fitness",
+      "fit"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "yoga_nsfw",
+    "name": "Yoga_NSFW",
+    "displayName": "Yoga NSFW",
+    "members": 280000,
+    "engagementRate": 10,
+    "category": "fitness",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Yoga poses",
+        "Flexibility content"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "morning"
+    ],
+    "averageUpvotes": 130,
+    "successProbability": 65,
+    "growthTrend": "rising",
+    "growthTrend": "up",
+    "modActivity": "low",
+    "description": "Yoga and flexibility",
+    "tags": [
+      "yoga",
+      "flexible"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "hotmoms",
+    "name": "HotMoms",
+    "displayName": "Hot Moms",
+    "members": 420000,
+    "engagementRate": 11,
+    "category": "age",
+    "verificationRequired": false,
+    "promotionAllowed": "yes",
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Mom creators",
+        "Age appropriate"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "afternoon"
+    ],
+    "averageUpvotes": 160,
+    "successProbability": 72,
+    "growthTrend": "rising",
+    "growthTrend": "up",
+    "modActivity": "low",
+    "description": "Mom content creators",
+    "tags": [
+      "milf",
+      "mom"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "mombod",
+    "name": "mombod",
+    "displayName": "Mom Bod",
+    "members": 350000,
+    "engagementRate": 12,
+    "category": "body_type",
+    "verificationRequired": false,
+    "promotionAllowed": "yes",
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Mom body positivity",
+        "Natural bodies"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "afternoon"
+    ],
+    "averageUpvotes": 140,
+    "successProbability": 75,
+    "growthTrend": "rising",
+    "growthTrend": "up",
+    "modActivity": "low",
+    "description": "Mom body appreciation",
+    "tags": [
+      "mombod",
+      "natural"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "amateur_milfs",
+    "name": "Amateur_MILFs",
+    "displayName": "Amateur MILFs",
+    "members": 380000,
+    "engagementRate": 13,
+    "category": "age",
+    "verificationRequired": false,
+    "promotionAllowed": "yes",
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Amateur mature content",
+        "30+ creators"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 150,
+    "successProbability": 74,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "low",
+    "description": "Amateur mature creators",
+    "tags": [
+      "milf",
+      "amateur"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "ebonygirls",
+    "name": "EbonyGirls",
+    "displayName": "Ebony Girls",
+    "members": 450000,
+    "engagementRate": 10,
+    "category": "ethnicity",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Black creators",
+        "Respectful space"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 180,
+    "successProbability": 65,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "medium",
+    "description": "Black content creators",
+    "tags": [
+      "ebony",
+      "black"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "blackgirls",
+    "name": "BlackGirls",
+    "displayName": "Black Girls",
+    "members": 380000,
+    "engagementRate": 11,
+    "category": "ethnicity",
+    "verificationRequired": false,
+    "promotionAllowed": "yes",
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Black creators only",
+        "Celebration space"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 160,
+    "successProbability": 70,
+    "growthTrend": "rising",
+    "growthTrend": "up",
+    "modActivity": "low",
+    "description": "Black creator community",
+    "tags": [
+      "black",
+      "woc"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "indiangirls",
+    "name": "IndianGirls",
+    "displayName": "Indian Girls",
+    "members": 420000,
+    "engagementRate": 9,
+    "category": "ethnicity",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Indian/South Asian creators",
+        "Cultural respect"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 150,
+    "successProbability": 62,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "medium",
+    "description": "Indian content creators",
+    "tags": [
+      "indian",
+      "desi"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "juicyasians",
+    "name": "juicyasians",
+    "displayName": "Juicy Asians",
+    "members": 680000,
+    "engagementRate": 10,
+    "category": "ethnicity",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Asian creators",
+        "Body positive"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 200,
+    "successProbability": 64,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "medium",
+    "description": "Asian creator community",
+    "tags": [
+      "asian",
+      "thick"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "paag",
+    "name": "paag",
+    "displayName": "PAAG",
+    "members": 520000,
+    "engagementRate": 11,
+    "category": "ethnicity",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Asian creators",
+        "Theme specific"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 180,
+    "successProbability": 66,
+    "growthTrend": "rising",
+    "growthTrend": "up",
+    "modActivity": "low",
+    "description": "Specific Asian content",
+    "tags": [
+      "asian",
+      "body_type"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "smallboobs",
+    "name": "SmallBoobs",
+    "displayName": "Small Boobs",
+    "members": 480000,
+    "engagementRate": 10,
+    "category": "body_type",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Small chest appreciation",
+        "Body positive"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 160,
+    "successProbability": 68,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "low",
+    "description": "Small chest appreciation",
+    "tags": [
+      "small",
+      "petite"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "tinytits",
+    "name": "TinyTits",
+    "displayName": "Tiny Tits",
+    "members": 520000,
+    "engagementRate": 11,
+    "category": "body_type",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Petite chest focus",
+        "Respectful"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 170,
+    "successProbability": 69,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "medium",
+    "description": "Petite chest creators",
+    "tags": [
+      "tiny",
+      "small"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "hugeboobs",
+    "name": "HugeBoobs",
+    "displayName": "Huge Boobs",
+    "members": 720000,
+    "engagementRate": 9,
+    "category": "body_type",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Large chest content",
+        "Natural or enhanced"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 220,
+    "successProbability": 62,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "medium",
+    "description": "Large chest creators",
+    "tags": [
+      "busty",
+      "large"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "bigboobs",
+    "name": "BigBoobs",
+    "displayName": "Big Boobs",
+    "members": 850000,
+    "engagementRate": 8,
+    "category": "body_type",
+    "verificationRequired": false,
+    "promotionAllowed": "no",
+    "postingLimits": {
+      "daily": 1
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "not_allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Large chest focus",
+        "No selling"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 1,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 250,
+    "successProbability": 58,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "high",
+    "description": "Big chest appreciation",
+    "tags": [
+      "big",
+      "busty"
+    ],
+    "competitionLevel": "high"
+  },
+  {
+    "id": "naturaltits",
+    "name": "NaturalTits",
+    "displayName": "Natural",
+    "members": 580000,
+    "engagementRate": 10,
+    "category": "natural",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Natural only",
+        "No enhancements"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 190,
+    "successProbability": 65,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "medium",
+    "description": "Natural body creators",
+    "tags": [
+      "natural",
+      "real"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "tattooedgirls",
+    "name": "TattooedGirls",
+    "displayName": "Tattooed Girls",
+    "members": 420000,
+    "engagementRate": 11,
+    "category": "style",
+    "verificationRequired": false,
+    "promotionAllowed": "yes",
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Tattoo visibility",
+        "Ink appreciation"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening",
+      "night"
+    ],
+    "averageUpvotes": 160,
+    "successProbability": 70,
+    "growthTrend": "rising",
+    "growthTrend": "up",
+    "modActivity": "low",
+    "description": "Tattooed creators",
+    "tags": [
+      "tattoo",
+      "ink"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "piercedgirls",
+    "name": "PiercedGirls",
+    "displayName": "Pierced Girls",
+    "members": 320000,
+    "engagementRate": 12,
+    "category": "style",
+    "verificationRequired": false,
+    "promotionAllowed": "yes",
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Piercing focus",
+        "Body modification"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
+    "averageUpvotes": 140,
+    "successProbability": 72,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "low",
+    "description": "Pierced creators",
+    "tags": [
+      "piercing",
+      "alt"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "emogirls",
+    "name": "EmoGirls",
+    "displayName": "Emo Girls",
+    "members": 280000,
+    "engagementRate": 13,
+    "category": "style",
+    "verificationRequired": false,
+    "promotionAllowed": "yes",
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Emo aesthetic",
+        "Scene welcome"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
+    "averageUpvotes": 130,
+    "successProbability": 74,
+    "growthTrend": "rising",
+    "growthTrend": "up",
+    "modActivity": "low",
+    "description": "Emo style creators",
+    "tags": [
+      "emo",
+      "scene"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "scenegirls",
+    "name": "SceneGirls",
+    "displayName": "Scene Girls",
+    "members": 250000,
+    "engagementRate": 14,
+    "category": "style",
+    "verificationRequired": false,
+    "promotionAllowed": "yes",
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Scene style",
+        "Colorful aesthetic"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
+    "averageUpvotes": 120,
+    "successProbability": 75,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "low",
+    "description": "Scene style creators",
+    "tags": [
+      "scene",
+      "alt"
+    ],
+    "competitionLevel": "very_low"
+  },
+  {
+    "id": "egirls",
+    "name": "egirls",
+    "displayName": "E-Girls",
+    "members": 380000,
+    "engagementRate": 15,
+    "category": "style",
+    "verificationRequired": false,
+    "promotionAllowed": "yes",
+    "postingLimits": {
+      "daily": 4
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "E-girl aesthetic",
+        "Gaming/anime themes"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 4,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
+    "averageUpvotes": 150,
+    "successProbability": 76,
+    "growthTrend": "rising",
+    "growthTrend": "up",
+    "modActivity": "low",
+    "description": "E-girl aesthetic creators",
+    "tags": [
+      "egirl",
+      "gaming"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "collegegirls",
+    "name": "CollegeGirls",
+    "displayName": "College Girls",
+    "members": 580000,
+    "engagementRate": 8,
+    "category": "age",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "College age",
+        "School themes"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
+    "averageUpvotes": 180,
+    "successProbability": 60,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "medium",
+    "description": "College themed content",
+    "tags": [
+      "college",
+      "young"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "barelylegal",
+    "name": "BarelyLegal",
+    "displayName": "18+",
+    "members": 480000,
+    "engagementRate": 7,
+    "category": "age",
+    "verificationRequired": true,
+    "promotionAllowed": "no",
+    "postingLimits": {
+      "daily": 1
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "not_allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Age verification required",
+        "18+ only"
+      ],
+      "verificationRequired": true,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 1,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 150,
+    "successProbability": 55,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "very_high",
+    "description": "Young adult creators",
+    "tags": [
+      "18plus",
+      "young"
+    ],
+    "competitionLevel": "high"
+  },
+  {
+    "id": "2000sgirls",
+    "name": "2000sGirls",
+    "displayName": "2000s Girls",
+    "members": 320000,
+    "engagementRate": 10,
+    "category": "age",
+    "verificationRequired": false,
+    "promotionAllowed": "yes",
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Born 2000-2005",
+        "Young adult content"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 140,
+    "successProbability": 70,
+    "growthTrend": "rising",
+    "growthTrend": "up",
+    "modActivity": "low",
+    "description": "2000s born creators",
+    "tags": [
+      "2000s",
+      "young"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "snapchatgirls",
+    "name": "SnapchatGirls",
+    "displayName": "Snapchat Girls",
+    "members": 420000,
+    "engagementRate": 12,
+    "category": "social",
+    "verificationRequired": false,
+    "promotionAllowed": "yes",
+    "postingLimits": {
+      "daily": 4
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Snapchat promotion",
+        "Username sharing"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 4,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "all_day"
+    ],
+    "averageUpvotes": 100,
+    "successProbability": 75,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "low",
+    "description": "Snapchat promotion",
+    "tags": [
+      "snapchat",
+      "social"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "tiktokgirls",
+    "name": "TikTokGirls",
+    "displayName": "TikTok Girls",
+    "members": 380000,
+    "engagementRate": 11,
+    "category": "social",
+    "verificationRequired": false,
+    "promotionAllowed": "yes",
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "TikTok creators",
+        "Dance/trend content"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "afternoon",
+      "evening"
+    ],
+    "averageUpvotes": 120,
+    "successProbability": 72,
+    "growthTrend": "rising",
+    "growthTrend": "up",
+    "modActivity": "low",
+    "description": "TikTok creator promotion",
+    "tags": [
+      "tiktok",
+      "social"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "instagrammodels",
+    "name": "InstagramModels",
+    "displayName": "Instagram Models",
+    "members": 520000,
+    "engagementRate": 8,
+    "category": "social",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "IG promotion",
+        "Model content"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "afternoon"
+    ],
+    "averageUpvotes": 150,
+    "successProbability": 62,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "medium",
+    "description": "Instagram model promotion",
+    "tags": [
+      "instagram",
+      "model"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "camgirls",
+    "name": "CamGirls",
+    "displayName": "Cam Girls",
+    "members": 380000,
+    "engagementRate": 14,
+    "category": "cam",
+    "verificationRequired": false,
+    "promotionAllowed": "yes",
+    "postingLimits": {
+      "daily": 4
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Cam promotion",
+        "Schedule sharing"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 4,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "all_day"
+    ],
+    "averageUpvotes": 110,
+    "successProbability": 78,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "low",
+    "description": "Cam performer promotion",
+    "tags": [
+      "cam",
+      "live"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "camsluts",
+    "name": "CamSluts",
+    "displayName": "Cam Performers",
+    "members": 320000,
+    "engagementRate": 15,
+    "category": "cam",
+    "verificationRequired": false,
+    "promotionAllowed": "yes",
+    "postingLimits": {
+      "daily": 5
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Cam content",
+        "Links allowed"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 5,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "all_day"
+    ],
+    "averageUpvotes": 90,
+    "successProbability": 80,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "low",
+    "description": "Cam site promotion",
+    "tags": [
+      "cam",
+      "streaming"
+    ],
+    "competitionLevel": "very_low"
+  },
+  {
+    "id": "stripgirls",
+    "name": "StripGirls",
+    "displayName": "Strip Girls",
+    "members": 280000,
+    "engagementRate": 12,
+    "category": "dancer",
+    "verificationRequired": false,
+    "promotionAllowed": "yes",
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Dancer content",
+        "Stage/pole welcome"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
+    "averageUpvotes": 120,
+    "successProbability": 73,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "low",
+    "description": "Dancer/stripper content",
+    "tags": [
+      "dancer",
+      "stripper"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "poledancing",
+    "name": "PoleDancing",
+    "displayName": "Pole Dancing",
+    "members": 220000,
+    "engagementRate": 11,
+    "category": "dancer",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Pole content",
+        "Athletic focus"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 100,
+    "successProbability": 68,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "medium",
+    "description": "Pole dancing content",
+    "tags": [
+      "pole",
+      "dance"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "homemadeporn",
+    "name": "HomemadePorn",
+    "displayName": "Homemade",
+    "members": 680000,
+    "engagementRate": 9,
+    "category": "amateur",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": false,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Amateur content",
+        "OC only"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 200,
+    "successProbability": 62,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "medium",
+    "description": "Homemade amateur content",
+    "tags": [
+      "homemade",
+      "amateur"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "amateur",
+    "name": "Amateur",
+    "displayName": "Amateur",
+    "members": 820000,
+    "engagementRate": 8,
+    "category": "amateur",
+    "verificationRequired": false,
+    "promotionAllowed": "no",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": false,
+      "sellingAllowed": "not_allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Amateur only",
+        "No pro content"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 180,
+    "successProbability": 58,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "high",
+    "description": "Amateur content only",
+    "tags": [
+      "amateur",
+      "real"
+    ],
+    "competitionLevel": "high"
+  },
+  {
+    "id": "homemadexxx",
+    "name": "HomemadeXXX",
+    "displayName": "Homemade XXX",
+    "members": 520000,
+    "engagementRate": 10,
+    "category": "amateur",
+    "verificationRequired": false,
+    "promotionAllowed": "yes",
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": false,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Homemade content",
+        "Couples welcome"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
+    "averageUpvotes": 160,
+    "successProbability": 70,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "low",
+    "description": "Homemade adult content",
+    "tags": [
+      "homemade",
+      "couple"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "couplesgonewild",
+    "name": "CouplesGoneWild",
+    "displayName": "Couples Gone Wild",
+    "members": 480000,
+    "engagementRate": 10,
+    "category": "couples",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Couples content",
+        "Both partners visible"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
+    "averageUpvotes": 170,
+    "successProbability": 65,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "medium",
+    "description": "Couple content",
+    "tags": [
+      "couple",
+      "partners"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "gwcouples",
+    "name": "GWCouples",
+    "displayName": "GW Couples",
+    "members": 420000,
+    "engagementRate": 11,
+    "category": "couples",
+    "verificationRequired": true,
+    "promotionAllowed": "no",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "not_allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Verified couples",
+        "No selling"
+      ],
+      "verificationRequired": true,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
+    "averageUpvotes": 190,
+    "successProbability": 63,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "high",
+    "description": "Verified couple content",
+    "tags": [
+      "couple",
+      "verified"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "hotwife",
+    "name": "HotWife",
+    "displayName": "HotWife",
+    "members": 380000,
+    "engagementRate": 12,
+    "category": "lifestyle",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Lifestyle content",
+        "Respectful"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 150,
+    "successProbability": 68,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "medium",
+    "description": "Hotwife lifestyle",
+    "tags": [
+      "hotwife",
+      "lifestyle"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "wifesharing",
+    "name": "WifeSharing",
+    "displayName": "Wife Sharing",
+    "members": 350000,
+    "engagementRate": 11,
+    "category": "lifestyle",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Consensual content",
+        "Partner aware"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 140,
+    "successProbability": 66,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "medium",
+    "description": "Wife sharing content",
+    "tags": [
+      "sharing",
+      "lifestyle"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "swingers",
+    "name": "Swingers",
+    "displayName": "Swingers",
+    "members": 320000,
+    "engagementRate": 10,
+    "category": "lifestyle",
+    "verificationRequired": false,
+    "promotionAllowed": "yes",
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Swinger lifestyle",
+        "Respectful community"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 120,
+    "successProbability": 70,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "low",
+    "description": "Swinger lifestyle content",
+    "tags": [
+      "swinger",
+      "lifestyle"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "slutwife",
+    "name": "SlutWife",
+    "displayName": "SlutWife",
+    "members": 280000,
+    "engagementRate": 13,
+    "category": "lifestyle",
+    "verificationRequired": false,
+    "promotionAllowed": "yes",
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Lifestyle content",
+        "Consensual"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
+    "averageUpvotes": 110,
+    "successProbability": 72,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "low",
+    "description": "Alternative lifestyle",
+    "tags": [
+      "lifestyle",
+      "wife"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "cuckold",
+    "name": "Cuckold",
+    "displayName": "Cuckold",
+    "members": 250000,
+    "engagementRate": 11,
+    "category": "lifestyle",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Lifestyle specific",
+        "Consensual only"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
+    "averageUpvotes": 100,
+    "successProbability": 65,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "medium",
+    "description": "Cuckold lifestyle",
+    "tags": [
+      "cuckold",
+      "lifestyle"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "breeding",
+    "name": "Breeding",
+    "displayName": "Breeding",
+    "members": 320000,
+    "engagementRate": 9,
+    "category": "fetish",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Fantasy content",
+        "Role play"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
+    "averageUpvotes": 130,
+    "successProbability": 62,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "medium",
+    "description": "Breeding fantasy content",
+    "tags": [
+      "breeding",
+      "fantasy"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "knockmeup",
+    "name": "KnockMeUp",
+    "displayName": "Knock Me Up",
+    "members": 280000,
+    "engagementRate": 10,
+    "category": "fetish",
+    "verificationRequired": false,
+    "promotionAllowed": "yes",
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Fantasy theme",
+        "Role play content"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
+    "averageUpvotes": 110,
+    "successProbability": 68,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "low",
+    "description": "Breeding fantasy",
+    "tags": [
+      "breeding",
+      "roleplay"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "creampie",
+    "name": "Creampie",
+    "displayName": "Creampie",
+    "members": 420000,
+    "engagementRate": 8,
+    "category": "content_type",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Specific content type",
+        "OC preferred"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
+    "averageUpvotes": 150,
+    "successProbability": 60,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "medium",
+    "description": "Specific content type",
+    "tags": [
+      "creampie",
+      "content"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "cumsluts",
+    "name": "CumSluts",
+    "displayName": "Cum Content",
+    "members": 480000,
+    "engagementRate": 9,
+    "category": "content_type",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Theme specific",
+        "OC welcome"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
+    "averageUpvotes": 170,
+    "successProbability": 62,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "medium",
+    "description": "Specific content theme",
+    "tags": [
+      "cum",
+      "content"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "facial",
+    "name": "Facial",
+    "displayName": "Facial",
+    "members": 380000,
+    "engagementRate": 8,
+    "category": "content_type",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Specific content",
+        "OC preferred"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
+    "averageUpvotes": 140,
+    "successProbability": 60,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "medium",
+    "description": "Facial content",
+    "tags": [
+      "facial",
+      "content"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "squirting",
+    "name": "Squirting",
+    "displayName": "Squirting",
+    "members": 420000,
+    "engagementRate": 10,
+    "category": "content_type",
+    "verificationRequired": false,
+    "promotionAllowed": "yes",
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Squirt content",
+        "OC encouraged"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
+    "averageUpvotes": 160,
+    "successProbability": 70,
+    "growthTrend": "rising",
+    "growthTrend": "up",
+    "modActivity": "low",
+    "description": "Squirting content",
+    "tags": [
+      "squirt",
+      "content"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "grool",
+    "name": "Grool",
+    "displayName": "Grool",
+    "members": 320000,
+    "engagementRate": 11,
+    "category": "content_type",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Specific content",
+        "Natural only"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 130,
+    "successProbability": 65,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "medium",
+    "description": "Natural wetness content",
+    "tags": [
+      "grool",
+      "natural"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "wetspot",
+    "name": "WetSpot",
+    "displayName": "Wet Spot",
+    "members": 180000,
+    "engagementRate": 12,
+    "category": "content_type",
+    "verificationRequired": false,
+    "promotionAllowed": "yes",
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Wet spot content",
+        "Clothing focus"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 90,
+    "successProbability": 72,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "low",
+    "description": "Wet spot content",
+    "tags": [
+      "wetspot",
+      "clothing"
+    ],
+    "competitionLevel": "very_low"
+  },
+  {
+    "id": "panties",
+    "name": "Panties",
+    "displayName": "Panties",
+    "members": 380000,
+    "engagementRate": 10,
+    "category": "clothing",
+    "verificationRequired": false,
+    "promotionAllowed": "yes",
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Panty content",
+        "Selling allowed"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 120,
+    "successProbability": 70,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "low",
+    "description": "Panty content and sales",
+    "tags": [
+      "panties",
+      "underwear"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "usedpanties",
+    "name": "UsedPanties",
+    "displayName": "Used Panties",
+    "members": 220000,
+    "engagementRate": 14,
+    "category": "selling",
+    "verificationRequired": true,
+    "promotionAllowed": "yes",
+    "postingLimits": {
+      "daily": 5
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": true,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Selling platform",
+        "Verification required"
+      ],
+      "verificationRequired": true,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 5,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "all_day"
+    ],
+    "averageUpvotes": 80,
+    "successProbability": 80,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "medium",
+    "description": "Panty selling marketplace",
+    "tags": [
+      "selling",
+      "panties"
+    ],
+    "competitionLevel": "very_low"
+  },
+  {
+    "id": "lingerie",
+    "name": "Lingerie",
+    "displayName": "Lingerie",
+    "members": 520000,
+    "engagementRate": 9,
+    "category": "clothing",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Lingerie focus",
+        "Quality content"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 170,
+    "successProbability": 64,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "medium",
+    "description": "Lingerie content",
+    "tags": [
+      "lingerie",
+      "clothing"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "stockings",
+    "name": "Stockings",
+    "displayName": "Stockings",
+    "members": 320000,
+    "engagementRate": 10,
+    "category": "clothing",
+    "verificationRequired": false,
+    "promotionAllowed": "yes",
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Stocking/hosiery content",
+        "Legs focus"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 130,
+    "successProbability": 68,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "low",
+    "description": "Stocking and hosiery content",
+    "tags": [
+      "stockings",
+      "legs"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "thighhighs",
+    "name": "ThighHighs",
+    "displayName": "Thigh Highs",
+    "members": 280000,
+    "engagementRate": 11,
+    "category": "clothing",
+    "verificationRequired": false,
+    "promotionAllowed": "yes",
+    "postingLimits": {
+      "daily": 3
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Thigh high focus",
+        "Socks/stockings"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 3,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 120,
+    "successProbability": 70,
+    "growthTrend": "rising",
+    "growthTrend": "up",
+    "modActivity": "low",
+    "description": "Thigh high content",
+    "tags": [
+      "thighhighs",
+      "socks"
+    ],
+    "competitionLevel": "low"
+  },
+  {
+    "id": "yoga_pants",
+    "name": "YogaPants",
+    "displayName": "Yoga Pants",
+    "members": 420000,
+    "engagementRate": 8,
+    "category": "clothing",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Yoga pants/leggings",
+        "Athletic wear"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "afternoon"
+    ],
+    "averageUpvotes": 140,
+    "successProbability": 62,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "medium",
+    "description": "Yoga pants and leggings",
+    "tags": [
+      "yogapants",
+      "athletic"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "girlsinyogapants",
+    "name": "GirlsInYogaPants",
+    "displayName": "Girls In Yoga Pants",
+    "members": 680000,
+    "engagementRate": 7,
+    "category": "clothing",
+    "verificationRequired": false,
+    "promotionAllowed": "no",
+    "postingLimits": {
+      "daily": 1
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "not_allowed",
+      "titleRules": [],
+      "contentRules": [
+        "Yoga pants only",
+        "No nudity"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 1,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "afternoon"
+    ],
+    "averageUpvotes": 180,
+    "successProbability": 58,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "high",
+    "description": "Yoga pants appreciation",
+    "tags": [
+      "yogapants",
+      "sfw"
+    ],
+    "competitionLevel": "high"
+  },
+  {
+    "id": "asshole",
+    "name": "Asshole",
+    "displayName": "Asshole",
+    "members": 520000,
+    "engagementRate": 9,
+    "category": "specific",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Specific focus",
+        "Close-up content"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
+    "averageUpvotes": 160,
+    "successProbability": 63,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "medium",
+    "description": "Specific body part focus",
+    "tags": [
+      "ass",
+      "closeup"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "pussy",
+    "name": "Pussy",
+    "displayName": "Pussy",
+    "members": 780000,
+    "engagementRate": 8,
+    "category": "specific",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "limited",
+      "titleRules": [],
+      "contentRules": [
+        "Specific focus",
+        "Quality content"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 2,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "night"
+    ],
+    "averageUpvotes": 190,
+    "successProbability": 60,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "medium",
+    "description": "Specific content focus",
+    "tags": [
+      "pussy",
+      "closeup"
+    ],
+    "competitionLevel": "high"
+  },
+  {
+    "id": "godpussy",
+    "name": "GodPussy",
+    "displayName": "God Pussy",
+    "members": 620000,
+    "engagementRate": 10,
+    "category": "specific",
+    "verificationRequired": false,
+    "promotionAllowed": "no",
+    "postingLimits": {
+      "daily": 1
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": null,
+      "sellingAllowed": "not_allowed",
+      "titleRules": [],
+      "contentRules": [
+        "High quality only",
+        "Aesthetic focus"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": true,
+      "maxPostsPerDay": 1,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": [
+      "evening"
+    ],
+    "averageUpvotes": 250,
+    "successProbability": 55,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "very_high",
+    "description": "High quality specific content",
+    "tags": [
+      "quality",
+      "aesthetic"
+    ],
+    "competitionLevel": "very_high"
+  }
+]
+server/seeds/reddit-communities.json
++41
+-12
+
+[
+  {
+    "id": "photography",
+    "name": "photography",
+    "displayName": "Photography",
+    "members": 5000000,
+    "engagementRate": 5,
+    "category": "art",
+    "verificationRequired": false,
+    "promotionAllowed": "limited",
+    "postingLimits": {"daily": 1},
+    "postingLimits": {
+      "daily": 1
+    },
+    "rules": {
+      "minKarma": null,
+      "minAccountAge": null,
+      "watermarksAllowed": true,
+      "sellingAllowed": "limited",
+      "titleRules": ["Be descriptive", "No clickbait"],
+      "contentRules": ["Be nice", "No spam", "High quality images only"],
+      "titleRules": [
+        "Be descriptive",
+        "No clickbait"
+      ],
+      "contentRules": [
+        "Be nice",
+        "No spam",
+        "High quality images only"
+      ],
+      "verificationRequired": false,
+      "requiresApproval": false,
+      "nsfwRequired": false,
+      "maxPostsPerDay": 1,
+      "cooldownHours": null
+    },
+    "bestPostingTimes": ["morning", "evening"],
+    "bestPostingTimes": [
+      "morning",
+      "evening"
+    ],
+    "averageUpvotes": 100,
+    "successProbability": 60,
+    "growthTrend": "rising",
+    "growthTrend": "up",
+    "modActivity": "high",
+    "description": "A place to share photos.",
+    "tags": ["photography", "art"],
+    "tags": [
+      "photography",
+      "art"
+    ],
+    "competitionLevel": "medium"
+  },
+  {
+    "id": "fitness",
+    "name": "fitness",
+    "displayName": "Fitness",
+    "members": 10000000,
+    "engagementRate": 7,
+    "category": "health",
+    "verificationRequired": true,
+    "promotionAllowed": "strict",
+    "postingLimits": {"daily": 2},
+    "postingLimits": {
+      "daily": 2
+    },
+    "rules": {
+      "minKarma": 100,
+      "minAccountAge": 30,
+      "watermarksAllowed": false,
+      "sellingAllowed": "not_allowed",
+      "titleRules": ["Include workout type", "No self-promotion"],
+      "contentRules": ["No self-promotion", "Stay on topic", "Include progress or advice"],
+      "titleRules": [
+        "Include workout type",
+        "No self-promotion"
+      ],
+      "contentRules": [
+        "No self-promotion",
+        "Stay on topic",
+        "Include progress or advice"
+      ],
+      "verificationRequired": true,
+      "requiresApproval": false,
+      "nsfwRequired": false,
+      "maxPostsPerDay": 2,
+      "cooldownHours": 12
+    },
+    "bestPostingTimes": ["afternoon"],
+    "bestPostingTimes": [
+      "afternoon"
+    ],
+    "averageUpvotes": 250,
+    "successProbability": 70,
+    "growthTrend": "steady",
+    "growthTrend": "stable",
+    "modActivity": "medium",
+    "description": "Workout tips and discussion.",
+    "tags": ["fitness", "health"],
+    "tags": [
+      "fitness",
+      "health"
+    ],
+    "competitionLevel": "high"
+  }
+]
+shared/growth-trends.ts
+New
++9
+-0
+
+export const GROWTH_TRENDS = ['up', 'stable', 'down'] as const;
+
+export type GrowthTrend = (typeof GROWTH_TRENDS)[number];
+
+export const GROWTH_TREND_LABELS: Record<GrowthTrend, string> = {
+  up: 'Growing',
+  stable: 'Stable',
+  down: 'Declining'
+};
+shared/schema.ts
++5
+-2
+
+import { pgTable, serial, varchar, text, integer, timestamp, jsonb, boolean, unique, index } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
+import { relations } from "drizzle-orm";
+import { GROWTH_TRENDS, type GrowthTrend } from "./growth-trends";
+
+// ==========================================
+// PROTECTION LEVEL VALIDATION SCHEMAS
+// ==========================================
+
+export const protectionLevelEnum = z.enum(['light', 'standard', 'heavy'], {
+  errorMap: () => ({ message: 'Protection level must be light, standard, or heavy' })
+});
+
+export const imageProcessingOptionsSchema = z.object({
+  blurIntensity: z.number().min(0).max(5).optional().default(1),
+  noiseIntensity: z.number().min(0).max(50).optional().default(10),
+  resizePercent: z.number().min(50).max(100).optional().default(90),
+  cropPercent: z.number().min(0).max(15).optional().default(0),
+  quality: z.number().min(60).max(100).optional().default(88)
+});
+
+export const uploadRequestSchema = z.object({
+  protectionLevel: protectionLevelEnum.optional().default('standard'),
+  customSettings: imageProcessingOptionsSchema.optional(),
+  useCustom: z.boolean().optional().default(false),
+  addWatermark: z.boolean().optional()
+});
+
+export type ProtectionLevel = z.infer<typeof protectionLevelEnum>;
+@@ -255,59 +256,61 @@ export const createDefaultRules = (): RedditCommunityRuleSet => ({
+  watermarksAllowed: null,
+  sellingAllowed: 'unknown',
+  titleRules: [],
+  contentRules: [],
+  verificationRequired: false,
+  requiresApproval: false,
+  nsfwRequired: false,
+  maxPostsPerDay: null,
+  cooldownHours: null
+});
+
+export const redditCommunities = pgTable("reddit_communities", {
+  id: varchar("id", { length: 100 }).primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  displayName: varchar("display_name", { length: 255 }).notNull(),
+  members: integer("members").notNull(),
+  engagementRate: integer("engagement_rate").notNull(),
+  category: varchar("category", { length: 50 }).notNull(),
+  verificationRequired: boolean("verification_required").default(false).notNull(),
+  promotionAllowed: varchar("promotion_allowed", { length: 20 }).default("no").notNull(),
+  postingLimits: jsonb("posting_limits"),
+  rules: jsonb("rules").$type<RedditCommunityRuleSet>(),
+  bestPostingTimes: jsonb("best_posting_times").$type<string[]>(),
+  averageUpvotes: integer("average_upvotes"),
+  successProbability: integer("success_probability"),
+  growthTrend: varchar("growth_trend", { length: 20 }),
+  growthTrend: varchar("growth_trend", { length: 20 }).$type<GrowthTrend | null>(),
+  modActivity: varchar("mod_activity", { length: 20 }),
+  description: text("description"),
+  tags: jsonb("tags").$type<string[]>(),
+  competitionLevel: varchar("competition_level", { length: 20 })
+});
+export type RedditCommunity = typeof redditCommunities.$inferSelect;
+export type InsertRedditCommunity = typeof redditCommunities.$inferInsert;
+export const insertRedditCommunitySchema = createInsertSchema(redditCommunities);
+export const insertRedditCommunitySchema = createInsertSchema(redditCommunities, {
+  growthTrend: z.enum(GROWTH_TRENDS).nullable().optional()
+});
+
+export const subscriptions = pgTable("subscriptions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).unique().notNull(),
+  status: varchar("status", { length: 20 }).notNull(), // "active" | "past_due" | "canceled"
+  plan: varchar("plan", { length: 20 }).notNull(), // "free" | "pro"
+  priceCents: integer("price_cents").notNull(),
+  processor: varchar("processor", { length: 20 }).notNull(), // "ccbill" | "segpay" | "epoch" | "crypto"
+  processorSubId: varchar("processor_sub_id", { length: 255 }),
+  currentPeriodEnd: timestamp("current_period_end"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const invoices = pgTable("invoices", {
+  id: serial("id").primaryKey(),
+  subscriptionId: integer("subscription_id").references(() => subscriptions.id).notNull(),
+  amountCents: integer("amount_cents").notNull(),
+  status: varchar("status", { length: 20 }).notNull(), // "paid" | "failed" | "refunded"
+  processor: varchar("processor", { length: 20 }).notNull(),
+  processorRef: varchar("processor_ref", { length: 255 }),
+  referralCodeId: integer("referral_code_id").references(() => referralCodes.id), // Phase 5: Referral simplification
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+tests/unit/server/reddit-communities.rules.test.ts
++186
+-125
+
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const mockDbState = vi.hoisted(() => ({ rows: [] as unknown[] }));
+
+vi.mock('../../../server/db.js', () => {
+  const select = vi.fn(() => ({
+    from: () => ({
+      where: () => ({
+        limit: () => Promise.resolve(mockDbState.rows),
+      }),
+    }),
+  }));
+
+  return {
+    db: {
+      select,
+    },
+  };
+});
+
+vi.mock('../../../server/lib/policy-linter.js', () => ({
+  lintCaption: vi.fn().mockResolvedValue({ warnings: [] }),
+}));
+
+vi.mock('@shared/schema', async () => {
+  const actual = await vi.importActual<typeof import('../../../shared/schema.ts')>(
+    '../../../shared/schema.ts'
+  );
+  return actual;
+});
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+describe('Reddit Communities Rules Unit Tests', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockDbState.rows = [];
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  describe('Seed data verification', () => {
+    it('should load both seed datasets and verify structured rule content', async () => {
+      const projectRoot = path.resolve(__dirname, '../../../');
+      
+      // Load both seed files
+      const regularSeedPath = path.join(projectRoot, 'server/seeds/reddit-communities.json');
+      const fullSeedPath = path.join(projectRoot, 'server/seeds/reddit-communities-full.json');
+      
+      expect(fs.existsSync(regularSeedPath)).toBe(true);
+      expect(fs.existsSync(fullSeedPath)).toBe(true);
+      
+      // Parse seed data
+      const regularSeed = JSON.parse(fs.readFileSync(regularSeedPath, 'utf8'));
+      const fullSeed = JSON.parse(fs.readFileSync(fullSeedPath, 'utf8'));
+      
+      expect(Array.isArray(regularSeed)).toBe(true);
+      expect(Array.isArray(fullSeed)).toBe(true);
+      expect(regularSeed.length).toBeGreaterThan(0);
+      expect(fullSeed.length).toBeGreaterThan(0);
+@@ -61,205 +91,236 @@ describe('Reddit Communities Rules Unit Tests', () => {
+      
+      // Test specific communities from different seeds
+      const gonewild = fullSeed.find((c: any) => c.id === 'gonewild');
+      expect(gonewild).toBeDefined();
+      expect(gonewild.rules.sellingAllowed).toBe('not_allowed');
+      expect(gonewild.rules.watermarksAllowed).toBe(false);
+      expect(gonewild.rules.verificationRequired).toBe(true);
+      
+      const onlyfans = fullSeed.find((c: any) => c.id === 'onlyfans');
+      expect(onlyfans).toBeDefined();
+      expect(onlyfans.rules.sellingAllowed).toBe('allowed');
+      expect(onlyfans.rules.watermarksAllowed).toBe(true);
+      
+      const fitness = regularSeed.find((c: any) => c.id === 'fitness');
+      expect(fitness).toBeDefined();
+      expect(fitness.rules.minKarma).toBe(100);
+      expect(fitness.rules.minAccountAge).toBe(30);
+      expect(fitness.rules.sellingAllowed).toBe('not_allowed');
+      expect(fitness.rules.watermarksAllowed).toBe(false);
+    });
+
+  });
+
+  describe('Rule processing and normalization', () => {
+    it('should handle legacy array-based rules with backward compatibility', async () => {
+      // Create a simple test module to access normalizeRules function
+      const testModule = `
+        import { normalizeRules } from '../../../server/reddit-communities.ts';
+        
+        export function testNormalizeRules(rawRules, promotionAllowed, category) {
+          return normalizeRules(rawRules, promotionAllowed, category);
+        }
+      `;
+      
+      // Write temporary test file
+      const tempTestPath = path.join(__dirname, '../../../temp-test-normalizer.js');
+      fs.writeFileSync(tempTestPath, testModule);
+      
+      try {
+        const { testNormalizeRules } = await import('../../../temp-test-normalizer.js');
+        
+        // Test legacy array-based rules
+        const legacyRules = ['Verification required', 'No selling', 'OC only'];
+        const result = testNormalizeRules(legacyRules, 'no', 'gonewild');
+        
+        expect(result.contentRules).toEqual(legacyRules);
+        expect(result.sellingAllowed).toBe('not_allowed'); // Inferred from promotion='no'
+        expect(result.titleRules).toEqual([]);
+        expect(result.verificationRequired).toBe(false); // Default value
+        
+        // Test empty legacy rules
+        const emptyResult = testNormalizeRules([], 'yes', 'selling');
+        expect(emptyResult.contentRules).toEqual([]);
+        expect(emptyResult.sellingAllowed).toBe('allowed'); // Inferred from promotion='yes'
+        
+        // Test null rules
+        const nullResult = testNormalizeRules(null, 'limited', 'general');
+        expect(nullResult.sellingAllowed).toBe('unknown'); // Default value
+        expect(nullResult.contentRules).toEqual([]);
+        
+      } finally {
+        // Cleanup temp file
+        if (fs.existsSync(tempTestPath)) {
+          fs.unlinkSync(tempTestPath);
+        }
+      }
+      const { normalizeRules } = await import('../../../server/reddit-communities.ts');
+
+      const legacyRules = ['Verification required', 'No selling', 'OC only'];
+      const result = normalizeRules(legacyRules, 'no', 'gonewild');
+
+      expect(result.contentRules).toEqual(legacyRules);
+      expect(result.sellingAllowed).toBe('not_allowed');
+      expect(result.titleRules).toEqual([]);
+      expect(result.verificationRequired).toBe(false);
+
+      const emptyResult = normalizeRules([], 'yes', 'selling');
+      expect(emptyResult.contentRules).toEqual([]);
+      expect(emptyResult.sellingAllowed).toBe('allowed');
+
+      const nullResult = normalizeRules(null, 'limited', 'general');
+      expect(nullResult.sellingAllowed).toBe('unknown');
+      expect(nullResult.contentRules).toEqual([]);
+    });
+
+    it('should properly infer selling policy from promotion flags and category', async () => {
+      // Test via the normalizeRules function with unknown selling policy
+      const testModule = `
+        import { normalizeRules } from '../../../server/reddit-communities.ts';
+        
+        export function testSellingPolicyInference(promotionAllowed, category) {
+          const rules = { sellingAllowed: 'unknown' };
+          return normalizeRules(rules, promotionAllowed, category);
+        }
+      `;
+      
+      const tempTestPath = path.join(__dirname, '../../../temp-test-policy.js');
+      fs.writeFileSync(tempTestPath, testModule);
+      
+      try {
+        const { testSellingPolicyInference } = await import('../../../temp-test-policy.js');
+        
+        // Test various promotion/category combinations
+        expect(testSellingPolicyInference('yes', 'general').sellingAllowed).toBe('allowed');
+        expect(testSellingPolicyInference('no', 'general').sellingAllowed).toBe('not_allowed');
+        expect(testSellingPolicyInference('limited', 'general').sellingAllowed).toBe('limited');
+        expect(testSellingPolicyInference('subtle', 'general').sellingAllowed).toBe('limited');
+        expect(testSellingPolicyInference('unknown', 'selling').sellingAllowed).toBe('allowed');
+        expect(testSellingPolicyInference('unknown', 'gonewild').sellingAllowed).toBe('unknown');
+        
+      } finally {
+        // Cleanup temp file
+        if (fs.existsSync(tempTestPath)) {
+          fs.unlinkSync(tempTestPath);
+        }
+      }
+      const { normalizeRules } = await import('../../../server/reddit-communities.ts');
+
+      const infer = (promotionAllowed: string, category: string) =>
+        normalizeRules({ sellingAllowed: 'unknown' }, promotionAllowed, category).sellingAllowed;
+
+      expect(infer('yes', 'general')).toBe('allowed');
+      expect(infer('no', 'general')).toBe('not_allowed');
+      expect(infer('limited', 'general')).toBe('limited');
+      expect(infer('subtle', 'general')).toBe('limited');
+      expect(infer('unknown', 'selling')).toBe('allowed');
+      expect(infer('unknown', 'gonewild')).toBe('unknown');
+    });
+
+    it('should derive insights warnings from structured rules', async () => {
+      // Test deriving insights from rule combinations
+      const { normalizeRules } = await import('../../../server/reddit-communities.ts');
+
+      const testCommunity = {
+        id: 'test_community',
+        name: 'test_community',
+        displayName: 'Test Community',
+        category: 'test',
+        promotionAllowed: 'limited',
+        successProbability: 60,
+        growthTrend: 'stable',
+        competitionLevel: 'medium',
+        bestPostingTimes: ['morning', 'evening'],
+        rules: {
+          minKarma: 500,
+          minAccountAge: 30,
+          watermarksAllowed: false,
+          sellingAllowed: 'limited',
+          titleRules: ['No clickbait', 'Include category'],
+          contentRules: ['High quality only', 'No spam'],
+          verificationRequired: true,
+          requiresApproval: true,
+          nsfwRequired: false,
+          maxPostsPerDay: 1,
+          cooldownHours: 48
+        }
+      };
+
+      // Import the normalizeRules function to test insights derivation
+      const testModule = `
+        import { normalizeRules } from '../../../server/reddit-communities.ts';
+        
+        export function testInsightsFromRules(community) {
+          const rules = normalizeRules(community.rules, community.promotionAllowed, community.category);
+          const warnings = [];
+          
+          // Replicate the warning logic from getCommunityInsights
+          if (rules.verificationRequired) warnings.push('Verification required - complete r/GetVerified');
+          if (rules.sellingAllowed === 'not_allowed') warnings.push('No promotion/selling allowed - content only');
+          if (rules.sellingAllowed === 'limited') warnings.push('Limited promotion allowed - check specific rules');
+          if (rules.watermarksAllowed === false) warnings.push('Watermarks not allowed - use clean images');
+          if (rules.minKarma && rules.minKarma > 50) warnings.push(\`Requires \${rules.minKarma}+ karma\`);
+          if (rules.minAccountAge && rules.minAccountAge > 7) warnings.push(\`Account must be \${rules.minAccountAge}+ days old\`);
+          if (rules.maxPostsPerDay && rules.maxPostsPerDay <= 1) warnings.push(\`Limited to \${rules.maxPostsPerDay} post\${rules.maxPostsPerDay === 1 ? '' : 's'} per day\`);
+          if (rules.cooldownHours && rules.cooldownHours >= 24) warnings.push(\`\${rules.cooldownHours}h cooldown between posts\`);
+          if (rules.requiresApproval) warnings.push('Posts require mod approval - expect delays');
+          
+          return { rules, warnings };
+        }
+      `;
+      
+      const tempTestPath = path.join(__dirname, '../../../temp-test-insights.js');
+      fs.writeFileSync(tempTestPath, testModule);
+      
+      try {
+        const { testInsightsFromRules } = await import('../../../temp-test-insights.js');
+        
+        const result = testInsightsFromRules(testCommunity);
+        
+        // Verify warnings are generated correctly
+        expect(result.warnings).toContain('Verification required - complete r/GetVerified');
+        expect(result.warnings).toContain('Limited promotion allowed - check specific rules');
+        expect(result.warnings).toContain('Watermarks not allowed - use clean images');
+        expect(result.warnings).toContain('Requires 500+ karma');
+        expect(result.warnings).toContain('Account must be 30+ days old');
+        expect(result.warnings).toContain('Limited to 1 post per day');
+        expect(result.warnings).toContain('48h cooldown between posts');
+        expect(result.warnings).toContain('Posts require mod approval - expect delays');
+        
+        // Verify structured rules are properly normalized
+        expect(result.rules.sellingAllowed).toBe('limited');
+        expect(result.rules.watermarksAllowed).toBe(false);
+        expect(result.rules.verificationRequired).toBe(true);
+        
+      } finally {
+        // Cleanup temp file
+        if (fs.existsSync(tempTestPath)) {
+          fs.unlinkSync(tempTestPath);
+        }
+      }
+      const rules = normalizeRules(testCommunity.rules, testCommunity.promotionAllowed, testCommunity.category);
+      const warnings: string[] = [];
+
+      if (rules.verificationRequired) warnings.push('Verification required - complete r/GetVerified');
+      if (rules.sellingAllowed === 'not_allowed') warnings.push('No promotion/selling allowed - content only');
+      if (rules.sellingAllowed === 'limited') warnings.push('Limited promotion allowed - check specific rules');
+      if (rules.watermarksAllowed === false) warnings.push('Watermarks not allowed - use clean images');
+      if (rules.minKarma && rules.minKarma > 50) warnings.push(`Requires ${rules.minKarma}+ karma`);
+      if (rules.minAccountAge && rules.minAccountAge > 7) warnings.push(`Account must be ${rules.minAccountAge}+ days old`);
+      if (rules.maxPostsPerDay && rules.maxPostsPerDay <= 1) warnings.push(`Limited to ${rules.maxPostsPerDay} post${rules.maxPostsPerDay === 1 ? '' : 's'} per day`);
+      if (rules.cooldownHours && rules.cooldownHours >= 24) warnings.push(`${rules.cooldownHours}h cooldown between posts`);
+      if (rules.requiresApproval) warnings.push('Posts require mod approval - expect delays');
+
+      expect(warnings).toContain('Verification required - complete r/GetVerified');
+      expect(warnings).toContain('Limited promotion allowed - check specific rules');
+      expect(warnings).toContain('Watermarks not allowed - use clean images');
+      expect(warnings).toContain('Requires 500+ karma');
+      expect(warnings).toContain('Account must be 30+ days old');
+      expect(warnings).toContain('Limited to 1 post per day');
+      expect(warnings).toContain('48h cooldown between posts');
+      expect(warnings).toContain('Posts require mod approval - expect delays');
+
+      expect(rules.sellingAllowed).toBe('limited');
+      expect(rules.watermarksAllowed).toBe(false);
+      expect(rules.verificationRequired).toBe(true);
+    });
+
+  });
+
+  describe('Growth trend insights heuristics', () => {
+    interface MockCommunityRow {
+      id: string;
+      name: string;
+      displayName: string;
+      members: number;
+      engagementRate: number;
+      category: string;
+      verificationRequired: boolean;
+      promotionAllowed: string;
+      postingLimits: null;
+      rules: unknown;
+      bestPostingTimes: string[] | null;
+      averageUpvotes: number | null;
+      successProbability: number | null;
+      growthTrend: string | null;
+      modActivity: string | null;
+      description: string;
+      tags: string[] | null;
+      competitionLevel: string | null;
+    }
+
+    const baseCommunity: MockCommunityRow = {
+      id: 'trend_base',
+      name: 'trend_base',
+      displayName: 'Trend Base',
+      members: 150000,
+      engagementRate: 12,
+      category: 'general',
+      verificationRequired: false,
+      promotionAllowed: 'limited',
+      postingLimits: null,
+      rules: null,
+      bestPostingTimes: ['morning'],
+      averageUpvotes: 120,
+      successProbability: 70,
+      growthTrend: 'stable',
+      modActivity: 'medium',
+      description: 'Test community',
+      tags: null,
+      competitionLevel: 'medium',
+    };
+
+    const loadInsights = async (trend: string | null, overrides: Partial<MockCommunityRow> = {}) => {
+      const { getCommunityInsights } = await import('../../../server/reddit-communities.ts');
+      const community: MockCommunityRow = {
+        ...baseCommunity,
+        ...overrides,
+        id: overrides.id ?? baseCommunity.id,
+        name: overrides.name ?? baseCommunity.name,
+        displayName: overrides.displayName ?? baseCommunity.displayName,
+        growthTrend: trend,
+      };
+      mockDbState.rows = [community];
+      return getCommunityInsights(community.id);
+    };
+
+    const growthTip = 'Growing community - get in early';
+    const stableTip = 'Stable community - consistent engagement levels';
+    const declineWarning = 'Declining engagement - performance may be lower';
+
+    it.each<[string]>([
+      ['up'],
+      ['growing'],
+    ])('treats %s as an upward trend', async (trend) => {
+      const insights = await loadInsights(trend);
+      expect(insights.successTips).toContain(growthTip);
+      expect(insights.successTips).not.toContain(stableTip);
+      expect(insights.warnings).not.toContain(declineWarning);
+    });
+
+    it.each<[string]>([
+      ['stable'],
+      ['steady'],
+    ])('treats %s as a stable trend', async (trend) => {
+      const insights = await loadInsights(trend);
+      expect(insights.successTips).toContain(stableTip);
+      expect(insights.successTips).not.toContain(growthTip);
+      expect(insights.warnings).not.toContain(declineWarning);
+    });
+
+    it.each<[string]>([
+      ['down'],
+      ['Declining'],
+    ])('treats %s as a declining trend', async (trend) => {
+      const insights = await loadInsights(trend);
+      expect(insights.warnings).toContain(declineWarning);
+      expect(insights.successTips).not.toContain(growthTip);
+      expect(insights.successTips).not.toContain(stableTip);
+    });
+
+    it('omits growth messaging when trend is unknown', async () => {
+      const insights = await loadInsights(null);
+      expect(insights.successTips).not.toContain(growthTip);
+      expect(insights.successTips).not.toContain(stableTip);
+      expect(insights.warnings).not.toContain(declineWarning);
+    });
+  });
+
+  describe('Schema validation', () => {
+    it('should validate RedditCommunityRuleSet schema correctly', async () => {
+      // Import schema components
+      const { redditCommunityRuleSetSchema, createDefaultRules } = await import('../../../shared/schema.ts');
+      
+      // Test valid rule set
+      const validRules = {
+        minKarma: 100,
+        minAccountAge: 30,
+        watermarksAllowed: false,
+        sellingAllowed: 'not_allowed' as const,
+        titleRules: ['No clickbait'],
+        contentRules: ['High quality only'],
+        verificationRequired: true,
+        requiresApproval: false,
+        nsfwRequired: true,
+        maxPostsPerDay: 2,
+        cooldownHours: 24
+      };
+      
+      const result = redditCommunityRuleSetSchema.parse(validRules);
+      expect(result).toMatchObject(validRules);
+@@ -280,26 +341,26 @@ describe('Reddit Communities Rules Unit Tests', () => {
+        verificationRequired: false,
+        requiresApproval: false,
+        nsfwRequired: false,
+        maxPostsPerDay: null,
+        cooldownHours: null
+      });
+    });
+
+    it('should validate sellingAllowed enum values', async () => {
+      const { redditCommunityRuleSetSchema } = await import('../../../shared/schema.ts');
+      
+      const validValues = ['allowed', 'limited', 'not_allowed', 'unknown'];
+      
+      for (const value of validValues) {
+        const rules = { sellingAllowed: value };
+        const result = redditCommunityRuleSetSchema.parse(rules);
+        expect(result.sellingAllowed).toBe(value);
+      }
+      
+      // Test invalid value
+      expect(() => {
+        redditCommunityRuleSetSchema.parse({ sellingAllowed: 'invalid' });
+      }).toThrow();
+    });
+  });
+});
+});

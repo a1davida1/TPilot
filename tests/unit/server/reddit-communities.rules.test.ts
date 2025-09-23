@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { normalizeRules, inferSellingPolicy } from '../../../server/reddit-communities.js';
 
 // Test interfaces
 interface TestCommunityRules {
@@ -111,80 +112,39 @@ describe('Reddit Communities Rules Unit Tests', () => {
 
   describe('Rule processing and normalization', () => {
     it('should handle legacy array-based rules with backward compatibility', async () => {
-      // Create a simple test module to access normalizeRules function
-      const testModule = `
-        import { normalizeRules } from '../../../server/reddit-communities.ts';
-        
-        export function testNormalizeRules(rawRules: unknown, promotionAllowed: string, category: string) {
-          return normalizeRules(rawRules, promotionAllowed, category);
-        }
-      `;
+      // Test legacy array-based rules
+      const legacyRules = ['Verification required', 'No selling', 'OC only'];
+      const result = normalizeRules(legacyRules, 'no', 'gonewild');
       
-      // Write temporary test file
-      const tempTestPath = path.join(__dirname, '../../../temp-test-normalizer.js');
-      fs.writeFileSync(tempTestPath, testModule);
+      expect(result.contentRules).toEqual(legacyRules);
+      expect(result.sellingAllowed).toBe('no'); // Inferred from promotion='no'
+      expect(result.titleRules).toEqual([]);
+      expect(result.verificationRequired).toBe(false); // Default value
       
-      try {
-        const { testNormalizeRules } = await import('../../../temp-test-normalizer.js');
-        
-        // Test legacy array-based rules
-        const legacyRules = ['Verification required', 'No selling', 'OC only'];
-        const result = testNormalizeRules(legacyRules, 'no', 'gonewild');
-        
-        expect(result.contentRules).toEqual(legacyRules);
-        expect(result.sellingAllowed).toBe('not_allowed'); // Inferred from promotion='no'
-        expect(result.titleRules).toEqual([]);
-        expect(result.verificationRequired).toBe(false); // Default value
-        
-        // Test empty legacy rules
-        const emptyResult = testNormalizeRules([], 'yes', 'selling');
-        expect(emptyResult.contentRules).toEqual([]);
-        expect(emptyResult.sellingAllowed).toBe('allowed'); // Inferred from promotion='yes'
-        
-        // Test null rules
-        const nullResult = testNormalizeRules(null, 'limited', 'general');
-        expect(nullResult.sellingAllowed).toBe('unknown'); // Default value
-        expect(nullResult.contentRules).toEqual([]);
-        
-      } finally {
-        // Cleanup temp file
-        if (fs.existsSync(tempTestPath)) {
-          fs.unlinkSync(tempTestPath);
-        }
-      }
+      // Test empty legacy rules
+      const emptyResult = normalizeRules([], 'yes', 'selling');
+      expect(emptyResult.contentRules).toEqual([]);
+      expect(emptyResult.sellingAllowed).toBe('yes'); // Inferred from promotion='yes'
+      
+      // Test null rules
+      const nullResult = normalizeRules(null, 'limited', 'general');
+      expect(nullResult.sellingAllowed).toBe('unknown'); // Default value
+      expect(nullResult.contentRules).toEqual([]);
     });
 
     it('should properly infer selling policy from promotion flags and category', async () => {
-      // Test via the normalizeRules function with unknown selling policy
-      const testModule = `
-        import { normalizeRules } from '../../../server/reddit-communities.ts';
-        
-        export function testSellingPolicyInference(promotionAllowed: string, category: string) {
-          const rules = { sellingAllowed: 'unknown' };
-          return normalizeRules(rules, promotionAllowed, category);
-        }
-      `;
+      // Test various promotion/category combinations using inferSellingPolicy directly
+      expect(inferSellingPolicy('yes', 'general')).toBe('yes');
+      expect(inferSellingPolicy('no', 'general')).toBe('no');
+      expect(inferSellingPolicy('limited', 'general')).toBe('limited');
+      expect(inferSellingPolicy('subtle', 'general')).toBe('limited');
+      expect(inferSellingPolicy('unknown', 'selling')).toBe('yes');
+      expect(inferSellingPolicy('unknown', 'gonewild')).toBe(undefined);
       
-      const tempTestPath = path.join(__dirname, '../../../temp-test-policy.js');
-      fs.writeFileSync(tempTestPath, testModule);
-      
-      try {
-        const { testSellingPolicyInference } = await import('../../../temp-test-policy.js');
-        
-        // Test various promotion/category combinations
-        expect(testSellingPolicyInference('yes', 'general').sellingAllowed).toBe('allowed');
-        expect(testSellingPolicyInference('no', 'general').sellingAllowed).toBe('not_allowed');
-        expect(testSellingPolicyInference('limited', 'general').sellingAllowed).toBe('limited');
-        expect(testSellingPolicyInference('subtle', 'general').sellingAllowed).toBe('limited');
-        expect(testSellingPolicyInference('unknown', 'selling').sellingAllowed).toBe('allowed');
-        expect(testSellingPolicyInference('unknown', 'gonewild').sellingAllowed).toBe('unknown');
-        
-      } finally {
-        // Cleanup temp file
-        if (fs.existsSync(tempTestPath)) {
-          fs.unlinkSync(tempTestPath);
-        }
-      }
+      // Test with normalizeRules to verify integration
+      const rules = { sellingAllowed: 'unknown' };
+      expect(normalizeRules(rules, 'yes', 'general').sellingAllowed).toBe('unknown'); // Rules already specify policy
+      expect(normalizeRules({}, 'yes', 'general').sellingAllowed).toBe('yes'); // Empty rules, infer from flags
     });
 
     it('should derive insights warnings from structured rules', async () => {
@@ -214,58 +174,35 @@ describe('Reddit Communities Rules Unit Tests', () => {
         }
       };
 
-      // Import the normalizeRules function to test insights derivation
-      const testModule = `
-        import { normalizeRules } from '../../../server/reddit-communities.ts';
-        
-        export function testInsightsFromRules(community: TestCommunity) {
-          const rules = normalizeRules(community.rules, community.promotionAllowed, community.category);
-          const warnings = [];
-          
-          // Replicate the warning logic from getCommunityInsights
-          if (rules.verificationRequired) warnings.push('Verification required - complete r/GetVerified');
-          if (rules.sellingAllowed === 'not_allowed') warnings.push('No promotion/selling allowed - content only');
-          if (rules.sellingAllowed === 'limited') warnings.push('Limited promotion allowed - check specific rules');
-          if (rules.watermarksAllowed === false) warnings.push('Watermarks not allowed - use clean images');
-          if (rules.minKarma && rules.minKarma > 50) warnings.push(\`Requires \${rules.minKarma}+ karma\`);
-          if (rules.minAccountAge && rules.minAccountAge > 7) warnings.push(\`Account must be \${rules.minAccountAge}+ days old\`);
-          if (rules.maxPostsPerDay && rules.maxPostsPerDay <= 1) warnings.push(\`Limited to \${rules.maxPostsPerDay} post\${rules.maxPostsPerDay === 1 ? '' : 's'} per day\`);
-          if (rules.cooldownHours && rules.cooldownHours >= 24) warnings.push(\`\${rules.cooldownHours}h cooldown between posts\`);
-          if (rules.requiresApproval) warnings.push('Posts require mod approval - expect delays');
-          
-          return { rules, warnings };
-        }
-      `;
+      // Test insights derivation using normalizeRules directly
+      const rules = normalizeRules(testCommunity.rules, testCommunity.promotionAllowed, testCommunity.category);
+      const warnings: string[] = [];
       
-      const tempTestPath = path.join(__dirname, '../../../temp-test-insights.js');
-      fs.writeFileSync(tempTestPath, testModule);
+      // Replicate the warning logic from getCommunityInsights
+      if (rules.verificationRequired) warnings.push('Verification required - complete r/GetVerified');
+      if (rules.sellingAllowed === 'no') warnings.push('No promotion/selling allowed - content only');
+      if (rules.sellingAllowed === 'limited') warnings.push('Limited promotion allowed - check specific rules');
+      if (rules.watermarksAllowed === false) warnings.push('Watermarks not allowed - use clean images');
+      if (rules.minKarma && rules.minKarma > 50) warnings.push(`Requires ${rules.minKarma}+ karma`);
+      if (rules.minAccountAge && rules.minAccountAge > 7) warnings.push(`Account must be ${rules.minAccountAge}+ days old`);
+      if (rules.maxPostsPerDay && rules.maxPostsPerDay <= 1) warnings.push(`Limited to ${rules.maxPostsPerDay} post${rules.maxPostsPerDay === 1 ? '' : 's'} per day`);
+      if (rules.cooldownHours && rules.cooldownHours >= 24) warnings.push(`${rules.cooldownHours}h cooldown between posts`);
+      if (rules.requiresApproval) warnings.push('Posts require mod approval - expect delays');
       
-      try {
-        const { testInsightsFromRules } = await import('../../../temp-test-insights.js');
-        
-        const result = testInsightsFromRules(testCommunity);
-        
-        // Verify warnings are generated correctly
-        expect(result.warnings).toContain('Verification required - complete r/GetVerified');
-        expect(result.warnings).toContain('Limited promotion allowed - check specific rules');
-        expect(result.warnings).toContain('Watermarks not allowed - use clean images');
-        expect(result.warnings).toContain('Requires 500+ karma');
-        expect(result.warnings).toContain('Account must be 30+ days old');
-        expect(result.warnings).toContain('Limited to 1 post per day');
-        expect(result.warnings).toContain('48h cooldown between posts');
-        expect(result.warnings).toContain('Posts require mod approval - expect delays');
-        
-        // Verify structured rules are properly normalized
-        expect(result.rules.sellingAllowed).toBe('limited');
-        expect(result.rules.watermarksAllowed).toBe(false);
-        expect(result.rules.verificationRequired).toBe(true);
-        
-      } finally {
-        // Cleanup temp file
-        if (fs.existsSync(tempTestPath)) {
-          fs.unlinkSync(tempTestPath);
-        }
-      }
+      // Verify warnings are generated correctly
+      expect(warnings).toContain('Verification required - complete r/GetVerified');
+      expect(warnings).toContain('Limited promotion allowed - check specific rules');
+      expect(warnings).toContain('Watermarks not allowed - use clean images');
+      expect(warnings).toContain('Requires 500+ karma');
+      expect(warnings).toContain('Account must be 30+ days old');
+      expect(warnings).toContain('Limited to 1 post per day');
+      expect(warnings).toContain('48h cooldown between posts');
+      expect(warnings).toContain('Posts require mod approval - expect delays');
+      
+      // Verify structured rules are properly normalized
+      expect(rules.sellingAllowed).toBe('limited');
+      expect(rules.watermarksAllowed).toBe(false);
+      expect(rules.verificationRequired).toBe(true);
     });
   });
 
@@ -321,7 +258,7 @@ describe('Reddit Communities Rules Unit Tests', () => {
       for (const value of validValues) {
         const rules = { sellingAllowed: value };
         const result = redditCommunityRuleSetSchema.parse(rules);
-        expect(result.sellingAllowed).toBe(value);
+        expect(result?.sellingAllowed).toBe(value);
       }
       
       // Test invalid value

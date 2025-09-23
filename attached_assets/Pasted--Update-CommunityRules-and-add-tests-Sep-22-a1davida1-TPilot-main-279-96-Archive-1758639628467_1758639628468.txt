@@ -1,0 +1,1622 @@
+
+Update CommunityRules and add tests
+Sep 22
+·
+a1davida1/TPilot
+·
+main
+·
++279
+-96
+
+Archive
+
+Share
+
+Create PR
+
+
+1. Update `CommunityRules` in `client/src/hooks/use-admin-communities.ts` (and any related payload builders) so `sellingAllowed` uses the same `'allowed' | 'limited' | 'not_allowed' | 'unknown'` union exported by `shared/schema.ts`.
+2. Replace boolean truthiness checks in `client/src/components/admin/admin-communities-panel.tsx` (both `RuleSummary` and the expanded table) and `client/src/components/reddit-communities.tsx` with explicit string handling so “limited” and “not\_allowed” display the correct badges.
+3. Add focused unit tests in `client/src/components/__tests__/admin-communities-panel.test.tsx` (and, if needed, the Reddit communities table tests) covering the various enum values to lock the behavior down.
+Copy
+Summary
+
+Exposed RedditCommunitySellingPolicy from the shared schema and reused it for client-side rule definitions so selling policies rely on a single canonical enum.
+
+Reworked the admin communities panel to store selling selections with the enum, translate them into descriptive rule badges, and extend the form selector with limited/not_allowed/unknown options.
+
+Updated the Reddit communities list and posting workflow to format selling policies via shared metadata, showing nuanced badges, eligibility warnings, and summary chips across the UI.
+
+Added focused tests to lock down selling policy permutations for the admin rule summaries and Reddit posting fixtures.
+
+Testing
+
+❌ npm run lint -- --quiet *(fails: existing parse error in client/src/components/enhanced-ai-generator.tsx)*
+
+❌ npm test *(fails: numerous pre-existing suite errors; run aborted after repeated failures)*
+
+
+Files (8)
+
+client/src/components/__tests__/admin-communities-panel.test.tsx
++53
+-2
+
+client/src/components/admin/admin-communities-panel.tsx
++20
+-18
+
+client/src/components/reddit-communities.tsx
++33
+-9
+
+client/src/hooks/use-admin-communities.ts
++2
+-1
+
+client/src/pages/__tests__/reddit-posting.test.tsx
++3
+-3
+
+client/src/pages/reddit-posting.tsx
++164
+-62
+
+client/src/types/reddit.ts
++3
+-1
+
+shared/schema.ts
++1
+-0
+
+
+
+Ask
+
+Code
+Diff
+Logs
+
+client/src/components/__tests__/admin-communities-panel.test.tsx
++53
+-2
+
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AdminCommunitiesPanel } from '../admin/admin-communities-panel';
+import { apiRequest } from '@/lib/queryClient';
+
+// Mock the API request function
+vi.mock('@/lib/queryClient', () => ({
+  apiRequest: vi.fn(),
+}));
+
+// Mock toast hook
+vi.mock('@/hooks/use-toast', () => ({
+  useToast: () => ({
+    toast: vi.fn(),
+  }),
+}));
+
+const mockApiRequest = vi.mocked(apiRequest);
+
+// Mock communities data
+const mockCommunities = [
+  {
+    id: 'test_community_1',
+    name: 'gonewild',
+    displayName: 'Gone Wild',
+    category: 'nsfw',
+    members: 500000,
+    engagementRate: 0.05,
+    verificationRequired: true,
+    promotionAllowed: 'limited' as const,
+    postingLimits: { perDay: 1, cooldownHours: 24 },
+    rules: {
+      minKarma: 100,
+      minAccountAge: 30,
+      watermarksAllowed: false,
+      sellingAllowed: false,
+      sellingAllowed: 'not_allowed' as const,
+      titleRules: ['Must include age', 'No clickbait'],
+      contentRules: ['OC only', 'High quality'],
+    },
+    bestPostingTimes: ['morning', 'evening'],
+    averageUpvotes: 150,
+    successProbability: 75.5,
+    growthTrend: 'stable' as const,
+    modActivity: 'high' as const,
+    description: 'Adult content community',
+    tags: ['adult', 'verification'],
+    competitionLevel: 'high' as const,
+  },
+  {
+    id: 'test_community_2',
+    name: 'photography',
+    displayName: 'Photography',
+    category: 'creative',
+    members: 250000,
+    engagementRate: 0.03,
+    verificationRequired: false,
+    promotionAllowed: 'yes' as const,
+    postingLimits: null,
+    rules: {
+      minKarma: 50,
+      contentRules: ['Original work only'],
+@@ -366,50 +366,101 @@ describe('AdminCommunitiesPanel', () => {
+      expect(screen.getByText('No watermarks')).toBeInTheDocument();
+      expect(screen.getByText('No selling')).toBeInTheDocument();
+      expect(screen.getByText('2 title rules')).toBeInTheDocument();
+      expect(screen.getByText('2 content rules')).toBeInTheDocument();
+    });
+
+    it('should show no rules message when community has no structured rules', async () => {
+      // Mock community without structured rules
+      const communitiesWithoutRules = [{
+        ...mockCommunities[0],
+        id: 'no_rules_community',
+        rules: null,
+      }];
+
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(communitiesWithoutRules),
+      });
+
+      renderWithProviders(<AdminCommunitiesPanel canManage={true} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('No structured rules')).toBeInTheDocument();
+      });
+    });
+
+    it('should render selling policy variants in rule summaries', async () => {
+      const base = mockCommunities[0];
+      const sellingVariants = [
+        {
+          ...base,
+          id: 'limited_selling',
+          name: 'limited_selling',
+          displayName: 'Limited Selling',
+          rules: {
+            ...base.rules,
+            sellingAllowed: 'limited' as const,
+          },
+        },
+        {
+          ...base,
+          id: 'allowed_selling',
+          name: 'allowed_selling',
+          displayName: 'Allowed Selling',
+          rules: {
+            ...base.rules,
+            sellingAllowed: 'allowed' as const,
+          },
+        },
+        {
+          ...base,
+          id: 'unknown_selling',
+          name: 'unknown_selling',
+          displayName: 'Unknown Selling',
+          rules: {
+            ...base.rules,
+            sellingAllowed: 'unknown' as const,
+          },
+        },
+      ];
+
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(sellingVariants),
+      });
+
+      renderWithProviders(<AdminCommunitiesPanel canManage={true} />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('row-community-limited_selling')).toBeInTheDocument();
+      });
+
+      expect(within(screen.getByTestId('row-community-limited_selling')).getByText('Limited selling')).toBeInTheDocument();
+      expect(within(screen.getByTestId('row-community-allowed_selling')).getByText('Selling allowed')).toBeInTheDocument();
+      expect(within(screen.getByTestId('row-community-unknown_selling')).getByText('Selling policy unknown')).toBeInTheDocument();
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('should display error message when API fails', async () => {
+      global.fetch = vi.fn().mockRejectedValue(new Error('API Error'));
+
+      renderWithProviders(<AdminCommunitiesPanel canManage={true} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Error Loading Communities')).toBeInTheDocument();
+        expect(screen.getByText('Failed to load community data. Please check your connection and try again.')).toBeInTheDocument();
+      });
+    });
+
+    it('should show loading state', () => {
+      // Mock a slow API response
+      global.fetch = vi.fn().mockImplementation(() => new Promise(() => {}));
+
+      renderWithProviders(<AdminCommunitiesPanel canManage={true} />);
+
+      expect(screen.getByText('Loading communities...')).toBeInTheDocument();
+    });
+
+    it('should show empty state when no communities match filters', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+client/src/components/admin/admin-communities-panel.tsx
++20
+-18
+
+@@ -13,73 +13,75 @@ import {
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import {
+  type AdminCommunity,
+  type CommunityPayload,
+  type PromotionPolicy,
+  type GrowthTrend,
+  type ActivityLevel,
+  type CompetitionLevel,
+  useAdminCommunities,
+  useCreateCommunity,
+  useUpdateCommunity,
+  useDeleteCommunity,
+} from '@/hooks/use-admin-communities';
+import { cn } from '@/lib/utils';
+import { CheckCircle, Edit2, Loader2, PlusCircle, ShieldAlert, Trash2 } from 'lucide-react';
+import type { RedditCommunitySellingPolicy } from '@shared/schema';
+
+interface AdminCommunitiesPanelProps {
+  canManage: boolean;
+}
+
+type TriState = 'unspecified' | 'allowed' | 'disallowed';
+type SellingRuleOption = 'unspecified' | RedditCommunitySellingPolicy;
+
+interface CommunityFormState {
+  id: string;
+  name: string;
+  displayName: string;
+  category: string;
+  members: string;
+  engagementRate: string;
+  verificationRequired: boolean;
+  promotionAllowed: PromotionPolicy;
+  postingLimitsPerDay: string;
+  postingLimitsPerWeek: string;
+  postingLimitsCooldownHours: string;
+  rulesMinKarma: string;
+  rulesMinAccountAge: string;
+  rulesWatermarksAllowed: TriState;
+  rulesSellingAllowed: TriState;
+  rulesSellingAllowed: SellingRuleOption;
+  rulesTitleRules: string;
+  rulesContentRules: string;
+  rulesLinkRestrictions: string;
+  bestPostingTimes: string;
+  averageUpvotes: string;
+  successProbability: string;
+  growthTrend: GrowthTrend;
+  modActivity: ActivityLevel;
+  description: string;
+  tags: string;
+  competitionLevel: CompetitionLevel;
+}
+
+const defaultFormState: CommunityFormState = {
+  id: '',
+  name: '',
+  displayName: '',
+  category: '',
+  members: '',
+  engagementRate: '',
+  verificationRequired: false,
+  promotionAllowed: 'limited',
+  postingLimitsPerDay: '',
+  postingLimitsPerWeek: '',
+  postingLimitsCooldownHours: '',
+@@ -118,56 +120,51 @@ function parseList(value: string): string[] | undefined {
+}
+
+function communityToForm(community: AdminCommunity): CommunityFormState {
+  return {
+    id: community.id,
+    name: community.name,
+    displayName: community.displayName,
+    category: community.category,
+    members: String(community.members ?? ''),
+    engagementRate: String(community.engagementRate ?? ''),
+    verificationRequired: community.verificationRequired,
+    promotionAllowed: community.promotionAllowed,
+    postingLimitsPerDay: community.postingLimits?.perDay ? String(community.postingLimits.perDay) : '',
+    postingLimitsPerWeek: community.postingLimits?.perWeek ? String(community.postingLimits.perWeek) : '',
+    postingLimitsCooldownHours: community.postingLimits?.cooldownHours
+      ? String(community.postingLimits.cooldownHours)
+      : '',
+    rulesMinKarma: community.rules?.minKarma !== undefined ? String(community.rules.minKarma) : '',
+    rulesMinAccountAge: community.rules?.minAccountAge !== undefined ? String(community.rules.minAccountAge) : '',
+    rulesWatermarksAllowed:
+      community.rules?.watermarksAllowed === true
+        ? 'allowed'
+        : community.rules?.watermarksAllowed === false
+          ? 'disallowed'
+          : 'unspecified',
+    rulesSellingAllowed:
+      community.rules?.sellingAllowed === true
+        ? 'allowed'
+        : community.rules?.sellingAllowed === false
+          ? 'disallowed'
+          : 'unspecified',
+    rulesSellingAllowed: community.rules?.sellingAllowed ?? 'unspecified',
+    rulesTitleRules: (community.rules?.titleRules ?? []).join('\n'),
+    rulesContentRules: (community.rules?.contentRules ?? []).join('\n'),
+    rulesLinkRestrictions: (community.rules?.linkRestrictions ?? []).join('\n'),
+    bestPostingTimes: (community.bestPostingTimes ?? []).join(', '),
+    averageUpvotes: community.averageUpvotes !== null && community.averageUpvotes !== undefined
+      ? String(community.averageUpvotes)
+      : '',
+    successProbability: community.successProbability !== null && community.successProbability !== undefined
+      ? String(community.successProbability)
+      : '',
+    growthTrend: community.growthTrend ?? 'stable',
+    modActivity: community.modActivity ?? 'medium',
+    description: community.description ?? '',
+    tags: (community.tags ?? []).join(', '),
+    competitionLevel: community.competitionLevel ?? 'medium',
+  };
+}
+
+function formToPayload(form: CommunityFormState): CommunityPayload {
+  const members = parseNumber(form.members);
+  const engagementRate = parseNumber(form.engagementRate);
+  if (members === undefined) {
+    throw new Error('Member count is required and must be a number.');
+  }
+  if (engagementRate === undefined) {
+@@ -178,109 +175,110 @@ function formToPayload(form: CommunityFormState): CommunityPayload {
+  const tags = parseList(form.tags);
+  const postingLimitsPerDay = parseNumber(form.postingLimitsPerDay);
+  const postingLimitsPerWeek = parseNumber(form.postingLimitsPerWeek);
+  const postingLimitsCooldownHours = parseNumber(form.postingLimitsCooldownHours);
+  const rulesMinKarma = parseNumber(form.rulesMinKarma);
+  const rulesMinAccountAge = parseNumber(form.rulesMinAccountAge);
+  const rulesTitleRules = parseList(form.rulesTitleRules);
+  const rulesContentRules = parseList(form.rulesContentRules);
+  const rulesLinkRestrictions = parseList(form.rulesLinkRestrictions);
+  const averageUpvotes = parseNumber(form.averageUpvotes);
+  const successProbability = parseNumber(form.successProbability);
+
+  const postingLimits = {
+    ...(postingLimitsPerDay !== undefined ? { perDay: postingLimitsPerDay } : {}),
+    ...(postingLimitsPerWeek !== undefined ? { perWeek: postingLimitsPerWeek } : {}),
+    ...(postingLimitsCooldownHours !== undefined ? { cooldownHours: postingLimitsCooldownHours } : {}),
+  };
+  const normalizedPostingLimits = Object.keys(postingLimits).length ? postingLimits : null;
+
+  const watermarksAllowed =
+    form.rulesWatermarksAllowed === 'allowed'
+      ? true
+      : form.rulesWatermarksAllowed === 'disallowed'
+        ? false
+        : undefined;
+  const sellingAllowed =
+    form.rulesSellingAllowed === 'allowed'
+      ? true
+      : form.rulesSellingAllowed === 'disallowed'
+        ? false
+        : undefined;
+  const sellingAllowed: RedditCommunitySellingPolicy | undefined =
+    form.rulesSellingAllowed === 'unspecified'
+      ? undefined
+      : form.rulesSellingAllowed;
+
+  const rules = {
+    ...(rulesMinKarma !== undefined ? { minKarma: rulesMinKarma } : {}),
+    ...(rulesMinAccountAge !== undefined ? { minAccountAge: rulesMinAccountAge } : {}),
+    ...(watermarksAllowed !== undefined ? { watermarksAllowed } : {}),
+    ...(sellingAllowed !== undefined ? { sellingAllowed } : {}),
+    ...(rulesTitleRules ? { titleRules: rulesTitleRules } : {}),
+    ...(rulesContentRules ? { contentRules: rulesContentRules } : {}),
+    ...(rulesLinkRestrictions ? { linkRestrictions: rulesLinkRestrictions } : {}),
+  };
+  const normalizedRules = Object.keys(rules).length ? rules : null;
+
+  return {
+    id: form.id.trim() || undefined,
+    name: form.name.trim(),
+    displayName: form.displayName.trim(),
+    category: form.category.trim(),
+    members,
+    engagementRate,
+    verificationRequired: form.verificationRequired,
+    promotionAllowed: form.promotionAllowed,
+    postingLimits: normalizedPostingLimits,
+    rules: normalizedRules,
+    bestPostingTimes: bestPostingTimes ?? null,
+    averageUpvotes: averageUpvotes ?? null,
+    successProbability: successProbability ?? null,
+    growthTrend: form.growthTrend,
+    modActivity: form.modActivity,
+    description: form.description.trim() || null,
+    tags: tags ?? null,
+    competitionLevel: form.competitionLevel,
+  };
+}
+
+function RuleSummary({ community }: { community: AdminCommunity }) {
+  const ruleItems: string[] = [];
+  if (community.rules?.minKarma !== undefined) {
+    ruleItems.push(`Min Karma ${community.rules.minKarma}`);
+  }
+  if (community.rules?.minAccountAge !== undefined) {
+    ruleItems.push(`Account ${community.rules.minAccountAge}d`);
+  }
+  if (community.rules?.watermarksAllowed === true) {
+    ruleItems.push('Watermarks allowed');
+  }
+  if (community.rules?.watermarksAllowed === false) {
+    ruleItems.push('No watermarks');
+  }
+  if (community.rules?.sellingAllowed === true) {
+  if (community.rules?.sellingAllowed === 'allowed') {
+    ruleItems.push('Selling allowed');
+  }
+  if (community.rules?.sellingAllowed === false) {
+  } else if (community.rules?.sellingAllowed === 'limited') {
+    ruleItems.push('Limited selling');
+  } else if (community.rules?.sellingAllowed === 'not_allowed') {
+    ruleItems.push('No selling');
+  } else if (community.rules?.sellingAllowed === 'unknown') {
+    ruleItems.push('Selling policy unknown');
+  }
+  if ((community.rules?.titleRules?.length ?? 0) > 0) {
+    ruleItems.push(`${community.rules?.titleRules?.length ?? 0} title rules`);
+  }
+  if ((community.rules?.contentRules?.length ?? 0) > 0) {
+    ruleItems.push(`${community.rules?.contentRules?.length ?? 0} content rules`);
+  }
+  if ((community.rules?.linkRestrictions?.length ?? 0) > 0) {
+    ruleItems.push('Link restrictions');
+  }
+  return (
+    <div className="flex flex-wrap gap-1">
+      {ruleItems.length ? (
+        ruleItems.map(item => (
+          <Badge key={item} variant="secondary" className="bg-purple-50 text-purple-700">
+            {item}
+          </Badge>
+        ))
+      ) : (
+        <span className="text-sm text-muted-foreground">No structured rules</span>
+      )}
+    </div>
+  );
+}
+
+@@ -701,59 +699,63 @@ export function AdminCommunitiesPanel({ canManage }: AdminCommunitiesPanelProps)
+                    value={formState.rulesMinAccountAge}
+                    onChange={(e) => setFormState(prev => ({ ...prev, rulesMinAccountAge: e.target.value }))}
+                    data-testid="input-rules-min-account-age"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="rulesWatermarksAllowed">Watermarks</Label>
+                  <Select
+                    value={formState.rulesWatermarksAllowed}
+                    onValueChange={(value) => setFormState(prev => ({ ...prev, rulesWatermarksAllowed: value as TriState }))}
+                  >
+                    <SelectTrigger data-testid="select-rules-watermarks-allowed">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unspecified">Unspecified</SelectItem>
+                      <SelectItem value="allowed">Allowed</SelectItem>
+                      <SelectItem value="disallowed">Not allowed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="rulesSellingAllowed">Selling</Label>
+                  <Select
+                    value={formState.rulesSellingAllowed}
+                    onValueChange={(value) => setFormState(prev => ({ ...prev, rulesSellingAllowed: value as TriState }))}
+                    onValueChange={(value) =>
+                      setFormState(prev => ({ ...prev, rulesSellingAllowed: value as SellingRuleOption }))
+                    }
+                  >
+                    <SelectTrigger data-testid="select-rules-selling-allowed">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unspecified">Unspecified</SelectItem>
+                      <SelectItem value="allowed">Allowed</SelectItem>
+                      <SelectItem value="disallowed">Not allowed</SelectItem>
+                      <SelectItem value="limited">Limited</SelectItem>
+                      <SelectItem value="not_allowed">Not allowed</SelectItem>
+                      <SelectItem value="unknown">Unknown</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="space-y-2">
+                  <Label htmlFor="rulesTitleRules">Title Rules (one per line)</Label>
+                  <Textarea
+                    id="rulesTitleRules"
+                    placeholder="e.g., Must include age&#10;No clickbait"
+                    value={formState.rulesTitleRules}
+                    onChange={(e) => setFormState(prev => ({ ...prev, rulesTitleRules: e.target.value }))}
+                    data-testid="textarea-rules-title-rules"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="rulesContentRules">Content Rules (one per line)</Label>
+                  <Textarea
+                    id="rulesContentRules"
+                    placeholder="e.g., OC only&#10;High quality images"
+                    value={formState.rulesContentRules}
+                    onChange={(e) => setFormState(prev => ({ ...prev, rulesContentRules: e.target.value }))}
+                    data-testid="textarea-rules-content-rules"
+                  />
+client/src/components/reddit-communities.tsx
++33
+-9
+
+import React, { useState, useMemo } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { 
+  Users, 
+  TrendingUp, 
+  Shield, 
+  Megaphone, 
+import {
+  Users,
+  TrendingUp,
+  Shield,
+  Megaphone,
+  Search,
+  ChevronUp,
+  ChevronDown,
+  CheckCircle,
+  XCircle,
+} from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import type { RedditCommunitySellingPolicy } from "@shared/schema";
+
+function formatSellingPolicy(policy?: RedditCommunitySellingPolicy) {
+  switch (policy) {
+    case "allowed":
+      return "✓ Allowed";
+    case "limited":
+      return "△ Limited";
+    case "not_allowed":
+      return "✗ Not Allowed";
+    case "unknown":
+      return "? Unknown";
+    default:
+      return "— Unspecified";
+  }
+}
+
+interface RedditCommunity {
+  id: string;
+  name: string;
+  displayName: string;
+  members: number;
+  engagementRate: number;
+  category: 'premium' | 'general' | 'niche' | 'fetish' | 'verification' | 'gonewild' | 'selling';
+  verificationRequired: boolean;
+  promotionAllowed: 'yes' | 'limited' | 'subtle' | 'no';
+  postingLimits: {
+    perDay?: number;
+    perWeek?: number;
+    cooldownHours?: number;
+  };
+  rules: {
+    minKarma?: number;
+    minAccountAge?: number;
+    watermarksAllowed?: boolean;
+    sellingAllowed?: boolean;
+    sellingAllowed?: RedditCommunitySellingPolicy;
+    titleRules?: string[];
+    contentRules?: string[];
+  };
+  bestPostingTimes: string[];
+  averageUpvotes: number;
+  successProbability: number;
+  growthTrend: 'up' | 'stable' | 'down';
+  modActivity: 'high' | 'medium' | 'low';
+  description: string;
+  tags: string[];
+  competitionLevel: 'low' | 'medium' | 'high';
+}
+
+export function RedditCommunities() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState<'members' | 'engagement' | 'upvotes' | 'name' | 'success'>('success');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [filterPromotion, setFilterPromotion] = useState<string>('all');
+  const [filterVerification, setFilterVerification] = useState<string>('all');
+  const [expandedRow, setExpandedRow] = useState<string | null>(null);
+
+  // Fetch communities data
+  const { data: communities = [], isLoading } = useQuery({
+    queryKey: ['/api/reddit/communities', filterCategory, searchTerm],
+    queryFn: async () => {
+@@ -331,52 +347,60 @@ export function RedditCommunities() {
+                    </TableCell>
+                    <TableCell>
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        className="text-purple-400 hover:text-purple-300"
+                      >
+                        {expandedRow === community.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                  
+                  {/* Expanded Details Row */}
+                  {expandedRow === community.id && (
+                    <TableRow>
+                      <TableCell colSpan={8} className="bg-gray-800/30">
+                        <div className="p-4 space-y-4">
+                          <p className="text-sm text-gray-300">{community.description}</p>
+                          
+                          <div className="grid md:grid-cols-4 gap-4">
+                            <div>
+                              <h4 className="text-sm font-semibold text-purple-300 mb-2">Requirements</h4>
+                              <div className="space-y-1 text-xs text-gray-400">
+                                {community.rules.minKarma && <p>• Min Karma: {community.rules.minKarma}</p>}
+                                {community.rules.minAccountAge && <p>• Min Account Age: {community.rules.minAccountAge} days</p>}
+                                <p>• Watermarks: {community.rules.watermarksAllowed ? '✓ Allowed' : '✗ Not Allowed'}</p>
+                                <p>• Selling: {community.rules.sellingAllowed ? '✓ Allowed' : '✗ Not Allowed'}</p>
+                                <p>
+                                  • Watermarks: {
+                                    community.rules.watermarksAllowed === undefined
+                                      ? '— Unspecified'
+                                      : community.rules.watermarksAllowed
+                                        ? '✓ Allowed'
+                                        : '✗ Not Allowed'
+                                  }
+                                </p>
+                                <p>• Selling: {formatSellingPolicy(community.rules.sellingAllowed)}</p>
+                              </div>
+                            </div>
+
+                            <div>
+                              <h4 className="text-sm font-semibold text-purple-300 mb-2">Intelligence</h4>
+                              <div className="space-y-1 text-xs text-gray-400">
+                                <p>• Success Rate: <span className={getSuccessProbabilityColor(community.successProbability)}>{community.successProbability}%</span></p>
+                                <p>• Competition: <span className={community.competitionLevel === 'low' ? 'text-green-400' : community.competitionLevel === 'medium' ? 'text-yellow-400' : 'text-red-400'}>{community.competitionLevel}</span></p>
+                                <p>• Growth: <span className={community.growthTrend === 'up' ? 'text-green-400' : community.growthTrend === 'stable' ? 'text-yellow-400' : 'text-red-400'}>{community.growthTrend}</span></p>
+                                <p>• Mod Activity: <span className={community.modActivity === 'high' ? 'text-red-400' : community.modActivity === 'medium' ? 'text-yellow-400' : 'text-green-400'}>{community.modActivity}</span></p>
+                              </div>
+                            </div>
+                            
+                            <div>
+                              <h4 className="text-sm font-semibold text-purple-300 mb-2">Best Posting Times</h4>
+                              <div className="space-y-1 text-xs text-gray-400">
+                                {community.bestPostingTimes.slice(0, 3).map((time: string, idx: number) => (
+                                  <p key={idx}>• {time}</p>
+                                ))}
+                              </div>
+                            </div>
+                            
+                            <div>
+                              <h4 className="text-sm font-semibold text-purple-300 mb-2">Performance</h4>
+                              <div className="space-y-1 text-xs text-gray-400">
+client/src/hooks/use-admin-communities.ts
++2
+-1
+
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
+import type { RedditCommunitySellingPolicy } from '@shared/schema';
+
+export type PromotionPolicy = 'yes' | 'no' | 'limited' | 'subtle' | 'strict' | 'unknown';
+export type GrowthTrend = 'growing' | 'stable' | 'declining' | 'unknown';
+export type ActivityLevel = 'low' | 'medium' | 'high' | 'unknown';
+export type CompetitionLevel = 'low' | 'medium' | 'high' | 'unknown';
+
+export interface CommunityRules {
+  minKarma?: number;
+  minAccountAge?: number;
+  watermarksAllowed?: boolean;
+  sellingAllowed?: boolean;
+  sellingAllowed?: RedditCommunitySellingPolicy;
+  titleRules?: string[];
+  contentRules?: string[];
+  linkRestrictions?: string[];
+  verificationRequired?: boolean;
+  requiresApproval?: boolean;
+  nsfwRequired?: boolean;
+  maxPostsPerDay?: number;
+  cooldownHours?: number;
+}
+
+export interface PostingLimits {
+  perDay?: number;
+  perWeek?: number;
+  cooldownHours?: number;
+}
+
+export interface AdminCommunity {
+  id: string;
+  name: string;
+  displayName: string;
+  category: string;
+  members: number;
+  engagementRate: number;
+  verificationRequired: boolean;
+  promotionAllowed: PromotionPolicy;
+client/src/pages/__tests__/reddit-posting.test.tsx
++3
+-3
+
+@@ -98,89 +98,89 @@ describe('RedditPosting community picker', () => {
+        username: 'creator',
+        isActive: true,
+        connectedAt: '2023-01-01T00:00:00.000Z',
+        karma: 2400,
+        verified: true,
+        accountAgeDays: 400,
+      },
+    ];
+
+    const communities = [
+      {
+        id: 'creatorclub',
+        name: 'r/CreatorClub',
+        displayName: 'Creator Club',
+        members: 120000,
+        engagementRate: 12,
+        category: 'general',
+        promotionAllowed: 'yes',
+        bestPostingTimes: ['morning'],
+        averageUpvotes: 220,
+        successProbability: 78,
+        description: 'High-signal creator collabs.',
+        rules: {
+          minKarma: 500,
+          minAccountAge: 60,
+          sellingAllowed: true,
+          sellingAllowed: 'allowed',
+          watermarksAllowed: true,
+        },
+      },
+      {
+        id: 'prohub',
+        name: 'r/ProHub',
+        displayName: 'Pro Hub',
+        members: 95000,
+        engagementRate: 10,
+        category: 'general',
+        promotionAllowed: 'limited',
+        bestPostingTimes: ['afternoon'],
+        averageUpvotes: 180,
+        successProbability: 70,
+        description: 'Advanced strategy discussions.',
+        rules: {
+          minKarma: 800,
+          minAccountAge: 90,
+          sellingAllowed: true,
+          sellingAllowed: 'allowed',
+          watermarksAllowed: false,
+        },
+      },
+      {
+        id: 'gatedelite',
+        name: 'r/GatedElite',
+        displayName: 'Gated Elite',
+        members: 510000,
+        engagementRate: 15,
+        category: 'premium',
+        promotionAllowed: 'limited',
+        bestPostingTimes: ['evening'],
+        averageUpvotes: 410,
+        successProbability: 82,
+        description: 'Invitation-only audience.',
+        rules: {
+          minKarma: 5000,
+          minAccountAge: 365,
+          sellingAllowed: false,
+          sellingAllowed: 'not_allowed',
+          watermarksAllowed: false,
+        },
+      },
+    ];
+
+    mockUseQuery.mockImplementation(({ queryKey }: any) => {
+      const key = Array.isArray(queryKey) ? queryKey[0] : queryKey;
+      switch (key) {
+        case '/api/reddit/accounts':
+          return { data: accounts, isLoading: false, error: null };
+        case '/api/reddit/communities':
+          return { data: communities, isLoading: false, error: null };
+        case '/api/media':
+          return { data: [], isLoading: false, error: null };
+        default:
+          return { data: undefined, isLoading: false, error: null };
+      }
+    });
+
+    mockUseMutation.mockImplementation(() => ({
+      mutate: () => undefined,
+      mutateAsync: async () => undefined,
+      isPending: false,
+      reset: () => undefined,
+    }));
+client/src/pages/reddit-posting.tsx
++164
+-62
+
+import React, { useState, useEffect, useMemo } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Badge, type BadgeProps } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { apiRequest, type ApiError } from '@/lib/queryClient';
+import { AuthModal } from '@/components/auth-modal';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator
+} from '@/components/ui/command';
+import {
+  Send,
+  Calendar,
+  User,
+  Eye,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  Link as LinkIcon,
+  Globe,
+  Settings,
+  Clock,
+  BarChart3,
+  Users,
+  TrendingUp,
+  Zap,
+  Shield,
+  FileText,
+  TestTube,
+  ExternalLink,
+  ImageIcon,
+  Images,
+  LogIn,
+  UserCheck,
+  ChevronsUpDown,
+  RefreshCcw,
+  Loader2
+} from 'lucide-react';
+import { MediaLibrarySelector } from '@/components/MediaLibrarySelector';
+import type { 
+  ShadowbanStatusType, 
+  ShadowbanCheckApiResponse 
+import type {
+  ShadowbanStatusType,
+  ShadowbanCheckApiResponse,
+  RedditCommunitySellingPolicy
+} from '@shared/schema';
+
+function isApiError(error: unknown): error is ApiError {
+  return error instanceof Error && 'status' in error && typeof (error as { status?: unknown }).status === 'number';
+}
+
+interface RedditAccount {
+  id: number;
+  username: string;
+  isActive: boolean;
+  connectedAt: string;
+  karma: number;
+  verified: boolean;
+  accountAgeDays?: number;
+}
+
+interface SubredditCommunity {
+  id: string;
+  name: string;
+  displayName: string;
+  members: number;
+  engagementRate: number;
+  category: string;
+  promotionAllowed: string;
+  bestPostingTimes: string[];
+  averageUpvotes: number;
+  successProbability: number;
+  description: string;
+  rules?: {
+    minKarma?: number;
+    minAccountAge?: number;
+    watermarksAllowed?: boolean;
+    sellingAllowed?: boolean;
+    sellingAllowed?: RedditCommunitySellingPolicy;
+    titleRules?: string[];
+    contentRules?: string[];
+  };
+}
+
+// API response interfaces
+interface ConnectionTestResponse {
+  connected: boolean;
+  profile?: {
+    username: string;
+    karma: number;
+  };
+}
+
+interface ConnectRedditResponse {
+  authUrl: string;
+}
+
+interface ContentValidationResponse {
+  policyState: 'allow' | 'warn' | 'block';
+}
+
+interface PostSubmissionResponse {
+  success: boolean;
+  error?: string;
+@@ -123,50 +124,115 @@ interface SchedulePostResponse {
+}
+
+interface MediaAsset {
+  id: number;
+  filename: string;
+  signedUrl?: string;
+  downloadUrl?: string;
+  createdAt: string;
+}
+
+interface PostData {
+  subreddit: string;
+  title: string;
+  nsfw: boolean;
+  spoiler: boolean;
+  postType: 'text' | 'link' | 'image' | 'gallery';
+  body?: string;
+  url?: string;
+  imageData?: string;
+  images?: Array<{
+    url: string;
+    caption?: string;
+  }>;
+}
+
+type SellingPolicyKey = RedditCommunitySellingPolicy | 'unspecified';
+
+const SELLING_POLICY_META: Record<
+  SellingPolicyKey,
+  {
+    label: string;
+    statusText: string;
+    badgeVariant: BadgeProps['variant'];
+    badgeClass: string;
+    smallVariant: BadgeProps['variant'];
+    smallClass: string;
+    icon: typeof CheckCircle | typeof AlertTriangle;
+  }
+> = {
+  allowed: {
+    label: 'Selling OK',
+    statusText: 'Allowed',
+    badgeVariant: 'secondary',
+    badgeClass: 'text-green-700 bg-green-50 border-green-200',
+    smallVariant: 'secondary',
+    smallClass: 'text-green-700 bg-green-50 border-green-200',
+    icon: CheckCircle,
+  },
+  limited: {
+    label: 'Selling limited',
+    statusText: 'Limited',
+    badgeVariant: 'outline',
+    badgeClass: 'text-amber-700 bg-amber-50 border-amber-200',
+    smallVariant: 'outline',
+    smallClass: 'text-amber-600 border-amber-300 bg-amber-50/50',
+    icon: AlertTriangle,
+  },
+  not_allowed: {
+    label: 'No selling',
+    statusText: 'Not allowed',
+    badgeVariant: 'outline',
+    badgeClass: 'text-orange-700 bg-orange-50 border-orange-200',
+    smallVariant: 'destructive',
+    smallClass: '',
+    icon: AlertTriangle,
+  },
+  unknown: {
+    label: 'Selling unknown',
+    statusText: 'Unknown',
+    badgeVariant: 'outline',
+    badgeClass: 'text-slate-700 bg-slate-50 border-slate-200',
+    smallVariant: 'outline',
+    smallClass: 'text-slate-500 border-slate-300 bg-slate-50/50',
+    icon: AlertTriangle,
+  },
+  unspecified: {
+    label: 'Selling unspecified',
+    statusText: 'Unspecified',
+    badgeVariant: 'outline',
+    badgeClass: 'text-slate-700 bg-slate-50 border-slate-200',
+    smallVariant: 'outline',
+    smallClass: 'text-slate-500 border-slate-300 bg-slate-50/50',
+    icon: AlertTriangle,
+  },
+};
+
+function getSellingPolicyMeta(policy?: RedditCommunitySellingPolicy) {
+  return SELLING_POLICY_META[policy ?? 'unspecified'];
+}
+
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+interface CommunityEligibility {
+  community: SubredditCommunity;
+  isEligible: boolean;
+  reasons: string[];
+  badges: {
+    karmaOk: boolean;
+    ageOk: boolean;
+    sellingOk: boolean;
+    watermarkOk: boolean;
+  };
+}
+
+function checkCommunityEligibility(
+  community: SubredditCommunity,
+  account: RedditAccount | null
+): CommunityEligibility {
+  const reasons: string[] = [];
+  let isEligible = true;
+
+  const badges = {
+    karmaOk: true,
+    ageOk: true,
+    sellingOk: true,
+@@ -181,54 +247,57 @@ function checkCommunityEligibility(
+      reasons,
+      badges: {
+        karmaOk: false,
+        ageOk: false,
+        sellingOk: false,
+        watermarkOk: false,
+      },
+    };
+  }
+
+  if (community.rules?.minKarma && account.karma < community.rules.minKarma) {
+    reasons.push(`Requires ${community.rules.minKarma} karma (you have ${account.karma})`);
+    isEligible = false;
+    badges.karmaOk = false;
+  }
+
+  if (community.rules?.minAccountAge && account.accountAgeDays) {
+    if (account.accountAgeDays < community.rules.minAccountAge) {
+      reasons.push(`Account must be ${community.rules.minAccountAge} days old (yours is ${account.accountAgeDays} days)`);
+      isEligible = false;
+      badges.ageOk = false;
+    }
+  }
+
+  // Include selling and watermark restrictions in eligibility
+  if (community.rules?.sellingAllowed === false) {
+  const sellingPolicy = community.rules?.sellingAllowed;
+  if (sellingPolicy === 'not_allowed') {
+    badges.sellingOk = false;
+    reasons.push('Selling not allowed in this community');
+    isEligible = false;
+  } else if (sellingPolicy === 'limited') {
+    reasons.push('Selling limited in this community');
+  }
+
+  if (community.rules?.watermarksAllowed === false) {
+    badges.watermarkOk = false;
+    reasons.push('Watermarks not allowed in this community');
+    isEligible = false;
+  }
+
+  return {
+    community,
+    isEligible,
+    reasons,
+    badges,
+  };
+}
+
+export default function RedditPostingPage() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { isAuthenticated, user } = useAuth();
+  
+  // Form state
+  const [subreddit, setSubreddit] = useState('');
+  const [communityPickerOpen, setCommunityPickerOpen] = useState(false);
+  const [title, setTitle] = useState('');
+@@ -908,164 +977,189 @@ export default function RedditPostingPage() {
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={communityPickerOpen}
+                        className="w-full justify-between"
+                        data-testid="community-picker-trigger"
+                      >
+                        {subreddit ? (
+                          (() => {
+                            const selected = sortedCommunities.find(sc => sc.community.id === subreddit);
+                            return selected ? selected.community.displayName : subreddit;
+                          })()
+                        ) : (
+                          'Select community...'
+                        )}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0">
+                      <Command>
+                        <CommandInput placeholder="Search communities..." />
+                        <CommandEmpty>No communities found.</CommandEmpty>
+                        <CommandList>
+                          <CommandGroup heading="Eligible Communities">
+                            {sortedCommunities
+                              .filter(sc => sc.isEligible)
+                              .map((sc) => (
+                                <CommandItem
+                                  key={sc.community.id}
+                                  value={sc.community.id}
+                                  onSelect={(currentValue) => {
+                                    setSubreddit(currentValue === subreddit ? '' : currentValue);
+                                    setCommunityPickerOpen(false);
+                                  }}
+                                  data-testid={`community-option-${sc.community.id}`}
+                                >
+                                  <div className="flex items-center justify-between w-full">
+                                    <div className="flex-1">
+                                      <div className="font-medium">{sc.community.displayName}</div>
+                                      <div className="text-xs text-gray-500 truncate">
+                                        {sc.community.members.toLocaleString()} members • {sc.community.successProbability}% success
+                              .map((sc) => {
+                                const sellingPolicy = sc.community.rules?.sellingAllowed;
+                                const sellingBadge = sellingPolicy ? getSellingPolicyMeta(sellingPolicy) : null;
+
+                                return (
+                                  <CommandItem
+                                    key={sc.community.id}
+                                    value={sc.community.id}
+                                    onSelect={(currentValue) => {
+                                      setSubreddit(currentValue === subreddit ? '' : currentValue);
+                                      setCommunityPickerOpen(false);
+                                    }}
+                                    data-testid={`community-option-${sc.community.id}`}
+                                  >
+                                    <div className="flex items-center justify-between w-full">
+                                      <div className="flex-1">
+                                        <div className="font-medium">{sc.community.displayName}</div>
+                                        <div className="text-xs text-gray-500 truncate">
+                                          {sc.community.members.toLocaleString()} members • {sc.community.successProbability}% success
+                                        </div>
+                                      </div>
+                                      <div className="flex gap-1 ml-2">
+                                        {sc.badges.karmaOk && <Badge variant="secondary" className="text-xs">Karma OK</Badge>}
+                                        {sc.badges.ageOk && <Badge variant="secondary" className="text-xs">Age OK</Badge>}
+                                        {sellingBadge && (
+                                          <Badge
+                                            variant={sellingBadge.smallVariant}
+                                            className={`text-xs ${sellingBadge.smallClass}`.trim()}
+                                          >
+                                            {sellingBadge.label}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div className="flex gap-1 ml-2">
+                                      {sc.badges.karmaOk && <Badge variant="secondary" className="text-xs">Karma OK</Badge>}
+                                      {sc.badges.ageOk && <Badge variant="secondary" className="text-xs">Age OK</Badge>}
+                                      {sc.badges.sellingOk && <Badge variant="secondary" className="text-xs">Selling OK</Badge>}
+                                    </div>
+                                  </div>
+                                </CommandItem>
+                              ))}
+                                  </CommandItem>
+                                );
+                              })}
+                          </CommandGroup>
+                          
+                          {sortedCommunities.some(sc => !sc.isEligible) && (
+                            <>
+                              <CommandSeparator />
+                              <CommandGroup heading="Requires Qualification">
+                                {sortedCommunities
+                                  .filter(sc => !sc.isEligible)
+                                  .map((sc) => (
+                                    <CommandItem
+                                      key={sc.community.id}
+                                      value={sc.community.id}
+                                      disabled
+                                      data-testid={`community-option-${sc.community.id}`}
+                                    >
+                                      <div className="flex items-center justify-between w-full opacity-50">
+                                        <div className="flex-1">
+                                          <div className="font-medium">{sc.community.displayName}</div>
+                                          <div className="text-xs text-red-600" data-testid={`community-option-${sc.community.id}-reasons`}>
+                                            {sc.reasons.join(', ')}
+                                  .map((sc) => {
+                                    const sellingBadge = !sc.badges.sellingOk && sc.community.rules?.sellingAllowed
+                                      ? getSellingPolicyMeta(sc.community.rules.sellingAllowed)
+                                      : null;
+
+                                    return (
+                                      <CommandItem
+                                        key={sc.community.id}
+                                        value={sc.community.id}
+                                        disabled
+                                        data-testid={`community-option-${sc.community.id}`}
+                                      >
+                                        <div className="flex items-center justify-between w-full opacity-50">
+                                          <div className="flex-1">
+                                            <div className="font-medium">{sc.community.displayName}</div>
+                                            <div className="text-xs text-red-600" data-testid={`community-option-${sc.community.id}-reasons`}>
+                                              {sc.reasons.join(', ')}
+                                            </div>
+                                          </div>
+                                          <div className="flex gap-1 ml-2">
+                                            {!sc.badges.karmaOk && <Badge variant="destructive" className="text-xs">Karma</Badge>}
+                                            {!sc.badges.ageOk && <Badge variant="destructive" className="text-xs">Age</Badge>}
+                                            {sellingBadge && (
+                                              <Badge variant={sellingBadge.smallVariant} className={`text-xs ${sellingBadge.smallClass}`.trim()}>
+                                                {sellingBadge.label}
+                                              </Badge>
+                                            )}
+                                          </div>
+                                        </div>
+                                        <div className="flex gap-1 ml-2">
+                                          {!sc.badges.karmaOk && <Badge variant="destructive" className="text-xs">Karma</Badge>}
+                                          {!sc.badges.ageOk && <Badge variant="destructive" className="text-xs">Age</Badge>}
+                                        </div>
+                                      </div>
+                                    </CommandItem>
+                                  ))}
+                                      </CommandItem>
+                                    );
+                                  })}
+                              </CommandGroup>
+                            </>
+                          )}
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  
+                  {/* Enhanced Community Insights */}
+                  {selectedCommunity && (() => {
+                    const eligibility = checkCommunityEligibility(selectedCommunity, activeAccount);
+                    return (
+                      <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg border border-blue-200">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium text-blue-800" data-testid="selected-community-name">
+                            {selectedCommunity.displayName}
+                          </span>
+                          <Badge variant="outline" className="text-blue-700 border-blue-300">
+                            {selectedCommunity.members.toLocaleString()} members
+                          </Badge>
+                        </div>
+                        <p className="text-blue-700 mb-2">{selectedCommunity.description}</p>
+                        
+                        {/* Eligibility Badges */}
+                        <div className="flex gap-2 mb-2" data-testid="selected-community-eligibility">
+                          {eligibility.badges.karmaOk ? (
+                            <Badge variant="secondary" className="text-green-700 bg-green-50 border-green-200">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Karma OK
+                            </Badge>
+                          ) : (
+                            <Badge variant="destructive" className="text-red-700 bg-red-50 border-red-200">
+                              <XCircle className="h-3 w-3 mr-1" />
+                              Karma Required
+                            </Badge>
+                          )}
+                          
+                          {eligibility.badges.ageOk ? (
+                            <Badge variant="secondary" className="text-green-700 bg-green-50 border-green-200">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Age OK
+                            </Badge>
+                          ) : (
+                            <Badge variant="destructive" className="text-red-700 bg-red-50 border-red-200">
+                              <XCircle className="h-3 w-3 mr-1" />
+                              Age Required
+                            </Badge>
+                          )}
+                          
+                          {selectedCommunity.rules?.sellingAllowed !== false ? (
+                            <Badge variant="secondary" className="text-green-700 bg-green-50 border-green-200">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Selling OK
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-orange-700 bg-orange-50 border-orange-200">
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              No Selling
+                            </Badge>
+                          )}
+                          {(() => {
+                            const sellingMeta = getSellingPolicyMeta(selectedCommunity.rules?.sellingAllowed);
+                            const SellingIcon = sellingMeta.icon;
+                            return (
+                              <Badge
+                                variant={sellingMeta.badgeVariant}
+                                className={sellingMeta.badgeClass}
+                              >
+                                <SellingIcon className="h-3 w-3 mr-1" />
+                                {sellingMeta.label}
+                              </Badge>
+                            );
+                          })()}
+                          
+                          {selectedCommunity.rules?.watermarksAllowed !== false ? (
+                            <Badge variant="secondary" className="text-green-700 bg-green-50 border-green-200">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Watermarks OK
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-orange-700 bg-orange-50 border-orange-200">
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              No Watermarks
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div>Success Rate: <span className="font-medium text-green-600">{selectedCommunity.successProbability}%</span></div>
+                          <div>Avg Upvotes: <span className="font-medium text-blue-600">{selectedCommunity.averageUpvotes}</span></div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* Title Input */}
+                <div className="space-y-2">
+@@ -1329,53 +1423,61 @@ export default function RedditPostingPage() {
+                      <p className="font-medium text-orange-800">{selectedCommunity.averageUpvotes}</p>
+                      <p className="text-orange-600">Avg Upvotes</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <h4 className="font-medium text-gray-800 mb-2">Community Rules</h4>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Min Karma:</span>
+                          <span className="font-medium">{selectedCommunity.rules.minKarma}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Min Account Age:</span>
+                          <span className="font-medium">{selectedCommunity.rules.minAccountAge} days</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Watermarks:</span>
+                          <Badge variant={selectedCommunity.rules.watermarksAllowed ? 'default' : 'destructive'} className="text-xs">
+                            {selectedCommunity.rules.watermarksAllowed ? 'Allowed' : 'Not Allowed'}
+                          </Badge>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Selling:</span>
+                          <Badge variant={selectedCommunity.rules.sellingAllowed ? 'default' : 'destructive'} className="text-xs">
+                            {selectedCommunity.rules.sellingAllowed ? 'Allowed' : 'Not Allowed'}
+                          </Badge>
+                          {(() => {
+                            const sellingMeta = getSellingPolicyMeta(selectedCommunity.rules?.sellingAllowed);
+                            return (
+                              <Badge
+                                variant={sellingMeta.badgeVariant}
+                                className={`text-xs ${sellingMeta.badgeClass}`.trim()}
+                              >
+                                {sellingMeta.statusText}
+                              </Badge>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Quick Tips */}
+            <Card className="bg-white/90 backdrop-blur-sm border-pink-200 shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Eye className="h-5 w-5" />
+                  Quick Tips
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="font-medium text-blue-800 mb-1">📝 Title Optimization</p>
+                  <p className="text-blue-700">Include your age/gender and be descriptive but not clickbait-y</p>
+                </div>
+                <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                  <p className="font-medium text-green-800 mb-1">⏰ Timing Matters</p>
+                  <p className="text-green-700">Post during peak hours for maximum engagement</p>
+                </div>
+client/src/types/reddit.ts
++3
+-1
+
+export interface ShadowbanStatusResponse {
+  isShadowbanned: boolean;
+  statusMessage: string;
+  checkedAt: string;
+  publicCount: number;
+  totalSelfPosts: number;
+  hiddenPosts: Array<{
+    id: string;
+    title: string;
+    createdUtc: number;
+  }>;
+  error?: string;
+}
+
+export interface RedditAccount {
+  id: number;
+  username: string;
+  isActive: boolean;
+  connectedAt: string;
+  karma: number;
+  verified: boolean;
+  accountAgeDays?: number;
+}
+
+import type { RedditCommunitySellingPolicy } from '@shared/schema';
+
+export interface SubredditCommunity {
+  id: string;
+  name: string;
+  displayName: string;
+  members: number;
+  engagementRate: number;
+  category: string;
+  promotionAllowed: string;
+  bestPostingTimes: string[];
+  averageUpvotes: number;
+  successProbability: number;
+  description: string;
+  rules?: {
+    minKarma?: number;
+    minAccountAge?: number;
+    watermarksAllowed?: boolean;
+    sellingAllowed?: boolean;
+    sellingAllowed?: RedditCommunitySellingPolicy;
+    titleRules?: string[];
+    contentRules?: string[];
+  };
+}
+
+export interface ConnectionTestResponse {
+  connected: boolean;
+  profile?: {
+    username: string;
+    karma: number;
+  };
+}
+
+export interface ConnectRedditResponse {
+  authUrl: string;
+}
+
+export interface ContentValidationResponse {
+  policyState: 'allow' | 'warn' | 'block';
+}
+
+export interface PostSubmissionResponse {
+  success: boolean;
+  error?: string;
+}
+shared/schema.ts
++1
+-0
+
+@@ -225,50 +225,51 @@ export const postJobs = pgTable("post_jobs", {
+  status: varchar("status", { length: 20 }).default("queued").notNull(), // "queued" | "sent" | "failed" | "paused"
+  resultJson: jsonb("result_json"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// ==========================================
+// REDDIT COMMUNITY RULE SCHEMAS
+// ==========================================
+
+export const redditCommunityRuleSetSchema = z.object({
+  minKarma: z.number().nullable().default(null),
+  minAccountAge: z.number().nullable().default(null), // in days
+  watermarksAllowed: z.boolean().nullable().default(null),
+  sellingAllowed: z.enum(['allowed', 'limited', 'not_allowed', 'unknown']).default('unknown'),
+  titleRules: z.array(z.string()).default([]),
+  contentRules: z.array(z.string()).default([]),
+  verificationRequired: z.boolean().default(false),
+  requiresApproval: z.boolean().default(false),
+  nsfwRequired: z.boolean().default(false),
+  maxPostsPerDay: z.number().nullable().default(null),
+  cooldownHours: z.number().nullable().default(null)
+});
+
+export type RedditCommunityRuleSet = z.infer<typeof redditCommunityRuleSetSchema>;
+export type RedditCommunitySellingPolicy = RedditCommunityRuleSet['sellingAllowed'];
+
+// Default rule set factory
+export const createDefaultRules = (): RedditCommunityRuleSet => ({
+  minKarma: null,
+  minAccountAge: null,
+  watermarksAllowed: null,
+  sellingAllowed: 'unknown',
+  titleRules: [],
+  contentRules: [],
+  verificationRequired: false,
+  requiresApproval: false,
+  nsfwRequired: false,
+  maxPostsPerDay: null,
+  cooldownHours: null
+});
+
+export const redditCommunities = pgTable("reddit_communities", {
+  id: varchar("id", { length: 100 }).primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  displayName: varchar("display_name", { length: 255 }).notNull(),
+  members: integer("members").notNull(),
+  engagementRate: integer("engagement_rate").notNull(),
+  category: varchar("category", { length: 50 }).notNull(),
+  verificationRequired: boolean("verification_required").default(false).notNull(),
+  promotionAllowed: varchar("promotion_allowed", { length: 20 }).default("no").notNull(),

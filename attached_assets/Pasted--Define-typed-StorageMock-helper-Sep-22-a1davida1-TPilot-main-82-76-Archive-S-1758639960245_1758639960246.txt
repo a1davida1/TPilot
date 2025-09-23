@@ -1,0 +1,242 @@
+
+Define typed StorageMock helper
+Sep 22
+·
+a1davida1/TPilot
+·
+main
+·
++82
+-76
+
+Archive
+
+Share
+
+Create PR
+
+
+1. In `tests/_helpers/buildStorageMock.ts`, define a mapped helper type, e.g. `type StorageMock = { [K in keyof IStorage]: vi.MockInstance<ReturnType<IStorage[K]>, Parameters<IStorage[K]>> };`.
+2. Add a small factory like `const make = <K extends keyof IStorage>() => vi.fn<Parameters<IStorage[K]>, ReturnType<IStorage[K]>>();` (or equivalent using `MockedFunction<IStorage[K]>`) and use it for every property so the compiler enforces each signature.
+3. Ensure the exported object is typed as `StorageMock`, avoiding any `as any` casts; update any tests that relied on the loose typing if TypeScript now flags incorrect call shapes.
+4. Re-run the Vitest suites that use this helper to confirm the stronger typings don’t break existing mocks.
+Copy
+Summary
+
+Introduced a StorageMock mapped type backed by MockInstance so every mocked method mirrors the true IStorage signature instead of relying on a loosely typed record. 
+
+Wrapped vi.fn<IStorage[K]> in a reusable make factory and applied it to each property in buildStorageMock, ensuring the exported mock preserves parameter and return types for all storage operations. 
+
+Testing
+
+✅ npm run lint (warnings only; no errors surfaced) 
+
+✅ npm test (suite currently reports 0 runnable tests) 
+
+⚠️ npx vitest run tests/unit/expenses/expense-operations.test.ts (aborted after numerous pre-existing suite failures unrelated to this helper; see log) 
+
+
+File (1)
+
+tests/_helpers/buildStorageMock.ts
++82
+-76
+
+
+
+Ask
+
+Code
+Diff
+Logs
+
+tests/_helpers/buildStorageMock.ts
++82
+-76
+
+import { vi, type MockedFunction } from 'vitest';
+import { vi, type MockInstance } from 'vitest';
+import type { IStorage } from '../../server/storage';
+
+type StorageMock = {
+  [K in keyof IStorage]: MockInstance<IStorage[K]>;
+};
+
+const make = <K extends keyof IStorage>(_key: K): StorageMock[K] => vi.fn<IStorage[K]>();
+
+/**
+ * Creates a complete mock of the storage interface with all methods
+ * that can be used across different test files
+ */
+export function buildStorageMock(): Record<keyof IStorage, MockedFunction<any>> {
+export function buildStorageMock(): StorageMock {
+  return {
+    // User operations
+    getUser: vi.fn(),
+    getUserById: vi.fn(),
+    getAllUsers: vi.fn(),
+    getUserByUsername: vi.fn(),
+    getUserByEmail: vi.fn(),
+    createUser: vi.fn(),
+    updateUserTier: vi.fn(),
+    updateUser: vi.fn(),
+    updateUserProfile: vi.fn(),
+    updateUserPassword: vi.fn(),
+    updateUserEmailVerified: vi.fn(),
+    createVerificationToken: vi.fn(),
+    getVerificationToken: vi.fn(),
+    deleteVerificationToken: vi.fn(),
+    deleteUser: vi.fn(),
+    getUser: make('getUser'),
+    getUserById: make('getUserById'),
+    getAllUsers: make('getAllUsers'),
+    getUserByUsername: make('getUserByUsername'),
+    getUserByEmail: make('getUserByEmail'),
+    createUser: make('createUser'),
+    updateUserTier: make('updateUserTier'),
+    updateUser: make('updateUser'),
+    updateUserProfile: make('updateUserProfile'),
+    updateUserPassword: make('updateUserPassword'),
+    updateUserEmailVerified: make('updateUserEmailVerified'),
+    createVerificationToken: make('createVerificationToken'),
+    getVerificationToken: make('getVerificationToken'),
+    deleteVerificationToken: make('deleteVerificationToken'),
+    deleteUser: make('deleteUser'),
+
+    // Generation operations
+    createGeneration: vi.fn(),
+    getGenerationsByUserId: vi.fn(),
+    createContentGeneration: vi.fn(),
+    getUserContentGenerations: vi.fn(),
+    getContentGenerationCount: vi.fn(),
+    getContentGenerationStats: vi.fn(),
+    getLastGenerated: vi.fn(),
+    createGeneration: make('createGeneration'),
+    getGenerationsByUserId: make('getGenerationsByUserId'),
+    createContentGeneration: make('createContentGeneration'),
+    getUserContentGenerations: make('getUserContentGenerations'),
+    getContentGenerationCount: make('getContentGenerationCount'),
+    getContentGenerationStats: make('getContentGenerationStats'),
+    getLastGenerated: make('getLastGenerated'),
+
+    // Revenue operations
+    getRevenue: vi.fn(),
+    getRevenue: make('getRevenue'),
+
+    // Preference operations
+    getUserPreferences: vi.fn(),
+    updateUserPreferences: vi.fn(),
+    getUserPreferences: make('getUserPreferences'),
+    updateUserPreferences: make('updateUserPreferences'),
+
+    // Image operations
+    createUserImage: vi.fn(),
+    getUserImages: vi.fn(),
+    getUserImage: vi.fn(),
+    updateUserImage: vi.fn(),
+    deleteUserImage: vi.fn(),
+    createUserImage: make('createUserImage'),
+    getUserImages: make('getUserImages'),
+    getUserImage: make('getUserImage'),
+    updateUserImage: make('updateUserImage'),
+    deleteUserImage: make('deleteUserImage'),
+
+    // Streak operations
+    calculateDailyStreak: vi.fn(),
+    calculateDailyStreak: make('calculateDailyStreak'),
+
+    // Admin operations
+    getTotalUserCount: vi.fn(),
+    getActiveUserCount: vi.fn(),
+    getTotalContentGenerated: vi.fn(),
+    getSubscriptionCounts: vi.fn(),
+    getTotalUserCount: make('getTotalUserCount'),
+    getActiveUserCount: make('getActiveUserCount'),
+    getTotalContentGenerated: make('getTotalContentGenerated'),
+    getSubscriptionCounts: make('getSubscriptionCounts'),
+
+    // Generation limit operations
+    getDailyGenerationCount: vi.fn(),
+    getDailyGenerationCount: make('getDailyGenerationCount'),
+
+    // Expense operations
+    createExpenseCategory: vi.fn(),
+    getExpenseCategories: vi.fn(),
+    getExpenseCategory: vi.fn(),
+    updateExpenseCategory: vi.fn(),
+    deleteExpenseCategory: vi.fn(),
+    
+    createExpense: vi.fn(),
+    getUserExpenses: vi.fn(),
+    getExpense: vi.fn(),
+    updateExpense: vi.fn(),
+    deleteExpense: vi.fn(),
+    getExpensesByCategory: vi.fn(),
+    getExpensesByDateRange: vi.fn(),
+    getExpenseTotals: vi.fn(),
+
+    getTaxDeductionInfo: vi.fn(),
+    getTaxDeductionInfoByCategory: vi.fn(),
+    createTaxDeductionInfo: vi.fn(),
+    createExpenseCategory: make('createExpenseCategory'),
+    getExpenseCategories: make('getExpenseCategories'),
+    getExpenseCategory: make('getExpenseCategory'),
+    updateExpenseCategory: make('updateExpenseCategory'),
+    deleteExpenseCategory: make('deleteExpenseCategory'),
+
+    createExpense: make('createExpense'),
+    getUserExpenses: make('getUserExpenses'),
+    getExpense: make('getExpense'),
+    updateExpense: make('updateExpense'),
+    deleteExpense: make('deleteExpense'),
+    getExpensesByCategory: make('getExpensesByCategory'),
+    getExpensesByDateRange: make('getExpensesByDateRange'),
+    getExpenseTotals: make('getExpenseTotals'),
+
+    getTaxDeductionInfo: make('getTaxDeductionInfo'),
+    getTaxDeductionInfoByCategory: make('getTaxDeductionInfoByCategory'),
+    createTaxDeductionInfo: make('createTaxDeductionInfo'),
+
+    // Social Media operations
+    createSocialMediaAccount: vi.fn(),
+    getUserSocialMediaAccounts: vi.fn(),
+    getSocialMediaAccount: vi.fn(),
+    updateSocialMediaAccount: vi.fn(),
+    deleteSocialMediaAccount: vi.fn(),
+
+    createSocialMediaPost: vi.fn(),
+    getUserSocialMediaPosts: vi.fn(),
+    getSocialMediaPost: vi.fn(),
+    updateSocialMediaPost: vi.fn(),
+    deleteSocialMediaPost: vi.fn(),
+
+    createPlatformEngagement: vi.fn(),
+    getPlatformEngagement: vi.fn(),
+
+    createPostSchedule: vi.fn(),
+    getUserScheduledPosts: vi.fn(),
+    getPostSchedule: vi.fn(),
+    updatePostSchedule: vi.fn(),
+    deletePostSchedule: vi.fn()
+    createSocialMediaAccount: make('createSocialMediaAccount'),
+    getUserSocialMediaAccounts: make('getUserSocialMediaAccounts'),
+    getSocialMediaAccount: make('getSocialMediaAccount'),
+    updateSocialMediaAccount: make('updateSocialMediaAccount'),
+    deleteSocialMediaAccount: make('deleteSocialMediaAccount'),
+
+    createSocialMediaPost: make('createSocialMediaPost'),
+    getUserSocialMediaPosts: make('getUserSocialMediaPosts'),
+    getSocialMediaPost: make('getSocialMediaPost'),
+    updateSocialMediaPost: make('updateSocialMediaPost'),
+    deleteSocialMediaPost: make('deleteSocialMediaPost'),
+
+    createPlatformEngagement: make('createPlatformEngagement'),
+    getPlatformEngagement: make('getPlatformEngagement'),
+
+    createPostSchedule: make('createPostSchedule'),
+    getUserScheduledPosts: make('getUserScheduledPosts'),
+    getPostSchedule: make('getPostSchedule'),
+    updatePostSchedule: make('updatePostSchedule'),
+    deletePostSchedule: make('deletePostSchedule')
+  };
+}
