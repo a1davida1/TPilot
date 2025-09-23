@@ -1,11 +1,11 @@
 import { eq } from "drizzle-orm";
-import { getPreviewStats, canQueuePosts, checkPreviewGate } from '../../server/lib/preview-gate';
+import { getPreviewStats, checkPreviewGate } from '../../server/lib/preview-gate';
 import { db } from '../../server/db';
 import { postPreviews, contentGenerations, users } from '@shared/schema.js';
 
 describe('Preview Gate', () => {
   const testUserId = 999; // Test user ID
-  
+
   beforeAll(async () => {
     // Create test user
     const uniqueSuffix = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
@@ -149,7 +149,7 @@ describe('Preview Gate', () => {
     test('allows queue with sufficient previews', async () => {
       // Insert 3 OK previews
       const recent = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
-      
+
       await db.insert(postPreviews).values([
         {
           userId: testUserId,
@@ -198,7 +198,7 @@ describe('Preview Gate', () => {
     test('passes gate check when requirement is met', async () => {
       // Insert 3 OK previews
       const recent = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
-      
+
       await db.insert(postPreviews).values([
         {
           userId: testUserId,
@@ -240,7 +240,7 @@ describe('Preview Gate', () => {
     test('handles database errors gracefully', async () => {
       // Test with invalid user ID to trigger error handling
       const stats = await getPreviewStats(-1);
-      
+
       // Should return safe defaults
       expect(stats.okCount14d).toBe(0);
       expect(stats.canQueue).toBe(false);
