@@ -582,7 +582,7 @@ export function AdminDashboard() {
 
         {/* Communities Tab */}
         <TabsContent value="communities" className="space-y-6">
-          <AdminCommunitiesPanel canManage={user?.tier === 'admin'} />
+          <AdminCommunitiesPanel canManage={user?.isAdmin || false} />
         </TabsContent>
 
         {/* Compliance Tab */}
