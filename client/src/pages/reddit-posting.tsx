@@ -56,8 +56,10 @@ import { MediaLibrarySelector } from '@/components/MediaLibrarySelector';
 import type { 
   ShadowbanStatusType, 
   ShadowbanCheckApiResponse,
+  ShadowbanSubmissionSummary,
   RedditCommunitySellingPolicy 
 } from '@shared/schema';
+import type { SubredditCommunity } from '@/types/reddit';
 
 function isApiError(error: unknown): error is ApiError {
   return error instanceof Error && 'status' in error && typeof (error as { status?: unknown }).status === 'number';
@@ -73,27 +75,7 @@ interface RedditAccount {
   accountAgeDays?: number;
 }
 
-interface SubredditCommunity {
-  id: string;
-  name: string;
-  displayName: string;
-  members: number;
-  engagementRate: number;
-  category: string;
-  promotionAllowed: string;
-  bestPostingTimes: string[];
-  averageUpvotes: number;
-  successProbability: number;
-  description: string;
-  rules?: {
-    minKarma?: number;
-    minAccountAge?: number;
-    watermarksAllowed?: boolean;
-    sellingAllowed?: RedditCommunitySellingPolicy;
-    titleRules?: string[];
-    contentRules?: string[];
-  };
-}
+// SubredditCommunity type now imported from @/types/reddit
 
 // API response interfaces
 interface ConnectionTestResponse {
@@ -189,33 +171,33 @@ function checkCommunityEligibility(
     };
   }
 
-  if (community.rules?.minKarma && account.karma < community.rules.minKarma) {
-    reasons.push(`Requires ${community.rules.minKarma} karma (you have ${account.karma})`);
+  if (community.rules?.eligibility?.minKarma && account.karma < community.rules.eligibility.minKarma) {
+    reasons.push(`Requires ${community.rules.eligibility.minKarma} karma (you have ${account.karma})`);
     isEligible = false;
     badges.karmaOk = false;
   }
 
-  if (community.rules?.minAccountAge && account.accountAgeDays) {
-    if (account.accountAgeDays < community.rules.minAccountAge) {
-      reasons.push(`Account must be ${community.rules.minAccountAge} days old (yours is ${account.accountAgeDays} days)`);
+  if (community.rules?.eligibility?.minAccountAgeDays && account.accountAgeDays) {
+    if (account.accountAgeDays < community.rules?.eligibility?.minAccountAgeDays) {
+      reasons.push(`Account must be ${community.rules?.eligibility?.minAccountAgeDays} days old (yours is ${account.accountAgeDays} days)`);
       isEligible = false;
       badges.ageOk = false;
     }
   }
 
   // Include selling and watermark restrictions in eligibility
-  if (community.rules?.sellingAllowed === 'not_allowed') {
+  if (community.rules?.content?.sellingPolicy === 'not_allowed') {
     badges.sellingOk = false;
     reasons.push('Selling not allowed in this community');
     isEligible = false;
   }
   
-  if (community.rules?.sellingAllowed === 'unknown') {
+  if (community.rules?.content?.sellingPolicy === 'unknown') {
     badges.sellingOk = false;
     reasons.push('Selling policy unclear - check community rules');
   }
 
-  if (community.rules?.watermarksAllowed === false) {
+  if (community.rules?.content?.watermarksAllowed === false) {
     badges.watermarkOk = false;
     reasons.push('Watermarks not allowed in this community');
     isEligible = false;
@@ -381,8 +363,8 @@ export default function RedditPostingPage() {
       }
       
       // Within same eligibility, sort by karma requirement
-      const aKarma = a.community.rules?.minKarma || 0;
-      const bKarma = b.community.rules?.minKarma || 0;
+      const aKarma = a.community.rules?.eligibility?.minKarma || 0;
+      const bKarma = b.community.rules?.eligibility?.minKarma || 0;
       return aKarma - bKarma;
     });
   }, [communities, activeAccount]);
@@ -1081,7 +1063,7 @@ export default function RedditPostingPage() {
                           )}
                           
                           {(() => {
-                            const policy = selectedCommunity.rules?.sellingAllowed;
+                            const policy = selectedCommunity.rules?.content?.sellingPolicy;
                             if (policy === 'allowed') {
                               return (
                                 <Badge variant="secondary" className="text-green-700 bg-green-50 border-green-200">
@@ -1113,7 +1095,7 @@ export default function RedditPostingPage() {
                             }
                           })()}
                           
-                          {selectedCommunity.rules?.watermarksAllowed !== false ? (
+                          {selectedCommunity.rules?.content?.watermarksAllowed !== false ? (
                             <Badge variant="secondary" className="text-green-700 bg-green-50 border-green-200">
                               <CheckCircle className="h-3 w-3 mr-1" />
                               Watermarks OK
@@ -1405,22 +1387,22 @@ export default function RedditPostingPage() {
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
                           <span className="text-gray-600">Min Karma:</span>
-                          <span className="font-medium">{selectedCommunity.rules.minKarma}</span>
+                          <span className="font-medium">{selectedCommunity.rules?.eligibility?.minKarma}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">Min Account Age:</span>
-                          <span className="font-medium">{selectedCommunity.rules.minAccountAge} days</span>
+                          <span className="font-medium">{selectedCommunity.rules?.eligibility?.minAccountAgeDays} days</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">Watermarks:</span>
-                          <Badge variant={selectedCommunity.rules.watermarksAllowed ? 'default' : 'destructive'} className="text-xs">
-                            {selectedCommunity.rules.watermarksAllowed ? 'Allowed' : 'Not Allowed'}
+                          <Badge variant={selectedCommunity.rules?.content?.watermarksAllowed ? 'default' : 'destructive'} className="text-xs">
+                            {selectedCommunity.rules?.content?.watermarksAllowed ? 'Allowed' : 'Not Allowed'}
                           </Badge>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">Selling:</span>
                           {(() => {
-                            const policy = selectedCommunity.rules.sellingAllowed;
+                            const policy = selectedCommunity.rules?.content?.sellingPolicy;
                             switch (policy) {
                               case 'allowed':
                                 return <Badge variant="default" className="text-xs">Allowed</Badge>;
