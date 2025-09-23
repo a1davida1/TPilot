@@ -98,6 +98,9 @@ function normalizeRules(rawRules: unknown, promotionAllowed?: string, category?:
       return {
         ...defaults,
         contentRules: rawRules.filter(rule => typeof rule === 'string'),
+        titleRules: defaults.titleRules || [],
+        bannedContent: defaults.bannedContent || [],
+        formattingRequirements: defaults.formattingRequirements || [],
         sellingAllowed: inferSellingPolicy(promotionAllowed || 'no', category || 'general')
       };
     }
@@ -107,12 +110,14 @@ function normalizeRules(rawRules: unknown, promotionAllowed?: string, category?:
       // Try to parse as structured rules
       const parsed = redditCommunityRuleSetSchema.parse(rawRules);
       
-      // If sellingAllowed is undefined/null, try to infer from promotion flags
-      if (!parsed.sellingAllowed && (promotionAllowed || category)) {
-        parsed.sellingAllowed = inferSellingPolicy(promotionAllowed || 'no', category || 'general', parsed);
+      if (parsed) {
+        // If sellingAllowed is undefined/null, try to infer from promotion flags
+        if (!parsed.sellingAllowed && (promotionAllowed || category)) {
+          parsed.sellingAllowed = inferSellingPolicy(promotionAllowed || 'no', category || 'general', parsed);
+        }
+        
+        return parsed;
       }
-      
-      return parsed;
     }
     
     return createDefaultRules();
@@ -213,22 +218,22 @@ export async function getCommunityInsights(communityId: string): Promise<{
   if (community.growthTrend === 'up') successTips.push('Growing community - get in early');
   if (community.competitionLevel === 'low') successTips.push('Low competition - your content will stand out');
 
-  // Rule-based warnings using structured rules
-  if (rules.verificationRequired) warnings.push('Verification required - complete r/GetVerified');
-  if (rules.sellingAllowed === 'no') warnings.push('No promotion/selling allowed - content only');
-  if (rules.sellingAllowed === 'limited') warnings.push('Limited promotion allowed - check specific rules');
-  if (rules.watermarksAllowed === false) warnings.push('Watermarks not allowed - use clean images');
-  if (rules.minKarma && rules.minKarma > 50) warnings.push(`Requires ${rules.minKarma}+ karma`);
-  if (rules.minAccountAge && rules.minAccountAge > 7) warnings.push(`Account must be ${rules.minAccountAge}+ days old`);
-  if (rules.maxPostsPerDay && rules.maxPostsPerDay <= 1) warnings.push(`Limited to ${rules.maxPostsPerDay} post${rules.maxPostsPerDay === 1 ? '' : 's'} per day`);
-  if (rules.cooldownHours && rules.cooldownHours >= 24) warnings.push(`${rules.cooldownHours}h cooldown between posts`);
-  if (rules.requiresApproval) warnings.push('Posts require mod approval - expect delays');
+  // Rule-based warnings using structured rules with safe null checks
+  if (rules?.verificationRequired) warnings.push('Verification required - complete r/GetVerified');
+  if (rules?.sellingAllowed === 'no') warnings.push('No promotion/selling allowed - content only');
+  if (rules?.sellingAllowed === 'limited') warnings.push('Limited promotion allowed - check specific rules');
+  if (rules?.watermarksAllowed === false) warnings.push('Watermarks not allowed - use clean images');
+  if (rules?.minKarma && rules.minKarma > 50) warnings.push(`Requires ${rules.minKarma}+ karma`);
+  if (rules?.minAccountAge && rules.minAccountAge > 7) warnings.push(`Account must be ${rules.minAccountAge}+ days old`);
+  if (rules?.maxPostsPerDay && rules.maxPostsPerDay <= 1) warnings.push(`Limited to ${rules.maxPostsPerDay} post${rules.maxPostsPerDay === 1 ? '' : 's'} per day`);
+  if (rules?.cooldownHours && rules.cooldownHours >= 24) warnings.push(`${rules.cooldownHours}h cooldown between posts`);
+  if (rules?.requiresApproval) warnings.push('Posts require mod approval - expect delays');
 
-  // Add title and content rule warnings
-  if (rules.titleRules.length > 0) {
+  // Add title and content rule warnings with safe null checks
+  if (rules?.titleRules && rules.titleRules.length > 0) {
     warnings.push(`Title rules: ${rules.titleRules.slice(0, 2).join(', ')}${rules.titleRules.length > 2 ? '...' : ''}`);
   }
-  if (rules.contentRules.length > 0) {
+  if (rules?.contentRules && rules.contentRules.length > 0) {
     warnings.push(`Content rules: ${rules.contentRules.slice(0, 2).join(', ')}${rules.contentRules.length > 2 ? '...' : ''}`);
   }
 
