@@ -136,18 +136,18 @@ function communityToForm(community: AdminCommunity): CommunityFormState {
     postingLimitsCooldownHours: community.postingLimits?.cooldownHours
       ? String(community.postingLimits.cooldownHours)
       : '',
-    rulesMinKarma: community.rules?.minKarma !== undefined ? String(community.rules.minKarma) : '',
-    rulesMinAccountAge: community.rules?.minAccountAge !== undefined ? String(community.rules.minAccountAge) : '',
+    rulesMinKarma: community.rules?.eligibility?.minKarma !== undefined ? String(community.rules.eligibility.minKarma) : '',
+    rulesMinAccountAge: community.rules?.eligibility?.minAccountAgeDays !== undefined ? String(community.rules.eligibility.minAccountAgeDays) : '',
     rulesWatermarksAllowed:
-      community.rules?.watermarksAllowed === true
+      community.rules?.content?.watermarksAllowed === true
         ? 'allowed'
-        : community.rules?.watermarksAllowed === false
+        : community.rules?.content?.watermarksAllowed === false
           ? 'disallowed'
           : 'unspecified',
-    rulesSellingAllowed: community.rules?.sellingAllowed ?? 'unspecified',
-    rulesTitleRules: (community.rules?.titleRules ?? []).join('\n'),
-    rulesContentRules: (community.rules?.contentRules ?? []).join('\n'),
-    rulesLinkRestrictions: (community.rules?.linkRestrictions ?? []).join('\n'),
+    rulesSellingAllowed: community.rules?.content?.sellingPolicy ?? 'unspecified',
+    rulesTitleRules: (community.rules?.content?.titleGuidelines ?? []).join('\n'),
+    rulesContentRules: (community.rules?.content?.contentGuidelines ?? []).join('\n'),
+    rulesLinkRestrictions: (community.rules?.content?.linkRestrictions ?? []).join('\n'),
     bestPostingTimes: (community.bestPostingTimes ?? []).join(', '),
     averageUpvotes: community.averageUpvotes !== null && community.averageUpvotes !== undefined
       ? String(community.averageUpvotes)
@@ -202,13 +202,18 @@ function formToPayload(form: CommunityFormState): CommunityPayload {
   const sellingAllowed = form.rulesSellingAllowed === 'unspecified' ? undefined : form.rulesSellingAllowed;
 
   const rules = {
-    ...(rulesMinKarma !== undefined ? { minKarma: rulesMinKarma } : {}),
-    ...(rulesMinAccountAge !== undefined ? { minAccountAge: rulesMinAccountAge } : {}),
-    ...(watermarksAllowed !== undefined ? { watermarksAllowed } : {}),
-    ...(sellingAllowed !== undefined ? { sellingAllowed } : {}),
-    ...(rulesTitleRules ? { titleRules: rulesTitleRules } : {}),
-    ...(rulesContentRules ? { contentRules: rulesContentRules } : {}),
-    ...(rulesLinkRestrictions ? { linkRestrictions: rulesLinkRestrictions } : {}),
+    eligibility: {
+      ...(rulesMinKarma !== undefined ? { minKarma: rulesMinKarma } : {}),
+      ...(rulesMinAccountAge !== undefined ? { minAccountAgeDays: rulesMinAccountAge } : {}),
+    },
+    content: {
+      ...(watermarksAllowed !== undefined ? { watermarksAllowed } : {}),
+      ...(sellingAllowed !== undefined ? { sellingPolicy: sellingAllowed } : {}),
+      ...(rulesTitleRules ? { titleGuidelines: rulesTitleRules } : {}),
+      ...(rulesContentRules ? { contentGuidelines: rulesContentRules } : {}),
+      ...(rulesLinkRestrictions ? { linkRestrictions: rulesLinkRestrictions } : {}),
+    },
+    posting: {},
   };
   const normalizedRules = Object.keys(rules).length ? rules : null;
 
@@ -236,19 +241,19 @@ function formToPayload(form: CommunityFormState): CommunityPayload {
 
 function RuleSummary({ community }: { community: AdminCommunity }) {
   const ruleItems: string[] = [];
-  if (community.rules?.minKarma !== undefined) {
-    ruleItems.push(`Min Karma ${community.rules.minKarma}`);
+  if (community.rules?.eligibility?.minKarma !== undefined) {
+    ruleItems.push(`Min Karma ${community.rules.eligibility.minKarma}`);
   }
-  if (community.rules?.minAccountAge !== undefined) {
-    ruleItems.push(`Account ${community.rules.minAccountAge}d`);
+  if (community.rules?.eligibility?.minAccountAgeDays !== undefined) {
+    ruleItems.push(`Account ${community.rules.eligibility.minAccountAgeDays}d`);
   }
-  if (community.rules?.watermarksAllowed === true) {
+  if (community.rules?.content?.watermarksAllowed === true) {
     ruleItems.push('Watermarks allowed');
   }
-  if (community.rules?.watermarksAllowed === false) {
+  if (community.rules?.content?.watermarksAllowed === false) {
     ruleItems.push('No watermarks');
   }
-  const sellingPolicy = community.rules?.sellingAllowed;
+  const sellingPolicy = community.rules?.content?.sellingPolicy;
   if (sellingPolicy === 'allowed') {
     ruleItems.push('Selling allowed');
   } else if (sellingPolicy === 'limited') {
@@ -258,13 +263,13 @@ function RuleSummary({ community }: { community: AdminCommunity }) {
   } else if (sellingPolicy === 'unknown') {
     ruleItems.push('Selling policy unknown');
   }
-  if ((community.rules?.titleRules?.length ?? 0) > 0) {
-    ruleItems.push(`${community.rules?.titleRules?.length ?? 0} title rules`);
+  if ((community.rules?.content?.titleGuidelines?.length ?? 0) > 0) {
+    ruleItems.push(`${community.rules?.content?.titleGuidelines?.length ?? 0} title rules`);
   }
-  if ((community.rules?.contentRules?.length ?? 0) > 0) {
-    ruleItems.push(`${community.rules?.contentRules?.length ?? 0} content rules`);
+  if ((community.rules?.content?.contentGuidelines?.length ?? 0) > 0) {
+    ruleItems.push(`${community.rules?.content?.contentGuidelines?.length ?? 0} content rules`);
   }
-  if ((community.rules?.linkRestrictions?.length ?? 0) > 0) {
+  if ((community.rules?.content?.linkRestrictions?.length ?? 0) > 0) {
     ruleItems.push('Link restrictions');
   }
   return (

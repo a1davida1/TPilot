@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
-import type { RedditCommunitySellingPolicy } from '@shared/schema';
+import type { RedditCommunitySellingPolicy, RedditCommunityRuleSet } from '@shared/schema';
 import { 
   type GrowthTrend,
   GROWTH_TRENDS,
@@ -18,20 +18,8 @@ export type CompetitionLevel = 'low' | 'medium' | 'high' | 'unknown';
 // Re-export growth trend constants and labels for use by components
 export { GROWTH_TRENDS, GROWTH_TREND_LABELS, getGrowthTrendLabel };
 
-export interface CommunityRules {
-  minKarma?: number;
-  minAccountAge?: number;
-  watermarksAllowed?: boolean;
-  sellingAllowed?: RedditCommunitySellingPolicy;
-  titleRules?: string[];
-  contentRules?: string[];
-  linkRestrictions?: string[];
-  verificationRequired?: boolean;
-  requiresApproval?: boolean;
-  nsfwRequired?: boolean;
-  maxPostsPerDay?: number;
-  cooldownHours?: number;
-}
+// Use the structured rule schema from shared/schema
+export type CommunityRules = RedditCommunityRuleSet;
 
 export interface PostingLimits {
   perDay?: number;
