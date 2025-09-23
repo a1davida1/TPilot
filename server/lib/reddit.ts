@@ -1119,9 +1119,9 @@ export class RedditManager {
 
         // Use community-specific posting limits if available
         if (communityData.postingLimits) {
-          const communityLimits = communityData.postingLimits as any;
+          const communityLimits = communityData.postingLimits as Record<string, unknown>;
           const dailyLimit = communityLimits?.daily || communityLimits?.perDay || communityLimits?.per24h;
-          if (dailyLimit && typeof dailyLimit === 'number') {
+          if (typeof dailyLimit === 'number') {
             // Get current posting stats for this community
             const oneDayAgo = new Date(now.getTime() - DAY_IN_MS);
             const recentPosts = await db
@@ -1135,11 +1135,13 @@ export class RedditManager {
                 )
               );
 
-            const postsInLast24h = recentPosts.length;
-            if (postsInLast24h >= dailyLimit) {
+            const communityPostsInLast24h = recentPosts.length;
+            postsInLast24h = Math.max(postsInLast24h, communityPostsInLast24h);
+
+            if (communityPostsInLast24h >= dailyLimit) {
               reasons.push(`Community posting limit reached (${dailyLimit} posts per 24 hours)`);
-            } else if (postsInLast24h >= dailyLimit - 1) {
-              warnings.push(`Approaching community limit: ${postsInLast24h + 1}/${dailyLimit} posts`);
+            } else if (communityPostsInLast24h >= dailyLimit - 1) {
+              warnings.push(`Approaching community limit: ${communityPostsInLast24h + 1}/${dailyLimit} posts`);
             }
           }
         }
