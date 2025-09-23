@@ -43,6 +43,7 @@ export function Header() {
     { href: '/dashboard', label: 'Dashboard', authenticated: true },
     { href: '/reddit', label: 'Reddit', authenticated: null },
     { href: '/caption-generator', label: 'Generator', authenticated: null },
+    { href: '/referral', label: 'Referral', authenticated: true, proOnly: true },
     { href: '/history', label: 'History', authenticated: true },
     { href: '/settings', label: 'Settings', authenticated: true },
     { href: '/admin', label: 'Admin Portal', authenticated: true, adminOnly: true },
@@ -53,6 +54,10 @@ export function Header() {
       // If item requires admin access, check admin status
       if (item.adminOnly) {
         return isAdmin;
+      }
+      // If item requires pro access, check pro status
+      if (item.proOnly) {
+        return user?.tier === 'pro';
       }
       return true;
     }

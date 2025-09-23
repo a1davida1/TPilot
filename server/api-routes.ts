@@ -1,4 +1,5 @@
 import type { Express } from "express";
+import { z } from "zod";
 import { db } from "./db.js";
 import { storage } from "./storage.js";
 import { AiService } from "./lib/ai-service.js";

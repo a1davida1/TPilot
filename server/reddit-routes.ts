@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import { RedditManager, getRedditAuthUrl, exchangeRedditCode } from './lib/reddit.js';
 import { SafetyManager } from './lib/safety-systems.js';
 import { db } from './db.js';
-import { creatorAccounts } from '@shared/schema';
+import { creatorAccounts, type ShadowbanCheckApiResponse } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
 import { authenticateToken, type AuthRequest } from './middleware/auth.js';
 import { stateStore, encrypt, decrypt, rateLimit } from './services/state-store.js';

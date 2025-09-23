@@ -30,6 +30,7 @@ const CaptionGeneratorPage = React.lazy(() => import("@/pages/caption-generator"
 const RedditPostingPage = React.lazy(() => import("@/pages/reddit-posting"));
 const ImageShieldPage = React.lazy(() => import("@/pages/imageshield"));
 const TaxTracker = React.lazy(() => import("@/pages/tax-tracker"));
+const ReferralPage = React.lazy(() => import("@/pages/referral"));
 const TermsOfService = React.lazy(() => import("@/pages/terms-of-service"));
 const PrivacyPolicy = React.lazy(() => import("@/pages/privacy-policy"));
 import { RedditCommunities } from "@/components/reddit-communities";
@@ -113,6 +114,10 @@ function AuthenticatedRoutes() {
       <Route path="/communities" component={() => <CommunitiesPage />} />
       <Route path="/gallery" component={() => <GalleryPage />} />
       <Route path="/tax-tracker" component={() => <TaxTracker />} />
+      {/* Pro user only route */}
+      {userTier === 'pro' && (
+        <Route path="/referral" component={ReferralPage} />
+      )}
       <Route path="/history" component={History} />
       <Route path="/settings" component={Settings} />
       <Route path="/checkout" component={Checkout} />
