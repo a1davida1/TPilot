@@ -211,7 +211,7 @@ import { getRandomTemplates, addWatermark, getTemplateByMood } from "./content-t
 import { generateAdvancedContent, type ContentParameters } from "./advanced-content-generator.js";
 // Reddit communities now handled in reddit-routes.ts
 import { getAvailablePerks, getPerksByCategory, getSignupInstructions, realProPerks, type ProPerk } from "./pro-perks.js";
-// import { ReferralManager } from "./referral-manager.js"; // TODO: Create referral manager
+import { ReferralManager } from './lib/referral-system.js';
 
 // API route modules
 import { registerApiRoutes } from "./api-routes.js";
