@@ -1,0 +1,268 @@
+server/auth.ts
++4
+-4
+
+@@ -324,78 +324,78 @@ export function setupAuth(app: Express) {
+  // Email service health check endpoint
+  app.get('/api/auth/email-status', (req, res) => {
+    const status = {
+      configured: emailService.isEmailServiceConfigured,
+      sendgrid_key_exists: !!process.env.SENDGRID_API_KEY,
+      from_email: process.env.FROM_EMAIL || 'not set',
+      frontend_url: process.env.FRONTEND_URL || 'not set',
+      jwt_secret_exists: !!process.env.JWT_SECRET,
+      node_env: process.env.NODE_ENV || 'not set',
+      deployment: process.env.REPLIT_DEPLOYMENT || 'not set'
+    };
+    
+    logger.info('Email service status check', status);
+    res.json(status);
+  });
+
+  // Get current user endpoint (CRITICAL - this was missing!)
+  app.get('/api/auth/user', async (req: Request, res: Response) => {
+    try {
+      let token: string | null = null;
+
+      // Extract token using the utility function
+      token = extractAuthToken(req);
+
+      if (!token) {
+        return res.status(401).json({ message: 'Access token required' });
+        return res.status(401).json({ error: 'Access token required' });
+      }
+        
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET_VALIDATED) as { userId?: number; id?: number; isAdmin?: boolean; };
+        
+        // Verify admin status through database lookup only
+        
+        // Regular user lookup
+        const userId = decoded.userId || decoded.id;
+        if (!userId) {
+          return res.status(401).json({ message: 'Invalid token: missing user ID' });
+          return res.status(401).json({ error: 'Invalid token: missing user ID' });
+        }
+        const user = await storage.getUser(userId);
+        if (user) {
+          const { password: _, ...userResponse } = user;
+          const isAdmin = Boolean(userResponse.isAdmin || userResponse.role === 'admin');
+          return res.json({
+            ...userResponse,
+            tier: userResponse.tier || 'free',
+            isAdmin
+          });
+        }
+
+        return res.status(404).json({ message: 'User not found' });
+        return res.status(404).json({ error: 'User not found' });
+      } catch (jwtError) {
+        safeLog('error', 'JWT verification failed', { error: (jwtError as Error).message });
+        return res.status(401).json({ message: 'Invalid token' });
+        return res.status(401).json({ error: 'Invalid token' });
+      }
+    } catch (error) {
+      safeLog('error', 'Get user failed', { error: (error as Error).message });
+      res.status(500).json({ message: 'Error fetching user data' });
+    }
+  });
+
+  // Force password change endpoint (for temporary passwords)
+  app.post('/api/auth/change-password', passwordChangeLimiter, validate(passwordChangeValidationSchema), async (req, res) => {
+    try {
+      const { userId, currentPassword, newPassword } = req.body;
+
+      if (!userId || !currentPassword || !newPassword) {
+        return res.status(400).json({ message: 'Missing required fields' });
+      }
+
+      if (newPassword.length < 6) {
+        return res.status(400).json({ message: 'New password must be at least 6 characters long' });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+server/middleware/auth.ts
++5
+-5
+
+@@ -25,69 +25,69 @@ if (!JWT_SECRET) {
+const adminCredentials = getAdminCredentials();
+
+export const ADMIN_EMAIL = adminCredentials.email;
+export const ADMIN_PASSWORD_HASH = adminCredentials.passwordHash;
+
+if (!ADMIN_PASSWORD_HASH) {
+  logger.warn('ADMIN_PASSWORD_HASH environment variable is not set. Admin login is disabled.');
+}
+
+if (!ADMIN_EMAIL) {
+  logger.warn('ADMIN_EMAIL environment variable is not set. Admin login is disabled.');
+}
+
+export const authenticateToken = async (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
+  const authHeader = req.headers['authorization'];
+  let token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+  // Fall back to JWT stored in httpOnly cookie
+  if (!token && req.cookies?.authToken) {
+    token = req.cookies.authToken;
+  }
+
+  // Try JWT token first
+  if (token) {
+    if (await isTokenBlacklisted(token)) {
+      return res.status(401).json({ message: 'Token revoked' });
+      return res.status(401).json({ error: 'Token revoked' });
+    }
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as { userId?: number; id?: number; email?: string; isAdmin?: boolean; username?: string; role?: string; tier?: string; iat: number; exp: number };
+
+      // All users must exist in database - no hardcoded admin backdoors
+      // Admin status is verified from database isAdmin/role fields only
+
+      // For regular users, fetch from database
+      const userId = decoded.userId || decoded.id;
+      if (!userId) {
+        return res.status(401).json({ message: 'Invalid token: missing user ID' });
+        return res.status(401).json({ error: 'Invalid token: missing user ID' });
+      }
+
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+
+      if (!user) {
+        return res.status(401).json({ message: 'User not found' });
+        return res.status(401).json({ error: 'User not found' });
+      }
+
+      req.user = user;
+      return next();
+    } catch (error) {
+      logger.error('Auth error:', error);
+      return res.status(403).json({ message: 'Invalid token' });
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+  }
+
+  // Fallback to session-based auth
+  if (req.session && (req.session as { user?: UserType }).user) {
+    req.user = (req.session as any).user as UserType;
+    return next();
+  }
+
+  return res.status(401).json({ message: 'Access token required' });
+  return res.status(401).json({ error: 'Access token required' });
+};
+
+export const createToken = (user: UserType): string => {
+  return jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
+};
+
+export const verifyToken = (token: string): { userId: number; email: string; iat: number; exp: number } => {
+  return jwt.verify(token, JWT_SECRET) as { userId: number; email: string; iat: number; exp: number };
+};
+tests/routes/admin-communities.test.ts
++2
+-2
+
+@@ -288,58 +288,58 @@ describe('Admin Communities Routes', () => {
+        .delete('/api/admin/communities/nonexistent')
+        .expect(404);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe('Community not found');
+    });
+
+    it('should handle delete community error', async () => {
+      mockListCommunities.mockResolvedValue([
+        { id: 'test1', name: 'testcommunity', displayName: 'Test Community' }
+      ]);
+      mockDeleteCommunity.mockRejectedValue(new Error('Database error'));
+
+      const response = await request
+        .delete('/api/admin/communities/test1')
+        .expect(500);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe('Failed to delete community');
+    });
+  });
+
+  describe('Authentication and Authorization', () => {
+    it('should return 401 when no authentication token is provided', async () => {
+      mockAuthenticateToken.mockImplementation((req: any, res: any, next: any) => {
+        res.status(401).json({ message: 'Access token required' });
+        res.status(401).json({ error: 'Access token required' });
+      });
+
+      const response = await request
+        .get('/api/admin/communities')
+        .expect(401);
+
+      expect(response.body.message).toBe('Access token required');
+      expect(response.body.error).toBe('Access token required');
+    });
+
+    it('should return 403 when user is not admin', async () => {
+      mockAuthenticateToken.mockImplementation((req: any, res: any, next: any) => {
+        req.user = {
+          id: 2,
+          username: 'regular_user',
+          email: 'user@test.com',
+          isAdmin: false,
+          role: 'user',
+          tier: 'free'
+        };
+        next();
+      });
+      
+      mockRequireAdmin.mockImplementation((req: any, res: any, next: any) => {
+        res.status(403).json({ message: 'Admin access required' });
+      });
+
+      const response = await request
+        .get('/api/admin/communities')
+        .expect(403);
+
+      expect(response.body.message).toBe('Admin access required');
+    });
+tests/unit/auth/login-identifier.test.ts
++3
+-2
+
+@@ -117,29 +117,30 @@ describe('Login Identifier and Cookie Auth', () => {
+
+      const auth = extractAuthCredentials(loginResponse);
+      expect(auth.hasAuth).toBeTruthy();
+
+      if (auth.cookie || auth.token) {
+        // Use cookie or token for authenticated request
+        const userResponse = auth.cookie
+          ? await request(app)
+              .get('/api/auth/user')
+              .set('Cookie', auth.cookie)
+          : await request(app)
+              .get('/api/auth/user')
+              .set('Authorization', `Bearer ${auth.token}`);
+
+        // Should accept cookie authentication
+        expect(userResponse.status).toBe(200);
+        expect(userResponse.body).toHaveProperty('id');
+      }
+    });
+
+    it('should reject request without auth cookie or token', async () => {
+      const response = await request(app)
+        .get('/api/auth/user');
+
+      expect(response.status).toBe(401);
+      expect(response.body.message || "").toContain('Access token required');
+      const errorMessage = (response.body.error || response.body.message || '') as string;
+      expect(errorMessage).toContain('Access token required');
+    });
+  });
+});
+});

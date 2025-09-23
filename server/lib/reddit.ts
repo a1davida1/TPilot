@@ -1168,22 +1168,23 @@ export class RedditManager {
 
         // For daily limits, only count posts in last 24h
         const oneDayAgo = new Date(now.getTime() - DAY_IN_MS);
-        const postsInLast24h = recentPosts.filter(post => {
+        const postsInLast24hFromHistory = recentPosts.filter(post => {
           const postDate = toDate(post.lastPostAt);
           return postDate && postDate > oneDayAgo;
         }).length;
+
+        postsInLast24h = Math.max(postsInLast24h, postsInLast24hFromHistory);
 
         // Check link policy
         if (context.hasLink && rules?.linkPolicy === 'no-link') {
           reasons.push('This subreddit does not allow links');
         } else if (context.hasLink && rules?.linkPolicy === 'one-link') {
-          if (postsInLast24h > 0) {
+          if (postsInLast24hFromHistory > 0) {
             reasons.push('This subreddit only allows one link per 24 hours');
           }
         }
 
         // Check cooldown period
-        let nextAllowedPost: Date | undefined;
         if (cooldownMinutes && recentPosts.length > 0) {
           const mostRecentPost = recentPosts.reduce((latest, post) => {
             const postDate = toDate(post.lastPostAt);
@@ -1195,7 +1196,9 @@ export class RedditManager {
           if (mostRecentPostTime) {
             const cooldownEnd = new Date(mostRecentPostTime.getTime() + cooldownMinutes * 60 * 1000);
             if (now < cooldownEnd) {
-              nextAllowedPost = cooldownEnd;
+              if (!nextAllowedPost || cooldownEnd < nextAllowedPost) {
+                nextAllowedPost = cooldownEnd;
+              }
               const remainingMinutes = Math.ceil((cooldownEnd.getTime() - now.getTime()) / (60 * 1000));
               reasons.push(`Must wait ${remainingMinutes} minutes before posting again (cooldown period)`);
             }
@@ -1206,8 +1209,9 @@ export class RedditManager {
         const dailyLimit = deriveDailyLimit(rules);
         const maxPostsPer24h = dailyLimit || 3; // Conservative default to prevent shadowbans
 
-        if (postsInLast24h >= maxPostsPer24h) {
+        if (postsInLast24hFromHistory >= maxPostsPer24h) {
           reasons.push(`Daily posting limit reached (${maxPostsPer24h} posts per 24 hours)`);
+          
 
           // Calculate when daily limit resets (oldest post + 24h)
           const postsInLast24hSorted = recentPosts
@@ -1218,35 +1222,21 @@ export class RedditManager {
             .map(post => toDate(post.lastPostAt))
             .filter((date): date is Date => !!date)
             .sort((a, b) => a.getTime() - b.getTime());
+          
 
           if (postsInLast24hSorted.length > 0) {
             const oldestPostIn24h = postsInLast24hSorted[0];
             const dailyLimitReset = new Date(oldestPostIn24h.getTime() + DAY_IN_MS);
+            
 
             // nextAllowedPost is the earliest of cooldown end or daily limit reset
             if (!nextAllowedPost || dailyLimitReset < nextAllowedPost) {
               nextAllowedPost = dailyLimitReset;
             }
           }
-        } else if (postsInLast24h >= maxPostsPer24h - 1) {
-          warnings.push(`Approaching daily limit: ${postsInLast24h + 1}/${maxPostsPer24h} posts`);
+        } else if (postsInLast24hFromHistory >= maxPostsPer24h - 1) {
+          warnings.push(`Approaching daily limit: ${postsInLast24hFromHistory + 1}/${maxPostsPer24h} posts`);
         }
-
-        return {
-          canPost: reasons.length === 0,
-          reason: reasons.length > 0 ? reasons[0] : undefined,
-          reasons,
-          warnings,
-          nextAllowedPost,
-          evaluatedAt: now,
-          postsInLast24h,
-          maxPostsPer24h,
-          ruleSummary: rules ? {
-            linkPolicy: rules.linkPolicy,
-            cooldownMinutes: cooldownMinutes ?? undefined,
-            dailyLimit: dailyLimit ?? undefined,
-          } : undefined,
-        };
       }
 
       const canPost = reasons.length === 0;
@@ -1257,9 +1247,9 @@ export class RedditManager {
         reason: primaryReason,
         reasons,
         warnings,
-        nextAllowedPost: undefined,
+        nextAllowedPost,
         evaluatedAt: now,
-        postsInLast24h: 0,
+        postsInLast24h,
         maxPostsPer24h: communityData?.postingLimits ?
           (communityData.postingLimits as any)?.daily ||
           (communityData.postingLimits as any)?.perDay ||

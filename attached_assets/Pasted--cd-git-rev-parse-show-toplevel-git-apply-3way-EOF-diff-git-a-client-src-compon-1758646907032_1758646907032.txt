@@ -1,0 +1,153 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/client/src/components/GeminiCaptionGenerator.tsx b/client/src/components/GeminiCaptionGenerator.tsx
+index 7e5bcdafd448fb135a531fb9ccadde5a7448692a..9825f3ce0277a63dc3f97aff1918cfaaa3e5e252 100644
+--- a/client/src/components/GeminiCaptionGenerator.tsx
++++ b/client/src/components/GeminiCaptionGenerator.tsx
+@@ -1,124 +1,128 @@
+ import React, { useState } from "react";
+ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+ import { Button } from "@/components/ui/button";
+ import { Input } from "@/components/ui/input";
+ import { Label } from "@/components/ui/label";
+ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+ import { Alert, AlertDescription } from "@/components/ui/alert";
+ import { CaptionPreview } from "./CaptionPreview";
+ import { Loader2, Sparkles, Upload, AlertCircle, Image as ImageIcon } from "lucide-react";
+ import { toast } from "@/hooks/use-toast";
++import { apiRequest, type ApiError } from "@/lib/queryClient";
+ import { getErrorMessage } from "@/utils/errorHelpers";
+ 
+ const PLATFORMS = [
+   { value: "instagram", label: "Instagram" },
+   { value: "x", label: "X (Twitter)" },
+   { value: "reddit", label: "Reddit" },
+   { value: "tiktok", label: "TikTok" }
+ ];
+ 
+ const VOICES = [
+   { value: "flirty_playful", label: "Flirty & Playful" },
+   { value: "gamer_nerdy", label: "Gamer & Nerdy" },
+   { value: "luxury_minimal", label: "Luxury Minimal" },
+   { value: "arts_muse", label: "Arts & Muse" },
+   { value: "gym_energy", label: "Gym Energy" },
+   { value: "cozy_girl", label: "Cozy Girl" }
+ ];
+ 
++function isApiError(error: unknown): error is ApiError {
++  return (
++    typeof error === "object" &&
++    error !== null &&
++    "status" in error &&
++    typeof (error as { status: unknown }).status === "number" &&
++    "statusText" in error &&
++    typeof (error as { statusText: unknown }).statusText === "string"
++  );
++}
++
+ export function GeminiCaptionGenerator() {
+   const [imageUrl, setImageUrl] = useState("");
+   const [platform, setPlatform] = useState<string>("instagram");
+   const [voice, setVoice] = useState<string>("flirty_playful");
+   const [isGenerating, setIsGenerating] = useState(false);
+   const [captionData, setCaptionData] = useState<any>(null);
+   const [error, setError] = useState<string | null>(null);
+   const [imageFile, setImageFile] = useState<File | null>(null);
+   const [imagePreview, setImagePreview] = useState<string | null>(null);
+ 
+   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+     const file = e.target.files?.[0];
+     if (file) {
+       if (!file.type.startsWith('image/')) {
+         toast({
+           title: "Invalid file",
+           description: "Please upload an image file",
+           variant: "destructive"
+         });
+         return;
+       }
+       
+       setImageFile(file);
+       const reader = new FileReader();
+       reader.onloadend = () => {
+         const base64 = reader.result as string;
+         setImagePreview(base64);
+         setImageUrl(base64);
+       };
+       reader.readAsDataURL(file);
+     }
+   };
+ 
+   const handleGenerate = async () => {
+     if (!imageUrl) {
+       setError("Please provide an image URL or upload an image");
+       return;
+     }
+ 
+     setIsGenerating(true);
+     setError(null);
+     setCaptionData(null);
+ 
+     try {
+-      const response = await fetch('/api/caption/generate', {
+-        method: 'POST',
+-        headers: {
+-          'Content-Type': 'application/json',
+-        },
+-        body: JSON.stringify({
+-          imageUrl,
+-          platform,
+-          voice
+-        })
++      const response = await apiRequest('POST', '/api/caption/generate', {
++        imageUrl,
++        platform,
++        voice
+       });
+ 
+       const result = await response.json();
+ 
+-      if (!response.ok) {
+-        throw new Error(result.error || 'Generation failed');
+-      }
+-
+       setCaptionData(result);
+       toast({
+         title: "Caption generated!",
+         description: "Your AI-powered caption is ready to use",
+       });
+     } catch (err: unknown) {
+       console.error('Generation error:', err);
+-      const message = getErrorMessage(err);
+-      setError(message || 'Failed to generate caption');
++      const message = isApiError(err)
++        ? err.userMessage ?? err.message ?? 'Failed to generate caption'
++        : getErrorMessage(err);
++      setError(message);
+       toast({
+         title: "Generation failed",
+         description: message || 'Please try again',
+         variant: "destructive"
+       });
+     } finally {
+       setIsGenerating(false);
+     }
+   };
+ 
+   const handleRegenerate = () => {
+     setCaptionData(null);
+     handleGenerate();
+   };
+ 
+   return (
+     <div className="space-y-6">
+       <Card>
+         <CardHeader>
+           <CardTitle className="flex items-center gap-2">
+             <Sparkles className="h-5 w-5 text-pink-500" />
+             AI Caption Generator (2-Pass Gemini)
+           </CardTitle>
+         </CardHeader>
+         <CardContent className="space-y-4">
+ 
+EOF
+)

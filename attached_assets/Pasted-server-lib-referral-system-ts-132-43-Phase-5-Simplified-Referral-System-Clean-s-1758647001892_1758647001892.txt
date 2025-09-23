@@ -1,0 +1,897 @@
+server/lib/referral-system.ts
++132
+-43
+
+/**
+ * Phase 5: Simplified Referral System
+ * Clean, straightforward referral tracking with user-friendly codes
+ */
+
+import { db } from '../db';
+import { users, referralRewards } from '@shared/schema';
+import { users, referralRewards, referralCodes } from '@shared/schema';
+import { eq, sql } from 'drizzle-orm';
+import { customAlphabet } from 'nanoid';
+// TODO: implement real notification service
+const notificationService = {
+  sendReferralNotification: async () => ({ skipped: true })
+};
+
+// Generate user-friendly referral codes (no confusing characters)
+const generateReferralCode = customAlphabet('ABCDEFGHIJKLMNPQRSTUVWXYZ123456789', 8);
+
+interface ReferralCodeOptions {
+  sharePct?: number;
+}
+
+const DEFAULT_SHARE_PCT = 20;
+
+export interface ReferralInfo {
+  code: string;
+  totalReferrals: number;
+  activeReferrals: number;
+  totalCommission: number;
+  conversionRate: number;
+}
+
+export interface ReferralReward {
+  type: 'commission' | 'bonus_storage' | 'free_month';
+  amount: number;
+  description: string;
+}
+
+export class ReferralManager {
+  /**
+   * Generate a unique referral code for a user
+   */
+  static async generateReferralCode(userId: number): Promise<string> {
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    while (attempts < maxAttempts) {
+      const code = generateReferralCode();
+      
+      // Check if code already exists
+      const existing = await db
+        .select({ id: users.id })
+  static async generateReferralCode(userId: number, options?: ReferralCodeOptions): Promise<string> {
+    return await this.getUserReferralCode(userId, options);
+  }
+
+  /**
+   * Get or create referral code for a user
+   */
+  static async getUserReferralCode(userId: number, options?: ReferralCodeOptions): Promise<string> {
+    const sharePct = options?.sharePct ?? DEFAULT_SHARE_PCT;
+
+    return await db.transaction(async (tx) => {
+      const [user] = await tx
+        .select({
+          id: users.id,
+          referralCodeId: users.referralCodeId,
+        })
+        .from(users)
+        .where(eq(users.referralCodeId, parseInt(code)))
+        .where(eq(users.id, userId))
+        .limit(1);
+
+      if (existing.length === 0) {
+        // Update user with the new referral code
+        await db
+          .update(users)
+          .set({ referralCodeId: parseInt(code) })
+          .where(eq(users.id, userId));
+
+        return code;
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      attempts++;
+    }
+
+    throw new Error('Unable to generate unique referral code');
+  }
+      if (user.referralCodeId) {
+        const [existingCode] = await tx
+          .select({
+            id: referralCodes.id,
+            code: referralCodes.code,
+            ownerId: referralCodes.ownerId,
+            sharePct: referralCodes.sharePct,
+          })
+          .from(referralCodes)
+          .where(eq(referralCodes.id, user.referralCodeId))
+          .limit(1);
+
+        if (existingCode) {
+          const updates: Partial<{ ownerId: number | null; sharePct: number }> = {};
+
+          if (existingCode.ownerId !== userId) {
+            updates.ownerId = userId;
+          }
+
+          if (existingCode.sharePct !== sharePct) {
+            updates.sharePct = sharePct;
+          }
+
+          if (Object.keys(updates).length > 0) {
+            await tx
+              .update(referralCodes)
+              .set(updates)
+              .where(eq(referralCodes.id, existingCode.id));
+          }
+
+          return existingCode.code;
+        }
+      }
+
+  /**
+   * Get or create referral code for a user
+   */
+  static async getUserReferralCode(userId: number): Promise<string> {
+    const [user] = await db
+      .select({ referralCodeId: users.referralCodeId })
+      .from(users)
+      .where(eq(users.id, userId));
+      const [ownedCode] = await tx
+        .select({
+          id: referralCodes.id,
+          code: referralCodes.code,
+          sharePct: referralCodes.sharePct,
+        })
+        .from(referralCodes)
+        .where(eq(referralCodes.ownerId, userId))
+        .limit(1);
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+      if (ownedCode) {
+        if (user.referralCodeId !== ownedCode.id) {
+          await tx
+            .update(users)
+            .set({ referralCodeId: ownedCode.id })
+            .where(eq(users.id, userId));
+        }
+
+        if (ownedCode.sharePct !== sharePct) {
+          await tx
+            .update(referralCodes)
+            .set({ sharePct })
+            .where(eq(referralCodes.id, ownedCode.id));
+        }
+
+        return ownedCode.code;
+      }
+
+    if (user.referralCodeId) {
+      return user.referralCodeId.toString();
+    }
+      let attempts = 0;
+      const maxAttempts = 10;
+
+      while (attempts < maxAttempts) {
+        const codeCandidate = generateReferralCode();
+        const [inserted] = await tx
+          .insert(referralCodes)
+          .values({
+            code: codeCandidate,
+            ownerId: userId,
+            sharePct,
+          })
+          .onConflictDoNothing()
+          .returning({ id: referralCodes.id, code: referralCodes.code });
+
+        if (inserted) {
+          await tx
+            .update(users)
+            .set({ referralCodeId: inserted.id })
+            .where(eq(users.id, userId));
+
+          return inserted.code;
+        }
+
+        attempts++;
+      }
+
+    // Generate new code if user doesn't have one
+    return await this.generateReferralCode(userId);
+      throw new Error('Unable to generate unique referral code');
+    });
+  }
+
+  /**
+   * Apply referral code when user signs up
+   */
+  static async applyReferralCode(newUserId: number, referralCode: string): Promise<{
+    success: boolean;
+    referrerId?: number;
+    error?: string;
+  }> {
+    try {
+      // Find the referrer
+      const [codeRecord] = await db
+        .select({
+          id: referralCodes.id,
+          ownerId: referralCodes.ownerId,
+        })
+        .from(referralCodes)
+        .where(eq(referralCodes.code, referralCode))
+        .limit(1);
+
+      if (!codeRecord?.ownerId) {
+        return {
+          success: false,
+          error: 'Invalid referral code',
+        };
+      }
+
+      const [referrer] = await db
+        .select({ id: users.id, subscriptionStatus: users.subscriptionStatus })
+        .from(users)
+        .where(eq(users.referralCodeId, parseInt(referralCode)));
+        .where(eq(users.id, codeRecord.ownerId))
+        .limit(1);
+
+      if (!referrer) {
+        return {
+          success: false,
+          error: 'Invalid referral code',
+        };
+      }
+
+      // Check if new user is trying to refer themselves
+      if (referrer.id === newUserId) {
+        return {
+          success: false,
+          error: 'Cannot use your own referral code',
+        };
+      }
+
+      // Update new user with referrer information
+      await db
+        .update(users)
+        .set({ 
+        .set({
+          referredBy: referrer.id,
+          createdAt: new Date(),
+        })
+        .where(eq(users.id, newUserId));
+
+      return {
+        success: true,
+        referrerId: referrer.id,
+      };
+
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to apply referral code',
+      };
+    }
+  }
+
+  /**
+   * Get referral statistics for a user
+   */
+  static async getReferralInfo(userId: number): Promise<ReferralInfo> {
+    // Get user's referral code
+    const code = await this.getUserReferralCode(userId);
+
+server/routes.ts
++35
+-3
+
+@@ -3,50 +3,51 @@ import express from "express";
+import { createServer, type Server } from "http";
+import session from 'express-session';
+import path from 'path';
+import connectPgSimple from 'connect-pg-simple';
+import * as connectRedis from 'connect-redis';
+import { Pool } from 'pg';
+import Redis from 'ioredis';
+import Stripe from 'stripe';
+import passport from 'passport';
+
+// Security and middleware
+import { validateEnvironment, securityMiddleware, ipLoggingMiddleware, errorHandler, logger, generationLimiter } from "./middleware/security.js";
+import { AppError, CircuitBreaker } from "./lib/errors.js";
+import { authenticateToken } from "./middleware/auth.js";
+
+// Route modules
+// import { authRoutes } from "./routes/auth.js"; // Removed - using server/auth.ts instead
+import { uploadRoutes, applyImageShieldProtection, protectionPresets } from "./routes/upload.js";
+import { mediaRoutes } from "./routes/media.js";
+import { analyticsRouter } from "./routes/analytics.js";
+import { registerExpenseRoutes } from "./expense-routes.js";
+import { adminCommunitiesRouter } from "./routes/admin-communities.js";
+
+// Core imports
+import { storage } from "./storage.js";
+import { ReferralManager } from "./lib/referral-system.js";
+import { setupAuth } from "./auth.js";
+import { setupAdminRoutes } from "./admin-routes.js";
+import { configureSocialAuth, socialAuthRoutes } from "./social-auth-config.js";
+import { visitorAnalytics } from "./visitor-analytics.js";
+import { makePaxum, makeCoinbase, makeStripe } from "./payments/payment-providers.js";
+import { deriveStripeConfig } from "./payments/stripe-config.js";
+// Analytics request type
+interface AnalyticsRequest extends express.Request {
+  sessionID: string;
+}
+
+// Import users table for type inference
+import { users, type ContentGeneration } from "@shared/schema";
+
+// AuthUser interface for passport serialization
+interface AuthUser {
+  id: number;
+  username?: string;
+  isAdmin?: boolean;
+}
+
+// Auth request interface that includes user  
+type SessionUser = typeof users.$inferSelect & { subscriptionTier?: string | null };
+
+interface AuthenticatedRequest extends express.Request {
+@@ -84,50 +85,79 @@ function registerProResourcesRoutes(app: Express) {
+    const tierFromUser = resolveTier(user.tier);
+    if (tierFromUser) {
+      return tierFromUser;
+    }
+
+    try {
+      const persistedUser = await storage.getUserById(user.id);
+      if (persistedUser) {
+        const persistedTier = resolveTier(
+          (persistedUser as SessionUser).subscriptionTier ?? persistedUser.tier
+        );
+        if (persistedTier) {
+          return persistedTier;
+        }
+      }
+    } catch (storageError) {
+      logger.warn('Failed to resolve user tier from storage', {
+        userId: user.id,
+        error: storageError instanceof Error ? storageError.message : String(storageError)
+      });
+    }
+
+    return 'free';
+  };
+
+  const deriveSharePercentage = (perk: ProPerk): number => {
+    if (!perk.commissionRate) {
+      return 20;
+    }
+
+    const percentMatches = Array.from(perk.commissionRate.matchAll(/(\d+(?:\.\d+)?)\s*%/g));
+    if (percentMatches.length === 0) {
+      return 20;
+    }
+
+    const numericPercents = percentMatches
+      .map(match => Number.parseFloat(match[1]))
+      .filter((value): value is number => Number.isFinite(value));
+
+    if (numericPercents.length === 0) {
+      return 20;
+    }
+
+    const normalizedPercents = numericPercents.map(value => {
+      const rounded = Math.round(value);
+      if (Number.isNaN(rounded)) {
+        return 20;
+      }
+      return Math.min(100, Math.max(1, rounded));
+    });
+
+    return Math.max(...normalizedPercents);
+  };
+
+
+  // GET /api/pro-resources - List all perks for authenticated users
+  app.get('/api/pro-resources', authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(403).json({ 
+          perks: [], 
+          accessGranted: false,
+          message: "Authentication required for pro resources" 
+        });
+      }
+
+      const userTier = await getUserTier(req.user);
+      
+      // Only pro/premium users get access
+      if (userTier === 'free' || userTier === 'starter') {
+        return res.status(403).json({
+          perks: [],
+          accessGranted: false,
+          message: "Pro subscription required to access these resources"
+        });
+      }
+
+      const availablePerks = userTier === 'premium'
+        ? getAvailablePerks('pro')
+@@ -192,84 +222,86 @@ function registerProResourcesRoutes(app: Express) {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const userTier = await getUserTier(req.user);
+      if (userTier === 'free' || userTier === 'starter') {
+        return res.status(403).json({ message: "Pro subscription required" });
+      }
+
+      const perkId = req.params.id;
+      if (!perkId) {
+        return res.status(400).json({ message: "Perk ID required" });
+      }
+
+      // Verify the perk exists and user has access
+      const availablePerks = userTier === 'premium'
+        ? getAvailablePerks('pro')
+        : getAvailablePerks(userTier);
+      const perk = availablePerks.find(p => p.id === perkId);
+      
+      if (!perk) {
+        return res.status(404).json({ message: "Perk not found or not accessible" });
+      }
+
+      const referralCode = generateReferralCode(req.user.id, perkId);
+      
+      const sharePct = deriveSharePercentage(perk);
+      const referralCode = await ReferralManager.getUserReferralCode(req.user.id, { sharePct });
+
+      res.json({
+        referralCode
+      });
+
+    } catch (error) {
+      logger.error("Referral code generation error:", error);
+      res.status(500).json({ message: "Failed to generate referral code" });
+    }
+  });
+}
+
+// Session interface with Reddit OAuth properties
+interface RedditSessionData {
+  redditOAuthState?: string;
+  redditConnected?: boolean;
+}
+
+declare module 'express-session' {
+  interface SessionData extends RedditSessionData {}
+}
+
+// Service imports
+import { generateContent } from "./services/content-generator.js";
+import { generateAIContent, analyzeImageForContent } from "./services/ai-generator.js";
+import { generateWithMultiProvider, getProviderStatus } from "./services/multi-ai-provider.js";
+import { generateUnifiedAIContent, analyzeImage } from "./services/unified-ai-service.js";
+import { generateImageCaption, imageToBase64, validateImageFormat } from "./image-caption-generator.js";
+import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage.js";
+import { getRandomTemplates, addWatermark, getTemplateByMood } from "./content-templates.js";
+import { generateAdvancedContent, type ContentParameters } from "./advanced-content-generator.js";
+// Reddit communities now handled in reddit-routes.ts
+import { getAvailablePerks, getPerksByCategory, generateReferralCode, getSignupInstructions, realProPerks } from "./pro-perks.js";
+import { getAvailablePerks, getPerksByCategory, getSignupInstructions, realProPerks } from "./pro-perks.js";
+import type { ProPerk } from "./pro-perks.js";
+
+// API route modules
+import { registerApiRoutes } from "./api-routes.js";
+import { registerPolicyRoutes } from "./policy-routes.js";
+import { registerRedditRoutes } from "./reddit-routes.js";
+import { registerAnalyticsRoutes } from "./analytics-routes.js";
+import { createLead, confirmLead } from "./api/leads.js";
+import { getLeads } from "./api/admin-leads.js";
+import { captionRouter } from "./routes/caption.js";
+import { contentGenerationLimiter } from "./middleware/tiered-rate-limit.js";
+import { registerSocialMediaRoutes } from "./social-media-routes.js";
+
+// Schema imports
+import { insertContentGenerationSchema, insertUserImageSchema } from "@shared/schema";
+
+// Core dependencies
+import multer from 'multer';
+import fs from 'fs/promises';
+import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
+import csrf from 'csurf';
+
+// Get secure environment variables (no fallbacks)
+const rawSessionSecret = process.env.SESSION_SECRET;
+tests/integration/pro-resources.test.ts
++144
+-10
+
+import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll, vi } from 'vitest';
+import request from 'supertest';
+import express from 'express';
+import type { Express } from 'express';
+import { storage } from '../../server/storage.js';
+
+// Mock auth module to simulate different authentication states
+const mockUsers = new Map<number, any>();
+let currentMockUser: any = null;
+
+// Mock the auth middleware to simulate real behavior
+const mockAuthMiddleware = vi.fn((req: any, res: any, next: any) => {
+  if (currentMockUser) {
+    req.user = currentMockUser;
+  }
+  next();
+});
+
+interface ReferralMockRecord {
+  id: number;
+  code: string;
+  sharePct: number;
+}
+
+interface ReferralMockRow extends ReferralMockRecord {
+  ownerId: number;
+}
+
+const referralManagerMockState: {
+  nextId: number;
+  byUser: Map<number, ReferralMockRecord>;
+  rows: Map<number, ReferralMockRow>;
+} = {
+  nextId: 1,
+  byUser: new Map(),
+  rows: new Map(),
+};
+
+const resetReferralManagerMockState = (): void => {
+  referralManagerMockState.nextId = 1;
+  referralManagerMockState.byUser.clear();
+  referralManagerMockState.rows.clear();
+};
+
+vi.mock('../../server/lib/referral-system.js', () => {
+  class ReferralManagerMock {
+    static async getUserReferralCode(userId: number, options?: { sharePct?: number }): Promise<string> {
+      const sharePct = options?.sharePct ?? 20;
+      const existing = referralManagerMockState.byUser.get(userId);
+
+      if (existing) {
+        if (existing.sharePct !== sharePct) {
+          existing.sharePct = sharePct;
+          const row = referralManagerMockState.rows.get(existing.id);
+          if (row) {
+            row.sharePct = sharePct;
+          }
+        }
+        return existing.code;
+      }
+
+      const code = `MOCK-${userId.toString().padStart(4, '0')}`;
+      const record: ReferralMockRecord = {
+        id: referralManagerMockState.nextId++,
+        code,
+        sharePct,
+      };
+
+      referralManagerMockState.byUser.set(userId, record);
+      referralManagerMockState.rows.set(record.id, { ...record, ownerId: userId });
+
+      return code;
+    }
+
+    static async generateReferralCode(userId: number, options?: { sharePct?: number }): Promise<string> {
+      return this.getUserReferralCode(userId, options);
+    }
+
+    static async applyReferralCode(): Promise<{ success: false; error: string }> {
+      return { success: false, error: 'Not implemented in mock' };
+    }
+
+    static async getReferralInfo(userId: number): Promise<{ code: string; totalReferrals: number; activeReferrals: number; totalCommission: number; conversionRate: number }> {
+      const code = await this.getUserReferralCode(userId);
+      return {
+        code,
+        totalReferrals: 0,
+        activeReferrals: 0,
+        totalCommission: 0,
+        conversionRate: 0,
+      };
+    }
+
+    static async generateReferralLink(userId: number, baseUrl: string): Promise<string> {
+      const code = await this.getUserReferralCode(userId);
+      return `${baseUrl}/register?ref=${code}`;
+    }
+
+    static isValidReferralCode(code: string): boolean {
+      return code.startsWith('MOCK-');
+    }
+
+    static async processReferralReward(): Promise<null> {
+      return null;
+    }
+
+    static async getReferralLeaderboard(): Promise<Array<{ userId: number; firstName: string | null; totalReferrals: number; activeReferrals: number; rank: number }>> {
+      return [];
+    }
+  }
+
+  return {
+    ReferralManager: ReferralManagerMock,
+    __referralManagerMockState: referralManagerMockState,
+    __resetReferralManagerMockState: resetReferralManagerMockState,
+  };
+});
+
+// Mock the pro-perks module
+vi.mock('../../server/pro-perks.js', () => ({
+  getAvailablePerks: vi.fn(() => [
+    {
+      id: 'onlyfans-referral',
+      name: 'OnlyFans Creator Referral',
+      category: 'affiliate',
+      tier: 'pro',
+      description: 'Earn 5% lifetime commission by referring new creators',
+      commissionRate: '5% lifetime',
+      signupProcess: 'Auto-approval with tracking link',
+      estimatedEarnings: '$100-500/month potential',
+      status: 'available',
+      officialLink: 'https://onlyfans.com/refer',
+      features: ['Lifetime 5% commission', 'Real-time tracking', 'Monthly payments']
+    }
+  ]),
+  generateReferralCode: vi.fn((userId: number, perkId: string) => `TP${userId}${perkId.slice(-4).toUpperCase()}`),
+  getSignupInstructions: vi.fn((perkId: string) => ({
+    steps: ['Sign up with provided link', 'Complete profile verification', 'Start earning commissions'],
+    requirements: ['Active ThottoPilot Pro subscription', 'Verified identity'],
+    timeline: 'Instant approval for most creators',
+    support: 'Contact support@thottopilot.com for assistance'
+  }))
+}));
+
+// Mock the authenticateToken middleware
+vi.mock('../../server/middleware/auth.js', () => ({
+  authenticateToken: mockAuthMiddleware
+}));
+
+// Mock storage for testing fallback behavior
+vi.mock('../../server/storage.js', () => ({
+  storage: {
+    getUserById: vi.fn()
+  }
+}));
+
+describe('Pro Resources Integration', () => {
+  let app: Express;
+  type StoredUser = NonNullable<Awaited<ReturnType<typeof storage.getUserById>>>;
+
+  const originalOpenAiKey = process.env.OPENAI_API_KEY;
+@@ -136,51 +235,52 @@ describe('Pro Resources Integration', () => {
+      redditUsername: overrides?.redditUsername ?? null,
+      redditAccessToken: overrides?.redditAccessToken ?? null,
+      redditRefreshToken: overrides?.redditRefreshToken ?? null,
+      redditId: overrides?.redditId ?? null,
+      stripeCustomerId: overrides?.stripeCustomerId ?? null,
+      stripeSubscriptionId: overrides?.stripeSubscriptionId ?? null,
+      bannedAt: overrides?.bannedAt ?? null,
+      suspendedUntil: overrides?.suspendedUntil ?? null,
+      banReason: overrides?.banReason ?? null,
+      suspensionReason: overrides?.suspensionReason ?? null,
+      createdAt: overrides?.createdAt ?? now,
+      updatedAt: overrides?.updatedAt ?? now,
+      lastLogin: overrides?.lastLogin ?? null,
+      passwordResetAt: overrides?.passwordResetAt ?? null,
+      deletedAt: overrides?.deletedAt ?? null,
+      isDeleted: overrides?.isDeleted ?? false,
+      ...overrides
+    };
+  };
+
+  beforeEach(async () => {
+    // Clear mocks and reset state
+    vi.clearAllMocks();
+    mockUsers.clear();
+    currentMockUser = null;
+    
+    resetReferralManagerMockState();
+
+    // Create Express app with real pro-resources routes
+    app = express();
+    app.use(express.json());
+    
+    // Import the real routes function
+    const { registerRoutes } = await import('../../server/routes.js');
+    
+    // Call registerRoutes to mount all routes including pro-resources
+    await registerRoutes(app);
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('GET /api/pro-resources', () => {
+    it('should return 403 for unauthenticated requests', async () => {
+      // No user set, should fail authentication
+      currentMockUser = null;
+      
+      const response = await request(app)
+        .get('/api/pro-resources')
+        .expect(403);
+
+      expect(response.body).toMatchObject({
+@@ -320,128 +420,162 @@ describe('Pro Resources Integration', () => {
+        username: 'testuser'
+      };
+
+      await request(app)
+        .post('/api/pro-resources/test-perk-id/referral-code')
+        .set('Content-Type', 'application/json')
+        .set('Authorization', 'Bearer mock-free-token')
+        .expect(403);
+    });
+
+    it('should return 404 for non-existent perk', async () => {
+      currentMockUser = {
+        id: 2,
+        subscriptionTier: 'pro',
+        username: 'prouser'
+      };
+
+      await request(app)
+        .post('/api/pro-resources/non-existent-perk/referral-code')
+        .set('Content-Type', 'application/json')
+        .set('Authorization', 'Bearer mock-pro-token')
+        .expect(404);
+    });
+
+    it('should generate referral code for valid perk and pro user', async () => {
+      const userId = 2;
+      currentMockUser = {
+        id: 2,
+        id: userId,
+        subscriptionTier: 'pro',
+        username: 'prouser'
+      };
+
+      const response = await request(app)
+        .post('/api/pro-resources/onlyfans-referral/referral-code')
+        .set('Content-Type', 'application/json')
+        .set('Authorization', 'Bearer mock-pro-token')
+        .expect(200);
+
+      expect(response.body).toMatchObject({
+        referralCode: expect.any(String)
+        referralCode: 'MOCK-0002'
+      });
+
+      // Verify referral code format matches our mock implementation
+      expect(response.body.referralCode).toMatch(/^TP2/);
+      const storedRow = Array.from(referralManagerMockState.rows.values()).find(row => row.ownerId === userId);
+      expect(storedRow).toBeDefined();
+      expect(storedRow?.code).toBe('MOCK-0002');
+      expect(storedRow?.sharePct).toBe(5);
+    });
+
+    it('should reuse stored referral code for repeated requests', async () => {
+      const userId = 2;
+      currentMockUser = {
+        id: userId,
+        subscriptionTier: 'pro',
+        username: 'prouser-repeat'
+      };
+
+      const firstResponse = await request(app)
+        .post('/api/pro-resources/onlyfans-referral/referral-code')
+        .set('Content-Type', 'application/json')
+        .set('Authorization', 'Bearer mock-pro-repeat')
+        .expect(200);
+
+      currentMockUser = {
+        id: userId,
+        subscriptionTier: 'pro',
+        username: 'prouser-repeat'
+      };
+
+      const secondResponse = await request(app)
+        .post('/api/pro-resources/onlyfans-referral/referral-code')
+        .set('Content-Type', 'application/json')
+        .set('Authorization', 'Bearer mock-pro-repeat')
+        .expect(200);
+
+      expect(secondResponse.body.referralCode).toBe(firstResponse.body.referralCode);
+
+      const rowsForUser = Array.from(referralManagerMockState.rows.values()).filter(row => row.ownerId === userId);
+      expect(rowsForUser).toHaveLength(1);
+    });
+
+    it('should generate unique referral codes for different users', async () => {
+      // First user
+      currentMockUser = {
+        id: 2,
+        subscriptionTier: 'pro',
+        username: 'prouser1'
+      };
+
+      const response1 = await request(app)
+        .post('/api/pro-resources/onlyfans-referral/referral-code')
+        .set('Content-Type', 'application/json')
+        .set('Authorization', 'Bearer mock-pro-token1')
+        .expect(200);
+
+      // Second user
+      currentMockUser = {
+        id: 3,
+        subscriptionTier: 'pro',
+        username: 'prouser2'
+      };
+
+      const response2 = await request(app)
+        .post('/api/pro-resources/onlyfans-referral/referral-code')
+        .set('Content-Type', 'application/json')
+        .set('Authorization', 'Bearer mock-pro-token2')
+        .expect(200);
+
+      // Referral codes should be different for different users
+      expect(response1.body.referralCode).toBe('MOCK-0002');
+      expect(response2.body.referralCode).toBe('MOCK-0003');
+      expect(response1.body.referralCode).not.toBe(response2.body.referralCode);
+    });
+
+    it('should fall back to stored tier when session is missing subscription tier', async () => {
+      const persistedUserId = 45;
+      currentMockUser = {
+        id: persistedUserId,
+        username: 'fallback-pro'
+        // Note: no subscriptionTier field, should trigger fallback
+      };
+
+      const { storage } = await import('../../server/storage.js');
+      const storedUser: Partial<User> & { subscriptionTier?: string | null } = {
+        id: persistedUserId,
+        tier: 'pro'
+      };
+
+      const getUserByIdSpy = vi
+        .spyOn(storage, 'getUserById')
+        .mockResolvedValue(storedUser as User);
+
+      const response = await request(app)
+        .post('/api/pro-resources/onlyfans-referral/referral-code')
+        .set('Content-Type', 'application/json')
+        .set('Authorization', 'Bearer mock-storage-tier')
+        .expect(200);
+
+      expect(getUserByIdSpy).toHaveBeenCalledWith(persistedUserId);
+      expect(response.body).toMatchObject({
+        referralCode: expect.stringMatching(/^TP45/)
+        referralCode: 'MOCK-0045'
+      });
+
+      getUserByIdSpy.mockRestore();
+    });
+  });
+
+  describe('Data Validation', () => {
+    it('should return perks with correct structure and required fields', async () => {
+      currentMockUser = {
+        id: 2,
+        subscriptionTier: 'pro',
+        username: 'prouser'
+      };
+
+      const response = await request(app)
+        .get('/api/pro-resources')
+        .set('Authorization', 'Bearer mock-pro-token')
+        .expect(200);
+
+      // Verify each perk has all required fields
+      response.body.perks.forEach((perk: any) => {
+        expect(perk).toMatchObject({
+          id: expect.any(String),
+          name: expect.any(String),
+          category: expect.stringMatching(/^(affiliate|integration|tools|community|pro)$/),

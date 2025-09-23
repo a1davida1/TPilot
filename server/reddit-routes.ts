@@ -1,6 +1,7 @@
 import type { Express } from 'express';
 import crypto from 'crypto';
 import { RedditManager, getRedditAuthUrl, exchangeRedditCode } from './lib/reddit.js';
+import { SafetyManager } from './lib/safety-systems.js';
 import { db } from './db.js';
 import { creatorAccounts } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
@@ -521,17 +522,41 @@ export function registerRedditRoutes(app: Express) {
           postType,
           url: result.url
         });
+
+        // Record post for rate limiting and duplicate detection
+        try {
+          await SafetyManager.recordPost(userId.toString(), subreddit);
+          await SafetyManager.recordPostForDuplicateDetection(
+            userId.toString(), 
+            subreddit, 
+            title, 
+            body || url || ''
+          );
+          console.log(`Recorded safety signals for user ${userId} in r/${subreddit}`);
+        } catch (safetyError) {
+          console.error('Failed to record safety signals:', safetyError);
+          // Don't fail the request if safety recording fails
+        }
         
         res.json({
           success: true,
           postId: result.postId,
           url: result.url,
-          message: `Post submitted successfully to r/${subreddit}`
+          message: `Post submitted successfully to r/${subreddit}`,
+          warnings: result.decision?.warnings || []
         });
       } else {
         res.status(400).json({
           success: false,
-          error: result.error || 'Failed to submit post'
+          error: result.error || 'Failed to submit post',
+          reason: result.decision?.reason,
+          reasons: result.decision?.reasons || [],
+          warnings: result.decision?.warnings || [],
+          nextAllowedPost: result.decision?.nextAllowedPost,
+          rateLimit: {
+            postsInLast24h: result.decision?.postsInLast24h || 0,
+            maxPostsPer24h: result.decision?.maxPostsPer24h || 3
+          }
         });
       }
 
