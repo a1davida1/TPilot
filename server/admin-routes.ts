@@ -118,9 +118,9 @@ export function setupAdminRoutes(app: Express) {
       return res.status(401).json({ message: 'Admin access required' });
     }
 
-    // Check if user is admin (ID 999, username 'admin', or has isAdmin flag)  
-    const typedUser = user as { id: number; username?: string | null; isAdmin?: boolean | null };
-    if (typedUser.id !== 999 && typedUser.username !== 'admin' && !typedUser.isAdmin) {
+    // Check if user has verified admin privileges
+    const typedUser = user as { id: number; username?: string | null; isAdmin?: boolean | null; role?: string | null };
+    if (!typedUser.isAdmin && typedUser.role !== 'admin') {
       return res.status(403).json({ message: 'Admin access required' });
     }
 
@@ -303,8 +303,9 @@ export function setupAdminRoutes(app: Express) {
     try {
       const userId = parseInt(req.params.userId);
       
-      // Prevent deleting admin user
-      if (userId === 999) {
+      // Prevent deleting admin users - check if target user is admin
+      const targetUser = await storage.getUser(userId);
+      if (targetUser && (targetUser.isAdmin || targetUser.role === 'admin')) {
         return res.status(400).json({ message: 'Cannot delete admin user' });
       }
       

@@ -348,8 +348,8 @@ export function registerApiRoutes(app: Express) {
       
       const userId = user.id;
 
-      // Check if user is admin first
-      if (user.isAdmin || userId === 999 || user.tier === 'admin') {
+      // Check if user is admin first - only check verified admin status
+      if (user.isAdmin || user.tier === 'admin' || user.role === 'admin') {
         return res.json({
           subscription: { plan: 'admin' },
           isPro: true,

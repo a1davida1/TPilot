@@ -52,24 +52,8 @@ export const authenticateToken = async (req: AuthRequest, res: express.Response,
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as { userId?: number; id?: number; email?: string; isAdmin?: boolean; username?: string; role?: string; tier?: string; iat: number; exp: number };
 
-      // Handle admin tokens specially (they don't exist in the database)
-      if (decoded.id === 999 || decoded.isAdmin) {
-        req.user = {
-          id: 999,
-          username: 'admin',
-          email: ADMIN_EMAIL || 'admin@example.com',
-          tier: 'admin',
-          isAdmin: true,
-          role: 'admin',
-          emailVerified: true,
-          password: '', // Not needed for admin
-          isDeleted: false,
-          mustChangePassword: false,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        } as UserType;
-        return next();
-      }
+      // All users must exist in database - no hardcoded admin backdoors
+      // Admin status is verified from database isAdmin/role fields only
 
       // For regular users, fetch from database
       const userId = decoded.userId || decoded.id;

@@ -157,43 +157,8 @@ export function setupAuth(app: Express) {
       const { username, password, email } = req.body;
       const loginIdentifier = email || username;
 
-      const adminEmail = await verifyAdminCredentials(loginIdentifier, password);
-
-      if (adminEmail) {
-        
-        // Create admin token
-        const token = jwt.sign(
-          {
-            id: 999,
-            userId: 999,
-            username: 'admin',
-            isAdmin: true,
-            role: 'admin',
-            tier: 'admin'
-          },
-          JWT_SECRET_VALIDATED,
-          { expiresIn: '24h' }
-        );
-
-        res.cookie('authToken', token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
-          maxAge: 24 * 60 * 60 * 1000
-        });
-
-        return res.json({
-          token,
-          user: {
-            id: 999,
-            username: 'admin',
-            email: adminEmail,
-            tier: 'admin',
-            isAdmin: true,
-            role: 'admin'
-          }
-        });
-      }
+      // Remove hardcoded admin backdoor - all logins must go through regular user verification
+      // Admin status is determined by isAdmin flag in database, not hardcoded credentials
 
       // Regular user login continues...
       let user;
@@ -387,18 +352,7 @@ export function setupAuth(app: Express) {
       try {
         const decoded = jwt.verify(token, JWT_SECRET_VALIDATED) as { userId?: number; id?: number; isAdmin?: boolean; };
         
-        // CHECK IF IT'S ADMIN TOKEN
-        if (decoded.id === 999 || decoded.isAdmin) {
-          return res.json({
-            id: 999,
-            username: 'admin',
-            email: process.env.ADMIN_EMAIL,
-            tier: 'admin',
-            isAdmin: true,
-            role: 'admin',
-            emailVerified: true
-          });
-        }
+        // Verify admin status through database lookup only
         
         // Regular user lookup
         const userId = decoded.userId || decoded.id;
@@ -408,7 +362,7 @@ export function setupAuth(app: Express) {
         const user = await storage.getUser(userId);
         if (user) {
           const { password: _, ...userResponse } = user;
-          const isAdmin = Boolean(userResponse.isAdmin || userResponse.role === 'admin' || userResponse.id === 999);
+          const isAdmin = Boolean(userResponse.isAdmin || userResponse.role === 'admin');
           return res.json({
             ...userResponse,
             tier: userResponse.tier || 'free',
