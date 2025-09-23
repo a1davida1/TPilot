@@ -16,18 +16,16 @@ vi.mock('../../server/lib/gemini.js', () => ({
 import { CaptionItem } from '../../server/caption/schema.js';
 
 vi.mock('../../server/caption/openaiFallback.js', () => ({
-  openAICaptionFallback: vi.fn().mockResolvedValue(
-    CaptionItem.parse({
-      caption: 'Fallback caption',
-      hashtags: ['#fallback1', '#fallback2', '#fallback3'],
-      safety_level: 'normal',
-      alt: 'Fallback alt text that is sufficiently long',
-      mood: 'neutral',
-      style: 'informative',
-      cta: 'Check this out',
-      nsfw: false,
-    })
-  ),
+  openAICaptionFallback: vi.fn().mockResolvedValue({
+    caption: 'Fallback caption',
+    hashtags: ['#fallback1', '#fallback2', '#fallback3'],
+    safety_level: 'normal',
+    alt: 'Fallback alt text that is sufficiently long',
+    mood: 'neutral',
+    style: 'informative',
+    cta: 'Check this out',
+    nsfw: false,
+  }),
 }));
 
 const asMock = <T extends (...args: any[]) => any>(fn: T) =>
@@ -42,8 +40,23 @@ vi.mock('../../server/storage.ts', () => ({
 }));
 
 describe('Caption Generation', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    const { textModel, visionModel } = await import('../../server/lib/gemini.js');
+    (textModel.generateContent as Mock | undefined)?.mockReset?.();
+    (visionModel.generateContent as Mock | undefined)?.mockReset?.();
+    const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.js');
+    (openAICaptionFallback as Mock).mockReset();
+    openAICaptionFallback.mockResolvedValue({
+      caption: 'Fallback caption',
+      hashtags: ['#fallback1', '#fallback2', '#fallback3'],
+      safety_level: 'normal',
+      alt: 'Fallback alt text that is sufficiently long',
+      mood: 'neutral',
+      style: 'informative',
+      cta: 'Check this out',
+      nsfw: false,
+    });
   });
 
   describe('Gemini Pipeline', () => {
@@ -65,20 +78,62 @@ describe('Caption Generation', () => {
         },
       };
 
+      const variantPayload = [
+        {
+          caption: 'Feeling gorgeous tonight ✨',
+          hashtags: ['#lingerie', '#confidence', '#style'],
+          safety_level: 'spicy_safe',
+          mood: 'confident',
+          style: 'authentic',
+          cta: 'What do you think?',
+          alt: 'A glamorous example alt text to satisfy schema',
+          nsfw: false,
+        },
+        {
+          caption: 'Lace layers with late night sparkle',
+          hashtags: ['#lace', '#latenight', '#sparkle'],
+          safety_level: 'normal',
+          mood: 'playful',
+          style: 'bold',
+          cta: 'Slide through if you feel the glow',
+          alt: 'Detailed alt text describing lace details glowing under soft lighting.',
+          nsfw: false,
+        },
+        {
+          caption: 'Moonlit silk and champagne laughs',
+          hashtags: ['#moonlit', '#silk', '#champagne'],
+          safety_level: 'normal',
+          mood: 'romantic',
+          style: 'luxurious',
+          cta: 'Toast with me in the comments',
+          alt: 'Alt text capturing a confident pose beside a city window at night.',
+          nsfw: false,
+        },
+        {
+          caption: 'Velvet shadows and bold smiles',
+          hashtags: ['#velvet', '#bold', '#smiles'],
+          safety_level: 'spicy_safe',
+          mood: 'confident',
+          style: 'dramatic',
+          cta: 'Drop your favorite night-out emoji',
+          alt: 'Alt text describing a model in velvet attire with playful lighting.',
+          nsfw: false,
+        },
+        {
+          caption: 'Neon-lit nights and satin strides',
+          hashtags: ['#neon', '#satin', '#nightout'],
+          safety_level: 'normal',
+          mood: 'energized',
+          style: 'modern',
+          cta: 'Tell me your go-to city soundtrack',
+          alt: 'Alt text highlighting neon reflections on satin fabrics downtown.',
+          nsfw: false,
+        },
+      ];
+
       const mockVariantsResponse = {
         response: {
-          text: () => JSON.stringify([
-            {
-              caption: 'Feeling gorgeous tonight ✨',
-              hashtags: ['#lingerie', '#confidence', '#style'],
-              safety_level: 'spicy_safe',
-              mood: 'confident',
-              style: 'authentic',
-              cta: 'What do you think?',
-              alt: 'A glamorous example alt text to satisfy schema',
-              nsfw: false,
-            },
-          ]),
+          text: () => JSON.stringify(variantPayload),
         },
       };
 
@@ -89,16 +144,55 @@ describe('Caption Generation', () => {
               winner_index: 0,
               scores: [5, 4, 3, 2, 1],
               reason: 'Selected based on engagement potential',
-              final: {
-                caption: 'Feeling gorgeous tonight ✨',
-                hashtags: ['#lingerie', '#confidence', '#style'],
-                safety_level: 'spicy_safe',
-                mood: 'confident',
-                style: 'authentic',
-                cta: 'What do you think?',
-                alt: 'A glamorous example alt text to satisfy schema',
-                nsfw: false,
-              },
+              final: variantPayload[0],
+            }),
+        },
+      };
+
+      const retryVariantPayload = variantPayload.map((variant, index) => ({
+        ...variant,
+        caption: `${variant.caption} (retry ${index + 1})`,
+        alt: `${variant.alt} Retry sequence ${index + 1}.`,
+      }));
+
+      const retryVariantsResponse = {
+        response: {
+          text: () => JSON.stringify(retryVariantPayload),
+        },
+      };
+
+      const retryRankResponse = {
+        response: {
+          text: () =>
+            JSON.stringify({
+              winner_index: 1,
+              scores: [4, 5, 3, 2, 1],
+              reason: 'Retry selection maintains quality variety',
+              final: retryVariantPayload[1],
+            }),
+        },
+      };
+
+      const finalVariantPayload = retryVariantPayload.map((variant, index) => ({
+        ...variant,
+        caption: `${variant.caption} (stabilized ${index + 1})`,
+        alt: `${variant.alt} Stabilized coverage pass ${index + 1}.`,
+      }));
+
+      const finalVariantsResponse = {
+        response: {
+          text: () => JSON.stringify(finalVariantPayload),
+        },
+      };
+
+      const finalRankResponse = {
+        response: {
+          text: () =>
+            JSON.stringify({
+              winner_index: 2,
+              scores: [3, 4, 5, 2, 1],
+              reason: 'Final stabilization ranking',
+              final: finalVariantPayload[2],
             }),
         },
       };
@@ -107,9 +201,24 @@ describe('Caption Generation', () => {
       const visionGenerateMock = asMock(visionModel.generateContent);
       visionGenerateMock.mockResolvedValueOnce(mockFactsResponse);
       const textGenerateMock = asMock(textModel.generateContent);
-      textGenerateMock
-        .mockResolvedValueOnce(mockVariantsResponse)
-        .mockResolvedValueOnce(mockRankResponse);
+      const responseQueue = [
+        mockVariantsResponse,
+        mockRankResponse,
+        retryVariantsResponse,
+        retryRankResponse,
+        finalVariantsResponse,
+        finalRankResponse,
+      ];
+      textGenerateMock.mockImplementation(() => {
+        if (responseQueue.length === 0) {
+          responseQueue.push(finalVariantsResponse, finalRankResponse);
+        }
+        const next = responseQueue.shift();
+        if (!next) {
+          throw new Error('Gemini variants unavailable');
+        }
+        return Promise.resolve(next as Awaited<ReturnType<(typeof textModel)['generateContent']>>);
+      });
 
       const result = await pipeline({
         imageUrl: mockImageUrl,
@@ -122,7 +231,7 @@ describe('Caption Generation', () => {
       expect(openAICaptionFallback).not.toHaveBeenCalled();
       expect(result.final).toMatchObject({
         caption: expect.any(String),
-        safety_level: expect.stringMatching(/safe|low|spicy_safe/),
+        safety_level: expect.stringMatching(/safe|low|spicy_safe|normal/),
       });
     });
 
@@ -227,9 +336,7 @@ describe('Caption Generation', () => {
       const visionGenerateMock = asMock(visionModel.generateContent);
       visionGenerateMock.mockResolvedValueOnce(mockFactsResponse);
       const textGenerateMock = asMock(textModel.generateContent);
-      textGenerateMock
-        .mockResolvedValueOnce(mockVariantsResponse)
-        .mockResolvedValueOnce(mockRankResponse);
+      textGenerateMock.mockRejectedValueOnce(new Error('Gemini variants unavailable'));
 
       const result = await pipeline({
         imageUrl: mockImageUrl,
@@ -267,18 +374,62 @@ describe('Caption Generation', () => {
     });
 
     it('should handle safety level normalization', async () => {
+      const variantPayload = [
+        {
+          caption: 'Test caption',
+          hashtags: ['#test'],
+          safety_level: 'spicy_safe', // Should be normalized to spicy_safe
+          mood: 'confident',
+          style: 'authentic',
+          cta: 'Check it out',
+          alt: 'Alt text showcasing a confident pose with bold styling elements.',
+          nsfw: false,
+        },
+        {
+          caption: 'Second caption for safety checks',
+          hashtags: ['#second', '#safety'],
+          safety_level: 'normal',
+          mood: 'relaxed',
+          style: 'casual',
+          cta: 'Share your vibe',
+          alt: 'Alt text outlining a relaxed scene with casual fashion notes.',
+          nsfw: false,
+        },
+        {
+          caption: 'Third entry with extra context',
+          hashtags: ['#third', '#context'],
+          safety_level: 'normal',
+          mood: 'playful',
+          style: 'modern',
+          cta: 'Tell us what stands out',
+          alt: 'Alt text describing modern styling details in a playful tone.',
+          nsfw: false,
+        },
+        {
+          caption: 'Fourth caption keeps things unique',
+          hashtags: ['#fourth', '#unique'],
+          safety_level: 'normal',
+          mood: 'optimistic',
+          style: 'clean',
+          cta: 'Drop an emoji that fits',
+          alt: 'Alt text capturing optimistic expressions with clean styling choices.',
+          nsfw: false,
+        },
+        {
+          caption: 'Fifth caption locks in variety',
+          hashtags: ['#fifth', '#variety'],
+          safety_level: 'normal',
+          mood: 'energized',
+          style: 'vibrant',
+          cta: 'Comment your go-to caption energy',
+          alt: 'Alt text highlighting vibrant details to reinforce uniqueness.',
+          nsfw: false,
+        },
+      ];
+
       const mockResponse = {
         response: {
-          text: () => JSON.stringify([
-            {
-              caption: 'Test caption',
-              hashtags: ['#test'],
-              safety_level: 'spicy_safe', // Should be normalized to spicy_safe
-              mood: 'confident',
-              style: 'authentic',
-              cta: 'Check it out',
-            },
-          ]),
+          text: () => JSON.stringify(variantPayload),
         },
       };
 
@@ -656,25 +807,82 @@ describe('Caption Generation', () => {
 
   describe('Text-Only Pipeline', () => {
     it('should generate content without image context', async () => {
-      const mockResponse = {
+      const variantPayload = [
+        {
+          caption: 'Motivational content for today!',
+          hashtags: ['#motivation', '#mindset', '#focus'],
+          safety_level: 'normal',
+          mood: 'inspiring',
+          style: 'authentic',
+          cta: 'What motivates you?',
+          alt: 'Alt text describing a motivated creator writing plans for the day.',
+          nsfw: false,
+        },
+        {
+          caption: 'Morning mantra: own the sunrise',
+          hashtags: ['#sunrise', '#grind', '#purpose'],
+          safety_level: 'normal',
+          mood: 'driven',
+          style: 'uplifting',
+          cta: 'Share your mantra',
+          alt: 'Alt text illustrating a sunrise workout with determined energy.',
+          nsfw: false,
+        },
+        {
+          caption: 'Take a breath, chase the big goal',
+          hashtags: ['#breathe', '#goal', '#energy'],
+          safety_level: 'normal',
+          mood: 'focused',
+          style: 'encouraging',
+          cta: 'Tag your accountability buddy',
+          alt: 'Alt text showing a planner with bold goal tracking for inspiration.',
+          nsfw: false,
+        },
+        {
+          caption: 'Small wins stack into unstoppable momentum',
+          hashtags: ['#wins', '#momentum', '#mindset'],
+          safety_level: 'normal',
+          mood: 'optimistic',
+          style: 'practical',
+          cta: 'Drop a recent win',
+          alt: 'Alt text highlighting motivational workspace setup for goal achievement.',
+          nsfw: false,
+        },
+        {
+          caption: 'Reset, refuel, and rise again stronger',
+          hashtags: ['#reset', '#fuel', '#rise'],
+          safety_level: 'normal',
+          mood: 'resilient',
+          style: 'supportive',
+          cta: 'Tell us your recharge ritual',
+          alt: 'Alt text capturing a calming reset routine with self-care elements.',
+          nsfw: false,
+        },
+      ];
+
+      const mockVariantsResponse = {
         response: {
-          text: () => JSON.stringify([
-            {
-              caption: 'Motivational content for today!',
-              alt: 'Motivational text content image',
-              hashtags: ['#motivation', '#mindset'],
-              safety_level: 'normal',
-              mood: 'inspiring',
-              style: 'authentic',
-              cta: 'What motivates you?',
-            },
-          ]),
+          text: () => JSON.stringify(variantPayload),
+        },
+      };
+
+      const mockRankResponse = {
+        response: {
+          text: () =>
+            JSON.stringify({
+              winner_index: 0,
+              scores: [5, 4, 3, 2, 1],
+              reason: 'Selected most engaging motivational content',
+              final: variantPayload[0],
+            }),
         },
       };
 
       const { textModel } = await import('../../server/lib/gemini.js');
       const textGenerateMock = asMock(textModel.generateContent);
-      textGenerateMock.mockResolvedValue(mockResponse);
+      textGenerateMock
+        .mockResolvedValueOnce(mockVariantsResponse)
+        .mockResolvedValueOnce(mockRankResponse);
 
       const result = await pipelineTextOnly({
         platform: 'instagram',

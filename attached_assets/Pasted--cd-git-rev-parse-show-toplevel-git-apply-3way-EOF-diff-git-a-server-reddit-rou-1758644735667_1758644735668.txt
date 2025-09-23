@@ -1,0 +1,114 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/server/reddit-routes.ts b/server/reddit-routes.ts
+index 4087be38edbe1b701d9a1ba38d272e5a6e357053..486168a346ac874abdec336468901a0502deadfa 100644
+--- a/server/reddit-routes.ts
++++ b/server/reddit-routes.ts
+@@ -293,96 +293,103 @@ export function registerRedditRoutes(app: Express) {
+     }
+   });
+ 
+   // Test Reddit connection
+   app.post('/api/reddit/test', authenticateToken, async (req: AuthRequest, res) => {
+     try {
+       const userId = req.user?.id;
+       if (!userId) {
+         return res.status(401).json({ error: 'Authentication required' });
+       }
+       
+       // Get account from database
+       const accounts = await db
+         .select()
+         .from(creatorAccounts)
+         .where(
+           and(
+             eq(creatorAccounts.userId, userId),
+             eq(creatorAccounts.platform, 'reddit'),
+             eq(creatorAccounts.isActive, true)
+           )
+         )
+         .limit(1);
+ 
+       if (accounts.length === 0) {
+-        return res.status(404).json({ error: 'No active Reddit account found' });
++        return res.status(200).json({
++          connected: false,
++          profile: null,
++          message: 'No active Reddit account found'
++        });
+       }
+ 
+       const account = accounts[0];
+       
+       // Decrypt tokens
+       const accessToken = account.oauthToken ? decrypt(account.oauthToken) : null;
+       const refreshToken = account.oauthRefresh ? decrypt(account.oauthRefresh) : null;
+       
+       if (!accessToken) {
+         return res.status(401).json({ error: 'Invalid tokens. Please reconnect your Reddit account.' });
+       }
+       
+       // Create Reddit manager with decrypted tokens
+       const reddit = new RedditManager(accessToken, refreshToken || '', userId);
+       const isConnected = await reddit.testConnection();
+       
+       if (isConnected) {
+         const fetchedProfile = await reddit.getProfile();
+         const profile = fetchedProfile as RedditProfile | null;
+         
+         // Update metadata with latest info
+         if (profile) {
+           await db
+             .update(creatorAccounts)
+             .set({
+               metadata: {
+                 karma: profile.karma || 0,
+                 verified: profile.verified || false,
+                 lastTested: Date.now()
+               },
+               updatedAt: new Date()
+             })
+             .where(eq(creatorAccounts.id, account.id));
+         }
+         
+         res.json({ 
+           connected: true, 
+           profile: {
+             username: profile?.username,
+             karma: profile?.karma,
+             verified: profile?.verified
+           }
+         });
+       } else {
+-        res.json({ connected: false });
++        res.json({
++          connected: false,
++          profile: null
++        });
+       }
+ 
+     } catch (error) {
+       console.error('Reddit test error:', error);
+       res.status(500).json({ error: 'Failed to test Reddit connection' });
+     }
+   });
+ 
+   // Enhanced submit endpoint with image support
+   app.post('/api/reddit/submit', authenticateToken, async (req: AuthRequest, res) => {
+     try {
+       const userId = req.user?.id;
+       if (!userId) {
+         return res.status(401).json({ error: 'Authentication required' });
+       }
+       
+       const { subreddit, title, body, url, nsfw, spoiler, postType, imageData } = req.body;
+ 
+       if (!subreddit || !title) {
+         return res.status(400).json({ error: 'Subreddit and title are required' });
+       }
+ 
+       // Get Reddit manager
+       const reddit = await RedditManager.forUser(userId);
+       if (!reddit) {
+ 
+EOF
+)

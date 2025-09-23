@@ -1,0 +1,511 @@
+
+Refactor server initialization and exports
+Sep 23
+·
+a1davida1/TPilot
+·
+main
+·
++70
+-58
+
+Archive
+
+Share
+
+Create PR
+
+
+13
+1. Refactor `server/index.ts` (or add a sibling module) so it exports the Express `app` (and optionally `createApp`) without auto-starting the HTTP listener when imported.
+2. Guard the bootstrapping logic behind `if (import.meta.url === process.argv[1])` (or similar) so production still launches the server, while tests can import the preconfigured app.
+3. Update any imports in the test suite to use the new exported symbol if the name or path changes.
+4. Execute one of the affected integration suites (e.g., `tests/integration/reddit-communities-schema.test.ts`) to confirm `supertest` now binds to a live Express instance.
+Copy
+Summary
+
+Refactored server/index.ts to re-export createApp and API_PREFIX, add a createExpressApp helper for tests, and guard the HTTP bootstrap so the listener only starts when the module is executed directly.
+
+Updated integration and route tests to import createApp (and API_PREFIX where needed) from the new entry point, ensuring they bind supertest to the preconfigured Express instance without triggering the server listener.
+
+Testing
+
+✅ npm run lint
+
+✅ npm test -- tests/routes/webhooks.stripe.test.ts
+
+⚠️ npm test (fails due to numerous pre-existing integration/unit suite issues that require extensive environment setup; aborted after observing cascading failures)
+
+
+Files (6)
+
+server/index.ts
++62
+-50
+
+tests/integration/dashboard-api.test.ts
++1
+-1
+
+tests/integration/post-scheduling.test.ts
++1
+-1
+
+tests/integration/reddit-communities-schema.test.ts
++1
+-1
+
+tests/integration/static-assets.test.ts
++2
+-2
+
+tests/routes/webhooks.stripe.test.ts
++3
+-3
+
+
+
+Ask
+
+Code
+Diff
+Logs
+
+server/index.ts
++62
+-50
+
+import { createApp } from './app.js';
+import { pathToFileURL } from 'node:url';
+import type { Express } from 'express';
+import {
+  createApp,
+  API_PREFIX,
+  type CreateAppOptions,
+  type CreateAppResult,
+} from './app.js';
+import { logger } from './bootstrap/logger.js';
+
+process.on('unhandledRejection', (err: unknown) => {
+  const message = err instanceof Error ? err.message : String(err);
+  logger.error('Unhandled rejection', { error: message });
+  process.exit(1);
+});
+
+(async () => {
+  try {
+    const { server } = await createApp();
+export { createApp, API_PREFIX };
+export type { CreateAppOptions, CreateAppResult };
+
+    // ALWAYS serve the app on the port specified in the environment variable PORT
+    // Other ports are firewalled. Default to 5000 if not specified.
+    // this serves both the API and the client.
+    // It is the only port that is not firewalled.
+    const port = Number.parseInt(process.env.PORT ?? '5000', 10);
+export async function createExpressApp(options: CreateAppOptions = {}): Promise<Express> {
+  const { app } = await createApp(options);
+  return app;
+}
+
+    // Graceful port binding with EADDRINUSE error handling
+    const startServer = (attemptPort: number, retryCount = 0): void => {
+      const maxRetries = 3;
+async function bootstrap(): Promise<void> {
+  const { server } = await createApp();
+
+      // Remove any existing error listeners to prevent memory leaks
+      server.removeAllListeners('error');
+  const port = Number.parseInt(process.env.PORT ?? '5000', 10);
+
+      server.listen(
+        {
+          port: attemptPort,
+          host: '0.0.0.0',
+          reusePort: true,
+        },
+        () => {
+          logger.info(`serving on port ${attemptPort}`);
+          if (attemptPort !== port) {
+            logger.info(`Note: Using fallback port ${attemptPort} instead of ${port}`);
+          }
+        },
+      );
+  const startServer = (attemptPort: number, retryCount = 0): void => {
+    const maxRetries = 3;
+
+      server.on('error', (err: unknown) => {
+        const error = err as NodeJS.ErrnoException;
+        if (error.code === 'EADDRINUSE') {
+          logger.warn(`Port ${attemptPort} is in use`, { error: (error as Error).message });
+    server.removeAllListeners('error');
+
+          if (retryCount < maxRetries) {
+            // In Replit, we can only use the PORT environment variable
+            // Try to kill any stray processes and retry the same port
+            logger.info(`Retrying port ${attemptPort} in 2 seconds (attempt ${retryCount + 1}/${maxRetries})`);
+            setTimeout(() => {
+              startServer(attemptPort, retryCount + 1);
+            }, 2000);
+          } else {
+            logger.error(`Failed to bind to port ${attemptPort} after ${maxRetries} attempts`);
+            logger.error('Please check if another process is using this port and restart the application');
+            process.exit(1);
+          }
+    server.listen(
+      {
+        port: attemptPort,
+        host: '0.0.0.0',
+        reusePort: true,
+      },
+      () => {
+        logger.info(`serving on port ${attemptPort}`);
+        if (attemptPort !== port) {
+          logger.info(`Note: Using fallback port ${attemptPort} instead of ${port}`);
+        }
+      },
+    );
+
+    server.on('error', (err: unknown) => {
+      const error = err as NodeJS.ErrnoException;
+      if (error.code === 'EADDRINUSE') {
+        logger.warn(`Port ${attemptPort} is in use`, { error: (error as Error).message });
+
+        if (retryCount < maxRetries) {
+          logger.info(`Retrying port ${attemptPort} in 2 seconds (attempt ${retryCount + 1}/${maxRetries})`);
+          setTimeout(() => {
+            startServer(attemptPort, retryCount + 1);
+          }, 2000);
+        } else {
+          logger.error('Server error:', error);
+          logger.error(`Failed to bind to port ${attemptPort} after ${maxRetries} attempts`);
+          logger.error('Please check if another process is using this port and restart the application');
+          process.exit(1);
+        }
+      });
+    };
+      } else {
+        logger.error('Server error:', error);
+        process.exit(1);
+      }
+    });
+  };
+
+  startServer(port);
+}
+
+const isExecutedDirectly =
+  typeof process.argv[1] === 'string' && pathToFileURL(process.argv[1]).href === import.meta.url;
+
+    startServer(port);
+  } catch (error) {
+if (isExecutedDirectly) {
+  bootstrap().catch((error: unknown) => {
+    logger.error('Failed to start application:', error);
+    process.exit(1);
+  }
+})();
+  });
+}
+tests/integration/dashboard-api.test.ts
++1
+-1
+
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import request from 'supertest';
+import type { Express } from 'express';
+import jwt from 'jsonwebtoken';
+import { createApp } from '../../server/app.js';
+import { createApp } from '../../server/index.js';
+import { storage } from '../../server/storage.js';
+
+describe('Dashboard API', () => {
+  let app: Express;
+  let testUserId: number;
+  let testUserToken: string;
+  let adminUserId: number;
+  let adminToken: string;
+
+  beforeAll(async () => {
+    const result = await createApp({
+      startQueue: false,
+      configureStaticAssets: false,
+      enableVite: false
+    });
+    app = result.app;
+    
+    // Create test users
+    const testUser = await storage.createUser({
+      username: 'dashboardtest',
+      email: 'dashboard@test.com',
+      password: 'hashedpassword',
+      subscriptionTier: 'free'
+    });
+    testUserId = testUser.id;
+tests/integration/post-scheduling.test.ts
++1
+-1
+
+import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
+import request, { Test } from 'supertest';
+import type { Express } from 'express';
+import jwt from 'jsonwebtoken';
+import { eq } from 'drizzle-orm';
+
+import { createApp } from '../../server/app.js';
+import { createApp } from '../../server/index.js';
+import { storage } from '../../server/storage.js';
+import { db } from '../../server/db.js';
+import { postJobs, type InsertUser } from '../../shared/schema.js';
+import * as queueModule from '../../server/lib/queue/index.js';
+import { PostScheduler } from '../../server/lib/scheduling.js';
+
+interface PostingJobPayload {
+  userId: number;
+  postJobId: number;
+  subreddit: string;
+  titleFinal: string;
+  bodyFinal: string;
+  mediaKey?: string;
+}
+
+describe('POST /api/posts/schedule', () => {
+  let app: Express;
+  let userId: number;
+  let authToken: string;
+
+  beforeAll(async () => {
+    const result = await createApp({
+      startQueue: false,
+      configureStaticAssets: false,
+      enableVite: false,
+tests/integration/reddit-communities-schema.test.ts
++1
+-1
+
+/* eslint-env node, jest */
+import { describe, test, expect } from 'vitest';
+import request from 'supertest';
+import { createApp } from '../../server/app';
+import { createApp } from '../../server/index.js';
+
+describe('Reddit Communities Schema Integration', () => {
+
+  test('should return communities with structured rules schema from seeded data', async () => {
+    const { app } = await createApp();
+    const response = await request(app)
+      .get('/api/reddit/communities')
+      .expect(200);
+
+    expect(Array.isArray(response.body)).toBe(true);
+    expect(response.body.length).toBeGreaterThan(0);
+    
+    // Test the first community's structure
+    const community = response.body[0];
+    expect(community).toBeDefined();
+
+    // Verify the community has the expected basic structure
+    expect(community.id).toBeDefined();
+    expect(community.name).toBeDefined();
+    expect(community.displayName).toBeDefined();
+    expect(typeof community.members).toBe('number');
+    expect(typeof community.engagementRate).toBe('number');
+
+    // Verify the rules object contains structured fields
+    expect(community.rules).toBeDefined();
+tests/integration/static-assets.test.ts
++2
+-2
+
+@@ -31,51 +31,51 @@ vi.mock('../../server/auth.js', () => ({
+vi.mock('../../server/social-auth.js', () => ({
+  setupSocialAuth: vi.fn()
+}));
+
+vi.mock('../../server/routes/webhooks.stripe.js', () => ({
+  mountStripeWebhook: vi.fn()
+}));
+
+vi.mock('../../server/routes/billing.js', () => ({
+  mountBillingRoutes: vi.fn()
+}));
+
+vi.mock('../../server/bootstrap/queue.js', () => ({
+  startQueue: vi.fn(async () => undefined)
+}));
+
+type LoggerType = typeof import('../../server/bootstrap/logger.js')['logger'];
+type LoggerInfoParams = Parameters<LoggerType['info']>;
+type LoggerInfoReturn = ReturnType<LoggerType['info']>;
+type LoggerWarnParams = Parameters<LoggerType['warn']>;
+type LoggerWarnReturn = ReturnType<LoggerType['warn']>;
+
+type InfoSpy = SpyInstance<LoggerInfoParams, LoggerInfoReturn>;
+type WarnSpy = SpyInstance<LoggerWarnParams, LoggerWarnReturn>;
+
+type CreateApp = typeof import('../../server/app.js')['createApp'];
+type CreateApp = typeof import('../../server/index.js')['createApp'];
+
+type CreateAppResult = Awaited<ReturnType<CreateApp>>;
+
+let createApp: CreateApp;
+let loggerInstance: LoggerType;
+
+async function removeClientDist(): Promise<void> {
+  await fs.rm(clientDistRoot, { recursive: true, force: true });
+}
+
+async function seedClientBuild(includeIndex: boolean): Promise<void> {
+  await removeClientDist();
+  await fs.mkdir(assetsDirectory, { recursive: true });
+  if (includeIndex) {
+    await fs.writeFile(indexFilePath, '<!doctype html><html><head><title>Static Test</title></head><body>Static Asset Test</body></html>');
+  }
+  await fs.writeFile(jsAssetPath, 'console.log("static assets test");');
+  await fs.writeFile(cssAssetPath, 'body { background: #123456; }');
+}
+
+function collectLogs<Args extends unknown[], ReturnType>(
+  spy: SpyInstance<Args, ReturnType>,
+  predicate: (message: string) => boolean
+): boolean {
+  return spy.mock.calls.some((call) => {
+@@ -84,51 +84,51 @@ function collectLogs<Args extends unknown[], ReturnType>(
+  });
+}
+
+async function closeServer(server: Server): Promise<void> {
+  if (!server.listening) {
+    return;
+  }
+  await new Promise<void>((resolve, reject) => {
+    server.close((error) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve();
+    });
+  });
+}
+
+beforeAll(async () => {
+  process.env.NODE_ENV = 'test';
+  process.env.ENABLE_VITE_DEV = 'false';
+  process.env.JWT_SECRET = process.env.JWT_SECRET ?? 'static-assets-test-secret-1234567890';
+  process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? 'static-assets-test-session-secret-123456';
+  process.env.DATABASE_URL = process.env.DATABASE_URL ?? 'https://example.com/database';
+
+  ({ createApp } = await import('../../server/app.js'));
+  ({ createApp } = await import('../../server/index.js'));
+  ({ logger: loggerInstance } = await import('../../server/bootstrap/logger.js'));
+});
+
+afterAll(async () => {
+  await removeClientDist();
+});
+
+describe('Static asset delivery', () => {
+  it('serves built assets with explicit content types and emits informative logs', async () => {
+    await seedClientBuild(true);
+
+    const infoSpy: InfoSpy = vi.spyOn(loggerInstance, 'info').mockImplementation(() => loggerInstance);
+    const warnSpy: WarnSpy = vi.spyOn(loggerInstance, 'warn').mockImplementation(() => loggerInstance);
+
+    const { app, server }: CreateAppResult = await createApp({
+      configureStaticAssets: true,
+      startQueue: false,
+      enableVite: false
+    });
+
+    try {
+      const jsResponse = await request(app).get('/assets/app.js');
+      expect(jsResponse.status).toBe(200);
+      expect(jsResponse.headers['content-type']).toContain('application/javascript');
+      expect(jsResponse.text).toContain('static assets test');
+tests/routes/webhooks.stripe.test.ts
++3
+-3
+
+@@ -70,78 +70,78 @@ vi.mock('../../server/db.js', () => {
+            conflictCalls.push({ table, config });
+          }
+        }) as InsertOperation;
+        return operation;
+      }
+    }),
+    update: (table: unknown) => ({
+      set: (setArg: unknown) => {
+        updateSetCalls.push({ table, set: setArg });
+        return {
+          where: async (condition: unknown) => {
+            updateWhereCalls.push({ table, condition });
+          }
+        };
+      }
+    })
+  };
+
+  return {
+    db: dbMock as unknown as typeof DbType,
+    pool: {} as any,
+    closeDatabaseConnections: async () => undefined
+  };
+});
+
+let createApp: typeof import('../../server/app.js')['createApp'];
+let apiPrefix: typeof import('../../server/app.js')['API_PREFIX'];
+let createApp: typeof import('../../server/index.js')['createApp'];
+let apiPrefix: typeof import('../../server/index.js')['API_PREFIX'];
+let stripeInstance: typeof import('../../server/lib/billing/stripe.js')['stripe'];
+
+async function closeServer(server: Server | undefined): Promise<void> {
+  if (!server || !server.listening) {
+    return;
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    server.close((error) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve();
+    });
+  });
+}
+
+beforeAll(async () => {
+  process.env.NODE_ENV = 'test';
+  process.env.STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY ?? 'sk_test_mock';
+  process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test_secret';
+  process.env.JWT_SECRET = process.env.JWT_SECRET ?? 'webhook-test-jwt';
+  process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? 'webhook-test-session';
+
+  ({ createApp, API_PREFIX: apiPrefix } = await import('../../server/app.js'));
+  ({ createApp, API_PREFIX: apiPrefix } = await import('../../server/index.js'));
+  ({ stripe: stripeInstance } = await import('../../server/lib/billing/stripe.js'));
+});
+
+beforeEach(() => {
+  insertCalls.length = 0;
+  conflictCalls.length = 0;
+  updateSetCalls.length = 0;
+  updateWhereCalls.length = 0;
+});
+
+afterEach(async () => {
+  vi.clearAllMocks();
+});
+
+describe('Stripe webhook integration', () => {
+  it('processes subscription and invoice webhooks through the prefixed endpoint', async () => {
+    const { app, server } = await createApp({
+      configureStaticAssets: false,
+      startQueue: false,
+      enableVite: false
+    });
+
+    const webhookPath = `${apiPrefix}/webhooks/stripe`;
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (!webhookSecret) {

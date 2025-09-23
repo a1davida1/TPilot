@@ -142,3 +142,11 @@ Compliance: Phased approach - base features without ID verification, gate advanc
 - ✅ **Test type improvements**: Updated expense operations tests to use proper `IStorage` typing instead of `any`, improving type safety across the test suite
 - ✅ **Backward compatibility**: All existing tests continue to pass (16/16 tests successful) while gaining stronger type safety
 - ✅ **Developer experience**: TypeScript compiler now catches storage mock usage errors at compile time instead of runtime
+
+### Caption Generation Test Enhancement (September 23, 2025)
+- ✅ **Five distinct variant responses**: Updated caption generation tests to return five unique variant objects instead of single variants to satisfy uniqueness checks in generateVariants function
+- ✅ **Queue-based mock implementation**: Added resilient queue-based mock responses for complex retry scenarios in caption generation pipeline tests
+- ✅ **Enhanced mock reset logic**: Implemented proper async beforeEach mock reset for Gemini and OpenAI models to prevent test interference
+- ✅ **Fallback behavior support**: Added extra mockResolvedValueOnce stubs for fallback behavior tests to ensure subsequent pipeline retries receive well-formed responses
+- ✅ **Test coverage improvements**: Updated both route tests (tests/routes/caption-generation.test.ts) and unit tests (tests/unit/caption/fallback-inference.test.ts) with distinct variant payloads
+- ✅ **Contract alignment**: All mocks now align with the new contract requiring five unique variants per generation call

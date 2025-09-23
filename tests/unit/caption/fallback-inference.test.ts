@@ -46,27 +46,71 @@ describe('inferFallbackFromFacts helper', () => {
 });
 
 describe('pipeline fallbacks', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    const { textModel, visionModel } = await import('../../../server/lib/gemini.js');
+    (textModel.generateContent as unknown as Mock)?.mockReset?.();
+    (visionModel.generateContent as unknown as Mock)?.mockReset?.();
   });
 
   it('fills missing variant fields with contextual beach data', async () => {
+    const variantPayload = [
+      {
+        caption: 'Sunset set vibes',
+        hashtags: [],
+        safety_level: 'normal',
+        mood: '',
+        style: '',
+        cta: '',
+        alt: '',
+        nsfw: false,
+      },
+      {
+        caption: 'Beach day energy with golden light',
+        hashtags: [],
+        safety_level: 'normal',
+        mood: '',
+        style: '',
+        cta: '',
+        alt: '',
+        nsfw: false,
+      },
+      {
+        caption: 'Catching waves under perfect sky',
+        hashtags: [],
+        safety_level: 'normal',
+        mood: '',
+        style: '',
+        cta: '',
+        alt: '',
+        nsfw: false,
+      },
+      {
+        caption: 'Surfboard ready for the next set',
+        hashtags: [],
+        safety_level: 'normal',
+        mood: '',
+        style: '',
+        cta: '',
+        alt: '',
+        nsfw: false,
+      },
+      {
+        caption: 'Ocean breeze and endless possibilities',
+        hashtags: [],
+        safety_level: 'normal',
+        mood: '',
+        style: '',
+        cta: '',
+        alt: '',
+        nsfw: false,
+      },
+    ];
+
     const { textModel } = await import('../../../server/lib/gemini.js');
     (textModel.generateContent as unknown as Mock).mockResolvedValueOnce({
       response: {
-        text: () =>
-          JSON.stringify([
-            {
-              caption: 'Sunset set vibes',
-              hashtags: [],
-              safety_level: 'normal',
-              mood: '',
-              style: '',
-              cta: '',
-              alt: '',
-              nsfw: false,
-            },
-          ]),
+        text: () => JSON.stringify(variantPayload),
       },
     });
 
@@ -88,22 +132,63 @@ describe('pipeline fallbacks', () => {
   });
 
   it('crafts launch-oriented fallbacks for text-only prompts', async () => {
+    const variantPayload = [
+      {
+        caption: 'Join us for something big',
+        hashtags: [],
+        safety_level: 'normal',
+        mood: '',
+        style: '',
+        cta: '',
+        alt: '',
+        nsfw: false,
+      },
+      {
+        caption: 'Friday launch excitement builds up',
+        hashtags: [],
+        safety_level: 'normal',
+        mood: '',
+        style: '',
+        cta: '',
+        alt: '',
+        nsfw: false,
+      },
+      {
+        caption: 'SaaS platform ready to transform workflows',
+        hashtags: [],
+        safety_level: 'normal',
+        mood: '',
+        style: '',
+        cta: '',
+        alt: '',
+        nsfw: false,
+      },
+      {
+        caption: 'Waitlist opens with exclusive early access',
+        hashtags: [],
+        safety_level: 'normal',
+        mood: '',
+        style: '',
+        cta: '',
+        alt: '',
+        nsfw: false,
+      },
+      {
+        caption: 'Revolutionary tools coming this week',
+        hashtags: [],
+        safety_level: 'normal',
+        mood: '',
+        style: '',
+        cta: '',
+        alt: '',
+        nsfw: false,
+      },
+    ];
+
     const { textModel } = await import('../../../server/lib/gemini.js');
     (textModel.generateContent as unknown as Mock).mockResolvedValueOnce({
       response: {
-        text: () =>
-          JSON.stringify([
-            {
-              caption: 'Join us for something big',
-              hashtags: [],
-              safety_level: 'normal',
-              mood: '',
-              style: '',
-              cta: '',
-              alt: '',
-              nsfw: false,
-            },
-          ]),
+        text: () => JSON.stringify(variantPayload),
       },
     });
 

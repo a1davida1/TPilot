@@ -1,0 +1,106 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/server/app.ts b/server/app.ts
+index 070c851a58e226f5dfe34ac5604214a31c3f9ec0..ec9b3a3f6c930b15b5d27ebc53d3299dc8c6fcb6 100644
+--- a/server/app.ts
++++ b/server/app.ts
+@@ -91,79 +91,91 @@ function applyRequestLogging(app: express.Express): void {
+       if (path.startsWith('/api')) {
+         let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+         const payload = prepareResponseLogPayload(capturedJsonResponse);
+         if (payload) {
+           logLine += ` :: ${payload}`;
+         }
+ 
+         logger.info(truncateLogLine(logLine), { requestId: req.id });
+       }
+     });
+ 
+     next();
+   });
+ }
+ 
+ async function configureStaticAssets(
+   app: express.Express,
+   server: import('http').Server,
+   enableVite: boolean,
+ ): Promise<void> {
+   const path = await import('path');
+   const { fileURLToPath } = await import('url');
+   const __dirname = path.dirname(fileURLToPath(import.meta.url));
+   const fs = await import('fs');
+ 
+-  const candidateClientPaths = [
++  const candidateClientPaths: string[] = [
+     path.resolve(__dirname, '..', '..', 'dist', 'client'),
+     path.resolve(__dirname, '..', 'client', 'dist'),
+-    path.resolve(__dirname, '..', 'client'),
+   ];
+ 
++  if (enableVite) {
++    candidateClientPaths.push(path.resolve(__dirname, '..', 'client'));
++  }
++
+   let clientPath: string | null = null;
+ 
++  const missingIndexPaths: string[] = [];
++
+   for (const candidate of candidateClientPaths) {
+     const indexPath = path.join(candidate, 'index.html');
+     if (!fs.existsSync(indexPath)) {
+-      logger.warn(`Client build not found at ${indexPath}`);
++      missingIndexPaths.push(indexPath);
++      logger.debug(`Client build candidate missing index at ${indexPath}`);
+       continue;
+     }
+ 
+     clientPath = candidate;
+     logger.info(`Serving client from: ${clientPath}`);
+     break;
+   }
+ 
+   if (!clientPath) {
++    if (missingIndexPaths.length > 0) {
++      const missingDescriptions = missingIndexPaths
++        .map((missingPath) => `Client build not found at ${missingPath}`)
++        .join('; ');
++      logger.warn(missingDescriptions);
++    }
+     if (process.env.NODE_ENV === 'production') {
+       logger.error('CRITICAL: Production build missing client files!');
+     }
+-    logger.error('Unable to locate compiled client assets in any known directory.');
+-    
++    logger.error('Client build not found; unable to locate compiled client assets in any known directory.');
++
+     // Return a 404 handler for all static file requests instead of crashing
+     app.get('*', (req, res) => {
+-      res.status(404).send('Application build not found - static assets unavailable');
++      res.status(404).send('Client build not found - static assets unavailable');
+     });
+     return;
+   }
+ 
+   // Debug middleware to trace all requests
+   app.use((req, res, next) => {
+     if (req.path.startsWith('/assets/')) {
+       logger.info(`Asset request received: ${req.method} ${req.path}`);
+     }
+     next();
+   });
+ 
+   // IMPORTANT: Serve static files BEFORE Vite setup to ensure they're accessible
+   // Set index: false to prevent serving index.html for directory requests to avoid conflicts
+   app.use(express.static(clientPath, {
+     index: false,
+     setHeaders: (res, path) => {
+       logger.info(`Static file served: ${path}`);
+       if (path.endsWith('.js')) {
+         res.setHeader('Content-Type', 'application/javascript');
+       } else if (path.endsWith('.css')) {
+         res.setHeader('Content-Type', 'text/css');
+       }
+     }
+   }));
+ 
+EOF
+)
