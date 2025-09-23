@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import type { RedditCommunity, PostingLimits, promotionAllowedSchema, categorySchema } from "@shared/schema";
+import type { RedditCommunity, PostingLimits } from "@shared/schema";
 import { z } from "zod";
 
 export function RedditCommunities() {
@@ -41,26 +41,26 @@ export function RedditCommunities() {
   const [filterVerification, setFilterVerification] = useState<string>('all');
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
-  // Using shared enum schemas with local validation for runtime safety
+  // Client validation schema - server enforces canonical enums and validation
   const RedditCommunityArraySchema = z.array(z.object({
     id: z.string(),
     name: z.string(),
     displayName: z.string(),
     members: z.number(),
     engagementRate: z.number(),
-    category: z.string(), // Will be validated by server with categorySchema
+    category: z.enum(['age', 'amateur', 'appearance', 'body_type', 'cam', 'clothing', 'comparison', 'content_type', 'cosplay', 'couples', 'dancer', 'ethnicity', 'fetish', 'fitness', 'gaming', 'general', 'gonewild', 'lifestyle', 'natural', 'niche', 'reveal', 'selling', 'social', 'specific', 'style', 'theme']),
     verificationRequired: z.boolean(),
-    promotionAllowed: z.string(), // Will be validated by server with promotionAllowedSchema
+    promotionAllowed: z.enum(['yes', 'limited', 'no']),
     postingLimits: z.any().nullable().optional(),
     rules: z.any().optional(),
     bestPostingTimes: z.array(z.string()).optional(),
     averageUpvotes: z.number().nullable().optional(),
     successProbability: z.number().nullable().optional(),
-    growthTrend: z.string().nullable().optional(),
-    modActivity: z.string().nullable().optional(),
+    growthTrend: z.enum(['up', 'down', 'stable']).nullable().optional(),
+    modActivity: z.enum(['active', 'moderate', 'inactive']).nullable().optional(),
     description: z.string().nullable().optional(),
     tags: z.array(z.string()).optional(),
-    competitionLevel: z.string().nullable().optional()
+    competitionLevel: z.enum(['low', 'medium', 'high']).nullable().optional()
   }));
 
   // Fetch communities data with runtime validation
@@ -74,7 +74,8 @@ export function RedditCommunities() {
       const response = await apiRequest('GET', `/api/reddit/communities?${params.toString()}`);
       const rawData = await response.json();
       
-      // Runtime validation using local schema (server validates with canonical schema)
+      // Runtime validation using inline canonical schema structure
+      // Note: Server enforces full canonical validation with proper enums
       try {
         const validatedData = RedditCommunityArraySchema.parse(rawData);
         return validatedData as RedditCommunity[];
@@ -92,12 +93,12 @@ export function RedditCommunities() {
   const filteredCommunities = useMemo(() => {
     let filtered = Array.isArray(displayCommunities) ? [...displayCommunities] : [];
 
-    // Search filter
+    // Search filter with safe nullable field handling
     if (searchTerm) {
       filtered = filtered.filter(c => 
         c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.description.toLowerCase().includes(searchTerm.toLowerCase())
+        (c.description ?? '').toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
