@@ -233,7 +233,7 @@ export function sanitizeFinalVariant(variant: any, platform?: string): any {
   if (isCannedCTA(sanitized.cta)) {
     sanitized.cta = HUMAN_CTA;
   }
-  
+
   // Sanitize CTA for banned words
   if (typeof sanitized.cta === "string") {
     if (containsBannedWord(sanitized.cta)) {
@@ -261,23 +261,33 @@ export function sanitizeFinalVariant(variant: any, platform?: string): any {
   const fallback = fallbackHashtags(platform);
 
   if (Array.isArray(sanitized.hashtags)) {
-    const cleanedHashtags = sanitized.hashtags
+    let cleanedHashtags = sanitized.hashtags
       .filter((tag: any): tag is string => typeof tag === "string")
       .map((tag: string) => tag.trim())
       .filter((tag: string) => tag.length > 0)
       .filter((tag: string) => !containsBannedWord(tag))
       .filter((tag: string) => !GENERIC_HASHTAGS.has(tag.toLowerCase()));
 
-    if (platform === "reddit") {
-      sanitized.hashtags = [];
-    } else {
-      const limitedHashtags =
-        platform === "x" ? cleanedHashtags.slice(0, 2) : cleanedHashtags;
+    // Apply platform-specific hashtag limits after cleaning
+    if (platform === 'x' && cleanedHashtags.length > 2) {
+      cleanedHashtags = cleanedHashtags.slice(0, 2);
+    } else if (platform === 'reddit' && cleanedHashtags.length > 1) {
+      cleanedHashtags = cleanedHashtags.slice(0, 1);
+    }
+    // Instagram and TikTok: no limit enforced
 
-      sanitized.hashtags = limitedHashtags.length > 0 ? limitedHashtags : fallback;
+    // Enforce minimum requirements or fall back
+    const fallback = fallbackHashtags(platform);
+    const minRequired = platform === 'reddit' ? 0 : 1;
+
+    if (cleanedHashtags.length < minRequired) {
+      sanitized.hashtags = minRequired === 0 ? [] : fallback;
+    } else {
+      sanitized.hashtags = cleanedHashtags;
     }
   } else {
-    sanitized.hashtags = platform === "reddit" ? [] : fallback;
+    // No hashtags provided, use fallback when platform requires at least one
+    sanitized.hashtags = platform === 'reddit' ? [] : fallbackHashtags(platform);
   }
 
   return sanitized;

@@ -3,7 +3,7 @@ import { z } from "zod";
 export const CaptionItem = z.object({
   caption: z.string().min(1),
   alt: z.string().min(20).max(200),
-  hashtags: z.array(z.string()).min(1).max(10),
+  hashtags: z.array(z.string()).max(10),
   cta: z.string().min(2),
   mood: z.string().min(2),
   style: z.string().min(2),

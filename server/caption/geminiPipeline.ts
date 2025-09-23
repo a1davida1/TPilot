@@ -44,6 +44,11 @@ const VARIANT_TARGET = 5;
 const VARIANT_RETRY_LIMIT = 4;
 const CAPTION_KEY_LENGTH = 80;
 
+const safeFallbackCaption = "Check out this amazing content!";
+const safeFallbackAlt = "Detailed alt text describing the scene.";
+const safeFallbackHashtags = ["#content", "#creative", "#amazing"];
+const safeFallbackCta = "Check it out";
+
 function captionKey(caption: string): string {
   return caption.trim().slice(0, 80).toLowerCase();
 }
@@ -99,7 +104,7 @@ function normalizeVariantFields(
   );
   if (typeof next.mood !== "string" || next.mood.trim().length < 2) next.mood = "engaging";
   if (typeof next.style !== "string" || next.style.trim().length < 2) next.style = "authentic";
-  
+
   // Use helper for contextual fallbacks
   const fallback = ensureFallbackCompliance(
     {
@@ -114,15 +119,15 @@ function normalizeVariantFields(
       existingCaption: existingCaption || (typeof next.caption === 'string' ? next.caption : undefined),
     }
   );
-  
+
   next.hashtags = fallback.hashtags;
   next.cta = fallback.cta;
   next.alt = fallback.alt;
-  
+
   if (typeof next.caption !== "string" || next.caption.trim().length < 1) {
     next.caption = existingCaption || "Here's something I'm proud of today.";
   }
-  
+
   return CaptionItem.parse(next);
 }
 
@@ -457,7 +462,7 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
       const res = await textModel.generateContent([
         { text: `${sys}\n${guard}\n${prompt}\n${user}` }
       ]);
-      const json = stripToJSON(res.response.text());
+      const json = stripToJSON(res.response.text()) as unknown;
       return Array.isArray(json) ? json : [];
     } catch (error) {
       console.error("Gemini textModel.generateContent failed:", error);
@@ -538,7 +543,7 @@ function normalizeGeminiFinal(
   );
   final.mood = typeof final.mood === "string" && final.mood.trim().length >= 2 ? final.mood.trim() : "engaging";
   final.style = typeof final.style === "string" && final.style.trim().length >= 2 ? final.style.trim() : "authentic";
-  
+
   // Use helper for contextual fallbacks
   if (platform) {
     const fallback = ensureFallbackCompliance(
@@ -554,10 +559,18 @@ function normalizeGeminiFinal(
         existingCaption: typeof final.caption === 'string' ? final.caption : undefined,
       }
     );
-    
+
+
     final.hashtags = fallback.hashtags;
     final.cta = fallback.cta;
     final.alt = fallback.alt;
+
+    if (platform === 'x' && Array.isArray(final.hashtags)) {
+      final.hashtags = final.hashtags.slice(0, 2);
+    }
+    if (platform === 'reddit') {
+      final.hashtags = [];
+    }
   } else {
     // Fallback to original logic if no platform
     const trimmedCta = typeof final.cta === "string" ? final.cta.trim() : "";
@@ -578,7 +591,7 @@ function normalizeGeminiFinal(
     }
     final.hashtags = hashtags;
   }
-  
+
   const trimmedCaption = typeof final.caption === "string" ? final.caption.trim() : "";
   final.caption = trimmedCaption.length > 0 ? trimmedCaption : "Sharing something I'm genuinely proud of.";
 }
@@ -594,6 +607,10 @@ async function invokeTextModel(prompt: Array<{ text: string }>): Promise<unknown
   } else {
     throw new Error('textModel is neither a function nor has a generateContent method');
   }
+}
+
+function truncateReason(reason: string, maxLength = 100): string {
+  return reason.length > maxLength ? `${reason.slice(0, maxLength - 3)}...` : reason;
 }
 
 async function requestGeminiRanking(
@@ -619,17 +636,67 @@ async function requestGeminiRanking(
         ? res 
         : JSON.stringify(res)
   ) as unknown;
-  
+
+
+  const defaultVariant = variantsInput[0] ??
+    CaptionItem.parse({
+      caption: safeFallbackCaption,
+      alt: safeFallbackAlt,
+      hashtags: [...safeFallbackHashtags],
+      cta: safeFallbackCta,
+      mood: "engaging",
+      style: "authentic",
+      safety_level: "normal",
+      nsfw: false,
+    });
+  const defaultScores = [5, 4, 3, 2, 1];
+
   if(Array.isArray(json)) {
     const winner = json[0] as Record<string, unknown> | undefined;
     json = {
       winner_index: 0,
-      scores: [5, 4, 3, 2, 1],
+      scores: [...defaultScores],
       reason: "Selected based on engagement potential",
-      final: winner ?? variantsInput[0]
+      final: winner ?? { ...defaultVariant }
     };
   }
-  
+
+
+  if (json && typeof json === "object" && !Array.isArray(json)) {
+    const container = json as Record<string, unknown>;
+
+    const rawWinner = container.winner_index;
+    const normalizedWinner =
+      typeof rawWinner === "number" && Number.isFinite(rawWinner)
+        ? Math.min(Math.max(Math.trunc(rawWinner), 0), defaultScores.length - 1)
+        : 0;
+    container.winner_index = normalizedWinner;
+
+    const rawScores = container.scores;
+    const normalizedScores =
+      Array.isArray(rawScores) &&
+      rawScores.length === defaultScores.length &&
+      rawScores.every(score => typeof score === "number" && Number.isFinite(score))
+        ? rawScores.map(score => Number(score))
+        : [...defaultScores];
+    container.scores = normalizedScores;
+
+    const rawReason = typeof container.reason === "string" ? container.reason.trim() : "";
+    const reasonText = rawReason.length > 0 ? rawReason : "Selected for authenticity and compliance";
+    container.reason = truncateReason(reasonText);
+
+    const fallbackIndex = container.winner_index as number;
+    const winnerVariant =
+      variantsInput[fallbackIndex] ?? variantsInput[0] ?? defaultVariant;
+
+    const providedFinal = container.final;
+    const normalizedFinal =
+      providedFinal && typeof providedFinal === "object"
+        ? { ...(providedFinal as Record<string, unknown>) }
+        : { ...winnerVariant };
+    container.final = normalizedFinal;
+  }
+
   if((json as Record<string, unknown>).final){
     const final = (json as { final: Record<string, unknown> }).final;
     normalizeGeminiFinal(final, platform, facts);
@@ -648,7 +715,7 @@ export async function rankAndSelect(
   const first = await requestGeminiRanking(variants, serializedVariants, promptBlock, params?.platform, undefined, params?.facts);
   let parsed = RankResult.parse(first);
   const violations = detectVariantViolations(parsed.final);
-  
+
   if (violations.length === 0) {
     return parsed;
   }
@@ -663,7 +730,7 @@ export async function rankAndSelect(
   );
   parsed = RankResult.parse(rerank);
   const rerankViolations = detectVariantViolations(parsed.final);
-  
+
   if (rerankViolations.length === 0) {
     return parsed;
   }
