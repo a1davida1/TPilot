@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { test, expect, beforeEach, vi } from 'vitest';
 import { validateContent } from './validateContent';
 import * as utils from './moderation-utils';
 

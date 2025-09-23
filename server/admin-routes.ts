@@ -451,7 +451,7 @@ export function setupAdminRoutes(app: Express) {
   // Send bulk email
   app.post('/api/admin/send-email', requireAdmin, async (req, res) => {
     try {
-      const { userIds, subject, content } = req.body;
+      const { userIds, subject: _subject, content: _content } = req.body;
       
       if (!emailService.isEmailServiceConfigured) {
         return res.status(400).json({ message: 'Email service not configured' });
@@ -619,7 +619,7 @@ export function setupAdminRoutes(app: Express) {
 
   app.get('/api/admin/system-logs', requireAdmin, async (req, res) => {
     try {
-      const level = req.query.level || 'all';
+      const _level = req.query.level || 'all';
       const limit = parseInt(req.query.limit as string) || 50;
 
       // Return empty logs array since we don't have system_logs table yet

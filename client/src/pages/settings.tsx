@@ -37,7 +37,7 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: userSettings } = useQuery({
+  const { data: _userSettings } = useQuery({
     queryKey: ['/api/user/settings'],
   });
 

@@ -148,7 +148,7 @@ const formatRiskLabel = (riskLevel: string) => {
   return riskLevel.charAt(0).toUpperCase() + riskLevel.slice(1);
 };
 
-const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
+const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier: _userTier = 'free' }) => {
   const currentYear = new Date().getFullYear();
   const earliestTaxYear = 2000;
   const latestTaxYear = currentYear + 1;
@@ -511,7 +511,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                       </Button>
                     </div>
                   ) : (
-                    recentExpenses.slice(0, 3).map((expense, index) => (
+                    recentExpenses.slice(0, 3).map((expense, _index) => (
                       <div 
                         key={expense.id}
                         className="flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
@@ -545,7 +545,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier = 'free' }) => {
                   <p className="text-gray-500">Loading categories...</p>
                 </div>
               ) : (
-                expenseCategories.map((category, index) => {
+                expenseCategories.map((category, _index) => {
                   const IconComponent = iconMap[category.icon] || Sparkles;
                   return (
                     <div key={category.id}>

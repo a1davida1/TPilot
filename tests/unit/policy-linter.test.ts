@@ -1,5 +1,4 @@
 import { describe, test, expect, beforeAll, afterAll, vi } from 'vitest';
-import { eq } from "drizzle-orm";
 
 // Mock the database and policy linter
 const mockDb = {
