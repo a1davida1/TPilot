@@ -10,17 +10,27 @@
     "promotionAllowed": "limited",
     "postingLimits": {"daily": 1},
     "rules": {
-      "minKarma": null,
-      "minAccountAge": null,
-      "watermarksAllowed": true,
-      "sellingAllowed": "limited",
-      "titleRules": ["Be descriptive", "No clickbait"],
-      "contentRules": ["Be nice", "No spam", "High quality images only"],
-      "verificationRequired": false,
-      "requiresApproval": false,
-      "nsfwRequired": false,
-      "maxPostsPerDay": 1,
-      "cooldownHours": null
+      "eligibility": {
+        "minKarma": null,
+        "minAccountAge": null,
+        "verification": false
+      },
+      "content": {
+        "sellingPolicy": "limited",
+        "watermarksAllowed": true,
+        "contentGuidelines": ["Be nice", "No spam", "High quality images only"]
+      },
+      "posting": {
+        "titleRequirements": ["Be descriptive", "No clickbait"],
+        "maxPostsPerDay": 1,
+        "cooldownHours": null,
+        "requiresApproval": false,
+        "nsfwRequired": false
+      },
+      "notes": {
+        "additionalInfo": [],
+        "exemptions": []
+      }
     },
     "bestPostingTimes": ["morning", "evening"],
     "averageUpvotes": 100,
@@ -42,17 +52,27 @@
     "promotionAllowed": "strict",
     "postingLimits": {"daily": 2},
     "rules": {
-      "minKarma": 100,
-      "minAccountAge": 30,
-      "watermarksAllowed": false,
-      "sellingAllowed": "not_allowed",
-      "titleRules": ["Include workout type", "No self-promotion"],
-      "contentRules": ["No self-promotion", "Stay on topic", "Include progress or advice"],
-      "verificationRequired": true,
-      "requiresApproval": false,
-      "nsfwRequired": false,
-      "maxPostsPerDay": 2,
-      "cooldownHours": 12
+      "eligibility": {
+        "minKarma": 100,
+        "minAccountAge": 30,
+        "verification": true
+      },
+      "content": {
+        "sellingPolicy": "not_allowed",
+        "watermarksAllowed": false,
+        "contentGuidelines": ["No self-promotion", "Stay on topic", "Include progress or advice"]
+      },
+      "posting": {
+        "titleRequirements": ["Include workout type", "No self-promotion"],
+        "maxPostsPerDay": 2,
+        "cooldownHours": 12,
+        "requiresApproval": false,
+        "nsfwRequired": false
+      },
+      "notes": {
+        "additionalInfo": [],
+        "exemptions": []
+      }
     },
     "bestPostingTimes": ["afternoon"],
     "averageUpvotes": 250,

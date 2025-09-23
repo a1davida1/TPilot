@@ -22,7 +22,7 @@ export interface RedditAccount {
   accountAgeDays?: number;
 }
 
-import type { RedditCommunitySellingPolicy } from '@shared/schema';
+import type { RedditCommunitySellingPolicy, RedditCommunityRuleSet } from '@shared/schema';
 
 export interface SubredditCommunity {
   id: string;
@@ -36,14 +36,7 @@ export interface SubredditCommunity {
   averageUpvotes: number;
   successProbability: number;
   description: string;
-  rules?: {
-    minKarma?: number;
-    minAccountAge?: number;
-    watermarksAllowed?: boolean;
-    sellingAllowed?: RedditCommunitySellingPolicy;
-    titleRules?: string[];
-    contentRules?: string[];
-  };
+  rules?: RedditCommunityRuleSet;
 }
 
 export interface ConnectionTestResponse {
