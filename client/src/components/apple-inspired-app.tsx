@@ -290,9 +290,9 @@ export function AppleInspiredApp() {
         <div className="p-6 border-b border-gray-200/50">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <img 
-                src="/thottopilot-full-logo.png" 
-                alt="ThottoPilot" 
+              <img
+                src="/thottopilot-logo.png"
+                alt="ThottoPilot"
                 className="h-10 w-10 object-contain"
               />
               <div>

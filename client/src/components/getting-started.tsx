@@ -224,9 +224,9 @@ export function GettingStarted({ userTier = 'free', onSectionSelect, isAtBottom 
       {/* Welcome Header */}
       <div className="text-center space-y-4">
         <div className="flex flex-col items-center justify-center space-y-4">
-          <img 
-            src="/thottopilot-full-logo.png" 
-            alt="ThottoPilot" 
+          <img
+            src="/thottopilot-logo.png"
+            alt="ThottoPilot"
             className="h-16 w-16 object-contain"
           />
           <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">

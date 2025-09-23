@@ -47,9 +47,9 @@ const getOnboardingSteps = (completedSteps: Set<string>): OnboardingStep[] => [
     component: (
       <div className="text-center space-y-4">
         <div className="w-24 h-24 mx-auto flex items-center justify-center">
-          <img 
-            src="/thottopilot-full-logo.png" 
-            alt="ThottoPilot - Pilot Content Creation Platform" 
+          <img
+            src="/thottopilot-logo.png"
+            alt="ThottoPilot - Pilot Content Creation Platform"
             className="h-24 w-24 object-contain"
           />
         </div>
