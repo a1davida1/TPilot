@@ -6,9 +6,12 @@ import {
   insertRedditCommunitySchema,
   type InsertRedditCommunity,
   type RedditCommunityRuleSet,
+  type LegacyRedditCommunityRuleSet,
   type RedditCommunitySellingPolicy,
   redditCommunityRuleSetSchema,
-  createDefaultRules
+  createDefaultRules,
+  normalizeRulesToStructured,
+  inferSellingPolicyFromRules
 } from '@shared/schema';
 import { type GrowthTrend, isValidGrowthTrend, getGrowthTrendLabel } from '@shared/growth-trends';
 import { eq, ilike, desc, or } from 'drizzle-orm';
@@ -43,9 +46,9 @@ export function parseCommunityRules(community: RedditCommunity): CommunityRules 
   const structuredRules = normalizeRules(community.rules, community.promotionAllowed, community.category);
   
   return {
-    minKarma: structuredRules?.minKarma ?? null,
-    minAccountAge: structuredRules?.minAccountAge ?? null,
-    verificationRequired: columnLevelVerification || (structuredRules?.verificationRequired ?? false)
+    minKarma: structuredRules?.eligibility?.minKarma ?? null,
+    minAccountAge: structuredRules?.eligibility?.minAccountAgeDays ?? null,
+    verificationRequired: columnLevelVerification || (structuredRules?.eligibility?.verificationRequired ?? false)
   };
 }
 
@@ -85,7 +88,7 @@ export async function getEligibleCommunitiesForUser(criteria: CommunityEligibili
 
 /**
  * Normalize and hydrate community rules from database response
- * Handles backward compatibility with legacy array-based rules
+ * Handles backward compatibility with legacy flat rules and new structured rules
  */
 export function normalizeRules(rawRules: unknown, promotionAllowed?: string, category?: string): RedditCommunityRuleSet {
   try {
@@ -98,27 +101,52 @@ export function normalizeRules(rawRules: unknown, promotionAllowed?: string, cat
     if (Array.isArray(rawRules)) {
       const defaults = createDefaultRules();
       return {
-        ...defaults,
-        contentRules: rawRules.filter(rule => typeof rule === 'string'),
-        titleRules: defaults?.titleRules || [],
-        bannedContent: defaults?.bannedContent || [],
-        formattingRequirements: defaults?.formattingRequirements || [],
-        sellingAllowed: inferSellingPolicy(promotionAllowed || 'no', category || 'general')
+        ...defaults!,
+        content: {
+          ...defaults!.content!,
+          contentGuidelines: rawRules.filter(rule => typeof rule === 'string'),
+          sellingPolicy: inferSellingPolicy(promotionAllowed || 'no', category || 'general')
+        }
       };
     }
     
     // Handle object-based rules
     if (typeof rawRules === 'object') {
-      // Try to parse as structured rules
-      const parsed = redditCommunityRuleSetSchema.parse(rawRules);
-      
-      if (parsed) {
-        // If sellingAllowed is undefined/null, try to infer from promotion flags
-        if (!parsed.sellingAllowed && (promotionAllowed || category)) {
-          parsed.sellingAllowed = inferSellingPolicy(promotionAllowed || 'no', category || 'general', parsed);
+      // First try to parse as new structured rules
+      try {
+        const parsed = redditCommunityRuleSetSchema.parse(rawRules);
+        if (parsed) {
+          // If sellingPolicy is undefined/null, try to infer from promotion flags
+          if (!parsed.content?.sellingPolicy && (promotionAllowed || category)) {
+            const inferredPolicy = inferSellingPolicy(promotionAllowed || 'no', category || 'general');
+            if (parsed.content) {
+              parsed.content.sellingPolicy = inferredPolicy;
+            } else {
+              const defaults = createDefaultRules();
+              parsed.content = {
+                ...defaults!.content!,
+                sellingPolicy: inferredPolicy
+              };
+            }
+          }
+          return parsed;
         }
-        
-        return parsed;
+      } catch (e) {
+        // Fall back to legacy handling
+      }
+      
+      // Try to handle legacy flat structure
+      const legacyRules = rawRules as LegacyRedditCommunityRuleSet;
+      const normalized = normalizeRulesToStructured(legacyRules);
+      if (normalized) {
+        // Infer selling policy if not present
+        if (!normalized.content?.sellingPolicy && (promotionAllowed || category)) {
+          const inferredPolicy = inferSellingPolicy(promotionAllowed || 'no', category || 'general');
+          if (normalized.content) {
+            normalized.content.sellingPolicy = inferredPolicy;
+          }
+        }
+        return normalized;
       }
     }
     
@@ -132,10 +160,10 @@ export function normalizeRules(rawRules: unknown, promotionAllowed?: string, cat
 /**
  * Infer selling policy from promotion flags and category
  */
-export function inferSellingPolicy(promotionAllowed: string, category: string, rules?: RedditCommunityRuleSet): RedditCommunitySellingPolicy | undefined {
+export function inferSellingPolicy(promotionAllowed: string, category: string, rules?: RedditCommunityRuleSet): RedditCommunitySellingPolicy {
   // If rules already specify selling policy, use it
-  if (rules && 'sellingAllowed' in rules && rules.sellingAllowed) {
-    return rules.sellingAllowed;
+  if (rules?.content?.sellingPolicy) {
+    return rules.content.sellingPolicy;
   }
   
   // Infer from promotion flags and category
@@ -221,23 +249,23 @@ export async function getCommunityInsights(communityId: string): Promise<{
   if (community.competitionLevel === 'low') successTips.push('Low competition - your content will stand out');
 
   // Rule-based warnings using structured rules with safe null checks
-  if (rules?.verificationRequired) warnings.push('Verification required - complete r/GetVerified');
-  if (rules?.sellingAllowed === 'not_allowed') warnings.push('No promotion/selling allowed - content only');
-  if (rules?.sellingAllowed === 'limited') warnings.push('Limited promotion allowed - check specific rules');
-  if (rules?.sellingAllowed === 'unknown') warnings.push('Selling policy unclear - check community rules');
-  if (rules?.watermarksAllowed === false) warnings.push('Watermarks not allowed - use clean images');
-  if (rules?.minKarma && rules.minKarma > 50) warnings.push(`Requires ${rules.minKarma}+ karma`);
-  if (rules?.minAccountAge && rules.minAccountAge > 7) warnings.push(`Account must be ${rules.minAccountAge}+ days old`);
-  if (rules?.maxPostsPerDay && rules.maxPostsPerDay <= 1) warnings.push(`Limited to ${rules.maxPostsPerDay} post${rules.maxPostsPerDay === 1 ? '' : 's'} per day`);
-  if (rules?.cooldownHours && rules.cooldownHours >= 24) warnings.push(`${rules.cooldownHours}h cooldown between posts`);
-  if (rules?.requiresApproval) warnings.push('Posts require mod approval - expect delays');
+  if (rules?.eligibility?.verificationRequired) warnings.push('Verification required - complete r/GetVerified');
+  if (rules?.content?.sellingPolicy === 'not_allowed') warnings.push('No promotion/selling allowed - content only');
+  if (rules?.content?.sellingPolicy === 'limited') warnings.push('Limited promotion allowed - check specific rules');
+  if (rules?.content?.sellingPolicy === 'unknown') warnings.push('Selling policy unclear - check community rules');
+  if (rules?.content?.watermarksAllowed === false) warnings.push('Watermarks not allowed - use clean images');
+  if (rules?.eligibility?.minKarma && rules.eligibility.minKarma > 50) warnings.push(`Requires ${rules.eligibility.minKarma}+ karma`);
+  if (rules?.eligibility?.minAccountAgeDays && rules.eligibility.minAccountAgeDays > 7) warnings.push(`Account must be ${rules.eligibility.minAccountAgeDays}+ days old`);
+  if (rules?.posting?.maxPostsPerDay && rules.posting.maxPostsPerDay <= 1) warnings.push(`Limited to ${rules.posting.maxPostsPerDay} post${rules.posting.maxPostsPerDay === 1 ? '' : 's'} per day`);
+  if (rules?.posting?.cooldownHours && rules.posting.cooldownHours >= 24) warnings.push(`${rules.posting.cooldownHours}h cooldown between posts`);
+  if (rules?.eligibility?.requiresApproval) warnings.push('Posts require mod approval - expect delays');
 
   // Add title and content rule warnings with safe null checks
-  if (rules?.titleRules && rules.titleRules.length > 0) {
-    warnings.push(`Title rules: ${rules.titleRules.slice(0, 2).join(', ')}${rules.titleRules.length > 2 ? '...' : ''}`);
+  if (rules?.content?.titleGuidelines && rules.content.titleGuidelines.length > 0) {
+    warnings.push(`Title rules: ${rules.content.titleGuidelines.slice(0, 2).join(', ')}${rules.content.titleGuidelines.length > 2 ? '...' : ''}`);
   }
-  if (rules?.contentRules && rules.contentRules.length > 0) {
-    warnings.push(`Content rules: ${rules.contentRules.slice(0, 2).join(', ')}${rules.contentRules.length > 2 ? '...' : ''}`);
+  if (rules?.content?.contentGuidelines && rules.content.contentGuidelines.length > 0) {
+    warnings.push(`Content rules: ${rules.content.contentGuidelines.slice(0, 2).join(', ')}${rules.content.contentGuidelines.length > 2 ? '...' : ''}`);
   }
 
   // Enhanced rule-based warnings using the policy linter as fallback
