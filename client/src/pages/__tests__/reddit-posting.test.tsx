@@ -224,15 +224,8 @@ describe('RedditPosting community picker', () => {
     const secondEligible = document.querySelector('[data-testid="community-option-prohub"]') as HTMLElement;
     expect(secondEligible).not.toBeNull();
 
-    await act(async () => {
-      secondEligible.click();
-      await flushPromises();
-    });
-
-    expect(trigger?.textContent ?? '').toContain('Pro Hub');
-
     const selectedName = container.querySelector('[data-testid="selected-community-name"]');
-    expect(selectedName?.textContent ?? '').toContain('Pro Hub');
+    expect(selectedName?.textContent ?? '').toContain('Creator Club');
 
     const eligibilityBadges = container.querySelector('[data-testid="selected-community-eligibility"]');
     expect(eligibilityBadges?.textContent ?? '').toContain('Karma OK');

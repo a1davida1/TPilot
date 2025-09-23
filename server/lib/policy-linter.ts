@@ -102,7 +102,7 @@ function coerceRuleSpec(rawRules: any): RuleSpec {
 
   // Handle new RuleSpec format or ensure it has proper structure
   const spec = rawRules as RuleSpec;
-  let result: RuleSpec = {
+  const result: RuleSpec = {
     bannedWords: spec.bannedWords || [],
     titleRegexes: spec.titleRegexes || [],
     bodyRegexes: spec.bodyRegexes || [],

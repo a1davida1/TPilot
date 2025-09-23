@@ -293,7 +293,12 @@ export default function RedditPostingPage() {
     retry: false,
   });
 
-  const hasActiveAccount = accounts.length > 0;
+  const activeAccount = useMemo(
+    () => accounts.find((account) => account.isActive) ?? null,
+    [accounts]
+  );
+
+  const hasActiveAccount = Boolean(activeAccount);
 
   // Fetch shadowban status for authenticated users with Reddit accounts
   const {
@@ -345,9 +350,6 @@ export default function RedditPostingPage() {
     : undefined;
 
   const selectedAssets = mediaAssets.filter((asset) => selectedMediaIds.includes(asset.id));
-
-  // Get the active account (assuming first active account for eligibility checking)
-  const activeAccount = accounts.find((acc) => acc.isActive) || null;
 
   // Sort communities by eligibility and karma requirements
   const sortedCommunities = useMemo(() => {
@@ -682,32 +684,55 @@ export default function RedditPostingPage() {
                     </div>
                   ) : accounts?.length > 0 ? (
                     <div className="space-y-3">
-                      {accounts.map((account) => (
-                        <div key={account.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
-                          <div className="flex items-center gap-3">
-                            <div className="w-3 h-3 bg-green-500 rounded-full" />
-                            <div>
-                              <p className="font-medium text-green-800">u/{account.username}</p>
-                              <p className="text-sm text-green-600">{account.karma} karma • Connected {new Date(account.connectedAt).toLocaleDateString()}</p>
+                      {accounts.map((account) => {
+                        const isActive = account.isActive;
+                        const rowAccent = isActive ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200';
+                        const indicatorAccent = isActive ? 'bg-green-500' : 'bg-gray-400';
+                        const nameAccent = isActive ? 'text-green-800' : 'text-gray-700';
+                        const metaAccent = isActive ? 'text-green-600' : 'text-gray-500';
+                        const badgeAccent = isActive ? 'text-green-700 border-green-300' : 'text-gray-600 border-gray-300';
+                        const testButtonAccent = isActive
+                          ? 'border-green-300 text-green-700 hover:bg-green-50'
+                          : 'border-gray-300 text-gray-500 cursor-not-allowed opacity-60';
+
+                        return (
+                          <div
+                            key={account.id}
+                            data-testid={`reddit-account-${account.id}`}
+                            className={`flex items-center justify-between p-3 rounded-lg border ${rowAccent}`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={`w-3 h-3 rounded-full ${indicatorAccent}`} />
+                              <div>
+                                <p className={`font-medium ${nameAccent}`}>u/{account.username}</p>
+                                <p className={`text-sm ${metaAccent}`}>
+                                  {account.karma} karma • Connected {new Date(account.connectedAt).toLocaleDateString()}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Badge
+                                variant="outline"
+                                className={badgeAccent}
+                                data-testid={`reddit-account-${account.id}-status`}
+                              >
+                                {isActive ? (account.verified ? 'Verified' : 'Active') : 'Inactive'}
+                              </Badge>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => testConnection()}
+                                disabled={testingConnection || !isActive}
+                                className={testButtonAccent}
+                                data-testid={`reddit-account-${account.id}-test`}
+                              >
+                                <TestTube className="h-4 w-4 mr-1" />
+                                Test
+                              </Button>
                             </div>
                           </div>
-                          <div className="flex gap-2">
-                            <Badge variant="outline" className="text-green-700 border-green-300">
-                              {account.verified ? 'Verified' : 'Active'}
-                            </Badge>
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => testConnection()}
-                              disabled={testingConnection}
-                              className="border-green-300 text-green-700 hover:bg-green-50"
-                            >
-                              <TestTube className="h-4 w-4 mr-1" />
-                              Test
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   ) : (
                     <div className="text-center p-6 bg-orange-50 rounded-lg border border-orange-200">
@@ -734,7 +759,10 @@ export default function RedditPostingPage() {
 
             {/* Shadowban Status */}
             {hasActiveAccount && (
-              <Card className={`bg-white/90 backdrop-blur-sm shadow-lg ${shadowbanCardStyles}`}>
+              <Card
+                data-testid="shadowban-card"
+                className={`bg-white/90 backdrop-blur-sm shadow-lg ${shadowbanCardStyles}`}
+              >
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     {shadowbanIcon}
