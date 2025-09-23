@@ -8,6 +8,8 @@ import {
   getGrowthTrendLabel
 } from '@shared/growth-trends';
 
+export type { GrowthTrend } from '@shared/growth-trends';
+
 export type PromotionPolicy = 'yes' | 'no' | 'limited' | 'subtle' | 'strict' | 'unknown';
 // GrowthTrend type imported from @shared/growth-trends - uses canonical values: 'up' | 'stable' | 'down'
 export type ActivityLevel = 'low' | 'medium' | 'high' | 'unknown';

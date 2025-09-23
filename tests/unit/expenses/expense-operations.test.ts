@@ -1,6 +1,10 @@
 /* eslint-env node, jest */
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
-import type { InsertExpense } from '../../../shared/schema.js';
+import type {
+  InsertExpense,
+  Expense,
+  ExpenseCategory
+} from '../../../shared/schema.js';
 import type { IStorage } from '../../../server/storage';
 import { buildStorageMock } from '../../_helpers/buildStorageMock.js';
 
@@ -289,48 +293,131 @@ describe('Expense Operations Unit Tests', () => {
     test('should fetch user expenses with category information', async () => {
       const mockExpensesWithCategories = [
         {
-          expense: {
-            id: 1,
-            userId,
-            categoryId: 1,
-            description: 'Camera lens',
-            amount: 75000,
-            expenseDate: new Date('2024-01-15'),
-            taxYear: 2024
-          },
+          id: 1,
+          userId,
+          categoryId: 1,
+          amount: 75000,
+          description: 'Camera lens',
+          vendor: null,
+          expenseDate: new Date('2024-01-15'),
+          receiptUrl: null,
+          receiptFileName: null,
+          businessPurpose: null,
+          deductionPercentage: 100,
+          tags: null,
+          isRecurring: false,
+          recurringPeriod: null,
+          taxYear: 2024,
+          notes: null,
+          createdAt: new Date('2024-01-20'),
+          updatedAt: new Date('2024-01-20'),
           category: {
             id: 1,
             name: 'Technology',
-            deductionPercentage: 100
+            description: 'Equipment and technology purchases',
+            legalExplanation: 'Equipment deduction',
+            deductionPercentage: 100,
+            itsDeductionCode: null,
+            examples: [],
+            icon: 'tech',
+            color: '#000000',
+            isActive: true,
+            sortOrder: 1,
+            defaultBusinessPurpose: null,
+            createdAt: new Date('2024-01-01')
           }
         }
-      ];
+      ] satisfies Array<Expense & { category: ExpenseCategory | null }>;
 
       mockStorage.getUserExpenses.mockResolvedValueOnce(mockExpensesWithCategories);
 
       const result = await storage.getUserExpenses(userId, 2024);
 
       expect(result).toEqual(mockExpensesWithCategories);
+      expect(result[0]?.category?.name).toBe('Technology');
       expect(mockStorage.getUserExpenses).toHaveBeenCalledWith(userId, 2024);
     });
 
     test('should fetch expenses without tax year filter', async () => {
       const mockAllExpenses = [
         {
-          expense: { id: 1, userId, description: 'Expense 1', taxYear: 2023 },
-          category: { name: 'Category 1' }
+          id: 1,
+          userId,
+          categoryId: 2,
+          amount: 12000,
+          description: 'Expense 1',
+          vendor: null,
+          expenseDate: new Date('2023-03-10'),
+          receiptUrl: null,
+          receiptFileName: null,
+          businessPurpose: null,
+          deductionPercentage: 80,
+          tags: null,
+          isRecurring: false,
+          recurringPeriod: null,
+          taxYear: 2023,
+          notes: null,
+          createdAt: new Date('2023-03-11'),
+          updatedAt: new Date('2023-03-11'),
+          category: {
+            id: 2,
+            name: 'Education',
+            description: 'Courses and learning materials',
+            legalExplanation: 'Education deduction',
+            deductionPercentage: 80,
+            itsDeductionCode: null,
+            examples: ['Online courses'],
+            icon: 'book',
+            color: '#FFAA00',
+            isActive: true,
+            sortOrder: 2,
+            defaultBusinessPurpose: null,
+            createdAt: new Date('2023-01-01')
+          }
         },
         {
-          expense: { id: 2, userId, description: 'Expense 2', taxYear: 2024 },
-          category: { name: 'Category 2' }
+          id: 2,
+          userId,
+          categoryId: 3,
+          amount: 8500,
+          description: 'Expense 2',
+          vendor: null,
+          expenseDate: new Date('2024-02-05'),
+          receiptUrl: null,
+          receiptFileName: null,
+          businessPurpose: null,
+          deductionPercentage: 100,
+          tags: null,
+          isRecurring: false,
+          recurringPeriod: null,
+          taxYear: 2024,
+          notes: null,
+          createdAt: new Date('2024-02-06'),
+          updatedAt: new Date('2024-02-06'),
+          category: {
+            id: 3,
+            name: 'Travel',
+            description: 'Business travel expenses',
+            legalExplanation: 'Travel deduction',
+            deductionPercentage: 100,
+            itsDeductionCode: null,
+            examples: ['Flights', 'Hotels'],
+            icon: 'plane',
+            color: '#3366FF',
+            isActive: true,
+            sortOrder: 3,
+            defaultBusinessPurpose: null,
+            createdAt: new Date('2024-01-05')
+          }
         }
-      ];
+      ] satisfies Array<Expense & { category: ExpenseCategory | null }>;
 
       mockStorage.getUserExpenses.mockResolvedValueOnce(mockAllExpenses);
 
       const result = await storage.getUserExpenses(userId);
 
       expect(result).toEqual(mockAllExpenses);
+      expect(result).toHaveLength(2);
       expect(mockStorage.getUserExpenses).toHaveBeenCalledWith(userId);
     });
   });

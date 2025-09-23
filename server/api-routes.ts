@@ -1,5 +1,4 @@
 import type { Express } from "express";
-import { z } from "zod";
 import { db } from "./db.js";
 import { storage } from "./storage.js";
 import { AiService } from "./lib/ai-service.js";
@@ -17,6 +16,7 @@ import { eq, desc, sql } from "drizzle-orm";
 import multer from "multer";
 import type { Request, Response, NextFunction } from 'express';
 import { authenticateToken, type AuthRequest } from './middleware/auth.js';
+import { z, ZodError } from "zod";
 
 interface PostingJobPayload {
   userId: number;
@@ -73,6 +73,10 @@ export function registerApiRoutes(app: Express) {
       });
       res.json(result);
     } catch (error: unknown) {
+      // Handle Zod validation errors specifically
+      if (error instanceof ZodError) {
+        return res.status(400).json({ errors: error.errors });
+      }
       next(error instanceof AppError ? error : new AppError('AI generation failed', 500));
     }
   });
@@ -110,6 +114,10 @@ export function registerApiRoutes(app: Express) {
       });
       res.json(result);
     } catch (error: unknown) {
+      // Handle Zod validation errors specifically
+      if (error instanceof ZodError) {
+        return res.status(400).json({ errors: error.errors });
+      }
       next(error instanceof AppError ? error : new AppError('Enhanced AI generation failed', 500));
     }
   });

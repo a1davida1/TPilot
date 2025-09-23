@@ -139,7 +139,10 @@ export interface IStorage {
   deleteExpenseCategory(id: number): Promise<void>;
   
   createExpense(expense: InsertExpense): Promise<Expense>;
-  getUserExpenses(userId: number, taxYear?: number): Promise<Expense[]>;
+  getUserExpenses(
+    userId: number,
+    taxYear?: number
+  ): Promise<Array<Expense & { category: ExpenseCategory | null }>>;
   getExpense(id: number, userId: number): Promise<Expense | undefined>;
   updateExpense(id: number, userId: number, updates: Partial<Expense>): Promise<Expense>;
   deleteExpense(id: number, userId: number): Promise<void>;
@@ -801,7 +804,10 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getUserExpenses(userId: number, taxYear?: number): Promise<Expense[]> {
+  async getUserExpenses(
+    userId: number,
+    taxYear?: number
+  ): Promise<Array<Expense & { category: ExpenseCategory | null }>> {
     try {
       const query = db.select({
         expense: expenses,

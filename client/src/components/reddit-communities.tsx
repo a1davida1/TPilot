@@ -31,7 +31,14 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import type { RedditCommunity, PostingLimits, RedditCommunitySellingPolicy } from "@shared/schema";
-import { GROWTH_TRENDS, GROWTH_TREND_LABELS, getGrowthTrendLabel, growthTrendSchema } from "@shared/growth-trends";
+import {
+  GROWTH_TRENDS,
+  GROWTH_TREND_LABELS,
+  getGrowthTrendLabel,
+  growthTrendSchema,
+  isValidGrowthTrend
+} from "@shared/growth-trends";
+import type { GrowthTrend } from "@shared/growth-trends";
 import { z } from "zod";
 
 export function RedditCommunities() {
