@@ -7,6 +7,47 @@ import { storage } from './storage';
 import { emailService } from './services/email-service';
 import { type User } from '@shared/schema';
 
+// Admin route interfaces
+interface UserSession {
+  id: string;
+  userId: number;
+  ipAddress: string;
+  userAgent: string;
+  location?: string;
+  startTime: Date;
+  lastActivity: Date;
+  isActive: boolean;
+}
+
+interface IPData {
+  ip: string;
+  location: string;
+  userCount: number;
+  lastSeen: Date;
+  flagged: boolean;
+  reason?: string;
+}
+
+interface SystemLog {
+  id: string;
+  level: 'info' | 'warn' | 'error' | 'debug';
+  message: string;
+  timestamp: Date;
+  source: string;
+  metadata?: Record<string, unknown>;
+}
+
+interface ContentFlag {
+  id: string;
+  contentId: string;
+  userId: number;
+  reason: string;
+  status: 'pending' | 'reviewed' | 'dismissed';
+  flaggedAt: Date;
+  reviewedAt?: Date;
+  reviewerId?: number;
+}
+
 const JWT_SECRET_TEST_FALLBACK = 'test-jwt-secret';
 const MISSING_JWT_SECRET_MESSAGE = 'JWT secret not configured';
 
@@ -559,7 +600,7 @@ export function setupAdminRoutes(app: Express) {
       }
 
       // Return real user session data if available, otherwise empty array
-      const sessions: any[] = [];
+      const sessions: UserSession[] = [];
       
       res.json(sessions);
     } catch (error) {
@@ -571,7 +612,7 @@ export function setupAdminRoutes(app: Express) {
   app.get('/api/admin/ip-tracking', requireAdmin, async (req, res) => {
     try {
       // Return empty array since we don't have IP tracking data in the database yet
-      const ipData: any[] = [];
+      const ipData: IPData[] = [];
       res.json(ipData);
     } catch (error) {
       console.error('Error fetching IP data:', error);
@@ -623,7 +664,7 @@ export function setupAdminRoutes(app: Express) {
       const limit = parseInt(req.query.limit as string) || 50;
 
       // Return empty logs array since we don't have system_logs table yet
-      const logs: any[] = [];
+      const logs: SystemLog[] = [];
 
       res.json(logs);
     } catch (error) {
@@ -727,7 +768,7 @@ export function setupAdminRoutes(app: Express) {
       const status = req.query.status || 'pending';
       
       // Return empty flags array since we don't have content_flags table data yet
-      const flags: any[] = [];
+      const flags: ContentFlag[] = [];
 
       res.json(flags);
     } catch (error) {

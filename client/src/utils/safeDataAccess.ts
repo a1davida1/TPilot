@@ -27,7 +27,7 @@ export const safeGet = <T>(obj: unknown, path: string, fallback: T): T => {
     if (current === null || current === undefined || typeof current !== 'object' || !(key in current)) {
       return fallback;
     }
-    current = (current as any)[key];
+    current = (current as Record<string, unknown>)[key];
   }
   
   return current === null || current === undefined ? fallback : current as T;

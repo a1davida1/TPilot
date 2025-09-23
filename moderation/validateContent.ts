@@ -11,7 +11,7 @@ import {
 interface Violation {
   type: string;
   severity: string;
-  detail?: any;
+  detail?: string | number | Record<string, unknown>;
 }
 
 interface Rules {
@@ -19,9 +19,15 @@ interface Rules {
   // Add other rule properties as needed
 }
 
-export async function validateContent(content: string, context: any = {}) {
+interface ValidationContext {
+  subreddit?: string;
+  userId?: number;
+  allowNSFW?: boolean;
+}
+
+export async function validateContent(content: string, context: ValidationContext = {}) {
   const violations: Violation[] = [];
-  const { subreddit, userId, allowNSFW = false } = context as any;
+  const { subreddit, userId, allowNSFW = false } = context;
 
   /* length check */
   if (content.length > 280) {

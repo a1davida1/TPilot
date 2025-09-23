@@ -203,7 +203,8 @@ export async function fetchWithRetry(
  * Error recovery suggestions
  */
 export function getErrorRecoverySuggestion(error: unknown): string | null {
-  const errorString = (error as any)?.message || (error as any)?.code || '';
+  const errorWithMessage = error as { message?: string; code?: string };
+  const errorString = errorWithMessage?.message || errorWithMessage?.code || '';
   
   if (errorString.includes('quota') || errorString.includes('limit')) {
     return 'Consider upgrading to Pro for unlimited access';
@@ -224,10 +225,19 @@ export function getErrorRecoverySuggestion(error: unknown): string | null {
   return null;
 }
 
+interface ErrorToast {
+  title: string;
+  description: string;
+  action?: {
+    label: string;
+    onClick: () => void;
+  };
+}
+
 /**
  * Create a toast-friendly error object
  */
-export function createErrorToast(error: unknown) {
+export function createErrorToast(error: unknown): ErrorToast {
   const message = getUserFriendlyError(error);
   const suggestion = getErrorRecoverySuggestion(error);
   

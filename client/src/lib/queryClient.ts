@@ -9,8 +9,8 @@ export interface ApiError extends Error {
 }
 
 // Helper function to get an error message based on status and error data
-function getErrorMessage(status: number, errorData: any): string | undefined {
-  if (errorData.message) {
+function getErrorMessage(status: number, errorData: Record<string, unknown>): string | undefined {
+  if (errorData.message && typeof errorData.message === 'string') {
     return errorData.message;
   }
   switch (status) {
@@ -143,8 +143,9 @@ export const getQueryFn: <T = unknown>(options: {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const error: ApiError = new Error(errorData.message || response.statusText) as ApiError;
+        const errorData = await response.json().catch(() => ({})) as Record<string, unknown>;
+        const errorMessage = typeof errorData.message === 'string' ? errorData.message : response.statusText;
+        const error: ApiError = new Error(errorMessage) as ApiError;
         error.status = response.status;
         error.statusText = response.statusText;
         error.isAuthError = response.status === 401 || response.status === 403;
