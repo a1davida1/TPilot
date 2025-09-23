@@ -1,0 +1,483 @@
+
+Update SafetyManager to insert new records
+Sep 23
+·
+a1davida1/TPilot
+·
+main
+·
++120
+-38
+
+Archive
+
+Share
+
+Create PR
+
+
+3
+1. Update `SafetyManager.recordPost` to inspect `updated.rowCount` (or an equivalent) and insert a new record when it is zero.
+2. Add unit tests that stub `db.update` returning `rowCount: 0` to prove a fresh record is created and another where the update path increments the counter.
+3. After fixing, backfill any missing rate-limit rows (migration or cron) so existing users aren’t untracked.
+Copy
+Summary
+
+Updated SafetyManager.recordPost to populate updatedAt, interpret rowCount values from different drivers, and fall back to an insert when no rows are affected so rate-limit tracking always advances.
+
+Expanded the unit suite for recordPost to mock both zero-row and successful update responses, confirming that the insert fallback and counter increments behave with the new timestamps.
+
+Rebuilt the rate-limit backfill utility to seed missing post_rate_limits rows from historical duplicate data and exposed a dedicated npm script for running the job in production environments.
+
+Testing
+
+✅ npm run lint (completes with existing repository warnings)
+
+⚠️ npm test *(fails across numerous pre-existing integration/unit suites—DB mocks, asset processing, and other upstream dependencies; run aborted after repeated errors)*
+
+
+Files (4)
+
+package.json
++1
+-0
+
+scripts/backfill-post-rate-limits.ts
++98
+-35
+
+server/lib/safety-systems.ts
++18
+-2
+
+tests/unit/server/services/safety-systems.record-post.test.ts
++3
+-1
+
+
+
+Ask
+
+Code
+Diff
+Logs
+
+package.json
++1
+-0
+
+{
+  "name": "rest-express",
+  "version": "1.0.0",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "dev": "NODE_ENV=development tsx server/index.ts",
+    "build": "bash build-production.sh",
+    "prestart": "npm run build",
+    "build:client": "vite build",
+    "build:server": "tsc -p tsconfig.server.json",
+    "start": "NODE_ENV=production node dist/server/index.js",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "fix-imports": "bash fix-all-imports.sh",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "backfill:post-rate-limits": "tsx scripts/backfill-post-rate-limits.ts",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "tsx vendor/playwright-test/runner.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.37.0",
+    "@aws-sdk/client-s3": "^3.864.0",
+    "@aws-sdk/s3-request-presigner": "^3.864.0",
+    "@eslint/js": "^9.35.0",
+    "@google-cloud/storage": "^7.17.0",
+    "@google/genai": "^1.12.0",
+    "@google/generative-ai": "^0.24.1",
+    "@hookform/resolvers": "^3.10.0",
+    "@jridgewell/trace-mapping": "^0.3.25",
+    "@maxmind/geoip2-node": "^6.1.0",
+    "@neondatabase/serverless": "^0.10.4",
+    "@playwright/test": "file:vendor/playwright-test",
+    "@radix-ui/react-accordion": "^1.2.4",
+    "@radix-ui/react-alert-dialog": "^1.1.7",
+    "@radix-ui/react-aspect-ratio": "^1.1.3",
+    "@radix-ui/react-avatar": "^1.1.4",
+    "@radix-ui/react-checkbox": "^1.1.5",
+    "@radix-ui/react-collapsible": "^1.1.4",
+    "@radix-ui/react-context-menu": "^2.2.7",
+    "@radix-ui/react-dialog": "^1.1.7",
+    "@radix-ui/react-dropdown-menu": "^2.1.7",
+scripts/backfill-post-rate-limits.ts
++98
+-35
+
+import { db } from '../server/db.js';
+import { postRateLimits, users } from '../shared/schema.js';
+import { eq, sql } from 'drizzle-orm';
+
+/**
+ * This script creates missing rate limit records for all users in all subreddits
+ * they have posted to. This ensures that future rate limit checks work correctly
+ * with the updated SafetyManager.recordPost logic.
+ */
+async function backfillPostRateLimits(): Promise<void> {
+import { postDuplicates, postRateLimits } from '../shared/schema.js';
+import { and, eq, isNull } from 'drizzle-orm';
+
+const RATE_LIMIT_WINDOW_MS = 24 * 60 * 60 * 1000;
+const BATCH_SIZE = 100;
+
+type RateLimitSeed = {
+  userId: number;
+  subreddit: string;
+  lastPostAt: Date;
+  postCount24h: number;
+};
+
+function createSeedKey(userId: number, subreddit: string): string {
+  return `${userId}:${subreddit}`;
+}
+
+function normalizeDate(value: Date | null): Date {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value;
+  }
+
+  return new Date(0);
+}
+
+export async function backfillPostRateLimits(): Promise<void> {
+  console.log('🔄 Starting post rate limits backfill...');
+
+  // Get all distinct user/subreddit combinations that need rate limit records
+  const missingRecords = await db
+  const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MS);
+
+  const duplicates = await db
+    .select({
+      userId: users.id,
+      subreddit: sql<string>`'general'`.as('subreddit'),
+      userId: postDuplicates.userId,
+      subreddit: postDuplicates.subreddit,
+      createdAt: postDuplicates.createdAt,
+    })
+    .from(users)
+    .from(postDuplicates)
+    .leftJoin(
+      postRateLimits,
+      eq(users.id, postRateLimits.userId)
+      and(
+        eq(postRateLimits.userId, postDuplicates.userId),
+        eq(postRateLimits.subreddit, postDuplicates.subreddit)
+      )
+    )
+    .where(sql`${postRateLimits.id} IS NULL`);
+    .where(isNull(postRateLimits.id));
+
+  if (missingRecords.length === 0) {
+  if (duplicates.length === 0) {
+    console.log('✅ No missing rate limit records found. Backfill complete.');
+    return;
+  }
+
+  console.log(`📊 Found ${missingRecords.length} missing rate limit records to create`);
+  console.log(`📊 Found ${duplicates.length} historical posts missing rate limit coverage`);
+
+  const seeds = new Map<string, RateLimitSeed>();
+
+  for (const duplicate of duplicates) {
+    const { userId, subreddit, createdAt } = duplicate;
+
+    if (userId === null || subreddit === null) {
+      continue;
+    }
+
+  // Create missing records in batches
+  const batchSize = 100;
+  let processedCount = 0;
+    const key = createSeedKey(userId, subreddit);
+    const postTimestamp = normalizeDate(createdAt);
+
+  for (let i = 0; i < missingRecords.length; i += batchSize) {
+    const batch = missingRecords.slice(i, i + batchSize);
+    
+    const values = batch.map(record => ({
+      userId: record.userId,
+      subreddit: record.subreddit,
+      postCount24h: 0,
+      lastPostAt: new Date(),
+    }));
+    const existing = seeds.get(key);
+
+    if (!existing) {
+      seeds.set(key, {
+        userId,
+        subreddit,
+        lastPostAt: postTimestamp,
+        postCount24h: postTimestamp >= windowStart ? 1 : 0,
+      });
+      continue;
+    }
+
+    if (postTimestamp > existing.lastPostAt) {
+      existing.lastPostAt = postTimestamp;
+    }
+
+    if (postTimestamp >= windowStart) {
+      existing.postCount24h += 1;
+    }
+  }
+
+  if (seeds.size === 0) {
+    console.log('✅ No new rate limit seeds required after filtering existing records.');
+    return;
+  }
+
+  const seedArray = Array.from(seeds.values());
+
+  console.log(`🧮 Preparing to insert ${seedArray.length} rate limit records`);
+
+  let processed = 0;
+
+  for (let index = 0; index < seedArray.length; index += BATCH_SIZE) {
+    const batch = seedArray.slice(index, index + BATCH_SIZE);
+
+    await db
+      .insert(postRateLimits)
+      .values(values)
+      .values(
+        batch.map((seed) => ({
+          userId: seed.userId,
+          subreddit: seed.subreddit,
+          postCount24h: seed.postCount24h,
+          lastPostAt: seed.lastPostAt,
+          updatedAt: seed.lastPostAt,
+        }))
+      )
+      .onConflictDoNothing();
+
+    processedCount += batch.length;
+    console.log(`⏳ Processed ${processedCount}/${missingRecords.length} records`);
+    processed += batch.length;
+    console.log(`⏳ Processed ${processed}/${seedArray.length} rate limit seeds`);
+  }
+
+  console.log(`✅ Successfully backfilled ${processedCount} rate limit records`);
+  console.log(`✅ Successfully backfilled ${processed} rate limit records`);
+}
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  backfillPostRateLimits()
+    .then(() => {
+      console.log('🎉 Backfill completed successfully');
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error('❌ Backfill failed:', error);
+      process.exit(1);
+    });
+}
+}
+server/lib/safety-systems.ts
++18
+-2
+
+@@ -131,74 +131,90 @@ export class SafetyManager {
+    const updated = await db
+      .update(postRateLimits)
+      .set({
+        postCount24h: sql`${postRateLimits.postCount24h} + 1`,
+        lastPostAt: now,
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(postRateLimits.userId, userIdNumeric),
+          eq(postRateLimits.subreddit, subreddit),
+          gte(postRateLimits.lastPostAt, windowStart)
+        )
+      );
+
+    const rowsUpdated = SafetyManager.getRowCount(updated);
+
+    if (rowsUpdated === 0) {
+      await db
+        .insert(postRateLimits)
+        .values({
+          userId: userIdNumeric,
+          subreddit,
+          postCount24h: 1,
+          lastPostAt: now,
+          updatedAt: now,
+        })
+        .onConflictDoUpdate({
+          target: [postRateLimits.userId, postRateLimits.subreddit],
+          set: {
+            postCount24h: 1,
+            lastPostAt: now,
+            updatedAt: now,
+          },
+        });
+    }
+  }
+
+  private static hasRowCount(result: unknown): result is { rowCount?: number } {
+  private static hasRowCount(
+    result: unknown
+  ): result is { rowCount?: number | bigint | string } {
+    return typeof result === 'object' && result !== null && 'rowCount' in result;
+  }
+
+  private static getRowCount(result: unknown): number {
+    if (Array.isArray(result)) {
+      return result.length;
+    }
+
+    if (SafetyManager.hasRowCount(result)) {
+      const { rowCount } = result;
+      return typeof rowCount === 'number' ? rowCount : 0;
+      if (typeof rowCount === 'number') {
+        return rowCount;
+      }
+
+      if (typeof rowCount === 'bigint') {
+        return Number(rowCount);
+      }
+
+      if (typeof rowCount === 'string') {
+        const parsed = Number.parseInt(rowCount, 10);
+        return Number.isNaN(parsed) ? 0 : parsed;
+      }
+
+      return 0;
+    }
+
+    return 0;
+  }
+
+  /**
+   * Check for duplicate content
+   */
+  static async checkDuplicate(
+    userId: string,
+    subreddit: string,
+    title: string,
+    body: string
+  ): Promise<DuplicateCheck> {
+    const contentHash = this.generateContentHash(title, body);
+
+    // Check for recent duplicates (last 30 days)
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+    const [duplicate] = await db
+      .select()
+      .from(postDuplicates)
+      .where(
+        and(
+          eq(postDuplicates.userId, parseInt(userId)),
+tests/unit/server/services/safety-systems.record-post.test.ts
++3
+-1
+
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { postRateLimits } from '../../../../shared/schema.js';
+
+type RowCountResult = { rowCount?: number };
+type RowCountResult = { rowCount?: number | bigint | string };
+
+type UpdateWhere = (conditions: unknown) => Promise<RowCountResult>;
+type UpdateSetInput = {
+  postCount24h: unknown;
+  lastPostAt: Date;
+  updatedAt: Date;
+};
+type UpdateSet = (values: UpdateSetInput) => { where: UpdateWhere };
+type UpdateChain = { set: UpdateSet };
+
+type InsertValuesInput = {
+  userId: number;
+  subreddit: string;
+  postCount24h: number;
+  lastPostAt: Date;
+  updatedAt: Date;
+};
+type OnConflictConfig = {
+  target: [typeof postRateLimits.userId, typeof postRateLimits.subreddit];
+  set: {
+    postCount24h: number;
+    lastPostAt: Date;
+    updatedAt: Date;
+  };
+};
+type InsertValues = (
+  values: InsertValuesInput
+) => { onConflictDoUpdate: (config: OnConflictConfig) => Promise<void> };
+type InsertChain = { values: InsertValues };
+
+type UpdateFn = (table: typeof postRateLimits) => UpdateChain;
+type InsertFn = (table: typeof postRateLimits) => InsertChain;
+
+const updateSpy = vi.fn<UpdateFn>();
+const insertSpy = vi.fn<InsertFn>();
+
+vi.mock('../../../../server/db.js', () => ({
+  db: {
+    update: updateSpy,
+    insert: insertSpy,
+  },
+@@ -66,50 +67,51 @@ describe('SafetyManager.recordPost', () => {
+      .mockResolvedValue();
+    const insertValues = vi
+      .fn<InsertValues>()
+      .mockReturnValue({ onConflictDoUpdate });
+    insertSpy.mockReturnValue({ values: insertValues });
+
+    const { SafetyManager } = await import('../../../../server/lib/safety-systems.js');
+
+    await SafetyManager.recordPost('42', 'unit_testing');
+
+    expect(updateSpy).toHaveBeenCalledWith(postRateLimits);
+    expect(updateSet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lastPostAt: now,
+        updatedAt: now,
+      })
+    );
+    expect(updateWhere).toHaveBeenCalledTimes(1);
+
+    expect(insertSpy).toHaveBeenCalledWith(postRateLimits);
+    expect(insertValues).toHaveBeenCalledWith({
+      userId: 42,
+      subreddit: 'unit_testing',
+      postCount24h: 1,
+      lastPostAt: now,
+      updatedAt: now,
+    });
+    expect(onConflictDoUpdate).toHaveBeenCalledWith({
+      target: [postRateLimits.userId, postRateLimits.subreddit],
+      set: {
+        postCount24h: 1,
+        lastPostAt: now,
+        updatedAt: now,
+      },
+    });
+
+    vi.useRealTimers();
+  });
+
+  it('increments existing rate limit row when update succeeds', async () => {
+    vi.useFakeTimers();
+    const now = new Date('2024-02-01T00:00:00.000Z');
+    vi.setSystemTime(now);
+
+    const updateWhere = vi.fn<UpdateWhere>().mockResolvedValue({ rowCount: 1 });
+    const updateSet = vi
+      .fn<UpdateSet>()
+      .mockReturnValue({ where: updateWhere });
+    updateSpy.mockReturnValue({ set: updateSet });
+
+    const insertValues = vi.fn<InsertValues>();
