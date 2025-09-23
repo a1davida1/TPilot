@@ -262,7 +262,42 @@ export type CompetitionLevel = z.infer<typeof competitionLevelSchema>;
 export const modActivitySchema = z.enum(['low', 'medium', 'high', 'unknown']).nullable();
 export type ModActivity = z.infer<typeof modActivitySchema>;
 
+// Nested rule structure schemas
+export const eligibilityRulesSchema = z.object({
+  minKarma: z.number().nullable().optional(),
+  minAccountAgeDays: z.number().nullable().optional(),
+  verificationRequired: z.boolean().optional(),
+  requiresApproval: z.boolean().optional(),
+}).optional();
+
+export const contentRulesSchema = z.object({
+  sellingPolicy: redditCommunitySellingPolicySchema.optional(),
+  watermarksAllowed: z.boolean().nullable().optional(),
+  promotionalLinks: ruleAllowanceSchema.nullable().optional(),
+  requiresOriginalContent: z.boolean().optional(),
+  nsfwRequired: z.boolean().optional(),
+  titleGuidelines: z.array(z.string()).optional().default([]),
+  contentGuidelines: z.array(z.string()).optional().default([]),
+  linkRestrictions: z.array(z.string()).optional().default([]),
+  bannedContent: z.array(z.string()).optional().default([]),
+  formattingRequirements: z.array(z.string()).optional().default([]),
+}).optional();
+
+export const postingRulesSchema = z.object({
+  maxPostsPerDay: z.number().nullable().optional(),
+  cooldownHours: z.number().nullable().optional(),
+}).optional();
+
+// New structured rule schema
 export const redditCommunityRuleSetSchema = z.object({
+  eligibility: eligibilityRulesSchema,
+  content: contentRulesSchema,
+  posting: postingRulesSchema,
+  notes: z.string().nullable().optional(),
+}).optional();
+
+// Legacy schema for backwards compatibility
+export const legacyRedditCommunityRuleSetSchema = z.object({
   minKarma: z.number().nullable().optional(),
   minAccountAge: z.number().nullable().optional(), // in days (legacy)
   minAccountAgeDays: z.number().nullable().optional(), // in days (new)
@@ -283,6 +318,10 @@ export const redditCommunityRuleSetSchema = z.object({
 }).optional();
 
 export type RedditCommunityRuleSet = z.infer<typeof redditCommunityRuleSetSchema>;
+export type EligibilityRules = z.infer<typeof eligibilityRulesSchema>;
+export type ContentRules = z.infer<typeof contentRulesSchema>;
+export type PostingRules = z.infer<typeof postingRulesSchema>;
+export type LegacyRedditCommunityRuleSet = z.infer<typeof legacyRedditCommunityRuleSetSchema>;
 
 // Posting limits schema
 export const postingLimitsSchema = z.object({
@@ -326,6 +365,33 @@ export type RedditCommunityZod = z.infer<typeof redditCommunityZodSchema>;
 
 // Default rule set factory
 export const createDefaultRules = (): RedditCommunityRuleSet => ({
+  eligibility: {
+    minKarma: null,
+    minAccountAgeDays: null,
+    verificationRequired: false,
+    requiresApproval: false,
+  },
+  content: {
+    sellingPolicy: undefined,
+    watermarksAllowed: null,
+    promotionalLinks: null,
+    requiresOriginalContent: false,
+    nsfwRequired: false,
+    titleGuidelines: [],
+    contentGuidelines: [],
+    linkRestrictions: [],
+    bannedContent: [],
+    formattingRequirements: [],
+  },
+  posting: {
+    maxPostsPerDay: null,
+    cooldownHours: null,
+  },
+  notes: null,
+});
+
+// Legacy default rule factory for backwards compatibility
+export const createDefaultLegacyRules = (): LegacyRedditCommunityRuleSet => ({
   minKarma: null,
   minAccountAge: null,
   minAccountAgeDays: null,
@@ -368,6 +434,43 @@ export const redditCommunities = pgTable("reddit_communities", {
 export type RedditCommunity = typeof redditCommunities.$inferSelect;
 export type InsertRedditCommunity = typeof redditCommunities.$inferInsert;
 export const insertRedditCommunitySchema = createInsertSchema(redditCommunities);
+
+// Helper function to normalize legacy rules to structured rules
+export const normalizeRulesToStructured = (legacyRules: LegacyRedditCommunityRuleSet | null | undefined): RedditCommunityRuleSet | null => {
+  if (!legacyRules) return null;
+  
+  return {
+    eligibility: {
+      minKarma: legacyRules.minKarma ?? null,
+      minAccountAgeDays: legacyRules.minAccountAgeDays ?? legacyRules.minAccountAge ?? null,
+      verificationRequired: legacyRules.verificationRequired ?? false,
+      requiresApproval: legacyRules.requiresApproval ?? false,
+    },
+    content: {
+      sellingPolicy: legacyRules.sellingAllowed,
+      watermarksAllowed: legacyRules.watermarksAllowed ?? null,
+      promotionalLinks: legacyRules.promotionalLinksAllowed ?? null,
+      requiresOriginalContent: legacyRules.requiresOriginalContent ?? false,
+      nsfwRequired: legacyRules.nsfwRequired ?? false,
+      titleGuidelines: legacyRules.titleRules ?? [],
+      contentGuidelines: legacyRules.contentRules ?? [],
+      linkRestrictions: [],
+      bannedContent: legacyRules.bannedContent ?? [],
+      formattingRequirements: legacyRules.formattingRequirements ?? [],
+    },
+    posting: {
+      maxPostsPerDay: legacyRules.maxPostsPerDay ?? null,
+      cooldownHours: legacyRules.cooldownHours ?? null,
+    },
+    notes: legacyRules.notes ?? null,
+  };
+};
+
+// Helper function to infer selling policy from rules
+export const inferSellingPolicyFromRules = (rules: RedditCommunityRuleSet | null): RedditCommunitySellingPolicy => {
+  if (!rules?.content?.sellingPolicy) return 'unknown';
+  return rules.content.sellingPolicy;
+};
 
 export const subscriptions = pgTable("subscriptions", {
   id: serial("id").primaryKey(),
