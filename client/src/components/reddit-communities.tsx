@@ -49,9 +49,20 @@ interface RedditCommunity {
     minKarma?: number;
     minAccountAge?: number;
     watermarksAllowed?: boolean;
-    sellingAllowed?: boolean;
+    sellingAllowed?: 'yes' | 'limited' | 'no';
     titleRules?: string[];
     contentRules?: string[];
+    verificationRequired?: boolean;
+    requiresApproval?: boolean;
+    nsfwRequired?: boolean;
+    maxPostsPerDay?: number;
+    cooldownHours?: number;
+    minAccountAgeDays?: number;
+    requiresOriginalContent?: boolean;
+    promotionalLinksAllowed?: 'yes' | 'limited' | 'no';
+    bannedContent?: string[];
+    formattingRequirements?: string[];
+    notes?: string;
   };
   bestPostingTimes: string[];
   averageUpvotes: number;
@@ -354,7 +365,7 @@ export function RedditCommunities() {
                                 {community.rules.minKarma && <p>• Min Karma: {community.rules.minKarma}</p>}
                                 {community.rules.minAccountAge && <p>• Min Account Age: {community.rules.minAccountAge} days</p>}
                                 <p>• Watermarks: {community.rules.watermarksAllowed ? '✓ Allowed' : '✗ Not Allowed'}</p>
-                                <p>• Selling: {community.rules.sellingAllowed ? '✓ Allowed' : '✗ Not Allowed'}</p>
+                                <p>• Selling: {community.rules.sellingAllowed === 'yes' ? '✓ Allowed' : community.rules.sellingAllowed === 'limited' ? '⚠ Limited' : '✗ Not Allowed'}</p>
                               </div>
                             </div>
 
