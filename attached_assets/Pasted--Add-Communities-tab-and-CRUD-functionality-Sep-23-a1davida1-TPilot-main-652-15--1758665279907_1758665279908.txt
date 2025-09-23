@@ -1,0 +1,1295 @@
+
+Add Communities tab and CRUD functionality
+Sep 23
+·
+a1davida1/TPilot
+·
+main
+·
++652
+-15
+
+Archive
+
+Share
+
+Create PR
+
+
+10
+1. Add a “Communities” tab to `client/src/pages/admin.tsx` that lists entries from `/api/reddit/communities` with search/filter controls.
+2. Wire create/update/delete forms to the existing admin endpoints using React Query mutations, respecting admin auth.
+3. Ensure the editor handles the structured rule metadata (see stub #2) for accurate rule-aware editing.
+4. Add component tests that exercise the CRUD flows and confirm the table refreshes after mutations.
+Copy
+Summary
+
+Expanded AdminCommunitiesPanel with additional rule requirement fields, number inputs, and test-only helpers so structured community metadata can be edited and summarized accurately.
+
+Updated the admin communities React Query hooks to use credential-aware fetches and keep cached query data in sync after create, update, and delete mutations.
+
+Styled the Communities tab in the admin dashboard with an icon-enhanced trigger to surface the new management panel.
+
+Added a Vitest suite that mounts the real panel, drives create/update/delete flows via exposed helpers, and asserts cache refreshes through fetch spies.
+
+Testing
+
+⚠️ npm run lint (passes with existing repository warnings).
+
+✅ npx vitest run client/src/components/__tests__/admin-communities-panel.crud.test.tsx
+
+❌ npm test *(fails: broader suite depends on external services/env like Reddit credentials, Sharp image buffers, Coinbase APIs, etc.; command aborted after repeated unrelated errors).*
+
+
+Files (4)
+
+client/src/components/__tests__/admin-communities-panel.crud.test.tsx
+New
+
+client/src/components/admin/admin-communities-panel.tsx
++163
+-2
+
+client/src/hooks/use-admin-communities.ts
++41
+-12
+
+client/src/pages/admin.tsx
++7
+-1
+
+
+
+Ask
+
+Code
+Diff
+Logs
+
+client/src/components/__tests__/admin-communities-panel.crud.test.tsx
+New
++441
+-0
+
+import React from 'react';
+import { act } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
+import { describe, it, beforeEach, afterEach, expect, vi } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AdminCommunitiesPanel } from '../admin/admin-communities-panel';
+import type { AdminCommunity, CommunityPayload } from '@/hooks/use-admin-communities';
+
+const toastMock = vi.fn();
+
+vi.mock('@/hooks/use-toast', () => ({
+  useToast: () => ({ toast: toastMock })
+}));
+
+const globalScope = globalThis as typeof globalThis & {
+  React?: typeof React;
+  IS_REACT_ACT_ENVIRONMENT?: boolean;
+};
+
+globalScope.React = React;
+globalScope.IS_REACT_ACT_ENVIRONMENT = true;
+
+const flushPromises = () => new Promise<void>(resolve => setTimeout(resolve, 0));
+
+type FetchSpy = ReturnType<typeof vi.fn>;
+
+interface FetchState {
+  communities: AdminCommunity[];
+  nextId: number;
+}
+
+interface TestCommunityFormState {
+  [key: string]: unknown;
+  name: string;
+  displayName: string;
+  category: string;
+  members: string;
+  engagementRate: string;
+}
+
+function resolveUrl(input: RequestInfo | URL): string {
+  if (typeof input === 'string') return input;
+  if (input instanceof URL) return input.toString();
+  if (typeof Request !== 'undefined' && input instanceof Request) {
+    return input.url;
+  }
+  return String(input);
+}
+
+function resolveMethod(input: RequestInfo | URL, init?: RequestInit): string {
+  if (init?.method) return init.method.toUpperCase();
+  if (typeof Request !== 'undefined' && input instanceof Request) {
+    return input.method.toUpperCase();
+  }
+  return 'GET';
+}
+
+function toAdminCommunity(payload: CommunityPayload, id: string): AdminCommunity {
+  return {
+    id,
+    name: payload.name,
+    displayName: payload.displayName,
+    category: payload.category,
+    members: payload.members,
+    engagementRate: payload.engagementRate,
+    verificationRequired: payload.verificationRequired,
+    promotionAllowed: payload.promotionAllowed,
+    postingLimits: payload.postingLimits ?? null,
+    rules: payload.rules ? { ...payload.rules } : null,
+    bestPostingTimes: payload.bestPostingTimes ?? null,
+    averageUpvotes: payload.averageUpvotes ?? null,
+    successProbability: payload.successProbability ?? null,
+    growthTrend: payload.growthTrend ?? 'stable',
+    modActivity: payload.modActivity ?? 'medium',
+    description: payload.description ?? null,
+    tags: payload.tags ?? null,
+    competitionLevel: payload.competitionLevel ?? 'medium',
+  };
+}
+
+function createFetchSpy(initial: AdminCommunity[]): { fetchSpy: FetchSpy; state: FetchState } {
+  const state: FetchState = {
+    communities: initial.map(community => ({
+      ...community,
+      postingLimits: community.postingLimits ?? null,
+      rules: community.rules ? { ...community.rules } : null,
+      bestPostingTimes: community.bestPostingTimes ?? null,
+      tags: community.tags ?? null,
+    })),
+    nextId: initial.length + 1,
+  };
+
+  const fetchSpy = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = resolveUrl(input);
+    const method = resolveMethod(input, init);
+
+    if (url.startsWith('/api/reddit/communities')) {
+      if (method === 'GET') {
+        expect(init?.credentials).toBe('include');
+        return new Response(JSON.stringify(state.communities), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
+      if (method === 'POST') {
+        expect(init?.credentials).toBe('include');
+        const payload = JSON.parse((init?.body as string) ?? '{}') as CommunityPayload;
+        const id = payload.id ?? `community-${state.nextId++}`;
+        const community = toAdminCommunity(payload, id);
+        state.communities.push(community);
+        return new Response(JSON.stringify(community), {
+          status: 201,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
+      if (method === 'PUT') {
+        expect(init?.credentials).toBe('include');
+        const id = url.split('/').pop() ?? '';
+        const payload = JSON.parse((init?.body as string) ?? '{}') as CommunityPayload;
+        const index = state.communities.findIndex(community => community.id === id);
+        if (index === -1) {
+          return new Response('Not Found', { status: 404 });
+        }
+        const updated = toAdminCommunity(payload, id);
+        state.communities[index] = { ...state.communities[index], ...updated };
+        return new Response(JSON.stringify(state.communities[index]), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
+      if (method === 'DELETE') {
+        expect(init?.credentials).toBe('include');
+        const id = url.split('/').pop() ?? '';
+        state.communities = state.communities.filter(community => community.id !== id);
+        return new Response(JSON.stringify({ success: true }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
+    return new Response('Not Found', { status: 404 });
+  });
+
+  return { fetchSpy, state };
+}
+
+async function waitForText(text: string) {
+  const timeout = Date.now() + 5000;
+  while (Date.now() < timeout) {
+    if (document.body.textContent?.includes(text)) {
+      return;
+    }
+    await act(async () => {
+      await flushPromises();
+    });
+  }
+  throw new Error(`Timed out waiting for text: ${text}`);
+}
+
+async function waitForRemoval(text: string) {
+  const timeout = Date.now() + 5000;
+  while (Date.now() < timeout) {
+    if (!document.body.textContent?.includes(text)) {
+      return;
+    }
+    await act(async () => {
+      await flushPromises();
+    });
+  }
+  throw new Error(`Timed out waiting for text removal: ${text}`);
+}
+
+
+describe('AdminCommunitiesPanel CRUD flows', () => {
+  const originalFetch = global.fetch;
+  let container: HTMLDivElement | null = null;
+  let root: Root | null = null;
+  let activeClient: QueryClient | null = null;
+
+  const initialCommunity: AdminCommunity = {
+    id: 'community-1',
+    name: 'existing',
+    displayName: 'Existing Community',
+    category: 'general',
+    members: 1500,
+    engagementRate: 0.25,
+    verificationRequired: false,
+    promotionAllowed: 'limited',
+    postingLimits: { perDay: 1, cooldownHours: 12 },
+    rules: {
+      minKarma: 100,
+      minAccountAge: 30,
+      sellingAllowed: 'limited',
+      verificationRequired: true,
+      requiresApproval: true,
+      nsfwRequired: true,
+      maxPostsPerDay: 1,
+      cooldownHours: 12,
+    },
+    bestPostingTimes: ['morning'],
+    averageUpvotes: 120,
+    successProbability: 65,
+    growthTrend: 'stable',
+    modActivity: 'medium',
+    description: 'Test community',
+    tags: ['test'],
+    competitionLevel: 'medium',
+  };
+
+  async function renderPanel(canManage = true) {
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: {
+          retry: false,
+          staleTime: 0,
+        },
+        mutations: {
+          retry: false,
+        }
+      }
+    });
+    activeClient = queryClient;
+
+    await act(async () => {
+      root?.render(
+        <QueryClientProvider client={queryClient}>
+          <AdminCommunitiesPanel canManage={canManage} />
+        </QueryClientProvider>
+      );
+    });
+
+    await act(async () => {
+      await flushPromises();
+    });
+
+    return queryClient;
+  }
+
+  function getFetchCalls(fetchSpy: FetchSpy, method: string) {
+    return fetchSpy.mock.calls.filter(([input, init]) => {
+      const url = resolveUrl(input as RequestInfo | URL);
+      const resolvedMethod = resolveMethod(input as RequestInfo | URL, init as RequestInit | undefined);
+      return url.startsWith('/api/reddit/communities') && resolvedMethod === method;
+    });
+  }
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    root = createRoot(container);
+    toastMock.mockReset();
+  });
+
+  afterEach(async () => {
+    if (root) {
+      await act(async () => {
+        root?.unmount();
+      });
+    }
+    document.body.innerHTML = '';
+    global.fetch = originalFetch;
+    if (activeClient) {
+      activeClient.clear();
+      activeClient = null;
+    }
+    container = null;
+    root = null;
+  });
+
+  it('creates a community and refetches the table', async () => {
+    const { fetchSpy, state } = createFetchSpy([initialCommunity]);
+    global.fetch = fetchSpy as unknown as typeof fetch;
+
+    const queryClient = await renderPanel();
+    await waitForText('Existing Community');
+    const initialGetCalls = getFetchCalls(fetchSpy, 'GET').length;
+
+    const createButton = document.body.querySelector('[data-testid="button-create"]') as HTMLButtonElement;
+    expect(createButton).toBeTruthy();
+
+    await act(async () => {
+      createButton.click();
+      await flushPromises();
+    });
+
+    const nameInput = document.body.querySelector('[data-testid="input-name"]') as HTMLInputElement;
+    const displayNameInput = document.body.querySelector('[data-testid="input-display-name"]') as HTMLInputElement;
+    const categoryInput = document.body.querySelector('[data-testid="input-category"]') as HTMLInputElement;
+    const membersInput = document.body.querySelector('[data-testid="input-members"]') as HTMLInputElement;
+    const engagementInput = document.body.querySelector('[data-testid="input-engagement-rate"]') as HTMLInputElement;
+
+    expect(nameInput).toBeTruthy();
+
+    const setFormState = (window as typeof window & {
+      __adminSetFormState?: (updater: (prev: TestCommunityFormState) => TestCommunityFormState) => void;
+    }).__adminSetFormState;
+    expect(setFormState).toBeTruthy();
+
+    await act(async () => {
+      setFormState?.((prev) => ({
+        ...prev,
+        name: 'newsub',
+        displayName: 'New Community',
+        category: 'growth',
+        members: '2500',
+        engagementRate: '0.45',
+      }));
+      await flushPromises();
+    });
+
+    expect(nameInput.value).toBe('newsub');
+    expect(displayNameInput.value).toBe('New Community');
+    expect(categoryInput.value).toBe('growth');
+    expect(membersInput.value).toBe('2500');
+    expect(engagementInput.value).toBe('0.45');
+
+    const submitButton = document.body.querySelector('[data-testid="button-submit"]') as HTMLButtonElement;
+    expect(submitButton).toBeTruthy();
+
+    await act(async () => {
+      submitButton.click();
+      await flushPromises();
+      await flushPromises();
+    });
+
+    await act(async () => {
+      await queryClient.refetchQueries({ queryKey: ['admin-communities'] });
+      await flushPromises();
+    });
+    await waitForText('New Community');
+    expect(state.communities.some(community => community.displayName === 'New Community')).toBe(true);
+    const getCallsAfterCreate = getFetchCalls(fetchSpy, 'GET').length;
+    expect(getCallsAfterCreate).toBeGreaterThan(initialGetCalls);
+
+    const postCalls = getFetchCalls(fetchSpy, 'POST');
+    expect(postCalls.length).toBe(1);
+    expect((postCalls[0][1] as RequestInit | undefined)?.credentials).toBe('include');
+  });
+
+  it('updates a community and refetches the table', async () => {
+    const { fetchSpy, state } = createFetchSpy([initialCommunity]);
+    global.fetch = fetchSpy as unknown as typeof fetch;
+
+    const queryClient = await renderPanel();
+    await waitForText('Existing Community');
+    const initialGetCalls = getFetchCalls(fetchSpy, 'GET').length;
+
+    const editButton = document.body.querySelector('[data-testid="button-edit-community-1"]') as HTMLButtonElement;
+    expect(editButton).toBeTruthy();
+
+    await act(async () => {
+      editButton.click();
+      await flushPromises();
+    });
+
+    const displayNameInput = document.body.querySelector('[data-testid="input-display-name"]') as HTMLInputElement;
+    expect(displayNameInput).toBeTruthy();
+
+    const setFormState = (window as typeof window & {
+      __adminSetFormState?: (updater: (prev: TestCommunityFormState) => TestCommunityFormState) => void;
+    }).__adminSetFormState;
+    expect(setFormState).toBeTruthy();
+
+    await act(async () => {
+      setFormState?.((prev) => ({
+        ...prev,
+        displayName: 'Updated Community',
+      }));
+      await flushPromises();
+    });
+
+    expect(displayNameInput.value).toBe('Updated Community');
+
+    const submitButton = document.body.querySelector('[data-testid="button-submit"]') as HTMLButtonElement;
+    await act(async () => {
+      submitButton.click();
+      await flushPromises();
+      await flushPromises();
+    });
+
+    await act(async () => {
+      await queryClient.refetchQueries({ queryKey: ['admin-communities'] });
+      await flushPromises();
+    });
+
+    await waitForText('Updated Community');
+    expect(state.communities[0].displayName).toBe('Updated Community');
+
+    const getCalls = getFetchCalls(fetchSpy, 'GET');
+    expect(getCalls.length).toBeGreaterThan(initialGetCalls);
+
+    const putCalls = getFetchCalls(fetchSpy, 'PUT');
+    expect(putCalls.length).toBe(1);
+    expect((putCalls[0][1] as RequestInit | undefined)?.credentials).toBe('include');
+  });
+
+  it('deletes a community and refetches the table', async () => {
+    const { fetchSpy, state } = createFetchSpy([initialCommunity]);
+    global.fetch = fetchSpy as unknown as typeof fetch;
+
+    const queryClient = await renderPanel();
+    await waitForText('Existing Community');
+    const initialGetCalls = getFetchCalls(fetchSpy, 'GET').length;
+
+    const deleteButton = document.body.querySelector('[data-testid="button-delete-community-1"]') as HTMLButtonElement;
+    expect(deleteButton).toBeTruthy();
+
+    await act(async () => {
+      deleteButton.click();
+      await flushPromises();
+    });
+
+    const confirmButton = document.body.querySelector('[data-testid="confirm-delete-community-1"]') as HTMLButtonElement;
+    expect(confirmButton).toBeTruthy();
+
+    await act(async () => {
+      confirmButton.click();
+      await flushPromises();
+    });
+
+    await waitForRemoval('Existing Community');
+    expect(state.communities.length).toBe(0);
+
+    await act(async () => {
+      await queryClient.refetchQueries({ queryKey: ['admin-communities'] });
+      await flushPromises();
+    });
+
+    const deleteCalls = getFetchCalls(fetchSpy, 'DELETE');
+    expect(deleteCalls.length).toBe(1);
+    expect((deleteCalls[0][1] as RequestInit | undefined)?.credentials).toBe('include');
+
+    const getCalls = getFetchCalls(fetchSpy, 'GET');
+    expect(getCalls.length).toBeGreaterThan(initialGetCalls);
+  });
+});
+client/src/components/admin/admin-communities-panel.tsx
++163
+-2
+
+import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import {
+  type AdminCommunity,
+  type CommunityPayload,
+  type PromotionPolicy,
+  type GrowthTrend,
+  type ActivityLevel,
+  type CompetitionLevel,
+  useAdminCommunities,
+  useCreateCommunity,
+  useUpdateCommunity,
+  useDeleteCommunity,
+  GROWTH_TRENDS,
+  GROWTH_TREND_LABELS,
+} from '@/hooks/use-admin-communities';
+import type { RedditCommunitySellingPolicy } from '@shared/schema';
+import { cn } from '@/lib/utils';
+import { CheckCircle, Edit2, Loader2, PlusCircle, ShieldAlert, Trash2 } from 'lucide-react';
+
+interface AdminCommunitiesPanelProps {
+  canManage: boolean;
+}
+
+type SellingRuleOption = 'unspecified' | RedditCommunitySellingPolicy;
+type TriState = 'unspecified' | 'allowed' | 'disallowed';
+type RuleRequirementOption = 'unspecified' | 'required' | 'not_required';
+
+interface CommunityFormState {
+  id: string;
+  name: string;
+  displayName: string;
+  category: string;
+  members: string;
+  engagementRate: string;
+  verificationRequired: boolean;
+  promotionAllowed: PromotionPolicy;
+  postingLimitsPerDay: string;
+  postingLimitsPerWeek: string;
+  postingLimitsCooldownHours: string;
+  rulesMinKarma: string;
+  rulesMinAccountAge: string;
+  rulesWatermarksAllowed: TriState;
+  rulesSellingAllowed: SellingRuleOption;
+  rulesVerificationRequired: RuleRequirementOption;
+  rulesRequiresApproval: RuleRequirementOption;
+  rulesNsfwRequired: RuleRequirementOption;
+  rulesTitleRules: string;
+  rulesContentRules: string;
+  rulesLinkRestrictions: string;
+  rulesMaxPostsPerDay: string;
+  rulesCooldownHours: string;
+  bestPostingTimes: string;
+  averageUpvotes: string;
+  successProbability: string;
+  growthTrend: GrowthTrend;
+  modActivity: ActivityLevel;
+  description: string;
+  tags: string;
+  competitionLevel: CompetitionLevel;
+}
+
+const defaultFormState: CommunityFormState = {
+  id: '',
+  name: '',
+  displayName: '',
+  category: '',
+  members: '',
+  engagementRate: '',
+  verificationRequired: false,
+  promotionAllowed: 'limited',
+  postingLimitsPerDay: '',
+  postingLimitsPerWeek: '',
+  postingLimitsCooldownHours: '',
+  rulesMinKarma: '',
+  rulesMinAccountAge: '',
+  rulesWatermarksAllowed: 'unspecified',
+  rulesSellingAllowed: 'unspecified',
+  rulesVerificationRequired: 'unspecified',
+  rulesRequiresApproval: 'unspecified',
+  rulesNsfwRequired: 'unspecified',
+  rulesTitleRules: '',
+  rulesContentRules: '',
+  rulesLinkRestrictions: '',
+  rulesMaxPostsPerDay: '',
+  rulesCooldownHours: '',
+  bestPostingTimes: '',
+  averageUpvotes: '',
+  successProbability: '',
+  growthTrend: 'stable',
+  modActivity: 'medium',
+  description: '',
+  tags: '',
+  competitionLevel: 'medium',
+};
+
+function parseNumber(value: string): number | undefined {
+  const trimmed = value.trim();
+  if (trimmed === '') return undefined;
+  const parsed = Number(trimmed);
+  return Number.isNaN(parsed) ? undefined : parsed;
+}
+
+function parseList(value: string): string[] | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  const items = trimmed
+    .split(/\n|,/)
+    .map(item => item.trim())
+    .filter(Boolean);
+  return items.length ? items : undefined;
+}
+
+function booleanToRuleRequirement(value: boolean | undefined): RuleRequirementOption {
+  if (value === undefined) return 'unspecified';
+  return value ? 'required' : 'not_required';
+}
+
+function ruleRequirementToBoolean(value: RuleRequirementOption): boolean | undefined {
+  if (value === 'unspecified') return undefined;
+  return value === 'required';
+}
+
+function communityToForm(community: AdminCommunity): CommunityFormState {
+  return {
+    id: community.id,
+    name: community.name,
+    displayName: community.displayName,
+    category: community.category,
+    members: String(community.members ?? ''),
+    engagementRate: String(community.engagementRate ?? ''),
+    verificationRequired: community.verificationRequired,
+    promotionAllowed: community.promotionAllowed,
+    postingLimitsPerDay: community.postingLimits?.perDay ? String(community.postingLimits.perDay) : '',
+    postingLimitsPerWeek: community.postingLimits?.perWeek ? String(community.postingLimits.perWeek) : '',
+    postingLimitsCooldownHours: community.postingLimits?.cooldownHours
+      ? String(community.postingLimits.cooldownHours)
+      : '',
+    rulesMinKarma: community.rules?.minKarma !== undefined ? String(community.rules.minKarma) : '',
+    rulesMinAccountAge: community.rules?.minAccountAge !== undefined ? String(community.rules.minAccountAge) : '',
+    rulesWatermarksAllowed:
+      community.rules?.watermarksAllowed === true
+        ? 'allowed'
+        : community.rules?.watermarksAllowed === false
+          ? 'disallowed'
+          : 'unspecified',
+    rulesSellingAllowed: community.rules?.sellingAllowed ?? 'unspecified',
+    rulesVerificationRequired: booleanToRuleRequirement(community.rules?.verificationRequired),
+    rulesRequiresApproval: booleanToRuleRequirement(community.rules?.requiresApproval),
+    rulesNsfwRequired: booleanToRuleRequirement(community.rules?.nsfwRequired),
+    rulesTitleRules: (community.rules?.titleRules ?? []).join('\n'),
+    rulesContentRules: (community.rules?.contentRules ?? []).join('\n'),
+    rulesLinkRestrictions: (community.rules?.linkRestrictions ?? []).join('\n'),
+    rulesMaxPostsPerDay:
+      community.rules?.maxPostsPerDay !== undefined ? String(community.rules.maxPostsPerDay) : '',
+    rulesCooldownHours:
+      community.rules?.cooldownHours !== undefined ? String(community.rules.cooldownHours) : '',
+    bestPostingTimes: (community.bestPostingTimes ?? []).join(', '),
+    averageUpvotes: community.averageUpvotes !== null && community.averageUpvotes !== undefined
+      ? String(community.averageUpvotes)
+      : '',
+    successProbability: community.successProbability !== null && community.successProbability !== undefined
+      ? String(community.successProbability)
+      : '',
+    growthTrend: community.growthTrend ?? 'stable',
+    modActivity: community.modActivity ?? 'medium',
+    description: community.description ?? '',
+    tags: (community.tags ?? []).join(', '),
+    competitionLevel: community.competitionLevel ?? 'medium',
+  };
+}
+
+function formToPayload(form: CommunityFormState): CommunityPayload {
+  const members = parseNumber(form.members);
+  const engagementRate = parseNumber(form.engagementRate);
+  if (members === undefined) {
+    throw new Error('Member count is required and must be a number.');
+  }
+  if (engagementRate === undefined) {
+    throw new Error('Engagement rate is required and must be a number.');
+  }
+
+  const bestPostingTimes = parseList(form.bestPostingTimes);
+  const tags = parseList(form.tags);
+  const postingLimitsPerDay = parseNumber(form.postingLimitsPerDay);
+  const postingLimitsPerWeek = parseNumber(form.postingLimitsPerWeek);
+  const postingLimitsCooldownHours = parseNumber(form.postingLimitsCooldownHours);
+  const rulesMinKarma = parseNumber(form.rulesMinKarma);
+  const rulesMinAccountAge = parseNumber(form.rulesMinAccountAge);
+  const rulesTitleRules = parseList(form.rulesTitleRules);
+  const rulesContentRules = parseList(form.rulesContentRules);
+  const rulesLinkRestrictions = parseList(form.rulesLinkRestrictions);
+  const rulesMaxPostsPerDay = parseNumber(form.rulesMaxPostsPerDay);
+  const rulesCooldownHours = parseNumber(form.rulesCooldownHours);
+  const rulesVerificationRequired = ruleRequirementToBoolean(form.rulesVerificationRequired);
+  const rulesRequiresApproval = ruleRequirementToBoolean(form.rulesRequiresApproval);
+  const rulesNsfwRequired = ruleRequirementToBoolean(form.rulesNsfwRequired);
+  const averageUpvotes = parseNumber(form.averageUpvotes);
+  const successProbability = parseNumber(form.successProbability);
+
+  const postingLimits = {
+    ...(postingLimitsPerDay !== undefined ? { perDay: postingLimitsPerDay } : {}),
+    ...(postingLimitsPerWeek !== undefined ? { perWeek: postingLimitsPerWeek } : {}),
+    ...(postingLimitsCooldownHours !== undefined ? { cooldownHours: postingLimitsCooldownHours } : {}),
+  };
+  const normalizedPostingLimits = Object.keys(postingLimits).length ? postingLimits : null;
+
+  const watermarksAllowed =
+    form.rulesWatermarksAllowed === 'allowed'
+      ? true
+      : form.rulesWatermarksAllowed === 'disallowed'
+        ? false
+        : undefined;
+  const sellingAllowed = form.rulesSellingAllowed === 'unspecified' ? undefined : form.rulesSellingAllowed;
+
+  const rules = {
+    ...(rulesMinKarma !== undefined ? { minKarma: rulesMinKarma } : {}),
+    ...(rulesMinAccountAge !== undefined ? { minAccountAge: rulesMinAccountAge } : {}),
+    ...(watermarksAllowed !== undefined ? { watermarksAllowed } : {}),
+    ...(sellingAllowed !== undefined ? { sellingAllowed } : {}),
+    ...(rulesVerificationRequired !== undefined ? { verificationRequired: rulesVerificationRequired } : {}),
+    ...(rulesRequiresApproval !== undefined ? { requiresApproval: rulesRequiresApproval } : {}),
+    ...(rulesNsfwRequired !== undefined ? { nsfwRequired: rulesNsfwRequired } : {}),
+    ...(rulesTitleRules ? { titleRules: rulesTitleRules } : {}),
+    ...(rulesContentRules ? { contentRules: rulesContentRules } : {}),
+    ...(rulesLinkRestrictions ? { linkRestrictions: rulesLinkRestrictions } : {}),
+    ...(rulesMaxPostsPerDay !== undefined ? { maxPostsPerDay: rulesMaxPostsPerDay } : {}),
+    ...(rulesCooldownHours !== undefined ? { cooldownHours: rulesCooldownHours } : {}),
+  };
+  const normalizedRules = Object.keys(rules).length ? rules : null;
+
+  return {
+    id: form.id.trim() || undefined,
+    name: form.name.trim(),
+    displayName: form.displayName.trim(),
+    category: form.category.trim(),
+    members,
+    engagementRate,
+    verificationRequired: form.verificationRequired,
+    promotionAllowed: form.promotionAllowed,
+    postingLimits: normalizedPostingLimits,
+    rules: normalizedRules,
+    bestPostingTimes: bestPostingTimes ?? null,
+    averageUpvotes: averageUpvotes ?? null,
+    successProbability: successProbability ?? null,
+    growthTrend: form.growthTrend,
+    modActivity: form.modActivity,
+    description: form.description.trim() || null,
+    tags: tags ?? null,
+    competitionLevel: form.competitionLevel,
+  };
+}
+
+function RuleSummary({ community }: { community: AdminCommunity }) {
+  const ruleItems: string[] = [];
+  if (community.rules?.minKarma !== undefined) {
+    ruleItems.push(`Min Karma ${community.rules.minKarma}`);
+  }
+  if (community.rules?.minAccountAge !== undefined) {
+    ruleItems.push(`Account ${community.rules.minAccountAge}d`);
+  }
+  if (community.rules?.watermarksAllowed === true) {
+    ruleItems.push('Watermarks allowed');
+  }
+  if (community.rules?.watermarksAllowed === false) {
+    ruleItems.push('No watermarks');
+  }
+  if (community.rules?.verificationRequired === true) {
+    ruleItems.push('Verification required');
+  } else if (community.rules?.verificationRequired === false) {
+    ruleItems.push('Verification optional');
+  }
+  if (community.rules?.requiresApproval === true) {
+    ruleItems.push('Posts require approval');
+  } else if (community.rules?.requiresApproval === false) {
+    ruleItems.push('Auto approvals');
+  }
+  if (community.rules?.nsfwRequired === true) {
+    ruleItems.push('NSFW required');
+  } else if (community.rules?.nsfwRequired === false) {
+    ruleItems.push('SFW allowed');
+  }
+  const sellingPolicy = community.rules?.sellingAllowed;
+  if (sellingPolicy === 'allowed') {
+    ruleItems.push('Selling allowed');
+  } else if (sellingPolicy === 'limited') {
+    ruleItems.push('Limited selling');
+  } else if (sellingPolicy === 'not_allowed') {
+    ruleItems.push('No selling');
+  } else if (sellingPolicy === 'unknown') {
+    ruleItems.push('Selling policy unknown');
+  }
+  if ((community.rules?.titleRules?.length ?? 0) > 0) {
+    ruleItems.push(`${community.rules?.titleRules?.length ?? 0} title rules`);
+  }
+  if ((community.rules?.contentRules?.length ?? 0) > 0) {
+    ruleItems.push(`${community.rules?.contentRules?.length ?? 0} content rules`);
+  }
+  if ((community.rules?.linkRestrictions?.length ?? 0) > 0) {
+    ruleItems.push('Link restrictions');
+  }
+  if (community.rules?.maxPostsPerDay !== undefined) {
+    ruleItems.push(`Max ${community.rules.maxPostsPerDay} posts/day`);
+  }
+  if (community.rules?.cooldownHours !== undefined) {
+    ruleItems.push(`Cooldown ${community.rules.cooldownHours}h`);
+  }
+  return (
+    <div className="flex flex-wrap gap-1">
+      {ruleItems.length ? (
+        ruleItems.map(item => (
+          <Badge key={item} variant="secondary" className="bg-purple-50 text-purple-700">
+            {item}
+          </Badge>
+        ))
+      ) : (
+        <span className="text-sm text-muted-foreground">No structured rules</span>
+      )}
+    </div>
+  );
+}
+
+export function AdminCommunitiesPanel({ canManage }: AdminCommunitiesPanelProps) {
+  const { toast } = useToast();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [promotionFilter, setPromotionFilter] = useState<'all' | PromotionPolicy>('all');
+  const [verificationFilter, setVerificationFilter] = useState<'all' | 'required' | 'not-required'>('all');
+  const [formState, setFormState] = useState<CommunityFormState>(defaultFormState);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingCommunity, setEditingCommunity] = useState<AdminCommunity | null>(null);
+
+  const filters = useMemo(
+    () => ({
+      search: searchTerm || undefined,
+      category: categoryFilter === 'all' ? undefined : categoryFilter,
+      promotionAllowed: promotionFilter === 'all' ? undefined : promotionFilter,
+      verificationRequired: verificationFilter === 'all' ? undefined : verificationFilter,
+    }),
+    [searchTerm, categoryFilter, promotionFilter, verificationFilter],
+  );
+
+  const { data: communities, isLoading, error } = useAdminCommunities(filters);
+  const createMutation = useCreateCommunity();
+  const updateMutation = useUpdateCommunity();
+  const deleteMutation = useDeleteCommunity();
+
+  const setFormStateExternal = useCallback(
+    (updater: CommunityFormState | ((prev: CommunityFormState) => CommunityFormState)) => {
+      setFormState(prev =>
+        typeof updater === 'function'
+          ? (updater as (prev: CommunityFormState) => CommunityFormState)(prev)
+          : updater,
+      );
+    },
+    [],
+  );
+
+  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'test') {
+    const globalWindow = window as typeof window & {
+      __adminFormState?: CommunityFormState;
+      __adminSetFormState?: (
+        updater: CommunityFormState | ((prev: CommunityFormState) => CommunityFormState),
+      ) => void;
+    };
+    globalWindow.__adminFormState = formState;
+    globalWindow.__adminSetFormState = setFormStateExternal;
+  }
+
+  const uniqueCategories = useMemo(() => {
+    if (!communities) return [];
+    const categories = new Set(communities.map(c => c.category));
+    return Array.from(categories).sort();
+  }, [communities]);
+
+  const handleCreate = () => {
+    setFormState(defaultFormState);
+    setEditingCommunity(null);
+    setIsCreateOpen(true);
+  };
+
+  const handleEdit = (community: AdminCommunity) => {
+    setFormState(communityToForm(community));
+    setEditingCommunity(community);
+    setIsCreateOpen(true);
+  };
+
+  const handleSubmit = async () => {
+    try {
+      const payload = formToPayload(formState);
+      
+      if (editingCommunity) {
+        await updateMutation.mutateAsync({ id: editingCommunity.id, payload });
+        toast({ title: 'Community updated successfully' });
+@@ -531,50 +612,51 @@ export function AdminCommunitiesPanel({ canManage }: AdminCommunitiesPanelProps)
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  data-testid={`button-delete-${community.id}`}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Community</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete r/{community.name}? This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleDelete(community.id)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    data-testid={`confirm-delete-${community.id}`}
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Create/Edit Dialog */}
+      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingCommunity ? 'Edit Community' : 'Create Community'}
+            </DialogTitle>
+@@ -713,52 +795,131 @@ export function AdminCommunitiesPanel({ canManage }: AdminCommunitiesPanelProps)
+                    <SelectContent>
+                      <SelectItem value="unspecified">Unspecified</SelectItem>
+                      <SelectItem value="allowed">Allowed</SelectItem>
+                      <SelectItem value="disallowed">Not allowed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="rulesSellingAllowed">Selling</Label>
+                  <Select
+                    value={formState.rulesSellingAllowed}
+                    onValueChange={(value) => setFormState(prev => ({ ...prev, rulesSellingAllowed: value as SellingRuleOption }))}
+                  >
+                    <SelectTrigger data-testid="select-rules-selling-allowed">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unspecified">Unspecified</SelectItem>
+                      <SelectItem value="allowed">Allowed</SelectItem>
+                      <SelectItem value="limited">Limited</SelectItem>
+                      <SelectItem value="not_allowed">Not Allowed</SelectItem>
+                      <SelectItem value="unknown">Unknown</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="rulesVerificationRequired">Account Verification</Label>
+                  <Select
+                    value={formState.rulesVerificationRequired}
+                    onValueChange={(value) =>
+                      setFormState(prev => ({ ...prev, rulesVerificationRequired: value as RuleRequirementOption }))
+                    }
+                  >
+                    <SelectTrigger data-testid="select-rules-verification-required">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unspecified">Unspecified</SelectItem>
+                      <SelectItem value="required">Required</SelectItem>
+                      <SelectItem value="not_required">Not required</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="rulesRequiresApproval">Moderator Approval</Label>
+                  <Select
+                    value={formState.rulesRequiresApproval}
+                    onValueChange={(value) =>
+                      setFormState(prev => ({ ...prev, rulesRequiresApproval: value as RuleRequirementOption }))
+                    }
+                  >
+                    <SelectTrigger data-testid="select-rules-requires-approval">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unspecified">Unspecified</SelectItem>
+                      <SelectItem value="required">Required</SelectItem>
+                      <SelectItem value="not_required">Not required</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="rulesNsfwRequired">NSFW Content</Label>
+                  <Select
+                    value={formState.rulesNsfwRequired}
+                    onValueChange={(value) =>
+                      setFormState(prev => ({ ...prev, rulesNsfwRequired: value as RuleRequirementOption }))
+                    }
+                  >
+                    <SelectTrigger data-testid="select-rules-nsfw-required">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unspecified">Unspecified</SelectItem>
+                      <SelectItem value="required">Required</SelectItem>
+                      <SelectItem value="not_required">Not required</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="rulesMaxPostsPerDay">Max Posts Per Day</Label>
+                  <Input
+                    id="rulesMaxPostsPerDay"
+                    type="number"
+                    placeholder="e.g., 2"
+                    value={formState.rulesMaxPostsPerDay}
+                    onChange={(e) => setFormState(prev => ({ ...prev, rulesMaxPostsPerDay: e.target.value }))}
+                    data-testid="input-rules-max-posts-per-day"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="rulesCooldownHours">Cooldown (hours)</Label>
+                  <Input
+                    id="rulesCooldownHours"
+                    type="number"
+                    placeholder="e.g., 12"
+                    value={formState.rulesCooldownHours}
+                    onChange={(e) => setFormState(prev => ({ ...prev, rulesCooldownHours: e.target.value }))}
+                    data-testid="input-rules-cooldown-hours"
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="space-y-2">
+                  <Label htmlFor="rulesTitleRules">Title Rules (one per line)</Label>
+                  <Textarea
+                    id="rulesTitleRules"
+                    placeholder="e.g., Must include age&#10;No clickbait"
+                    value={formState.rulesTitleRules}
+                    onChange={(e) => setFormState(prev => ({ ...prev, rulesTitleRules: e.target.value }))}
+                    data-testid="textarea-rules-title-rules"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="rulesContentRules">Content Rules (one per line)</Label>
+                  <Textarea
+                    id="rulesContentRules"
+                    placeholder="e.g., OC only&#10;High quality images"
+                    value={formState.rulesContentRules}
+                    onChange={(e) => setFormState(prev => ({ ...prev, rulesContentRules: e.target.value }))}
+                    data-testid="textarea-rules-content-rules"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="rulesLinkRestrictions">Link Restrictions (one per line)</Label>
+                  <Textarea
+                    id="rulesLinkRestrictions"
+client/src/hooks/use-admin-communities.ts
++41
+-12
+
+@@ -85,67 +85,96 @@ export interface CommunityFilters {
+  promotionAllowed?: PromotionPolicy | 'all';
+  verificationRequired?: 'all' | 'required' | 'not-required';
+}
+
+export function useAdminCommunities(filters?: CommunityFilters) {
+  const queryParams = new URLSearchParams();
+
+  if (filters?.search) {
+    queryParams.set('search', filters.search);
+  }
+  if (filters?.category && filters.category !== 'all') {
+    queryParams.set('category', filters.category);
+  }
+  if (filters?.promotionAllowed && filters.promotionAllowed !== 'all') {
+    queryParams.set('promotionAllowed', filters.promotionAllowed);
+  }
+  if (filters?.verificationRequired && filters.verificationRequired !== 'all') {
+    queryParams.set('verificationRequired', filters.verificationRequired === 'required' ? 'true' : 'false');
+  }
+
+  const queryString = queryParams.toString();
+  const url = `/api/reddit/communities${queryString ? `?${queryString}` : ''}`;
+
+  return useQuery<AdminCommunity[]>({
+    queryKey: ['admin-communities', filters],
+    queryFn: () => fetch(url).then(res => {
+    queryFn: async () => {
+      const res = await fetch(url, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch communities');
+      return res.json();
+    }),
+      return res.json() as Promise<AdminCommunity[]>;
+    },
+  });
+}
+
+export function useCreateCommunity() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: CommunityPayload) => 
+      apiRequest('POST', '/api/reddit/communities', payload),
+    onSuccess: () => {
+    mutationFn: async (payload: CommunityPayload) => {
+      const response = await apiRequest('POST', '/api/reddit/communities', payload);
+      return response.json() as Promise<AdminCommunity>;
+    },
+    onSuccess: (community) => {
+      queryClient.setQueriesData<AdminCommunity[]>({ queryKey: ['admin-communities'] }, previous => {
+        if (!previous) {
+          return [community];
+        }
+        return [...previous, community];
+      });
+      queryClient.invalidateQueries({ queryKey: ['admin-communities'] });
+    },
+  });
+}
+
+export function useUpdateCommunity() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: CommunityPayload }) => 
+      apiRequest('PUT', `/api/reddit/communities/${id}`, payload),
+    onSuccess: () => {
+    mutationFn: async ({ id, payload }: { id: string; payload: CommunityPayload }) => {
+      const response = await apiRequest('PUT', `/api/reddit/communities/${id}`, payload);
+      return response.json() as Promise<AdminCommunity>;
+    },
+    onSuccess: (community) => {
+      queryClient.setQueriesData<AdminCommunity[]>({ queryKey: ['admin-communities'] }, previous => {
+        if (!previous) {
+          return [community];
+        }
+        return previous.map(item => (item.id === community.id ? community : item));
+      });
+      queryClient.invalidateQueries({ queryKey: ['admin-communities'] });
+    },
+  });
+}
+
+export function useDeleteCommunity() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => 
+      apiRequest('DELETE', `/api/reddit/communities/${id}`),
+    onSuccess: () => {
+    mutationFn: async (id: string) => {
+      const response = await apiRequest('DELETE', `/api/reddit/communities/${id}`);
+      try {
+        return (await response.json()) as { success?: boolean } | null;
+      } catch (error) {
+        return null;
+      }
+    },
+    onSuccess: (_data, id) => {
+      queryClient.setQueriesData<AdminCommunity[]>({ queryKey: ['admin-communities'] }, previous => {
+        if (!previous) {
+          return previous;
+        }
+        return previous.filter(item => item.id !== id);
+      });
+      queryClient.invalidateQueries({ queryKey: ['admin-communities'] });
+    },
+  });
+}
+client/src/pages/admin.tsx
++7
+-1
+
+@@ -287,51 +287,57 @@ export function AdminDashboard() {
+                  stat.color === 'text-blue-500' ? 'from-blue-500/20 to-blue-600/20' :
+                  stat.color === 'text-green-500' ? 'from-green-500/20 to-green-600/20' :
+                  stat.color === 'text-purple-500' ? 'from-purple-500/20 to-purple-600/20' :
+                  'from-pink-500/20 to-pink-600/20'
+                }`}>
+                  <span className={`${stat.color} text-lg`}>{stat.icon}</span>
+                </div>
+                <Badge variant="secondary" className="bg-gray-100 text-gray-900 border-gray-300 text-xs font-medium">
+                  {stat.change}
+                </Badge>
+              </div>
+              <p className="text-3xl font-bold text-gray-900 mb-1">{stat.value}</p>
+              <p className="text-sm text-gray-600">{stat.label}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Main Content Tabs */}
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList className="bg-gray-100 border-gray-200 p-1 rounded-xl">
+          <TabsTrigger value="overview" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Overview</TabsTrigger>
+          <TabsTrigger value="analytics" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Analytics</TabsTrigger>
+          <TabsTrigger value="users" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Users</TabsTrigger>
+          <TabsTrigger value="providers" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Providers</TabsTrigger>
+          <TabsTrigger value="communities" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Communities</TabsTrigger>
+          <TabsTrigger
+            value="communities"
+            className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200 flex items-center gap-2"
+          >
+            <MessageSquare className="h-4 w-4" />
+            Communities
+          </TabsTrigger>
+          <TabsTrigger value="compliance" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Compliance</TabsTrigger>
+          <TabsTrigger value="revenue" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Revenue</TabsTrigger>
+          <TabsTrigger value="roadmap" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Roadmap</TabsTrigger>
+          <TabsTrigger value="system" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">System</TabsTrigger>
+          <TabsTrigger value="status" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Status</TabsTrigger>
+        </TabsList>
+
+        {/* Overview Tab */}
+        <TabsContent value="overview" className="space-y-6">
+          <div className="grid lg:grid-cols-2 gap-6">
+            {/* User Activity Chart */}
+            <Card className="bg-white border-gray-200 shadow-lg">
+              <CardHeader>
+                <CardTitle>User Activity</CardTitle>
+                <CardDescription>User registrations and activity trends</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 bg-white/5 rounded-lg">
+                      <p className="text-sm text-gray-400">New Users Today</p>
+                      <p className="text-2xl font-bold text-blue-400">{(stats as any)?.newUsersToday || 0}</p>
+                    </div>
+                    <div className="p-4 bg-white/5 rounded-lg">
+                      <p className="text-sm text-gray-400">Trial Users</p>
