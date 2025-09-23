@@ -201,7 +201,35 @@ export function registerRedditRoutes(app: Express) {
       if (category && category !== 'all') {
         communities = communities.filter(c => c.category === category);
       }
-      res.json(communities);
+      
+      // Runtime validation using zod schema to ensure type safety
+      const { z } = await import('zod');
+      const { redditCommunities } = await import('@shared/schema');
+      
+      // Validate the response structure
+      const RedditCommunityArraySchema = z.array(z.object({
+        id: z.string(),
+        name: z.string(),
+        displayName: z.string(),
+        members: z.number(),
+        engagementRate: z.number(),
+        category: z.string(),
+        verificationRequired: z.boolean(),
+        promotionAllowed: z.string(),
+        postingLimits: z.any().nullable().optional(),
+        rules: z.any().optional(),
+        bestPostingTimes: z.array(z.string()).optional(),
+        averageUpvotes: z.number().nullable().optional(),
+        successProbability: z.number().nullable().optional(),
+        growthTrend: z.string().nullable().optional(),
+        modActivity: z.string().nullable().optional(),
+        description: z.string().nullable().optional(),
+        tags: z.array(z.string()).optional(),
+        competitionLevel: z.string().nullable().optional()
+      }));
+      
+      const validatedCommunities = RedditCommunityArraySchema.parse(communities);
+      res.json(validatedCommunities);
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       console.error('Error fetching Reddit communities:', err.message);
