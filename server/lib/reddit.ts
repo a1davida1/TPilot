@@ -6,6 +6,7 @@ import { decrypt } from '../services/state-store.js';
 import { SafetyManager } from './safety-systems.js';
 import { getEligibleCommunitiesForUser, type CommunityEligibilityCriteria } from '../reddit-communities.js';
 import type { RedditCommunity, ShadowbanStatusType, ShadowbanSubmissionSummary, ShadowbanEvidenceResponse, ShadowbanCheckApiResponse } from '@shared/schema';
+import { lookup } from 'dns/promises';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
@@ -105,6 +106,166 @@ function resolvePostType(context: PostCheckContext): PostType {
     return 'link';
   }
   return 'text';
+}
+
+/**
+ * Securely fetch an image URL with comprehensive SSRF protection
+ */
+async function secureFetchImage(imageUrl: string): Promise<Buffer> {
+  // Validate URL format
+  let url: URL;
+  try {
+    url = new URL(imageUrl);
+  } catch {
+    throw new Error('Invalid URL format');
+  }
+
+  // Check protocol
+  if (!['http:', 'https:'].includes(url.protocol)) {
+    throw new Error('Invalid URL protocol - only HTTP and HTTPS allowed');
+  }
+
+  // Allowlist for trusted image hosting services
+  const allowedHosts = [
+    'i.redd.it',
+    'i.imgur.com',
+    'imgur.com',
+    'i.postimg.cc',
+    'postimg.cc',
+    'image.shutterstock.com',
+    'unsplash.com',
+    'images.unsplash.com',
+    'cdn.discordapp.com',
+    'media.discordapp.net'
+  ];
+
+  const hostname = url.hostname.toLowerCase();
+  const isAllowedHost = allowedHosts.some(host => 
+    hostname === host || hostname.endsWith('.' + host)
+  );
+
+  if (!isAllowedHost) {
+    throw new Error('Image URL must be from an allowed hosting service');
+  }
+
+  // DNS resolution and IP validation to prevent SSRF
+  try {
+    const addresses = await lookup(hostname, { all: true });
+    
+    for (const address of addresses) {
+      const ip = address.address;
+      
+      // Check for private/loopback/link-local IPs (IPv4 and IPv6)
+      const forbiddenPatterns = [
+        /^127\./,                          // 127.0.0.0/8 (loopback)
+        /^10\./,                           // 10.0.0.0/8 (private)
+        /^172\.(1[6-9]|2[0-9]|3[0-1])\./,  // 172.16.0.0/12 (private)
+        /^192\.168\./,                     // 192.168.0.0/16 (private)
+        /^169\.254\./,                     // 169.254.0.0/16 (link-local)
+        /^0\./,                            // 0.0.0.0/8 (this network)
+        /^::1$/,                           // IPv6 loopback
+        /^fe80::/i,                        // IPv6 link-local
+        /^fc00::/i,                        // IPv6 ULA
+        /^fd00::/i,                        // IPv6 ULA
+        /^::ffff:127\./i,                  // IPv4-mapped IPv6 loopback
+        /^::ffff:10\./i,                   // IPv4-mapped IPv6 private
+        /^::ffff:172\.(1[6-9]|2[0-9]|3[0-1])\./i, // IPv4-mapped IPv6 private
+        /^::ffff:192\.168\./i,             // IPv4-mapped IPv6 private
+        /^::ffff:169\.254\./i,             // IPv4-mapped IPv6 link-local
+      ];
+
+      const isForbiddenIP = forbiddenPatterns.some(pattern => pattern.test(ip));
+      if (isForbiddenIP) {
+        throw new Error('Access to private/loopback networks not allowed');
+      }
+    }
+  } catch (dnsError) {
+    console.warn('DNS lookup failed for hostname:', hostname, dnsError);
+    throw new Error('Could not resolve hostname');
+  }
+
+  // Create AbortController for timeout
+  const abortController = new AbortController();
+  const timeoutId = setTimeout(() => abortController.abort(), 10000); // 10 second timeout
+
+  try {
+    const response = await fetch(imageUrl, {
+      signal: abortController.signal,
+      headers: {
+        'User-Agent': 'ThottoPilot/1.0 (Reddit Integration)',
+      },
+      // Prevent redirects to avoid redirect-based SSRF
+      redirect: 'error'
+    });
+
+    clearTimeout(timeoutId);
+
+    // Check response status
+    if (!response.ok) {
+      throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
+    }
+
+    // Check content type
+    const contentType = response.headers.get('content-type') || '';
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.some(type => contentType.startsWith(type))) {
+      throw new Error('Invalid content type - must be an image');
+    }
+
+    // Check content length header
+    const contentLength = response.headers.get('content-length');
+    const maxSize = 50 * 1024 * 1024; // 50MB limit
+    if (contentLength && parseInt(contentLength) > maxSize) {
+      throw new Error('Image too large - maximum 50MB allowed');
+    }
+
+    // Stream the response with size checking
+    if (!response.body) {
+      throw new Error('No response body');
+    }
+
+    const reader = response.body.getReader();
+    const chunks: Uint8Array[] = [];
+    let totalSize = 0;
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) break;
+        
+        totalSize += value.length;
+        if (totalSize > maxSize) {
+          throw new Error('Image too large - maximum 50MB allowed');
+        }
+        
+        chunks.push(value);
+      }
+    } finally {
+      reader.releaseLock();
+    }
+
+    // Combine chunks into buffer
+    const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+    const result = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const chunk of chunks) {
+      result.set(chunk, offset);
+      offset += chunk.length;
+    }
+
+    return Buffer.from(result);
+
+  } catch (fetchError) {
+    clearTimeout(timeoutId);
+    if (fetchError instanceof Error) {
+      if (fetchError.name === 'AbortError') {
+        throw new Error('Image download timed out');
+      }
+      throw fetchError;
+    }
+    throw new Error('Failed to download image');
+  }
 }
 
 // Base rule predicates that apply to all subreddits
@@ -574,28 +735,18 @@ export class RedditManager {
 
       const reddit = await this.initReddit();
       
-      // Security: Validate imageUrl to prevent SSRF
-      if (options.imageUrl) {
+      // If we have a URL, download it to buffer with security measures
+      if (options.imageUrl && !options.imageBuffer) {
         try {
-          const url = new URL(options.imageUrl);
-          if (!['http:', 'https:'].includes(url.protocol)) {
-            throw new Error('Invalid URL protocol');
-          }
-          // Additional validation could include hostname allowlisting
-        } catch (urlError) {
+          options.imageBuffer = await secureFetchImage(options.imageUrl);
+        } catch (fetchError) {
+          console.error('Failed to fetch image:', fetchError);
           return {
             success: false,
-            error: 'Invalid image URL provided',
+            error: fetchError instanceof Error ? fetchError.message : 'Failed to download image',
             decision: permission,
           };
         }
-      }
-      
-      // If we have a URL, download it to buffer
-      if (options.imageUrl && !options.imageBuffer) {
-        const response = await fetch(options.imageUrl);
-        const arrayBuffer = await response.arrayBuffer();
-        options.imageBuffer = Buffer.from(arrayBuffer);
       }
 
       // Direct image upload to Reddit
@@ -725,20 +876,12 @@ export class RedditManager {
           let imageBuffer = img.buffer;
           
           if (!imageBuffer && img.url) {
-            // Security: Validate URL to prevent SSRF
+            // Security: Use secure fetch with comprehensive SSRF protection
             try {
-              const url = new URL(img.url);
-              if (!['http:', 'https:'].includes(url.protocol)) {
-                throw new Error('Invalid URL protocol');
-              }
-              // Additional validation could include hostname allowlisting
-            } catch (urlError) {
-              throw new Error('Invalid image URL provided in gallery');
+              imageBuffer = await secureFetchImage(img.url);
+            } catch (fetchError) {
+              throw new Error(`Invalid gallery image URL: ${fetchError instanceof Error ? fetchError.message : 'Unknown error'}`);
             }
-            
-            const response = await fetch(img.url);
-            const arrayBuffer = await response.arrayBuffer();
-            imageBuffer = Buffer.from(arrayBuffer);
           }
           
           if (!imageBuffer) {
