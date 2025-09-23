@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -26,7 +26,7 @@ import {
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
-  ExternalLink,
+  Globe,
   Loader2,
   Sparkles,
 } from "lucide-react";
@@ -52,20 +52,29 @@ interface RedditSubmitResponse {
   error?: string;
 }
 
-interface RedditAccountSummary {
-  platform: string;
+interface RedditAccount {
+  id: number;
   username: string;
+  isActive: boolean;
+  connectedAt: string;
+  karma: number;
+  verified: boolean;
 }
 
-interface QuickStartModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  initialStep: QuickStartStep;
-  isRedditConnected?: boolean;
-  onNavigate?: (path: string) => void;
-  onConnected?: () => void;
-  onSelectedCommunity?: () => void;
-  onPosted?: () => void;
+const POLL_INTERVAL_MS = 2000;
+const POLL_TIMEOUT_MS = 60000;
+
+function isRedditAccountList(value: unknown): value is RedditAccount[] {
+  return (
+    Array.isArray(value) &&
+    value.every((account) => {
+      if (account === null || typeof account !== "object") {
+        return false;
+      }
+      const candidate = account as Partial<RedditAccount>;
+      return typeof candidate.id === "number" && typeof candidate.username === "string";
+    })
+  );
 }
 
 const QUICK_START_TEMPLATES: QuickStartTemplate[] = [
@@ -145,11 +154,11 @@ export function QuickStartModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const connectionCompletedRef = useRef(false);
 
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const pollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const clearConnectionMonitors = () => {
+  const clearConnectionMonitors = useCallback(() => {
     if (pollIntervalRef.current) {
       clearInterval(pollIntervalRef.current);
       pollIntervalRef.current = null;
@@ -158,22 +167,35 @@ export function QuickStartModal({
       clearTimeout(pollTimeoutRef.current);
       pollTimeoutRef.current = null;
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!open) {
+      clearConnectionMonitors();
+      setConnectionInitiated(false);
+      setIsConnecting(false);
+      return;
+    }
+    setCurrentStep(initialStep);
+    setSubmitError(null);
+    setIsSubmitting(false);
+    setConnectionInitiated(false);
+  }, [open, initialStep, clearConnectionMonitors]);
 
   useEffect(() => {
     if (!open) {
       return;
     }
-    setCurrentStep(initialStep);
-    setConnected(isRedditConnected);
-    setConnectionInitiated(false);
-    setSubmitError(null);
-    setIsSubmitting(false);
-    setIsConnecting(false);
-    if (isRedditConnected) {
-      clearConnectionMonitors();
+    if (connectionInitiated) {
+      return;
     }
-  }, [open, initialStep, isRedditConnected]);
+    setConnected(isRedditConnected);
+  }, [isRedditConnected, connectionInitiated, open]);
+
+  useEffect(() => () => {
+    clearConnectionMonitors();
+  }, [clearConnectionMonitors]);
+
 
   // Initialize default template separately to avoid step reset
   useEffect(() => {
@@ -206,17 +228,47 @@ export function QuickStartModal({
   }, [currentStep, connected, selectedTemplateId, postTitle, postBody]);
 
   const handleConnect = async () => {
-    if (connected) {
+    if (connected || isConnecting) {
       return;
     }
 
     setIsConnecting(true);
     setConnectionInitiated(true);
-    clearConnectionMonitors();
+    connectionCompletedRef.current = false;
+
+    const finishConnection = () => {
+      if (connectionCompletedRef.current) {
+        return true;
+      }
+      connectionCompletedRef.current = true;
+      clearConnectionMonitors();
+      setConnected(true);
+      setIsConnecting(false);
+      setConnectionInitiated(false);
+      onConnected?.();
+      return true;
+    };
+
+    const checkForAccount = async (): Promise<boolean> => {
+      if (connectionCompletedRef.current) {
+        return false;
+      }
+      try {
+        const response = await apiRequest("GET", "/api/reddit/accounts");
+        const data = (await response.json()) as unknown;
+        if (isRedditAccountList(data) && data.length > 0) {
+          return finishConnection();
+        }
+      } catch (pollError) {
+        console.error("Reddit account poll failed", pollError);
+      }
+      return false;
+    };
 
     try {
       const response = await apiRequest("GET", "/api/reddit/connect");
       const data = await response.json() as RedditConnectResponse;
+
 
       if (data.authUrl) {
         window.open(data.authUrl, "_blank");
@@ -224,70 +276,41 @@ export function QuickStartModal({
           title: "Reddit Authorization",
           description: "Complete the authorization in the new window, then return here.",
         });
-        let lastErrorMessage =
-          "We couldn't detect a connected Reddit account. Please finish the Reddit authorization window.";
 
-        const verifyConnection = async () => {
-          try {
-            const accountsResponse = await apiRequest("GET", "/api/reddit/accounts");
-            const accountsRaw = await accountsResponse.json() as unknown;
+        clearConnectionMonitors();
 
-            if (!Array.isArray(accountsRaw)) {
-              lastErrorMessage = "Unexpected response while verifying Reddit accounts.";
-              return;
-            }
-
-            const accounts = accountsRaw as RedditAccountSummary[];
-            const hasRedditAccount = accounts.some(account => account.platform === "reddit");
-
-            if (hasRedditAccount) {
-              clearConnectionMonitors();
-              setConnected(true);
-              setIsConnecting(false);
-              toast({
-                title: "Reddit account connected",
-                description: "You're ready to continue the quick start.",
-              });
-              onConnected?.();
-            } else {
-              lastErrorMessage =
-                "No Reddit account detected yet. Complete the authorization window to continue.";
-            }
-          } catch (verificationError) {
-            if (verificationError instanceof Error) {
-              lastErrorMessage = verificationError.message;
-            } else {
-              lastErrorMessage = "Failed to verify Reddit connection.";
-            }
-          }
-        };
+        const initialCheckSucceeded = await checkForAccount();
+        if (initialCheckSucceeded) {
+          return;
+        }
 
         pollIntervalRef.current = setInterval(() => {
-          void verifyConnection();
-        }, 3000);
+          void checkForAccount();
+        }, POLL_INTERVAL_MS);
 
         pollTimeoutRef.current = setTimeout(() => {
+          connectionCompletedRef.current = true;
           clearConnectionMonitors();
           setIsConnecting(false);
+          setConnectionInitiated(false);
           toast({
-            title: "Waiting for Reddit authorization",
-            description: lastErrorMessage,
+            title: "Connection Timeout",
+            description: "We couldn't verify your Reddit connection. Please try again.",
             variant: "destructive",
           });
-        }, 60000);
-
-        void verifyConnection();
+        }, POLL_TIMEOUT_MS);
       } else {
         throw new Error(data.message || "Failed to get authorization URL");
       }
     } catch (error) {
       clearConnectionMonitors();
+      setIsConnecting(false);
+      setConnectionInitiated(false);
       toast({
         title: "Connection Error",
         description: error instanceof Error ? error.message : "Failed to connect to Reddit",
         variant: "destructive",
       });
-      setIsConnecting(false);
     }
   };
 
@@ -393,17 +416,27 @@ export function QuickStartModal({
             ) : (
               <Button
                 onClick={handleConnect}
-                disabled={isConnecting}
-                className="w-full bg-orange-500 hover:bg-orange-600"
-                data-testid="connect-reddit-button"
+                disabled={connected || isConnecting}
+                className={cn(
+                  "w-full",
+                  connected ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"
+                )}
               >
                 {isConnecting ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     Connecting...
                   </>
+                ) : connected ? (
+                  <>
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Connected to Reddit
+                  </>
                 ) : (
-                  "Connect Reddit"
+                  <>
+                    <Globe className="h-4 w-4 mr-2" />
+                    Connect Reddit
+                  </>
                 )}
               </Button>
             )}

@@ -161,22 +161,13 @@ describe("ModernDashboard quick start", () => {
       const key = Array.isArray(queryKey) ? queryKey[0] : queryKey;
       if (key === "/api/dashboard/stats") {
         return {
-          data: {
-            postsToday: 2,
-            engagementRate: 3.4,
-            takedownsFound: 1,
-            estimatedTaxSavings: 1250,
-          },
+          data: { postsToday: 2, engagementRate: 3.4, takedownsFound: 1, estimatedTaxSavings: 1250 },
           isLoading: false,
           error: null,
         };
       }
       if (key === "/api/dashboard/activity") {
-        return {
-          data: { recentMedia: [] },
-          isLoading: false,
-          error: null,
-        };
+        return { data: { recentMedia: [] }, isLoading: false, error: null };
       }
       return { data: undefined, isLoading: false, error: null };
     });
@@ -214,33 +205,31 @@ describe("ModernDashboard quick start", () => {
   it("walks through the quick start flow and submits a Reddit post", async () => {
     mockedAuthUser = null;
     apiRequestMock.mockImplementation((method: string, url: string) => {
-      if (url === "/api/reddit/connect") {
+      if (method === "GET" && url === "/api/reddit/connect") {
         return Promise.resolve({
           json: async () => ({ authUrl: "https://reddit.com/auth" }),
         } as Response);
       }
-
-      if (url === "/api/reddit/accounts") {
+      if (method === "GET" && url === "/api/reddit/accounts") {
         return Promise.resolve({
           json: async () => [
             {
-              id: 101,
-              platform: "reddit",
-              handle: "creator",
-              status: "ready",
-              createdAt: "2024-01-01T00:00:00.000Z",
+              id: 21,
+              username: "creator",
+              isActive: true,
+              connectedAt: new Date().toISOString(),
+              karma: 0,
+              verified: false,
             },
           ],
         } as Response);
       }
-
-      if (url === "/api/reddit/submit") {
+      if (method === "POST" && url === "/api/reddit/submit") {
         return Promise.resolve({
           json: async () => ({ success: true }),
         } as Response);
       }
-
-      return Promise.reject(new Error(`Unhandled url: ${url}`));
+      throw new Error(`Unexpected apiRequest call: ${method} ${url}`);
     });
 
     const onOpenChange = vi.fn();
@@ -254,23 +243,24 @@ describe("ModernDashboard quick start", () => {
       />,
     );
 
+    const continueButton = getButtonByText(/^Continue$/i);
+    expect(continueButton.disabled).toBe(true);
+
     click(getButtonByText(/Connect Reddit/i));
 
     await waitFor(() => {
       expect(apiRequestMock).toHaveBeenCalledWith("GET", "/api/reddit/connect");
-      return true;
-    });
-
-    await waitFor(() => {
       expect(apiRequestMock).toHaveBeenCalledWith("GET", "/api/reddit/accounts");
+      const nextButton = getButtonByText(/^Continue$/i);
+      if (nextButton.disabled) {
+        throw new Error("Continue button is still disabled");
+      }
       return true;
     });
 
-    await waitFor(() => {
-      const continueButton = getButtonByText(/^Continue$/i);
-      expect(continueButton.disabled).toBe(false);
-      return true;
-    });
+    apiRequestMock.mockResolvedValueOnce({
+      json: async () => ({ success: true }),
+    } as Response);
 
     click(getButtonByText(/^Continue$/i));
     expect(await findByText(/Choose a subreddit/i)).toBeTruthy();

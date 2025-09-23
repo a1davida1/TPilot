@@ -149,7 +149,7 @@ export async function lintCaption(input: {
   try {
     // Normalize the subreddit name for lookup
     const normalizedSubreddit = normalizeSubredditName(subreddit);
-    
+
     // Load subreddit-specific rules
     const [subredditRule] = await db
       .select()
@@ -158,7 +158,7 @@ export async function lintCaption(input: {
 
     // Coerce rules to proper format
     let rules: RuleSpec;
-    
+
     if (subredditRule?.rulesJson) {
       rules = coerceRuleSpec(subredditRule.rulesJson);
     } else {
@@ -180,7 +180,7 @@ export async function lintCaption(input: {
           title.toLowerCase().includes(word.toLowerCase()) ||
           body.toLowerCase().includes(word.toLowerCase())
         );
-        
+
         if (bannedFound.length > 0) {
           warnings.push(`Contains banned terms: ${bannedFound.join(", ")}`);
           state = "block";
@@ -257,7 +257,7 @@ export async function lintCaption(input: {
       const hasRequiredTag = effectiveRequiredTags.some(tag =>
         title.includes(tag) || body.includes(tag)
       );
-      
+
       if (!hasRequiredTag) {
         warnings.push(`Missing required tags`);
         if (state !== "block") state = "warn";
@@ -266,7 +266,7 @@ export async function lintCaption(input: {
       const hasRequiredTag = rules.requiredTags.some(tag =>
         title.includes(tag) || body.includes(tag)
       );
-      
+
       if (!hasRequiredTag) {
         warnings.push(`Missing required tags`);
         if (state !== "block") state = "warn";
@@ -297,7 +297,7 @@ export async function lintCaption(input: {
     // Additional content quality checks (warnings)
     // Check for minimum length if specified in test format
     const minLength = (subredditRule?.rulesJson as TestRuleSpec)?.minLength;
-    
+
     // For test compatibility: use exact message "too short"
     if (minLength) {
       if (title.length < minLength) {

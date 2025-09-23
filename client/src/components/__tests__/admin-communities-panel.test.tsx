@@ -93,7 +93,7 @@ function renderWithProviders(component: React.ReactElement) {
 describe('AdminCommunitiesPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Mock fetch for community list
     global.fetch = vi.fn().mockImplementation((url: string) => {
       if (url.includes('/api/reddit/communities')) {
@@ -113,7 +113,7 @@ describe('AdminCommunitiesPanel', () => {
       expect(screen.getByTestId('admin-communities-panel')).toBeInTheDocument();
       expect(screen.getByText('Reddit Communities')).toBeInTheDocument();
       expect(screen.getByText('Manage the subreddit directory and community rules')).toBeInTheDocument();
-      
+
       // Check for filter elements
       expect(screen.getByTestId('input-search')).toBeInTheDocument();
       expect(screen.getByTestId('select-category')).toBeInTheDocument();
@@ -171,7 +171,7 @@ describe('AdminCommunitiesPanel', () => {
 
       const categorySelect = screen.getByTestId('select-category');
       fireEvent.click(categorySelect);
-      
+
       // Note: This test would need more specific implementation
       // depending on how the Select component works in your setup
     });
@@ -185,7 +185,7 @@ describe('AdminCommunitiesPanel', () => {
 
       const promotionSelect = screen.getByTestId('select-promotion');
       fireEvent.click(promotionSelect);
-      
+
       // Similar to category test
     });
   });
@@ -203,7 +203,7 @@ describe('AdminCommunitiesPanel', () => {
 
     it('should call create API when form is submitted', async () => {
       mockApiRequest.mockResolvedValue({ ok: true });
-      
+
       renderWithProviders(<AdminCommunitiesPanel canManage={true} />);
 
       // Open create dialog
@@ -250,7 +250,7 @@ describe('AdminCommunitiesPanel', () => {
 
       expect(screen.getByText('Edit Community')).toBeInTheDocument();
       expect(screen.getByText('Update the community information and rules.')).toBeInTheDocument();
-      
+
       // Check that form is pre-populated
       expect(screen.getByDisplayValue('gonewild')).toBeInTheDocument();
       expect(screen.getByDisplayValue('Gone Wild')).toBeInTheDocument();
@@ -258,7 +258,7 @@ describe('AdminCommunitiesPanel', () => {
 
     it('should call update API when edit form is submitted', async () => {
       mockApiRequest.mockResolvedValue({ ok: true });
-      
+
       renderWithProviders(<AdminCommunitiesPanel canManage={true} />);
 
       await waitFor(() => {
@@ -286,7 +286,7 @@ describe('AdminCommunitiesPanel', () => {
 
     it('should call delete API when delete is confirmed', async () => {
       mockApiRequest.mockResolvedValue({ ok: true });
-      
+
       renderWithProviders(<AdminCommunitiesPanel canManage={true} />);
 
       await waitFor(() => {

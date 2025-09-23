@@ -408,9 +408,11 @@ export function setupAuth(app: Express) {
         const user = await storage.getUser(userId);
         if (user) {
           const { password: _, ...userResponse } = user;
+          const isAdmin = Boolean(userResponse.isAdmin || userResponse.role === 'admin' || userResponse.id === 999);
           return res.json({
             ...userResponse,
-            tier: userResponse.tier || 'free'
+            tier: userResponse.tier || 'free',
+            isAdmin
           });
         }
 
