@@ -1,0 +1,275 @@
+diff --git a/client/src/hooks/use-admin-communities.ts b/client/src/hooks/use-admin-communities.ts
+--- a/client/src/hooks/use-admin-communities.ts
++++ b/client/src/hooks/use-admin-communities.ts
+@@
+-  const url = `/api/admin/communities${queryString ? `?${queryString}` : ''}`;
++  const url = `/api/reddit/communities${queryString ? `?${queryString}` : ''}`;
+@@
+-      apiRequest('POST', '/api/admin/communities', payload),
++      apiRequest('POST', '/api/reddit/communities', payload),
+@@
+-      apiRequest('PUT', `/api/admin/communities/${id}`, payload),
++      apiRequest('PUT', `/api/reddit/communities/${id}`, payload),
+@@
+-      apiRequest('DELETE', `/api/admin/communities/${id}`),
++      apiRequest('DELETE', `/api/reddit/communities/${id}`),
+diff --git a/client/src/components/__tests__/admin-communities-panel.test.tsx b/client/src/components/__tests__/admin-communities-panel.test.tsx
+--- a/client/src/components/__tests__/admin-communities-panel.test.tsx
++++ b/client/src/components/__tests__/admin-communities-panel.test.tsx
+@@
+-    global.fetch = vi.fn().mockImplementation((url: string) => {
+-      if (url.includes('/api/admin/communities')) {
++    global.fetch = vi.fn().mockImplementation((url: string) => {
++      if (url.includes('/api/reddit/communities')) {
+@@
+-        expect(fetch).toHaveBeenCalledWith('/api/admin/communities?search=photography');
++        expect(fetch).toHaveBeenCalledWith('/api/reddit/communities?search=photography');
+@@
+-        expect(mockApiRequest).toHaveBeenCalledWith('POST', '/api/admin/communities', expect.objectContaining({
++        expect(mockApiRequest).toHaveBeenCalledWith('POST', '/api/reddit/communities', expect.objectContaining({
+@@
+-        expect(mockApiRequest).toHaveBeenCalledWith('PUT', '/api/admin/communities/test_community_1', expect.objectContaining({
++        expect(mockApiRequest).toHaveBeenCalledWith('PUT', '/api/reddit/communities/test_community_1', expect.objectContaining({
+@@
+-        expect(mockApiRequest).toHaveBeenCalledWith('DELETE', '/api/admin/communities/test_community_1');
++        expect(mockApiRequest).toHaveBeenCalledWith('DELETE', '/api/reddit/communities/test_community_1');
+diff --git a/client/src/components/dashboard-quick-start.tsx b/client/src/components/dashboard-quick-start.tsx
+--- a/client/src/components/dashboard-quick-start.tsx
++++ b/client/src/components/dashboard-quick-start.tsx
+@@
+-import React, { useEffect, useMemo, useState } from "react";
++import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+@@
+ interface RedditSubmitResponse {
+   success?: boolean;
+   error?: string;
+ }
+ 
++interface RedditAccountSummary {
++  id: number;
++  platform: string;
++  handle: string;
++  status?: string;
++  createdAt?: string;
++}
++
+@@
+   const [postBody, setPostBody] = useState("");
+   const [isSubmitting, setIsSubmitting] = useState(false);
+   const [submitError, setSubmitError] = useState<string | null>(null);
+   const [isConnecting, setIsConnecting] = useState(false);
++  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
++  const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
++
++  const clearConnectionMonitors = useCallback(() => {
++    if (pollIntervalRef.current) {
++      clearInterval(pollIntervalRef.current);
++      pollIntervalRef.current = null;
++    }
++    if (pollTimeoutRef.current) {
++      clearTimeout(pollTimeoutRef.current);
++      pollTimeoutRef.current = null;
++    }
++  }, []);
+ 
+-  useEffect(() => {
+-    if (!open) {
+-      return;
+-    }
+-    setCurrentStep(initialStep);
+-    setConnected(isRedditConnected);
+-    setConnectionInitiated(false);
+-    setSubmitError(null);
+-    setIsSubmitting(false);
+-    setIsConnecting(false);
+-  }, [open, initialStep, isRedditConnected]);
++  useEffect(() => {
++    if (!open) {
++      clearConnectionMonitors();
++      setIsConnecting(false);
++      return;
++    }
++
++    setCurrentStep(initialStep);
++    setConnectionInitiated(false);
++    setSubmitError(null);
++    setIsSubmitting(false);
++    setIsConnecting(false);
++  }, [open, initialStep, clearConnectionMonitors]);
++
++  useEffect(() => {
++    if (!open) {
++      return;
++    }
++
++    setConnected(isRedditConnected);
++    if (isRedditConnected) {
++      setIsConnecting(false);
++      clearConnectionMonitors();
++    }
++  }, [isRedditConnected, open, clearConnectionMonitors]);
++
++  useEffect(() => {
++    return () => {
++      clearConnectionMonitors();
++    };
++  }, [clearConnectionMonitors]);
+@@
+   const handleConnect = async () => {
+     if (connected) {
+       return;
+     }
+ 
+     setIsConnecting(true);
+     setConnectionInitiated(true);
++    clearConnectionMonitors();
+ 
+     try {
+       const response = await apiRequest("GET", "/api/reddit/connect");
+       const data = await response.json() as RedditConnectResponse;
+ 
+       if (data.authUrl) {
+         window.open(data.authUrl, "_blank");
+         toast({
+           title: "Reddit Authorization",
+           description: "Complete the authorization in the new window, then return here.",
+         });
+-        // Simulate connection success for the flow
+-        setTimeout(() => {
+-          setConnected(true);
+-          setIsConnecting(false);
+-          onConnected?.();
+-        }, 2000);
++        let lastErrorMessage =
++          "We couldn't detect a connected Reddit account. Please finish the Reddit authorization window.";
++
++        const verifyConnection = async () => {
++          try {
++            const accountsResponse = await apiRequest("GET", "/api/reddit/accounts");
++            const accountsRaw = await accountsResponse.json() as unknown;
++
++            if (!Array.isArray(accountsRaw)) {
++              lastErrorMessage = "Unexpected response while verifying Reddit accounts.";
++              return;
++            }
++
++            const accounts = accountsRaw as RedditAccountSummary[];
++            const hasRedditAccount = accounts.some(account => account.platform === "reddit");
++
++            if (hasRedditAccount) {
++              clearConnectionMonitors();
++              setConnected(true);
++              setIsConnecting(false);
++              toast({
++                title: "Reddit account connected",
++                description: "You're ready to continue the quick start.",
++              });
++              onConnected?.();
++            } else {
++              lastErrorMessage =
++                "No Reddit account detected yet. Complete the authorization window to continue.";
++            }
++          } catch (verificationError) {
++            if (verificationError instanceof Error) {
++              lastErrorMessage = verificationError.message;
++            } else {
++              lastErrorMessage = "Failed to verify Reddit connection.";
++            }
++          }
++        };
++
++        pollIntervalRef.current = setInterval(() => {
++          void verifyConnection();
++        }, 3000);
++
++        pollTimeoutRef.current = setTimeout(() => {
++          clearConnectionMonitors();
++          setIsConnecting(false);
++          toast({
++            title: "Waiting for Reddit authorization",
++            description: lastErrorMessage,
++            variant: "destructive",
++          });
++        }, 60000);
++
++        void verifyConnection();
+       } else {
+         throw new Error(data.message || "Failed to get authorization URL");
+       }
+     } catch (error) {
++      clearConnectionMonitors();
+       toast({
+         title: "Connection Error",
+         description: error instanceof Error ? error.message : "Failed to connect to Reddit",
+         variant: "destructive",
+       });
+       setIsConnecting(false);
+     }
+   };
+diff --git a/client/src/components/__tests__/modern-dashboard.test.tsx b/client/src/components/__tests__/modern-dashboard.test.tsx
+--- a/client/src/components/__tests__/modern-dashboard.test.tsx
++++ b/client/src/components/__tests__/modern-dashboard.test.tsx
+@@
+-    apiRequestMock.mockResolvedValueOnce({
+-      json: async () => ({ authUrl: "https://reddit.com/auth" }),
+-    } as Response);
++    apiRequestMock.mockImplementation((method: string, url: string) => {
++      if (url === "/api/reddit/connect") {
++        return Promise.resolve({
++          json: async () => ({ authUrl: "https://reddit.com/auth" }),
++        } as Response);
++      }
++
++      if (url === "/api/reddit/accounts") {
++        return Promise.resolve({
++          json: async () => [
++            {
++              id: 101,
++              platform: "reddit",
++              handle: "creator",
++              status: "ready",
++              createdAt: "2024-01-01T00:00:00.000Z",
++            },
++          ],
++        } as Response);
++      }
++
++      if (url === "/api/reddit/submit") {
++        return Promise.resolve({
++          json: async () => ({ success: true }),
++        } as Response);
++      }
++
++      return Promise.reject(new Error(`Unhandled url: ${url}`));
++    });
+@@
+     click(getButtonByText(/Connect Reddit/i));
+ 
+     await waitFor(() => {
+       expect(apiRequestMock).toHaveBeenCalledWith("GET", "/api/reddit/connect");
+       return true;
+     });
+ 
+-    apiRequestMock.mockResolvedValueOnce({
+-      json: async () => ({ success: true }),
+-    } as Response);
++    await waitFor(() => {
++      expect(apiRequestMock).toHaveBeenCalledWith("GET", "/api/reddit/accounts");
++      return true;
++    });
++
++    await waitFor(() => {
++      const continueButton = getButtonByText(/^Continue$/i);
++      expect(continueButton.disabled).toBe(false);
++      return true;
++    });
+ 
+     click(getButtonByText(/^Continue$/i));
+     expect(await findByText(/Choose a subreddit/i)).toBeTruthy();
+@@
+diff --git a/client/src/pages/admin.tsx b/client/src/pages/admin.tsx
+--- a/client/src/pages/admin.tsx
++++ b/client/src/pages/admin.tsx
+@@
+-          <AdminCommunitiesPanel canManage={user?.tier === 'admin'} />
++          <AdminCommunitiesPanel canManage={Boolean(user?.isAdmin)} />
