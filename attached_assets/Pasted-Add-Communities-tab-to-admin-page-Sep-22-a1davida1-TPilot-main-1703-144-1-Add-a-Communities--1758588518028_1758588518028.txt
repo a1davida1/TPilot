@@ -1,0 +1,2615 @@
+Add Communities tab to admin page
+Sep 22 · a1davida1/TPilot · main
++1703-144
+1. Add a “Communities” tab to `client/src/pages/admin.tsx` that lists entries from `/api/reddit/communities` with search/filter controls.
+2. Wire create/update/delete forms to the existing admin endpoints using React Query mutations, respecting admin auth.
+3. Ensure the editor handles the structured rule metadata (see stub #2) for accurate rule-aware editing.
+4. Add component tests that exercise the CRUD flows and confirm the table refreshes after mutations.
+
+Summary
+
+    Hardened the admin dashboard typing by introducing explicit interfaces for system health, analytics, completeness, and user-action responses, and by updating the shared authenticated fetch helper and React Query hooks to use typed generics instead of any.
+
+Built out the Reddit Communities management experience with typed filtering, sorting, formatting helpers, and a dialog-driven editor that captures structured rule metadata and wired create/update/delete mutations with proper toast feedback.
+
+Added a Vitest component suite that mocks admin endpoints to cover community creation, editing, and deletion flows while asserting payload shapes and table refresh behaviour.
+
+Testing
+
+    ❌ npm run lint *(fails: repository already contains hundreds of lint warnings plus one error outside this change set)*
+
+    ❌ npm test *(fails: existing suites for ImageShield, Gemini pipelines, Coinbase integrations, etc., continue to error; run was interrupted after many baseline failures)*
+
+
+client/src/pages/__tests__/admin-communities.test.tsx
+New
++450-0
+import React from 'react';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { act } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const toastMock = vi.fn();
+
+vi.mock('@/hooks/use-toast', () => ({
+  useToast: () => ({ toast: toastMock })
+}));
+
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: () => ({ user: { id: 1, isAdmin: true } })
+}));
+
+import { AdminDashboard } from '../admin';
+import * as queryClientModule from '@/lib/queryClient';
+
+type FetchInput = Parameters<typeof fetch>[0];
+
+type RedditCommunity = {
+  id: string;
+  name: string;
+  displayName: string;
+  members: number;
+  engagementRate: number;
+  category: string;
+  verificationRequired: boolean;
+  promotionAllowed: 'yes' | 'limited' | 'subtle' | 'no';
+  postingLimits?: { perDay?: number; perWeek?: number; cooldownHours?: number } | null;
+  rules?: {
+    minKarma?: number;
+    minAccountAge?: number;
+    watermarksAllowed?: boolean;
+    sellingAllowed?: boolean;
+    titleRules?: string[];
+    contentRules?: string[];
+  } | null;
+  bestPostingTimes?: string[] | null;
+  averageUpvotes?: number | null;
+  successProbability?: number | null;
+  growthTrend?: 'up' | 'stable' | 'down' | null;
+  modActivity?: 'high' | 'medium' | 'low' | null;
+  description?: string | null;
+  tags?: string[] | null;
+  competitionLevel?: 'low' | 'medium' | 'high' | null;
+};
+
+const globalScope = globalThis as typeof globalThis & {
+  React?: typeof React;
+  IS_REACT_ACT_ENVIRONMENT?: boolean;
+};
+
+globalScope.React = React;
+globalScope.IS_REACT_ACT_ENVIRONMENT = true;
+
+const flushPromises = () => new Promise<void>(resolve => setTimeout(resolve, 0));
+
+const waitFor = async (assertion: () => void, timeout = 2000) => {
+  const start = Date.now();
+  while (Date.now() - start <= timeout) {
+    try {
+      assertion();
+      return;
+    } catch (error) {
+      await act(async () => {
+        await flushPromises();
+      });
+    }
+  }
+  assertion();
+};
+
+const createJsonResponse = <T,>(data: T): Response => ({
+  ok: true,
+  json: async () => data,
+  text: async () => JSON.stringify(data)
+}) as Response;
+
+const baseCommunity: RedditCommunity = {
+  id: 'r-existing',
+  name: 'r/existing',
+  displayName: 'Existing Community',
+  members: 250000,
+  engagementRate: 12,
+  category: 'general',
+  verificationRequired: false,
+  promotionAllowed: 'limited',
+  postingLimits: null,
+  rules: {
+    watermarksAllowed: true,
+    sellingAllowed: false,
+    titleRules: ['No spam']
+  },
+  bestPostingTimes: ['Evening'],
+  averageUpvotes: 210,
+  successProbability: 75,
+  growthTrend: 'stable',
+  modActivity: 'medium',
+  description: 'An established community.',
+  tags: ['core'],
+  competitionLevel: 'medium'
+};
+
+const originalFetch = global.fetch;
+
+let fetchMock: ReturnType<typeof vi.fn>;
+let apiRequestMock: ReturnType<typeof vi.spyOn>;
+let communityQueue: RedditCommunity[][];
+
+const defaultStats = {
+  totalUsers: 0,
+  revenue: 0,
+  activeUsers: 0,
+  contentGenerated: 0,
+  newUsersToday: 0,
+  trialUsers: 0,
+  freeUsers: 0,
+  proUsers: 0,
+  premiumUsers: 0,
+  jwtConfigured: true,
+  emailConfigured: true
+};
+
+const defaultAnalytics = {
+  visitors: 0,
+  pageViews: 0,
+  sessions: 0,
+  conversionRate: 0,
+  topPages: [],
+  trafficSources: []
+};
+
+const defaultSystemHealth = {
+  status: 'ok',
+  services: {}
+};
+
+const defaultCompleteness = {
+  percentage: 80,
+  items: []
+};
+
+const defaultUsers: Array<{ id: number; username: string; email: string; tier: string }> = [
+  { id: 1, username: 'alpha', email: 'alpha@example.com', tier: 'pro' }
+];
+
+const defaultProviders: Array<{ name: string; available: boolean; inputCost: string; outputCost: string; savings: string }> = [
+  { name: 'Provider A', available: true, inputCost: '1', outputCost: '2', savings: '10' }
+];
+
+const getUrl = (input: FetchInput): string => (typeof input === 'string' ? input : input.url);
+
+const prepareFetchMock = () => {
+  communityQueue = [];
+  fetchMock = vi.fn(async (input: FetchInput) => {
+    const url = getUrl(input);
+    if (url.startsWith('/api/reddit/communities')) {
+      const response = communityQueue.length > 1 ? communityQueue.shift() : communityQueue[0];
+      return createJsonResponse(response ?? []);
+    }
+    if (url.startsWith('/api/admin/stats')) {
+      return createJsonResponse(defaultStats);
+    }
+    if (url.startsWith('/api/admin/users')) {
+      return createJsonResponse(defaultUsers);
+    }
+    if (url.startsWith('/api/providers')) {
+      return createJsonResponse(defaultProviders);
+    }
+    if (url.startsWith('/api/admin/system-health')) {
+      return createJsonResponse(defaultSystemHealth);
+    }
+    if (url.startsWith('/api/admin/analytics')) {
+      return createJsonResponse(defaultAnalytics);
+    }
+    if (url.startsWith('/api/admin/completeness')) {
+      return createJsonResponse(defaultCompleteness);
+    }
+    return createJsonResponse({});
+  });
+  global.fetch = fetchMock as unknown as typeof fetch;
+};
+
+const renderAdminDashboard = async () => {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false, refetchOnWindowFocus: false }
+    }
+  });
+  const container = document.createElement('div');
+  document.body.appendChild(container);
+  const root = createRoot(container);
+  await act(async () => {
+    root.render(
+      <QueryClientProvider client={queryClient}>
+        <AdminDashboard />
+      </QueryClientProvider>
+    );
+  });
+  return { container, root, queryClient };
+};
+
+const cleanupRender = async (root: Root, container: HTMLElement, queryClient: QueryClient) => {
+  await act(async () => {
+    root.unmount();
+  });
+  container.remove();
+  queryClient.clear();
+};
+
+const setInputValue = (element: HTMLInputElement | HTMLTextAreaElement, value: string) => {
+  element.value = value;
+  element.dispatchEvent(new Event('input', { bubbles: true }));
+};
+
+describe('Admin communities management', () => {
+  beforeEach(() => {
+    toastMock.mockClear();
+    prepareFetchMock();
+    apiRequestMock = vi.spyOn(queryClientModule, 'apiRequest');
+  });
+
+  afterEach(() => {
+    apiRequestMock.mockRestore();
+    global.fetch = originalFetch;
+    document.body.innerHTML = '';
+  });
+
+  it('creates a community and refreshes the table', async () => {
+    const newCommunity: RedditCommunity = {
+      id: 'r-new',
+      name: 'r/new',
+      displayName: 'New Community',
+      members: 123000,
+      engagementRate: 9,
+      category: 'premium',
+      verificationRequired: true,
+      promotionAllowed: 'subtle',
+      postingLimits: { perDay: 1 },
+      rules: {
+        minKarma: 50,
+        minAccountAge: 30,
+        watermarksAllowed: false,
+        sellingAllowed: true,
+        titleRules: ['Title 1', 'Title 2'],
+        contentRules: ['Content 1']
+      },
+      bestPostingTimes: ['Morning', 'Evening'],
+      averageUpvotes: 200,
+      successProbability: 82,
+      growthTrend: 'up',
+      modActivity: 'high',
+      description: 'Brand new community.',
+      tags: ['new'],
+      competitionLevel: 'low'
+    };
+
+    communityQueue = [[baseCommunity], [baseCommunity, newCommunity]];
+
+    apiRequestMock.mockImplementation(async (method: string, url: string, payload?: unknown) => {
+      if (method === 'POST' && url === '/api/reddit/communities') {
+        expect(payload).toMatchObject({
+          id: 'r-new',
+          name: 'r/new',
+          rules: {
+            titleRules: ['Title 1', 'Title 2'],
+            contentRules: ['Content 1'],
+            watermarksAllowed: false,
+            sellingAllowed: true,
+            minKarma: 50,
+            minAccountAge: 30
+          }
+        });
+        return createJsonResponse(newCommunity);
+      }
+      return createJsonResponse({ success: true });
+    });
+
+    const { container, root, queryClient } = await renderAdminDashboard();
+
+    const communitiesTab = container.querySelector('[data-testid="tab-communities"]') as HTMLButtonElement;
+    await act(async () => {
+      communitiesTab.click();
+      await flushPromises();
+    });
+
+    await waitFor(() => {
+      const rows = container.querySelectorAll('[data-testid^="community-row-"]');
+      expect(rows.length).toBe(1);
+    });
+
+    const addButton = container.querySelector('[data-testid="button-add-community"]') as HTMLButtonElement;
+    await act(async () => {
+      addButton.click();
+    });
+
+    await waitFor(() => {
+      const dialog = document.querySelector('[data-testid="community-form"]');
+      expect(dialog).not.toBeNull();
+    });
+
+    const idInput = document.querySelector('[data-testid="input-community-id"]') as HTMLInputElement;
+    const nameInput = document.querySelector('[data-testid="input-community-name"]') as HTMLInputElement;
+    const displayInput = document.querySelector('[data-testid="input-community-display"]') as HTMLInputElement;
+    const membersInput = document.querySelector('[data-testid="input-community-members"]') as HTMLInputElement;
+    const engagementInput = document.querySelector('[data-testid="input-community-engagement"]') as HTMLInputElement;
+    const successInput = document.querySelector('[data-testid="input-community-success"]') as HTMLInputElement;
+    const bestTimesInput = document.querySelector('[data-testid="input-community-best-times"]') as HTMLInputElement;
+    const titleRulesTextarea = document.querySelector('[data-testid="input-community-title-rules"]') as HTMLTextAreaElement;
+    const contentRulesTextarea = document.querySelector('[data-testid="input-community-content-rules"]') as HTMLTextAreaElement;
+    const watermarksSwitch = document.querySelector('[data-testid="switch-watermarks"]') as HTMLButtonElement;
+    const sellingSwitch = document.querySelector('[data-testid="switch-selling"]') as HTMLButtonElement;
+
+    await act(async () => {
+      setInputValue(idInput, 'r-new');
+      setInputValue(nameInput, 'r/new');
+      setInputValue(displayInput, 'New Community');
+      setInputValue(membersInput, '123000');
+      setInputValue(engagementInput, '9');
+      setInputValue(successInput, '82');
+      setInputValue(bestTimesInput, 'Morning, Evening');
+      setInputValue(titleRulesTextarea, 'Title 1\nTitle 2');
+      setInputValue(contentRulesTextarea, 'Content 1');
+      watermarksSwitch.click();
+      sellingSwitch.click();
+    });
+
+    const submitButton = document.querySelector('[data-testid="button-submit-community"]') as HTMLButtonElement;
+    await act(async () => {
+      submitButton.click();
+      await flushPromises();
+    });
+
+    await waitFor(() => {
+      const rows = container.querySelectorAll('[data-testid^="community-row-"]');
+      expect(rows.length).toBe(2);
+      expect(container.textContent ?? '').toContain('New Community');
+    });
+
+    await cleanupRender(root, container, queryClient);
+  });
+
+  it('updates a community and reflects new metadata', async () => {
+    const updatedCommunity: RedditCommunity = {
+      ...baseCommunity,
+      displayName: 'Updated Community',
+      successProbability: 90,
+      rules: {
+        ...baseCommunity.rules,
+        contentRules: ['Updated guidance']
+      }
+    };
+
+    communityQueue = [[baseCommunity, updatedCommunity], [baseCommunity, updatedCommunity]];
+
+    apiRequestMock.mockImplementation(async (method: string, url: string) => {
+      if (method === 'PUT' && url === `/api/reddit/communities/${baseCommunity.id}`) {
+        return createJsonResponse(updatedCommunity);
+      }
+      return createJsonResponse({ success: true });
+    });
+
+    const { container, root, queryClient } = await renderAdminDashboard();
+
+    const communitiesTab = container.querySelector('[data-testid="tab-communities"]') as HTMLButtonElement;
+    await act(async () => {
+      communitiesTab.click();
+      await flushPromises();
+    });
+
+    await waitFor(() => {
+      const rows = container.querySelectorAll('[data-testid^="community-row-"]');
+      expect(rows.length).toBe(2);
+    });
+
+    const editButton = container.querySelector(`[data-testid="button-edit-community-${baseCommunity.id}"]`) as HTMLButtonElement;
+    await act(async () => {
+      editButton.click();
+    });
+
+    await waitFor(() => {
+      const dialog = document.querySelector('[data-testid="community-form"]');
+      expect(dialog).not.toBeNull();
+    });
+
+    const displayInput = document.querySelector('[data-testid="input-community-display"]') as HTMLInputElement;
+    const successInput = document.querySelector('[data-testid="input-community-success"]') as HTMLInputElement;
+    const contentRulesTextarea = document.querySelector('[data-testid="input-community-content-rules"]') as HTMLTextAreaElement;
+
+    await act(async () => {
+      setInputValue(displayInput, 'Updated Community');
+      setInputValue(successInput, '90');
+      setInputValue(contentRulesTextarea, 'Updated guidance');
+    });
+
+    const submitButton = document.querySelector('[data-testid="button-submit-community"]') as HTMLButtonElement;
+    await act(async () => {
+      submitButton.click();
+      await flushPromises();
+    });
+
+    await waitFor(() => {
+      expect(container.textContent ?? '').toContain('Updated Community');
+    });
+
+    await cleanupRender(root, container, queryClient);
+  });
+
+  it('deletes a community and reloads the table', async () => {
+    communityQueue = [[baseCommunity, { ...baseCommunity, id: 'r-remove', name: 'r/remove', displayName: 'Remove Me' }], [baseCommunity], [baseCommunity]];
+
+    apiRequestMock.mockImplementation(async (method: string, url: string) => {
+      if (method === 'DELETE' && url === '/api/reddit/communities/r-remove') {
+        return createJsonResponse({ success: true });
+      }
+      return createJsonResponse({ success: true });
+    });
+
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    const { container, root, queryClient } = await renderAdminDashboard();
+
+    const communitiesTab = container.querySelector('[data-testid="tab-communities"]') as HTMLButtonElement;
+    await act(async () => {
+      communitiesTab.click();
+      await flushPromises();
+    });
+
+    await waitFor(() => {
+      const rows = container.querySelectorAll('[data-testid^="community-row-"]');
+      expect(rows.length).toBe(2);
+    });
+
+    const deleteButton = container.querySelector('[data-testid="button-delete-community-r-remove"]') as HTMLButtonElement;
+    await act(async () => {
+      deleteButton.click();
+      await flushPromises();
+    });
+
+    await waitFor(() => {
+      const rows = container.querySelectorAll('[data-testid^="community-row-"]');
+      expect(rows.length).toBe(1);
+    });
+
+    confirmSpy.mockRestore();
+    await cleanupRender(root, container, queryClient);
+  });
+});
+client/src/pages/admin.tsx
++1253-144
+import { useState, useEffect } from 'react';
+import { useState, useMemo, type ChangeEvent, type FormEvent } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { 
+  Users, 
+import {
+  Users,
+  DollarSign, 
+  TrendingUp, 
+  Settings, 
+  Shield,
+  Activity,
+  Database,
+  CreditCard,
+  Eye,
+  BarChart3,
+  Ban,
+  Clock3,
+  Key,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+  Target,
+  Smartphone,
+  Calendar,
+  VideoIcon,
+  MessageSquare,
+  Globe,
+  Zap,
+  Gift,
+  Headphones,
+  MonitorPlay,
+  FileCheck
+  FileCheck,
+  Plus,
+  Pencil,
+  Trash2,
+  FilterIcon
+} from 'lucide-react';
+
+interface AdminStats {
+  totalUsers: number;
+  revenue: number;
+  activeUsers: number;
+  contentGenerated: number;
+  newUsersToday: number;
+  trialUsers: number;
+  freeUsers: number;
+  proUsers: number;
+  premiumUsers: number;
+  jwtConfigured: boolean;
+  emailConfigured: boolean;
+}
+
+interface User {
+  id: number;
+  username: string;
+  email: string;
+  tier: string;
+  isActive: boolean;
+  isVerified: boolean;
+  createdAt?: string;
+  lastLoginAt?: string;
+  contentCount?: number;
+}
+
+interface UserActionData {
+  action: string;
+  userId?: number;
+  tier?: string;
+  newTier?: string;
+  reason?: string;
+  duration?: string;
+}
+
+interface UserActionResponse {
+  tempPassword?: string;
+  success?: boolean;
+  message?: string;
+  [key: string]: unknown;
+}
+
+interface Provider {
+  name: string;
+  status: string;
+  status?: string;
+  available?: boolean;
+  inputCost?: string;
+  outputCost?: string;
+  savings?: string;
+  cost?: number;
+}
+
+type CommunityCategory = 'premium' | 'general' | 'niche' | 'fetish' | 'verification' | 'gonewild' | 'selling';
+type PromotionPolicy = 'yes' | 'limited' | 'subtle' | 'no';
+type GrowthTrend = 'up' | 'stable' | 'down';
+type ModActivity = 'high' | 'medium' | 'low';
+type CompetitionLevel = 'low' | 'medium' | 'high';
+
+interface PostingLimitsMetadata {
+  perDay?: number;
+  perWeek?: number;
+  cooldownHours?: number;
+}
+
+interface RuleMetadata {
+  minKarma?: number;
+  minAccountAge?: number;
+  watermarksAllowed?: boolean;
+  sellingAllowed?: boolean;
+  titleRules?: string[];
+  contentRules?: string[];
+}
+
+interface RedditCommunityRow {
+  id: string;
+  name: string;
+  displayName: string;
+  members: number;
+  engagementRate: number;
+  category: CommunityCategory;
+  verificationRequired: boolean;
+  promotionAllowed: PromotionPolicy;
+  postingLimits?: PostingLimitsMetadata | null;
+  rules?: RuleMetadata | null;
+  bestPostingTimes?: string[] | null;
+  averageUpvotes?: number | null;
+  successProbability?: number | null;
+  growthTrend?: GrowthTrend | null;
+  modActivity?: ModActivity | null;
+  description?: string | null;
+  tags?: string[] | null;
+  competitionLevel?: CompetitionLevel | null;
+}
+
+interface PostingLimitFormState {
+  perDay: string;
+  perWeek: string;
+  cooldownHours: string;
+}
+
+interface RuleFormState {
+  minKarma: string;
+  minAccountAge: string;
+  watermarksAllowed: boolean;
+  sellingAllowed: boolean;
+  titleRules: string;
+  contentRules: string;
+}
+
+interface CommunityFormState {
+  id: string;
+  name: string;
+  displayName: string;
+  members: string;
+  engagementRate: string;
+  category: CommunityCategory;
+  verificationRequired: boolean;
+  promotionAllowed: PromotionPolicy;
+  postingLimits: PostingLimitFormState;
+  rules: RuleFormState;
+  bestPostingTimes: string;
+  averageUpvotes: string;
+  successProbability: string;
+  growthTrend: GrowthTrend;
+  modActivity: ModActivity;
+  description: string;
+  tags: string;
+  competitionLevel: CompetitionLevel;
+}
+
+interface CommunityPayload {
+  id?: string;
+  name: string;
+  displayName: string;
+  members: number;
+  engagementRate: number;
+  category: CommunityCategory;
+  verificationRequired: boolean;
+  promotionAllowed: PromotionPolicy;
+  postingLimits?: PostingLimitsMetadata | null;
+  rules?: RuleMetadata | null;
+  bestPostingTimes?: string[];
+  averageUpvotes?: number | null;
+  successProbability?: number | null;
+  growthTrend?: GrowthTrend | null;
+  modActivity?: ModActivity | null;
+  description?: string;
+  tags?: string[];
+  competitionLevel?: CompetitionLevel | null;
+}
+
+interface CommunityMutationVariables {
+  id: string;
+  data: CommunityPayload;
+}
+
+const createInitialCommunityForm = (): CommunityFormState => ({
+  id: '',
+  name: '',
+  displayName: '',
+  members: '',
+  engagementRate: '',
+  category: 'general',
+  verificationRequired: false,
+  promotionAllowed: 'no',
+  postingLimits: {
+    perDay: '',
+    perWeek: '',
+    cooldownHours: ''
+  },
+  rules: {
+    minKarma: '',
+    minAccountAge: '',
+    watermarksAllowed: true,
+    sellingAllowed: false,
+    titleRules: '',
+    contentRules: ''
+  },
+  bestPostingTimes: '',
+  averageUpvotes: '',
+  successProbability: '',
+  growthTrend: 'stable',
+  modActivity: 'medium',
+  description: '',
+  tags: '',
+  competitionLevel: 'medium'
+});
+
+interface ServiceStatus {
+  status?: string;
+  message?: string;
+}
+
+interface SystemPerformance {
+  avgResponseTime?: string;
+  errorRate?: string;
+  throughput?: string;
+}
+
+interface SystemHealth {
+  status: string;
+  services: {
+    [key: string]: {
+      status: string;
+      message?: string;
+    };
+  status?: string;
+  database?: {
+    status?: string;
+    [key: string]: unknown;
+  };
+  services?: Record<string, ServiceStatus | undefined>;
+  performance?: SystemPerformance;
+}
+
+interface AnalyticsPage {
+  path?: string;
+  views?: number;
+}
+
+interface TrafficSource {
+  source?: string;
+  visitors?: number;
+}
+
+interface Analytics {
+  visitors: number;
+  pageViews: number;
+  sessions: number;
+  conversionRate: number;
+  uniqueVisitors?: number;
+  pageViews?: number;
+  bounceRate?: number;
+  topPages?: AnalyticsPage[];
+  trafficSources?: TrafficSource[];
+}
+
+interface CompletenessSection {
+  [key: string]: boolean | undefined;
+}
+
+interface Completeness {
+  percentage: number;
+  items: {
+    name: string;
+    status: boolean;
+  }[];
+  completionPercentage?: number;
+  core?: CompletenessSection;
+  features?: CompletenessSection;
+  integrations?: CompletenessSection;
+}
+
+export function AdminDashboard() {
+  const { toast } = useToast();
+  const [selectedPeriod, setSelectedPeriod] = useState('7d');
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [actionType, setActionType] = useState<'ban' | 'suspend' | 'unban' | 'reset-password' | 'tier-management' | 'user-details' | null>(null);
+  const [reason, setReason] = useState('');
+  const [duration, setDuration] = useState('24');
+  const [tempPassword, setTempPassword] = useState('');
+  const [newTier, setNewTier] = useState('free');
+  const [communitySearch, setCommunitySearch] = useState('');
+  const [communityCategoryFilter, setCommunityCategoryFilter] = useState<'all' | CommunityCategory>('all');
+  const [communityPromotionFilter, setCommunityPromotionFilter] = useState<'all' | PromotionPolicy>('all');
+  const [communityVerificationFilter, setCommunityVerificationFilter] = useState<'all' | 'required' | 'optional'>('all');
+  const [communitySort, setCommunitySort] = useState<'members' | 'engagementRate' | 'successProbability'>('successProbability');
+  const [communityDialogOpen, setCommunityDialogOpen] = useState(false);
+  const [editingCommunity, setEditingCommunity] = useState<RedditCommunityRow | null>(null);
+  const [communityForm, setCommunityForm] = useState<CommunityFormState>(() => createInitialCommunityForm());
+  const { user } = useAuth();
+  const isAdmin = Boolean(user?.isAdmin);
+
+  const parseNumber = (value: string): number | undefined => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return undefined;
+    }
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  };
+
+  const mapCommunityToForm = (community: RedditCommunityRow): CommunityFormState => ({
+    id: community.id,
+    name: community.name,
+    displayName: community.displayName,
+    members: community.members.toString(),
+    engagementRate: community.engagementRate.toString(),
+    category: community.category,
+    verificationRequired: community.verificationRequired,
+    promotionAllowed: community.promotionAllowed,
+    postingLimits: {
+      perDay: community.postingLimits?.perDay !== undefined ? community.postingLimits.perDay.toString() : '',
+      perWeek: community.postingLimits?.perWeek !== undefined ? community.postingLimits.perWeek.toString() : '',
+      cooldownHours: community.postingLimits?.cooldownHours !== undefined ? community.postingLimits.cooldownHours.toString() : ''
+    },
+    rules: {
+      minKarma: community.rules?.minKarma !== undefined ? community.rules.minKarma.toString() : '',
+      minAccountAge: community.rules?.minAccountAge !== undefined ? community.rules.minAccountAge.toString() : '',
+      watermarksAllowed: community.rules?.watermarksAllowed ?? true,
+      sellingAllowed: community.rules?.sellingAllowed ?? false,
+      titleRules: community.rules?.titleRules?.join('\n') ?? '',
+      contentRules: community.rules?.contentRules?.join('\n') ?? ''
+    },
+    bestPostingTimes: community.bestPostingTimes?.join(', ') ?? '',
+    averageUpvotes:
+      community.averageUpvotes !== undefined && community.averageUpvotes !== null
+        ? community.averageUpvotes.toString()
+        : '',
+    successProbability:
+      community.successProbability !== undefined && community.successProbability !== null
+        ? community.successProbability.toString()
+        : '',
+    growthTrend: community.growthTrend ?? 'stable',
+    modActivity: community.modActivity ?? 'medium',
+    description: community.description ?? '',
+    tags: community.tags?.join(', ') ?? '',
+    competitionLevel: community.competitionLevel ?? 'medium'
+  });
+
+  const resetCommunityForm = () => {
+    setCommunityForm(createInitialCommunityForm());
+  };
+
+  const closeCommunityDialog = () => {
+    setCommunityDialogOpen(false);
+    setEditingCommunity(null);
+    resetCommunityForm();
+  };
+
+  const openCreateCommunityDialog = () => {
+    setEditingCommunity(null);
+    resetCommunityForm();
+    setCommunityDialogOpen(true);
+  };
+
+  const openEditCommunityDialog = (community: RedditCommunityRow) => {
+    setEditingCommunity(community);
+    setCommunityForm(mapCommunityToForm(community));
+    setCommunityDialogOpen(true);
+  };
+
+  const buildCommunityPayload = (formState: CommunityFormState): CommunityPayload => {
+    const postingLimits: PostingLimitsMetadata = {
+      perDay: parseNumber(formState.postingLimits.perDay),
+      perWeek: parseNumber(formState.postingLimits.perWeek),
+      cooldownHours: parseNumber(formState.postingLimits.cooldownHours)
+    };
+    const hasPostingLimits = Object.values(postingLimits).some(value => value !== undefined);
+
+    const titleRules = formState.rules.titleRules
+      .split('\n')
+      .map(rule => rule.trim())
+      .filter(rule => rule.length > 0);
+
+    const contentRules = formState.rules.contentRules
+      .split('\n')
+      .map(rule => rule.trim())
+      .filter(rule => rule.length > 0);
+
+    const rules: RuleMetadata = {
+      minKarma: parseNumber(formState.rules.minKarma),
+      minAccountAge: parseNumber(formState.rules.minAccountAge),
+      watermarksAllowed: formState.rules.watermarksAllowed,
+      sellingAllowed: formState.rules.sellingAllowed,
+      ...(titleRules.length > 0 ? { titleRules } : {}),
+      ...(contentRules.length > 0 ? { contentRules } : {})
+    };
+
+    const hasRuleMetadata =
+      rules.minKarma !== undefined ||
+      rules.minAccountAge !== undefined ||
+      rules.titleRules !== undefined ||
+      rules.contentRules !== undefined ||
+      rules.watermarksAllowed !== undefined ||
+      rules.sellingAllowed !== undefined;
+
+    const bestPostingTimes = formState.bestPostingTimes
+      .split(',')
+      .map(time => time.trim())
+      .filter(time => time.length > 0);
+
+    const tags = formState.tags
+      .split(',')
+      .map(tag => tag.trim())
+      .filter(tag => tag.length > 0);
+
+    return {
+      id: formState.id.trim() || undefined,
+      name: formState.name.trim(),
+      displayName: formState.displayName.trim(),
+      members: parseNumber(formState.members) ?? 0,
+      engagementRate: parseNumber(formState.engagementRate) ?? 0,
+      category: formState.category,
+      verificationRequired: formState.verificationRequired,
+      promotionAllowed: formState.promotionAllowed,
+      postingLimits: hasPostingLimits ? postingLimits : null,
+      rules: hasRuleMetadata ? rules : null,
+      bestPostingTimes: bestPostingTimes.length > 0 ? bestPostingTimes : undefined,
+      averageUpvotes: parseNumber(formState.averageUpvotes) ?? null,
+      successProbability: parseNumber(formState.successProbability) ?? null,
+      growthTrend: formState.growthTrend || null,
+      modActivity: formState.modActivity || null,
+      description: formState.description.trim() || undefined,
+      tags: tags.length > 0 ? tags : undefined,
+      competitionLevel: formState.competitionLevel || null
+    };
+  };
+
+  const validateCommunityForm = (formState: CommunityFormState) => {
+    if (!editingCommunity && !formState.id.trim()) {
+      return 'Community identifier is required.';
+    }
+    if (!formState.name.trim()) {
+      return 'Community name is required.';
+    }
+    if (!formState.displayName.trim()) {
+      return 'Display name is required.';
+    }
+    if (parseNumber(formState.members) === undefined) {
+      return 'Member count must be a valid number.';
+    }
+    if (parseNumber(formState.engagementRate) === undefined) {
+      return 'Engagement rate must be a valid number.';
+    }
+    return null;
+  };
+
+  const submitCommunityForm = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!isAdmin) {
+      toast({ title: 'Permission denied', description: 'Admin access is required for this action.', variant: 'destructive' });
+      return;
+    }
+    const validationError = validateCommunityForm(communityForm);
+    if (validationError) {
+      toast({ title: 'Invalid community data', description: validationError, variant: 'destructive' });
+      return;
+    }
+
+    const payload = buildCommunityPayload(communityForm);
+    if (!editingCommunity && !payload.id) {
+      toast({ title: 'Invalid community data', description: 'Community identifier is required.', variant: 'destructive' });
+      return;
+    }
+
+    if (editingCommunity) {
+      updateCommunityMutation.mutate({ id: editingCommunity.id, data: payload });
+    } else {
+      createCommunityMutation.mutate(payload);
+    }
+  };
+
+  const handleDeleteCommunity = (community: RedditCommunityRow) => {
+    if (!isAdmin) {
+      toast({ title: 'Permission denied', description: 'Admin access is required for this action.', variant: 'destructive' });
+      return;
+    }
+    const confirmed = window.confirm(`Remove ${community.displayName}? This cannot be undone.`);
+    if (!confirmed) {
+      return;
+    }
+    deleteCommunityMutation.mutate(community.id);
+  };
+
+  const filteredCommunities = useMemo(() => {
+    let list = Array.isArray(communities) ? [...communities] : [];
+
+    if (communitySearch.trim()) {
+      const term = communitySearch.trim().toLowerCase();
+      list = list.filter(community =>
+        community.name.toLowerCase().includes(term) ||
+        community.displayName.toLowerCase().includes(term) ||
+        (community.description ?? '').toLowerCase().includes(term)
+      );
+    }
+
+    if (communityCategoryFilter !== 'all') {
+      list = list.filter(community => community.category === communityCategoryFilter);
+    }
+
+    if (communityPromotionFilter !== 'all') {
+      list = list.filter(community => community.promotionAllowed === communityPromotionFilter);
+    }
+
+    if (communityVerificationFilter === 'required') {
+      list = list.filter(community => community.verificationRequired);
+    } else if (communityVerificationFilter === 'optional') {
+      list = list.filter(community => !community.verificationRequired);
+    }
+
+    list.sort((a, b) => {
+      if (communitySort === 'members') {
+        return b.members - a.members;
+      }
+      if (communitySort === 'engagementRate') {
+        return b.engagementRate - a.engagementRate;
+      }
+      return (b.successProbability ?? 0) - (a.successProbability ?? 0);
+    });
+
+    return list;
+  }, [
+    communities,
+    communitySearch,
+    communityCategoryFilter,
+    communityPromotionFilter,
+    communityVerificationFilter,
+    communitySort
+  ]);
+
+  const formatCommunityNumber = (value: number | null | undefined) => {
+    if (value === null || value === undefined) {
+      return '—';
+    }
+    if (value >= 1_000_000) {
+      return `${(value / 1_000_000).toFixed(1)}M`;
+    }
+    if (value >= 1_000) {
+      return `${(value / 1_000).toFixed(0)}K`;
+    }
+    return value.toString();
+  };
+
+  const renderPromotionBadge = (policy: PromotionPolicy) => {
+    switch (policy) {
+      case 'yes':
+        return <Badge className="bg-green-500/20 text-green-600">Promotion OK</Badge>;
+      case 'limited':
+        return <Badge className="bg-yellow-500/20 text-yellow-600">Limited</Badge>;
+      case 'subtle':
+        return <Badge className="bg-blue-500/20 text-blue-600">Subtle</Badge>;
+      default:
+        return <Badge className="bg-red-500/20 text-red-600">No Promo</Badge>;
+    }
+  };
+
+  const renderCategoryBadge = (category: CommunityCategory) => {
+    const colorMap: Record<CommunityCategory, string> = {
+      premium: 'bg-purple-500/15 text-purple-700',
+      general: 'bg-blue-500/15 text-blue-700',
+      niche: 'bg-cyan-500/15 text-cyan-700',
+      fetish: 'bg-orange-500/15 text-orange-700',
+      verification: 'bg-yellow-500/15 text-yellow-700',
+      gonewild: 'bg-pink-500/15 text-pink-700',
+      selling: 'bg-green-500/15 text-green-700'
+    };
+    return <Badge className={colorMap[category]}>{category}</Badge>;
+  };
+
+  const isCommunitySaving = createCommunityMutation.isPending || updateCommunityMutation.isPending;
+
+  // Authenticated API request helper (using cookies)
+  const authenticatedFetch = async (url: string) => {
+  const authenticatedFetch = async <T>(url: string): Promise<T> => {
+    const response = await fetch(url, {
+      credentials: 'include' // Use cookie-based authentication
+    });
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status}`);
+    }
+    return response.json();
+    return (await response.json()) as T;
+  };
+
+  // Fetch admin stats
+  const { data: stats } = useQuery<AdminStats>({
+    queryKey: ['/api/admin/stats', selectedPeriod],
+    queryFn: () => authenticatedFetch('/api/admin/stats')
+    queryFn: () => authenticatedFetch<AdminStats>('/api/admin/stats')
+  });
+
+  // Fetch user data
+  const { data: users } = useQuery<User[]>({
+    queryKey: ['/api/admin/users'],
+    queryFn: () => authenticatedFetch('/api/admin/users')
+    queryFn: () => authenticatedFetch<User[]>('/api/admin/users')
+  });
+
+  // Fetch provider costs
+  const { data: providers } = useQuery<Provider[]>({
+    queryKey: ['/api/providers'],
+    queryFn: () => authenticatedFetch('/api/providers')
+    queryFn: () => authenticatedFetch<Provider[]>('/api/providers')
+  });
+
+  // Fetch system health
+  const { data: systemHealth } = useQuery<SystemHealth>({
+    queryKey: ['/api/admin/system-health'],
+    queryFn: () => authenticatedFetch('/api/admin/system-health')
+    queryFn: () => authenticatedFetch<SystemHealth>('/api/admin/system-health')
+  });
+
+  // Fetch visitor analytics
+  const { data: analytics } = useQuery<Analytics>({
+    queryKey: ['/api/admin/analytics', selectedPeriod],
+    queryFn: () => authenticatedFetch('/api/admin/analytics')
+    queryFn: () => authenticatedFetch<Analytics>('/api/admin/analytics')
+  });
+
+  // Fetch system completeness
+  const { data: completeness } = useQuery<Completeness>({
+    queryKey: ['/api/admin/completeness'],
+    queryFn: () => authenticatedFetch('/api/admin/completeness')
+    queryFn: () => authenticatedFetch<Completeness>('/api/admin/completeness')
+  });
+
+  const {
+    data: communities = [],
+    isFetching: isFetchingCommunities
+  } = useQuery<RedditCommunityRow[]>({
+    queryKey: ['/api/reddit/communities', communityCategoryFilter, communitySearch],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (communityCategoryFilter !== 'all') {
+        params.set('category', communityCategoryFilter);
+      }
+      if (communitySearch.trim()) {
+        params.set('search', communitySearch.trim());
+      }
+      const queryString = params.toString();
+      return authenticatedFetch<RedditCommunityRow[]>(
+        `/api/reddit/communities${queryString ? `?${queryString}` : ''}`
+      );
+    }
+  });
+
+  const queryClient = useQueryClient();
+
+  const createCommunityMutation = useMutation<RedditCommunityRow, Error, CommunityPayload>({
+    mutationFn: async data => {
+      const response = await apiRequest('POST', '/api/reddit/communities', data);
+      return (await response.json()) as RedditCommunityRow;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/reddit/communities'] });
+      toast({ title: 'Community created', description: 'Reddit community added to catalog.' });
+      closeCommunityDialog();
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Failed to create community', description: error.message, variant: 'destructive' });
+    }
+  });
+
+  const updateCommunityMutation = useMutation<RedditCommunityRow, Error, CommunityMutationVariables>({
+    mutationFn: async variables => {
+      const response = await apiRequest('PUT', `/api/reddit/communities/${variables.id}`, variables.data);
+      return (await response.json()) as RedditCommunityRow;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/reddit/communities'] });
+      toast({ title: 'Community updated', description: 'Latest rules and metadata saved.' });
+      closeCommunityDialog();
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Failed to update community', description: error.message, variant: 'destructive' });
+    }
+  });
+
+  const deleteCommunityMutation = useMutation<{ success: boolean }, Error, string>({
+    mutationFn: async id => {
+      const response = await apiRequest('DELETE', `/api/reddit/communities/${id}`);
+      return (await response.json()) as { success: boolean };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/reddit/communities'] });
+      toast({ title: 'Community deleted', description: 'Community removed from catalog.' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Failed to delete community', description: error.message, variant: 'destructive' });
+    }
+  });
+
+  // User action mutation for admin operations
+  const actionMutation = useMutation<any, Error, UserActionData>({
+  const actionMutation = useMutation<UserActionResponse, Error, UserActionData>({
+    mutationFn: async (data: UserActionData) => {
+      let endpoint = '/api/admin/user-action';
+      if (data.action === 'reset-password') endpoint = '/api/admin/reset-password';
+      else if (data.action === 'tier-management') endpoint = '/api/admin/upgrade-user';
+      
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data),
+        credentials: 'include' // Use cookie-based authentication
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `Failed to ${data.action}`);
+      }
+      return response.json();
+      return (await response.json()) as UserActionResponse;
+    },
+    onSuccess: (data, variables) => {
+      if (variables.action === 'reset-password') {
+        setTempPassword(data.tempPassword);
+        setTempPassword(data.tempPassword ?? '');
+        toast({ title: "Password Reset Successful", description: "Temporary password generated." });
+      } else if (variables.action === 'tier-management') {
+        toast({ title: "Tier Updated", description: `User tier changed to ${variables.newTier}` });
+        setSelectedUser(null);
+        setActionType(null);
+      } else {
+        toast({ title: `User ${variables.action} successful` });
+        setSelectedUser(null);
+        setActionType(null);
+      }
+    },
+    onError: (error: Error) => {
+      toast({ title: "Action Failed", description: error.message, variant: "destructive" });
+    }
+  });
+
+  const handleAction = () => {
+    if (!selectedUser || !actionType) return;
+    if (actionType === 'reset-password') {
+      actionMutation.mutate({ action: 'reset-password', userId: selectedUser.id });
+    } else if (actionType === 'tier-management') {
+      actionMutation.mutate({ action: 'tier-management', userId: selectedUser.id, tier: newTier });
+    }
+  };
+
+  // Calculate real percentage changes
+  const calculateChange = (current: number, previous: number) => {
+    if (previous === 0) return current > 0 ? '+100%' : '0%';
+    const change = ((current - previous) / previous) * 100;
+    return `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`;
+  };
+
+  const adminStats = [
+    { 
+      label: 'Total Users', 
+      value: stats?.totalUsers || 0, 
+    {
+      label: 'Total Users',
+      value: stats?.totalUsers || 0,
+      change: calculateChange(stats?.totalUsers || 0, Math.max(1, (stats?.totalUsers || 0) - (stats?.newUsersToday || 1))),
+      icon: <Users className="h-4 w-4" />,
+      color: 'text-blue-500'
+    },
+    { 
+      label: 'Revenue', 
+      value: `$${stats?.revenue || '0'}`, 
+      change: calculateChange(stats?.revenue || 0, Math.max(1, (stats?.revenue || 0) * 0.85)),
+      icon: <DollarSign className="h-4 w-4" />,
+      color: 'text-green-500'
+    },
+    { 
+      label: 'Active Users (30d)', 
+      value: stats?.activeUsers || 0, 
+      change: calculateChange(stats?.activeUsers || 0, Math.max(1, (stats?.activeUsers || 0) * 0.92)),
+      icon: <Activity className="h-4 w-4" />,
+      color: 'text-purple-500'
+    },
+    { 
+      label: 'Content Generated', 
+      value: stats?.contentGenerated || 0, 
+      change: calculateChange(stats?.contentGenerated || 0, Math.max(1, (stats?.contentGenerated || 0) * 0.75)),
+      icon: <BarChart3 className="h-4 w-4" />,
+      color: 'text-pink-500'
+    }
+  ];
+
+  const topPages = analytics?.topPages?.slice(0, 5) ?? [];
+  const trafficSources = analytics?.trafficSources?.slice(0, 5) ?? [];
+  const bounceRateDisplay = analytics?.bounceRate !== undefined ? analytics.bounceRate.toFixed(1) : '0';
+  const completenessCoreEntries = Object.entries(completeness?.core ?? {});
+  const completenessFeatureEntries = Object.entries(completeness?.features ?? {});
+  const completenessIntegrationEntries = Object.entries(completeness?.integrations ?? {});
+  const completionPercentage = completeness?.completionPercentage ?? 0;
+
+  return (
+    <div className="min-h-screen bg-white text-gray-900 p-6">
+      {/* Admin Header */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-800 via-pink-800 to-purple-900 bg-clip-text text-transparent">
+              Admin Portal
+            </h1>
+            <p className="text-gray-600 mt-2 text-lg">System overview and management</p>
+          </div>
+          <Badge variant="outline" className="text-emerald-700 border-emerald-700 bg-emerald-50 px-4 py-2">
+            <Shield className="h-4 w-4 mr-2" />
+            Admin Access
+          </Badge>
+        </div>
+      </div>
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {adminStats.map((stat, index) => (
+          <Card key={index} className="bg-white border-gray-200 hover:bg-gray-50 transition-all duration-300 shadow-lg">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className={`p-3 rounded-xl bg-gradient-to-br ${
+                  stat.color === 'text-blue-500' ? 'from-blue-500/20 to-blue-600/20' :
+                  stat.color === 'text-green-500' ? 'from-green-500/20 to-green-600/20' :
+                  stat.color === 'text-purple-500' ? 'from-purple-500/20 to-purple-600/20' :
+                  'from-pink-500/20 to-pink-600/20'
+                }`}>
+                  <span className={`${stat.color} text-lg`}>{stat.icon}</span>
+                </div>
+                <Badge variant="secondary" className="bg-gray-100 text-gray-900 border-gray-300 text-xs font-medium">
+                  {stat.change}
+                </Badge>
+              </div>
+              <p className="text-3xl font-bold text-gray-900 mb-1">{stat.value}</p>
+              <p className="text-sm text-gray-600">{stat.label}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Main Content Tabs */}
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList className="bg-gray-100 border-gray-200 p-1 rounded-xl">
+          <TabsTrigger value="overview" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Overview</TabsTrigger>
+          <TabsTrigger value="analytics" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Analytics</TabsTrigger>
+          <TabsTrigger value="users" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Users</TabsTrigger>
+          <TabsTrigger value="communities" data-testid="tab-communities" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200 flex items-center gap-2">
+            <FilterIcon className="h-4 w-4" />
+            Communities
+          </TabsTrigger>
+          <TabsTrigger value="providers" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Providers</TabsTrigger>
+          <TabsTrigger value="revenue" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Revenue</TabsTrigger>
+          <TabsTrigger value="roadmap" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Roadmap</TabsTrigger>
+          <TabsTrigger value="system" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">System</TabsTrigger>
+          <TabsTrigger value="status" className="data-[state=active]:bg-white data-[state=active]:text-purple-800 text-gray-600 rounded-lg transition-all duration-200">Status</TabsTrigger>
+        </TabsList>
+
+        {/* Overview Tab */}
+        <TabsContent value="overview" className="space-y-6">
+          <div className="grid lg:grid-cols-2 gap-6">
+            {/* User Activity Chart */}
+            <Card className="bg-white border-gray-200 shadow-lg">
+              <CardHeader>
+                <CardTitle>User Activity</CardTitle>
+                <CardDescription>User registrations and activity trends</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 bg-white/5 rounded-lg">
+                      <p className="text-sm text-gray-400">New Users Today</p>
+                      <p className="text-2xl font-bold text-blue-400">{(stats as any)?.newUsersToday || 0}</p>
+                      <p className="text-2xl font-bold text-blue-400">{stats?.newUsersToday ?? 0}</p>
+                    </div>
+                    <div className="p-4 bg-white/5 rounded-lg">
+                      <p className="text-sm text-gray-400">Trial Users</p>
+                      <p className="text-2xl font-bold text-purple-400">{(stats as any)?.trialUsers || 0}</p>
+                      <p className="text-2xl font-bold text-purple-400">{stats?.trialUsers ?? 0}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400">Free Users</span>
+                      <span className="text-gray-900">{(stats as any)?.freeUsers || 0}</span>
+                      <span className="text-gray-900">{stats?.freeUsers ?? 0}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400">Pro Users</span>
+                      <span className="text-green-400">{(stats as any)?.proUsers || 0}</span>
+                      <span className="text-green-400">{stats?.proUsers ?? 0}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400">Premium Users</span>
+                      <span className="text-purple-400">{(stats as any)?.premiumUsers || 0}</span>
+                      <span className="text-purple-400">{stats?.premiumUsers ?? 0}</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Content Generation Stats */}
+            <Card className="bg-white border-gray-200 shadow-lg">
+              <CardHeader>
+                <CardTitle>System Status</CardTitle>
+                <CardDescription>Service availability and configuration</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-3 h-3 rounded-full ${(stats as any)?.jwtConfigured ? 'bg-green-500' : 'bg-red-500'}`} />
+                      <span className="text-sm">Authentication</span>
+                    </div>
+                    <Badge variant={(stats as any)?.jwtConfigured ? 'default' : 'destructive'}>
+                      {(stats as any)?.jwtConfigured ? 'Active' : 'Inactive'}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-3 h-3 rounded-full ${(stats as any)?.emailConfigured ? 'bg-green-500' : 'bg-yellow-500'}`} />
+                      <span className="text-sm">Email Service</span>
+                    </div>
+                    <Badge variant={(stats as any)?.emailConfigured ? 'default' : 'secondary'}>
+                      {(stats as any)?.emailConfigured ? 'Configured' : 'Not Set'}
+                    </Badge>
+                    <div className={`w-3 h-3 rounded-full ${stats?.jwtConfigured ? 'bg-green-500' : 'bg-red-500'}`} />
+                    <span className="text-sm">Authentication</span>
+                  </div>
+                  <div className="mt-4 p-3 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg">
+                    <p className="text-sm text-gray-300">Total Content Generated</p>
+                    <p className="text-3xl font-bold text-gray-900">{(stats as any)?.contentGenerated || 0}</p>
+                    <p className="text-xs text-gray-400 mt-1">Across all users and platforms</p>
+                  <Badge variant={stats?.jwtConfigured ? 'default' : 'destructive'}>
+                    {stats?.jwtConfigured ? 'Active' : 'Inactive'}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-3 h-3 rounded-full ${stats?.emailConfigured ? 'bg-green-500' : 'bg-yellow-500'}`} />
+                    <span className="text-sm">Email Service</span>
+                  </div>
+                  <Badge variant={stats?.emailConfigured ? 'default' : 'secondary'}>
+                    {stats?.emailConfigured ? 'Configured' : 'Not Set'}
+                  </Badge>
+                </div>
+                <div className="mt-4 p-3 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg">
+                  <p className="text-sm text-gray-300">Total Content Generated</p>
+                  <p className="text-3xl font-bold text-gray-900">{stats?.contentGenerated ?? 0}</p>
+                  <p className="text-xs text-gray-400 mt-1">Across all users and platforms</p>
+                </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Users Tab */}
+        <TabsContent value="users" className="space-y-6">
+          <Card className="bg-white border-gray-200 shadow-lg">
+            <CardHeader>
+              <CardTitle>User Management</CardTitle>
+              <CardDescription>View and manage platform users</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-white/10">
+                      <th className="text-left p-4">User</th>
+                      <th className="text-left p-4">Tier</th>
+                      <th className="text-left p-4">Joined</th>
+                      <th className="text-left p-4">Content Created</th>
+                      <th className="text-left p-4">Status</th>
+                      <th className="text-left p-4">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(users as any)?.slice(0, 5).map((user: unknown) => (
+                      <tr key={(user as User).id} className="border-b border-white/5">
+                    {users?.slice(0, 5).map(user => (
+                      <tr key={user.id} className="border-b border-white/5">
+                        <td className="p-4">
+                          <div>
+                            <p className="font-medium">{(user as User).username}</p>
+                            <p className="text-xs text-gray-500">{(user as User).email}</p>
+                            <p className="font-medium">{user.username}</p>
+                            <p className="text-xs text-gray-500">{user.email}</p>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <Badge variant={(user as User).tier === 'premium' ? 'default' : 'secondary'}>
+                            {(user as User).tier}
+                          <Badge variant={user.tier === 'premium' ? 'default' : 'secondary'}>
+                            {user.tier}
+                          </Badge>
+                        </td>
+                        <td className="p-4 text-sm text-gray-400">
+                          {new Date((user as User).createdAt || '').toLocaleDateString()}
+                          {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Unknown'}
+                        </td>
+                        <td className="p-4">{(user as User).contentCount || 0}</td>
+                        <td className="p-4">{user.contentCount ?? 0}</td>
+                        <td className="p-4">
+                          <Badge variant="outline" className="text-green-400 border-green-400">
+                            Active
+                          <Badge
+                            variant={user.isActive ? 'outline' : 'destructive'}
+                            className={user.isActive ? 'text-green-400 border-green-400' : 'text-red-500 border-red-500'}
+                          >
+                            {user.isActive ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex gap-2">
+                            <Button 
+                              size="sm" 
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => { setSelectedUser(user as User); setActionType('user-details'); }}
+                              data-testid={`button-user-details-${(user as User).id}`}
+                              onClick={() => {
+                                setSelectedUser(user);
+                                setActionType('user-details');
+                              }}
+                              data-testid={`button-user-details-${user.id}`}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              size="sm" 
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => { setSelectedUser(user as User); setActionType('tier-management'); setNewTier((user as User).tier); }}
+                              data-testid={`button-tier-management-${(user as User).id}`}
+                              onClick={() => {
+                                setSelectedUser(user);
+                                setActionType('tier-management');
+                                setNewTier(user.tier);
+                              }}
+                              data-testid={`button-tier-management-${user.id}`}
+                            >
+                              <Settings className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              size="sm" 
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => { setSelectedUser(user as User); setActionType('reset-password'); }}
+                              data-testid={`button-reset-password-${(user as User).id}`}
+                              onClick={() => {
+                                setSelectedUser(user);
+                                setActionType('reset-password');
+                              }}
+                              data-testid={`button-reset-password-${user.id}`}
+                              className="text-orange-600 hover:text-orange-700"
+                            >
+                              <Key className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Communities Tab */}
+        <TabsContent value="communities" className="space-y-6">
+          <Card className="bg-white border-gray-200 shadow-lg">
+            <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <CardTitle>Reddit Communities</CardTitle>
+                <CardDescription>Curate subreddits with promotion policies and rule metadata.</CardDescription>
+              </div>
+              <Button onClick={openCreateCommunityDialog} data-testid="button-add-community">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Community
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div className="w-full lg:max-w-md">
+                  <Label htmlFor="community-search" className="text-sm font-medium text-gray-600">Search</Label>
+                  <Input
+                    id="community-search"
+                    value={communitySearch}
+                    onChange={(event: ChangeEvent<HTMLInputElement>) => setCommunitySearch(event.target.value)}
+                    placeholder="Search by subreddit or description"
+                    data-testid="input-community-search"
+                  />
+                </div>
+                <div className="grid w-full gap-4 sm:grid-cols-3 lg:w-auto">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-600">Category</Label>
+                    <Select value={communityCategoryFilter} onValueChange={value => setCommunityCategoryFilter(value as 'all' | CommunityCategory)}>
+                      <SelectTrigger data-testid="filter-category">
+                        <SelectValue placeholder="Category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All</SelectItem>
+                        <SelectItem value="premium">Premium</SelectItem>
+                        <SelectItem value="general">General</SelectItem>
+                        <SelectItem value="niche">Niche</SelectItem>
+                        <SelectItem value="fetish">Fetish</SelectItem>
+                        <SelectItem value="verification">Verification</SelectItem>
+                        <SelectItem value="gonewild">Gonewild</SelectItem>
+                        <SelectItem value="selling">Selling</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-600">Promotion</Label>
+                    <Select value={communityPromotionFilter} onValueChange={value => setCommunityPromotionFilter(value as 'all' | PromotionPolicy)}>
+                      <SelectTrigger data-testid="filter-promotion">
+                        <SelectValue placeholder="Promotion" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All</SelectItem>
+                        <SelectItem value="yes">Allowed</SelectItem>
+                        <SelectItem value="limited">Limited</SelectItem>
+                        <SelectItem value="subtle">Subtle</SelectItem>
+                        <SelectItem value="no">No Promotion</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-600">Verification</Label>
+                    <Select value={communityVerificationFilter} onValueChange={value => setCommunityVerificationFilter(value as 'all' | 'required' | 'optional')}>
+                      <SelectTrigger data-testid="filter-verification">
+                        <SelectValue placeholder="Verification" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All</SelectItem>
+                        <SelectItem value="required">Required</SelectItem>
+                        <SelectItem value="optional">Not Required</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-gray-500">{filteredCommunities.length} communities match the filters.</p>
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-medium text-gray-600">Sort by</Label>
+                  <Select value={communitySort} onValueChange={value => setCommunitySort(value as 'members' | 'engagementRate' | 'successProbability')}>
+                    <SelectTrigger data-testid="filter-sort">
+                      <SelectValue placeholder="Sort" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="successProbability">Success Probability</SelectItem>
+                      <SelectItem value="members">Member Count</SelectItem>
+                      <SelectItem value="engagementRate">Engagement Rate</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Community</TableHead>
+                      <TableHead className="whitespace-nowrap">Members</TableHead>
+                      <TableHead className="whitespace-nowrap">Performance</TableHead>
+                      <TableHead>Promotion</TableHead>
+                      <TableHead>Rules</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody data-testid="communities-table-body">
+                    {isFetchingCommunities && (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-6 text-gray-500">
+                          Loading communities...
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    {!isFetchingCommunities && filteredCommunities.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-6 text-gray-500">
+                          No communities match your filters.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    {!isFetchingCommunities && filteredCommunities.map(community => (
+                      <TableRow key={community.id} data-testid={`community-row-${community.id}`}>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="font-semibold text-gray-900">{community.displayName}</div>
+                            <div className="text-sm text-gray-500">{community.name}</div>
+                            <div className="flex flex-wrap gap-2 pt-2">
+                              {renderCategoryBadge(community.category)}
+                              <Badge variant="outline" className="border-gray-300 text-gray-600">
+                                {community.verificationRequired ? 'Verification Required' : 'Open'}
+                              </Badge>
+                              {community.bestPostingTimes && community.bestPostingTimes.length > 0 && (
+                                <Badge variant="outline" className="border-purple-300 text-purple-700">
+                                  Best: {community.bestPostingTimes.join(', ')}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <div className="font-medium text-gray-900">{formatCommunityNumber(community.members)}</div>
+                          <div className="text-xs text-gray-500">Avg upvotes {formatCommunityNumber(community.averageUpvotes)}</div>
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <div className="font-medium text-gray-900">{community.engagementRate}%</div>
+                          <div className="text-xs text-gray-500">Success {community.successProbability ?? '—'}%</div>
+                        </TableCell>
+                        <TableCell className="align-top">{renderPromotionBadge(community.promotionAllowed)}</TableCell>
+                        <TableCell className="align-top">
+                          <div className="space-y-1 text-xs text-gray-600">
+                            <div>Min Karma: {community.rules?.minKarma ?? '—'}</div>
+                            <div>Account Age: {community.rules?.minAccountAge ?? '—'} days</div>
+                            <div>Watermarks: {community.rules?.watermarksAllowed ? 'Allowed' : 'Not allowed'}</div>
+                            <div>Selling: {community.rules?.sellingAllowed ? 'Allowed' : 'Not allowed'}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openEditCommunityDialog(community)}
+                              data-testid={`button-edit-community-${community.id}`}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-red-600 hover:text-red-700"
+                              onClick={() => handleDeleteCommunity(community)}
+                              data-testid={`button-delete-community-${community.id}`}
+                              disabled={deleteCommunityMutation.isPending}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Providers Tab */}
+        <TabsContent value="providers" className="space-y-6">
+          <Card className="bg-white border-gray-200 shadow-lg">
+            <CardHeader>
+              <CardTitle>Provider Costs & Status</CardTitle>
+              <CardDescription>Monitor service usage and costs</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {(providers as any)?.map((provider: unknown) => {
+                  const typedProvider = provider as {name?: string; available?: boolean; inputCost?: string; outputCost?: string; savings?: string};
+                  return (
+                  <div key={typedProvider.name} className="p-4 bg-white/5 rounded-lg">
+                {providers?.map(provider => (
+                  <div key={provider.name} className="p-4 bg-white/5 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-3 h-3 rounded-full ${typedProvider.available ? 'bg-green-500' : 'bg-red-500'}`} />
+                        <h3 className="font-medium">{typedProvider.name}</h3>
+                        <div className={`w-3 h-3 rounded-full ${provider.available ? 'bg-green-500' : 'bg-red-500'}`} />
+                        <h3 className="font-medium">{provider.name}</h3>
+                      </div>
+                      <Badge variant={typedProvider.available ? 'default' : 'destructive'}>
+                        {typedProvider.available ? 'Active' : 'Inactive'}
+                      <Badge variant={provider.available ? 'default' : 'destructive'}>
+                        {provider.available ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <p className="text-gray-500">Input Cost</p>
+                        <p className="font-medium">${typedProvider.inputCost}/1M tokens</p>
+                        <p className="font-medium">${provider.inputCost}/1M tokens</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500">Output Cost</p>
+                        <p className="font-medium">${typedProvider.outputCost}/1M tokens</p>
+                        <p className="font-medium">${provider.outputCost}/1M tokens</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500">Savings vs GPT-4</p>
+                        <p className="font-medium text-green-400">{typedProvider.savings}%</p>
+                        <p className="font-medium text-green-400">{provider.savings}%</p>
+                      </div>
+                    </div>
+                  </div>
+                  );
+                })}
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Revenue Tab */}
+        <TabsContent value="revenue" className="space-y-6">
+          <div className="grid lg:grid-cols-3 gap-6">
+            <Card className="bg-white border-gray-200 shadow-lg">
+              <CardHeader>
+                <CardTitle>Monthly Revenue</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold">${(stats as any)?.revenue || '0'}</p>
+                <p className="text-3xl font-bold">${stats?.revenue ?? 0}</p>
+                <p className="text-sm text-gray-400 mt-2">Total platform revenue</p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white border-gray-200 shadow-lg">
+              <CardHeader>
+                <CardTitle>Active Subscriptions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Free</span>
+                    <span>{(stats as any)?.freeUsers || 0}</span>
+                    <span>{stats?.freeUsers ?? 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Pro ($20/mo)</span>
+                    <span className="text-green-400">{(stats as any)?.proUsers || 0}</span>
+                    <span className="text-green-400">{stats?.proUsers ?? 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Premium ($50/mo)</span>
+                    <span className="text-purple-400">{(stats as any)?.premiumUsers || 0}</span>
+                    <span className="text-purple-400">{stats?.premiumUsers ?? 0}</span>
+                  </div>
+                  <div className="border-t border-white/10 pt-2 mt-2">
+                    <div className="flex justify-between font-medium">
+                      <span className="text-gray-900">Monthly Revenue</span>
+                      <span className="text-green-400">${((stats as any)?.proUsers || 0) * 20 + ((stats as any)?.premiumUsers || 0) * 50}</span>
+                      <span className="text-green-400">${(stats?.proUsers ?? 0) * 20 + (stats?.premiumUsers ?? 0) * 50}</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white border-gray-200 shadow-lg">
+              <CardHeader>
+                <CardTitle>Service Costs</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold">${Math.floor(((stats as any)?.contentGenerated || 0) * 0.02) || '0'}</p>
+                <p className="text-3xl font-bold">${Math.floor(((stats?.contentGenerated ?? 0) * 0.02)) || '0'}</p>
+                <p className="text-sm text-gray-400 mt-2">Estimated AI costs</p>
+                <div className="mt-3 text-xs space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Gemini (Primary)</span>
+                    <span className="text-green-400">85% savings</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Content Generated</span>
+                    <span className="text-gray-900">{(stats as any)?.contentGenerated || 0}</span>
+                    <span className="text-gray-900">{stats?.contentGenerated ?? 0}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* System Tab */}
+        <TabsContent value="system" className="space-y-6">
+          <Card className="bg-white border-gray-200 shadow-lg">
+            <CardHeader>
+              <CardTitle>System Health</CardTitle>
+              <CardDescription>Monitor system status and performance</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Database className="h-5 w-5 text-blue-400" />
+                    <span>Database</span>
+                  </div>
+                  <Badge variant="outline" className="text-green-400 border-green-400">
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    {(systemHealth as any)?.database?.status === 'healthy' ? 'Healthy' : 'Issues'}
+                    {systemHealth?.database?.status === 'healthy' ? 'Healthy' : 'Issues'}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Zap className="h-5 w-5 text-purple-400" />
+                    <span>Gemini AI</span>
+                  </div>
+                  <Badge variant={((systemHealth as any)?.services?.gemini ? 'outline' : 'destructive')} className={((systemHealth as any)?.services?.gemini ? 'text-green-400 border-green-400' : '')}>
+                    {(systemHealth as any)?.services?.gemini ? <CheckCircle className="h-3 w-3 mr-1" /> : <XCircle className="h-3 w-3 mr-1" />}
+                    {(systemHealth as any)?.services?.gemini ? 'Active' : 'Inactive'}
+                  </Badge>
+                  {(() => {
+                    const geminiActive = Boolean(systemHealth?.services?.gemini);
+                    return (
+                      <Badge
+                        variant={geminiActive ? 'outline' : 'destructive'}
+                        className={geminiActive ? 'text-green-400 border-green-400' : ''}
+                      >
+                        {geminiActive ? <CheckCircle className="h-3 w-3 mr-1" /> : <XCircle className="h-3 w-3 mr-1" />}
+                        {geminiActive ? 'Active' : 'Inactive'}
+                      </Badge>
+                    );
+                  })()}
+                </div>
+                <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Activity className="h-5 w-5 text-blue-400" />
+                    <span>OpenAI</span>
+                  </div>
+                  <Badge variant={((systemHealth as any)?.services?.openai ? 'outline' : 'destructive')} className={((systemHealth as any)?.services?.openai ? 'text-green-400 border-green-400' : '')}>
+                    {(systemHealth as any)?.services?.openai ? <CheckCircle className="h-3 w-3 mr-1" /> : <XCircle className="h-3 w-3 mr-1" />}
+                    {(systemHealth as any)?.services?.openai ? 'Active' : 'Inactive'}
+                  </Badge>
+                  {(() => {
+                    const openaiActive = Boolean(systemHealth?.services?.openai);
+                    return (
+                      <Badge
+                        variant={openaiActive ? 'outline' : 'destructive'}
+                        className={openaiActive ? 'text-green-400 border-green-400' : ''}
+                      >
+                        {openaiActive ? <CheckCircle className="h-3 w-3 mr-1" /> : <XCircle className="h-3 w-3 mr-1" />}
+                        {openaiActive ? 'Active' : 'Inactive'}
+                      </Badge>
+                    );
+                  })()}
+                </div>
+                <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Headphones className="h-5 w-5 text-yellow-400" />
+                    <span>Email Service</span>
+                  </div>
+                  <Badge variant={((systemHealth as any)?.services?.email ? 'outline' : 'secondary')} className={((systemHealth as any)?.services?.email ? 'text-green-400 border-green-400' : 'text-yellow-400 border-yellow-400')}>
+                    {(systemHealth as any)?.services?.email ? <CheckCircle className="h-3 w-3 mr-1" /> : <AlertCircle className="h-3 w-3 mr-1" />}
+                    {(systemHealth as any)?.services?.email ? 'Configured' : 'Not Set'}
+                  </Badge>
+                  {(() => {
+                    const emailConfigured = Boolean(systemHealth?.services?.email);
+                    return (
+                      <Badge
+                        variant={emailConfigured ? 'outline' : 'secondary'}
+                        className={emailConfigured ? 'text-green-400 border-green-400' : 'text-yellow-400 border-yellow-400'}
+                      >
+                        {emailConfigured ? <CheckCircle className="h-3 w-3 mr-1" /> : <AlertCircle className="h-3 w-3 mr-1" />}
+                        {emailConfigured ? 'Configured' : 'Not Set'}
+                      </Badge>
+                    );
+                  })()}
+                </div>
+                
+                {/* Performance Metrics */}
+                <div className="mt-6 p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg">
+                  <h4 className="text-sm font-medium text-gray-900 mb-3">Performance Metrics</h4>
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <p className="text-gray-400">Response Time</p>
+                      <p className="font-medium text-blue-400">{(systemHealth as any)?.performance?.avgResponseTime || 'N/A'}</p>
+                      <p className="font-medium text-blue-400">{systemHealth?.performance?.avgResponseTime ?? 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">Error Rate</p>
+                      <p className="font-medium text-green-400">{(systemHealth as any)?.performance?.errorRate || 'N/A'}</p>
+                      <p className="font-medium text-green-400">{systemHealth?.performance?.errorRate ?? 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">Throughput</p>
+                      <p className="font-medium text-purple-400">{(systemHealth as any)?.performance?.throughput || 'N/A'}</p>
+                      <p className="font-medium text-purple-400">{systemHealth?.performance?.throughput ?? 'N/A'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Visitor Analytics Tab */}
+        <TabsContent value="analytics" className="space-y-6">
+          <div className="grid lg:grid-cols-3 gap-6 mb-6">
+            <Card className="bg-white border-gray-200 shadow-lg">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-2xl font-bold">{(analytics as any)?.uniqueVisitors || 0}</p>
+                    <p className="text-2xl font-bold">{analytics?.uniqueVisitors ?? 0}</p>
+                    <p className="text-sm text-gray-400">Unique Visitors</p>
+                  </div>
+                  <Eye className="h-8 w-8 text-blue-400" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-white border-gray-200 shadow-lg">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-2xl font-bold">{(analytics as any)?.pageViews || 0}</p>
+                    <p className="text-2xl font-bold">{analytics?.pageViews ?? 0}</p>
+                    <p className="text-sm text-gray-400">Page Views</p>
+                  </div>
+                  <BarChart3 className="h-8 w-8 text-green-400" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-white border-gray-200 shadow-lg">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-2xl font-bold">{(analytics as any)?.bounceRate?.toFixed(1) || 0}%</p>
+                    <p className="text-2xl font-bold">{bounceRateDisplay}%</p>
+                    <p className="text-sm text-gray-400">Bounce Rate</p>
+                  </div>
+                  <TrendingUp className="h-8 w-8 text-purple-400" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-6">
+            {/* Top Pages */}
+            <Card className="bg-white border-gray-200 shadow-lg">
+              <CardHeader>
+                <CardTitle>Top Pages</CardTitle>
+                <CardDescription>Most visited pages</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {(analytics as any)?.topPages?.slice(0, 5).map((page: unknown, index: number) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                      <span className="text-sm">{(page as {path?: string; views?: number})?.path}</span>
+                      <Badge variant="secondary">{(page as {path?: string; views?: number})?.views} views</Badge>
+                    </div>
+                  )) || (
+                    <div className="text-center text-gray-500 py-8">
+                      No page data available yet
+                    </div>
+                  {topPages.length > 0 ? (
+                    topPages.map((page, index) => (
+                      <div key={page.path ?? index} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                        <span className="text-sm">{page.path}</span>
+                        <Badge variant="secondary">{page.views} views</Badge>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center text-gray-500 py-8">No page data available yet</div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Traffic Sources */}
+            <Card className="bg-white border-gray-200 shadow-lg">
+              <CardHeader>
+                <CardTitle>Traffic Sources</CardTitle>
+                <CardDescription>Where visitors come from</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {(analytics as any)?.trafficSources?.slice(0, 5).map((source: unknown, index: number) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                      <span className="text-sm">{(source as {source?: string; visitors?: number})?.source}</span>
+                      <Badge variant="secondary">{(source as {source?: string; visitors?: number})?.visitors} visitors</Badge>
+                    </div>
+                  )) || (
+                    <div className="text-center text-gray-500 py-8">
+                      No traffic data available yet
+                    </div>
+                  {trafficSources.length > 0 ? (
+                    trafficSources.map((source, index) => (
+                      <div key={source.source ?? index} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                        <span className="text-sm">{source.source}</span>
+                        <Badge variant="secondary">{source.visitors} visitors</Badge>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center text-gray-500 py-8">No traffic data available yet</div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Development Roadmap Tab */}
+        <TabsContent value="roadmap" className="space-y-6">
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Immediate Priority (Q1) */}
+            <Card className="bg-white border-gray-200 shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-red-400">🔥 Immediate Priority</CardTitle>
+                <CardDescription>Q1 2025 - Critical features</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Gift className="h-5 w-5 text-red-400" />
+                    <p className="font-medium text-red-400">Referral System</p>
+                  </div>
+                  <p className="text-sm text-gray-400">User referral program with tiered rewards and tracking dashboard</p>
+                  <Badge variant="outline" className="mt-2 border-red-400 text-red-400">High Priority</Badge>
+                </div>
+@@ -888,83 +1656,83 @@ export function AdminDashboard() {
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Q1 2025 Goals</span>
+                  <span className="text-sm text-gray-400">3 of 3 features</span>
+                </div>
+                <div className="w-full bg-gray-700 rounded-full h-2">
+                  <div className="bg-gradient-to-r from-red-500 to-red-400 h-2 rounded-full" style={{width: '33%'}}></div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* System Status Tab */}
+        <TabsContent value="status" className="space-y-6">
+          <div className="grid lg:grid-cols-2 gap-6">
+            {/* Platform Completeness */}
+            <Card className="bg-white border-gray-200 shadow-lg">
+              <CardHeader>
+                <CardTitle>Platform Completeness</CardTitle>
+                <CardDescription>Feature implementation status</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Overall Progress</span>
+                    <span className="text-2xl font-bold text-purple-400">{(completeness as any)?.completionPercentage || 0}%</span>
+                    <span className="text-2xl font-bold text-purple-400">{completionPercentage}%</span>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium text-purple-300">Core Features</h4>
+                      {Object.entries((completeness as any)?.core || {}).map(([key, value]) => (
+                      {completenessCoreEntries.map(([key, value]) => (
+                        <div key={key} className="flex items-center justify-between text-sm">
+                          <span className="text-gray-400 capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
+                          <Badge variant={value ? 'default' : 'destructive'} className="text-xs">
+                            {value ? <CheckCircle className="h-3 w-3 mr-1" /> : <XCircle className="h-3 w-3 mr-1" />}
+                            {value ? 'Done' : 'Missing'}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium text-blue-300">Advanced Features</h4>
+                      {Object.entries((completeness as any)?.features || {}).map(([key, value]) => (
+                      {completenessFeatureEntries.map(([key, value]) => (
+                        <div key={key} className="flex items-center justify-between text-sm">
+                          <span className="text-gray-400 capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
+                          <Badge variant={value ? 'default' : 'secondary'} className="text-xs">
+                            {value ? <CheckCircle className="h-3 w-3 mr-1" /> : <AlertCircle className="h-3 w-3 mr-1" />}
+                            {value ? 'Ready' : 'Planned'}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium text-green-300">Integrations</h4>
+                      {Object.entries((completeness as any)?.integrations || {}).map(([key, value]) => (
+                      {completenessIntegrationEntries.map(([key, value]) => (
+                        <div key={key} className="flex items-center justify-between text-sm">
+                          <span className="text-gray-400 capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
+                          <Badge variant={value ? 'default' : 'outline'} className="text-xs">
+                            {value ? <CheckCircle className="h-3 w-3 mr-1" /> : <AlertCircle className="h-3 w-3 mr-1" />}
+                            {value ? 'Connected' : 'Not Set'}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Quick Actions */}
+            <Card className="bg-white border-gray-200 shadow-lg">
+              <CardHeader>
+                <CardTitle>Admin Actions</CardTitle>
+                <CardDescription>Quick management operations</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <Button 
+                    className="w-full justify-start bg-blue-100 hover:bg-blue-200 border-blue-300 text-blue-800"
+                    onClick={() => {
+@@ -1001,50 +1769,391 @@ export function AdminDashboard() {
+                    }}
+                  >
+                    <Activity className="h-4 w-4 mr-2" />
+                    System Health
+                  </Button>
+                  
+                  <Button 
+                    className="w-full justify-start bg-pink-100 hover:bg-pink-200 border-pink-300 text-pink-800"
+                    onClick={() => {
+                      toast({
+                        title: "Provider Analytics",
+                        description: "Monitor AI provider costs and performance"
+                      });
+                    }}
+                  >
+                    <BarChart3 className="h-4 w-4 mr-2" />
+                    Provider Analytics
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      <Dialog open={communityDialogOpen} onOpenChange={open => (open ? setCommunityDialogOpen(true) : closeCommunityDialog())}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>{editingCommunity ? 'Edit Community' : 'Add Community'}</DialogTitle>
+          </DialogHeader>
+          <form className="space-y-6" onSubmit={submitCommunityForm} data-testid="community-form">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <Label htmlFor="community-id">Subreddit ID</Label>
+                <Input
+                  id="community-id"
+                  value={communityForm.id}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => setCommunityForm(prev => ({ ...prev, id: event.target.value }))}
+                  placeholder="r/example"
+                  data-testid="input-community-id"
+                  disabled={Boolean(editingCommunity)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="community-name">Name</Label>
+                <Input
+                  id="community-name"
+                  value={communityForm.name}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => setCommunityForm(prev => ({ ...prev, name: event.target.value }))}
+                  placeholder="example"
+                  data-testid="input-community-name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="community-display">Display Name</Label>
+                <Input
+                  id="community-display"
+                  value={communityForm.displayName}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => setCommunityForm(prev => ({ ...prev, displayName: event.target.value }))}
+                  placeholder="Example Community"
+                  data-testid="input-community-display"
+                />
+              </div>
+              <div>
+                <Label htmlFor="community-description">Description</Label>
+                <Textarea
+                  id="community-description"
+                  value={communityForm.description}
+                  onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setCommunityForm(prev => ({ ...prev, description: event.target.value }))}
+                  placeholder="Short description to help creators decide if this community is a fit."
+                  rows={3}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-3">
+              <div>
+                <Label htmlFor="community-members">Members</Label>
+                <Input
+                  id="community-members"
+                  value={communityForm.members}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => setCommunityForm(prev => ({ ...prev, members: event.target.value }))}
+                  placeholder="250000"
+                  data-testid="input-community-members"
+                />
+              </div>
+              <div>
+                <Label htmlFor="community-engagement">Engagement Rate (%)</Label>
+                <Input
+                  id="community-engagement"
+                  value={communityForm.engagementRate}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => setCommunityForm(prev => ({ ...prev, engagementRate: event.target.value }))}
+                  placeholder="8"
+                  data-testid="input-community-engagement"
+                />
+              </div>
+              <div>
+                <Label htmlFor="community-success">Success Probability (%)</Label>
+                <Input
+                  id="community-success"
+                  value={communityForm.successProbability}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => setCommunityForm(prev => ({ ...prev, successProbability: event.target.value }))}
+                  placeholder="82"
+                  data-testid="input-community-success"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-3">
+              <div>
+                <Label htmlFor="community-upvotes">Average Upvotes</Label>
+                <Input
+                  id="community-upvotes"
+                  value={communityForm.averageUpvotes}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => setCommunityForm(prev => ({ ...prev, averageUpvotes: event.target.value }))}
+                  placeholder="250"
+                />
+              </div>
+              <div>
+                <Label htmlFor="community-best-times">Best Posting Times</Label>
+                <Input
+                  id="community-best-times"
+                  value={communityForm.bestPostingTimes}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => setCommunityForm(prev => ({ ...prev, bestPostingTimes: event.target.value }))}
+                  placeholder="Morning, Evening"
+                  data-testid="input-community-best-times"
+                />
+              </div>
+              <div>
+                <Label htmlFor="community-tags">Tags</Label>
+                <Input
+                  id="community-tags"
+                  value={communityForm.tags}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => setCommunityForm(prev => ({ ...prev, tags: event.target.value }))}
+                  placeholder="wellness,fitness"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-3">
+              <div>
+                <Label className="text-sm font-medium text-gray-600">Category</Label>
+                <Select value={communityForm.category} onValueChange={value => setCommunityForm(prev => ({ ...prev, category: value as CommunityCategory }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="premium">Premium</SelectItem>
+                    <SelectItem value="general">General</SelectItem>
+                    <SelectItem value="niche">Niche</SelectItem>
+                    <SelectItem value="fetish">Fetish</SelectItem>
+                    <SelectItem value="verification">Verification</SelectItem>
+                    <SelectItem value="gonewild">Gonewild</SelectItem>
+                    <SelectItem value="selling">Selling</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-gray-600">Promotion Policy</Label>
+                <Select value={communityForm.promotionAllowed} onValueChange={value => setCommunityForm(prev => ({ ...prev, promotionAllowed: value as PromotionPolicy }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Promotion" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="yes">Allowed</SelectItem>
+                    <SelectItem value="limited">Limited</SelectItem>
+                    <SelectItem value="subtle">Subtle</SelectItem>
+                    <SelectItem value="no">Not Allowed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
+                <div>
+                  <Label className="text-sm font-medium text-gray-600">Verification Required</Label>
+                  <p className="text-xs text-gray-500">Requires r/GetVerified prior to posting.</p>
+                </div>
+                <Switch
+                  checked={communityForm.verificationRequired}
+                  onCheckedChange={checked => setCommunityForm(prev => ({ ...prev, verificationRequired: checked }))}
+                  data-testid="switch-verification"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-3">
+              <div>
+                <Label className="text-sm font-medium text-gray-600">Growth Trend</Label>
+                <Select value={communityForm.growthTrend} onValueChange={value => setCommunityForm(prev => ({ ...prev, growthTrend: value as GrowthTrend }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="up">Trending Up</SelectItem>
+                    <SelectItem value="stable">Stable</SelectItem>
+                    <SelectItem value="down">Declining</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-gray-600">Moderator Activity</Label>
+                <Select value={communityForm.modActivity} onValueChange={value => setCommunityForm(prev => ({ ...prev, modActivity: value as ModActivity }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="low">Low</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-gray-600">Competition</Label>
+                <Select value={communityForm.competitionLevel} onValueChange={value => setCommunityForm(prev => ({ ...prev, competitionLevel: value as CompetitionLevel }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-3">
+              <div>
+                <Label htmlFor="limit-day">Posts per Day</Label>
+                <Input
+                  id="limit-day"
+                  value={communityForm.postingLimits.perDay}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => setCommunityForm(prev => ({
+                    ...prev,
+                    postingLimits: { ...prev.postingLimits, perDay: event.target.value }
+                  }))}
+                  placeholder="1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="limit-week">Posts per Week</Label>
+                <Input
+                  id="limit-week"
+                  value={communityForm.postingLimits.perWeek}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => setCommunityForm(prev => ({
+                    ...prev,
+                    postingLimits: { ...prev.postingLimits, perWeek: event.target.value }
+                  }))}
+                  placeholder="5"
+                />
+              </div>
+              <div>
+                <Label htmlFor="limit-cooldown">Cooldown (hrs)</Label>
+                <Input
+                  id="limit-cooldown"
+                  value={communityForm.postingLimits.cooldownHours}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => setCommunityForm(prev => ({
+                    ...prev,
+                    postingLimits: { ...prev.postingLimits, cooldownHours: event.target.value }
+                  }))}
+                  placeholder="24"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <Label htmlFor="rule-karma">Minimum Karma</Label>
+                <Input
+                  id="rule-karma"
+                  value={communityForm.rules.minKarma}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => setCommunityForm(prev => ({
+                    ...prev,
+                    rules: { ...prev.rules, minKarma: event.target.value }
+                  }))}
+                  placeholder="100"
+                />
+              </div>
+              <div>
+                <Label htmlFor="rule-age">Minimum Account Age (days)</Label>
+                <Input
+                  id="rule-age"
+                  value={communityForm.rules.minAccountAge}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => setCommunityForm(prev => ({
+                    ...prev,
+                    rules: { ...prev.rules, minAccountAge: event.target.value }
+                  }))}
+                  placeholder="30"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
+                <div>
+                  <Label className="text-sm font-medium text-gray-600">Watermarks Allowed</Label>
+                  <p className="text-xs text-gray-500">Toggle based on mod guidance.</p>
+                </div>
+                <Switch
+                  checked={communityForm.rules.watermarksAllowed}
+                  onCheckedChange={checked => setCommunityForm(prev => ({
+                    ...prev,
+                    rules: { ...prev.rules, watermarksAllowed: checked }
+                  }))}
+                  data-testid="switch-watermarks"
+                />
+              </div>
+              <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
+                <div>
+                  <Label className="text-sm font-medium text-gray-600">Selling Allowed</Label>
+                  <p className="text-xs text-gray-500">Mark if direct promotion is tolerated.</p>
+                </div>
+                <Switch
+                  checked={communityForm.rules.sellingAllowed}
+                  onCheckedChange={checked => setCommunityForm(prev => ({
+                    ...prev,
+                    rules: { ...prev.rules, sellingAllowed: checked }
+                  }))}
+                  data-testid="switch-selling"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <Label htmlFor="rule-title">Title Rules</Label>
+                <Textarea
+                  id="rule-title"
+                  value={communityForm.rules.titleRules}
+                  onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setCommunityForm(prev => ({
+                    ...prev,
+                    rules: { ...prev.rules, titleRules: event.target.value }
+                  }))}
+                  placeholder="One rule per line"
+                  rows={4}
+                  data-testid="input-community-title-rules"
+                />
+              </div>
+              <div>
+                <Label htmlFor="rule-content">Content Rules</Label>
+                <Textarea
+                  id="rule-content"
+                  value={communityForm.rules.contentRules}
+                  onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setCommunityForm(prev => ({
+                    ...prev,
+                    rules: { ...prev.rules, contentRules: event.target.value }
+                  }))}
+                  placeholder="One guideline per line"
+                  rows={4}
+                  data-testid="input-community-content-rules"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={closeCommunityDialog}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isCommunitySaving} data-testid="button-submit-community">
+                {isCommunitySaving ? 'Saving...' : editingCommunity ? 'Update Community' : 'Create Community'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Action Modal */}
+      {selectedUser && actionType && (
+        <Dialog open={true} onOpenChange={() => { setSelectedUser(null); setActionType(null); setReason(''); setTempPassword(''); }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-red-600">
+                {actionType === 'user-details' ? 'User Details' : 
+                 actionType === 'tier-management' ? 'Tier Management' : 
+                 actionType === 'reset-password' ? 'Reset Password' : 
+                 actionType.toUpperCase()} - {selectedUser.username}
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              {actionType === 'user-details' && (
+                <div className="space-y-3">
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <h4 className="font-medium mb-2">Account Information</h4>
+                    <div className="space-y-1 text-sm">
+                      <p><strong>ID:</strong> {selectedUser.id}</p>
+                      <p><strong>Username:</strong> {selectedUser.username}</p>
+                      <p><strong>Email:</strong> {selectedUser.email}</p>
+                      <p><strong>Tier:</strong> {selectedUser.tier}</p>
+                      <p><strong>Joined:</strong> {selectedUser.createdAt ? new Date(selectedUser.createdAt).toLocaleDateString() : 'Unknown'}</p>
+                      <p><strong>Last Active:</strong> {selectedUser.lastLoginAt ? new Date(selectedUser.lastLoginAt).toLocaleDateString() : 'Never'}</p>

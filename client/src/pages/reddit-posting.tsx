@@ -58,6 +58,10 @@ import type {
   ShadowbanCheckApiResponse 
 } from '@shared/schema';
 
+function isApiError(error: unknown): error is ApiError {
+  return error instanceof Error && 'status' in error && typeof (error as { status?: unknown }).status === 'number';
+}
+
 interface RedditAccount {
   id: number;
   username: string;
@@ -113,6 +117,8 @@ interface PostSubmissionResponse {
 }
 
 interface SchedulePostResponse {
+  success: boolean;
+  postJobId: number;
   scheduledAt: string;
 }
 
@@ -478,22 +484,52 @@ export default function RedditPostingPage() {
   });
 
   // Schedule post
-  const { mutate: schedulePost, isPending: scheduling } = useMutation({
-    mutationFn: async (data: { subreddit: string; title: string; body: string; scheduledAt?: string }) => {
+  const { mutate: schedulePost, isPending: scheduling } = useMutation<SchedulePostResponse, unknown, { subreddit: string; title: string; body: string; scheduledAt?: string }>({
+    mutationFn: async (data) => {
       const response = await apiRequest('POST', '/api/posts/schedule', data);
       return response.json();
     },
-    onSuccess: (data: SchedulePostResponse) => {
+    onSuccess: (data) => {
+      if (data.success) {
+        toast({
+          title: "📅 Post Scheduled!",
+          description: `Post will be published at ${new Date(data.scheduledAt).toLocaleString()}`,
+          variant: "default"
+        });
+        // Reset form
+        setTitle('');
+        setBody('');
+        setSubreddit('');
+        setScheduledAt('');
+        return;
+      }
+
       toast({
-        title: "📅 Post Scheduled!",
-        description: `Post will be published at ${new Date(data.scheduledAt).toLocaleString()}`,
-        variant: "default"
+        title: "Failed to schedule post",
+        description: "The scheduler did not confirm the job creation. Please try again.",
+        variant: "destructive",
       });
-      // Reset form
-      setTitle('');
-      setBody('');
-      setSubreddit('');
-      setScheduledAt('');
+    },
+    onError: (error) => {
+      if (isApiError(error) && error.isAuthError) {
+        setShowAuthModal(true);
+        toast({
+          title: "Authentication required",
+          description: error.userMessage ?? "Please log in to schedule posts.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const fallbackMessage = error instanceof Error
+        ? error.message
+        : 'Failed to schedule post. Please try again later.';
+
+      toast({
+        title: "Failed to schedule post",
+        description: fallbackMessage,
+        variant: "destructive",
+      });
     }
   });
 

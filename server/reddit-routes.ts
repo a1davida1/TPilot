@@ -562,17 +562,13 @@ export function registerRedditRoutes(app: Express) {
       const reddit = await RedditManager.forUser(userId);
       if (!reddit) {
         return res.status(404).json({
-          status: 'unknown',
-          reason: 'No Reddit account connected',
-          evidence: {
-            username: 'unknown',
-            checkedAt: new Date().toISOString(),
-            privateCount: 0,
-            publicCount: 0,
-            privateSubmissions: [],
-            publicSubmissions: [],
-            missingSubmissionIds: []
-          }
+          isShadowbanned: false,
+          statusMessage: 'No Reddit account connected',
+          checkedAt: new Date().toISOString(),
+          publicCount: 0,
+          totalSelfPosts: 0,
+          hiddenPosts: [],
+          error: 'No Reddit account connected'
         });
       }
 
@@ -580,11 +576,10 @@ export function registerRedditRoutes(app: Express) {
       
       logger.info('Shadowban status checked', {
         userId,
-        username: shadowbanResult.evidence.username,
-        status: shadowbanResult.status,
-        privateCount: shadowbanResult.evidence.privateCount,
-        publicCount: shadowbanResult.evidence.publicCount,
-        missingCount: shadowbanResult.evidence.missingSubmissionIds.length
+        isShadowbanned: shadowbanResult.isShadowbanned,
+        publicCount: shadowbanResult.publicCount,
+        totalSelfPosts: shadowbanResult.totalSelfPosts,
+        hiddenCount: shadowbanResult.hiddenPosts.length
       });
 
       res.json(shadowbanResult);
@@ -597,17 +592,13 @@ export function registerRedditRoutes(app: Express) {
       });
       
       res.status(500).json({
-        status: 'unknown',
-        reason: 'Failed to check shadowban status',
-        evidence: {
-          username: 'unknown',
-          checkedAt: new Date().toISOString(),
-          privateCount: 0,
-          publicCount: 0,
-          privateSubmissions: [],
-          publicSubmissions: [],
-          missingSubmissionIds: []
-        }
+        isShadowbanned: false,
+        statusMessage: 'Failed to check shadowban status',
+        checkedAt: new Date().toISOString(),
+        publicCount: 0,
+        totalSelfPosts: 0,
+        hiddenPosts: [],
+        error: 'Failed to check shadowban status'
       });
     }
   });

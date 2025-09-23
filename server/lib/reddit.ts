@@ -1249,6 +1249,105 @@ export class RedditManager {
       return [];
     }
   }
+
+  /**
+   * Check shadowban status by comparing self-view vs public submissions
+   */
+  async checkShadowbanStatus(): Promise<{
+    isShadowbanned: boolean;
+    statusMessage: string;
+    checkedAt: string;
+    publicCount: number;
+    totalSelfPosts: number;
+    hiddenPosts: Array<{
+      id: string;
+      title: string;
+      createdUtc: number;
+    }>;
+    error?: string;
+  }> {
+    try {
+      // Get user's profile to get username
+      const profile = await this.getProfile();
+      if (!profile) {
+        return {
+          isShadowbanned: false,
+          statusMessage: 'Unable to fetch profile',
+          checkedAt: new Date().toISOString(),
+          publicCount: 0,
+          totalSelfPosts: 0,
+          hiddenPosts: [],
+          error: 'Could not access Reddit profile'
+        };
+      }
+
+      // Get recent submissions from user's profile (authenticated view)
+      const recentSubmissions = await this.reddit.getUser(profile.username).getSubmissions({ limit: 25 });
+      
+      if (!recentSubmissions || recentSubmissions.length === 0) {
+        return {
+          isShadowbanned: false,
+          statusMessage: 'No recent submissions found',
+          checkedAt: new Date().toISOString(),
+          publicCount: 0,
+          totalSelfPosts: 0,
+          hiddenPosts: [],
+          error: 'No submissions to analyze'
+        };
+      }
+
+      // Get public submissions for comparison
+      const publicSubmissions = await this.fetchPublicSubmissions(profile.username);
+      
+      // Create sets for easy comparison
+      const selfPostIds = new Set(recentSubmissions.map((sub: any) => sub.id));
+      const publicPostIds = new Set(publicSubmissions.map(sub => sub.id));
+      
+      // Find hidden posts (in self view but not in public view)
+      const hiddenPosts = recentSubmissions
+        .filter((sub: any) => !publicPostIds.has(sub.id))
+        .map((sub: any) => ({
+          id: sub.id,
+          title: sub.title,
+          createdUtc: sub.created_utc
+        }));
+
+      const totalSelfPosts = recentSubmissions.length;
+      const publicCount = publicSubmissions.length;
+      const hiddenCount = hiddenPosts.length;
+      const isShadowbanned = hiddenCount > 0;
+
+      let statusMessage = '';
+      if (isShadowbanned) {
+        const percentage = Math.round((hiddenCount / totalSelfPosts) * 100);
+        statusMessage = `${percentage}% of recent posts are hidden from public view.`;
+      } else {
+        statusMessage = 'All recent posts are visible publicly.';
+      }
+
+      return {
+        isShadowbanned,
+        statusMessage,
+        checkedAt: new Date().toISOString(),
+        publicCount,
+        totalSelfPosts,
+        hiddenPosts: hiddenPosts.slice(0, 5), // Limit to first 5 for UI
+        error: undefined
+      };
+
+    } catch (error) {
+      console.error('Shadowban check failed:', error);
+      return {
+        isShadowbanned: false,
+        statusMessage: 'Unable to check shadowban status',
+        checkedAt: new Date().toISOString(),
+        publicCount: 0,
+        totalSelfPosts: 0,
+        hiddenPosts: [],
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
+      };
+    }
+  }
 }
 
 /**

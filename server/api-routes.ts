@@ -210,7 +210,7 @@ export function registerApiRoutes(app: Express) {
   });
 
   // Schedule Post
-  app.post('/api/posts/schedule', async (req, res) => {
+  app.post('/api/posts/schedule', authenticateToken, async (req, res) => {
     try {
       const schema = z.object({
         subreddit: z.string(),
