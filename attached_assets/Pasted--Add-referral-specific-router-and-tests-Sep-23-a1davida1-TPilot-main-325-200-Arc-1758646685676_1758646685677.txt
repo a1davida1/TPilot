@@ -1,0 +1,996 @@
+
+Add referral-specific router and tests
+Sep 23
+·
+a1davida1/TPilot
+·
+main
+·
++325
+-200
+
+Archive
+
+Share
+
+Create PR
+
+
+3
+1. Add a referral-specific router (e.g., `server/routes/referrals.ts`) that exposes `/api/referral/code` and `/api/referral/summary`, importing `ReferralManager.getUserReferralCode`, `applyReferralCode`, and `getReferralInfo` from `server/lib/referral-system.ts`.
+2. Mount this router inside `registerRoutes` (or the Express app bootstrap) and delete the Pro Perks referral handler plus the `generateReferralCode` export from `server/pro-perks.ts`, since affiliate perks should only surface static partner links.
+3. Write integration coverage in `tests/integration` that exercises the new endpoints, asserting that codes survive multiple calls and match the `ReferralManager` data rather than per-perk tokens.
+Copy
+Summary
+
+Introduced server/routes/referrals.ts to serve /api/referral/code and /api/referral/summary, handling authenticated code retrieval, referral application, and summary responses with defensive logging.
+
+Mounted the referral router in registerRoutes, removed the legacy pro-perk referral endpoint, and stopped exporting the perk-specific generateReferralCode helper to keep pro perks focused on static partner links.
+
+Updated tests/integration/pro-resources.test.ts to align mocks with static perks and added tests/integration/referral-routes.test.ts providing isolated coverage for the new referral endpoints with scoped module mocks.
+
+Testing
+
+✅ npm run lint
+
+❌ npm test (fails due to extensive pre-existing suite requirements such as database/third-party integrations; run aborted after numerous missing-environment errors)
+
+✅ npx vitest run tests/integration/referral-routes.test.ts
+
+
+Files (5)
+
+server/pro-perks.ts
++0
+-8
+
+server/routes.ts
++6
+-40
+
+server/routes/referrals.ts
+New
+
+tests/integration/pro-resources.test.ts
++0
+-152
+
+tests/integration/referral-routes.test.ts
+New
+
+
+
+Ask
+
+Code
+Diff
+Logs
+
+server/pro-perks.ts
++0
+-8
+
+@@ -509,57 +509,50 @@ export interface PerkUsageStats {
+  perkId: string;
+  signups: number;
+  activeUsers: number;
+  totalEarnings: number;
+  averageMonthlyEarnings: number;
+  successRate: number;
+}
+
+export function getAvailablePerks(userTier: 'free' | 'starter' | 'pro'): ProPerk[] {
+  if (userTier === 'free' || userTier === 'starter') {
+    return [];
+  }
+  
+  return realProPerks.filter(perk => {
+    if (userTier === 'pro') {
+      return perk.tier === 'pro';
+    }
+    return true; // Premium gets all perks
+  });
+}
+
+export function getPerksByCategory(category: ProPerk['category']): ProPerk[] {
+  return realProPerks.filter(perk => perk.category === category);
+}
+
+export function generateReferralCode(userId: number, perkId: string): string {
+  // Generate unique referral codes for tracking
+  const timestamp = Date.now().toString(36);
+  const userCode = userId.toString(36);
+  return `TP${userCode}${perkId.slice(0, 3).toUpperCase()}${timestamp}`.slice(0, 12);
+}
+
+export function getSignupInstructions(perkId: string): {
+  steps: string[];
+  requirements: string[];
+  timeline: string;
+  support: string;
+} {
+  const perk = realProPerks.find(p => p.id === perkId);
+  if (!perk) {
+    return {
+      steps: ['Perk not found'],
+      requirements: [],
+      timeline: 'N/A',
+      support: 'Contact ThottoPilot support'
+    };
+  }
+
+  const baseSteps = [
+    'Meet all listed requirements',
+    'Verify your identity and content compliance',
+    perk.signupProcess,
+    'Set up tracking and payment methods',
+    'Begin promoting and earning'
+  ];
+
+  return {
+@@ -572,29 +565,28 @@ export function getSignupInstructions(perkId: string): {
+
+// Success tracking and optimization
+export const perkSuccessMetrics = {
+  // Real data from industry research
+  onlyFansReferral: {
+    averageSignups: '2-5 per month for active promoters',
+    successRate: '15-30% of referred creators become profitable',
+    topEarners: '$10,000+ monthly from referrals alone'
+  },
+  discordPartner: {
+    approvalRate: '5-10% of applications',
+    communityGrowth: '50-200% increase after partnership',
+    benefits: 'Free Nitro ($120/year value) + community features'
+  },
+  affiliatePrograms: {
+    averageCommission: '10-40% depending on program',
+    monthlyPotential: '$100-$50,000 based on traffic and conversion',
+    topPerformers: 'Multi-six-figure annual affiliate income'
+  }
+};
+
+export default {
+  realProPerks,
+  getAvailablePerks,
+  getPerksByCategory,
+  generateReferralCode,
+  getSignupInstructions,
+  perkSuccessMetrics
+};
+server/routes.ts
++6
+-40
+
+import type { Express, Response, NextFunction } from "express";
+import express from "express";
+import { createServer, type Server } from "http";
+import session from 'express-session';
+import path from 'path';
+import connectPgSimple from 'connect-pg-simple';
+import * as connectRedis from 'connect-redis';
+import { Pool } from 'pg';
+import Redis from 'ioredis';
+import Stripe from 'stripe';
+import passport from 'passport';
+
+// Security and middleware
+import { validateEnvironment, securityMiddleware, ipLoggingMiddleware, errorHandler, logger, generationLimiter } from "./middleware/security.js";
+import { AppError, CircuitBreaker } from "./lib/errors.js";
+import { authenticateToken } from "./middleware/auth.js";
+
+// Route modules
+// import { authRoutes } from "./routes/auth.js"; // Removed - using server/auth.ts instead
+import { uploadRoutes, applyImageShieldProtection, protectionPresets } from "./routes/upload.js";
+import { mediaRoutes } from "./routes/media.js";
+import { analyticsRouter } from "./routes/analytics.js";
+import { referralRouter } from "./routes/referrals.js";
+import { registerExpenseRoutes } from "./expense-routes.js";
+import { adminCommunitiesRouter } from "./routes/admin-communities.js";
+
+// Core imports
+import { storage } from "./storage.js";
+import { setupAuth } from "./auth.js";
+import { setupAdminRoutes } from "./admin-routes.js";
+import { configureSocialAuth, socialAuthRoutes } from "./social-auth-config.js";
+import { visitorAnalytics } from "./visitor-analytics.js";
+import { makePaxum, makeCoinbase, makeStripe } from "./payments/payment-providers.js";
+import { deriveStripeConfig } from "./payments/stripe-config.js";
+// Analytics request type
+interface AnalyticsRequest extends express.Request {
+  sessionID: string;
+}
+
+// Import users table for type inference
+import { users, type ContentGeneration } from "@shared/schema";
+
+// AuthUser interface for passport serialization
+interface AuthUser {
+  id: number;
+  username?: string;
+  isAdmin?: boolean;
+}
+@@ -165,111 +166,73 @@ function registerProResourcesRoutes(app: Express) {
+        return res.status(400).json({ message: "Perk ID required" });
+      }
+
+      // Verify the perk exists and user has access
+      const availablePerks = userTier === 'premium'
+        ? getAvailablePerks('pro')
+        : getAvailablePerks(userTier);
+      const perk = availablePerks.find(p => p.id === perkId);
+      
+      if (!perk) {
+        return res.status(404).json({ message: "Perk not found or not accessible" });
+      }
+
+      const instructions = getSignupInstructions(perkId);
+      
+      res.json({
+        instructions
+      });
+
+    } catch (error) {
+      logger.error("Signup instructions error:", error);
+      res.status(500).json({ message: "Failed to load signup instructions" });
+    }
+  });
+
+  // POST /api/pro-resources/:id/referral-code - Generate referral code
+  app.post('/api/pro-resources/:id/referral-code', authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const userTier = await getUserTier(req.user);
+      if (userTier === 'free' || userTier === 'starter') {
+        return res.status(403).json({ message: "Pro subscription required" });
+      }
+
+      const perkId = req.params.id;
+      if (!perkId) {
+        return res.status(400).json({ message: "Perk ID required" });
+      }
+
+      // Verify the perk exists and user has access
+      const availablePerks = userTier === 'premium'
+        ? getAvailablePerks('pro')
+        : getAvailablePerks(userTier);
+      const perk = availablePerks.find(p => p.id === perkId);
+      
+      if (!perk) {
+        return res.status(404).json({ message: "Perk not found or not accessible" });
+      }
+
+      const referralCode = generateReferralCode(req.user.id, perkId);
+      
+      res.json({
+        referralCode
+      });
+
+    } catch (error) {
+      logger.error("Referral code generation error:", error);
+      res.status(500).json({ message: "Failed to generate referral code" });
+    }
+  });
+}
+
+// Session interface with Reddit OAuth properties
+interface RedditSessionData {
+  redditOAuthState?: string;
+  redditConnected?: boolean;
+}
+
+declare module 'express-session' {
+  interface SessionData extends RedditSessionData {}
+}
+
+// Service imports
+import { generateContent } from "./services/content-generator.js";
+import { generateAIContent, analyzeImageForContent } from "./services/ai-generator.js";
+import { generateWithMultiProvider, getProviderStatus } from "./services/multi-ai-provider.js";
+import { generateUnifiedAIContent, analyzeImage } from "./services/unified-ai-service.js";
+import { generateImageCaption, imageToBase64, validateImageFormat } from "./image-caption-generator.js";
+import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage.js";
+import { getRandomTemplates, addWatermark, getTemplateByMood } from "./content-templates.js";
+import { generateAdvancedContent, type ContentParameters } from "./advanced-content-generator.js";
+// Reddit communities now handled in reddit-routes.ts
+import { getAvailablePerks, getPerksByCategory, generateReferralCode, getSignupInstructions, realProPerks } from "./pro-perks.js";
+import { getAvailablePerks, getPerksByCategory, getSignupInstructions, realProPerks } from "./pro-perks.js";
+
+// API route modules
+import { registerApiRoutes } from "./api-routes.js";
+import { registerPolicyRoutes } from "./policy-routes.js";
+import { registerRedditRoutes } from "./reddit-routes.js";
+import { registerAnalyticsRoutes } from "./analytics-routes.js";
+import { createLead, confirmLead } from "./api/leads.js";
+import { getLeads } from "./api/admin-leads.js";
+import { captionRouter } from "./routes/caption.js";
+import { contentGenerationLimiter } from "./middleware/tiered-rate-limit.js";
+import { registerSocialMediaRoutes } from "./social-media-routes.js";
+
+// Schema imports
+import { insertContentGenerationSchema, insertUserImageSchema } from "@shared/schema";
+
+// Core dependencies
+import multer from 'multer';
+import fs from 'fs/promises';
+import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
+import csrf from 'csurf';
+
+// Get secure environment variables (no fallbacks)
+const rawSessionSecret = process.env.SESSION_SECRET;
+@@ -468,51 +431,54 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'):
+  // AUTHENTICATION SETUP
+  // ==========================================
+  
+  // Setup authentication
+  setupAuth(app);
+  setupAdminRoutes(app);
+  
+  // Configure social authentication
+  configureSocialAuth();
+
+  // ==========================================
+  // ROUTE REGISTRATION
+  // ==========================================
+  
+  // Authentication routes - handled by setupAuth() in server/auth.ts
+  // app.use('/api/auth', authRoutes); // Removed - duplicate auth system
+  
+  // Upload routes
+  app.use('/api/upload', uploadRoutes);
+  
+  // Media routes
+  app.use('/api/media', mediaRoutes);
+
+  // Analytics routes
+  app.use('/api/analytics', analyticsRouter);
+  
+
+  // Referral routes
+  app.use('/api/referral', referralRouter);
+
+  // Admin communities routes (mounted at reddit path for client compatibility)
+  app.use('/api/reddit/communities', adminCommunitiesRouter);
+  
+  // Social auth routes
+  app.get('/api/auth/google', socialAuthRoutes.googleAuth);
+  app.get('/api/auth/google/callback', socialAuthRoutes.googleCallback);
+  app.get('/api/auth/facebook', socialAuthRoutes.facebookAuth);
+  app.get('/api/auth/facebook/callback', socialAuthRoutes.facebookCallback);
+  app.get('/api/auth/reddit', socialAuthRoutes.redditAuth);
+  app.get('/api/auth/reddit/callback', socialAuthRoutes.redditCallback);
+
+  // Serve uploaded files securely
+  app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
+  // ==========================================
+  // STRIPE PAYMENT ENDPOINTS
+  // ==========================================
+  
+  // Create subscription payment intent
+  app.post("/api/create-subscription", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      if (!stripe) {
+        return res.status(503).json({ 
+          message: "Payment system is not configured. Please try again later." 
+        });
+server/routes/referrals.ts
+New
++99
+-0
+
+import { Router, type Request, type Response } from "express";
+
+import { authenticateToken } from "../middleware/auth.js";
+import { logger } from "../bootstrap/logger.js";
+import { ReferralManager } from "../lib/referral-system.js";
+
+interface AuthenticatedRequest extends Request {
+  user?: {
+    id?: number | null;
+  };
+}
+
+interface ApplyReferralRequestBody {
+  userId?: number;
+  referralCode?: string;
+}
+
+const referralRouter = Router();
+
+referralRouter.get("/code", authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+  const userId = req.user?.id;
+
+  if (typeof userId !== "number") {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+
+  try {
+    const code = await ReferralManager.getUserReferralCode(userId);
+    res.json({ code });
+  } catch (error: unknown) {
+    logger.error("Failed to load referral code", {
+      error: error instanceof Error ? error.message : String(error),
+      userId,
+    });
+    res.status(500).json({ message: "Failed to load referral code" });
+  }
+});
+
+referralRouter.post(
+  "/code",
+  async (
+    req: Request<unknown, unknown, ApplyReferralRequestBody>,
+    res: Response,
+  ) => {
+    const { userId, referralCode } = req.body;
+
+    if (typeof userId !== "number" || Number.isInteger(userId) === false) {
+      return res.status(400).json({ message: "Valid userId is required" });
+    }
+
+    if (typeof referralCode !== "string" || referralCode.trim().length === 0) {
+      return res.status(400).json({ message: "Referral code is required" });
+    }
+
+    try {
+      const sanitizedCode = referralCode.trim().toUpperCase();
+      const result = await ReferralManager.applyReferralCode(userId, sanitizedCode);
+
+      if (!result.success) {
+        return res.status(400).json({
+          success: false,
+          error: result.error ?? "Unable to apply referral code",
+        });
+      }
+
+      res.json({
+        success: true,
+        referrerId: result.referrerId ?? null,
+      });
+    } catch (error: unknown) {
+      logger.error("Failed to apply referral code", {
+        error: error instanceof Error ? error.message : String(error),
+        userId,
+      });
+      res.status(500).json({ message: "Failed to apply referral code" });
+    }
+  },
+);
+
+referralRouter.get("/summary", authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+  const userId = req.user?.id;
+
+  if (typeof userId !== "number") {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+
+  try {
+    const referralInfo = await ReferralManager.getReferralInfo(userId);
+    res.json(referralInfo);
+  } catch (error: unknown) {
+    logger.error("Failed to load referral summary", {
+      error: error instanceof Error ? error.message : String(error),
+      userId,
+    });
+    res.status(500).json({ message: "Failed to load referral summary" });
+  }
+});
+
+export { referralRouter };
+tests/integration/pro-resources.test.ts
++0
+-152
+
+@@ -11,51 +11,50 @@ let currentMockUser: any = null;
+// Mock the auth middleware to simulate real behavior
+const mockAuthMiddleware = vi.fn((req: any, res: any, next: any) => {
+  if (currentMockUser) {
+    req.user = currentMockUser;
+  }
+  next();
+});
+
+// Mock the pro-perks module
+vi.mock('../../server/pro-perks.js', () => ({
+  getAvailablePerks: vi.fn(() => [
+    {
+      id: 'onlyfans-referral',
+      name: 'OnlyFans Creator Referral',
+      category: 'affiliate',
+      tier: 'pro',
+      description: 'Earn 5% lifetime commission by referring new creators',
+      commissionRate: '5% lifetime',
+      signupProcess: 'Auto-approval with tracking link',
+      estimatedEarnings: '$100-500/month potential',
+      status: 'available',
+      officialLink: 'https://onlyfans.com/refer',
+      features: ['Lifetime 5% commission', 'Real-time tracking', 'Monthly payments']
+    }
+  ]),
+  generateReferralCode: vi.fn((userId: number, perkId: string) => `TP${userId}${perkId.slice(-4).toUpperCase()}`),
+  getSignupInstructions: vi.fn((perkId: string) => ({
+    steps: ['Sign up with provided link', 'Complete profile verification', 'Start earning commissions'],
+    requirements: ['Active ThottoPilot Pro subscription', 'Verified identity'],
+    timeline: 'Instant approval for most creators',
+    support: 'Contact support@thottopilot.com for assistance'
+  }))
+}));
+
+// Mock the authenticateToken middleware
+vi.mock('../../server/middleware/auth.js', () => ({
+  authenticateToken: mockAuthMiddleware
+}));
+
+// Mock storage for testing fallback behavior
+vi.mock('../../server/storage.js', () => ({
+  storage: {
+    getUserById: vi.fn()
+  }
+}));
+
+describe('Pro Resources Integration', () => {
+  let app: Express;
+  type StoredUser = NonNullable<Awaited<ReturnType<typeof storage.getUserById>>>;
+
+  const originalOpenAiKey = process.env.OPENAI_API_KEY;
+@@ -281,173 +280,50 @@ describe('Pro Resources Integration', () => {
+    it('should return signup instructions for valid perk and pro user', async () => {
+      currentMockUser = {
+        id: 2,
+        subscriptionTier: 'pro',
+        username: 'prouser'
+      };
+
+      const response = await request(app)
+        .get('/api/pro-resources/onlyfans-referral/signup-instructions')
+        .set('Authorization', 'Bearer mock-pro-token')
+        .expect(200);
+
+      expect(response.body).toMatchObject({
+        instructions: {
+          steps: expect.any(Array),
+          requirements: expect.any(Array),
+          timeline: expect.any(String),
+          support: expect.any(String)
+        }
+      });
+
+      expect(response.body.instructions.steps.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('POST /api/pro-resources/:id/referral-code', () => {
+    it('should return 401 for unauthenticated requests', async () => {
+      currentMockUser = null;
+      
+      await request(app)
+        .post('/api/pro-resources/test-perk-id/referral-code')
+        .set('Content-Type', 'application/json')
+        .expect(401);
+    });
+
+    it('should return 403 for free tier users', async () => {
+      currentMockUser = {
+        id: 1,
+        subscriptionTier: 'free',
+        username: 'testuser'
+      };
+
+      await request(app)
+        .post('/api/pro-resources/test-perk-id/referral-code')
+        .set('Content-Type', 'application/json')
+        .set('Authorization', 'Bearer mock-free-token')
+        .expect(403);
+    });
+
+    it('should return 404 for non-existent perk', async () => {
+      currentMockUser = {
+        id: 2,
+        subscriptionTier: 'pro',
+        username: 'prouser'
+      };
+
+      await request(app)
+        .post('/api/pro-resources/non-existent-perk/referral-code')
+        .set('Content-Type', 'application/json')
+        .set('Authorization', 'Bearer mock-pro-token')
+        .expect(404);
+    });
+
+    it('should generate referral code for valid perk and pro user', async () => {
+      currentMockUser = {
+        id: 2,
+        subscriptionTier: 'pro',
+        username: 'prouser'
+      };
+
+      const response = await request(app)
+        .post('/api/pro-resources/onlyfans-referral/referral-code')
+        .set('Content-Type', 'application/json')
+        .set('Authorization', 'Bearer mock-pro-token')
+        .expect(200);
+
+      expect(response.body).toMatchObject({
+        referralCode: expect.any(String)
+      });
+
+      // Verify referral code format matches our mock implementation
+      expect(response.body.referralCode).toMatch(/^TP2/);
+    });
+
+    it('should generate unique referral codes for different users', async () => {
+      // First user
+      currentMockUser = {
+        id: 2,
+        subscriptionTier: 'pro',
+        username: 'prouser1'
+      };
+
+      const response1 = await request(app)
+        .post('/api/pro-resources/onlyfans-referral/referral-code')
+        .set('Content-Type', 'application/json')
+        .set('Authorization', 'Bearer mock-pro-token1')
+        .expect(200);
+
+      // Second user
+      currentMockUser = {
+        id: 3,
+        subscriptionTier: 'pro',
+        username: 'prouser2'
+      };
+
+      const response2 = await request(app)
+        .post('/api/pro-resources/onlyfans-referral/referral-code')
+        .set('Content-Type', 'application/json')
+        .set('Authorization', 'Bearer mock-pro-token2')
+        .expect(200);
+
+      // Referral codes should be different for different users
+      expect(response1.body.referralCode).not.toBe(response2.body.referralCode);
+    });
+
+    it('should fall back to stored tier when session is missing subscription tier', async () => {
+      const persistedUserId = 45;
+      currentMockUser = {
+        id: persistedUserId,
+        username: 'fallback-pro'
+        // Note: no subscriptionTier field, should trigger fallback
+      };
+
+      const { storage } = await import('../../server/storage.js');
+      const storedUser: Partial<User> & { subscriptionTier?: string | null } = {
+        id: persistedUserId,
+        tier: 'pro'
+      };
+
+      const getUserByIdSpy = vi
+        .spyOn(storage, 'getUserById')
+        .mockResolvedValue(storedUser as User);
+
+      const response = await request(app)
+        .post('/api/pro-resources/onlyfans-referral/referral-code')
+        .set('Content-Type', 'application/json')
+        .set('Authorization', 'Bearer mock-storage-tier')
+        .expect(200);
+
+      expect(getUserByIdSpy).toHaveBeenCalledWith(persistedUserId);
+      expect(response.body).toMatchObject({
+        referralCode: expect.stringMatching(/^TP45/)
+      });
+
+      getUserByIdSpy.mockRestore();
+    });
+  });
+
+  describe('Data Validation', () => {
+    it('should return perks with correct structure and required fields', async () => {
+      currentMockUser = {
+        id: 2,
+        subscriptionTier: 'pro',
+        username: 'prouser'
+      };
+
+      const response = await request(app)
+        .get('/api/pro-resources')
+        .set('Authorization', 'Bearer mock-pro-token')
+        .expect(200);
+
+      // Verify each perk has all required fields
+      response.body.perks.forEach((perk: any) => {
+        expect(perk).toMatchObject({
+          id: expect.any(String),
+          name: expect.any(String),
+          category: expect.stringMatching(/^(affiliate|integration|tools|community|pro)$/),
+          tier: expect.stringMatching(/^(starter|pro)$/),
+          description: expect.any(String),
+          signupProcess: expect.any(String),
+          estimatedEarnings: expect.any(String),
+          status: expect.stringMatching(/^(available|application-required|coming-soon)$/),
+          features: expect.any(Array)
+@@ -527,55 +403,27 @@ describe('Pro Resources Integration', () => {
+    it('should handle storage errors gracefully', async () => {
+      currentMockUser = {
+        id: 456,
+        username: 'erroruser'
+        // No tier information at all
+      };
+
+      // Mock storage to throw error
+      (storage.getUserById as any).mockRejectedValue(new Error('Storage unavailable'));
+
+      const response = await request(app)
+        .get('/api/pro-resources')
+        .set('Content-Type', 'application/json')
+        .set('Authorization', 'Bearer mock-token')
+        .expect(403);
+
+      expect(response.body).toMatchObject({
+        perks: [],
+        accessGranted: false,
+        message: expect.stringContaining('Pro subscription required')
+      });
+
+      expect(storage.getUserById).toHaveBeenCalledWith(456);
+    });
+
+    it('should use subscriptionTier from storage when session tier is outdated', async () => {
+      currentMockUser = {
+        id: 789,
+        username: 'outdateduser',
+        tier: 'free', // Session shows old tier
+        subscriptionTier: null // Explicitly null
+      };
+
+      // Storage shows updated tier
+      const storedUser = createStoredUser('pro', { 
+        id: 789,
+        tier: 'pro'
+      });
+      (storedUser as any).subscriptionTier = 'pro';
+      (storage.getUserById as any).mockResolvedValue(storedUser);
+
+      const response = await request(app)
+        .post('/api/pro-resources/onlyfans-referral/referral-code')
+        .set('Content-Type', 'application/json')
+        .set('Authorization', 'Bearer mock-token')
+        .expect(200);
+
+      expect(response.body).toMatchObject({
+        referralCode: expect.stringContaining('TP789')
+      });
+
+      expect(storage.getUserById).toHaveBeenCalledWith(789);
+    });
+  });
+});
+tests/integration/referral-routes.test.ts
+New
++220
+-0
+
+import express, { type Express } from "express";
+import request from "supertest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
+
+const getUserReferralCode = vi.fn<
+  [userId: number],
+  Promise<string>
+>();
+const applyReferralCode = vi.fn<
+  [userId: number, referralCode: string],
+  Promise<{ success: boolean; referrerId?: number; error?: string }>
+>();
+const getReferralInfo = vi.fn<
+  [userId: number],
+  Promise<{
+    code: string;
+    totalReferrals: number;
+    activeReferrals: number;
+    totalCommission: number;
+    conversionRate: number;
+  }>
+>();
+
+type MockUser = {
+  id: number;
+  [key: string]: unknown;
+};
+
+let currentMockUser: MockUser | null = null;
+
+const mockAuthMiddlewareImpl = (
+  req: express.Request & { user?: Record<string, unknown> },
+  res: express.Response,
+  next: express.NextFunction,
+) => {
+  if (!currentMockUser) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
+  req.user = { ...(req.user ?? {}), ...currentMockUser };
+  next();
+};
+
+const mockAuthMiddleware = vi.fn(mockAuthMiddlewareImpl);
+
+describe("Referral routes", () => {
+  let app: Express;
+
+  const originalOpenAiKey = process.env.OPENAI_API_KEY;
+  const originalGeminiKey = process.env.GOOGLE_GENAI_API_KEY;
+  const originalSessionSecret = process.env.SESSION_SECRET;
+  const originalJwtSecret = process.env.JWT_SECRET;
+  const originalDatabaseUrl = process.env.DATABASE_URL;
+
+  beforeAll(() => {
+    if (!process.env.OPENAI_API_KEY) {
+      process.env.OPENAI_API_KEY = "test-openai-key";
+    }
+    if (!process.env.GOOGLE_GENAI_API_KEY) {
+      process.env.GOOGLE_GENAI_API_KEY = "test-gemini-key";
+    }
+    if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32) {
+      process.env.SESSION_SECRET = "test-session-secret-key-1234567890abcd";
+    }
+    if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+      process.env.JWT_SECRET = "test-jwt-secret-key-1234567890abcd";
+    }
+    const defaultDatabaseUrl = "postgres://user:pass@localhost:5432/testdb";
+    if (!process.env.DATABASE_URL || !URL.canParse(process.env.DATABASE_URL)) {
+      process.env.DATABASE_URL = defaultDatabaseUrl;
+    }
+  });
+
+  afterAll(() => {
+    if (originalOpenAiKey === undefined) {
+      delete process.env.OPENAI_API_KEY;
+    } else {
+      process.env.OPENAI_API_KEY = originalOpenAiKey;
+    }
+    if (originalGeminiKey === undefined) {
+      delete process.env.GOOGLE_GENAI_API_KEY;
+    } else {
+      process.env.GOOGLE_GENAI_API_KEY = originalGeminiKey;
+    }
+    if (originalSessionSecret === undefined) {
+      delete process.env.SESSION_SECRET;
+    } else {
+      process.env.SESSION_SECRET = originalSessionSecret;
+    }
+    if (originalJwtSecret === undefined) {
+      delete process.env.JWT_SECRET;
+    } else {
+      process.env.JWT_SECRET = originalJwtSecret;
+    }
+    if (originalDatabaseUrl === undefined) {
+      delete process.env.DATABASE_URL;
+    } else {
+      process.env.DATABASE_URL = originalDatabaseUrl;
+    }
+  });
+
+  beforeEach(async () => {
+    vi.resetModules();
+    vi.clearAllMocks();
+    currentMockUser = null;
+
+    vi.doMock("../../server/lib/referral-system.js", () => ({
+      ReferralManager: {
+        getUserReferralCode,
+        applyReferralCode,
+        getReferralInfo,
+      },
+    }));
+
+    vi.doMock("../../server/middleware/auth.js", () => ({
+      authenticateToken: mockAuthMiddleware,
+    }));
+
+    vi.doMock("../../server/storage.js", () => ({
+      storage: {
+        getUser: vi.fn(),
+        getUserById: vi.fn(),
+        updateUser: vi.fn(),
+        getUserImages: vi.fn(),
+        getUserImage: vi.fn(),
+        updateUserImage: vi.fn(),
+        getUserPreferences: vi.fn(),
+        updateUserPreferences: vi.fn(),
+        createUserImage: vi.fn(),
+        deleteUserImage: vi.fn(),
+      },
+    }));
+
+    app = express();
+    app.use(express.json());
+
+    const { registerRoutes } = await import("../../server/routes.js");
+    await registerRoutes(app);
+  });
+
+  afterEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+    vi.unmock("../../server/lib/referral-system.js");
+    vi.unmock("../../server/middleware/auth.js");
+    vi.unmock("../../server/storage.js");
+  });
+
+  it("should require authentication to fetch referral code", async () => {
+    await request(app)
+      .get("/api/referral/code")
+      .set("Content-Type", "application/json")
+      .expect(401);
+
+    expect(getUserReferralCode).not.toHaveBeenCalled();
+  });
+
+  it("should return persistent referral codes for authenticated users", async () => {
+    const referralCode = "REFCODE12";
+    currentMockUser = { id: 101 };
+    getUserReferralCode.mockResolvedValue(referralCode);
+
+    const firstResponse = await request(app)
+      .get("/api/referral/code")
+      .set("Authorization", "Bearer mock-token")
+      .expect(200);
+
+    const secondResponse = await request(app)
+      .get("/api/referral/code")
+      .set("Authorization", "Bearer mock-token")
+      .expect(200);
+
+    expect(firstResponse.body).toEqual({ code: referralCode });
+    expect(secondResponse.body).toEqual({ code: referralCode });
+    expect(getUserReferralCode).toHaveBeenNthCalledWith(1, 101);
+    expect(getUserReferralCode).toHaveBeenNthCalledWith(2, 101);
+  });
+
+  it("should apply referral codes using referral manager data", async () => {
+    applyReferralCode.mockResolvedValue({ success: true, referrerId: 202 });
+
+    const response = await request(app)
+      .post("/api/referral/code")
+      .set("Content-Type", "application/json")
+      .send({ userId: 404, referralCode: "coolcode" })
+      .expect(200);
+
+    expect(response.body).toEqual({ success: true, referrerId: 202 });
+    expect(applyReferralCode).toHaveBeenCalledWith(404, "COOLCODE");
+  });
+
+  it("should return referral summary sourced from referral manager", async () => {
+    currentMockUser = { id: 5150 };
+    const referralSummary = {
+      code: "VIPCODE1",
+      totalReferrals: 7,
+      activeReferrals: 3,
+      totalCommission: 21,
+      conversionRate: 3 / 7,
+    };
+    getReferralInfo.mockResolvedValue(referralSummary);
+
+    const response = await request(app)
+      .get("/api/referral/summary")
+      .set("Authorization", "Bearer mock-token")
+      .expect(200);
+
+    expect(response.body).toEqual(referralSummary);
+    expect(getReferralInfo).toHaveBeenCalledWith(5150);
+  });
+});

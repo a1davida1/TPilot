@@ -1032,21 +1032,24 @@ export class RedditManager {
       const rules: NormalizedSubredditRules | undefined = rulesResult[0]?.rulesJson as NormalizedSubredditRules;
       const reasons: string[] = [];
       const warnings: string[] = [];
+      const combinedContent = combineContentSegments(context.body, context.url);
 
       // Perform safety checks (rate limits, duplicates) with SafetyManager
-      if (context.title && context.body) {
-        const safetyCheck = await SafetyManager.performSafetyCheck(
-          userId.toString(),
-          normalizedSubreddit,
-          context.title,
-          context.body
-        );
+      const safetyCheck = await SafetyManager.performSafetyCheck(
+        userId.toString(),
+        normalizedSubreddit,
+        context.title ?? '',
+        combinedContent
+      );
 
-        if (!safetyCheck.canPost) {
-          reasons.push(...safetyCheck.issues);
-        }
-        warnings.push(...safetyCheck.warnings);
+      if (!safetyCheck.canPost) {
+        reasons.push(...safetyCheck.issues);
       }
+
+      warnings.push(...safetyCheck.warnings);
+
+      let postsInLast24h = safetyCheck.rateLimit.postsInWindow;
+      let nextAllowedPost: Date | undefined = safetyCheck.rateLimit.nextAvailableTime;
 
       // Evaluate rule predicates with account metadata
       if (communityData) {
