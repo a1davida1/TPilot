@@ -30,14 +30,14 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import type { RedditCommunity, PostingLimits, RedditCommunitySellingPolicy } from "@shared/schema";
 import {
-  GROWTH_TRENDS,
-  GROWTH_TREND_LABELS,
-  getGrowthTrendLabel,
-  growthTrendSchema,
-  isValidGrowthTrend
-} from "@shared/growth-trends";
+  modActivitySchema,
+  type ModActivity,
+  type PostingLimits,
+  type RedditCommunity,
+  type RedditCommunitySellingPolicy
+} from "@shared/schema";
+import { GROWTH_TRENDS, GROWTH_TREND_LABELS, getGrowthTrendLabel, growthTrendSchema } from "@shared/growth-trends";
 import type { GrowthTrend } from "@shared/growth-trends";
 import { z } from "zod";
 
@@ -88,7 +88,7 @@ export function RedditCommunities() {
 
       const response = await apiRequest('GET', `/api/reddit/communities?${params.toString()}`);
       const rawData = await response.json();
-      
+
       // Runtime validation using inline canonical schema structure
       // Note: Server enforces full canonical validation with proper enums
       try {
@@ -201,7 +201,7 @@ export function RedditCommunities() {
       fetish: 'bg-orange-500/20 text-orange-400',
       selling: 'bg-green-500/20 text-green-400',
       verification: 'bg-yellow-500/20 text-yellow-400',
-      
+
       // Additional categories from seed data
       amateur: 'bg-blue-400/20 text-blue-300',
       age: 'bg-indigo-500/20 text-indigo-400',
@@ -228,20 +228,37 @@ export function RedditCommunities() {
     return <Badge className={colors[category] || 'bg-gray-500/20 text-gray-400'}>{category}</Badge>;
   };
 
-  const getSuccessProbabilityColor = (probability: number) => {
+  const getSuccessProbabilityColor = (probability: number | null | undefined) => {
+    if (!probability) return 'text-gray-400';
     if (probability >= 85) return 'text-green-400';
     if (probability >= 70) return 'text-yellow-400';
     return 'text-red-400';
   };
 
-  const getGrowthTrendIcon = (trend: string) => {
+  const getGrowthTrendIcon = (trend: GrowthTrend | undefined) => {
     switch (trend) {
       case 'up':
         return <TrendingUp className="h-3 w-3 text-green-400" />;
       case 'down':
         return <ChevronDown className="h-3 w-3 text-red-400" />;
+      case 'stable':
+        return <div className="h-3 w-3 bg-yellow-400 rounded-full" />;
       default:
         return <div className="h-3 w-3 bg-gray-400 rounded-full" />;
+    }
+  };
+
+  // Helper to display mod activity with appropriate styling
+  const getModActivityDisplay = (modActivity: ModActivity | null | undefined) => {
+    switch (modActivity) {
+      case 'active':
+        return { label: 'Active', className: 'text-green-400' };
+      case 'moderate':
+        return { label: 'Moderate', className: 'text-yellow-400' };
+      case 'inactive':
+        return { label: 'Inactive', className: 'text-red-400' };
+      default:
+        return { label: 'Unknown', className: 'text-gray-400' };
     }
   };
 
@@ -266,7 +283,7 @@ export function RedditCommunities() {
               className="pl-10 bg-white/60 dark:bg-gray-800/60 border-pink-200 dark:border-pink-500/30 focus:border-pink-400 dark:focus:border-pink-400"
             />
           </div>
-          
+
           <Select value={filterCategory} onValueChange={setFilterCategory}>
             <SelectTrigger variant="overlay" className="w-[180px]">
             </SelectTrigger>
@@ -356,165 +373,170 @@ export function RedditCommunities() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredCommunities.map((community) => (
-                <React.Fragment key={community.id}>
-                  <TableRow 
-                    className="border-purple-500/10 hover:bg-purple-500/5 cursor-pointer"
-                    onClick={() => setExpandedRow(expandedRow === community.id ? null : community.id)}
-                  >
-                    <TableCell>
-                      <div>
-                        <p className="font-medium text-white">{community.name}</p>
-                        <p className="text-xs text-gray-400">{community.displayName}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Users className="h-4 w-4 text-gray-400" />
-                        <span className="text-gray-300">{formatNumber(community.members)}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <span className={`font-medium ${getSuccessProbabilityColor(community.successProbability)}`}>
-                          {community.successProbability}%
-                        </span>
-                        {getGrowthTrendIcon(community.growthTrend)}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <TrendingUp className="h-4 w-4 text-green-400" />
-                        <span className="text-gray-300">{community.engagementRate}%</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>{getCategoryBadge(community.category)}</TableCell>
-                    <TableCell>
-                      {community.verificationRequired ? (
-                        <CheckCircle className="h-4 w-4 text-green-400" />
-                      ) : (
-                        <XCircle className="h-4 w-4 text-gray-400" />
-                      )}
-                    </TableCell>
-                    <TableCell>{getPromotionBadge(community.promotionAllowed)}</TableCell>
-                    <TableCell>
-                      <div className="text-xs text-gray-400">
-                        {(() => {
-                          const limits = community.postingLimits as PostingLimits | null;
-                          const postsPerDay = limits?.perDay ?? limits?.daily;
-                          const cooldown = limits?.cooldownHours;
-                          
-                          return (
-                            <>
-                              {postsPerDay && `${postsPerDay}/day`}
-                              {cooldown && ` (${cooldown}h cooldown)`}
-                            </>
-                          );
-                        })()}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Button 
-                        size="sm" 
-                        variant="ghost"
-                        className="text-purple-400 hover:text-purple-300"
-                      >
-                        {expandedRow === community.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                  
-                  {/* Expanded Details Row */}
-                  {expandedRow === community.id && (
-                    <TableRow>
-                      <TableCell colSpan={8} className="bg-gray-800/30">
-                        <div className="p-4 space-y-4">
-                          <p className="text-sm text-gray-300">{community.description}</p>
-                          
-                          <div className="grid md:grid-cols-4 gap-4">
-                            <div>
-                              <h4 className="text-sm font-semibold text-purple-300 mb-2">Requirements</h4>
-                              <div className="space-y-1 text-xs text-gray-400">
-                                {community.rules?.eligibility?.minKarma && <p>• Min Karma: {community.rules.eligibility.minKarma}</p>}
-                                {community.rules?.eligibility?.minAccountAgeDays && <p>• Min Account Age: {community.rules.eligibility.minAccountAgeDays} days</p>}
-                                <p>• Watermarks: {community.rules?.content?.watermarksAllowed ? '✓ Allowed' : '✗ Not Allowed'}</p>
-                                <p>• Selling: {(() => {
-                                  const policy = community.rules?.content?.sellingPolicy;
-                                  switch (policy) {
-                                    case 'allowed': return '✓ Allowed';
-                                    case 'limited': return '⚠ Limited';
-                                    case 'not_allowed': return '✗ Not Allowed';
-                                    case 'unknown': return '? Unknown';
-                                    default: return '? Unknown';
-                                  }
-                                })()}</p>
-                              </div>
-                            </div>
-
-                            <div>
-                              <h4 className="text-sm font-semibold text-purple-300 mb-2">Intelligence</h4>
-                              <div className="space-y-1 text-xs text-gray-400">
-                                <p>• Success Rate: <span className={getSuccessProbabilityColor(community.successProbability)}>{community.successProbability}%</span></p>
-                                <p>• Competition: <span className={community.competitionLevel === 'low' ? 'text-green-400' : community.competitionLevel === 'medium' ? 'text-yellow-400' : 'text-red-400'}>{community.competitionLevel}</span></p>
-                                <p>• Growth: <span className={community.growthTrend === 'up' ? 'text-green-400' : community.growthTrend === 'stable' ? 'text-yellow-400' : 'text-red-400'}>{community.growthTrend ? getGrowthTrendLabel(community.growthTrend as GrowthTrend) : 'Unknown'}</span></p>
-                                <p>• Mod Activity: <span className={community.modActivity === 'high' ? 'text-red-400' : community.modActivity === 'medium' ? 'text-yellow-400' : 'text-green-400'}>{community.modActivity}</span></p>
-                              </div>
-                            </div>
-                            
-                            <div>
-                              <h4 className="text-sm font-semibold text-purple-300 mb-2">Best Posting Times</h4>
-                              <div className="space-y-1 text-xs text-gray-400">
-                                {community.bestPostingTimes.slice(0, 3).map((time: string, idx: number) => (
-                                  <p key={idx}>• {time}</p>
-                                ))}
-                              </div>
-                            </div>
-                            
-                            <div>
-                              <h4 className="text-sm font-semibold text-purple-300 mb-2">Performance</h4>
-                              <div className="space-y-1 text-xs text-gray-400">
-                                <p>• Avg Upvotes: {community.averageUpvotes.toLocaleString()}</p>
-                                <p>• Engagement Rate: {community.engagementRate}%</p>
-                                <p>• Total Members: {community.members.toLocaleString()}</p>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Rules and Tags */}
-                          <div className="grid md:grid-cols-2 gap-4 mt-4">
-                            {(community.rules?.content?.titleGuidelines || community.rules?.content?.contentGuidelines) && (
-                              <div>
-                                <h4 className="text-sm font-semibold text-purple-300 mb-2">Community Rules</h4>
-                                <div className="space-y-1 text-xs text-gray-400">
-                                  {community.rules?.content?.titleGuidelines && community.rules.content.titleGuidelines.map((rule: string, idx: number) => (
-                                    <p key={idx}>• Title: {rule}</p>
-                                  ))}
-                                  {community.rules?.content?.contentGuidelines && community.rules.content.contentGuidelines.map((rule: string, idx: number) => (
-                                    <p key={idx}>• Content: {rule}</p>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {community.tags && community.tags.length > 0 && (
-                              <div>
-                                <h4 className="text-sm font-semibold text-purple-300 mb-2">Tags</h4>
-                                <div className="flex flex-wrap gap-1">
-                                  {community.tags.map((tag: string, idx: number) => (
-                                    <Badge key={idx} className="bg-gray-700/50 text-gray-300 text-xs">
-                                      {tag}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
+              {filteredCommunities.map((community) => {
+                const modActivityDisplay = getModActivityDisplay(community.modActivity);
+                return (
+                  <React.Fragment key={community.id}>
+                    <TableRow 
+                      className="border-purple-500/10 hover:bg-purple-500/5 cursor-pointer"
+                      onClick={() => setExpandedRow(expandedRow === community.id ? null : community.id)}
+                    >
+                      <TableCell>
+                        <div>
+                          <p className="font-medium text-white">{community.name}</p>
+                          <p className="text-xs text-gray-400">{community.displayName}</p>
                         </div>
                       </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Users className="h-4 w-4 text-gray-400" />
+                          <span className="text-gray-300">{formatNumber(community.members)}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <span className={`font-medium ${getSuccessProbabilityColor(community.successProbability)}`}>
+                            {community.successProbability !== null && community.successProbability !== undefined ? `${community.successProbability}%` : 'N/A'}
+                          </span>
+                          {getGrowthTrendIcon(community.growthTrend)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <TrendingUp className="h-4 w-4 text-green-400" />
+                          <span className="text-gray-300">{community.engagementRate}%</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>{getCategoryBadge(community.category)}</TableCell>
+                      <TableCell>
+                        {community.verificationRequired ? (
+                          <CheckCircle className="h-4 w-4 text-green-400" />
+                        ) : (
+                          <XCircle className="h-4 w-4 text-gray-400" />
+                        )}
+                      </TableCell>
+                      <TableCell>{getPromotionBadge(community.promotionAllowed)}</TableCell>
+                      <TableCell>
+                        <div className="text-xs text-gray-400">
+                          {(() => {
+                            const limits = community.postingLimits as PostingLimits | null;
+                            const postsPerDay = limits?.perDay ?? limits?.daily;
+                            const cooldown = limits?.cooldownHours;
+
+                            return (
+                              <>
+                                {postsPerDay !== undefined && postsPerDay !== null && `${postsPerDay}/day`}
+                                {cooldown !== undefined && cooldown !== null && ` (${cooldown}h cooldown)`}
+                              </>
+                            );
+                          })()}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          className="text-purple-400 hover:text-purple-300"
+                        >
+                          {expandedRow === community.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        </Button>
+                      </TableCell>
                     </TableRow>
-                  )}
-                </React.Fragment>
-              ))}
+
+                    {/* Expanded Details Row */}
+                    {expandedRow === community.id && (
+                      <TableRow>
+                        <TableCell colSpan={8} className="bg-gray-800/30">
+                          <div className="p-4 space-y-4">
+                            <p className="text-sm text-gray-300">{community.description}</p>
+
+                            <div className="grid md:grid-cols-4 gap-4">
+                              <div>
+                                <h4 className="text-sm font-semibold text-purple-300 mb-2">Requirements</h4>
+                                <div className="space-y-1 text-xs text-gray-400">
+                                  {community.rules?.minKarma !== undefined && community.rules?.minKarma !== null && <p>• Min Karma: {community.rules.minKarma}</p>}
+                                  {community.rules?.minAccountAge !== undefined && community.rules?.minAccountAge !== null && <p>• Min Account Age: {community.rules.minAccountAge} days</p>}
+                                  <p>• Watermarks: {community.rules?.watermarksAllowed ? '✓ Allowed' : '✗ Not Allowed'}</p>
+                                  <p>• Selling: {(() => {
+                                    const policy = community.rules?.sellingAllowed;
+                                    switch (policy) {
+                                      case 'allowed': return '✓ Allowed';
+                                      case 'limited': return '⚠ Limited';
+                                      case 'not_allowed': return '✗ Not Allowed';
+                                      case 'unknown': return '? Unknown';
+                                      default: return '? Unknown';
+                                    }
+                                  })()}</p>
+                                </div>
+                              </div>
+
+                              <div>
+                                <h4 className="text-sm font-semibold text-purple-300 mb-2">Intelligence</h4>
+                                <div className="space-y-1 text-xs text-gray-400">
+                                  <p>• Success Rate: <span className={getSuccessProbabilityColor(community.successProbability)}>{community.successProbability !== null && community.successProbability !== undefined ? `${community.successProbability}%` : 'N/A'}</span></p>
+                                  <p>• Competition: <span className={community.competitionLevel === 'low' ? 'text-green-400' : community.competitionLevel === 'medium' ? 'text-yellow-400' : 'text-red-400'}>{community.competitionLevel ?? 'Unknown'}</span></p>
+                                  <p>• Growth: <span className={community.growthTrend === 'up' ? 'text-green-400' : community.growthTrend === 'stable' ? 'text-yellow-400' : 'text-red-400'}>{community.growthTrend ? getGrowthTrendLabel(community.growthTrend) : 'Unknown'}</span></p>
+                                  <p>
+                                    • Mod Activity: <span className={modActivityDisplay.className}>{modActivityDisplay.label}</span>
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div>
+                                <h4 className="text-sm font-semibold text-purple-300 mb-2">Best Posting Times</h4>
+                                <div className="space-y-1 text-xs text-gray-400">
+                                  {community.bestPostingTimes?.slice(0, 3).map((time: string, idx: number) => (
+                                    <p key={idx}>• {time}</p>
+                                  )) ?? <p>No data</p>}
+                                </div>
+                              </div>
+
+                              <div>
+                                <h4 className="text-sm font-semibold text-purple-300 mb-2">Performance</h4>
+                                <div className="space-y-1 text-xs text-gray-400">
+                                  <p>• Avg Upvotes: {community.averageUpvotes !== null && community.averageUpvotes !== undefined ? community.averageUpvotes.toLocaleString() : 'N/A'}</p>
+                                  <p>• Engagement Rate: {community.engagementRate}%</p>
+                                  <p>• Total Members: {community.members.toLocaleString()}</p>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Rules and Tags */}
+                            <div className="grid md:grid-cols-2 gap-4 mt-4">
+                              {(community.rules?.titleRules || community.rules?.contentRules) && (
+                                <div>
+                                  <h4 className="text-sm font-semibold text-purple-300 mb-2">Community Rules</h4>
+                                  <div className="space-y-1 text-xs text-gray-400">
+                                    {community.rules?.titleRules && community.rules.titleRules.map((rule: string, idx: number) => (
+                                      <p key={idx}>• Title: {rule}</p>
+                                    ))}
+                                    {community.rules?.contentRules && community.rules.contentRules.map((rule: string, idx: number) => (
+                                      <p key={idx}>• Content: {rule}</p>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {community.tags && community.tags.length > 0 && (
+                                <div>
+                                  <h4 className="text-sm font-semibold text-purple-300 mb-2">Tags</h4>
+                                  <div className="flex flex-wrap gap-1">
+                                    {community.tags.map((tag: string, idx: number) => (
+                                      <Badge key={idx} className="bg-gray-700/50 text-gray-300 text-xs">
+                                        {tag}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </React.Fragment>
+                );
+              })}
             </TableBody>
           </Table>
         </div>
@@ -532,21 +554,21 @@ export function RedditCommunities() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card className="bg-gray-800/50 border-purple-500/20">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-gray-400">Avg Engagement</p>
                   <p className="text-2xl font-bold text-green-400">
-                    {(filteredCommunities.reduce((acc, c) => acc + c.engagementRate, 0) / filteredCommunities.length || 0).toFixed(1)}%
+                    {(filteredCommunities.reduce((acc, c) => acc + c.engagementRate, 0) / (filteredCommunities.length || 1)).toFixed(1)}%
                   </p>
                 </div>
                 <TrendingUp className="h-8 w-8 text-green-400/50" />
               </div>
             </CardContent>
           </Card>
-          
+
           <Card className="bg-gray-800/50 border-purple-500/20">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -560,7 +582,7 @@ export function RedditCommunities() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card className="bg-gray-800/50 border-purple-500/20">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
