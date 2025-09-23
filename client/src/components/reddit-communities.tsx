@@ -435,11 +435,11 @@ export function RedditCommunities() {
                             <div>
                               <h4 className="text-sm font-semibold text-purple-300 mb-2">Requirements</h4>
                               <div className="space-y-1 text-xs text-gray-400">
-                                {community.rules.minKarma && <p>• Min Karma: {community.rules.minKarma}</p>}
-                                {community.rules.minAccountAge && <p>• Min Account Age: {community.rules.minAccountAge} days</p>}
-                                <p>• Watermarks: {community.rules.watermarksAllowed ? '✓ Allowed' : '✗ Not Allowed'}</p>
+                                {community.rules?.eligibility?.minKarma && <p>• Min Karma: {community.rules.eligibility.minKarma}</p>}
+                                {community.rules?.eligibility?.minAccountAgeDays && <p>• Min Account Age: {community.rules.eligibility.minAccountAgeDays} days</p>}
+                                <p>• Watermarks: {community.rules?.content?.watermarksAllowed ? '✓ Allowed' : '✗ Not Allowed'}</p>
                                 <p>• Selling: {(() => {
-                                  const policy = community.rules?.sellingAllowed;
+                                  const policy = community.rules?.content?.sellingPolicy;
                                   switch (policy) {
                                     case 'allowed': return '✓ Allowed';
                                     case 'limited': return '⚠ Limited';
@@ -456,7 +456,7 @@ export function RedditCommunities() {
                               <div className="space-y-1 text-xs text-gray-400">
                                 <p>• Success Rate: <span className={getSuccessProbabilityColor(community.successProbability)}>{community.successProbability}%</span></p>
                                 <p>• Competition: <span className={community.competitionLevel === 'low' ? 'text-green-400' : community.competitionLevel === 'medium' ? 'text-yellow-400' : 'text-red-400'}>{community.competitionLevel}</span></p>
-                                <p>• Growth: <span className={community.growthTrend === 'up' ? 'text-green-400' : community.growthTrend === 'stable' ? 'text-yellow-400' : 'text-red-400'}>{getGrowthTrendLabel(community.growthTrend)}</span></p>
+                                <p>• Growth: <span className={community.growthTrend === 'up' ? 'text-green-400' : community.growthTrend === 'stable' ? 'text-yellow-400' : 'text-red-400'}>{community.growthTrend ? getGrowthTrendLabel(community.growthTrend as GrowthTrend) : 'Unknown'}</span></p>
                                 <p>• Mod Activity: <span className={community.modActivity === 'high' ? 'text-red-400' : community.modActivity === 'medium' ? 'text-yellow-400' : 'text-green-400'}>{community.modActivity}</span></p>
                               </div>
                             </div>
@@ -482,14 +482,14 @@ export function RedditCommunities() {
 
                           {/* Rules and Tags */}
                           <div className="grid md:grid-cols-2 gap-4 mt-4">
-                            {(community.rules.titleRules || community.rules.contentRules) && (
+                            {(community.rules?.content?.titleGuidelines || community.rules?.content?.contentGuidelines) && (
                               <div>
                                 <h4 className="text-sm font-semibold text-purple-300 mb-2">Community Rules</h4>
                                 <div className="space-y-1 text-xs text-gray-400">
-                                  {community.rules.titleRules && community.rules.titleRules.map((rule: string, idx: number) => (
+                                  {community.rules?.content?.titleGuidelines && community.rules.content.titleGuidelines.map((rule: string, idx: number) => (
                                     <p key={idx}>• Title: {rule}</p>
                                   ))}
-                                  {community.rules.contentRules && community.rules.contentRules.map((rule: string, idx: number) => (
+                                  {community.rules?.content?.contentGuidelines && community.rules.content.contentGuidelines.map((rule: string, idx: number) => (
                                     <p key={idx}>• Content: {rule}</p>
                                   ))}
                                 </div>
