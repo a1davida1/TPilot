@@ -16,10 +16,10 @@ export function validate(schema: ZodSchema, source: ValidationSource = Validatio
     try {
       const data = req[source];
       const result = schema.safeParse(data);
-      
+
       if (!result.success) {
         const errors = result.error.flatten();
-        
+
         logger.warn('Input validation failed', {
           source,
           path: req.path,
@@ -29,7 +29,7 @@ export function validate(schema: ZodSchema, source: ValidationSource = Validatio
           ip: req.ip,
           userAgent: req.get('User-Agent')
         });
-        
+
         return res.status(400).json({
           error: 'VALIDATION_ERROR',
           message: 'Input validation failed',
@@ -39,11 +39,11 @@ export function validate(schema: ZodSchema, source: ValidationSource = Validatio
           }
         });
       }
-      
+
       // Replace original data with validated and potentially transformed data
       req[source] = result.data;
       next();
-      
+
     } catch (error) {
       logger.error('Validation middleware error', {
         error: (error as Error).message,
@@ -52,7 +52,7 @@ export function validate(schema: ZodSchema, source: ValidationSource = Validatio
         source,
         ip: req.ip
       });
-      
+
       return res.status(500).json({
         error: 'INTERNAL_ERROR',
         message: 'Validation processing failed'
@@ -65,11 +65,11 @@ export function validate(schema: ZodSchema, source: ValidationSource = Validatio
 export function validateMultiple(validations: Array<{ schema: ZodSchema; source: ValidationSource }>) {
   return (req: Request, res: Response, next: NextFunction) => {
     const errors: Record<string, { fieldErrors: Record<string, string[] | undefined>; formErrors: string[] }> = {};
-    
+
     for (const { schema, source } of validations) {
       const data = req[source];
       const result = schema.safeParse(data);
-      
+
       if (!result.success) {
         const sourceErrors = result.error.flatten();
         errors[source] = {
@@ -81,7 +81,7 @@ export function validateMultiple(validations: Array<{ schema: ZodSchema; source:
         req[source] = result.data;
       }
     }
-    
+
     if (Object.keys(errors).length > 0) {
       logger.warn('Multi-source validation failed', {
         validationErrors: errors,
@@ -90,14 +90,14 @@ export function validateMultiple(validations: Array<{ schema: ZodSchema; source:
         ip: req.ip,
         userAgent: req.get('User-Agent')
       });
-      
+
       return res.status(400).json({
         error: 'VALIDATION_ERROR',
         message: 'Input validation failed',
         details: errors
       });
     }
-    
+
     next();
   };
 }
@@ -238,11 +238,11 @@ export function sanitizeInput(input: unknown): unknown {
       .replace(/on\w+\s*=/gi, '') // Remove event handlers
       .trim();
   }
-  
+
   if (Array.isArray(input)) {
     return input.map(sanitizeInput);
   }
-  
+
   if (input && typeof input === 'object') {
     const sanitized: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(input)) {
@@ -250,7 +250,7 @@ export function sanitizeInput(input: unknown): unknown {
     }
     return sanitized;
   }
-  
+
   return input;
 }
 
@@ -259,7 +259,7 @@ export function validateAndSanitize(schema: ZodSchema, source: ValidationSource 
   return (req: Request, res: Response, next: NextFunction) => {
     // First sanitize the input
     req[source] = sanitizeInput(req[source]);
-    
+
     // Then apply validation
     return validate(schema, source)(req, res, next);
   };

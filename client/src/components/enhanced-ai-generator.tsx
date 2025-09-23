@@ -1,6 +1,4 @@
-` tags.
 
-<replit_final_file>
 import React, { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";

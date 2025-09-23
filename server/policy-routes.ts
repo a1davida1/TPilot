@@ -24,11 +24,11 @@ export function registerPolicyRoutes(app: Express) {
       if (!userId) {
         return res.status(401).json({ message: 'Authentication required' });
       }
-      
+
       // Validate request
       const validation = previewRequestSchema.safeParse(req.body);
       if (!validation.success) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: "Invalid request",
           errors: validation.error.issues
         });
@@ -79,7 +79,7 @@ export function registerPolicyRoutes(app: Express) {
       if (!userId) {
         return res.status(401).json({ message: 'Authentication required' });
       }
-      
+
       // Get preview statistics
       const stats = await getPreviewStats(userId);
 
@@ -99,7 +99,7 @@ export function registerPolicyRoutes(app: Express) {
       if (!userId) {
         return res.status(401).json({ message: 'Authentication required' });
       }
-      
+
       // Check preview gate
       const gateResult = await checkPreviewGate(userId);
 
@@ -128,7 +128,7 @@ export function registerPolicyRoutes(app: Express) {
 
     } catch (error) {
       console.error("Policy flags endpoint error:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         blockOnWarn: false // Fail safe
       });
     }
