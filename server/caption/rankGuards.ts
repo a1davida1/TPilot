@@ -68,7 +68,7 @@ export function fallbackHashtags(platform?: string): string[] {
     case "x":
       return ["#thoughts"];
     case "reddit":
-      return ["community insights"]; // Reddit descriptive labels instead of hashtags
+      return [];
     default:
       return ["#thoughts"];
   }
@@ -82,15 +82,6 @@ export interface Violation {
 
 export function detectVariantViolations(variant: any): Violation[] {
   const violations: Violation[] = [];
-
-  // Check for banned words first
-  if (variantContainsBannedWord(variant)) {
-    violations.push({
-      type: "banned_word",
-      content: variant.caption || "",
-      field: "caption"
-    });
-  }
 
   // Check caption for banned phrases
   if (typeof variant.caption === "string") {
@@ -129,6 +120,38 @@ export function detectVariantViolations(variant: any): Violation[] {
     });
   }
 
+  // Only surface banned words when no other specific violations are present
+  if (violations.length === 0) {
+    if (containsBannedWord(variant.caption)) {
+      violations.push({
+        type: "banned_word",
+        content: typeof variant.caption === "string" ? variant.caption : "",
+        field: "caption"
+      });
+    } else if (Array.isArray(variant.hashtags)) {
+      const flaggedHashtag = variant.hashtags.find((tag: unknown) => containsBannedWord(tag));
+      if (flaggedHashtag) {
+        violations.push({
+          type: "banned_word",
+          content: String(flaggedHashtag),
+          field: "hashtags"
+        });
+      }
+    } else if (containsBannedWord(variant.cta)) {
+      violations.push({
+        type: "banned_word",
+        content: typeof variant.cta === "string" ? variant.cta : "",
+        field: "cta"
+      });
+    } else if (containsBannedWord(variant.alt)) {
+      violations.push({
+        type: "banned_word",
+        content: typeof variant.alt === "string" ? variant.alt : "",
+        field: "caption"
+      });
+    }
+  }
+
   return violations;
 }
 
@@ -138,10 +161,10 @@ export function buildRerankHint(violations: Violation[]): string {
   for (const violation of violations) {
     switch (violation.type) {
       case "banned_phrase":
-        hints.push("avoid sparkle-filler phrases like 'Check out this amazing content'");
+        hints.push("skip sparkle emojis and filler phrases like 'Check out this amazing content'");
         break;
       case "generic_hashtag":
-        hints.push("use specific, authentic hashtags instead of generic ones like #content #creative #amazing");
+        hints.push("replace generic hashtags with specific, engaging tags instead of #content or #creative");
         break;
       case "canned_cta":
         hints.push("create unique calls-to-action instead of templates like 'Check it out'");
@@ -161,25 +184,26 @@ export function formatViolationSummary(violations: Violation[]): string {
   if (violations.length === 0) return "";
 
   const summaries: string[] = [];
-  
+
   for (const violation of violations) {
     switch (violation.type) {
       case "banned_phrase":
-        summaries.push("sanitized sparkle-filler caption");
+        summaries.push("caption polished");
         break;
       case "banned_word":
-        summaries.push("removed banned words");
+        summaries.push("banned words removed");
         break;
       case "generic_hashtag":
-        summaries.push("replaced generic hashtags");
+        summaries.push("generic hashtags swapped");
         break;
       case "canned_cta":
-        summaries.push("upgraded canned CTA");
+        summaries.push("canned CTA replaced");
         break;
     }
   }
 
-  return `Sanitized: ${summaries.join(", ")}`;
+  const details = summaries.join(", ");
+  return details ? `Sanitized sparkle filler: ${details}` : "Sanitized sparkle filler";
 }
 
 export function sanitizeFinalVariant(variant: any, platform?: string): any {
@@ -234,39 +258,26 @@ export function sanitizeFinalVariant(variant: any, platform?: string): any {
   }
 
   // Enhanced hashtag sanitization with platform-specific rules
+  const fallback = fallbackHashtags(platform);
+
   if (Array.isArray(sanitized.hashtags)) {
-    // Filter out banned words and generic hashtags
-    let cleanedHashtags = sanitized.hashtags
-      .filter((tag: any) => typeof tag === "string" && !containsBannedWord(tag))
-      .filter((tag: any) => !GENERIC_HASHTAGS.has(tag.toLowerCase()));
-    
-    // Reddit special case: strip leading # from descriptive labels
-    if (platform === 'reddit') {
-      cleanedHashtags = cleanedHashtags.map((tag: string) => 
-        tag.startsWith('#') ? tag.substring(1) : tag
-      );
-    }
-    
-    // Apply platform-specific hashtag limits after cleaning
-    if (platform === 'x' && cleanedHashtags.length > 3) {
-      cleanedHashtags = cleanedHashtags.slice(0, 3);
-    } else if (platform === 'reddit' && cleanedHashtags.length > 1) {
-      cleanedHashtags = cleanedHashtags.slice(0, 1);
-    }
-    // Instagram and TikTok: no limit enforced
-    
-    // Enforce minimum requirements or fall back
-    const fallback = fallbackHashtags(platform);
-    const minRequired = platform === 'reddit' ? 1 : 1; // At least 1 hashtag or label
-    
-    if (cleanedHashtags.length < minRequired) {
-      sanitized.hashtags = fallback;
+    const cleanedHashtags = sanitized.hashtags
+      .filter((tag: any): tag is string => typeof tag === "string")
+      .map((tag: string) => tag.trim())
+      .filter((tag: string) => tag.length > 0)
+      .filter((tag: string) => !containsBannedWord(tag))
+      .filter((tag: string) => !GENERIC_HASHTAGS.has(tag.toLowerCase()));
+
+    if (platform === "reddit") {
+      sanitized.hashtags = [];
     } else {
-      sanitized.hashtags = cleanedHashtags;
+      const limitedHashtags =
+        platform === "x" ? cleanedHashtags.slice(0, 2) : cleanedHashtags;
+
+      sanitized.hashtags = limitedHashtags.length > 0 ? limitedHashtags : fallback;
     }
   } else {
-    // No hashtags provided, use fallback
-    sanitized.hashtags = fallbackHashtags(platform);
+    sanitized.hashtags = platform === "reddit" ? [] : fallback;
   }
 
   return sanitized;
