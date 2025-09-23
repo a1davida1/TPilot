@@ -1,0 +1,648 @@
+diff --git a/server/policy-routes.ts b/server/policy-routes.ts
+--- a/server/policy-routes.ts
++++ b/server/policy-routes.ts
+@@
+-import type { Express, Request, Response } from "express";
+-
+-type AuthenticatedRequest = Request & {
+-  session?: { userId?: number };
+-  user?: { id?: number };
+-};
++import type { Express, Response } from "express";
++import { authenticateToken, type AuthRequest } from "./middleware/auth.js";
+@@
+-  app.post("/api/preview", async (req: AuthenticatedRequest, res: Response) => {
++  app.post("/api/preview", authenticateToken, async (req: AuthRequest, res: Response) => {
+     try {
+-      // Authentication check - get userId from session or auth middleware
+-      const userId = req.session?.userId ?? req.user?.id;
++      // Authentication check - rely on authenticateToken to populate req.user
++      const userId = req.user?.id;
+@@
+-  app.get("/api/user/previewStats", async (req: AuthenticatedRequest, res: Response) => {
++  app.get("/api/user/previewStats", authenticateToken, async (req: AuthRequest, res: Response) => {
+     try {
+-      // Authentication check - get userId from session or auth middleware
+-      const userId = req.session?.userId ?? req.user?.id;
++      // Authentication check - rely on authenticateToken to populate req.user
++      const userId = req.user?.id;
+@@
+-  app.get("/api/policy/gate/check", async (req: AuthenticatedRequest, res: Response) => {
++  app.get("/api/policy/gate/check", authenticateToken, async (req: AuthRequest, res: Response) => {
+     try {
+-      // Authentication check - get userId from session or auth middleware
+-      const userId = req.session?.userId ?? req.user?.id;
++      // Authentication check - rely on authenticateToken to populate req.user
++      const userId = req.user?.id;
+diff --git a/server/middleware/validation.ts b/server/middleware/validation.ts
+--- a/server/middleware/validation.ts
++++ b/server/middleware/validation.ts
+@@
+-export const passwordSchema = z.string()
+-  .min(12, 'Password must be at least 12 characters')
++export const passwordSchema = z.string()
++  .min(8, 'Password must be at least 8 characters')
+   .max(128, 'Password must be less than 128 characters')
+   .regex(/[A-Z]/, 'Must contain uppercase')
+   .regex(/[a-z]/, 'Must contain lowercase')
+-  .regex(/[0-9]/, 'Must contain number')
+-  .regex(/[^A-Za-z0-9]/, 'Must contain special character');
++  .regex(/[0-9]/, 'Must contain number');
+diff --git a/client/src/index.css b/client/src/index.css
+--- a/client/src/index.css
++++ b/client/src/index.css
+@@
+-  :root {
+-    /* Light Mode - Purple Gradient Theme */
+-    --background: 0 0 100;
+-    --foreground: 0 0 8;
++  :root {
++    /* Light Mode - Sunset Orange Theme */
++    --background: 24 100 99;
++    --foreground: 24 60 12;
+@@
+-    /* Purple Gradient Primary */
+-    --primary: 271 82 58;
+-    --primary-foreground: 0 0 100;
+-    --focus-ring: 0 0 0 2px rgba(147,51,234,0.5);
+-    --primary-50: 271 40 96;
+-    --primary-100: 271 45 92;
+-    --primary-200: 271 50 84;
+-    --primary-300: 271 60 74;
+-    --primary-400: 271 70 66;
+-    --primary-500: 271 82 58;
+-    --primary-600: 271 85 50;
+-    --primary-700: 271 88 42;
+-    --primary-800: 271 90 34;
+-    --primary-900: 271 92 26;
+-    --primary-950: 271 94 18;
++    /* Primary brand colors - Orange gradient */
++    --primary: 24 94 55;
++    --primary-foreground: 0 0 100;
++    --focus-ring: 0 0 0 2px rgba(249,115,22,0.45);
++    --primary-50: 33 100 97;
++    --primary-100: 32 98 93;
++    --primary-200: 30 96 85;
++    --primary-300: 28 94 74;
++    --primary-400: 26 94 64;
++    --primary-500: 24 94 55;
++    --primary-600: 22 90 48;
++    --primary-700: 20 85 40;
++    --primary-800: 18 80 34;
++    --primary-900: 16 75 26;
++    --primary-950: 14 68 20;
+@@
+-    /* Accent colors - Purple palette */
+-    --accent: 271 70 50;
+-    --accent-foreground: 0 0 100;
+-    --accent-purple: 271 91 65;
+-    --accent-violet: 262 83 58;
+-    --accent-indigo: 239 84 67;
++    /* Accent colors - Warm palette */
++    --accent: 16 90 55;
++    --accent-foreground: 0 0 100;
++    --accent-purple: 12 88 58;
++    --accent-violet: 8 82 54;
++    --accent-indigo: 2 78 50;
+@@
+-    /* Form and interaction colors */
+-    --border: 271 25 85;
+-    --input: 0 0 100;
+-    --ring: 271 70 50;
++    /* Form and interaction colors */
++    --border: 26 70 85;
++    --input: 0 0 100;
++    --ring: 24 94 55;
+@@
+-    /* Sidebar colors */
+-    --sidebar-background: 0 0 100;
+-    --sidebar-foreground: 0 0 8;
+-    --sidebar-primary: 271 70 50;
+-    --sidebar-primary-foreground: 0 0 100;
+-    --sidebar-accent: 262 70 55;
+-    --sidebar-accent-foreground: 0 0 100;
+-    --sidebar-border: 271 25 85;
+-    --sidebar-ring: 271 70 50;
++    /* Sidebar colors */
++    --sidebar-background: 24 100 99;
++    --sidebar-foreground: 24 60 12;
++    --sidebar-primary: 24 94 55;
++    --sidebar-primary-foreground: 0 0 100;
++    --sidebar-accent: 16 92 58;
++    --sidebar-accent-foreground: 0 0 100;
++    --sidebar-border: 26 70 85;
++    --sidebar-ring: 24 94 55;
+@@
+-  .dark {
+-    /* Dark Mode - Purple Night Theme with WCAG AA Compliance */
+-    --background: 271 40 8;
+-    --foreground: 0 0 95;
++  .dark {
++    /* Dark Mode - Ember Night Theme with WCAG AA Compliance */
++    --background: 24 40 10;
++    --foreground: 24 70 96;
+@@
+-    /* Primary brand colors - Purple scale for dark mode */
+-    --primary: 271 91 65;
+-    --primary-foreground: 0 0 100;
+-    --primary-50: 271 70 5;
+-    --primary-100: 271 75 10;
+-    --primary-200: 271 80 15;
+-    --primary-300: 271 85 25;
+-    --primary-400: 271 80 35;
+-    --primary-500: 271 80 50;
+-    --primary-600: 271 80 60;
+-    --primary-700: 271 80 70;
+-    --primary-800: 271 75 80;
+-    --primary-900: 271 70 85;
+-    --primary-950: 271 65 90;
++    /* Primary brand colors - Orange scale for dark mode */
++    --primary: 24 96 64;
++    --primary-foreground: 0 0 100;
++    --primary-50: 24 90 20;
++    --primary-100: 24 92 26;
++    --primary-200: 24 92 32;
++    --primary-300: 24 94 40;
++    --primary-400: 24 96 48;
++    --primary-500: 24 96 56;
++    --primary-600: 24 96 62;
++    --primary-700: 24 96 70;
++    --primary-800: 24 94 78;
++    --primary-900: 24 92 86;
++    --primary-950: 24 90 92;
+@@
+-    /* Accent colors - Purple palette for dark mode */
+-    --accent: 271 85 75;
+-    --accent-foreground: 0 0 100;
+-    --accent-purple: 271 80 70;
+-    --accent-violet: 262 85 75;
+-    --accent-indigo: 239 95 75;
++    /* Accent colors - Warm palette for dark mode */
++    --accent: 16 90 66;
++    --accent-foreground: 0 0 100;
++    --accent-purple: 12 85 64;
++    --accent-violet: 8 80 60;
++    --accent-indigo: 2 75 56;
+@@
+-    /* Form and interaction colors */
+-    --border: 271 30 22;
+-    --input: 0 0 11;
+-    --ring: 271 80 70;
++    /* Form and interaction colors */
++    --border: 24 35 32;
++    --input: 24 40 16;
++    --ring: 24 96 62;
+@@
+-    /* Sidebar colors for dark mode */
+-    --sidebar-background: 271 25 10;
+-    --sidebar-foreground: 0 0 90;
+-    --sidebar-primary: 271 80 70;
+-    --sidebar-primary-foreground: 0 0 100;
+-    --sidebar-accent: 262 85 75;
+-    --sidebar-accent-foreground: 0 0 100;
+-    --sidebar-border: 271 30 22;
+-    --sidebar-ring: 271 80 70;
++    /* Sidebar colors for dark mode */
++    --sidebar-background: 24 35 12;
++    --sidebar-foreground: 24 70 90;
++    --sidebar-primary: 24 96 62;
++    --sidebar-primary-foreground: 0 0 100;
++    --sidebar-accent: 16 92 60;
++    --sidebar-accent-foreground: 0 0 100;
++    --sidebar-border: 24 35 32;
++    --sidebar-ring: 24 96 62;
+diff --git a/client/src/components/ui/button.tsx b/client/src/components/ui/button.tsx
+--- a/client/src/components/ui/button.tsx
++++ b/client/src/components/ui/button.tsx
+@@
+-        default: "bg-gradient-to-r from-pink-500 via-rose-400 to-pink-600 text-white font-bold shadow-pink-500/25 hover:shadow-pink-500/40 hover:from-pink-600 hover:via-rose-500 hover:to-pink-700",
++        default: "bg-gradient-to-r from-orange-500 via-amber-400 to-red-500 text-white font-bold shadow-orange-500/25 hover:shadow-orange-500/40 hover:from-orange-600 hover:via-amber-500 hover:to-red-500",
+         destructive:
+           "bg-gradient-to-r from-red-500 to-red-600 text-white font-bold shadow-red-500/25 hover:shadow-red-500/40",
+         outline:
+-          "border-2 border-pink-300 bg-background/80 backdrop-blur text-pink-700 font-semibold hover:bg-pink-50 hover:border-pink-400 dark:border-pink-500 dark:text-pink-300 dark:hover:bg-pink-950/20",
++          "border-2 border-orange-300 bg-background/80 backdrop-blur text-orange-700 font-semibold hover:bg-orange-50 hover:border-orange-400 dark:border-orange-500 dark:text-orange-300 dark:hover:bg-orange-950/20",
+         secondary:
+-          "bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800 font-semibold border border-purple-200 hover:from-purple-200 hover:to-pink-200 dark:from-purple-900/20 dark:to-pink-900/20 dark:text-purple-300",
+-        ghost: "text-pink-600 font-semibold hover:bg-pink-100/50 hover:text-pink-700 dark:text-pink-400 dark:hover:bg-pink-950/20",
+-        link: "text-pink-600 font-semibold underline-offset-4 hover:underline hover:text-pink-700 dark:text-pink-400",
++          "bg-gradient-to-r from-amber-100 to-orange-100 text-orange-800 font-semibold border border-orange-200 hover:from-amber-200 hover:to-orange-200 dark:from-orange-900/20 dark:to-red-900/20 dark:text-orange-300",
++        ghost: "text-orange-600 font-semibold hover:bg-orange-100/50 hover:text-orange-700 dark:text-orange-400 dark:hover:bg-orange-950/20",
++        link: "text-orange-600 font-semibold underline-offset-4 hover:underline hover:text-orange-700 dark:text-orange-400",
+diff --git a/client/src/components/enhanced-ai-generator.tsx b/client/src/components/enhanced-ai-generator.tsx
+--- a/client/src/components/enhanced-ai-generator.tsx
++++ b/client/src/components/enhanced-ai-generator.tsx
+@@
+-import { Sparkles, Brain, Zap, DollarSign, Clock, TrendingUp, RefreshCw, Settings, Copy, Check, Hash } from "lucide-react";
++import { Sparkles, Brain, RefreshCw, Settings, Copy, Hash } from "lucide-react";
+@@
+-interface GeneratedContentType {
+-  titles?: string[];
+-  content?: string;
+-  photoInstructions?: string | object;
+-}
+-
+ // Define types for mutation variables and response
+ interface GenerateContentVariables {
+@@
+-// Match the actual API response from caption generation pipelines
+-interface GeneratedContent {
+-  provider: string;
+-  final: {
+-    caption: string;
+-    alt: string;
+-    hashtags: string[];
+-    cta: string;
+-    mood: string;
+-    style: string;
+-    safety_level: string;
+-    nsfw: boolean;
+-  };
+-  facts?: Record<string, unknown>;
+-  variants?: Array<{
+-    caption: string;
+-    alt: string;
+-    hashtags: string[];
+-    cta: string;
+-    mood: string;
+-    style: string;
+-    safety_level: string;
+-    nsfw: boolean;
+-  }>;
+-  ranked?: {
+-    winner_index: number;
+-    scores: number[];
+-    reason: string;
+-    final: {
+-      caption: string;
+-      alt: string;
+-      hashtags: string[];
+-      cta: string;
+-      mood: string;
+-      style: string;
+-      safety_level: string;
+-      nsfw: boolean;
+-    };
+-  };
+-}
++interface UnifiedAIResponse {
++  titles: string[];
++  content: string;
++  photoInstructions: {
++    lighting: string;
++    cameraAngle: string;
++    composition: string;
++    styling: string;
++    mood: string;
++    technicalSettings: string;
++  };
++  hashtags?: string[];
++  caption?: string;
++}
++
++const photoInstructionFields: Array<{ key: keyof UnifiedAIResponse["photoInstructions"]; label: string }> = [
++  { key: "lighting", label: "Lighting" },
++  { key: "cameraAngle", label: "Camera Angle" },
++  { key: "composition", label: "Composition" },
++  { key: "styling", label: "Styling" },
++  { key: "mood", label: "Mood" },
++  { key: "technicalSettings", label: "Technical Settings" }
++];
+@@
+-  const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
++  const [generatedContent, setGeneratedContent] = useState<UnifiedAIResponse | null>(null);
+@@
+-      color: 'bg-gradient-to-br from-purple-50 to-violet-100 hover:from-purple-100 hover:to-violet-200 text-purple-900 border-2 border-purple-200 hover:border-purple-300 shadow-sm hover:shadow-md'
++      color: 'bg-gradient-to-br from-orange-50 to-amber-100 hover:from-orange-100 hover:to-amber-200 text-orange-900 border-2 border-orange-200 hover:border-orange-300 shadow-sm hover:shadow-md'
+@@
+-  const generateContentMutation = useMutation<GeneratedContent, Error, GenerateContentVariables>({
++  const generateContentMutation = useMutation<UnifiedAIResponse, Error, GenerateContentVariables>({
+@@
+-      return (await response.json()) as GeneratedContent;
++      return (await response.json()) as UnifiedAIResponse;
+     },
+     onSuccess: (data, variables) => {
+-      setGeneratedContent(data);
+-
+-      // Transform the API response to match ContentGeneration interface for the callback
+-      const transformedContent: ContentGeneration = {
+-        id: 0, // Will be set by database
+-        userId: 0, // Will be set by database
+-        platform: variables.platform || "reddit",
+-        style: variables.style || "confident",
+-        theme: variables.theme || "general",
+-        titles: [data.final.caption], // Use caption as title
+-        content: data.final.caption,
+-        photoInstructions: {
+-          lighting: "Natural lighting recommended",
+-          cameraAngle: "Eye level or slightly above",
+-          composition: "Center subject with balanced background",
+-          styling: "Match the content mood and style",
+-          mood: data.final.mood || "confident",
+-          technicalSettings: "Auto settings work well"
+-        },
+-        prompt: variables.customPrompt || variables.prompt || "",
+-        subreddit: variables.subreddit,
+-        allowsPromotion: variables.includePromotion || false,
+-        generationType: "ai",
+-        createdAt: new Date(),
+-      };
+-
+-      onContentGenerated(transformedContent);
+-
+-      toast({
+-        title: "Content Generated Successfully!",
+-        description: `Generated with ${data.provider || 'AI service'}`
+-      });
+-
+-      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
++      const fallbackTitle = data.caption?.trim() || data.titles?.[0] || "AI Generated Content";
++      const normalizedTitles = data.titles && data.titles.length > 0 ? data.titles : [fallbackTitle];
++      const primaryContent = data.content?.trim() ? data.content : data.caption ?? fallbackTitle;
++      const sanitizedHashtags = data.hashtags
++        ?.map((tag) => tag.trim())
++        .filter((tag) => tag.length > 0);
++      const safePhotoInstructions = {
++        lighting: data.photoInstructions?.lighting || "Use warm, soft lighting that flatters skin tones.",
++        cameraAngle: data.photoInstructions?.cameraAngle || "Shoot at eye level or slightly above for a confident look.",
++        composition: data.photoInstructions?.composition || "Center yourself and keep the framing clean.",
++        styling: data.photoInstructions?.styling || "Match wardrobe and props to the vibe of the caption.",
++        mood: data.photoInstructions?.mood || "Project confidence with relaxed, inviting expressions.",
++        technicalSettings: data.photoInstructions?.technicalSettings || "Auto settings are fine; prioritize clear focus."
++      };
++
++      const normalizedResponse: UnifiedAIResponse = {
++        titles: normalizedTitles,
++        content: primaryContent,
++        photoInstructions: safePhotoInstructions,
++        caption: data.caption?.trim() || undefined,
++        hashtags: sanitizedHashtags && sanitizedHashtags.length > 0 ? sanitizedHashtags : undefined
++      };
++
++      setGeneratedContent(normalizedResponse);
++
++      const allowsPromotionValue =
++        typeof variables.includePromotion === "boolean"
++          ? variables.includePromotion
++          : variables.allowsPromotion !== "none";
++
++      // Transform the API response to match ContentGeneration interface for the callback
++      const transformedContent: ContentGeneration = {
++        id: 0, // Will be set by database
++        userId: 0, // Will be set by database
++        platform: variables.platform || "reddit",
++        style: variables.style || "confident",
++        theme: variables.theme || "general",
++        titles: normalizedResponse.titles,
++        content: normalizedResponse.content,
++        photoInstructions: normalizedResponse.photoInstructions,
++        prompt: variables.customPrompt || variables.prompt || "",
++        subreddit: variables.subreddit,
++        allowsPromotion: allowsPromotionValue,
++        generationType: "ai",
++        createdAt: new Date(),
++      };
++
++      onContentGenerated(transformedContent);
++
++      toast({
++        title: "Content Generated Successfully!",
++        description: normalizedResponse.caption ?? normalizedResponse.titles[0] ?? "Your AI content is ready."
++      });
++
++      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+@@
+-            <div className="flex items-center">
+-              <Brain className="mr-2 h-5 w-5 text-pink-600" />
+-              <span className="bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
++            <div className="flex items-center">
++              <Brain className="mr-2 h-5 w-5 text-orange-500" />
++              <span className="bg-gradient-to-r from-orange-500 via-amber-500 to-red-500 bg-clip-text text-transparent">
+@@
+-          {isGuestMode && (
+-            <Badge variant="secondary" className="bg-pink-100 text-pink-800">
++          {isGuestMode && (
++            <Badge variant="secondary" className="bg-orange-100 text-orange-800">
+@@
+-            <h3 className="text-lg font-semibold mb-2 bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
++            <h3 className="text-lg font-semibold mb-2 bg-gradient-to-r from-orange-500 via-amber-500 to-red-500 bg-clip-text text-transparent">
+@@
+-              <div className="flex items-center justify-center space-x-2 py-4">
+-                <RefreshCw className="h-4 w-4 animate-spin text-pink-600" />
++              <div className="flex items-center justify-center space-x-2 py-4">
++                <RefreshCw className="h-4 w-4 animate-spin text-orange-500" />
+@@
+-            <Textarea
++            <Textarea
+               value={customPrompt}
+               onChange={(e) => setCustomPrompt(e.target.value)}
+               rows={3}
+-              className="border-pink-200 focus:ring-pink-500"
++              className="border-orange-200 focus:ring-orange-500"
+@@
+-                <Label className="text-base font-medium text-pink-600">Photo Type</Label>
++                <Label className="text-base font-medium text-orange-600">Photo Type</Label>
+@@
+-                      className={`text-xs p-2 h-auto ${photoType === type.id ? 'bg-pink-600 text-white' : 'hover:bg-pink-50'}`}
++                      className={`text-xs p-2 h-auto ${photoType === type.id ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-500/30 border-transparent' : 'text-orange-600 hover:bg-orange-50 border-orange-200'}`}
+@@
+-                <Label className="text-base font-medium text-purple-600">Text Tone</Label>
++                <Label className="text-base font-medium text-amber-600">Text Tone</Label>
+@@
+-                  <SelectTrigger className="border-purple-200 focus:ring-purple-500">
++                  <SelectTrigger className="border-amber-200 focus:ring-amber-500">
+@@
+-        <Button
++        <Button
+           onClick={handleGenerate}
+           disabled={generateContentMutation.isPending}
+-          className="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white font-medium"
++          className="w-full bg-gradient-to-r from-orange-500 via-amber-500 to-red-500 hover:from-orange-600 hover:via-amber-500 hover:to-red-500 text-white font-medium"
+           size="lg"
+@@
+-        {generatedContent && (
+-          <div className="space-y-4 p-4 bg-gradient-to-br from-pink-50 to-purple-50 rounded-lg border border-pink-200">
+-            <h4 className="font-semibold text-lg text-pink-800">Generated Content</h4>
++        {generatedContent && (
++          <div className="space-y-4 p-4 bg-gradient-to-br from-orange-50 via-amber-50 to-rose-100 rounded-lg border border-orange-200">
++            <h4 className="font-semibold text-lg text-orange-800 flex items-center gap-2">
++              <Sparkles className="h-4 w-4 text-orange-500" />
++              Generated Content
++            </h4>
+@@
+-                <Label className="text-sm font-medium text-pink-700">Titles:</Label>
+-                {(Array.isArray((generatedContent as GeneratedContentType).titles) ? (generatedContent as GeneratedContentType).titles! : [(generatedContent as GeneratedContentType).titles!]).map((title: any, index: number) => (
+-                  <div key={index} className="relative p-3 bg-white rounded-lg border group">
+-                    <p className="text-sm font-medium pr-8">{title}</p>
++                <Label className="text-sm font-medium text-orange-700">Titles:</Label>
++                {generatedContent.titles.map((title, index) => (
++                  <div key={`${title}-${index}`} className="relative p-3 bg-white rounded-lg border group">
++                    <p className="text-sm font-medium pr-8">{title}</p>
+                     <Button
+                       variant="ghost"
+                       size="sm"
+-                      onClick={() => copyToClipboard(title, 'Title')}
+-                      className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
++                      onClick={() => copyToClipboard(title, "Title")}
++                      className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-orange-600"
+                     >
+                       <Copy className="h-3 w-3" />
+                     </Button>
+                   </div>
+                 ))}
+               </div>
+             )}
+-
+-            {/* Content */}
+-            {(generatedContent as any).content && (
+-              <div className="space-y-2">
+-                <Label className="text-sm font-medium text-purple-700">Content:</Label>
+-                <div className="relative p-3 bg-white rounded-lg border group">
+-                  <p className="text-sm whitespace-pre-wrap pr-8">{(generatedContent as any).content}</p>
+-                  <Button
+-                    variant="ghost"
+-                    size="sm"
+-                    onClick={() => copyToClipboard((generatedContent as any).content, 'Content')}
+-                    className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+-                  >
+-                    <Copy className="h-3 w-3" />
+-                  </Button>
+-                </div>
+-              </div>
+-            )}
+-
+-            {/* Photo Instructions */}
+-            {(generatedContent as any).photoInstructions && (
+-              <div className="space-y-2">
+-                <Label className="text-sm font-medium text-blue-700">Photo Instructions:</Label>
+-                <div className="relative p-3 bg-white rounded-lg border group">
+-                  <p className="text-sm whitespace-pre-wrap pr-8">
+-                    {typeof (generatedContent as any).photoInstructions === 'string'
+-                      ? (generatedContent as any).photoInstructions
+-                      : JSON.stringify((generatedContent as any).photoInstructions, null, 2)}
+-                  </p>
+-                  <Button
+-                    variant="ghost"
+-                    size="sm"
+-                    onClick={() => copyToClipboard(
+-                      typeof (generatedContent as any).photoInstructions === 'string'
+-                        ? (generatedContent as any).photoInstructions
+-                        : JSON.stringify((generatedContent as any).photoInstructions, null, 2),
+-                      'Photo Instructions'
+-                    )}
+-                    className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+-                  >
+-                    <Copy className="h-3 w-3" />
+-                  </Button>
+-                </div>
+-              </div>
+-            )}
+-          </div>
+-        )}
++            {generatedContent.caption && generatedContent.caption !== generatedContent.content && (
++              <div className="space-y-2">
++                <Label className="text-sm font-medium text-amber-700">Caption:</Label>
++                <div className="relative p-3 bg-white rounded-lg border group">
++                  <p className="text-sm whitespace-pre-wrap pr-8">{generatedContent.caption}</p>
++                  <Button
++                    variant="ghost"
++                    size="sm"
++                    onClick={() => copyToClipboard(generatedContent.caption ?? "", "Caption")}
++                    className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-orange-600"
++                  >
++                    <Copy className="h-3 w-3" />
++                  </Button>
++                </div>
++              </div>
++            )}
++
++            <div className="space-y-2">
++              <Label className="text-sm font-medium text-red-700">Content:</Label>
++              <div className="relative p-3 bg-white rounded-lg border group">
++                <p className="text-sm whitespace-pre-wrap pr-8">{generatedContent.content}</p>
++                <Button
++                  variant="ghost"
++                  size="sm"
++                  onClick={() => copyToClipboard(generatedContent.content, "Content")}
++                  className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-orange-600"
++                >
++                  <Copy className="h-3 w-3" />
++                </Button>
++              </div>
++            </div>
++
++            {generatedContent.hashtags && (
++              <div className="space-y-2">
++                <Label className="text-sm font-medium text-orange-700 flex items-center gap-1">
++                  <Hash className="h-3 w-3" />
++                  Hashtags:
++                </Label>
++                <div className="flex flex-wrap gap-2">
++                  {generatedContent.hashtags.map((tag) => (
++                    <span
++                      key={tag}
++                      className="px-2 py-1 rounded-full bg-orange-100 text-orange-800 text-xs font-semibold"
++                    >
++                      {tag}
++                    </span>
++                  ))}
++                </div>
++                <div className="flex justify-end">
++                  <Button
++                    variant="ghost"
++                    size="sm"
++                    onClick={() => copyToClipboard(generatedContent.hashtags!.join(" "), "Hashtags")}
++                    className="h-7 px-2 text-xs text-orange-600 hover:text-orange-700"
++                  >
++                    <Copy className="h-3 w-3 mr-1" />
++                    Copy all
++                  </Button>
++                </div>
++              </div>
++            )}
++
++            <div className="space-y-2">
++              <Label className="text-sm font-medium text-amber-700">Photo Instructions:</Label>
++              <div className="relative p-3 bg-white rounded-lg border">
++                <dl className="grid gap-2 text-sm text-slate-700 dark:text-slate-200">
++                  {photoInstructionFields.map(({ key, label }) => (
++                    <div key={key} className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1">
++                      <dt className="font-semibold text-orange-700">{label}</dt>
++                      <dd className="sm:text-right">{generatedContent.photoInstructions[key]}</dd>
++                    </div>
++                  ))}
++                </dl>
++                <Button
++                  variant="ghost"
++                  size="sm"
++                  onClick={() =>
++                    copyToClipboard(JSON.stringify(generatedContent.photoInstructions, null, 2), "Photo Instructions")
++                  }
++                  className="absolute top-2 right-2 h-7 px-2 text-xs opacity-70 hover:opacity-100 text-orange-600"
++                >
++                  <Copy className="h-3 w-3 mr-1" />
++                  Copy JSON
++                </Button>
++              </div>
++            </div>
++          </div>
++        )}
+@@
+-        {isGuestMode && (
+-          <div className="text-center p-4 bg-pink-50 border border-pink-200 rounded-lg">
+-            <p className="text-sm text-pink-700">
+-              <a href="/login" className="text-pink-800 underline ml-1 font-medium">
+-                Sign up for full access
+-              </a>
+-            </p>
+-          </div>
+-        )}
++        {isGuestMode && (
++          <div className="text-center p-4 bg-orange-50 border border-orange-200 rounded-lg">
++            <p className="text-sm text-orange-700">
++              <a href="/login" className="text-orange-800 underline ml-1 font-medium">
++                Sign up for full access
++              </a>
++            </p>
++          </div>
++        )}
