@@ -16,7 +16,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": false,
-      "sellingAllowed": "not_allowed",
+      "sellingAllowed": "no",
       "titleRules": [],
       "contentRules": [
         "Verification required",
@@ -60,7 +60,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": false,
-      "sellingAllowed": "not_allowed",
+      "sellingAllowed": "no",
       "titleRules": [],
       "contentRules": [
         "No selling",
@@ -101,7 +101,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": true,
-      "sellingAllowed": "allowed",
+      "sellingAllowed": "yes",
       "titleRules": [
         "Must follow format"
       ],
@@ -145,7 +145,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": true,
-      "sellingAllowed": "allowed",
+      "sellingAllowed": "yes",
       "titleRules": [],
       "contentRules": [
         "One post per day",
@@ -397,7 +397,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": true,
-      "sellingAllowed": "allowed",
+      "sellingAllowed": "yes",
       "titleRules": [
         "Follow title format"
       ],
@@ -440,7 +440,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "not_allowed",
+      "sellingAllowed": "no",
       "titleRules": [],
       "contentRules": [
         "Curvy content only",
@@ -524,7 +524,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "not_allowed",
+      "sellingAllowed": "no",
       "titleRules": [],
       "contentRules": [
         "Cute/adorable theme",
@@ -608,7 +608,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "not_allowed",
+      "sellingAllowed": "no",
       "titleRules": [],
       "contentRules": [
         "Specific body type",
@@ -650,7 +650,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "not_allowed",
+      "sellingAllowed": "no",
       "titleRules": [],
       "contentRules": [
         "General NSFW",
@@ -819,7 +819,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "not_allowed",
+      "sellingAllowed": "no",
       "titleRules": [],
       "contentRules": [
         "Work themed",
@@ -988,7 +988,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "allowed",
+      "sellingAllowed": "yes",
       "titleRules": [],
       "contentRules": [
         "Goth aesthetic",
@@ -1198,7 +1198,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "allowed",
+      "sellingAllowed": "yes",
       "titleRules": [],
       "contentRules": [
         "Feet content",
@@ -1240,7 +1240,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "allowed",
+      "sellingAllowed": "yes",
       "titleRules": [],
       "contentRules": [
         "Feet focus",
@@ -1324,7 +1324,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "allowed",
+      "sellingAllowed": "yes",
       "titleRules": [],
       "contentRules": [
         "Female domination theme",
@@ -1366,7 +1366,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "allowed",
+      "sellingAllowed": "yes",
       "titleRules": [],
       "contentRules": [
         "Financial domination",
@@ -1451,7 +1451,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "allowed",
+      "sellingAllowed": "yes",
       "titleRules": [],
       "contentRules": [
         "Adult cosplay",
@@ -1493,7 +1493,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "allowed",
+      "sellingAllowed": "yes",
       "titleRules": [],
       "contentRules": [
         "Geek culture theme",
@@ -1662,7 +1662,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "allowed",
+      "sellingAllowed": "yes",
       "titleRules": [],
       "contentRules": [
         "Mom creators",
@@ -1704,7 +1704,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "allowed",
+      "sellingAllowed": "yes",
       "titleRules": [],
       "contentRules": [
         "Mom body positivity",
@@ -1746,7 +1746,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "allowed",
+      "sellingAllowed": "yes",
       "titleRules": [],
       "contentRules": [
         "Amateur mature content",
@@ -1830,7 +1830,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "allowed",
+      "sellingAllowed": "yes",
       "titleRules": [],
       "contentRules": [
         "Black creators only",
@@ -2124,7 +2124,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "not_allowed",
+      "sellingAllowed": "no",
       "titleRules": [],
       "contentRules": [
         "Large chest focus",
@@ -2208,7 +2208,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "allowed",
+      "sellingAllowed": "yes",
       "titleRules": [],
       "contentRules": [
         "Tattoo visibility",
@@ -2251,7 +2251,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "allowed",
+      "sellingAllowed": "yes",
       "titleRules": [],
       "contentRules": [
         "Piercing focus",
@@ -2293,7 +2293,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "allowed",
+      "sellingAllowed": "yes",
       "titleRules": [],
       "contentRules": [
         "Emo aesthetic",
@@ -2335,7 +2335,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "allowed",
+      "sellingAllowed": "yes",
       "titleRules": [],
       "contentRules": [
         "Scene style",
@@ -2377,7 +2377,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "allowed",
+      "sellingAllowed": "yes",
       "titleRules": [],
       "contentRules": [
         "E-girl aesthetic",
@@ -2461,7 +2461,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "not_allowed",
+      "sellingAllowed": "no",
       "titleRules": [],
       "contentRules": [
         "Age verification required",
@@ -2503,7 +2503,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "allowed",
+      "sellingAllowed": "yes",
       "titleRules": [],
       "contentRules": [
         "Born 2000-2005",
@@ -2545,7 +2545,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "allowed",
+      "sellingAllowed": "yes",
       "titleRules": [],
       "contentRules": [
         "Snapchat promotion",
@@ -2587,7 +2587,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "allowed",
+      "sellingAllowed": "yes",
       "titleRules": [],
       "contentRules": [
         "TikTok creators",
@@ -2672,7 +2672,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "allowed",
+      "sellingAllowed": "yes",
       "titleRules": [],
       "contentRules": [
         "Cam promotion",
@@ -2714,7 +2714,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "allowed",
+      "sellingAllowed": "yes",
       "titleRules": [],
       "contentRules": [
         "Cam content",
@@ -2756,7 +2756,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "allowed",
+      "sellingAllowed": "yes",
       "titleRules": [],
       "contentRules": [
         "Dancer content",
@@ -2882,7 +2882,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": false,
-      "sellingAllowed": "not_allowed",
+      "sellingAllowed": "no",
       "titleRules": [],
       "contentRules": [
         "Amateur only",
@@ -2924,7 +2924,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": false,
-      "sellingAllowed": "allowed",
+      "sellingAllowed": "yes",
       "titleRules": [],
       "contentRules": [
         "Homemade content",
@@ -3008,7 +3008,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "not_allowed",
+      "sellingAllowed": "no",
       "titleRules": [],
       "contentRules": [
         "Verified couples",
@@ -3134,7 +3134,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "allowed",
+      "sellingAllowed": "yes",
       "titleRules": [],
       "contentRules": [
         "Swinger lifestyle",
@@ -3176,7 +3176,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "allowed",
+      "sellingAllowed": "yes",
       "titleRules": [],
       "contentRules": [
         "Lifestyle content",
@@ -3302,7 +3302,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "allowed",
+      "sellingAllowed": "yes",
       "titleRules": [],
       "contentRules": [
         "Fantasy theme",
@@ -3470,7 +3470,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "allowed",
+      "sellingAllowed": "yes",
       "titleRules": [],
       "contentRules": [
         "Squirt content",
@@ -3554,7 +3554,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "allowed",
+      "sellingAllowed": "yes",
       "titleRules": [],
       "contentRules": [
         "Wet spot content",
@@ -3596,7 +3596,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "allowed",
+      "sellingAllowed": "yes",
       "titleRules": [],
       "contentRules": [
         "Panty content",
@@ -3638,7 +3638,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": true,
-      "sellingAllowed": "allowed",
+      "sellingAllowed": "yes",
       "titleRules": [],
       "contentRules": [
         "Selling platform",
@@ -3722,7 +3722,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "allowed",
+      "sellingAllowed": "yes",
       "titleRules": [],
       "contentRules": [
         "Stocking/hosiery content",
@@ -3764,7 +3764,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "allowed",
+      "sellingAllowed": "yes",
       "titleRules": [],
       "contentRules": [
         "Thigh high focus",
@@ -3848,7 +3848,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "not_allowed",
+      "sellingAllowed": "no",
       "titleRules": [],
       "contentRules": [
         "Yoga pants only",
@@ -3974,7 +3974,7 @@
       "minKarma": null,
       "minAccountAge": null,
       "watermarksAllowed": null,
-      "sellingAllowed": "not_allowed",
+      "sellingAllowed": "no",
       "titleRules": [],
       "contentRules": [
         "High quality only",
