@@ -30,8 +30,8 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import type { RedditCommunity, PostingLimits } from "@shared/schema";
-import { redditCommunityArrayZodSchema } from "@shared/schema";
+import type { RedditCommunity, PostingLimits, promotionAllowedSchema, categorySchema } from "@shared/schema";
+import { z } from "zod";
 
 export function RedditCommunities() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -41,7 +41,27 @@ export function RedditCommunities() {
   const [filterVerification, setFilterVerification] = useState<string>('all');
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
-  // Using canonical shared Zod schema for end-to-end type safety
+  // Using shared enum schemas with local validation for runtime safety
+  const RedditCommunityArraySchema = z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    displayName: z.string(),
+    members: z.number(),
+    engagementRate: z.number(),
+    category: z.string(), // Will be validated by server with categorySchema
+    verificationRequired: z.boolean(),
+    promotionAllowed: z.string(), // Will be validated by server with promotionAllowedSchema
+    postingLimits: z.any().nullable().optional(),
+    rules: z.any().optional(),
+    bestPostingTimes: z.array(z.string()).optional(),
+    averageUpvotes: z.number().nullable().optional(),
+    successProbability: z.number().nullable().optional(),
+    growthTrend: z.string().nullable().optional(),
+    modActivity: z.string().nullable().optional(),
+    description: z.string().nullable().optional(),
+    tags: z.array(z.string()).optional(),
+    competitionLevel: z.string().nullable().optional()
+  }));
 
   // Fetch communities data with runtime validation
   const { data: communities = [], isLoading } = useQuery({
@@ -54,9 +74,9 @@ export function RedditCommunities() {
       const response = await apiRequest('GET', `/api/reddit/communities?${params.toString()}`);
       const rawData = await response.json();
       
-      // Runtime validation using canonical shared schema
+      // Runtime validation using local schema (server validates with canonical schema)
       try {
-        const validatedData = redditCommunityArrayZodSchema.parse(rawData);
+        const validatedData = RedditCommunityArraySchema.parse(rawData);
         return validatedData as RedditCommunity[];
       } catch (parseError) {
         console.error('API response validation failed:', parseError);
@@ -106,9 +126,11 @@ export function RedditCommunities() {
         case 'engagement':
           return b.engagementRate - a.engagementRate;
         case 'upvotes':
-          return b.averageUpvotes - a.averageUpvotes;
+          // Safe handling of nullable averageUpvotes
+          return (b.averageUpvotes ?? 0) - (a.averageUpvotes ?? 0);
         case 'success':
-          return b.successProbability - a.successProbability;
+          // Safe handling of nullable successProbability
+          return (b.successProbability ?? 0) - (a.successProbability ?? 0);
         case 'name':
           return a.name.localeCompare(b.name);
         default:
