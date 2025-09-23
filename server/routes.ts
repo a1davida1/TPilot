@@ -20,6 +20,7 @@ import { authenticateToken } from "./middleware/auth.js";
 import { uploadRoutes, applyImageShieldProtection, protectionPresets } from "./routes/upload.js";
 import { mediaRoutes } from "./routes/media.js";
 import { analyticsRouter } from "./routes/analytics.js";
+import { referralRouter } from "./routes/referrals.js";
 import { registerExpenseRoutes } from "./expense-routes.js";
 import { adminCommunitiesRouter } from "./routes/admin-communities.js";
 
@@ -187,44 +188,6 @@ function registerProResourcesRoutes(app: Express) {
     }
   });
 
-  // POST /api/pro-resources/:id/referral-code - Generate referral code
-  app.post('/api/pro-resources/:id/referral-code', authenticateToken, async (req: AuthenticatedRequest, res) => {
-    try {
-      if (!req.user?.id) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-
-      const userTier = await getUserTier(req.user);
-      if (userTier === 'free' || userTier === 'starter') {
-        return res.status(403).json({ message: "Pro subscription required" });
-      }
-
-      const perkId = req.params.id;
-      if (!perkId) {
-        return res.status(400).json({ message: "Perk ID required" });
-      }
-
-      // Verify the perk exists and user has access
-      const availablePerks = userTier === 'premium'
-        ? getAvailablePerks('pro')
-        : getAvailablePerks(userTier);
-      const perk = availablePerks.find(p => p.id === perkId);
-      
-      if (!perk) {
-        return res.status(404).json({ message: "Perk not found or not accessible" });
-      }
-
-      const referralCode = generateReferralCode(req.user.id, perkId);
-      
-      res.json({
-        referralCode
-      });
-
-    } catch (error) {
-      logger.error("Referral code generation error:", error);
-      res.status(500).json({ message: "Failed to generate referral code" });
-    }
-  });
 }
 
 // Session interface with Reddit OAuth properties
@@ -247,7 +210,7 @@ import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage.js";
 import { getRandomTemplates, addWatermark, getTemplateByMood } from "./content-templates.js";
 import { generateAdvancedContent, type ContentParameters } from "./advanced-content-generator.js";
 // Reddit communities now handled in reddit-routes.ts
-import { getAvailablePerks, getPerksByCategory, generateReferralCode, getSignupInstructions, realProPerks } from "./pro-perks.js";
+import { getAvailablePerks, getPerksByCategory, getSignupInstructions, realProPerks } from "./pro-perks.js";
 
 // API route modules
 import { registerApiRoutes } from "./api-routes.js";
@@ -490,6 +453,9 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
 
   // Analytics routes
   app.use('/api/analytics', analyticsRouter);
+
+  // Referral routes
+  app.use('/api/referral', referralRouter);
   
   // Admin communities routes (mounted at reddit path for client compatibility)
   app.use('/api/reddit/communities', adminCommunitiesRouter);

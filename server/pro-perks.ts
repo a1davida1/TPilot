@@ -531,12 +531,6 @@ export function getPerksByCategory(category: ProPerk['category']): ProPerk[] {
   return realProPerks.filter(perk => perk.category === category);
 }
 
-export function generateReferralCode(userId: number, perkId: string): string {
-  // Generate unique referral codes for tracking
-  const timestamp = Date.now().toString(36);
-  const userCode = userId.toString(36);
-  return `TP${userCode}${perkId.slice(0, 3).toUpperCase()}${timestamp}`.slice(0, 12);
-}
 
 export function getSignupInstructions(perkId: string): {
   steps: string[];
@@ -594,7 +588,6 @@ export default {
   realProPerks,
   getAvailablePerks,
   getPerksByCategory,
-  generateReferralCode,
   getSignupInstructions,
   perkSuccessMetrics
 };
