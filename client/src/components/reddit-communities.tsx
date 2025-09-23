@@ -241,13 +241,32 @@ export function RedditCommunities() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Categories</SelectItem>
-              <SelectItem value="premium">Premium</SelectItem>
-              <SelectItem value="gonewild">Gone Wild</SelectItem>
-              <SelectItem value="general">General</SelectItem>
-              <SelectItem value="niche">Niche</SelectItem>
+              <SelectItem value="age">Age</SelectItem>
+              <SelectItem value="amateur">Amateur</SelectItem>
+              <SelectItem value="appearance">Appearance</SelectItem>
+              <SelectItem value="body_type">Body Type</SelectItem>
+              <SelectItem value="cam">Cam</SelectItem>
+              <SelectItem value="clothing">Clothing</SelectItem>
+              <SelectItem value="comparison">Comparison</SelectItem>
+              <SelectItem value="content_type">Content Type</SelectItem>
+              <SelectItem value="cosplay">Cosplay</SelectItem>
+              <SelectItem value="couples">Couples</SelectItem>
+              <SelectItem value="dancer">Dancer</SelectItem>
+              <SelectItem value="ethnicity">Ethnicity</SelectItem>
               <SelectItem value="fetish">Fetish</SelectItem>
+              <SelectItem value="fitness">Fitness</SelectItem>
+              <SelectItem value="gaming">Gaming</SelectItem>
+              <SelectItem value="general">General</SelectItem>
+              <SelectItem value="gonewild">Gonewild</SelectItem>
+              <SelectItem value="lifestyle">Lifestyle</SelectItem>
+              <SelectItem value="natural">Natural</SelectItem>
+              <SelectItem value="niche">Niche</SelectItem>
+              <SelectItem value="reveal">Reveal</SelectItem>
               <SelectItem value="selling">Selling</SelectItem>
-              <SelectItem value="verification">Verification</SelectItem>
+              <SelectItem value="social">Social</SelectItem>
+              <SelectItem value="specific">Specific</SelectItem>
+              <SelectItem value="style">Style</SelectItem>
+              <SelectItem value="theme">Theme</SelectItem>
             </SelectContent>
           </Select>
 
