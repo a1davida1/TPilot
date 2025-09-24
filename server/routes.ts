@@ -253,7 +253,7 @@ const stripeConfig = deriveStripeConfig({
 
 // Initialize Stripe if configured
 const stripe = stripeConfig ? new Stripe(stripeConfig.secretKey, {
-  apiVersion: stripeConfig.apiVersion as any,
+  apiVersion: stripeConfig.apiVersion as Stripe.LatestApiVersion,
 }) : null;
 
 // Configure multer for optional image uploads
@@ -351,7 +351,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
 
   if (IS_PRODUCTION) {
     if (REDIS_URL) {
-      const { RedisStore } = connectRedis as any;
+      const { RedisStore } = connectRedis as { RedisStore: new (options: { client: unknown; prefix: string }) => session.Store };
       const redisClient = new Redis(REDIS_URL);
       store = new RedisStore({ client: redisClient, prefix: 'sess:' });
     } else if (DATABASE_URL) {
@@ -570,7 +570,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
             recurring: {
               interval: 'month',
             },
-          } as any,
+          },
         }],
         payment_behavior: 'default_incomplete',
         payment_settings: { save_default_payment_method: 'on_subscription' },
@@ -582,7 +582,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
       });
 
       const invoice = subscription.latest_invoice as Stripe.Invoice;
-      const paymentIntent = (invoice as any).payment_intent as Stripe.PaymentIntent;
+      const paymentIntent = (invoice as { payment_intent?: Stripe.PaymentIntent }).payment_intent as Stripe.PaymentIntent;
 
       res.json({
         subscriptionId: subscription.id,

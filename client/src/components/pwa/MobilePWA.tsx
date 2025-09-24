@@ -36,7 +36,7 @@ export default function MobilePWA() {
     // Check if app is already installed
     const checkInstalled = () => {
       if ('getInstalledRelatedApps' in navigator) {
-        (navigator as any).getInstalledRelatedApps().then((apps: unknown[]) => {
+        (navigator as typeof navigator & { getInstalledRelatedApps: () => Promise<unknown[]> }).getInstalledRelatedApps().then((apps) => {
           setIsInstalled(apps.length > 0);
         });
       }
@@ -56,7 +56,7 @@ export default function MobilePWA() {
     const getBatteryInfo = async () => {
       if ('getBattery' in navigator) {
         try {
-          const battery = await (navigator as any).getBattery();
+          const battery = await (navigator as typeof navigator & { getBattery: () => Promise<{ level: number }> }).getBattery();
           setBatteryLevel(Math.round(battery.level * 100));
         } catch (error) {
           // Battery API not available - silently ignore
@@ -67,7 +67,7 @@ export default function MobilePWA() {
     // Get network type
     const getNetworkInfo = () => {
       if ('connection' in navigator) {
-        const connection = (navigator as any).connection;
+        const connection = (navigator as typeof navigator & { connection?: { effectiveType?: string } }).connection;
         setNetworkType(connection.effectiveType || 'unknown');
       }
     };
@@ -76,7 +76,7 @@ export default function MobilePWA() {
     getBatteryInfo();
     getNetworkInfo();
 
-    window.addEventListener('beforeinstallprompt' as any, handleBeforeInstallPrompt as any);
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt as EventListener);
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 

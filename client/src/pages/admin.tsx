@@ -91,27 +91,49 @@ interface Provider {
 
 interface SystemHealth {
   status: string;
+  database?: {
+    status: string;
+    message?: string;
+  };
   services: {
-    [key: string]: {
-      status: string;
-      message?: string;
-    };
+    gemini?: boolean;
+    openai?: boolean;
+    email?: boolean;
+  };
+  performance?: {
+    avgResponseTime?: string;
+    errorRate?: string;
+    throughput?: string;
   };
 }
 
 interface Analytics {
-  visitors: number;
+  visitors?: number;
   pageViews: number;
-  sessions: number;
-  conversionRate: number;
+  sessions?: number;
+  conversionRate?: number;
+  uniqueVisitors?: number;
+  bounceRate?: number;
+  topPages?: Array<{
+    page: string;
+    views: number;
+  }>;
+  trafficSources?: Array<{
+    source: string;
+    visits: number;
+  }>;
 }
 
 interface Completeness {
-  percentage: number;
-  items: {
+  percentage?: number;
+  completionPercentage?: number;
+  items?: {
     name: string;
     status: boolean;
   }[];
+  core?: Record<string, boolean>;
+  features?: Record<string, boolean>;
+  integrations?: Record<string, boolean>;
 }
 
 export function AdminDashboard() {
@@ -173,7 +195,7 @@ export function AdminDashboard() {
   });
 
   // User action mutation for admin operations
-  const actionMutation = useMutation<any, Error, UserActionData>({
+  const actionMutation = useMutation<{ tempPassword?: string }, Error, UserActionData>({
     mutationFn: async (data: UserActionData) => {
       let endpoint = '/api/admin/user-action';
       if (data.action === 'reset-password') endpoint = '/api/admin/reset-password';
@@ -331,25 +353,25 @@ export function AdminDashboard() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="p-4 bg-white/5 rounded-lg">
                       <p className="text-sm text-gray-400">New Users Today</p>
-                      <p className="text-2xl font-bold text-blue-400">{(stats as any)?.newUsersToday || 0}</p>
+                      <p className="text-2xl font-bold text-blue-400">{stats?.newUsersToday || 0}</p>
                     </div>
                     <div className="p-4 bg-white/5 rounded-lg">
                       <p className="text-sm text-gray-400">Trial Users</p>
-                      <p className="text-2xl font-bold text-purple-400">{(stats as any)?.trialUsers || 0}</p>
+                      <p className="text-2xl font-bold text-purple-400">{stats?.trialUsers || 0}</p>
                     </div>
                   </div>
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-400">Free Users</span>
-                      <span className="text-gray-900">{(stats as any)?.freeUsers || 0}</span>
+                      <span className="text-gray-900">{stats?.freeUsers || 0}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-400">Pro Users</span>
-                      <span className="text-green-400">{(stats as any)?.proUsers || 0}</span>
+                      <span className="text-green-400">{stats?.proUsers || 0}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-400">Premium Users</span>
-                      <span className="text-purple-400">{(stats as any)?.premiumUsers || 0}</span>
+                      <span className="text-purple-400">{stats?.premiumUsers || 0}</span>
                     </div>
                   </div>
                 </div>
@@ -366,25 +388,25 @@ export function AdminDashboard() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
                     <div className="flex items-center gap-3">
-                      <div className={`w-3 h-3 rounded-full ${(stats as any)?.jwtConfigured ? 'bg-green-500' : 'bg-red-500'}`} />
+                      <div className={`w-3 h-3 rounded-full ${stats?.jwtConfigured ? 'bg-green-500' : 'bg-red-500'}`} />
                       <span className="text-sm">Authentication</span>
                     </div>
-                    <Badge variant={(stats as any)?.jwtConfigured ? 'default' : 'destructive'}>
-                      {(stats as any)?.jwtConfigured ? 'Active' : 'Inactive'}
+                    <Badge variant={stats?.jwtConfigured ? 'default' : 'destructive'}>
+                      {stats?.jwtConfigured ? 'Active' : 'Inactive'}
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
                     <div className="flex items-center gap-3">
-                      <div className={`w-3 h-3 rounded-full ${(stats as any)?.emailConfigured ? 'bg-green-500' : 'bg-yellow-500'}`} />
+                      <div className={`w-3 h-3 rounded-full ${stats?.emailConfigured ? 'bg-green-500' : 'bg-yellow-500'}`} />
                       <span className="text-sm">Email Service</span>
                     </div>
-                    <Badge variant={(stats as any)?.emailConfigured ? 'default' : 'secondary'}>
-                      {(stats as any)?.emailConfigured ? 'Configured' : 'Not Set'}
+                    <Badge variant={stats?.emailConfigured ? 'default' : 'secondary'}>
+                      {stats?.emailConfigured ? 'Configured' : 'Not Set'}
                     </Badge>
                   </div>
                   <div className="mt-4 p-3 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg">
                     <p className="text-sm text-gray-300">Total Content Generated</p>
-                    <p className="text-3xl font-bold text-gray-900">{(stats as any)?.contentGenerated || 0}</p>
+                    <p className="text-3xl font-bold text-gray-900">{stats?.contentGenerated || 0}</p>
                     <p className="text-xs text-gray-400 mt-1">Across all users and platforms</p>
                   </div>
                 </div>
@@ -414,7 +436,7 @@ export function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {(users as any)?.slice(0, 5).map((user: unknown) => (
+                    {users?.slice(0, 5).map((user) => (
                       <tr key={(user as User).id} className="border-b border-white/5">
                         <td className="p-4">
                           <div>
@@ -483,7 +505,7 @@ export function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {(providers as any)?.map((provider: unknown) => {
+                {providers?.map((provider) => {
                   const typedProvider = provider as {name?: string; available?: boolean; inputCost?: string; outputCost?: string; savings?: string};
                   return (
                   <div key={typedProvider.name} className="p-4 bg-white/5 rounded-lg">
@@ -526,7 +548,7 @@ export function AdminDashboard() {
                 <CardTitle>Monthly Revenue</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold">${(stats as any)?.revenue || '0'}</p>
+                <p className="text-3xl font-bold">${stats?.revenue || '0'}</p>
                 <p className="text-sm text-gray-400 mt-2">Total platform revenue</p>
               </CardContent>
             </Card>
@@ -539,20 +561,20 @@ export function AdminDashboard() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-gray-400">Free</span>
-                    <span>{(stats as any)?.freeUsers || 0}</span>
+                    <span>{stats?.freeUsers || 0}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">Pro ($20/mo)</span>
-                    <span className="text-green-400">{(stats as any)?.proUsers || 0}</span>
+                    <span className="text-green-400">{stats?.proUsers || 0}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">Premium ($50/mo)</span>
-                    <span className="text-purple-400">{(stats as any)?.premiumUsers || 0}</span>
+                    <span className="text-purple-400">{stats?.premiumUsers || 0}</span>
                   </div>
                   <div className="border-t border-white/10 pt-2 mt-2">
                     <div className="flex justify-between font-medium">
                       <span className="text-gray-900">Monthly Revenue</span>
-                      <span className="text-green-400">${((stats as any)?.proUsers || 0) * 20 + ((stats as any)?.premiumUsers || 0) * 50}</span>
+                      <span className="text-green-400">${(stats?.proUsers || 0) * 20 + (stats?.premiumUsers || 0) * 50}</span>
                     </div>
                   </div>
                 </div>
@@ -564,7 +586,7 @@ export function AdminDashboard() {
                 <CardTitle>Service Costs</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold">${Math.floor(((stats as any)?.contentGenerated || 0) * 0.02) || '0'}</p>
+                <p className="text-3xl font-bold">${Math.floor((stats?.contentGenerated || 0) * 0.02) || '0'}</p>
                 <p className="text-sm text-gray-400 mt-2">Estimated AI costs</p>
                 <div className="mt-3 text-xs space-y-1">
                   <div className="flex justify-between">
@@ -573,7 +595,7 @@ export function AdminDashboard() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Content Generated</span>
-                    <span className="text-gray-900">{(stats as any)?.contentGenerated || 0}</span>
+                    <span className="text-gray-900">{stats?.contentGenerated || 0}</span>
                   </div>
                 </div>
               </CardContent>
@@ -629,7 +651,7 @@ export function AdminDashboard() {
                   </div>
                   <Badge variant="outline" className="text-green-400 border-green-400">
                     <CheckCircle className="h-3 w-3 mr-1" />
-                    {(systemHealth as any)?.database?.status === 'healthy' ? 'Healthy' : 'Issues'}
+                    {systemHealth?.database?.status === 'healthy' ? 'Healthy' : 'Issues'}
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
@@ -637,9 +659,9 @@ export function AdminDashboard() {
                     <Zap className="h-5 w-5 text-purple-400" />
                     <span>Gemini AI</span>
                   </div>
-                  <Badge variant={((systemHealth as any)?.services?.gemini ? 'outline' : 'destructive')} className={((systemHealth as any)?.services?.gemini ? 'text-green-400 border-green-400' : '')}>
-                    {(systemHealth as any)?.services?.gemini ? <CheckCircle className="h-3 w-3 mr-1" /> : <XCircle className="h-3 w-3 mr-1" />}
-                    {(systemHealth as any)?.services?.gemini ? 'Active' : 'Inactive'}
+                  <Badge variant={systemHealth?.services?.gemini ? 'outline' : 'destructive'} className={systemHealth?.services?.gemini ? 'text-green-400 border-green-400' : ''}>
+                    {systemHealth?.services?.gemini ? <CheckCircle className="h-3 w-3 mr-1" /> : <XCircle className="h-3 w-3 mr-1" />}
+                    {systemHealth?.services?.gemini ? 'Active' : 'Inactive'}
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
@@ -647,9 +669,9 @@ export function AdminDashboard() {
                     <Activity className="h-5 w-5 text-blue-400" />
                     <span>OpenAI</span>
                   </div>
-                  <Badge variant={((systemHealth as any)?.services?.openai ? 'outline' : 'destructive')} className={((systemHealth as any)?.services?.openai ? 'text-green-400 border-green-400' : '')}>
-                    {(systemHealth as any)?.services?.openai ? <CheckCircle className="h-3 w-3 mr-1" /> : <XCircle className="h-3 w-3 mr-1" />}
-                    {(systemHealth as any)?.services?.openai ? 'Active' : 'Inactive'}
+                  <Badge variant={systemHealth?.services?.openai ? 'outline' : 'destructive'} className={systemHealth?.services?.openai ? 'text-green-400 border-green-400' : ''}>
+                    {systemHealth?.services?.openai ? <CheckCircle className="h-3 w-3 mr-1" /> : <XCircle className="h-3 w-3 mr-1" />}
+                    {systemHealth?.services?.openai ? 'Active' : 'Inactive'}
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
@@ -657,9 +679,9 @@ export function AdminDashboard() {
                     <Headphones className="h-5 w-5 text-yellow-400" />
                     <span>Email Service</span>
                   </div>
-                  <Badge variant={((systemHealth as any)?.services?.email ? 'outline' : 'secondary')} className={((systemHealth as any)?.services?.email ? 'text-green-400 border-green-400' : 'text-yellow-400 border-yellow-400')}>
-                    {(systemHealth as any)?.services?.email ? <CheckCircle className="h-3 w-3 mr-1" /> : <AlertCircle className="h-3 w-3 mr-1" />}
-                    {(systemHealth as any)?.services?.email ? 'Configured' : 'Not Set'}
+                  <Badge variant={systemHealth?.services?.email ? 'outline' : 'secondary'} className={systemHealth?.services?.email ? 'text-green-400 border-green-400' : 'text-yellow-400 border-yellow-400'}>
+                    {systemHealth?.services?.email ? <CheckCircle className="h-3 w-3 mr-1" /> : <AlertCircle className="h-3 w-3 mr-1" />}
+                    {systemHealth?.services?.email ? 'Configured' : 'Not Set'}
                   </Badge>
                 </div>
 
@@ -669,15 +691,15 @@ export function AdminDashboard() {
                   <div className="grid grid-cols-3 gap-4 text-sm">
                     <div>
                       <p className="text-gray-400">Response Time</p>
-                      <p className="font-medium text-blue-400">{(systemHealth as any)?.performance?.avgResponseTime || 'N/A'}</p>
+                      <p className="font-medium text-blue-400">{systemHealth?.performance?.avgResponseTime || 'N/A'}</p>
                     </div>
                     <div>
                       <p className="text-gray-400">Error Rate</p>
-                      <p className="font-medium text-green-400">{(systemHealth as any)?.performance?.errorRate || 'N/A'}</p>
+                      <p className="font-medium text-green-400">{systemHealth?.performance?.errorRate || 'N/A'}</p>
                     </div>
                     <div>
                       <p className="text-gray-400">Throughput</p>
-                      <p className="font-medium text-purple-400">{(systemHealth as any)?.performance?.throughput || 'N/A'}</p>
+                      <p className="font-medium text-purple-400">{systemHealth?.performance?.throughput || 'N/A'}</p>
                     </div>
                   </div>
                 </div>
@@ -693,7 +715,7 @@ export function AdminDashboard() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-2xl font-bold">{(analytics as any)?.uniqueVisitors || 0}</p>
+                    <p className="text-2xl font-bold">{analytics?.uniqueVisitors || 0}</p>
                     <p className="text-sm text-gray-400">Unique Visitors</p>
                   </div>
                   <Eye className="h-8 w-8 text-blue-400" />
@@ -705,7 +727,7 @@ export function AdminDashboard() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-2xl font-bold">{(analytics as any)?.pageViews || 0}</p>
+                    <p className="text-2xl font-bold">{analytics?.pageViews || 0}</p>
                     <p className="text-sm text-gray-400">Page Views</p>
                   </div>
                   <BarChart3 className="h-8 w-8 text-green-400" />
@@ -717,7 +739,7 @@ export function AdminDashboard() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-2xl font-bold">{(analytics as any)?.bounceRate?.toFixed(1) || 0}%</p>
+                    <p className="text-2xl font-bold">{analytics?.bounceRate?.toFixed(1) || 0}%</p>
                     <p className="text-sm text-gray-400">Bounce Rate</p>
                   </div>
                   <TrendingUp className="h-8 w-8 text-purple-400" />
@@ -735,7 +757,7 @@ export function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {(analytics as any)?.topPages?.slice(0, 5).map((page: unknown, index: number) => (
+                  {analytics?.topPages?.slice(0, 5).map((page, index: number) => (
                     <div key={index} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
                       <span className="text-sm">{(page as {path?: string; views?: number})?.path}</span>
                       <Badge variant="secondary">{(page as {path?: string; views?: number})?.views} views</Badge>
@@ -757,7 +779,7 @@ export function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {(analytics as any)?.trafficSources?.slice(0, 5).map((source: unknown, index: number) => (
+                  {analytics?.trafficSources?.slice(0, 5).map((source, index: number) => (
                     <div key={index} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
                       <span className="text-sm">{(source as {source?: string; visitors?: number})?.source}</span>
                       <Badge variant="secondary">{(source as {source?: string; visitors?: number})?.visitors} visitors</Badge>
@@ -954,13 +976,13 @@ export function AdminDashboard() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Overall Progress</span>
-                    <span className="text-2xl font-bold text-purple-400">{(completeness as any)?.completionPercentage || 0}%</span>
+                    <span className="text-2xl font-bold text-purple-400">{completeness?.completionPercentage || 0}%</span>
                   </div>
 
                   <div className="space-y-3">
                     <div className="space-y-2">
                       <h4 className="text-sm font-medium text-purple-300">Core Features</h4>
-                      {Object.entries((completeness as any)?.core || {}).map(([key, value]) => (
+                      {Object.entries(completeness?.core || {}).map(([key, value]) => (
                         <div key={key} className="flex items-center justify-between text-sm">
                           <span className="text-gray-400 capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
                           <Badge variant={value ? 'default' : 'destructive'} className="text-xs">
@@ -973,7 +995,7 @@ export function AdminDashboard() {
 
                     <div className="space-y-2">
                       <h4 className="text-sm font-medium text-blue-300">Advanced Features</h4>
-                      {Object.entries((completeness as any)?.features || {}).map(([key, value]) => (
+                      {Object.entries(completeness?.features || {}).map(([key, value]) => (
                         <div key={key} className="flex items-center justify-between text-sm">
                           <span className="text-gray-400 capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
                           <Badge variant={value ? 'default' : 'secondary'} className="text-xs">
@@ -986,7 +1008,7 @@ export function AdminDashboard() {
 
                     <div className="space-y-2">
                       <h4 className="text-sm font-medium text-green-300">Integrations</h4>
-                      {Object.entries((completeness as any)?.integrations || {}).map(([key, value]) => (
+                      {Object.entries(completeness?.integrations || {}).map(([key, value]) => (
                         <div key={key} className="flex items-center justify-between text-sm">
                           <span className="text-gray-400 capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
                           <Badge variant={value ? 'default' : 'outline'} className="text-xs">

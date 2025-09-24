@@ -25,7 +25,7 @@ export interface MultiAIResponse {
 
 export interface ContentResult {
   success: boolean;
-  content?: any;
+  content?: MultiAIResponse;
   error?: string;
 }
 

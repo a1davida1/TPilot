@@ -91,7 +91,8 @@ interface ConnectRedditResponse {
 }
 
 interface ContentValidationResponse {
-  policyState: 'allow' | 'warn' | 'block';
+  policyState: 'allow' | 'warn' | 'block' | 'pass';
+  warnings?: string[];
 }
 
 interface PostSubmissionResponse {
@@ -1227,33 +1228,33 @@ export default function RedditPostingPage() {
                 {/* Content Validation */}
                 {validation && (
                   <div className={`p-4 rounded-lg border ${
-                    (validation as any)?.policyState === 'pass' ? 'bg-green-50 border-green-200' :
-                    (validation as any)?.policyState === 'warn' ? 'bg-yellow-50 border-yellow-200' :
+                    validation?.policyState === 'pass' ? 'bg-green-50 border-green-200' :
+                    validation?.policyState === 'warn' ? 'bg-yellow-50 border-yellow-200' :
                     'bg-red-50 border-red-200'
                   }`}>
                     <div className="flex items-center gap-2 mb-2">
-                      {(validation as any)?.policyState === 'pass' ? (
+                      {validation?.policyState === 'pass' ? (
                         <CheckCircle className="h-5 w-5 text-green-600" />
-                      ) : (validation as any)?.policyState === 'warn' ? (
+                      ) : validation?.policyState === 'warn' ? (
                         <AlertTriangle className="h-5 w-5 text-yellow-600" />
                       ) : (
                         <XCircle className="h-5 w-5 text-red-600" />
                       )}
                       <span className={`font-medium ${
-                        (validation as any)?.policyState === 'pass' ? 'text-green-800' :
-                        (validation as any)?.policyState === 'warn' ? 'text-yellow-800' :
+                        validation?.policyState === 'pass' ? 'text-green-800' :
+                        validation?.policyState === 'warn' ? 'text-yellow-800' :
                         'text-red-800'
                       }`}>
-                        Policy Check: {((validation as any)?.policyState || 'unknown').toUpperCase()}
+                        Policy Check: {(validation?.policyState || 'unknown').toUpperCase()}
                       </span>
                     </div>
-                    {(validation as any)?.warnings && (validation as any)?.warnings.length > 0 && (
+                    {validation?.warnings && validation?.warnings.length > 0 && (
                       <ul className={`text-sm space-y-1 ${
-                        (validation as any)?.policyState === 'pass' ? 'text-green-700' :
-                        (validation as any)?.policyState === 'warn' ? 'text-yellow-700' :
+                        validation?.policyState === 'pass' ? 'text-green-700' :
+                        validation?.policyState === 'warn' ? 'text-yellow-700' :
                         'text-red-700'
                       }`}>
-                        {(validation as any)?.warnings.map((warning: string, index: number) => (
+                        {validation?.warnings.map((warning, index: number) => (
                           <li key={index}>• {warning}</li>
                         ))}
                       </ul>
@@ -1288,7 +1289,7 @@ export default function RedditPostingPage() {
                   </Button>
                   <Button
                     onClick={handleSubmitPost}
-                    disabled={submitting || !subreddit || !title || (accounts as any[])?.length === 0}
+                    disabled={submitting || !subreddit || !title || accounts?.length === 0}
                     className="flex-1 bg-orange-500 hover:bg-orange-600"
                     data-testid="button-submit"
                   >
