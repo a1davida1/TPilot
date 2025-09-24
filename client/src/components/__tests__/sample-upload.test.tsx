@@ -185,7 +185,7 @@ function click(element: HTMLElement) {
 }
 
 const clipboardDescriptor = Object.getOwnPropertyDescriptor(navigator, "clipboard");
-const clipboardWriteMock = vi.fn().mockResolvedValue(undefined);
+const clipboardWriteMock = vi.fn<[], Promise<void>>();
 
 describe("SampleUpload", () => {
   beforeEach(() => {
