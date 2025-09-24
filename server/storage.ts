@@ -1,4 +1,3 @@
-
 import {
   type User,
   type InsertUser,
@@ -103,7 +102,7 @@ export interface IStorage {
   getContentGenerationCount(): Promise<number>;
   getContentGenerationStats(userId: number): Promise<{ total: number; thisWeek: number; thisMonth: number; totalGenerations?: number }>;
   getLastGenerated(userId: number): Promise<ContentGeneration | undefined>;
-  
+
   // Revenue operations
   getRevenue(): Promise<number>;
 
@@ -118,7 +117,7 @@ export interface IStorage {
   getUserImage(imageId: number, userId: number): Promise<UserImage | undefined>;
   updateUserImage(imageId: number, userId: number, updates: Partial<UserImage>): Promise<UserImage>;
   deleteUserImage(imageId: number, userId: number): Promise<void>;
-  
+
   // Streak operations
   calculateDailyStreak(userId: number): Promise<number>;
 
@@ -127,17 +126,17 @@ export interface IStorage {
   getActiveUserCount(): Promise<number>;
   getTotalContentGenerated(): Promise<number>;
   getSubscriptionCounts(): Promise<{ free: number; starter: number; pro: number; }>;
-  
+
   // Generation limit operations
   getDailyGenerationCount(userId: number): Promise<number>;
-  
+
   // Expense operations
   createExpenseCategory(category: InsertExpenseCategory): Promise<ExpenseCategory>;
   getExpenseCategories(): Promise<ExpenseCategory[]>;
   getExpenseCategory(id: number): Promise<ExpenseCategory | undefined>;
   updateExpenseCategory(id: number, updates: Partial<ExpenseCategory>): Promise<ExpenseCategory>;
   deleteExpenseCategory(id: number): Promise<void>;
-  
+
   createExpense(expense: InsertExpense): Promise<Expense>;
   getUserExpenses(
     userId: number,
@@ -149,7 +148,7 @@ export interface IStorage {
   getExpensesByCategory(userId: number, categoryId: number, taxYear?: number): Promise<Expense[]>;
   getExpensesByDateRange(userId: number, startDate: Date, endDate: Date): Promise<Expense[]>;
   getExpenseTotals(userId: number, taxYear?: number): Promise<{ total: number; deductible: number; byCategory: { [key: string]: number } }>;
-  
+
   getTaxDeductionInfo(): Promise<TaxDeductionInfo[]>;
   getTaxDeductionInfoByCategory(category: string): Promise<TaxDeductionInfo[]>;
   createTaxDeductionInfo(info: InsertTaxDeductionInfo): Promise<TaxDeductionInfo>;
@@ -160,16 +159,16 @@ export interface IStorage {
   getSocialMediaAccount(accountId: number): Promise<SocialMediaAccount | undefined>;
   updateSocialMediaAccount(accountId: number, updates: Partial<SocialMediaAccount>): Promise<SocialMediaAccount>;
   deleteSocialMediaAccount(accountId: number): Promise<void>;
-  
+
   createSocialMediaPost(post: InsertSocialMediaPost): Promise<SocialMediaPost>;
   getUserSocialMediaPosts(userId: number, filters?: { platform?: string; status?: string; limit?: number; offset?: number }): Promise<SocialMediaPost[]>;
   getSocialMediaPost(postId: number): Promise<SocialMediaPost | undefined>;
   updateSocialMediaPost(postId: number, updates: Partial<SocialMediaPost>): Promise<SocialMediaPost>;
   deleteSocialMediaPost(postId: number): Promise<void>;
-  
+
   createPlatformEngagement(engagement: InsertPlatformEngagement): Promise<PlatformEngagement>;
   getPlatformEngagement(accountId: number, date?: Date): Promise<PlatformEngagement[]>;
-  
+
   createPostSchedule(schedule: InsertPostSchedule): Promise<PostSchedule>;
   getUserScheduledPosts(userId: number): Promise<PostSchedule[]>;
   getPostSchedule(scheduleId: number): Promise<PostSchedule | undefined>;
@@ -214,12 +213,12 @@ export class DatabaseStorage implements IStorage {
       const conditions = [
         eq(users.username, username)
       ];
-      
+
       // Only add emailVerified condition if explicitly provided
       if (verified !== undefined) {
         conditions.push(eq(users.emailVerified, verified));
       }
-      
+
       const result = await db.select().from(users).where(and(...conditions)).limit(1).execute();
       return result[0];
     } catch (error) {
@@ -234,12 +233,12 @@ export class DatabaseStorage implements IStorage {
       const conditions = [
         eq(users.email, email)
       ];
-      
+
       // Only add emailVerified condition if explicitly provided
       if (verified !== undefined) {
         conditions.push(eq(users.emailVerified, verified));
       }
-      
+
       const result = await db.select().from(users).where(and(...conditions)).limit(1).execute();
       return result[0];
     } catch (error) {
@@ -282,7 +281,7 @@ export class DatabaseStorage implements IStorage {
       const cleanUpdates = Object.fromEntries(
         Object.entries(updates).filter(([_, value]) => value !== undefined)
       );
-      
+
       // If no valid updates, return the existing user
       if (Object.keys(cleanUpdates).length === 0) {
         const user = await this.getUser(userId);
@@ -291,7 +290,7 @@ export class DatabaseStorage implements IStorage {
         }
         return user;
       }
-      
+
       const result = await db.update(users).set(cleanUpdates).where(eq(users.id, userId)).returning();
       if (!result[0]) {
         throw new Error('User not found');
@@ -441,7 +440,7 @@ export class DatabaseStorage implements IStorage {
         .select({ total: sql<number>`COALESCE(SUM(amount_cents), 0)` })
         .from(invoices)
         .where(eq(invoices.status, 'paid'));
-      
+
       // Convert cents to dollars
       const totalCents = result[0]?.total || 0;
       return Math.round(totalCents / 100);
@@ -660,12 +659,12 @@ export class DatabaseStorage implements IStorage {
       // Users who have generated content in the last 7 days
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      
+
       const result = await db
         .selectDistinct({ userId: contentGenerations.userId })
         .from(contentGenerations)
         .where(gte(contentGenerations.createdAt, sevenDaysAgo));
-      
+
       return result.length;
     } catch (error) {
       console.error('Error getting active user count:', { error: (error as Error).message });
@@ -687,7 +686,7 @@ export class DatabaseStorage implements IStorage {
     try {
       const allUsers = await this.getAllUsers();
       const counts = { free: 0, starter: 0, pro: 0 };
-      
+
       for (const user of allUsers) {
         const tier = user.tier || 'free';
         if (tier === 'free') counts.free++;
@@ -695,7 +694,7 @@ export class DatabaseStorage implements IStorage {
         else if (tier === 'pro') counts.pro++;
         else counts.free++; // Default to free if tier is unknown
       }
-      
+
       return counts;
     } catch (error) {
       console.error('Error getting subscription counts:', { error: (error as Error).message });
@@ -708,10 +707,10 @@ export class DatabaseStorage implements IStorage {
     try {
       const today = new Date();
       today.setHours(0, 0, 0, 0); // Start of today
-      
+
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1); // Start of tomorrow
-      
+
       const result = await db
         .select({ count: count() })
         .from(contentGenerations)
@@ -722,7 +721,7 @@ export class DatabaseStorage implements IStorage {
             sql`${contentGenerations.createdAt} < ${tomorrow}`
           )
         );
-      
+
       return result[0]?.count || 0;
     } catch (error) {
       console.error('Error getting daily generation count:', { error: (error as Error).message });
@@ -822,10 +821,13 @@ export class DatabaseStorage implements IStorage {
       );
 
       const results = await query.orderBy(desc(expenses.expenseDate));
-      return results.map(r => ({
-        ...r.expense,
-        category: r.category
-      })) as (Expense & { category: ExpenseCategory | null })[];
+      const flattenedResults: Array<Expense & { category: ExpenseCategory | null }> =
+        results.map(({ expense, category }) => ({
+          ...expense,
+          category,
+        }));
+
+      return flattenedResults;
     } catch (error) {
       console.error('Error getting user expenses:', { error: (error as Error).message });
       return [];
@@ -863,10 +865,10 @@ export class DatabaseStorage implements IStorage {
       if (updates.categoryId !== undefined) {
         const categoryChanged = existingExpense ? existingExpense.categoryId !== updates.categoryId : true;
         const category = await this.getExpenseCategory(updates.categoryId);
-        
+
         if (category) {
           const categoryDefaults: ExpenseCategoryWithDefaults = category;
-          
+
           if (categoryChanged) {
             updatesToApply = {
               ...updatesToApply,
@@ -930,7 +932,7 @@ export class DatabaseStorage implements IStorage {
         eq(expenses.userId, userId),
         eq(expenses.categoryId, categoryId)
       ];
-      
+
       if (taxYear) {
         conditions.push(eq(expenses.taxYear, taxYear));
       }
@@ -975,7 +977,7 @@ export class DatabaseStorage implements IStorage {
       );
 
       const results = await query;
-      
+
       return summarizeExpenseTotals(results);
     } catch (error) {
       console.error('Error getting expense totals:', { error: (error as Error).message });
@@ -1096,14 +1098,14 @@ export class DatabaseStorage implements IStorage {
   ): Promise<SocialMediaPost[]> {
     try {
       const { platform, status, limit = 50, offset = 0 } = filters || {};
-      
+
       // Build conditions array
       const conditions = [eq(socialMediaPosts.userId, userId)];
-      
+
       if (platform) {
         conditions.push(eq(socialMediaPosts.platform, platform));
       }
-      
+
       if (status) {
         conditions.push(eq(socialMediaPosts.status, status));
       }
@@ -1170,7 +1172,7 @@ export class DatabaseStorage implements IStorage {
     try {
       // Build conditions array
       const conditions = [eq(platformEngagement.accountId, accountId)];
-      
+
       if (date) {
         conditions.push(eq(platformEngagement.date, date));
       }
