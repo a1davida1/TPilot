@@ -250,7 +250,7 @@ export function AppleInspiredApp() {
       };
 
       img.src = originalImage;
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Protection Failed",
         description: "Unable to process image",

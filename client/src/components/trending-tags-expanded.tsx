@@ -172,7 +172,7 @@ export function TrendingTagsExpanded() {
         title: "Tag copied!",
         description: `#${tag} copied to clipboard`
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Failed to copy",
         variant: "destructive"

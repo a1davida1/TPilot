@@ -67,7 +67,7 @@ export default function EmailVerificationPage() {
         setVerificationStatus('error');
         setErrorMessage(data.message || 'Verification failed.');
       }
-    } catch (error) {
+    } catch (_error) {
       setVerificationStatus('error');
       setErrorMessage('Network error. Please try again.');
     }
