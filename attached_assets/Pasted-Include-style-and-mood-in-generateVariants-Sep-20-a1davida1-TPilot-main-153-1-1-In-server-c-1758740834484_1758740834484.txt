@@ -1,0 +1,271 @@
+Include style and mood in generateVariants
+Sep 20 · a1davida1/TPilot · main ·
++153-1
+1. In `server/caption/geminiPipeline.ts`, include the existing `style` and `mood` values when invoking `generateVariants` inside the platform-check retry block.
+2. Extend unit/contract tests for the caption pipeline to assert that a retry still reflects the requested tone fields.
+3. Document the change so future adjustments to `platformChecks` keep the full option set intact.
+
+Summary
+
+    Updated the Gemini caption pipeline so that platform-check retries continue forwarding the requested style and mood, keeping regenerated captions aligned with the caller’s tone selections.
+
+Added a regression test that mocks the two-pass retry flow, verifies the second prompt still contains the tone markers, and confirms the final caption preserves the requested mood and style values.
+
+Documented the retry behaviour and maintenance guidance to ensure future platformChecks updates keep the full generateVariants option set intact.
+
+Testing
+
+    ✅ npm run lint
+
+❌ npm test *(fails due to existing suite issues such as missing database configuration, queue connectivity, and email mocks—see ERR_INVALID_URL and HTTP 500 errors in the Vitest report)*
+
+
+docs/runbooks/caption-platform-checks.md
+New
++21-0
+# Caption Platform Checks
+
+## Retry behaviour in the Gemini caption pipeline
+
+The Gemini-powered caption pipeline performs a secondary pass whenever
+`platformChecks` flags an output that violates network requirements. During that
+retry we must forward the complete option set (`voice`, `style`, `mood`, safety
+flags, etc.) back into `generateVariants`. This preserves the tone requested by
+the user while giving the model additional guidance about what needs fixing.
+
+## Maintenance guidance
+
+- When adjusting `platformChecks` logic or adding new networks, ensure any
+  retries continue to call `generateVariants` with the same tone parameters so
+  we do not drop `style`/`mood` information.
+- If you introduce additional tone controls (e.g. `energy`, `persona`), thread
+  them through the retry call as well.
+- Keep tests updated to cover this behaviour. The suite includes a regression
+  test that asserts retry prompts retain the tone markers after a failed
+  platform check.
+
+server/caption/geminiPipeline.ts
++9-1
+@@ -292,37 +292,45 @@ export async function rankAndSelect(variants: z.infer<typeof CaptionArray>): Pro
+    if(typeof final.style !== 'string' || final.style.length<2) final.style="authentic";
+    if(typeof final.cta !== 'string' || final.cta.length<2) final.cta="Check it out";
+    if(typeof final.alt !== 'string' || final.alt.length<20) final.alt="Engaging social media content";
+    if(!Array.isArray(final.hashtags)) final.hashtags=["#content", "#creative", "#amazing"];
+    if(typeof final.caption !== 'string' || final.caption.length<1) final.caption="Check out this amazing content!";
+  }
+  return RankResult.parse(json);
+}
+
+export async function pipeline({ imageUrl, platform, voice = "flirty_playful", style, mood, nsfw = false }: {
+  imageUrl: string;
+  platform: "instagram" | "x" | "reddit" | "tiktok";
+  voice?: string;
+  style?: string;
+  mood?: string;
+  nsfw?: boolean;
+}): Promise<CaptionResult> {
+  try {
+    const facts = await extractFacts(imageUrl);
+    let variants = await generateVariants({ platform, voice, style, mood, facts, nsfw });
+    let ranked = await rankAndSelect(variants);
+    let out = ranked.final;
+
+    const err = platformChecks(platform, out);
+    if (err) {
+      variants = await generateVariants({ platform, voice, facts, hint:`Fix: ${err}. Use IMAGE_FACTS nouns/colors/setting explicitly.`, nsfw });
+      variants = await generateVariants({
+        platform,
+        voice,
+        style,
+        mood,
+        facts,
+        hint: `Fix: ${err}. Use IMAGE_FACTS nouns/colors/setting explicitly.`,
+        nsfw
+      });
+      ranked = await rankAndSelect(variants);
+      out = ranked.final;
+    }
+
+    return { provider: 'gemini', facts, variants, ranked, final: out };
+  } catch (error) {
+    const { openAICaptionFallback } = await import('./openaiFallback');
+    const final = await openAICaptionFallback({ platform, voice, imageUrl });
+    return { provider: 'openai', final } as CaptionResult;
+  }
+}
+tests/routes/caption-generation.test.ts
++123-0
+@@ -125,50 +125,173 @@ describe('Caption Generation', () => {
+            {
+              caption: 'Test caption',
+              hashtags: ['#test'],
+              safety_level: 'spicy_safe', // Should be normalized to spicy_safe
+              mood: 'confident',
+              style: 'authentic',
+              cta: 'Check it out',
+            },
+          ]),
+        },
+      };
+
+      const { textModel } = await import('../../server/lib/gemini.js');
+      (textModel.generateContent as any).mockResolvedValue(mockResponse);
+
+      // This would normally be called as part of the pipeline
+      const { generateVariants } = await import('../../server/caption/geminiPipeline.js');
+      const result = await generateVariants({
+        platform: 'instagram',
+        voice: 'flirty_playful',
+        facts: { objects: ['test'] },
+      });
+
+      expect(result[0].safety_level).toBe('spicy_safe');
+    });
+
+    it('should preserve requested tone when retrying after platform check failure', async () => {
+      const mockImageUrl =
+        'data:image/jpeg;base64,' +
+        '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP///////////////wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACP/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8Af//Z';
+      const style = 'luxury';
+      const mood = 'confident';
+
+      const mockFactsResponse = {
+        response: {
+          text: () => JSON.stringify({
+            objects: ['car'],
+            colors: ['gold'],
+            setting: 'studio',
+          }),
+        },
+      };
+
+      const firstVariantsResponse = {
+        response: {
+          text: () =>
+            JSON.stringify([
+              {
+                caption: 'Golden hour glow ready for the runway.',
+                hashtags: ['#vibe', '#luxury'],
+                safety_level: 'normal',
+                mood,
+                style,
+                cta: 'Tap in for the look',
+                alt: 'Fashion studio lit with warm golden tones showcasing luxury wardrobe accents and spotlight prep',
+                nsfw: false,
+              },
+            ]),
+        },
+      };
+
+      const firstRankResponse = {
+        response: {
+          text: () =>
+            JSON.stringify({
+              winner_index: 0,
+              scores: [5, 4, 3, 2, 1],
+              reason: 'Initial Gemini selection',
+              final: {
+                caption: 'Golden hour glow ready for the runway.',
+                hashtags: ['#vibe', '#luxury'],
+                safety_level: 'normal',
+                mood,
+                style,
+                cta: 'Tap in for the look',
+                alt: 'Fashion studio lit with warm golden tones showcasing luxury wardrobe accents and spotlight prep',
+                nsfw: false,
+              },
+            }),
+        },
+      };
+
+      const retryVariantsResponse = {
+        response: {
+          text: () =>
+            JSON.stringify([
+              {
+                caption: 'Golden hour glow ready for the runway.',
+                hashtags: ['#vibe', '#luxury', '#runwayready'],
+                safety_level: 'normal',
+                mood,
+                style,
+                cta: 'Tap in for the look',
+                alt: 'Fashion studio lit with warm golden tones showcasing luxury wardrobe accents and spotlight prep',
+                nsfw: false,
+              },
+            ]),
+        },
+      };
+
+      const retryRankResponse = {
+        response: {
+          text: () =>
+            JSON.stringify({
+              winner_index: 0,
+              scores: [5, 4, 3, 2, 1],
+              reason: 'Retry selection with compliant hashtags',
+              final: {
+                caption: 'Golden hour glow ready for the runway.',
+                hashtags: ['#vibe', '#luxury', '#runwayready'],
+                safety_level: 'normal',
+                mood,
+                style,
+                cta: 'Tap in for the look',
+                alt: 'Fashion studio lit with warm golden tones showcasing luxury wardrobe accents and spotlight prep',
+                nsfw: false,
+              },
+            }),
+        },
+      };
+
+      const { textModel, visionModel } = await import('../../server/lib/gemini.js');
+      (visionModel.generateContent as any).mockResolvedValueOnce(mockFactsResponse);
+      (textModel.generateContent as any)
+        .mockResolvedValueOnce(firstVariantsResponse)
+        .mockResolvedValueOnce(firstRankResponse)
+        .mockResolvedValueOnce(retryVariantsResponse)
+        .mockResolvedValueOnce(retryRankResponse);
+
+      const result = await pipeline({
+        imageUrl: mockImageUrl,
+        platform: 'instagram',
+        voice: 'flirty_playful',
+        style,
+        mood,
+      });
+
+      const variantRetryCall = (textModel.generateContent as any).mock.calls[2]?.[0]?.[0]?.text;
+      expect(variantRetryCall).toContain(`STYLE: ${style}`);
+      expect(variantRetryCall).toContain(`MOOD: ${mood}`);
+
+      expect(result.final).toMatchObject({
+        hashtags: ['#vibe', '#luxury', '#runwayready'],
+        style,
+        mood,
+      });
+      expect(result.final.hashtags).toHaveLength(3);
+    });
+  });
+
+  describe('Text-Only Pipeline', () => {
+    it('should generate content without image context', async () => {
+      const mockResponse = {
+        response: {
+          text: () => JSON.stringify([
+            {
+              caption: 'Motivational content for today!',
+              hashtags: ['#motivation', '#mindset'],
+              safety_level: 'normal',
+              mood: 'inspiring',
+              style: 'authentic',
+              cta: 'What motivates you?',
+            },
+          ]),
+        },
+      };
+
+      const { textModel } = await import('../../server/lib/gemini.js');
+      (textModel.generateContent as any).mockResolvedValue(mockResponse);
+
+      const result = await pipelineTextOnly({
+        platform: 'instagram',
+        voice: 'inspiring',
