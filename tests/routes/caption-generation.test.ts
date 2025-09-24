@@ -448,6 +448,129 @@ describe('Caption Generation', () => {
       expect(result[0].safety_level).toBe('spicy_safe');
     });
 
+    it('should preserve requested tone when retrying after platform check failure', async () => {
+      const mockImageUrl =
+        'data:image/jpeg;base64,' +
+        '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP///////////////wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACP/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8Af//Z';
+      const style = 'luxury';
+      const mood = 'confident';
+
+      const mockFactsResponse = {
+        response: {
+          text: () => JSON.stringify({
+            objects: ['car'],
+            colors: ['gold'],
+            setting: 'studio',
+          }),
+        },
+      };
+
+      const firstVariantsResponse = {
+        response: {
+          text: () =>
+            JSON.stringify([
+              {
+                caption: 'Golden hour glow ready for the runway.',
+                hashtags: ['#vibe', '#luxury'],
+                safety_level: 'normal',
+                mood,
+                style,
+                cta: 'Tap in for the look',
+                alt: 'Fashion studio lit with warm golden tones showcasing luxury wardrobe accents and spotlight prep',
+                nsfw: false,
+              },
+            ]),
+        },
+      };
+
+      const firstRankResponse = {
+        response: {
+          text: () =>
+            JSON.stringify({
+              winner_index: 0,
+              scores: [5, 4, 3, 2, 1],
+              reason: 'Initial Gemini selection',
+              final: {
+                caption: 'Golden hour glow ready for the runway.',
+                hashtags: ['#vibe', '#luxury'],
+                safety_level: 'normal',
+                mood,
+                style,
+                cta: 'Tap in for the look',
+                alt: 'Fashion studio lit with warm golden tones showcasing luxury wardrobe accents and spotlight prep',
+                nsfw: false,
+              },
+            }),
+        },
+      };
+
+      const retryVariantsResponse = {
+        response: {
+          text: () =>
+            JSON.stringify([
+              {
+                caption: 'Golden hour glow ready for the runway.',
+                hashtags: ['#vibe', '#luxury', '#runwayready'],
+                safety_level: 'normal',
+                mood,
+                style,
+                cta: 'Tap in for the look',
+                alt: 'Fashion studio lit with warm golden tones showcasing luxury wardrobe accents and spotlight prep',
+                nsfw: false,
+              },
+            ]),
+        },
+      };
+
+      const retryRankResponse = {
+        response: {
+          text: () =>
+            JSON.stringify({
+              winner_index: 0,
+              scores: [5, 4, 3, 2, 1],
+              reason: 'Retry selection with compliant hashtags',
+              final: {
+                caption: 'Golden hour glow ready for the runway.',
+                hashtags: ['#vibe', '#luxury', '#runwayready'],
+                safety_level: 'normal',
+                mood,
+                style,
+                cta: 'Tap in for the look',
+                alt: 'Fashion studio lit with warm golden tones showcasing luxury wardrobe accents and spotlight prep',
+                nsfw: false,
+              },
+            }),
+        },
+      };
+
+      const { textModel, visionModel } = await import('../../server/lib/gemini.js');
+      (visionModel.generateContent as any).mockResolvedValueOnce(mockFactsResponse);
+      (textModel.generateContent as any)
+        .mockResolvedValueOnce(firstVariantsResponse)
+        .mockResolvedValueOnce(firstRankResponse)
+        .mockResolvedValueOnce(retryVariantsResponse)
+        .mockResolvedValueOnce(retryRankResponse);
+
+      const result = await pipeline({
+        imageUrl: mockImageUrl,
+        platform: 'instagram',
+        voice: 'flirty_playful',
+        style,
+        mood,
+      });
+
+      const variantRetryCall = (textModel.generateContent as any).mock.calls[2]?.[0]?.[0]?.text;
+      expect(variantRetryCall).toContain(`STYLE: ${style}`);
+      expect(variantRetryCall).toContain(`MOOD: ${mood}`);
+
+      expect(result.final).toMatchObject({
+        hashtags: ['#vibe', '#luxury', '#runwayready'],
+        style,
+        mood,
+      });
+      expect(result.final.hashtags).toHaveLength(3);
+    });
+
     it('should verify all returned variants are unique', async () => {
       const variantPayload = [
         {

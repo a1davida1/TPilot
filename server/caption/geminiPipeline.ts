@@ -93,7 +93,7 @@ function buildRetryHint(
 }
 
 function normalizeVariantFields(
-  variant: Record<string, unknown>, 
+  variant: Record<string, unknown>,
   platform: "instagram" | "x" | "reddit" | "tiktok",
   facts?: Record<string, unknown>,
   existingCaption?: string
@@ -534,7 +534,7 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
 }
 
 function normalizeGeminiFinal(
-  final: Record<string, unknown>, 
+  final: Record<string, unknown>,
   platform?: string,
   facts?: Record<string, unknown>
 ){
@@ -630,10 +630,10 @@ async function requestGeminiRanking(
     throw error;
   }
   let json = stripToJSON(
-    (res as any)?.response?.text 
-      ? (res as any).response.text() 
-      : typeof res === 'string' 
-        ? res 
+    (res as any)?.response?.text
+      ? (res as any).response.text()
+      : typeof res === 'string'
+        ? res
         : JSON.stringify(res)
   ) as unknown;
 
@@ -761,7 +761,7 @@ type GeminiPipelineArgs = {
  * retries. When platform validation fails we re-run Gemini with the exact same tone
  * payload so the caller's requested persona stays intact.
  */
-export async function pipeline({ imageUrl, platform, voice = "flirty_playful", nsfw = false, ...toneRest }: GeminiPipelineArgs): Promise<CaptionResult> {
+export async function pipeline({ imageUrl, platform, voice = "flirty_playful", nsfw = false, style, mood, ...toneRest }: GeminiPipelineArgs): Promise<CaptionResult> {
   try {
     const tone = extractToneOptions(toneRest);
     const facts = await extractFacts(imageUrl);
@@ -787,11 +787,17 @@ export async function pipeline({ imageUrl, platform, voice = "flirty_playful", n
 
     const err = platformChecks(platform, out);
     if (err) {
-      variants = await generateVariants({ platform, voice, facts, nsfw, ...tone, hint:`Fix: ${err}. Use IMAGE_FACTS nouns/colors/setting explicitly.` });
-      variants = dedupeVariantsForRanking(variants, 5, { platform, facts });
-      ranked = await rankAndSelect(variants, { platform });
+      variants = await generateVariants({
+        platform,
+        voice,
+        style,
+        mood,
+        facts,
+        hint: `Fix: ${err}. Use IMAGE_FACTS nouns/colors/setting explicitly.`,
+        nsfw
+      });
+      ranked = await rankAndSelect(variants);
       out = ranked.final;
-      await enforceCoverage();
     }
 
     return { provider: 'gemini', facts, variants, ranked, final: out };
