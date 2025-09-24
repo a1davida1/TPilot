@@ -244,7 +244,7 @@ export function EnhancedAIGenerator({
       const resolvedSubreddit =
         typeof candidateSubreddit === "string" && candidateSubreddit.trim().length > 0
           ? candidateSubreddit
-          : variables?.subreddit || (subreddit.trim().length > 0 ? subreddit : null);
+          : variables?.subreddit || null;
       const candidateAllowsPromotion = candidate.allowsPromotion;
       const resolvedAllowsPromotion =
         typeof candidateAllowsPromotion === "boolean"
@@ -420,7 +420,7 @@ export function EnhancedAIGenerator({
               Generated Content
             </h4>
 
-            {generatedContent.titles && generatedContent.titles.length > 0 && (
+            {generatedContent.titles && Array.isArray(generatedContent.titles) && generatedContent.titles.length > 0 && (
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-orange-700">Titles:</Label>
                 {generatedContent.titles.map((title, index) => (

@@ -109,13 +109,20 @@ describe('AdminCommunitiesPanel Component', () => {
       verificationRequired: false,
       promotionAllowed: promotionPolicy,
       rules: {
-        sellingAllowed: sellingPolicy,
-        minKarma: 100,
-        minAccountAge: 30,
-        watermarksAllowed: true,
-        titleRules: [],
-        contentRules: [],
-        linkRestrictions: []
+        content: {
+          sellingPolicy: sellingPolicy,
+          promotionalLinks: 'limited',
+          watermarksAllowed: true,
+          titleGuidelines: ['Rule 1', 'Rule 2'],
+          contentGuidelines: ['Content rule 1'],
+          bannedContent: ['spam'],
+          formattingRequirements: ['Format req 1']
+        },
+        eligibility: {
+          minKarma: 100,
+          minAccountAgeDays: 30,
+          verificationRequired: true
+        }
       },
       growthTrend: 'stable',
       modActivity: 'medium',
@@ -255,14 +262,18 @@ describe('AdminCommunitiesPanel Component', () => {
         verificationRequired: true,
         promotionAllowed: 'limited',
         rules: {
-          sellingAllowed: 'limited',
-          minKarma: 500,
-          minAccountAge: 90,
-          watermarksAllowed: false,
-          verificationRequired: true,
-          titleRules: ['Clear descriptive titles', 'No clickbait'],
-          contentRules: ['High quality images only', 'OC preferred'],
-          linkRestrictions: ['No direct sales links', 'Portfolio links OK']
+          content: {
+            sellingPolicy: 'limited',
+            promotionalLinks: 'yes',
+            watermarksAllowed: false,
+            titleGuidelines: ['Test rule'],
+            contentGuidelines: [],
+            bannedContent: [],
+            formattingRequirements: []
+          },
+          eligibility: {
+            minKarma: 50
+          }
         },
         growthTrend: 'up',
         modActivity: 'high',
@@ -290,7 +301,7 @@ describe('AdminCommunitiesPanel Component', () => {
       // Check for rule summary elements
       const rulesSummary = container.querySelector('[data-testid="row-community-detailed-rules"]');
       expect(rulesSummary).toBeTruthy();
-      
+
       // The RuleSummary component should display the selling policy
       expect(container.textContent).toContain('limited');
 
@@ -406,7 +417,7 @@ describe('AdminCommunitiesPanel Component', () => {
       const categorySelect = container.querySelector('[data-testid="select-category"]');
       const promotionSelect = container.querySelector('[data-testid="select-promotion"]');
       const verificationSelect = container.querySelector('[data-testid="select-verification"]');
-      
+
       expect(categorySelect).toBeTruthy();
       expect(promotionSelect).toBeTruthy();
       expect(verificationSelect).toBeTruthy();
@@ -429,13 +440,19 @@ describe('AdminCommunitiesPanel Component', () => {
       verificationRequired: false,
       promotionAllowed: 'limited',
       rules: {
-        sellingAllowed: 'allowed',
-        minKarma: 100,
-        minAccountAge: 30,
-        watermarksAllowed: true,
-        titleRules: [],
-        contentRules: [],
-        linkRestrictions: []
+        content: {
+          sellingPolicy: 'allowed',
+          promotionalLinks: 'yes',
+          watermarksAllowed: true,
+          titleGuidelines: [],
+          contentGuidelines: [],
+          bannedContent: [],
+          formattingRequirements: []
+        },
+        eligibility: {
+          minKarma: 0,
+          verificationRequired: false
+        }
       },
       growthTrend,
       modActivity: 'medium',
@@ -539,6 +556,21 @@ describe('AdminCommunitiesPanel Component', () => {
           engagementRate: 50,
           verificationRequired: false,
           promotionAllowed: 'yes',
+          rules: {
+            content: {
+              sellingPolicy: 'allowed',
+              promotionalLinks: 'yes',
+              watermarksAllowed: true,
+              titleGuidelines: [],
+              contentGuidelines: [],
+              bannedContent: [],
+              formattingRequirements: []
+            },
+            eligibility: {
+              minKarma: 0,
+              verificationRequired: false
+            }
+          },
           growthTrend: 'up',
           modActivity: 'high',
           competitionLevel: 'low'
@@ -552,6 +584,20 @@ describe('AdminCommunitiesPanel Component', () => {
           engagementRate: 40,
           verificationRequired: true,
           promotionAllowed: 'limited',
+          rules: {
+            content: {
+              sellingPolicy: 'limited',
+              promotionalLinks: 'yes',
+              watermarksAllowed: false,
+              titleGuidelines: ['Test rule'],
+              contentGuidelines: [],
+              bannedContent: [],
+              formattingRequirements: []
+            },
+            eligibility: {
+              minKarma: 50
+            }
+          },
           growthTrend: 'stable',
           modActivity: 'medium',
           competitionLevel: 'medium'
@@ -565,6 +611,21 @@ describe('AdminCommunitiesPanel Component', () => {
           engagementRate: 30,
           verificationRequired: true,
           promotionAllowed: 'no',
+          rules: {
+            content: {
+              sellingPolicy: 'allowed',
+              promotionalLinks: 'yes',
+              watermarksAllowed: true,
+              titleGuidelines: [],
+              contentGuidelines: [],
+              bannedContent: [],
+              formattingRequirements: []
+            },
+            eligibility: {
+              minKarma: 0,
+              verificationRequired: false
+            }
+          },
           growthTrend: 'down',
           modActivity: 'low',
           competitionLevel: 'high'
@@ -649,7 +710,7 @@ describe('AdminCommunitiesPanel Component', () => {
 
     it('should handle form validation errors', async () => {
       mockMutateAsync.mockRejectedValue(new Error('Members count is required and must be a number.'));
-      
+
       mockUseQuery.mockReturnValue({
         data: [],
         isLoading: false,
@@ -802,6 +863,21 @@ describe('AdminCommunitiesPanel Component', () => {
           engagementRate: 50,
           verificationRequired: false,
           promotionAllowed: 'limited',
+          rules: {
+            content: {
+              sellingPolicy: 'allowed',
+              promotionalLinks: 'yes',
+              watermarksAllowed: true,
+              titleGuidelines: [],
+              contentGuidelines: [],
+              bannedContent: [],
+              formattingRequirements: []
+            },
+            eligibility: {
+              minKarma: 0,
+              verificationRequired: false
+            }
+          },
           growthTrend: 'up',
           modActivity: 'high',
           competitionLevel: 'low'
