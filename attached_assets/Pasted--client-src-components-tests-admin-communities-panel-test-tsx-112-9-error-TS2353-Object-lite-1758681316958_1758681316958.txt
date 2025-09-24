@@ -1,0 +1,52 @@
+
+client/src/components/__tests__/admin-communities-panel.test.tsx:112:9 - error TS2353: Object literal may only specify known properties, and 'sellingAllowed' does not exist in type '{ content?: { sellingPolicy?: "limited" | "allowed" | "not_allowed" | "unknown"; watermarksAllowed?: boolean; promotionalLinks?: "yes" | "limited" | "no"; requiresOriginalContent?: boolean; ... 5 more ...; formattingRequirements?: string[]; }; eligibility?: { ...; }; posting?: { ...; }; notes?: string; }'.
+
+112         sellingAllowed: sellingPolicy,
+            ~~~~~~~~~~~~~~
+
+  client/src/hooks/use-admin-communities.ts:40:3
+    40   rules?: CommunityRules | null;
+         ~~~~~
+    The expected type comes from property 'rules' which is declared here on type 'AdminCommunity'
+
+client/src/components/__tests__/admin-communities-panel.test.tsx:258:11 - error TS2353: Object literal may only specify known properties, and 'sellingAllowed' does not exist in type '{ content?: { sellingPolicy?: "limited" | "allowed" | "not_allowed" | "unknown"; watermarksAllowed?: boolean; promotionalLinks?: "yes" | "limited" | "no"; requiresOriginalContent?: boolean; ... 5 more ...; formattingRequirements?: string[]; }; eligibility?: { ...; }; posting?: { ...; }; notes?: string; }'.
+
+258           sellingAllowed: 'limited',
+              ~~~~~~~~~~~~~~
+
+  client/src/hooks/use-admin-communities.ts:40:3
+    40   rules?: CommunityRules | null;
+         ~~~~~
+    The expected type comes from property 'rules' which is declared here on type 'AdminCommunity'
+
+client/src/components/__tests__/admin-communities-panel.test.tsx:432:9 - error TS2353: Object literal may only specify known properties, and 'sellingAllowed' does not exist in type '{ content?: { sellingPolicy?: "limited" | "allowed" | "not_allowed" | "unknown"; watermarksAllowed?: boolean; promotionalLinks?: "yes" | "limited" | "no"; requiresOriginalContent?: boolean; ... 5 more ...; formattingRequirements?: string[]; }; eligibility?: { ...; }; posting?: { ...; }; notes?: string; }'.
+
+432         sellingAllowed: 'allowed',
+            ~~~~~~~~~~~~~~
+
+  client/src/hooks/use-admin-communities.ts:40:3
+    40   rules?: CommunityRules | null;
+         ~~~~~
+    The expected type comes from property 'rules' which is declared here on type 'AdminCommunity'
+
+client/src/components/enhanced-ai-generator.tsx:247:38 - error TS2304: Cannot find name 'subreddit'.
+
+247           : variables?.subreddit || (subreddit.trim().length > 0 ? subreddit : null);
+                                         ~~~~~~~~~
+
+client/src/components/enhanced-ai-generator.tsx:247:68 - error TS2304: Cannot find name 'subreddit'.
+
+247           : variables?.subreddit || (subreddit.trim().length > 0 ? subreddit : null);
+                                                                       ~~~~~~~~~
+
+client/src/components/enhanced-ai-generator.tsx:426:42 - error TS2339: Property 'map' does not exist on type 'string | string[]'.
+  Property 'map' does not exist on type 'string'.
+
+426                 {generatedContent.titles.map((title, index) => (
+                                             ~~~
+
+
+Found 6 errors in 2 files.
+
+Errors  Files
+     3  client/src/components/__tests__/admin-communities-panel.test.tsx:112
