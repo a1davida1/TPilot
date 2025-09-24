@@ -38,6 +38,8 @@ const GENERIC_HASHTAGS = new Set([
   "#mood", "#vibes"
 ]);
 
+const X_FALLBACK_HASHTAGS = ["#thoughts", "#freshperspective"] as const;
+
 // Canned CTA templates that should be avoided
 const RAW_CANNED_CTAS = [
   "Check it out", "Click the link", "Don't miss out",
@@ -66,11 +68,11 @@ export function fallbackHashtags(platform?: string): string[] {
     case "tiktok":
       return ["#niche", "#authentic"];
     case "x":
-      return ["#thoughts"];
+      return [...X_FALLBACK_HASHTAGS];
     case "reddit":
       return [];
     default:
-      return ["#thoughts"];
+      return [...X_FALLBACK_HASHTAGS];
   }
 }
 
@@ -82,6 +84,15 @@ export interface Violation {
 
 export function detectVariantViolations(variant: any): Violation[] {
   const violations: Violation[] = [];
+
+  // Check for banned words first
+  if (variantContainsBannedWord(variant)) {
+    violations.push({
+      type: "banned_word",
+      content: variant.caption || "",
+      field: "caption"
+    });
+  }
 
   // Check caption for banned phrases
   if (typeof variant.caption === "string") {
@@ -161,13 +172,13 @@ export function buildRerankHint(violations: Violation[]): string {
   for (const violation of violations) {
     switch (violation.type) {
       case "banned_phrase":
-        hints.push("skip sparkle emojis and filler phrases like 'Check out this amazing content'");
+        hints.push("avoid sparkle emojis and sparkle-filler phrases like 'Check out this amazing content'");
         break;
       case "generic_hashtag":
-        hints.push("replace generic hashtags with specific, engaging tags instead of #content or #creative");
+        hints.push("swap out generic hashtags for specific, engaging tags instead of filler like #content #creative #amazing");
         break;
       case "canned_cta":
-        hints.push("create unique calls-to-action instead of templates like 'Check it out'");
+        hints.push("create a unique call-to-action instead of a canned CTA template like 'Check it out'");
         break;
       case "banned_word":
         hints.push("avoid banned words (ai, ai-generated, content)");
@@ -188,22 +199,21 @@ export function formatViolationSummary(violations: Violation[]): string {
   for (const violation of violations) {
     switch (violation.type) {
       case "banned_phrase":
-        summaries.push("caption polished");
+        summaries.push("sanitized sparkle emojis and filler caption");
         break;
       case "banned_word":
-        summaries.push("banned words removed");
+        summaries.push("removed banned words");
         break;
       case "generic_hashtag":
-        summaries.push("generic hashtags swapped");
+        summaries.push("replaced generic hashtags");
         break;
       case "canned_cta":
-        summaries.push("canned CTA replaced");
+        summaries.push("upgraded canned CTA");
         break;
     }
   }
 
-  const details = summaries.join(", ");
-  return details ? `Sanitized sparkle filler: ${details}` : "Sanitized sparkle filler";
+  return `Sanitized: ${summaries.join(", ")}`;
 }
 
 export function sanitizeFinalVariant(variant: any, platform?: string): any {
@@ -258,36 +268,30 @@ export function sanitizeFinalVariant(variant: any, platform?: string): any {
   }
 
   // Enhanced hashtag sanitization with platform-specific rules
-  const fallback = fallbackHashtags(platform);
-
   if (Array.isArray(sanitized.hashtags)) {
-    let cleanedHashtags = sanitized.hashtags
-      .filter((tag: any): tag is string => typeof tag === "string")
-      .map((tag: string) => tag.trim())
-      .filter((tag: string) => tag.length > 0)
-      .filter((tag: string) => !containsBannedWord(tag))
-      .filter((tag: string) => !GENERIC_HASHTAGS.has(tag.toLowerCase()));
+    let cleanedHashtags: string[] = sanitized.hashtags
+      .filter((tag): tag is string => typeof tag === "string")
+      .filter((tag) => !containsBannedWord(tag))
+      .filter((tag) => !GENERIC_HASHTAGS.has(tag.toLowerCase()));
 
-    // Apply platform-specific hashtag limits after cleaning
-    if (platform === 'x' && cleanedHashtags.length > 2) {
-      cleanedHashtags = cleanedHashtags.slice(0, 2);
-    } else if (platform === 'reddit' && cleanedHashtags.length > 1) {
-      cleanedHashtags = cleanedHashtags.slice(0, 1);
+    if (platform === "reddit") {
+      cleanedHashtags = cleanedHashtags
+        .map((tag) => (tag.startsWith("#") ? tag.substring(1) : tag))
+        .filter((tag) => tag.length > 0);
     }
-    // Instagram and TikTok: no limit enforced
 
-    // Enforce minimum requirements or fall back
-    const fallback = fallbackHashtags(platform);
-    const minRequired = platform === 'reddit' ? 0 : 1;
+    const limit = platform === "x" ? 2 : platform === "reddit" ? 0 : undefined;
+    if (typeof limit === "number") {
+      cleanedHashtags = limit === 0 ? [] : cleanedHashtags.slice(0, limit);
+    }
 
-    if (cleanedHashtags.length < minRequired) {
-      sanitized.hashtags = minRequired === 0 ? [] : fallback;
+    if (cleanedHashtags.length === 0) {
+      sanitized.hashtags = fallbackHashtags(platform);
     } else {
       sanitized.hashtags = cleanedHashtags;
     }
   } else {
-    // No hashtags provided, use fallback when platform requires at least one
-    sanitized.hashtags = platform === 'reddit' ? [] : fallbackHashtags(platform);
+    sanitized.hashtags = fallbackHashtags(platform);
   }
 
   return sanitized;
