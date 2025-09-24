@@ -26,7 +26,7 @@ interface RedditProfile {
 }
 
 export function registerRedditRoutes(app: Express) {
-  
+
   // Start Reddit OAuth flow - SECURE VERSION
   app.get('/api/reddit/connect', rateLimit, authenticateToken, async (req: AuthRequest, res) => {
     try {
@@ -43,7 +43,7 @@ export function registerRedditRoutes(app: Express) {
 
       // Generate cryptographically secure state
       const state = crypto.randomBytes(32).toString('hex');
-      
+
       // Store state securely with user binding
       await stateStore.set(`reddit_state:${state}`, {
         userId,
@@ -51,16 +51,16 @@ export function registerRedditRoutes(app: Express) {
         userAgent: req.get('user-agent'),
         timestamp: Date.now()
       }, 600); // 10 minute expiry
-      
+
       logger.info('Reddit OAuth initiated', {
         userId,
         statePreview: state.substring(0, 8) + '...',
         requestIP: req.ip
       });
-      
+
       const authUrl = getRedditAuthUrl(state);
       res.json({ authUrl });
-      
+
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       logger.error('Reddit connect error', { error: err.message, stack: err.stack });
@@ -85,7 +85,7 @@ export function registerRedditRoutes(app: Express) {
 
       // Validate state from secure store
       const stateData = await stateStore.get(`reddit_state:${state}`);
-      
+
       if (!stateData) {
         const stateStr = Array.isArray(state) ? state[0] : state;
         const stateString = String(stateStr);
@@ -94,7 +94,7 @@ export function registerRedditRoutes(app: Express) {
         });
         return res.redirect('/dashboard?error=invalid_state');
       }
-      
+
       // Additional security check - log if IP differs (but don't block)
       if (stateData.ip !== req.ip) {
         logger.warn('IP mismatch in OAuth callback', {
@@ -103,10 +103,10 @@ export function registerRedditRoutes(app: Express) {
           userId: stateData.userId
         });
       }
-      
+
       // Clean up state immediately to prevent reuse
       await stateStore.delete(`reddit_state:${state}`);
-      
+
       const userId = stateData.userId;
       logger.info('Processing Reddit OAuth for user', { userId });
 
@@ -129,12 +129,12 @@ export function registerRedditRoutes(app: Express) {
       if (!tokenData.refreshToken) {
         logger.warn('Reddit token response missing refresh token', { userId });
       }
-      
+
       // Get Reddit user info
       const tempReddit = new RedditManager(tokenData.accessToken, tokenData.refreshToken, userId);
       const redditProfile = await tempReddit.getProfile();
       const profile = redditProfile as RedditProfile;
-      
+
       if (!profile) {
         logger.error('Failed to fetch Reddit profile');
         return res.redirect('/dashboard?error=reddit_profile_failed');
@@ -184,7 +184,7 @@ export function registerRedditRoutes(app: Express) {
 
       // Success redirect to dashboard
       res.redirect('/dashboard?reddit=connected&username=' + encodeURIComponent(profile.username));
-      
+
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       console.error('Reddit callback error:', err.message);
@@ -202,10 +202,10 @@ export function registerRedditRoutes(app: Express) {
       if (category && category !== 'all') {
         communities = communities.filter(c => c.category === category);
       }
-      
+
       // Runtime validation using canonical shared schema to ensure type safety
       const { redditCommunityArrayZodSchema } = await import('@shared/schema');
-      
+
       const validatedCommunities = redditCommunityArrayZodSchema.parse(communities);
       res.json(validatedCommunities);
     } catch (error) {
@@ -341,7 +341,7 @@ export function registerRedditRoutes(app: Express) {
       if (!userId) {
         return res.status(401).json({ error: 'Authentication required' });
       }
-      
+
       // Get account from database
       const accounts = await db
         .select()
@@ -364,23 +364,23 @@ export function registerRedditRoutes(app: Express) {
       }
 
       const account = accounts[0];
-      
+
       // Decrypt tokens
       const accessToken = account.oauthToken ? decrypt(account.oauthToken) : null;
       const refreshToken = account.oauthRefresh ? decrypt(account.oauthRefresh) : null;
-      
+
       if (!accessToken) {
         return res.status(401).json({ error: 'Invalid tokens. Please reconnect your Reddit account.' });
       }
-      
+
       // Create Reddit manager with decrypted tokens
       const reddit = new RedditManager(accessToken, refreshToken || '', userId);
       const isConnected = await reddit.testConnection();
-      
+
       if (isConnected) {
         const fetchedProfile = await reddit.getProfile();
         const profile = fetchedProfile as RedditProfile | null;
-        
+
         // Update metadata with latest info
         if (profile) {
           await db
@@ -395,7 +395,7 @@ export function registerRedditRoutes(app: Express) {
             })
             .where(eq(creatorAccounts.id, account.id));
         }
-        
+
         res.json({ 
           connected: true, 
           profile: {
@@ -442,7 +442,7 @@ export function registerRedditRoutes(app: Express) {
       }
 
       let result: RedditPostResult;
-      
+
       // Handle different post types
       switch (postType || 'text') {
         case 'image':
@@ -457,7 +457,7 @@ export function registerRedditRoutes(app: Express) {
             const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
             imageBuffer = Buffer.from(base64Data, 'base64');
           }
-          
+
           result = await reddit.submitImagePost({
             subreddit,
             title,
@@ -467,20 +467,20 @@ export function registerRedditRoutes(app: Express) {
             spoiler: spoiler || false
           });
           break;
-          
+
         case 'gallery':
           // Multiple images
           if (!req.body.images || !Array.isArray(req.body.images)) {
             return res.status(400).json({ error: 'Images array required for gallery post' });
           }
-          
+
           const typedImages =
             req.body.images as Array<{ url: string; caption?: string }>;
           const images = typedImages.map(img => ({
             url: img.url,
             caption: img.caption || ''
           }));
-          
+
           result = await reddit.submitGalleryPost({
             subreddit,
             title,
@@ -488,13 +488,13 @@ export function registerRedditRoutes(app: Express) {
             nsfw: nsfw || false
           });
           break;
-          
+
         case 'link':
           // Link post
           if (!url) {
             return res.status(400).json({ error: 'URL required for link post' });
           }
-          
+
           result = await reddit.submitPost({
             subreddit,
             title,
@@ -503,7 +503,7 @@ export function registerRedditRoutes(app: Express) {
             spoiler: spoiler || false
           });
           break;
-          
+
         case 'text':
         default:
           // Text post
@@ -540,7 +540,7 @@ export function registerRedditRoutes(app: Express) {
           console.error('Failed to record safety signals:', safetyError);
           // Don't fail the request if safety recording fails
         }
-        
+
         res.json({
           success: true,
           postId: result.postId,
@@ -599,15 +599,15 @@ export function registerRedditRoutes(app: Express) {
       if (!userId) {
         return res.status(401).json({ error: 'Authentication required' });
       }
-      
+
       const reddit = await RedditManager.forUser(userId);
       if (!reddit) {
         return res.status(404).json({ error: 'No Reddit account connected' });
       }
-      
+
       const capabilities = await reddit.checkSubredditCapabilities(req.params.name);
       res.json(capabilities);
-      
+
     } catch (error) {
       console.error('Error checking subreddit:', error);
       res.status(500).json({ error: 'Failed to check subreddit' });
@@ -623,7 +623,7 @@ export function registerRedditRoutes(app: Express) {
       }
 
       const eligibility = await getUserRedditCommunityEligibility(userId);
-      
+
       if (!eligibility) {
         return res.status(404).json({ 
           error: 'No Reddit account connected',
@@ -636,7 +636,7 @@ export function registerRedditRoutes(app: Express) {
       }
 
       res.json(eligibility);
-      
+
     } catch (error) {
       console.error('Error fetching eligible communities:', error);
       res.status(500).json({ 
@@ -672,7 +672,7 @@ export function registerRedditRoutes(app: Express) {
       }
 
       const shadowbanResult = await reddit.checkShadowbanStatus();
-      
+
       logger.info('Shadowban status checked', {
         userId,
         isShadowbanned: shadowbanResult.isShadowbanned,
@@ -682,14 +682,14 @@ export function registerRedditRoutes(app: Express) {
       });
 
       res.json(shadowbanResult);
-      
+
     } catch (error) {
       logger.error('Error checking shadowban status', { 
         userId: req.user?.id, 
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined
       });
-      
+
       res.status(500).json({
         isShadowbanned: false,
         statusMessage: 'Failed to check shadowban status',
@@ -711,7 +711,7 @@ export function registerRedditRoutes(app: Express) {
       }
 
       const summary = summarizeRemovalReasons(userId);
-      
+
       logger.info('Compliance removal summary requested', {
         userId,
         totalRemovals: summary.total,
@@ -719,13 +719,13 @@ export function registerRedditRoutes(app: Express) {
       });
 
       res.json(summary);
-      
+
     } catch (error) {
       logger.error('Error fetching compliance removal summary', { 
         userId: req.user?.id, 
         error: error instanceof Error ? error.message : String(error)
       });
-      
+
       res.status(500).json({
         total: 0,
         byReason: {},

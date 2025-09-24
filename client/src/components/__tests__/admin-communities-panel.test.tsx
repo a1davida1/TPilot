@@ -35,6 +35,43 @@ vi.mock('@/hooks/use-toast', () => ({
   useToast: () => ({ toast: mockToast }),
 }));
 
+// Helper to create structured rules
+const createStructuredRules = (
+  sellingPolicy: RedditCommunitySellingPolicy,
+  overrides: any = {}
+) => {
+  const baseRules = {
+    content: {
+      sellingPolicy: sellingPolicy,
+      promotionalLinks: 'limited',
+      watermarksAllowed: true,
+      titleGuidelines: [],
+      contentGuidelines: [],
+      bannedContent: [],
+      formattingRequirements: []
+    },
+    eligibility: {
+      minKarma: 100,
+      minAccountAgeDays: 30,
+      verificationRequired: false
+    }
+  };
+
+  // Deep merge overrides
+  const mergeDeep = (target: any, source: any) => {
+    for (const key in source) {
+      if (source[key] instanceof Object && key in target && target[key] instanceof Object) {
+        mergeDeep(target[key], source[key]);
+      } else {
+        target[key] = source[key];
+      }
+    }
+    return target;
+  };
+
+  return mergeDeep(JSON.parse(JSON.stringify(baseRules)), overrides);
+};
+
 vi.mock('@/hooks/use-admin-communities', () => ({
   useAdminCommunities: (filters?: any) => mockUseQuery({ queryKey: ['admin-communities', filters] }),
   useCreateCommunity: () => mockUseMutation(),
@@ -99,7 +136,10 @@ describe('AdminCommunitiesPanel Component', () => {
   });
 
   describe('Selling Policy Enum Variations', () => {
-    const createCommunityWithSellingPolicy = (sellingPolicy: RedditCommunitySellingPolicy, promotionPolicy: PromotionPolicy = 'limited'): AdminCommunity => ({
+    const createCommunityWithSellingPolicy = (
+      sellingPolicy: RedditCommunitySellingPolicy,
+      promotionPolicy: PromotionPolicy = 'limited'
+    ): AdminCommunity => ({
       id: `community-${sellingPolicy}`,
       name: `community${sellingPolicy}`,
       displayName: `Community ${sellingPolicy}`,
@@ -108,22 +148,7 @@ describe('AdminCommunitiesPanel Component', () => {
       engagementRate: 50,
       verificationRequired: false,
       promotionAllowed: promotionPolicy,
-      rules: {
-        content: {
-          sellingPolicy: sellingPolicy,
-          promotionalLinks: 'limited',
-          watermarksAllowed: true,
-          titleGuidelines: ['Rule 1', 'Rule 2'],
-          contentGuidelines: ['Content rule 1'],
-          bannedContent: ['spam'],
-          formattingRequirements: ['Format req 1']
-        },
-        eligibility: {
-          minKarma: 100,
-          minAccountAgeDays: 30,
-          verificationRequired: true
-        }
-      },
+      rules: createStructuredRules(sellingPolicy),
       growthTrend: 'stable',
       modActivity: 'medium',
       competitionLevel: 'medium'
@@ -261,20 +286,19 @@ describe('AdminCommunitiesPanel Component', () => {
         engagementRate: 65,
         verificationRequired: true,
         promotionAllowed: 'limited',
-        rules: {
-          content: {
-            sellingPolicy: 'limited',
-            promotionalLinks: 'yes',
-            watermarksAllowed: false,
-            titleGuidelines: ['Test rule'],
-            contentGuidelines: [],
-            bannedContent: [],
-            formattingRequirements: []
-          },
+        rules: createStructuredRules('limited', {
           eligibility: {
-            minKarma: 50
-          }
-        },
+            minKarma: 500,
+            minAccountAgeDays: 90,
+            verificationRequired: true,
+          },
+          content: {
+            watermarksAllowed: false,
+            titleGuidelines: ['Clear descriptive titles', 'No clickbait'],
+            contentGuidelines: ['High quality images only', 'OC preferred'],
+            linkRestrictions: ['No direct sales links', 'Portfolio links OK'],
+          },
+        }),
         growthTrend: 'up',
         modActivity: 'high',
         competitionLevel: 'medium'
@@ -439,21 +463,7 @@ describe('AdminCommunitiesPanel Component', () => {
       engagementRate: 50,
       verificationRequired: false,
       promotionAllowed: 'limited',
-      rules: {
-        content: {
-          sellingPolicy: 'allowed',
-          promotionalLinks: 'yes',
-          watermarksAllowed: true,
-          titleGuidelines: [],
-          contentGuidelines: [],
-          bannedContent: [],
-          formattingRequirements: []
-        },
-        eligibility: {
-          minKarma: 0,
-          verificationRequired: false
-        }
-      },
+      rules: createStructuredRules('allowed'),
       growthTrend,
       modActivity: 'medium',
       competitionLevel: 'medium'
@@ -556,21 +566,19 @@ describe('AdminCommunitiesPanel Component', () => {
           engagementRate: 50,
           verificationRequired: false,
           promotionAllowed: 'yes',
-          rules: {
+          rules: createStructuredRules('allowed', {
+            eligibility: {
+              minKarma: 0,
+              verificationRequired: false
+            },
             content: {
-              sellingPolicy: 'allowed',
-              promotionalLinks: 'yes',
               watermarksAllowed: true,
               titleGuidelines: [],
               contentGuidelines: [],
               bannedContent: [],
               formattingRequirements: []
-            },
-            eligibility: {
-              minKarma: 0,
-              verificationRequired: false
             }
-          },
+          }),
           growthTrend: 'up',
           modActivity: 'high',
           competitionLevel: 'low'
@@ -584,20 +592,18 @@ describe('AdminCommunitiesPanel Component', () => {
           engagementRate: 40,
           verificationRequired: true,
           promotionAllowed: 'limited',
-          rules: {
+          rules: createStructuredRules('limited', {
+            eligibility: {
+              minKarma: 50
+            },
             content: {
-              sellingPolicy: 'limited',
-              promotionalLinks: 'yes',
               watermarksAllowed: false,
               titleGuidelines: ['Test rule'],
               contentGuidelines: [],
               bannedContent: [],
               formattingRequirements: []
-            },
-            eligibility: {
-              minKarma: 50
             }
-          },
+          }),
           growthTrend: 'stable',
           modActivity: 'medium',
           competitionLevel: 'medium'
@@ -611,21 +617,19 @@ describe('AdminCommunitiesPanel Component', () => {
           engagementRate: 30,
           verificationRequired: true,
           promotionAllowed: 'no',
-          rules: {
+          rules: createStructuredRules('allowed', {
+            eligibility: {
+              minKarma: 0,
+              verificationRequired: false
+            },
             content: {
-              sellingPolicy: 'allowed',
-              promotionalLinks: 'yes',
               watermarksAllowed: true,
               titleGuidelines: [],
               contentGuidelines: [],
               bannedContent: [],
               formattingRequirements: []
-            },
-            eligibility: {
-              minKarma: 0,
-              verificationRequired: false
             }
-          },
+          }),
           growthTrend: 'down',
           modActivity: 'low',
           competitionLevel: 'high'
@@ -863,21 +867,7 @@ describe('AdminCommunitiesPanel Component', () => {
           engagementRate: 50,
           verificationRequired: false,
           promotionAllowed: 'limited',
-          rules: {
-            content: {
-              sellingPolicy: 'allowed',
-              promotionalLinks: 'yes',
-              watermarksAllowed: true,
-              titleGuidelines: [],
-              contentGuidelines: [],
-              bannedContent: [],
-              formattingRequirements: []
-            },
-            eligibility: {
-              minKarma: 0,
-              verificationRequired: false
-            }
-          },
+          rules: createStructuredRules('allowed'),
           growthTrend: 'up',
           modActivity: 'high',
           competitionLevel: 'low'
