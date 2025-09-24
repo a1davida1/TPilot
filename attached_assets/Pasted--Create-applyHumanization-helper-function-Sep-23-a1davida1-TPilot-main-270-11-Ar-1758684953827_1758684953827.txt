@@ -1,0 +1,552 @@
+
+Create applyHumanization helper function
+Sep 23
+·
+a1davida1/TPilot
+·
+main
+·
++270
+-11
+
+Archive
+
+Share
+
+Create PR
+
+
+1. Create an `applyHumanization(content, toneStyle)` helper in `server/advanced-content-generator.ts` (or a nearby utility) that—based on small random chances—adds traits like ellipses, lowercase interjections, intentionally dropped subject pronouns, or mild spelling variations (“kinda” vs. “kind of”) while avoiding harmful typos.
+2. Allow tone definitions to specify safe “imperfection” tokens (e.g., playful tone could append “lol”, authentic tone might insert “tbh”) and call this helper before returning the caption.
+3. Introduce parameters to cap how many quirks can be injected per caption to keep the copy readable and on-brand.
+4. Update serialization/tests to ensure hashtags remain intact and the humanization step is deterministic under seeded randomness (so QA can reproduce results).
+Copy
+Summary
+
+Introduced a HumanizationConfig option and a reusable applyHumanization helper that injects tone-aware quirks such as ellipses, interjections, pronoun drops, and safe colloquialisms while respecting a configurable ceiling on how many appear in each caption.
+
+Extended the tone style catalog with curated imperfection tokens so every tone can opt into signature phrases without compromising readability or brand safety.
+
+Updated caption assembly to route finished copy through the humanization helper before hashtags are appended, ensuring tags remain untouched while the body gains subtle personality.
+
+Added unit coverage that seeds randomness to assert deterministic humanization output and verifies that serialized captions still carry their hashtags for QA reproducibility.
+
+Testing
+
+✅ npm run lint
+
+⚠️ npm test *(fails across many legacy suites; run was aborted after repeated unrelated infrastructure errors)*
+
+✅ npx vitest run tests/unit/server/advanced-content-generator.test.ts
+
+
+Files (2)
+
+server/advanced-content-generator.ts
++192
+-11
+
+tests/unit/server/advanced-content-generator.test.ts
+New
+
+
+
+Diff
+Logs
+
+server/advanced-content-generator.ts
++192
+-11
+
+// Advanced Content Generation Engine
+// Produces authentically different content based on all user parameters
+
+export interface HumanizationConfig {
+  maxQuirks?: number;
+  random?: () => number;
+}
+
+export interface ContentParameters {
+  photoType: 'casual' | 'workout' | 'shower' | 'showing-skin' | 'spicy' | 'very-spicy' | 'all-xs';
+  textTone: 'confident' | 'playful' | 'mysterious' | 'authentic' | 'sassy';
+  style: string; // style preset like 'nude-photos', 'shower-content', etc.
+  includePromotion: boolean;
+  selectedHashtags: string[];
+  customPrompt?: string;
+  platform: string;
+  humanization?: HumanizationConfig;
+}
+
+export interface PhotoInstructions {
+  lighting: string;
+  cameraAngle?: string;
+  angles?: string;
+  composition: string;
+  styling: string;
+  technical?: string;
+  technicalSettings?: string;
+  sceneSetup?: string;
+  mood?: string;
+}
+
+export interface GeneratedContent {
+  titles: string[];
+  content: string;
+  photoInstructions: {
+    lighting: string;
+    angles: string;
+    composition: string;
+    styling: string;
+    technical: string;
+    sceneSetup: string;
+  };
+  tags: string[];
+}
+
+export interface PresetVariation {
+  titles: string[];
+  content: string;
+  photoInstructions: PhotoInstructions;
+}
+
+export interface PhotoConfig {
+  themes: string[];
+  settings: string[];
+  clothing: string[];
+  lighting: string;
+  angles: string;
+  mood: string;
+}
+
+export interface ToneStyle {
+  starters: string[];
+  descriptors: string[];
+  endings: string[];
+  emojis: string[];
+  imperfectionTokens?: string[];
+}
+
+const DEFAULT_MAX_HUMANIZATION_QUIRKS = 2;
+
+type RandomGenerator = () => number;
+
+interface HumanizationOptions {
+  maxQuirks?: number;
+  random?: RandomGenerator;
+}
+
+interface HumanizationContext {
+  random: RandomGenerator;
+  toneStyle: ToneStyle;
+}
+
+interface HumanizationQuirk {
+  chance: number;
+  apply: (text: string, context: HumanizationContext) => string;
+}
+
+const LOWERCASE_INTERJECTIONS: readonly string[] = ['hmm', 'haha', 'um', 'oh'];
+
+const SPELLING_VARIATIONS: Array<{ pattern: RegExp; replacement: string }> = [
+  { pattern: /\bkind of\b/i, replacement: 'kinda' },
+  { pattern: /\bsort of\b/i, replacement: 'sorta' },
+  { pattern: /\bgoing to\b/i, replacement: 'gonna' },
+  { pattern: /\bwant to\b/i, replacement: 'wanna' }
+];
+
+export function applyHumanization(content: string, toneStyle: ToneStyle, options?: HumanizationOptions): string {
+  if (content.trim().length === 0) {
+    return content;
+  }
+
+  const random: RandomGenerator = options?.random ?? Math.random;
+  const requestedMax = options?.maxQuirks ?? DEFAULT_MAX_HUMANIZATION_QUIRKS;
+  const maxQuirks = Math.max(0, Math.floor(requestedMax));
+
+  if (maxQuirks === 0) {
+    return content;
+  }
+
+  const context: HumanizationContext = { random, toneStyle };
+
+  const quirks: HumanizationQuirk[] = [
+    { chance: 0.2, apply: addTrailingEllipsis },
+    { chance: 0.15, apply: insertLowercaseInterjection },
+    { chance: 0.1, apply: dropSentencePronoun },
+    { chance: 0.15, apply: applySpellingVariationQuirk }
+  ];
+
+  if (toneStyle.imperfectionTokens && toneStyle.imperfectionTokens.length > 0) {
+    quirks.push({ chance: 0.2, apply: injectImperfectionToken });
+  }
+
+  let result = content;
+  let applied = 0;
+
+  for (const quirk of quirks) {
+    if (applied >= maxQuirks) {
+      break;
+    }
+
+    if (random() < quirk.chance) {
+      const updated = quirk.apply(result, context);
+      if (updated !== result) {
+        result = updated;
+        applied += 1;
+      }
+    }
+  }
+
+  return result;
+}
+
+function addTrailingEllipsis(text: string): string {
+  const trailingWhitespaceMatch = text.match(/\s*$/);
+  const whitespace = trailingWhitespaceMatch ? trailingWhitespaceMatch[0] : '';
+  const trimmed = text.slice(0, text.length - whitespace.length);
+
+  if (trimmed.endsWith('...')) {
+    return text;
+  }
+
+  if (trimmed.endsWith('.')) {
+    return `${trimmed.slice(0, -1)}...${whitespace}`;
+  }
+
+  return `${trimmed}...${whitespace}`;
+}
+
+function insertLowercaseInterjection(text: string, context: HumanizationContext): string {
+  if (text.length === 0) {
+    return text;
+  }
+
+  const chosenIndex = Math.floor(context.random() * LOWERCASE_INTERJECTIONS.length);
+  const interjection = LOWERCASE_INTERJECTIONS[chosenIndex] ?? LOWERCASE_INTERJECTIONS[0];
+
+  const punctuationPattern = /([.!?])\s+/;
+  const match = punctuationPattern.exec(text);
+
+  if (match && match.index !== undefined) {
+    const insertAt = match.index + match[0].length;
+    return `${text.slice(0, insertAt)}${interjection}, ${text.slice(insertAt)}`;
+  }
+
+  return `${interjection}... ${text}`;
+}
+
+function dropSentencePronoun(text: string): string {
+  const pronounPattern = /(^|[.!?]\s+)I\s+/;
+  const match = pronounPattern.exec(text);
+
+  if (!match || match.index === undefined) {
+    return text;
+  }
+
+  const start = match.index + match[1].length;
+  const remainder = text.slice(start + 2);
+
+  if (remainder.length === 0) {
+    return text;
+  }
+
+  return `${text.slice(0, start)}${remainder[0].toUpperCase()}${remainder.slice(1)}`;
+}
+
+function applySpellingVariationQuirk(text: string): string {
+  for (const variation of SPELLING_VARIATIONS) {
+    const match = variation.pattern.exec(text);
+    if (match && match.index !== undefined) {
+      const matchedValue = match[0];
+      const replacement = matchedValue[0] === matchedValue[0].toUpperCase()
+        ? variation.replacement.charAt(0).toUpperCase() + variation.replacement.slice(1)
+        : variation.replacement;
+
+      return `${text.slice(0, match.index)}${replacement}${text.slice(match.index + matchedValue.length)}`;
+    }
+  }
+
+  return text;
+}
+
+function injectImperfectionToken(text: string, context: HumanizationContext): string {
+  const tokens = context.toneStyle.imperfectionTokens;
+  if (!tokens || tokens.length === 0) {
+    return text;
+  }
+
+  const choiceIndex = Math.floor(context.random() * tokens.length);
+  const token = tokens[choiceIndex] ?? tokens[0];
+  if (!token) {
+    return text;
+  }
+
+  const trimmed = text.trimEnd();
+  if (trimmed.toLowerCase().endsWith(token.toLowerCase())) {
+    return text;
+  }
+
+  const trailingWhitespaceMatch = text.match(/\s*$/);
+  const whitespace = trailingWhitespaceMatch ? trailingWhitespaceMatch[0] : '';
+
+  return `${trimmed} ${token}${whitespace}`;
+}
+
+// Photo Type Specific Content Variations
+const photoTypeVariations = {
+  'teasing': {
+    themes: ['playful tease', 'subtle hint', 'flirty suggestion', 'mysterious allure', 'coy moment'],
+    settings: ['bedroom door', 'mirror selfie', 'cozy couch', 'bath time', 'morning bed'],
+    clothing: ['oversized shirt', 'silk robe', 'cute lingerie peek', 'towel wrap', 'strategic coverage'],
+    lighting: 'Soft intimate lighting, warm candlelight, sunset glow',
+    angles: 'Teasing glimpses, over-shoulder looks, partial reveals',
+    mood: 'playful and teasing'
+  },
+  'behind-scenes': {
+    themes: ['getting ready', 'makeup process', 'outfit selection', 'photoshoot prep', 'content creation'],
+    settings: ['vanity mirror', 'wardrobe area', 'makeup station', 'photo setup', 'behind camera'],
+    clothing: ['robe and lingerie', 'getting dressed', 'outfit changes', 'casual prep wear'],
+    lighting: 'Natural backstage lighting, mirror lights, behind-the-scenes authenticity',
+    angles: 'Candid preparation shots, mirror reflections, process documentation',
+    mood: 'authentic and intimate'
+  },
+  'outfit': {
+    themes: ['outfit reveal', 'fashion show', 'style showcase', 'wardrobe tour', 'clothing haul'],
+    settings: ['bedroom mirror', 'dressing room', 'closet area', 'fashion backdrop', 'outfit display'],
+    clothing: ['multiple outfits', 'lingerie sets', 'dress collection', 'style variations'],
+    lighting: 'Bright fashion lighting, clear visibility, flattering angles',
+@@ -143,75 +316,80 @@ const photoTypeVariations = {
+  },
+  'all-xs': {
+    themes: ['ultimate expression', 'no limits', 'complete freedom', 'artistic boundaries pushed', 'full creative expression'],
+    settings: ['private studio', 'exclusive location', 'artistic sanctuary', 'personal creative space'],
+    clothing: ['artistic freedom', 'creative expression', 'unlimited styling', 'boundary-free'],
+    lighting: 'Professional studio lighting, artistic drama, creative illumination',
+    angles: 'Unlimited creative angles, artistic freedom, boundary-pushing compositions',
+    mood: 'completely uninhibited and free'
+  },
+  'needs_review': {
+    themes: ['explicit content', 'uncensored expression', 'adult artistry', 'mature themes', 'uninhibited creativity'],
+    settings: ['private space', 'adult content studio', 'mature setting', 'exclusive location'],
+    clothing: ['explicit styling', 'uncensored wardrobe', 'mature fashion', 'adult themes'],
+    lighting: 'Professional explicit content lighting, dramatic contrasts',
+    angles: 'Explicit composition, uncensored angles, mature perspectives',
+    mood: 'explicitly mature and uncensored'
+  }
+};
+
+// Text Tone Variations
+const textToneStyles = {
+  'confident': {
+    starters: ["I know exactly", "Here's what", "Ready for", "You wanted", "Time for"],
+    descriptors: ["bold", "powerful", "stunning", "magnificent", "incredible"],
+    endings: ["and I deliver every time", "because quality matters", "no compromises here", "excellence is standard"],
+    emojis: ["💪", "🔥", "⚡", "💎", "👑"]
+    emojis: ["💪", "🔥", "⚡", "💎", "👑"],
+    imperfectionTokens: ['no doubt', 'for real']
+  },
+  'playful': {
+    starters: ["Guess what", "Oops!", "Surprise!", "Hey there", "So..."],
+    descriptors: ["cute", "silly", "adorable", "cheeky", "mischievous"],
+    endings: ["hope you like it!", "whoops! 🙈", "couldn't resist!", "being a little naughty"],
+    emojis: ["😘", "🙈", "😇", "💕", "🎀"]
+    emojis: ["😘", "🙈", "😇", "💕", "🎀"],
+    imperfectionTokens: ['lol', 'hehe']
+  },
+  'mysterious': {
+    starters: ["Something happened", "In the shadows", "Late night", "Behind closed doors", "Secret moment"],
+    descriptors: ["hidden", "forbidden", "mysterious", "secretive", "enigmatic"],
+    endings: ["but that's all I'll say", "the rest remains hidden", "some secrets are worth keeping", "only for those who understand"],
+    emojis: ["🌙", "🖤", "🕯️", "🔮", "💫"]
+    emojis: ["🌙", "🖤", "🕯️", "🔮", "💫"],
+    imperfectionTokens: ['lowkey', 'shh']
+  },
+  'authentic': {
+    starters: ["Real talk", "Being honest", "Just me", "Genuine moment", "Truth is"],
+    descriptors: ["real", "honest", "genuine", "authentic", "true"],
+    endings: ["just being myself", "no filters needed", "this is who I am", "raw and real"],
+    emojis: ["💯", "✨", "🌸", "💗", "🌟"]
+    emojis: ["💯", "✨", "🌸", "💗", "🌟"],
+    imperfectionTokens: ['tbh', 'real talk']
+  },
+  'sassy': {
+    starters: ["Listen up", "Well well", "Oh please", "You think", "Honey"],
+    descriptors: ["fierce", "bold", "attitude", "confidence", "sass"],
+    endings: ["deal with it", "take it or leave it", "that's how I roll", "bow down"],
+    emojis: ["💅", "😏", "🔥", "👑", "💄"]
+    emojis: ["💅", "😏", "🔥", "👑", "💄"],
+    imperfectionTokens: ['periodt', 'mkay']
+  }
+};
+
+// Generate content based on all parameters
+export function generateAdvancedContent(params: ContentParameters): GeneratedContent {
+  // Check if this is a preset request and use preset variations
+  const presetVariation = getRandomPresetVariation(params.style);
+  if (presetVariation) {
+    console.log(`🎯 Using preset variation for: ${params.style}`);
+    return {
+      titles: presetVariation.titles,
+      content: presetVariation.content,
+      photoInstructions: {
+        lighting: presetVariation.photoInstructions.lighting,
+        angles: presetVariation.photoInstructions.cameraAngle || "natural angles",
+        composition: presetVariation.photoInstructions.composition,
+        styling: presetVariation.photoInstructions.styling,
+        technical: presetVariation.photoInstructions.technicalSettings || "natural lighting",
+        sceneSetup: presetVariation.photoInstructions.mood || "casual setting"
+      },
+      tags: ['preset-content', params.style, params.platform]
+    };
+  }
+
+  // Fallback to existing system for non-preset requests
+@@ -1294,56 +1472,59 @@ function generateMainContent(params: ContentParameters, photoConfig: PhotoConfig
+    content += `Complete creative freedom unleashed. No limits, no boundaries, just pure artistic expression in its rawest form. `;
+  }
+  
+  // Add custom prompt integration
+  if (params.customPrompt) {
+    content += `${params.customPrompt} `;
+  }
+  
+  // Promotion integration
+  if (params.includePromotion) {
+    if (params.textTone === 'confident') {
+      content += `This exclusive content is available for my VIP subscribers who appreciate quality. `;
+    } else if (params.textTone === 'playful') {
+      content += `The full collection is waiting for my special subscribers! `;
+    } else if (params.textTone === 'mysterious') {
+      content += `But that's all you see here... the rest remains in the shadows for those who seek it. `;
+    } else if (params.textTone === 'sassy') {
+      content += `If you want the full experience, you know where to find me. `;
+    } else {
+      content += `The complete series is available for subscribers who want the authentic experience. `;
+    }
+  }
+  
+  // Ending with hashtags if selected
+  content += endings[Math.floor(Math.random() * endings.length)];
+  
+  if (params.selectedHashtags.length > 0) {
+    content += ` ${params.selectedHashtags.join(' ')}`;
+  }
+  
+  return content;
+
+  const hashtags = params.selectedHashtags.length > 0 ? ` ${params.selectedHashtags.join(' ')}` : '';
+  const baseContent = content.trim();
+  const humanized = applyHumanization(baseContent, toneStyle, {
+    maxQuirks: params.humanization?.maxQuirks,
+    random: params.humanization?.random
+  });
+
+  return `${humanized}${hashtags}`;
+}
+
+function generatePhotoInstructions(params: ContentParameters, photoConfig: PhotoConfig): GeneratedContent['photoInstructions'] {
+  return {
+    lighting: photoConfig.lighting + (params.photoType === 'shower' ? ', emphasis on steam and water reflections' : 
+               params.photoType === 'workout' ? ', bright and energetic to show determination' :
+               params.photoType === 'very-spicy' || params.photoType === 'all-xs' ? ', dramatic contrasts and artistic shadows' : ''),
+    angles: photoConfig.angles + (params.textTone === 'confident' ? ', powerful perspective shots' :
+            params.textTone === 'playful' ? ', fun candid angles' :
+            params.textTone === 'mysterious' ? ', shadowy artistic angles' : ''),
+    composition: `${photoConfig.mood} composition with ${params.photoType === 'casual' ? 'natural framing' :
+                 params.photoType === 'workout' ? 'dynamic action elements' :
+                 params.photoType === 'shower' ? 'steam and water elements' :
+                 params.photoType === 'showing-skin' ? 'artistic tasteful framing' :
+                 params.photoType === 'spicy' ? 'seductive elegant framing' :
+                 params.photoType === 'very-spicy' ? 'bold intimate framing' :
+                 'unlimited creative framing'}`,
+    styling: `${photoConfig.clothing.join(' or ')}, ${photoConfig.mood} aesthetic`,
+    technical: `High resolution, sharp focus, professional quality${params.photoType === 'very-spicy' || params.photoType === 'all-xs' ? ', studio-grade equipment recommended' : ''}`,
+    sceneSetup: `${photoConfig.settings.join(' or ')}, ${params.photoType} theme environment`
+  };
+}
+
+function generateTags(params: ContentParameters, photoConfig: PhotoConfig): string[] {
+  const baseTags = [params.photoType, params.textTone, params.platform];
+tests/unit/server/advanced-content-generator.test.ts
+New
++78
+-0
+
+import { afterEach, describe, expect, it } from 'vitest';
+
+import { applyHumanization, generateAdvancedContent, type ContentParameters, type ToneStyle } from '../../../server/advanced-content-generator';
+
+type SeededRandom = () => number;
+
+function createSeededRandom(seed: number): SeededRandom {
+  let state = seed % 2147483647;
+  if (state <= 0) {
+    state += 2147483646;
+  }
+  return () => {
+    state = state * 16807 % 2147483647;
+    return (state - 1) / 2147483646;
+  };
+}
+
+const originalRandom = Math.random;
+
+afterEach(() => {
+  Math.random = originalRandom;
+});
+
+describe('applyHumanization', () => {
+  it('respects the configured maxQuirks limit', () => {
+    const tone: ToneStyle = {
+      starters: ['hey'],
+      descriptors: ['chill'],
+      endings: ['see ya'],
+      emojis: ['🙂'],
+      imperfectionTokens: ['lol']
+    };
+    const baseText = 'I had a kind of wonderful shoot. It was electric';
+    const result = applyHumanization(baseText, tone, {
+      maxQuirks: 1,
+      random: () => 0
+    });
+
+    expect(result).toContain('...');
+    expect(result).not.toContain('kinda');
+    expect(result).not.toContain('lol');
+  });
+});
+
+describe('generateAdvancedContent humanization', () => {
+  const params: ContentParameters = {
+    photoType: 'casual',
+    textTone: 'playful',
+    style: 'test-style',
+    includePromotion: false,
+    selectedHashtags: ['#glow', '#mood'],
+    customPrompt: undefined,
+    platform: 'instagram',
+    humanization: {
+      maxQuirks: 3
+    }
+  };
+
+  it('keeps appended hashtags intact after applying humanization', () => {
+    Math.random = createSeededRandom(42);
+
+    const result = generateAdvancedContent(params);
+
+    expect(result.content.endsWith(' #glow #mood')).toBe(true);
+    expect(JSON.stringify(result)).toContain('#glow');
+  });
+
+  it('produces deterministic content when randomness is seeded', () => {
+    Math.random = createSeededRandom(24);
+    const first = generateAdvancedContent(params);
+
+    Math.random = createSeededRandom(24);
+    const second = generateAdvancedContent(params);
+
+    expect(second.content).toBe(first.content);
+    expect(second.titles).toEqual(first.titles);
+  });
+});
