@@ -426,7 +426,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
     next(err);
   });
 
-  // Apply CSRF protection to sensitive state-changing routes
+  // Apply CSRF protection to sensitive routes
   // Note: JWT-based routes rely on token authentication instead of CSRF
 
   // CSRF-protected routes (session-based and sensitive operations)

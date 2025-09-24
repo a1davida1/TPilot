@@ -191,7 +191,7 @@ function checkCommunityEligibility(
     reasons.push('Selling not allowed in this community');
     isEligible = false;
   }
-  
+
   if (community.rules?.content?.sellingPolicy === 'unknown') {
     badges.sellingOk = false;
     reasons.push('Selling policy unclear - check community rules');
@@ -215,7 +215,7 @@ export default function RedditPostingPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { isAuthenticated, user } = useAuth();
-  
+
   // Form state
   const [subreddit, setSubreddit] = useState('');
   const [communityPickerOpen, setCommunityPickerOpen] = useState(false);
@@ -231,7 +231,7 @@ export default function RedditPostingPage() {
   const [mediaCaptions, setMediaCaptions] = useState<Record<number, string>>({});
   const [scheduledAt, setScheduledAt] = useState('');
   const isGalleryFeatureEnabled = false;
-  
+
   // UI state
   const [selectedAccount, setSelectedAccount] = useState<string>('');
   const [isPreviewMode, setIsPreviewMode] = useState(false);
@@ -361,7 +361,7 @@ export default function RedditPostingPage() {
       if (a.isEligible !== b.isEligible) {
         return a.isEligible ? -1 : 1; // Eligible first
       }
-      
+
       // Within same eligibility, sort by karma requirement
       const aKarma = a.community.rules?.eligibility?.minKarma || 0;
       const bKarma = b.community.rules?.eligibility?.minKarma || 0;
@@ -639,7 +639,7 @@ export default function RedditPostingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50 to-pink-100 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        
+
         {/* Header */}
         <Card className="bg-white/90 backdrop-blur-sm border-pink-200 shadow-xl">
           <CardHeader>
@@ -660,10 +660,10 @@ export default function RedditPostingPage() {
         </Card>
 
         <div className="grid lg:grid-cols-3 gap-6">
-          
+
           {/* Main Posting Interface */}
           <div className="lg:col-span-2 space-y-6">
-            
+
             {/* Account Status */}
             <Card className="bg-white/90 backdrop-blur-sm border-pink-200 shadow-lg">
               <CardHeader>
@@ -807,11 +807,11 @@ export default function RedditPostingPage() {
                             Recheck
                           </Button>
                         </div>
-                        
+
                         {shadowbanStatus.reason && (
                           <p className="text-xs text-gray-600">{shadowbanStatus.reason}</p>
                         )}
-                        
+
                         <div className="grid grid-cols-2 gap-2 text-xs">
                           <div className="bg-gray-50 p-2 rounded">
                             <p className="font-medium">Private submissions</p>
@@ -822,11 +822,11 @@ export default function RedditPostingPage() {
                             <p className="text-gray-600">{shadowbanStatus.evidence.publicCount}</p>
                           </div>
                         </div>
-                        
+
                         {lastShadowbanCheck && (
                           <p className="text-xs text-gray-500">Last checked: {lastShadowbanCheck}</p>
                         )}
-                        
+
                         {shadowbanStatus.status === 'suspected' && (
                           <Alert className="border-red-200 bg-red-50">
                             <AlertTriangle className="h-4 w-4 text-red-600" />
@@ -887,7 +887,7 @@ export default function RedditPostingPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                
+
                 {/* Post Type Selection */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
                   <Button
@@ -985,7 +985,7 @@ export default function RedditPostingPage() {
                                 </CommandItem>
                               ))}
                           </CommandGroup>
-                          
+
                           {sortedCommunities.some(sc => !sc.isEligible) && (
                             <>
                               <CommandSeparator />
@@ -1020,7 +1020,7 @@ export default function RedditPostingPage() {
                       </Command>
                     </PopoverContent>
                   </Popover>
-                  
+
                   {/* Enhanced Community Insights */}
                   {selectedCommunity && (() => {
                     const eligibility = checkCommunityEligibility(selectedCommunity, activeAccount);
@@ -1035,7 +1035,7 @@ export default function RedditPostingPage() {
                           </Badge>
                         </div>
                         <p className="text-blue-700 mb-2">{selectedCommunity.description}</p>
-                        
+
                         {/* Eligibility Badges */}
                         <div className="flex gap-2 mb-2" data-testid="selected-community-eligibility">
                           {eligibility.badges.karmaOk ? (
@@ -1049,7 +1049,7 @@ export default function RedditPostingPage() {
                               Karma Required
                             </Badge>
                           )}
-                          
+
                           {eligibility.badges.ageOk ? (
                             <Badge variant="secondary" className="text-green-700 bg-green-50 border-green-200">
                               <CheckCircle className="h-3 w-3 mr-1" />
@@ -1061,7 +1061,7 @@ export default function RedditPostingPage() {
                               Age Required
                             </Badge>
                           )}
-                          
+
                           {(() => {
                             const policy = selectedCommunity.rules?.content?.sellingPolicy;
                             if (policy === 'allowed') {
@@ -1094,7 +1094,7 @@ export default function RedditPostingPage() {
                               );
                             }
                           })()}
-                          
+
                           {selectedCommunity.rules?.content?.watermarksAllowed !== false ? (
                             <Badge variant="secondary" className="text-green-700 bg-green-50 border-green-200">
                               <CheckCircle className="h-3 w-3 mr-1" />
@@ -1107,7 +1107,7 @@ export default function RedditPostingPage() {
                             </Badge>
                           )}
                         </div>
-                        
+
                         <div className="grid grid-cols-2 gap-2 text-xs">
                           <div>Success Rate: <span className="font-medium text-green-600">{selectedCommunity.successProbability}%</span></div>
                           <div>Avg Upvotes: <span className="font-medium text-blue-600">{selectedCommunity.averageUpvotes}</span></div>
@@ -1347,7 +1347,7 @@ export default function RedditPostingPage() {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            
+
             {/* Community Insights */}
             {selectedCommunity && (
               <Card className="bg-white/90 backdrop-blur-sm border-pink-200 shadow-lg">
@@ -1380,7 +1380,7 @@ export default function RedditPostingPage() {
                       <p className="text-orange-600">Avg Upvotes</p>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-3">
                     <div>
                       <h4 className="font-medium text-gray-800 mb-2">Community Rules</h4>

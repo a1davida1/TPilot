@@ -182,7 +182,7 @@ export async function variantsRewrite(params: RewriteVariantsParams) {
 
   while (attempts < VARIANT_RETRY_LIMIT && variants.length < VARIANT_TARGET) {
     attempts += 1;
-    
+
     const voiceContext = formatVoiceContext(params.voice);
     const user = [
       `PLATFORM: ${params.platform}`,
@@ -196,11 +196,11 @@ export async function variantsRewrite(params: RewriteVariantsParams) {
       mandatoryTokens,
       currentHint ? `HINT:${serializePromptField(currentHint, { block: true })}` : "",
     ].filter((line): line is string => Boolean(line)).join("\n");
-    
+
     const voiceGuide = buildVoiceGuideBlock(params.voice);
     const promptSections = [sys, guard, prompt, user];
     if (voiceGuide) promptSections.push(voiceGuide);
-    
+
     let res;
     try {
       res = await textModel.generateContent([{ text: promptSections.join("\n") }]);
@@ -208,21 +208,21 @@ export async function variantsRewrite(params: RewriteVariantsParams) {
       console.error('Gemini textModel.generateContent failed:', error);
       throw error;
     }
-    
+
     const json = stripToJSON(res.response.text()) as unknown;
     let hasBannedWords = false;
-    
+
     if (Array.isArray(json)) {
       json.forEach((item) => {
         const variant = item as Record<string, unknown>;
-        
+
         // Normalize variant fields first
         variant.safety_level = normalizeSafetyLevel(
           typeof variant.safety_level === 'string' ? variant.safety_level : 'normal'
         );
         if (typeof variant.mood !== 'string' || variant.mood.length < 2) variant.mood = "engaging";
         if (typeof variant.style !== 'string' || variant.style.length < 2) variant.style = "authentic";
-        
+
         // Use helper for contextual fallbacks
         const fallback = ensureFallbackCompliance(
           {
@@ -237,39 +237,39 @@ export async function variantsRewrite(params: RewriteVariantsParams) {
             existingCaption: params.existingCaption,
           }
         );
-        
+
         variant.hashtags = fallback.hashtags;
         variant.cta = fallback.cta;
         variant.alt = fallback.alt;
-        
+
         if (typeof variant.caption !== 'string' || variant.caption.length < 1) {
           variant.caption = params.existingCaption || "Here's something I'm proud of today.";
         }
-        
+
         // Check for banned words after normalization
         if (variantContainsBannedWord(variant)) {
           hasBannedWords = true;
           return; // Skip this variant
         }
-        
+
         variants.push(variant);
       });
     }
-    
+
     // If we don't have enough variants, build retry hint
     if (variants.length < VARIANT_TARGET) {
       const needed = VARIANT_TARGET - variants.length;
       let retryHint = `Generate ${needed} more unique, distinct variants.`;
-      
+
       // Add banned words hint if detected
       if (hasBannedWords) {
         retryHint = retryHint ? `${retryHint} ${BANNED_WORDS_HINT}` : BANNED_WORDS_HINT;
       }
-      
+
       currentHint = retryHint;
     }
   }
-  
+
   // Ensure exactly 5 variants by padding with variations if needed
   while (variants.length < VARIANT_TARGET) {
     const fallbackContent = inferFallbackFromFacts({
@@ -277,7 +277,7 @@ export async function variantsRewrite(params: RewriteVariantsParams) {
       facts: params.facts,
       existingCaption: params.existingCaption,
     });
-    
+
     const template = variants[0] || {
       caption: params.existingCaption || "Here's something I'm proud of today.",
       alt: fallbackContent.alt,
@@ -293,12 +293,12 @@ export async function variantsRewrite(params: RewriteVariantsParams) {
       caption: `${template.caption} Enhanced version ${variants.length + 1}`
     });
   }
-  
+
   // Trim to exactly 5 if more than 5
   if (variants.length > VARIANT_TARGET) {
     variants.splice(VARIANT_TARGET);
   }
-  
+
   return CaptionArray.parse(variants);
 }
 
@@ -318,7 +318,7 @@ async function requestRewriteRanking(
     throw error;
   }
   let json = stripToJSON(res.response.text()) as unknown;
-  
+
   if(Array.isArray(json)) {
     const winner = json[0] as Record<string, unknown> | undefined;
     json = {
@@ -328,7 +328,7 @@ async function requestRewriteRanking(
       final: winner ?? variantsInput[0]
     };
   }
-  
+
   return json;
 }
 
@@ -343,7 +343,7 @@ export async function rankAndSelect(
   const first = await requestRewriteRanking(variants, serializedVariants, promptBlock, params?.platform);
   let parsed = RankResult.parse(first);
   const violations = detectRankingViolations(parsed.final);
-  
+
   if (violations.length === 0) {
     return parsed;
   }
@@ -357,7 +357,7 @@ export async function rankAndSelect(
   );
   parsed = RankResult.parse(rerank);
   const rerankViolations = detectRankingViolations(parsed.final);
-  
+
   if (rerankViolations.length === 0) {
     return parsed;
   }
@@ -397,7 +397,7 @@ export async function pipelineRewrite({ platform, voice="flirty_playful", style,
   platform:"instagram"|"x"|"reddit"|"tiktok", voice?:string, style?:string, mood?:string, existingCaption:string, imageUrl?:string, nsfw?:boolean }){
   try {
     const facts = imageUrl ? await extractFacts(imageUrl) : undefined;
-    
+
     const doNotDrop = extractKeyEntities(existingCaption);
 
     const attemptHints: (string | undefined)[] = [
