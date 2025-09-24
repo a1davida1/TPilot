@@ -244,12 +244,18 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
   const startQueueOption = options.startQueue ?? true;
   const configureStaticOption = options.configureStaticAssets ?? true;
   const enableVite = options.enableVite ?? (app.get('env') === 'development');
+  const queuePrerequisitesPresent = Boolean(process.env.REDIS_URL || process.env.DATABASE_URL);
+  const shouldStartQueue = startQueueOption && queuePrerequisitesPresent;
 
   try {
     app.use(`${API_PREFIX}/auth`, authLimiter);
 
-    if (startQueueOption) {
+    if (shouldStartQueue) {
       await startQueue();
+    } else if (startQueueOption) {
+      logger.info(
+        'Queue startup skipped: provide REDIS_URL or DATABASE_URL environment variables to enable background workers.'
+      );
     } else {
       logger.info('Queue startup disabled for current execution context.');
     }

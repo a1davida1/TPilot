@@ -33,25 +33,124 @@ if (process.env.NODE_ENV !== 'production') {
   dotenv.config();
 }
 
-// ==========================================
-// VALIDATE ENVIRONMENT VARIABLES
-// ==========================================
+const generatedDevelopmentSecrets = new Set<"JWT_SECRET" | "SESSION_SECRET">();
 
-export const envSchema = z.object({
-  JWT_SECRET: z.string().min(32),
-  SESSION_SECRET: z.string().min(32),
-  DATABASE_URL: z.string().url(),
-  REDIS_URL: z.string().url().optional(),
-  SENDGRID_API_KEY: z.string().optional(),
-  SENTRY_DSN: z.string().url().optional(),
-  NODE_ENV: z.enum(["production", "development", "test"]),
-  PORT: z.string().regex(/^\d+$/).default("5000"),
-});
+function applyDevelopmentFallbacks(logWarnings: boolean): void {
+  const guidanceMessages: Record<"JWT_SECRET" | "SESSION_SECRET", string> = {
+    JWT_SECRET: 'Add JWT_SECRET to your .env file to keep tokens stable between restarts.',
+    SESSION_SECRET: 'Set SESSION_SECRET to persist login sessions locally.',
+  };
+
+  (Object.keys(guidanceMessages) as Array<"JWT_SECRET" | "SESSION_SECRET">).forEach(key => {
+    const secret = process.env[key];
+    if (!secret || secret.length < 32) {
+      const fallback = crypto.randomBytes(32).toString("hex");
+      process.env[key] = fallback;
+      generatedDevelopmentSecrets.add(key);
+      if (logWarnings) {
+        appLogger.warn(`${key} is missing or too short. Generated a temporary development secret. ${guidanceMessages[key]}`);
+      }
+    } else if (logWarnings && generatedDevelopmentSecrets.has(key)) {
+      appLogger.warn(`${key} was replaced with a generated development secret. ${guidanceMessages[key]}`);
+    }
+  });
+}
+
+const initialNodeEnv = process.env.NODE_ENV ?? "development";
+process.env.NODE_ENV = initialNodeEnv;
+if (initialNodeEnv !== "production") {
+  applyDevelopmentFallbacks(false);
+}
+
+export const envSchema = z
+  .object({
+    NODE_ENV: z.enum(["production", "development", "test"]).default("development"),
+    PORT: z.string().regex(/^\d+$/).default("5000"),
+    DATABASE_URL: z.string().url().optional(),
+    JWT_SECRET: z.string().min(32).optional(),
+    SESSION_SECRET: z.string().min(32).optional(),
+    REDIS_URL: z.string().url().optional(),
+    SENDGRID_API_KEY: z.string().optional(),
+    SENTRY_DSN: z.string().url().optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.NODE_ENV === "production") {
+      if (!value.DATABASE_URL) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "DATABASE_URL must be set in production.",
+          path: ["DATABASE_URL"],
+        });
+      }
+
+      if (!value.JWT_SECRET) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "JWT_SECRET must be set in production.",
+          path: ["JWT_SECRET"],
+        });
+      }
+
+      if (!value.SESSION_SECRET) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "SESSION_SECRET must be set in production.",
+          path: ["SESSION_SECRET"],
+        });
+      }
+    }
+  });
 
 export function validateEnvironment() {
-  const result = envSchema.safeParse(process.env);
+  const resolvedNodeEnv = process.env.NODE_ENV ?? "development";
+  process.env.NODE_ENV = resolvedNodeEnv;
+
+  const result = envSchema.safeParse({
+    ...process.env,
+    NODE_ENV: resolvedNodeEnv,
+  });
+
+  if (result.success) {
+    process.env.PORT = result.data.PORT;
+  } else if (!process.env.PORT || !/^\d+$/.test(process.env.PORT)) {
+    process.env.PORT = "5000";
+  }
+
   if (!result.success) {
-    throw new Error(result.error.issues.map(i => i.message).join("\n"));
+    const issues = result.error.issues.map(issue => {
+      const path = issue.path.join(".") || "environment";
+      return `${path}: ${issue.message}`;
+    });
+
+    const logIssue = resolvedNodeEnv === "production" ? appLogger.error.bind(appLogger) : appLogger.warn.bind(appLogger);
+    issues.forEach(message => {
+      logIssue(`Environment configuration issue detected: ${message}`);
+    });
+
+    if (resolvedNodeEnv === "production") {
+      throw new Error("Environment configuration invalid. Resolve the issues above and restart the server.");
+    }
+  }
+
+  if (resolvedNodeEnv !== "production") {
+    applyDevelopmentFallbacks(true);
+
+    if (!process.env.DATABASE_URL) {
+      appLogger.warn(
+        "DATABASE_URL is not set. Background workers and persistence features that require Postgres are disabled until you configure DATABASE_URL."
+      );
+    }
+  }
+
+  const sentryDsn = process.env.SENTRY_DSN;
+  if (sentryDsn) {
+    const { isValid, errors } = validateSentryDSN(sentryDsn);
+    if (!isValid) {
+      errors.forEach(errorMessage => {
+        const log = resolvedNodeEnv === "production" ? appLogger.error.bind(appLogger) : appLogger.warn.bind(appLogger);
+        log(`Invalid SENTRY_DSN detected: ${errorMessage}`);
+      });
+    }
   }
 }
 
@@ -167,7 +266,7 @@ function sanitizeObject(obj: Record<string, unknown>): void {
         .replace(/on\w+\s*=/gi, '')
         .replace(/eval\s*\(/gi, '')
         .replace(/expression\s*\(/gi, '');
-      
+
       // Limit string length to prevent DoS
       if ((obj[key] as string).length > 10000) {
         obj[key] = (obj[key] as string).substring(0, 10000);
@@ -183,12 +282,12 @@ function sanitizeObject(obj: Record<string, unknown>): void {
 // ==========================================
 export const validateApiKey = (req: express.Request, res: express.Response, next: express.NextFunction) => {
   const apiKey = req.headers['x-api-key'];
-  
+
   // Skip validation for non-API routes
   if (!req.path.startsWith('/api/')) {
     return next();
   }
-  
+
   // Skip validation for public endpoints
   const publicEndpoints = [
     '/api/health',
@@ -196,18 +295,18 @@ export const validateApiKey = (req: express.Request, res: express.Response, next
     '/api/auth/register',
     '/api/webhooks'
   ];
-  
+
   if (publicEndpoints.some(endpoint => req.path.startsWith(endpoint))) {
     return next();
   }
-  
+
   // Validate API key format if provided
   if (apiKey && !isValidApiKeyFormat(apiKey as string)) {
     const originIP = req.userIP || req.ip;
     logger.warn(`Invalid API key format from ${originIP}`);
     return res.status(401).json({ error: 'Invalid API key format' });
   }
-  
+
   next();
 };
 
@@ -224,21 +323,21 @@ export const validateContentType = (req: express.Request, res: express.Response,
   if (!['POST', 'PUT', 'PATCH'].includes(req.method)) {
     return next();
   }
-  
+
   const contentType = req.headers['content-type'];
-  
+
   // Skip for multipart uploads
   if (contentType && contentType.startsWith('multipart/form-data')) {
     return next();
   }
-  
+
   // Require JSON content type for API routes
   if (req.path.startsWith('/api/') && contentType !== 'application/json') {
     return res.status(400).json({ 
       error: 'Content-Type must be application/json for API requests' 
     });
   }
-  
+
   next();
 };
 
@@ -313,15 +412,15 @@ export const securityMiddleware = [
 
   // Input sanitization and validation
   inputSanitizer,
-  
+
   // HTTP Parameter Pollution protection
   hpp({
     whitelist: ['tags', 'categories'] // Allow arrays for these fields
   }),
-  
+
   // Content-Type validation
   validateContentType,
-  
+
   // API key format validation
   validateApiKey,
 
@@ -347,7 +446,7 @@ export const ipLoggingMiddleware = (req: express.Request, res: express.Response,
     : Array.isArray(xForwardedFor) 
       ? xForwardedFor[0]
       : undefined;
-  
+
   const userIP = forwardedIP || 
                  req.headers['x-real-ip'] || 
                  req.connection?.remoteAddress || 
@@ -423,7 +522,7 @@ export const notFoundHandler = (req: express.Request, res: express.Response) => 
   const userIP = req.userIP || req.ip || 'unknown';
   const path = req.path || req.url || 'unknown';
   const method = req.method || 'unknown';
-  
+
   // Log the 404 for monitoring purposes
   logger.warn('404 Not Found', {
     path,
@@ -433,7 +532,7 @@ export const notFoundHandler = (req: express.Request, res: express.Response) => 
     referer: req.headers.referer || req.headers.referrer,
     timestamp: new Date().toISOString()
   });
-  
+
   // Send appropriate response based on request type
   if (req.accepts('json') && req.path.startsWith('/api/')) {
     // API request - return JSON

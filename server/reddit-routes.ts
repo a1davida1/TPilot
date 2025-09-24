@@ -1,6 +1,6 @@
 import type { Express } from 'express';
 import crypto from 'crypto';
-import { RedditManager, getRedditAuthUrl, exchangeRedditCode } from './lib/reddit.js';
+import { RedditManager, getRedditAuthUrl, exchangeRedditCode, type RedditPostResult } from './lib/reddit.js';
 import { SafetyManager } from './lib/safety-systems.js';
 import { db } from './db.js';
 import { creatorAccounts, type ShadowbanCheckApiResponse } from '@shared/schema';
@@ -17,7 +17,7 @@ import {
 } from './reddit-communities.js';
 import { getUserRedditCommunityEligibility } from './lib/reddit.js';
 import { logger } from './bootstrap/logger.js';
-import { summarizeRemovalReasons } from './compliance/ruleViolationTracker.js';
+import { recordPostOutcome, summarizeRemovalReasons } from './compliance/ruleViolationTracker.js';
 
 interface RedditProfile {
   username: string;
@@ -419,13 +419,15 @@ export function registerRedditRoutes(app: Express) {
 
   // Enhanced submit endpoint with image support
   app.post('/api/reddit/submit', authenticateToken, async (req: AuthRequest, res) => {
+    const userId = req.user?.id;
+    const subreddit = typeof req.body?.subreddit === 'string' ? req.body.subreddit : undefined;
+
     try {
-      const userId = req.user?.id;
       if (!userId) {
         return res.status(401).json({ error: 'Authentication required' });
       }
-      
-      const { subreddit, title, body, url, nsfw, spoiler, postType, imageData } = req.body;
+
+      const { title, body, url, nsfw, spoiler, postType, imageData } = req.body;
 
       if (!subreddit || !title) {
         return res.status(400).json({ error: 'Subreddit and title are required' });
@@ -439,7 +441,7 @@ export function registerRedditRoutes(app: Express) {
         });
       }
 
-      let result;
+      let result: RedditPostResult;
       
       // Handle different post types
       switch (postType || 'text') {
@@ -448,8 +450,8 @@ export function registerRedditRoutes(app: Express) {
           if (!imageData && !url) {
             return res.status(400).json({ error: 'Image data or URL required for image post' });
           }
-          
-          let imageBuffer;
+
+          let imageBuffer: Buffer | undefined;
           if (imageData) {
             // Convert base64 to buffer if needed
             const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
@@ -516,6 +518,7 @@ export function registerRedditRoutes(app: Express) {
       }
 
       if (result.success) {
+        recordPostOutcome(userId, subreddit, { status: 'posted' });
         console.log('Reddit post successful:', {
           userId,
           subreddit,
@@ -546,6 +549,16 @@ export function registerRedditRoutes(app: Express) {
           warnings: result.decision?.warnings || []
         });
       } else {
+        const decisionReasons = Array.isArray(result.decision?.reasons) ? result.decision?.reasons.filter((value): value is string => typeof value === 'string' && value.trim().length > 0) : [];
+        const removalReason = result.error
+          ?? (typeof result.decision?.reason === 'string' ? result.decision.reason : undefined)
+          ?? decisionReasons[0]
+          ?? 'Reddit posting failed';
+
+        recordPostOutcome(userId, subreddit, {
+          status: 'removed',
+          reason: removalReason,
+        });
         res.status(400).json({
           success: false,
           error: result.error || 'Failed to submit post',
@@ -561,11 +574,20 @@ export function registerRedditRoutes(app: Express) {
       }
 
     } catch (error: unknown) {
+      const failureMessage = error instanceof Error
+        ? error.message
+        : 'Failed to submit post to Reddit';
+
+      if (userId && subreddit) {
+        recordPostOutcome(userId, subreddit, {
+          status: 'removed',
+          reason: failureMessage,
+        });
+      }
+
       console.error('Reddit submit error:', error);
       res.status(500).json({
-        error: error instanceof Error
-          ? (error as Error).message
-          : 'Failed to submit post to Reddit'
+        error: failureMessage
       });
     }
   });

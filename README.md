@@ -234,7 +234,7 @@ ThottoPilot uses environment variables for secure configuration of external serv
 
 **DATABASE_URL** - PostgreSQL connection string
 - **Format**: `postgresql://user:password@host:port/database`
-- **Required**: Yes - Core data storage for users, content, and billing
+- **Required**: Production deployments. In development the server logs a warning, generates temporary secrets, and disables background workers until credentials are provided.
 - **Example**: `postgresql://user:pass@localhost:5432/thottopilot`
 
 ### AI Content Generation
@@ -263,12 +263,12 @@ ThottoPilot uses environment variables for secure configuration of external serv
 ### Authentication & Security
 
 **JWT_SECRET** - Secret key for JSON Web Token signing
-- **Required**: Yes - Used for secure API authentication
+- **Required**: Production deployments (generated automatically for development, but sessions reset between restarts until you set a persistent value)
 - **Format**: Random string (minimum 32 characters)
 - **Generate**: `openssl rand -hex 32`
 
 **SESSION_SECRET** - Secret key for session cookie signing
-- **Required**: Yes - Protects user sessions
+- **Required**: Production deployments (auto-generated for development; define a stable secret locally to keep users logged in)
 - **Format**: Random string (minimum 32 characters)
 - **Generate**: `openssl rand -hex 32`
 
@@ -324,6 +324,8 @@ ThottoPilot uses environment variables for secure configuration of external serv
 - **Required**: Optional (PostgreSQL fallback available)
 - **Example**: `redis://localhost:6379`
 - **Usage**: High-performance job queue and caching
+
+> **Development fallback:** When neither `DATABASE_URL` nor `REDIS_URL` is configured the server boots in a degraded mode—temporary authentication secrets are generated, queue initialization is skipped, and a warning is written to the logs. Add `DATABASE_URL` (PostgreSQL) or `REDIS_URL` (Redis) and restart the process to re-enable background workers once your credentials are ready.
 
 **USE_PG_QUEUE** - Force PostgreSQL queue backend
 - **Default**: `false` (auto-enabled if no Redis)
