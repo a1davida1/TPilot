@@ -1,0 +1,213 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/client/src/components/reddit-communities.tsx b/client/src/components/reddit-communities.tsx
+index 9f878ce32af1b465664687f5a7ff1bc7af623533..5f7db0b09b6a9d6e460e6e532cdc3395af45134a 100644
+--- a/client/src/components/reddit-communities.tsx
++++ b/client/src/components/reddit-communities.tsx
+@@ -9,96 +9,100 @@ import {
+   SelectItem,
+   SelectTrigger,
+ } from "@/components/ui/select";
+ import {
+   Table,
+   TableBody,
+   TableCell,
+   TableHead,
+   TableHeader,
+   TableRow,
+ } from "@/components/ui/table";
+ import { 
+   Users, 
+   TrendingUp, 
+   Shield, 
+   Megaphone, 
+   Search,
+   ChevronUp,
+   ChevronDown,
+   CheckCircle,
+   XCircle,
+ } from "lucide-react";
+ import { useQuery } from "@tanstack/react-query";
+ import { apiRequest } from "@/lib/queryClient";
+ import {
++  categorySchema,
++  competitionLevelSchema,
++  legacyRedditCommunityRuleSetSchema,
+   modActivitySchema,
++  postingLimitsSchema,
++  promotionAllowedSchema,
++  redditCommunityRuleSetSchema,
+   type ModActivity,
+   type PostingLimits,
+   type RedditCommunity,
+   type RedditCommunitySellingPolicy
+ } from "@shared/schema";
+-import { GROWTH_TRENDS, GROWTH_TREND_LABELS, getGrowthTrendLabel, growthTrendSchema } from "@shared/growth-trends";
++import { getGrowthTrendLabel, growthTrendSchema } from "@shared/growth-trends";
+ import type { GrowthTrend } from "@shared/growth-trends";
+ import { z } from "zod";
+ 
+ export function RedditCommunities() {
+   const [searchTerm, setSearchTerm] = useState("");
+   const [sortBy, setSortBy] = useState<'members' | 'engagement' | 'upvotes' | 'name' | 'success'>('success');
+   const [filterCategory, setFilterCategory] = useState<string>('all');
+   const [filterPromotion, setFilterPromotion] = useState<string>('all');
+   const [filterVerification, setFilterVerification] = useState<string>('all');
+   const [expandedRow, setExpandedRow] = useState<string | null>(null);
+ 
+   // Client validation schema - server enforces canonical enums and validation
+-  const RedditCommunityArraySchema = z.array(z.object({
++  const redditCommunityClientSchema = z.object({
+     id: z.string(),
+     name: z.string(),
+     displayName: z.string(),
+     members: z.number(),
+     engagementRate: z.number(),
+-    category: z.enum(['age', 'amateur', 'appearance', 'body_type', 'cam', 'clothing', 'comparison', 'content_type', 'cosplay', 'couples', 'dancer', 'ethnicity', 'fetish', 'fitness', 'gaming', 'general', 'gonewild', 'lifestyle', 'natural', 'niche', 'reveal', 'selling', 'social', 'specific', 'style', 'theme']),
++    category: categorySchema,
+     verificationRequired: z.boolean(),
+-    promotionAllowed: z.enum(['yes', 'limited', 'no']),
+-    postingLimits: z.any().nullable().optional(),
+-    rules: z.object({
+-      sellingAllowed: z.enum(['allowed', 'limited', 'not_allowed', 'unknown']).optional(),
+-      watermarksAllowed: z.boolean().optional(),
+-      minKarma: z.number().optional(),
+-      minAccountAge: z.number().optional(),
+-      titleRules: z.array(z.string()).optional(),
+-      contentRules: z.array(z.string()).optional()
+-    }).optional(),
++    promotionAllowed: promotionAllowedSchema,
++    postingLimits: postingLimitsSchema,
++    rules: legacyRedditCommunityRuleSetSchema
++      .or(redditCommunityRuleSetSchema)
++      .nullable()
++      .optional(),
+     bestPostingTimes: z.array(z.string()).optional(),
+     averageUpvotes: z.number().nullable().optional(),
+     successProbability: z.number().nullable().optional(),
+     growthTrend: growthTrendSchema.optional(),
+-    modActivity: z.enum(['active', 'moderate', 'inactive']).nullable().optional(),
++    modActivity: modActivitySchema.optional(),
+     description: z.string().nullable().optional(),
+     tags: z.array(z.string()).optional(),
+-    competitionLevel: z.enum(['low', 'medium', 'high']).nullable().optional()
+-  }));
++    competitionLevel: competitionLevelSchema.optional()
++  });
++
++  const RedditCommunityArraySchema = z.array(redditCommunityClientSchema);
+ 
+   // Fetch communities data with runtime validation
+   const { data: communities = [], isLoading } = useQuery({
+     queryKey: ['/api/reddit/communities', filterCategory, searchTerm],
+     queryFn: async (): Promise<RedditCommunity[]> => {
+       const params = new URLSearchParams();
+       if (filterCategory !== 'all') params.append('category', filterCategory);
+       if (searchTerm) params.append('search', searchTerm);
+ 
+       const response = await apiRequest('GET', `/api/reddit/communities?${params.toString()}`);
+       const rawData = await response.json();
+ 
+       // Runtime validation using inline canonical schema structure
+       // Note: Server enforces full canonical validation with proper enums
+       try {
+         const validatedData = RedditCommunityArraySchema.parse(rawData);
+         return validatedData as RedditCommunity[];
+       } catch (parseError) {
+         console.error('API response validation failed:', parseError);
+         throw new Error('Invalid API response format');
+       }
+     },
+     retry: false
+   });
+ 
+diff --git a/client/src/components/reddit-communities.tsx b/client/src/components/reddit-communities.tsx
+index 9f878ce32af1b465664687f5a7ff1bc7af623533..5f7db0b09b6a9d6e460e6e532cdc3395af45134a 100644
+--- a/client/src/components/reddit-communities.tsx
++++ b/client/src/components/reddit-communities.tsx
+@@ -228,60 +232,74 @@ export function RedditCommunities() {
+     return <Badge className={colors[category] || 'bg-gray-500/20 text-gray-400'}>{category}</Badge>;
+   };
+ 
+   const getSuccessProbabilityColor = (probability: number | null | undefined) => {
+     if (!probability) return 'text-gray-400';
+     if (probability >= 85) return 'text-green-400';
+     if (probability >= 70) return 'text-yellow-400';
+     return 'text-red-400';
+   };
+ 
+   const getGrowthTrendIcon = (trend: GrowthTrend | undefined) => {
+     switch (trend) {
+       case 'up':
+         return <TrendingUp className="h-3 w-3 text-green-400" />;
+       case 'down':
+         return <ChevronDown className="h-3 w-3 text-red-400" />;
+       case 'stable':
+         return <div className="h-3 w-3 bg-yellow-400 rounded-full" />;
+       default:
+         return <div className="h-3 w-3 bg-gray-400 rounded-full" />;
+     }
+   };
+ 
+   // Helper to display mod activity with appropriate styling
+   const getModActivityDisplay = (modActivity: ModActivity | null | undefined) => {
+-    switch (modActivity) {
+-      case 'active':
+-        return { label: 'Active', className: 'text-green-400' };
+-      case 'moderate':
+-        return { label: 'Moderate', className: 'text-yellow-400' };
+-      case 'inactive':
+-        return { label: 'Inactive', className: 'text-red-400' };
+-      default:
+-        return { label: 'Unknown', className: 'text-gray-400' };
++    const defaultDisplay = { label: 'Unknown', className: 'text-gray-400' };
++    const normalizedActivity = modActivity ?? 'unknown';
++
++    if (typeof normalizedActivity !== 'string') {
++      return defaultDisplay;
++    }
++
++    const modActivityDisplayMap: Record<string, { label: string; className: string }> = {
++      high: { label: 'Highly Active', className: 'text-green-400' },
++      medium: { label: 'Moderate', className: 'text-yellow-400' },
++      low: { label: 'Low Activity', className: 'text-red-400' },
++      unknown: defaultDisplay,
++    };
++
++    if (normalizedActivity in modActivityDisplayMap) {
++      return modActivityDisplayMap[normalizedActivity];
+     }
++
++    const formattedLabel = normalizedActivity
++      .split('_')
++      .map(segment => segment.charAt(0).toUpperCase() + segment.slice(1))
++      .join(' ');
++
++    return { label: formattedLabel || defaultDisplay.label, className: defaultDisplay.className };
+   };
+ 
+   return (
+     <Card className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-pink-200/50 dark:border-pink-500/20 shadow-xl">
+       <CardHeader>
+         <CardTitle className="text-2xl bg-gradient-to-r from-pink-600 via-rose-500 to-purple-600 dark:from-pink-400 dark:via-rose-400 dark:to-purple-400 bg-clip-text text-transparent">
+           Reddit Communities Database
+         </CardTitle>
+         <p className="text-sm text-gray-600 dark:text-gray-300">
+           100+ communities with success probability scoring, growth trends, and intelligent recommendations
+         </p>
+       </CardHeader>
+       <CardContent className="space-y-6">
+         {/* Filters and Search */}
+         <div className="flex flex-col lg:flex-row gap-4">
+           <div className="relative flex-1">
+             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+             <Input
+               value={searchTerm}
+               onChange={(e) => setSearchTerm(e.target.value)}
+               className="pl-10 bg-white/60 dark:bg-gray-800/60 border-pink-200 dark:border-pink-500/30 focus:border-pink-400 dark:focus:border-pink-400"
+             />
+           </div>
+ 
+           <Select value={filterCategory} onValueChange={setFilterCategory}>
+ 
+EOF
+)
