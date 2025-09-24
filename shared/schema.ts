@@ -271,15 +271,15 @@ export type ModActivity = z.infer<typeof modActivitySchema>;
  */
 export function canonicalizeCompetitionLevel(value: string | null | undefined): CompetitionLevel {
   if (!value) return null;
-  
+
   const lowered = value.toLowerCase();
-  
+
   if (lowered === 'low' || lowered === 'very_low') return 'low';
   if (lowered === 'medium') return 'medium';
   if (lowered === 'high' || lowered === 'very_high') return 'high';
   if (lowered.includes('high')) return 'high';
   if (lowered.includes('low')) return 'low';
-  
+
   return 'medium'; // default fallback
 }
 
@@ -288,9 +288,9 @@ export function canonicalizeCompetitionLevel(value: string | null | undefined): 
  */
 export function canonicalizeModActivity(value: string | null | undefined): ModActivity {
   if (!value) return null;
-  
+
   const lowered = value.toLowerCase();
-  
+
   if (lowered === 'low' || lowered === 'very_low') return 'low';
   if (lowered === 'medium') return 'medium';
   if (lowered === 'high' || lowered === 'very_high') return 'high';
@@ -298,7 +298,7 @@ export function canonicalizeModActivity(value: string | null | undefined): ModAc
   if (lowered.includes('high')) return 'high';
   if (lowered.includes('medium')) return 'medium';
   if (lowered.includes('low')) return 'low';
-  
+
   return 'unknown'; // default fallback
 }
 
@@ -478,7 +478,7 @@ export const insertRedditCommunitySchema = createInsertSchema(redditCommunities)
 // Helper function to normalize legacy rules to structured rules
 export const normalizeRulesToStructured = (legacyRules: LegacyRedditCommunityRuleSet | null | undefined): RedditCommunityRuleSet | null => {
   if (!legacyRules) return null;
-  
+
   return {
     eligibility: {
       minKarma: legacyRules.minKarma ?? null,
@@ -494,7 +494,7 @@ export const normalizeRulesToStructured = (legacyRules: LegacyRedditCommunityRul
       nsfwRequired: legacyRules.nsfwRequired ?? false,
       titleGuidelines: legacyRules.titleRules ?? [],
       contentGuidelines: legacyRules.contentRules ?? [],
-      linkRestrictions: [],
+      linkRestrictions: legacyRules.linkRestrictions ?? [],
       bannedContent: legacyRules.bannedContent ?? [],
       formattingRequirements: legacyRules.formattingRequirements ?? [],
     },

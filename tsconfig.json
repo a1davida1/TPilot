@@ -1,14 +1,14 @@
 {
   "include": [
     "server/**/*.ts",
-    "shared/**/*.ts", 
+    "shared/**/*.ts",
     "client/**/*.ts",
     "client/**/*.tsx",
     "client/vite-env.d.ts"
   ],
   "exclude": ["node_modules", "dist"],
   "compilerOptions": {
-    "incremental": true,
+    "incremental": false,
     "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo",
     "noEmit": false,
     "module": "ESNext",

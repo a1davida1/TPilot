@@ -1,6 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
-import type { RedditCommunitySellingPolicy, RedditCommunityRuleSet } from '@shared/schema';
+import type {
+  RedditCommunitySellingPolicy,
+  RedditCommunityRuleSet,
+  LegacyRedditCommunityRuleSet,
+} from '@shared/schema';
 import { 
   type GrowthTrend,
   GROWTH_TRENDS,
@@ -38,6 +42,7 @@ export interface AdminCommunity {
   promotionAllowed: PromotionPolicy;
   postingLimits?: PostingLimits | null;
   rules?: CommunityRules | null;
+  legacyRules?: LegacyRedditCommunityRuleSet | null;
   bestPostingTimes?: string[] | null;
   averageUpvotes?: number | null;
   successProbability?: number | null;
@@ -97,10 +102,21 @@ export function useAdminCommunities(filters?: CommunityFilters) {
 
   return useQuery<AdminCommunity[]>({
     queryKey: ['admin-communities', filters],
-    queryFn: () => fetch(url).then(res => {
+    queryFn: async () => {
+      const res = await fetch(url);
       if (!res.ok) throw new Error('Failed to fetch communities');
-      return res.json();
-    }),
+      const payload = await res.json();
+
+      if (Array.isArray(payload)) {
+        return payload as AdminCommunity[];
+      }
+
+      if (payload && Array.isArray((payload as { data?: unknown }).data)) {
+        return (payload as { data: AdminCommunity[] }).data;
+      }
+
+      throw new Error('Unexpected response format when loading communities');
+    },
   });
 }
 
