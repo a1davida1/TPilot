@@ -171,3 +171,28 @@ describe('generateAdvancedContent humanization', () => {
     expect(second.titles).toEqual(first.titles);
   });
 });
+
+describe('generateAdvancedContent authenticity diagnostics', () => {
+  const params: ContentParameters = {
+    photoType: 'casual',
+    textTone: 'authentic',
+    style: 'community-style',
+    includePromotion: false,
+    selectedHashtags: [],
+    platform: 'reddit',
+    targetCommunity: 'r/fitness',
+    experiment: { id: 'conversational-tone-v1', variant: 'conversational' }
+  };
+
+  it('returns authenticity metrics with reddit voice markers', () => {
+    Math.random = createSeededRandom(77);
+
+    const result = generateAdvancedContent(params);
+
+    expect(result.content.toLowerCase()).toMatch(/ngl|honestly|fr/);
+    expect(result.diagnostics).toBeDefined();
+    expect(result.diagnostics?.authenticity.score).toBeGreaterThan(0.2);
+    expect(result.diagnostics?.voiceMarkersUsed.length).toBeGreaterThan(0);
+    expect(result.diagnostics?.experiment?.variant).toBe('conversational');
+  });
+});

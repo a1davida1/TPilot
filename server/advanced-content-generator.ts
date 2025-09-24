@@ -1,6 +1,29 @@
 import fs from 'fs/promises';
 import path from 'path';
 
+import {
+  applyConversationalTone,
+  buildConversationalToneConfig,
+  type ConversationalToneConfig
+} from './conversational-tone.js';
+import {
+  getCommunityVoicePack,
+  sampleCommunityReference,
+  type CommunityVoicePack
+} from './community-voice-packs.js';
+import {
+  applyStoryPersonaSegments,
+  getStoryPersona,
+  type PersonaTone
+} from './story-persona.js';
+import { scoreAuthenticity, type AuthenticityScore } from './authenticity-metrics.js';
+import {
+  assignExperimentVariant,
+  getExperimentDefinition,
+  isTreatmentVariant,
+  type ExperimentAssignment
+} from './engagement-experiments.js';
+
 export interface HumanizationConfig {
   maxQuirks?: number;
   random?: () => number;
@@ -15,6 +38,10 @@ export interface ContentParameters {
   customPrompt?: string;
   platform: string;
   humanization?: HumanizationConfig;
+  targetCommunity?: string;
+  conversationalOverrides?: Partial<ConversationalToneConfig>;
+  experiment?: ExperimentRequest;
+  narrativePersonaOverride?: PersonaTone;
 }
 
 export interface PhotoInstructions {
@@ -31,6 +58,18 @@ export interface GeneratedContent {
   content: string;
   photoInstructions: PhotoInstructions;
   tags: string[];
+  diagnostics?: ContentDiagnostics;
+}
+
+export interface ExperimentRequest {
+  id: string;
+  variant?: string;
+}
+
+export interface ContentDiagnostics {
+  authenticity: AuthenticityScore;
+  experiment?: ExperimentAssignment;
+  voiceMarkersUsed: string[];
 }
 
 export interface PresetVariation {
@@ -127,9 +166,63 @@ interface PlatformProfile {
   postProcessTitle?: (title: string, context: PlatformPostProcessContext) => string;
 }
 
+interface MainContentBuildResult {
+  content: string;
+  voiceMarkersUsed: string[];
+  callbacksUsed: string[];
+  communityPack: CommunityVoicePack;
+}
+
 const DEFAULT_MAX_HUMANIZATION_QUIRKS = 2;
 
 type RandomGenerator = () => number;
+
+function resolvePersonaTone(params: ContentParameters): PersonaTone {
+  return (params.narrativePersonaOverride ?? params.textTone) as PersonaTone;
+}
+
+function resolveExperimentAssignment(
+  request: ExperimentRequest | undefined,
+  random: () => number
+): ExperimentAssignment | undefined {
+  if (!request) {
+    return undefined;
+  }
+
+  if (request.variant) {
+    const definition = getExperimentDefinition(request.id);
+    const controlVariant = definition?.controlVariant ?? 'control';
+    return {
+      id: request.id,
+      variant: request.variant,
+      isControl: request.variant === controlVariant
+    };
+  }
+
+  return assignExperimentVariant(request.id, random);
+}
+
+function createConversationalToneConfig(
+  params: ContentParameters,
+  communityPack: CommunityVoicePack,
+  experimentAssignment: ExperimentAssignment | undefined,
+  random: () => number
+): ConversationalToneConfig {
+  const overrides: Partial<ConversationalToneConfig> = {
+    ...params.conversationalOverrides
+  };
+
+  if (experimentAssignment) {
+    if (isTreatmentVariant(experimentAssignment)) {
+      overrides.voiceMarkerProbability = Math.max(overrides.voiceMarkerProbability ?? 0.6, 0.75);
+      overrides.contractionProbability = Math.max(overrides.contractionProbability ?? 0.55, 0.65);
+    } else if (overrides.voiceMarkerProbability === undefined) {
+      overrides.voiceMarkerProbability = 0.45;
+    }
+  }
+
+  return buildConversationalToneConfig(communityPack, overrides, random, params.platform);
+}
 
 interface HumanizationOptions {
   maxQuirks?: number;
@@ -1438,17 +1531,32 @@ export function generateAdvancedContent(params: ContentParameters): GeneratedCon
   // Fallback to existing system for non-preset requests
   const photoConfig = photoTypeVariations[params.photoType as keyof typeof photoTypeVariations] || photoTypeVariations['casual'] as PhotoConfig;
   const toneStyle = textToneStyles[params.textTone as keyof typeof textToneStyles] || textToneStyles['authentic'] as ToneStyle;
+  const random = params.humanization?.random ?? Math.random;
+  const experimentAssignment = resolveExperimentAssignment(params.experiment, random);
 
   const titles = generateTitles(params, photoConfig, toneStyle, platformProfiles);
-  const content = generateMainContent(params, photoConfig, toneStyle);
+  const mainContent = generateMainContent(params, photoConfig, toneStyle, experimentAssignment);
   const photoInstructions = generatePhotoInstructions(params, photoConfig);
   const tags = generateTags(params, photoConfig);
 
+  const authenticity = scoreAuthenticity({
+    content: mainContent.content,
+    titles,
+    voiceMarkersUsed: mainContent.voiceMarkersUsed,
+    callbacksUsed: mainContent.callbacksUsed,
+    communityPack: mainContent.communityPack
+  });
+
   return {
     titles,
-    content,
+    content: mainContent.content,
     photoInstructions,
-    tags
+    tags,
+    diagnostics: {
+      authenticity,
+      experiment: experimentAssignment,
+      voiceMarkersUsed: mainContent.voiceMarkersUsed
+    }
   };
 }
 
@@ -1620,7 +1728,12 @@ function generateTitles(
   return processedTitles.slice(0, desiredTitleCount);
 }
 
-function generateMainContent(params: ContentParameters, photoConfig: PhotoConfig, toneStyle: ToneStyle): string {
+function generateMainContent(
+  params: ContentParameters,
+  photoConfig: PhotoConfig,
+  toneStyle: ToneStyle,
+  experimentAssignment: ExperimentAssignment | undefined
+): MainContentBuildResult {
   const themes = photoConfig.themes;
   const settings = photoConfig.settings;
   const descriptors = toneStyle.descriptors;
@@ -1628,6 +1741,9 @@ function generateMainContent(params: ContentParameters, photoConfig: PhotoConfig
   const emojis = toneStyle.emojis;
   const personalTone = personalToneConfigs[params.textTone];
   const profile = platformProfiles[params.platform] ?? platformProfiles.default;
+  const random = params.humanization?.random ?? Math.random;
+  const communityPack = getCommunityVoicePack(params.targetCommunity, params.platform);
+  const persona = getStoryPersona(resolvePersonaTone(params));
 
   const segments: string[] = [];
   const starter = pickRandom(toneStyle.starters);
@@ -1671,13 +1787,32 @@ function generateMainContent(params: ContentParameters, photoConfig: PhotoConfig
   const closer = pickRandom(personalTone.closers);
   segments.push(`${ending} ${closer}`);
 
-  let content = segments.filter(segment => segment.trim().length > 0).join(` ${profile.sentenceSeparator} `);
+  const personaResult = applyStoryPersonaSegments(segments, persona, {
+    communityPack,
+    random
+  });
 
-  if (params.selectedHashtags.length > 0) {
-    content += ` ${params.selectedHashtags.join(' ')}`;
+  const contentBody = personaResult.segments
+    .filter(segment => segment.trim().length > 0)
+    .join(` ${profile.sentenceSeparator} `)
+    .trim();
+
+  const toneConfig = createConversationalToneConfig(params, communityPack, experimentAssignment, random);
+  const conversational = applyConversationalTone(contentBody, toneConfig);
+  let conversationalContent = conversational.text;
+
+  if (params.platform.toLowerCase() === 'reddit') {
+    const communityReference = sampleCommunityReference(communityPack, random);
+    if (communityReference && !conversationalContent.includes(communityReference)) {
+      conversationalContent = `${conversationalContent} ${communityReference}`.trim();
+    }
   }
 
-  const humanized = applyHumanization(content, toneStyle, {
+  if (params.selectedHashtags.length > 0) {
+    conversationalContent = `${conversationalContent} ${params.selectedHashtags.join(' ')}`;
+  }
+
+  const humanized = applyHumanization(conversationalContent, toneStyle, {
     maxQuirks: params.humanization?.maxQuirks,
     random: params.humanization?.random
   });
@@ -1689,7 +1824,12 @@ function generateMainContent(params: ContentParameters, photoConfig: PhotoConfig
 
   const processedContent = profile.postProcessContent ? profile.postProcessContent(humanized, context) : humanized;
 
-  return processedContent;
+  return {
+    content: processedContent,
+    voiceMarkersUsed: conversational.voiceMarkersUsed,
+    callbacksUsed: personaResult.callbacksUsed,
+    communityPack
+  };
 }
 
 function generatePhotoInstructions(params: ContentParameters, photoConfig: PhotoConfig): GeneratedContent['photoInstructions'] {
