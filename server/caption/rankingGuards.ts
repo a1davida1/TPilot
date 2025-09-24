@@ -142,18 +142,19 @@ export function formatViolations(violations: readonly string[]): string {
  * Normalize unknown objects to ranking variants
  */
 export function normalizeVariantForRanking(final: Record<string, unknown>): CaptionVariant {
-  const safetyLevel = normalizeSafetyLevel(final.safetyLevel);
+  const safetyLevel = normalizeSafetyLevel(String(final.safetyLevel ?? 'normal'));
   
   return {
     caption: typeof final.caption === 'string' ? final.caption : safeFallbackCaption,
+    alt: typeof final.alt === 'string' ? final.alt : 'Generated image content',
     cta: typeof final.cta === 'string' ? final.cta : safeFallbackCta,
     hashtags: Array.isArray(final.hashtags) 
       ? final.hashtags.filter((tag): tag is string => typeof tag === 'string')
       : [...safeFallbackHashtags],
-    safetyLevel,
-    photoInstructions: typeof final.photoInstructions === 'string' 
-      ? final.photoInstructions 
-      : undefined
+    mood: typeof final.mood === 'string' ? final.mood : 'neutral',
+    style: typeof final.style === 'string' ? final.style : 'casual',
+    safety_level: safetyLevel,
+    nsfw: Boolean(final.nsfw)
   };
 }
 

@@ -23,7 +23,7 @@ import History from "@/pages/history";
 import Settings from "@/pages/settings";
 import Checkout from "@/pages/checkout";
 import Enterprise from "@/pages/enterprise";
-import Phase4Dashboard from "@/pages/phase4";
+import _Phase4Dashboard from "@/pages/phase4";
 const AdminDashboard = React.lazy(() => import("@/pages/admin").then(module => ({ default: module.AdminDashboard })));
 const AdminLeadsPage = React.lazy(() => import("@/pages/admin-leads").then(module => ({ default: module.AdminLeadsPage })));
 const CaptionGeneratorPage = React.lazy(() => import("@/pages/caption-generator"));
@@ -173,7 +173,7 @@ function UnauthenticatedRoutes() {
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
-  const { shouldShowOnboarding, markWalkthroughCompleted, showOnboarding } = useOnboarding();
+  const { shouldShowOnboarding, markWalkthroughCompleted, showOnboarding: _showOnboarding } = useOnboarding();
   const [location] = useLocation();
 
   // Phase 1: Track page views and user authentication

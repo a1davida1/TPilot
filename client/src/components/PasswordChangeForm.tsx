@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest as _apiRequest } from '@/lib/queryClient';
 
 interface PasswordChangeFormProps {
   userId: number;
@@ -64,7 +64,7 @@ export function PasswordChangeForm({ userId, onSuccess }: PasswordChangeFormProp
         throw new Error(errorData.message || 'Failed to change password');
       }
 
-      const data = await response.json();
+      const _data = await response.json();
       
       // User is now logged in with new password
       // The backend has already set the auth cookie

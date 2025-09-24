@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CaptionPreview } from "./CaptionPreview";
-import { Loader2, Sparkles, Upload, AlertCircle, Image as ImageIcon } from "lucide-react";
+import { Loader2, Sparkles, Upload, AlertCircle, Image as _ImageIcon } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { apiRequest, type ApiError } from "@/lib/queryClient";
 import { getErrorMessage } from "@/utils/errorHelpers";

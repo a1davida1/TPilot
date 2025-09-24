@@ -208,27 +208,29 @@ function createConversationalToneConfig(
   experimentAssignment: ExperimentAssignment | undefined,
   random: () => number
 ): ConversationalToneConfig {
-  const overrides: Partial<ConversationalToneConfig> = {
+  let overrides: Partial<ConversationalToneConfig> = {
     ...params.conversationalOverrides
   };
 
   if (experimentAssignment) {
-    const experimentalOverrides: ToneOverrides = { ...baseOverrides };
-
     if (isTreatmentVariant(experimentAssignment)) {
-      experimentalOverrides.voiceMarkerProbability = Math.max(
-        experimentalOverrides.voiceMarkerProbability ?? 0.6,
-        0.75
-      );
-      experimentalOverrides.contractionProbability = Math.max(
-        experimentalOverrides.contractionProbability ?? 0.55,
-        0.65
-      );
-    } else if (experimentalOverrides.voiceMarkerProbability === undefined) {
-      experimentalOverrides.voiceMarkerProbability = 0.45;
+      overrides = {
+        ...overrides,
+        voiceMarkerProbability: Math.max(
+          overrides.voiceMarkerProbability ?? 0.6,
+          0.75
+        ),
+        contractionProbability: Math.max(
+          overrides.contractionProbability ?? 0.55,
+          0.65
+        )
+      };
+    } else if (overrides.voiceMarkerProbability === undefined) {
+      overrides = {
+        ...overrides,
+        voiceMarkerProbability: 0.45
+      };
     }
-
-    overrides = experimentalOverrides;
   }
 
   return buildConversationalToneConfig(communityPack, overrides, random, params.platform);
@@ -1731,9 +1733,9 @@ function generateTitles(
 
   const processedTitles = titles
     .map(title => applyEmojiDensity(title, emojis, emojiCount))
-    .map(title => clampSentenceLength(title, maxSentenceLength))
+    .map(title => clampSentenceLength(title, maxSentenceLengths))
     .map(title => (profile.postProcessTitle ? profile.postProcessTitle(title, context) : title))
-    .map(title => clampSentenceLength(title, maxSentenceLength));
+    .map(title => clampSentenceLength(title, maxSentenceLengths));
 
   return processedTitles.slice(0, desiredTitleCount);
 }

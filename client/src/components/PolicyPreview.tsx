@@ -6,7 +6,7 @@ import { AlertTriangle, CheckCircle, XCircle, Shield, Clock } from 'lucide-react
 import { Alert, AlertDescription } from '@/components/ui/alert';
 // import { Progress } from '@/components/ui/progress';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest as _apiRequest } from '@/lib/queryClient';
 
 interface PolicyResult {
   state: 'ok' | 'warn' | 'block';

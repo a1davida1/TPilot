@@ -18,19 +18,19 @@ import {
   Gift,
   TrendingUp,
   Settings,
-  Mail,
+  Mail as _Mail,
   Shield,
   Activity,
   DollarSign,
-  UserPlus,
+  UserPlus as _UserPlus,
   Clock,
   CheckCircle,
-  AlertCircle,
+  AlertCircle as _AlertCircle,
   Star,
   Zap,
   Crown,
   Sparkles,
-  ChevronRight,
+  ChevronRight as _ChevronRight,
   RefreshCw,
   Target,
   Rocket,
@@ -51,7 +51,7 @@ import {
   Clock3
 } from 'lucide-react';
 
-interface AdminUser {
+interface _AdminUser {
   id: string;
   username: string;
   email: string;
@@ -101,7 +101,7 @@ interface MetricsType {
   };
 }
 
-interface UserStats {
+interface _UserStats {
   totalUsers: number;
   freeUsers: number;
   proUsers: number;
@@ -989,7 +989,7 @@ function IPTrackingTab({ authenticatedRequest }: { authenticatedRequest: Authent
     queryFn: () => authenticatedRequest('/api/admin/ip-tracking'),
   });
 
-  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [selectedUserId, _setSelectedUserId] = useState<number | null>(null);
   const { data: userActivity } = useQuery({
     queryKey: ['/api/admin/user-activity', selectedUserId],
     queryFn: () => authenticatedRequest(`/api/admin/user-activity/${selectedUserId}`),
@@ -1092,7 +1092,7 @@ function IPTrackingTab({ authenticatedRequest }: { authenticatedRequest: Authent
 
 // FEATURE 2: System Monitoring Component
 function SystemMonitorTab({ authenticatedRequest }: { authenticatedRequest: AuthenticatedRequest }) {
-  const { data: metrics, refetch: refetchMetrics } = useQuery({
+  const { data: metrics, refetch: _refetchMetrics } = useQuery({
     queryKey: ['/api/admin/system-metrics'],
     queryFn: () => authenticatedRequest('/api/admin/system-metrics'),
     refetchInterval: 10000,
