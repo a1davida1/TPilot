@@ -36,7 +36,6 @@ import {
   GROWTH_TREND_LABELS,
 } from '@/hooks/use-admin-communities';
 import type { RedditCommunitySellingPolicy } from '@shared/schema';
-import { cn } from '@/lib/utils';
 import { CheckCircle, Edit2, Loader2, PlusCircle, ShieldAlert, Trash2 } from 'lucide-react';
 
 interface AdminCommunitiesPanelProps {

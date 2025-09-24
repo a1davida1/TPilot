@@ -6,11 +6,11 @@ import { Copy, Check, AlertCircle } from "lucide-react";
 import { useState } from "react";
 
 export interface CaptionPreviewData {
-  final: string;
+  final: string | { caption: string; alt?: string; hashtags?: string[]; mood?: string; style?: string; cta?: string; safety_level?: 'normal' | 'spicy_safe' | 'unsafe' };
   ranked: string[];
 }
 
-export function CaptionPreview({ data }: { data: CaptionPreviewData | any }) {
+export function CaptionPreview({ data }: { data: CaptionPreviewData | null | undefined }) {
   const [copiedCaption, setCopiedCaption] = useState(false);
   const [copiedJSON, setCopiedJSON] = useState(false);
 

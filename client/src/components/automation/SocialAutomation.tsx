@@ -97,7 +97,7 @@ export function SocialAutomation() {
     {
       id: 'peak-times',
       name: 'Peak Time Posting',
-      description: 'Post during your audience\'s most active hours',
+      description: "Post during your audience's most active hours",
       platforms: ['reddit', 'twitter'],
       status: 'active'
     },

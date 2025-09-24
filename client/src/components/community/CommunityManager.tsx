@@ -155,7 +155,7 @@ export function CommunityManager() {
     {
       id: 3,
       trigger: 'collaboration',
-      template: 'Thanks for reaching out! I\'d love to hear more about your collaboration idea. Feel free to send me a DM with details!',
+      template: "Thanks for reaching out! I'd love to hear more about your collaboration idea. Feel free to send me a DM with details!",
       usage: 34,
       enabled: true
     },

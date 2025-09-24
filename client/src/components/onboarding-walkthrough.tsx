@@ -36,7 +36,7 @@ const tutorialSteps: TutorialStep[] = [
   {
     id: 'welcome',
     title: 'Welcome to ThottoPilot! ✈️',
-    description: 'Your complete platform for content creation, protection, and monetization. Let\'s take a quick tour!',
+    description: "Your complete platform for content creation, protection, and monetization. Let's take a quick tour!",
     position: 'center',
     icon: <Sparkles className="h-6 w-6" />,
     category: 'getting-started'
