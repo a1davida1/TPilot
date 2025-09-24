@@ -6,7 +6,7 @@ import { eq } from 'drizzle-orm';
 async function createAdmin() {
   const email = process.env.ADMIN_EMAIL || 'admin@thottopilot.com';
   const username = process.env.ADMIN_USERNAME || 'admin';
-  const password = process.env.ADMIN_PASSWORD || 'changeme';
+  const password = process.env.ADMIN_PASSWORD || 'admin123';
 
   const existing = await db.select().from(users).where(eq(users.email, email)).limit(1);
   if (existing.length > 0) {
