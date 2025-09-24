@@ -829,7 +829,7 @@ export const toneFragmentPools: Record<ContentParameters['textTone'], ToneFragme
         builder: context => `${formatFiller(context.pickFiller())} I pulled together something ${context.pickDescriptor()} in the ${context.pickSetting()}.`
       },
       {
-        builder: context => `I\'m serving ${context.pickDescriptor()} energy with that ${context.pickTheme()} concept ${context.pickEmoji()}`
+        builder: context => `I'm serving ${context.pickDescriptor()} energy with that ${context.pickTheme()} concept ${context.pickEmoji()}`
       },
       {
         builder: context => `Built this drop like a pro and it shows in every ${context.pickDescriptor()} detail.`

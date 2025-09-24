@@ -70,9 +70,9 @@ const redditFitnessPack: CommunityVoicePack = {
   ],
   voiceMarkers: ['fr', 'honestly', 'low-key'],
   storytellingPrompts: [
-    'Logged the session just so I could brag to you',
     'Hit a mini PR because I pictured you cheering from the sidelines',
-    'Turned the gym mirror into a confession booth for us'
+    'Turned the gym mirror into a confession booth for us',
+    'Logged the session just so I could brag to you'
   ],
   callouts: ['drop your current split', 'flex check thread when?']
 };
