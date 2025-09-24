@@ -9,6 +9,7 @@ export interface ConversationalToneConfig {
   readonly voiceMarkerProbability: number;
   readonly fragmentProbability: number;
   readonly allowImperfections?: boolean;
+  readonly vernacularProbability?: number;
   readonly random?: () => number;
 }
 
@@ -17,11 +18,18 @@ export interface ConversationalToneResult {
   voiceMarkersUsed: string[];
   contractionsApplied: number;
   fragmentsInserted: number;
+  vernacularInsertions: number;
 }
 
 const BASE_VOICE_MARKERS: readonly string[] = ['tbh', 'honestly', 'ngl', 'fr', 'I mean'];
 const BASE_FILLERS: readonly string[] = ['and yeah,', 'so, like,', 'no lie,', 'for real,', 'not gonna lie,'];
 const DEFAULT_FRAGMENT_TEMPLATE = (marker: string): string => `${marker} not gonna lie.`;
+const RHYTHM_FRAGMENT_TEMPLATES: readonly ((seed: string) => string)[] = [
+  (seed: string) => DEFAULT_FRAGMENT_TEMPLATE(seed),
+  (seed: string) => `${seed} kinda hits different.`,
+  (seed: string) => `${seed} had me feeling some type of way.`,
+  (seed: string) => `${seed}, just saying.`
+];
 
 interface ContractionRule {
   readonly matcher: RegExp;
@@ -79,6 +87,13 @@ function lowercaseFirst(value: string): string {
     return value;
   }
   return value.charAt(0).toLowerCase() + value.slice(1);
+}
+
+function capitalizeFirst(value: string): string {
+  if (value.length === 0) {
+    return value;
+  }
+  return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
 function applyCaseFromSource(source: string, replacement: string): string {
@@ -146,22 +161,161 @@ function ensureSentenceVariance(
   const normalized = [...sentences];
   let fragmentsInserted = 0;
 
-  const hasShort = normalized.some(sentence => sentence.trim().length <= 50);
-  if (!hasShort && normalized.length > 0 && random() < clamp(fragmentProbability, 0, 1)) {
-    const marker = used[0] ?? (fillerWords.length > 0 ? fillerWords[0] : 'honestly');
-    const fragment = DEFAULT_FRAGMENT_TEMPLATE(marker.replace(/[, ]+$/u, ''));
-    normalized.splice(1, 0, fragment);
-    fragmentsInserted += 1;
+  if (normalized.length === 0) {
+    return { sentences: normalized, fragmentsInserted };
   }
 
-  const hasLong = normalized.some(sentence => sentence.trim().length >= 110);
-  if (!hasLong && normalized.length >= 2) {
-    const filler = fillerWords.length > 0 ? pickRandom(fillerWords, random) : 'and yeah,';
-    const merged = `${normalized[0].trim()} ${filler} ${lowercaseFirst(normalized[1].trim())}`.replace(/\s+/gu, ' ');
-    normalized.splice(0, 2, merged);
+  const clampProbability = clamp(fragmentProbability, 0, 1);
+
+  const categorizeLength = (value: string): 'short' | 'medium' | 'long' => {
+    const length = value.trim().length;
+    if (length <= 55) {
+      return 'short';
+    }
+    if (length >= 130) {
+      return 'long';
+    }
+    return 'medium';
+  };
+
+  const sanitizeSeed = (seed: string): string => seed.replace(/^[,\s]+/u, '').replace(/[,\s]+$/u, '').trim();
+
+  const buildFragment = (): string => {
+    const seeds = [
+      ...used,
+      ...fillerWords.map(sanitizeSeed)
+    ].filter(entry => entry.trim().length > 0);
+    const seed = seeds.length > 0 ? pickRandom(seeds, random) : 'honestly';
+    const template = pickRandom(RHYTHM_FRAGMENT_TEMPLATES, random);
+    return template(sanitizeSeed(seed));
+  };
+
+  const splitSentenceForRhythm = (value: string): string[] | undefined => {
+    const trimmed = value.trim();
+    if (trimmed.length < 140) {
+      return undefined;
+    }
+    const normalized = trimmed.toLowerCase();
+    const midpoint = Math.floor(normalized.length / 2);
+    const separators = [',', ' — ', ' – ', ' - ', ';', ':', ' but ', ' because ', ' so ', ' and '];
+    let best: { index: number; length: number } | undefined;
+    let bestDistance = Number.POSITIVE_INFINITY;
+    for (const separator of separators) {
+      let startIndex = normalized.indexOf(separator);
+      while (startIndex !== -1) {
+        const distance = Math.abs(startIndex - midpoint);
+        const startValid = startIndex > 25;
+        const endValid = startIndex + separator.length < normalized.length - 25;
+        if (startValid && endValid && distance < bestDistance) {
+          best = { index: startIndex, length: separator.length };
+          bestDistance = distance;
+        }
+        startIndex = normalized.indexOf(separator, startIndex + separator.length);
+      }
+    }
+    if (!best) {
+      return undefined;
+    }
+    const first = trimmed.slice(0, best.index).trim();
+    const second = trimmed.slice(best.index + best.length).trim();
+    if (first.length <= 25 || second.length <= 25) {
+      return undefined;
+    }
+    const ensureTerminal = (segment: string): string => {
+      if (segment.length === 0) {
+        return segment;
+      }
+      if (/[.!?]$/u.test(segment)) {
+        return segment;
+      }
+      return `${segment}.`;
+    };
+    const firstSegment = ensureTerminal(first);
+    const secondSegment = ensureTerminal(capitalizeFirst(second));
+    return [firstSegment, secondSegment];
+  };
+
+  const mergeSentencesForFlow = (first: string, second: string): string => {
+    const connectorRaw = fillerWords.length > 0 ? pickRandom(fillerWords, random) : 'and yeah,';
+    const connector = connectorRaw.trim().length > 0 ? connectorRaw : 'and';
+    const firstCore = first.trim().replace(/([.!?])+$/u, '');
+    const secondCore = lowercaseFirst(second.trim());
+    const merged = `${firstCore} ${connector} ${secondCore}`.replace(/\s+/gu, ' ').trim();
+    const punctuation = /[.!?]$/u.test(second.trim()) ? '' : '.';
+    return `${merged}${punctuation}`;
+  };
+
+  const maybeAddFragment = () => {
+    if (random() <= clampProbability) {
+      normalized.splice(Math.min(1, normalized.length), 0, buildFragment());
+      fragmentsInserted += 1;
+    }
+  };
+
+  const lengths = normalized.map(sentence => categorizeLength(sentence));
+  const hasShort = lengths.includes('short');
+  const hasLong = lengths.includes('long');
+
+  if (!hasShort) {
+    const longestIndex = normalized.reduce((acc, sentence, index) => {
+      const currentLength = sentence.trim().length;
+      const longestLength = normalized[acc]?.trim().length ?? 0;
+      if (currentLength > longestLength) {
+        return index;
+      }
+      return acc;
+    }, 0);
+    const splitResult = splitSentenceForRhythm(normalized[longestIndex] ?? '');
+    if (splitResult) {
+      normalized.splice(longestIndex, 1, ...splitResult);
+    } else {
+      normalized.splice(Math.min(1, normalized.length), 0, buildFragment());
+      fragmentsInserted += 1;
+    }
   }
+
+  if (!hasLong && normalized.length >= 2) {
+    const mergeIndex = normalized.length >= 3 ? 1 : 0;
+    const merged = mergeSentencesForFlow(normalized[mergeIndex], normalized[mergeIndex + 1]);
+    normalized.splice(mergeIndex, 2, merged);
+  }
+
+  maybeAddFragment();
 
   return { sentences: normalized, fragmentsInserted };
+}
+
+interface VernacularInjectionResult {
+  readonly text: string;
+  readonly inserted: boolean;
+}
+
+function injectVernacularAside(
+  sentence: string,
+  fillerWords: readonly string[],
+  probability: number,
+  random: () => number
+): VernacularInjectionResult {
+  if (fillerWords.length === 0 || random() > probability) {
+    return { text: sentence, inserted: false };
+  }
+  const pool = fillerWords
+    .map(entry => entry.replace(/^[,\s]+/u, '').replace(/[,\s]+$/u, '').trim())
+    .filter(entry => entry.length > 0);
+  if (pool.length === 0) {
+    return { text: sentence, inserted: false };
+  }
+  const token = pickRandom(pool, random);
+  const trimmed = sentence.trim();
+  if (trimmed.length === 0) {
+    return { text: `${capitalizeFirst(token)}.`, inserted: true };
+  }
+  const punctuationMatch = trimmed.match(/([.!?]+)$/u);
+  const punctuation = punctuationMatch ? punctuationMatch[0] : '';
+  const core = punctuation ? trimmed.slice(0, -punctuation.length) : trimmed;
+  const aside = random() < 0.5 ? `(${token})` : `—${token}`;
+  const spacing = core.length === 0 ? '' : ' ';
+  return { text: `${core}${spacing}${aside}${punctuation}`, inserted: true };
 }
 
 function splitIntoSentences(paragraph: string): string[] {
@@ -180,7 +334,8 @@ export function applyConversationalTone(text: string, config: ConversationalTone
       text,
       voiceMarkersUsed: [],
       contractionsApplied: 0,
-      fragmentsInserted: 0
+      fragmentsInserted: 0,
+      vernacularInsertions: 0
     };
   }
 
@@ -189,6 +344,8 @@ export function applyConversationalTone(text: string, config: ConversationalTone
   const fillerWords = config.fillerWords.length > 0 ? config.fillerWords : BASE_FILLERS;
   const voiceMarkersUsed: string[] = [];
   let contractionsApplied = 0;
+  let vernacularInsertions = 0;
+  let fragmentsInsertedTotal = 0;
 
   const paragraphs = text.split(/\n\n+/u);
   const processedParagraphs = paragraphs.map(paragraph => {
@@ -203,7 +360,16 @@ export function applyConversationalTone(text: string, config: ConversationalTone
         random,
         voiceMarkersUsed
       );
-      return withVoiceMarker;
+      const vernacularResult = injectVernacularAside(
+        withVoiceMarker,
+        fillerWords,
+        clamp(config.vernacularProbability ?? 0.4, 0, 1),
+        random
+      );
+      if (vernacularResult.inserted) {
+        vernacularInsertions += 1;
+      }
+      return vernacularResult.text;
     });
 
     const varianceResult = ensureSentenceVariance(
@@ -213,6 +379,7 @@ export function applyConversationalTone(text: string, config: ConversationalTone
       random,
       voiceMarkersUsed
     );
+    fragmentsInsertedTotal += varianceResult.fragmentsInserted;
     return joinSentences(varianceResult.sentences, paragraph);
   });
 
@@ -220,7 +387,8 @@ export function applyConversationalTone(text: string, config: ConversationalTone
     text: processedParagraphs.join('\n\n'),
     voiceMarkersUsed,
     contractionsApplied,
-    fragmentsInserted: processedParagraphs.length - paragraphs.length
+    fragmentsInserted: fragmentsInsertedTotal,
+    vernacularInsertions
   };
 }
 
@@ -249,6 +417,7 @@ export function buildConversationalToneConfig(
     voiceMarkerProbability: overrides?.voiceMarkerProbability ?? 0.6,
     fragmentProbability: overrides?.fragmentProbability ?? 0.35,
     allowImperfections: overrides?.allowImperfections ?? true,
+    vernacularProbability: overrides?.vernacularProbability ?? 0.4,
     random: overrides?.random ?? random
   };
 }
