@@ -1,0 +1,560 @@
+server/advanced-content-generator.ts
++258-6
+// Advanced Content Generation Engine
+// Produces authentically different content based on all user parameters
+
+export interface ContentParameters {
+  photoType: 'casual' | 'workout' | 'shower' | 'showing-skin' | 'spicy' | 'very-spicy' | 'all-xs';
+  textTone: 'confident' | 'playful' | 'mysterious' | 'authentic' | 'sassy';
+  style: string; // style preset like 'nude-photos', 'shower-content', etc.
+  includePromotion: boolean;
+  selectedHashtags: string[];
+  customPrompt?: string;
+  platform: string;
+  humanizedLevel?: number;
+}
+
+export interface PhotoInstructions {
+  lighting: string;
+  cameraAngle?: string;
+  angles?: string;
+  composition: string;
+  styling: string;
+  technical?: string;
+  technicalSettings?: string;
+  sceneSetup?: string;
+  mood?: string;
+}
+
+export interface GeneratedContent {
+  titles: string[];
+  content: string;
+  photoInstructions: {
+    lighting: string;
+    angles: string;
+    composition: string;
+    styling: string;
+    technical: string;
+    sceneSetup: string;
+  };
+  tags: string[];
+}
+
+export interface PresetVariation {
+  titles: string[];
+  content: string;
+  photoInstructions: PhotoInstructions;
+}
+
+export interface PhotoConfig {
+  themes: string[];
+  settings: string[];
+  clothing: string[];
+  lighting: string;
+  angles: string;
+  mood: string;
+}
+
+export interface ToneStyle {
+  starters: string[];
+  descriptors: string[];
+  endings: string[];
+  emojis: string[];
+  interjections?: string[];
+}
+
+export interface ManualTypingOptions {
+  humanizedLevel?: number;
+  rng?: () => number;
+}
+
+const EM_DASH_ASIDES = [
+  'wait, let me brag for a sec',
+  'okay, mild obsession happening',
+  'small flex, forgive me',
+  'just being dramatic for effect'
+];
+
+const CORRECTION_SNIPPETS = [
+  'extra glow',
+  'actual vibe',
+  'soft focus',
+  'cozy energy',
+  'spicy detail'
+];
+
+const STRIKETHROUGH_EXCLUSIONS = ['~~'];
+
+// Photo Type Specific Content Variations
+const photoTypeVariations = {
+  'teasing': {
+    themes: ['playful tease', 'subtle hint', 'flirty suggestion', 'mysterious allure', 'coy moment'],
+    settings: ['bedroom door', 'mirror selfie', 'cozy couch', 'bath time', 'morning bed'],
+    clothing: ['oversized shirt', 'silk robe', 'cute lingerie peek', 'towel wrap', 'strategic coverage'],
+    lighting: 'Soft intimate lighting, warm candlelight, sunset glow',
+    angles: 'Teasing glimpses, over-shoulder looks, partial reveals',
+    mood: 'playful and teasing'
+  },
+  'behind-scenes': {
+    themes: ['getting ready', 'makeup process', 'outfit selection', 'photoshoot prep', 'content creation'],
+    settings: ['vanity mirror', 'wardrobe area', 'makeup station', 'photo setup', 'behind camera'],
+    clothing: ['robe and lingerie', 'getting dressed', 'outfit changes', 'casual prep wear'],
+    lighting: 'Natural backstage lighting, mirror lights, behind-the-scenes authenticity',
+    angles: 'Candid preparation shots, mirror reflections, process documentation',
+    mood: 'authentic and intimate'
+  },
+  'outfit': {
+    themes: ['outfit reveal', 'fashion show', 'style showcase', 'wardrobe tour', 'clothing haul'],
+    settings: ['bedroom mirror', 'dressing room', 'closet area', 'fashion backdrop', 'outfit display'],
+    clothing: ['multiple outfits', 'lingerie sets', 'dress collection', 'style variations'],
+    lighting: 'Bright fashion lighting, clear visibility, flattering angles',
+    angles: 'Full body shots, detail close-ups, 360 turns, outfit transitions',
+    mood: 'fashionable and stylish'
+@@ -143,78 +167,301 @@ const photoTypeVariations = {
+  },
+  'all-xs': {
+    themes: ['ultimate expression', 'no limits', 'complete freedom', 'artistic boundaries pushed', 'full creative expression'],
+    settings: ['private studio', 'exclusive location', 'artistic sanctuary', 'personal creative space'],
+    clothing: ['artistic freedom', 'creative expression', 'unlimited styling', 'boundary-free'],
+    lighting: 'Professional studio lighting, artistic drama, creative illumination',
+    angles: 'Unlimited creative angles, artistic freedom, boundary-pushing compositions',
+    mood: 'completely uninhibited and free'
+  },
+  'needs_review': {
+    themes: ['explicit content', 'uncensored expression', 'adult artistry', 'mature themes', 'uninhibited creativity'],
+    settings: ['private space', 'adult content studio', 'mature setting', 'exclusive location'],
+    clothing: ['explicit styling', 'uncensored wardrobe', 'mature fashion', 'adult themes'],
+    lighting: 'Professional explicit content lighting, dramatic contrasts',
+    angles: 'Explicit composition, uncensored angles, mature perspectives',
+    mood: 'explicitly mature and uncensored'
+  }
+};
+
+// Text Tone Variations
+const textToneStyles = {
+  'confident': {
+    starters: ["I know exactly", "Here's what", "Ready for", "You wanted", "Time for"],
+    descriptors: ["bold", "powerful", "stunning", "magnificent", "incredible"],
+    endings: ["and I deliver every time", "because quality matters", "no compromises here", "excellence is standard"],
+    emojis: ["💪", "🔥", "⚡", "💎", "👑"]
+    emojis: ["💪", "🔥", "⚡", "💎", "👑"],
+    interjections: ["hang on, hyping myself up", "wait, had to flex", "oops, brag moment"]
+  },
+  'playful': {
+    starters: ["Guess what", "Oops!", "Surprise!", "Hey there", "So..."],
+    descriptors: ["cute", "silly", "adorable", "cheeky", "mischievous"],
+    endings: ["hope you like it!", "whoops! 🙈", "couldn't resist!", "being a little naughty"],
+    emojis: ["😘", "🙈", "😇", "💕", "🎀"]
+    emojis: ["😘", "🙈", "😇", "💕", "🎀"],
+    interjections: ["lol, no wait...", "jk (kinda)", "brb hyping this"]
+  },
+  'mysterious': {
+    starters: ["Something happened", "In the shadows", "Late night", "Behind closed doors", "Secret moment"],
+    descriptors: ["hidden", "forbidden", "mysterious", "secretive", "enigmatic"],
+    endings: ["but that's all I'll say", "the rest remains hidden", "some secrets are worth keeping", "only for those who understand"],
+    emojis: ["🌙", "🖤", "🕯️", "🔮", "💫"]
+    emojis: ["🌙", "🖤", "🕯️", "🔮", "💫"],
+    interjections: ["shh, wait—", "hmm, maybe I said too much", "oops, almost spoiled it"]
+  },
+  'authentic': {
+    starters: ["Real talk", "Being honest", "Just me", "Genuine moment", "Truth is"],
+    descriptors: ["real", "honest", "genuine", "authentic", "true"],
+    endings: ["just being myself", "no filters needed", "this is who I am", "raw and real"],
+    emojis: ["💯", "✨", "🌸", "💗", "🌟"]
+    emojis: ["💯", "✨", "🌸", "💗", "🌟"],
+    interjections: ["wait, let me be real", "oh, actually—", "haha, small stumble"]
+  },
+  'sassy': {
+    starters: ["Listen up", "Well well", "Oh please", "You think", "Honey"],
+    descriptors: ["fierce", "bold", "attitude", "confidence", "sass"],
+    endings: ["deal with it", "take it or leave it", "that's how I roll", "bow down"],
+    emojis: ["💅", "😏", "🔥", "👑", "💄"]
+    emojis: ["💅", "😏", "🔥", "👑", "💄"],
+    interjections: ["ugh wait—", "hold on, I did not just", "lol no actually"]
+  }
+};
+
+function clampHumanizedLevel(level: number): number {
+  if (!Number.isFinite(level)) {
+    return 0;
+  }
+  if (level < 0) {
+    return 0;
+  }
+  if (level > 1) {
+    return 1;
+  }
+  return level;
+}
+
+function isWhitespaceToken(token: string): boolean {
+  return /^\s+$/.test(token);
+}
+
+function extractTokenParts(token: string): { prefix: string; core: string; suffix: string } {
+  const prefixMatch = token.match(/^[^A-Za-z0-9'’]+/u);
+  const prefix = prefixMatch ? prefixMatch[0] : '';
+  const suffixMatch = token.match(/[^A-Za-z0-9'’]+$/u);
+  const suffix = suffixMatch ? suffixMatch[0] : '';
+  const core = token.slice(prefix.length, token.length - suffix.length);
+
+  return { prefix, core, suffix };
+}
+
+function tokenContainsUrlOrHashtag(token: string): boolean {
+  const trimmed = token.trim();
+  if (!trimmed) {
+    return false;
+  }
+  const lowered = trimmed.toLowerCase();
+  return trimmed.startsWith('#') || lowered.includes('http://') || lowered.includes('https://') || lowered.startsWith('www.');
+}
+
+function isSafeToken(token?: string): boolean {
+  if (!token) {
+    return false;
+  }
+  if (tokenContainsUrlOrHashtag(token) || token.includes('#')) {
+    return false;
+  }
+  const { core } = extractTokenParts(token);
+  return core.length > 0;
+}
+
+function pickRandomIndex(indices: number[], rng: () => number): number | undefined {
+  if (indices.length === 0) {
+    return undefined;
+  }
+  const rawIndex = Math.floor(rng() * indices.length);
+  const safeIndex = rawIndex >= indices.length ? indices.length - 1 : rawIndex;
+  return indices[safeIndex];
+}
+
+function pickRandomValue(values: string[], rng: () => number): string | undefined {
+  if (values.length === 0) {
+    return undefined;
+  }
+  const rawIndex = Math.floor(rng() * values.length);
+  const index = rawIndex >= values.length ? values.length - 1 : rawIndex;
+  return values[index];
+}
+
+function injectInterjection(text: string, interjection: string): string {
+  if (!interjection.trim()) {
+    return text;
+  }
+  const trimmed = text.trimStart();
+  if (trimmed.startsWith(interjection)) {
+    return text;
+  }
+  return `${interjection} ${text}`;
+}
+
+function injectDoubleSpace(text: string, rng: () => number): string {
+  const tokens = text.split(/(\s+)/);
+  const candidateIndices: number[] = [];
+
+  tokens.forEach((token, index) => {
+    if (token === ' ' && isSafeToken(tokens[index - 1]) && isSafeToken(tokens[index + 1])) {
+      candidateIndices.push(index);
+    }
+  });
+
+  const targetIndex = pickRandomIndex(candidateIndices, rng);
+  if (targetIndex === undefined) {
+    return text;
+  }
+
+  tokens[targetIndex] = '  ';
+  return tokens.join('');
+}
+
+function injectEmDashAside(text: string, rng: () => number): string {
+  const aside = pickRandomValue(EM_DASH_ASIDES, rng);
+  if (!aside) {
+    return text;
+  }
+
+  const tokens = text.split(/(\s+)/);
+  const candidateIndices: number[] = [];
+
+  tokens.forEach((token, index) => {
+    if (!isWhitespaceToken(token) && isSafeToken(token) && !token.includes('—')) {
+      candidateIndices.push(index);
+    }
+  });
+
+  const targetIndex = pickRandomIndex(candidateIndices, rng);
+  if (targetIndex === undefined) {
+    return text;
+  }
+
+  const { prefix, core, suffix } = extractTokenParts(tokens[targetIndex]);
+  if (!core) {
+    return text;
+  }
+
+  tokens[targetIndex] = `${prefix}${core} — ${aside} —${suffix}`;
+  return tokens.join('');
+}
+
+function injectCorrection(text: string, rng: () => number): string {
+  const correction = pickRandomValue(CORRECTION_SNIPPETS, rng);
+  if (!correction) {
+    return text;
+  }
+
+  const tokens = text.split(/(\s+)/);
+  const candidateIndices: number[] = [];
+
+  tokens.forEach((token, index) => {
+    if (!isWhitespaceToken(token) && isSafeToken(token) && !token.toLowerCase().includes('oops meant')) {
+      candidateIndices.push(index);
+    }
+  });
+
+  const targetIndex = pickRandomIndex(candidateIndices, rng);
+  if (targetIndex === undefined) {
+    return text;
+  }
+
+  const { prefix, core, suffix } = extractTokenParts(tokens[targetIndex]);
+  if (!core) {
+    return text;
+  }
+
+  tokens[targetIndex] = `${prefix}${core} (oops meant ${correction})${suffix}`;
+  return tokens.join('');
+}
+
+function injectStrikethrough(text: string, rng: () => number): string {
+  const tokens = text.split(/(\s+)/);
+  const candidateIndices: number[] = [];
+
+  tokens.forEach((token, index) => {
+    if (!isWhitespaceToken(token) && isSafeToken(token) && !STRIKETHROUGH_EXCLUSIONS.some((marker) => token.includes(marker))) {
+      const { core } = extractTokenParts(token);
+      if (core.length > 2 && !/\s/u.test(core)) {
+        candidateIndices.push(index);
+      }
+    }
+  });
+
+  const targetIndex = pickRandomIndex(candidateIndices, rng);
+  if (targetIndex === undefined) {
+    return text;
+  }
+
+  const { prefix, core, suffix } = extractTokenParts(tokens[targetIndex]);
+  if (!core) {
+    return text;
+  }
+
+  tokens[targetIndex] = `${prefix}~~${core}~~${suffix}`;
+  return tokens.join('');
+}
+
+export function simulateManualTyping(content: string, toneStyle: ToneStyle, options: ManualTypingOptions = {}): string {
+  const rng = options.rng ?? Math.random;
+  const normalizedLevel = clampHumanizedLevel(options.humanizedLevel ?? 0);
+
+  if (normalizedLevel <= 0) {
+    return content;
+  }
+
+  const shouldApply = (baseProbability: number): boolean => rng() < baseProbability * normalizedLevel;
+
+  let mutated = content;
+
+  if (toneStyle.interjections && toneStyle.interjections.length > 0 && shouldApply(0.25)) {
+    const interjection = pickRandomValue(toneStyle.interjections, rng);
+    if (interjection) {
+      mutated = injectInterjection(mutated, interjection);
+    }
+  }
+
+  if (shouldApply(0.2)) {
+    mutated = injectDoubleSpace(mutated, rng);
+  }
+
+  if (shouldApply(0.18)) {
+    mutated = injectEmDashAside(mutated, rng);
+  }
+
+  if (shouldApply(0.15)) {
+    mutated = injectCorrection(mutated, rng);
+  }
+
+  if (shouldApply(0.12)) {
+    mutated = injectStrikethrough(mutated, rng);
+  }
+
+  return mutated;
+}
+
+// Generate content based on all parameters
+export function generateAdvancedContent(params: ContentParameters): GeneratedContent {
+  // Check if this is a preset request and use preset variations
+  const presetVariation = getRandomPresetVariation(params.style);
+  if (presetVariation) {
+    console.log(`🎯 Using preset variation for: ${params.style}`);
+    return {
+      titles: presetVariation.titles,
+      content: presetVariation.content,
+      photoInstructions: {
+        lighting: presetVariation.photoInstructions.lighting,
+        angles: presetVariation.photoInstructions.cameraAngle || "natural angles",
+        composition: presetVariation.photoInstructions.composition,
+        styling: presetVariation.photoInstructions.styling,
+        technical: presetVariation.photoInstructions.technicalSettings || "natural lighting",
+        sceneSetup: presetVariation.photoInstructions.mood || "casual setting"
+      },
+      tags: ['preset-content', params.style, params.platform]
+    };
+  }
+
+  // Fallback to existing system for non-preset requests
+  const photoConfig = photoTypeVariations[params.photoType as keyof typeof photoTypeVariations] || photoTypeVariations['casual'] as PhotoConfig;
+  const toneStyle = textToneStyles[params.textTone as keyof typeof textToneStyles] || textToneStyles['authentic'] as ToneStyle;
+  
+@@ -1298,51 +1545,56 @@ function generateMainContent(params: ContentParameters, photoConfig: PhotoConfig
+  if (params.customPrompt) {
+    content += `${params.customPrompt} `;
+  }
+  
+  // Promotion integration
+  if (params.includePromotion) {
+    if (params.textTone === 'confident') {
+      content += `This exclusive content is available for my VIP subscribers who appreciate quality. `;
+    } else if (params.textTone === 'playful') {
+      content += `The full collection is waiting for my special subscribers! `;
+    } else if (params.textTone === 'mysterious') {
+      content += `But that's all you see here... the rest remains in the shadows for those who seek it. `;
+    } else if (params.textTone === 'sassy') {
+      content += `If you want the full experience, you know where to find me. `;
+    } else {
+      content += `The complete series is available for subscribers who want the authentic experience. `;
+    }
+  }
+  
+  // Ending with hashtags if selected
+  content += endings[Math.floor(Math.random() * endings.length)];
+  
+  if (params.selectedHashtags.length > 0) {
+    content += ` ${params.selectedHashtags.join(' ')}`;
+  }
+  
+
+  const humanizedLevel = params.humanizedLevel ?? 0;
+  if (humanizedLevel > 0) {
+    content = simulateManualTyping(content, toneStyle, { humanizedLevel });
+  }
+
+  return content;
+}
+
+function generatePhotoInstructions(params: ContentParameters, photoConfig: PhotoConfig): GeneratedContent['photoInstructions'] {
+  return {
+    lighting: photoConfig.lighting + (params.photoType === 'shower' ? ', emphasis on steam and water reflections' : 
+               params.photoType === 'workout' ? ', bright and energetic to show determination' :
+               params.photoType === 'very-spicy' || params.photoType === 'all-xs' ? ', dramatic contrasts and artistic shadows' : ''),
+    angles: photoConfig.angles + (params.textTone === 'confident' ? ', powerful perspective shots' :
+            params.textTone === 'playful' ? ', fun candid angles' :
+            params.textTone === 'mysterious' ? ', shadowy artistic angles' : ''),
+    composition: `${photoConfig.mood} composition with ${params.photoType === 'casual' ? 'natural framing' :
+                 params.photoType === 'workout' ? 'dynamic action elements' :
+                 params.photoType === 'shower' ? 'steam and water elements' :
+                 params.photoType === 'showing-skin' ? 'artistic tasteful framing' :
+                 params.photoType === 'spicy' ? 'seductive elegant framing' :
+                 params.photoType === 'very-spicy' ? 'bold intimate framing' :
+                 'unlimited creative framing'}`,
+    styling: `${photoConfig.clothing.join(' or ')}, ${photoConfig.mood} aesthetic`,
+    technical: `High resolution, sharp focus, professional quality${params.photoType === 'very-spicy' || params.photoType === 'all-xs' ? ', studio-grade equipment recommended' : ''}`,
+    sceneSetup: `${photoConfig.settings.join(' or ')}, ${params.photoType} theme environment`
+  };
+}
+
+function generateTags(params: ContentParameters, photoConfig: PhotoConfig): string[] {
+tests/unit/server/simulate-manual-typing.test.ts
+New
++80-0
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import * as advancedContentGenerator from '../../../server/advanced-content-generator';
+import type { ContentParameters, ToneStyle } from '../../../server/advanced-content-generator';
+
+const { generateAdvancedContent, simulateManualTyping } = advancedContentGenerator;
+
+const baseToneStyle: ToneStyle = {
+  starters: [''],
+  descriptors: [''],
+  endings: [''],
+  emojis: [''],
+  interjections: ['lol, no wait...']
+};
+
+const createDeterministicRng = (values: number[]): (() => number) => {
+  let index = 0;
+  const fallback = values.length > 0 ? values[values.length - 1] : 0;
+  return () => {
+    const value = index < values.length ? values[index] : fallback;
+    index += 1;
+    return value;
+  };
+};
+
+describe('simulateManualTyping', () => {
+  it('returns the original content when the humanized level is zero', () => {
+    const content = 'Simple draft with https://example.com and #Hashtag intact.';
+    const result = simulateManualTyping(content, baseToneStyle, { humanizedLevel: 0, rng: () => 0 });
+
+    expect(result).toBe(content);
+  });
+
+  it('injects manual typing artifacts while preserving urls and hashtags', () => {
+    const content = 'Real talk, capturing magic today with friends at https://example.com drop #GlowUp for love.';
+    const rng = createDeterministicRng([0, 0, 0, 0, 0, 0, 0]);
+
+    const result = simulateManualTyping(content, baseToneStyle, { humanizedLevel: 1, rng });
+
+    expect(result).toMatch(/no wait/i);
+    expect(result).toContain('  ');
+    expect(result).toContain('— wait, let me brag for a sec —');
+    expect(result).toContain('(oops meant extra glow)');
+    expect(result).toMatch(/~~\w+~~/);
+    expect(result).toContain('https://example.com');
+    expect(result).toContain('#GlowUp');
+  });
+});
+
+describe('generateAdvancedContent manual typing integration', () => {
+  const baseParams: ContentParameters = {
+    photoType: 'casual',
+    textTone: 'authentic',
+    style: 'default',
+    includePromotion: false,
+    selectedHashtags: [],
+    platform: 'instagram'
+  };
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('skips manual typing when humanizedLevel is not provided', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+
+    const result = generateAdvancedContent({ ...baseParams });
+
+    expect(result.content).not.toContain('oops meant');
+    expect(result.content).not.toContain('~~');
+  });
+
+  it('applies manual typing when humanizedLevel is positive', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+
+    const result = generateAdvancedContent({ ...baseParams, humanizedLevel: 1 });
+
+    expect(result.content).toMatch(/oops meant|~~/);
+  });
+});
