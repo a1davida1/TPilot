@@ -29,8 +29,15 @@ async function bootstrap(): Promise<void> {
 
   const startServer = (attemptPort: number, retryCount = 0): void => {
     const maxRetries = 3;
+    let startupTimeout: NodeJS.Timeout | null = null;
 
     server.removeAllListeners('error');
+
+    // Add startup timeout to prevent hanging
+    startupTimeout = setTimeout(() => {
+      logger.error(`Server startup timeout after 30 seconds on port ${attemptPort}`);
+      process.exit(1);
+    }, 30000);
 
     server.listen(
       {
@@ -39,6 +46,10 @@ async function bootstrap(): Promise<void> {
         reusePort: true,
       },
       () => {
+        // Clear timeout when server starts successfully
+        if (startupTimeout) {
+          clearTimeout(startupTimeout);
+        }
         logger.info(`serving on port ${attemptPort}`);
         if (attemptPort !== port) {
           logger.info(`Note: Using fallback port ${attemptPort} instead of ${port}`);
@@ -47,6 +58,11 @@ async function bootstrap(): Promise<void> {
     );
 
     server.on('error', (err: unknown) => {
+      // Clear timeout on error
+      if (startupTimeout) {
+        clearTimeout(startupTimeout);
+      }
+      
       const error = err as NodeJS.ErrnoException;
       if (error.code === 'EADDRINUSE') {
         logger.warn(`Port ${attemptPort} is in use`, { error: (error as Error).message });
