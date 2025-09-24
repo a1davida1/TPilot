@@ -41,7 +41,7 @@ const getOnboardingSteps = (completedSteps: Set<string>): OnboardingStep[] => [
   {
     id: 'welcome',
     title: 'Welcome to ThottoPilot',
-    description: 'Let\'s get you started with creating amazing content',
+    description: "Let's get you started with creating amazing content",
     completed: completedSteps.has('welcome'),
     optional: false,
     component: (
@@ -379,7 +379,7 @@ export default function UserOnboarding() {
     {
       id: 'first-content',
       title: 'Create Your First Content',
-      description: 'Let\'s generate your first piece of content together',
+      description: "Let's generate your first piece of content together",
       duration: '5 min',
       difficulty: 'beginner',
       category: 'Content Creation',

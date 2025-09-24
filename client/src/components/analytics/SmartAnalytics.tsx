@@ -10,7 +10,7 @@ import {
   PieChart, Pie, Cell, AreaChart, Area
 } from 'recharts';
 import {
-  TrendingUp, TrendingDown, Eye, Heart, MessageCircle, Share2, DollarSign,
+  TrendingUp, Eye, Heart, MessageCircle, Share2, DollarSign,
   Target, Clock, Zap, Star, Users, Calendar, Award, Brain, Sparkles
 } from 'lucide-react';
 
