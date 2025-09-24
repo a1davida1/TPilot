@@ -213,12 +213,22 @@ function createConversationalToneConfig(
   };
 
   if (experimentAssignment) {
+    const experimentalOverrides: ToneOverrides = { ...baseOverrides };
+
     if (isTreatmentVariant(experimentAssignment)) {
-      overrides.voiceMarkerProbability = Math.max(overrides.voiceMarkerProbability ?? 0.6, 0.75);
-      overrides.contractionProbability = Math.max(overrides.contractionProbability ?? 0.55, 0.65);
-    } else if (overrides.voiceMarkerProbability === undefined) {
-      overrides.voiceMarkerProbability = 0.45;
+      experimentalOverrides.voiceMarkerProbability = Math.max(
+        experimentalOverrides.voiceMarkerProbability ?? 0.6,
+        0.75
+      );
+      experimentalOverrides.contractionProbability = Math.max(
+        experimentalOverrides.contractionProbability ?? 0.55,
+        0.65
+      );
+    } else if (experimentalOverrides.voiceMarkerProbability === undefined) {
+      experimentalOverrides.voiceMarkerProbability = 0.45;
     }
+
+    overrides = experimentalOverrides;
   }
 
   return buildConversationalToneConfig(communityPack, overrides, random, params.platform);
@@ -1618,7 +1628,7 @@ function generateTitles(
   profiles: Record<string, PlatformProfile>
 ): string[] {
   const profile = profiles[params.platform] ?? profiles.default;
-  const maxSentenceLength = pickRandom(profile.maxSentenceLength);
+  const maxSentenceLengths = profile.maxSentenceLength;
   const emojiCount = pickRandom(profile.emojiDensity);
   const callToAction = pickRandom(profile.callToActions);
   const context: PlatformPostProcessContext = {

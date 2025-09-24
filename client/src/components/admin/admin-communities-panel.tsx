@@ -129,11 +129,11 @@ function communityToForm(community: AdminCommunity): CommunityFormState {
   const minKarmaValue = eligibility?.minKarma ?? legacyRules?.minKarma;
   const minAccountAgeValue = eligibility?.minAccountAge ?? legacyRules?.minAccountAge;
   const watermarksAllowedValue =
-    content?.watermarksAllowed ?? legacyRules?.watermarksAllowed;
-  const sellingPolicyValue = content?.sellingPolicy ?? legacyRules?.sellingAllowed ?? 'unspecified';
-  const titleRulesValue = content?.titleRules ?? legacyRules?.titleRules ?? [];
-  const contentRulesValue = content?.contentRules ?? legacyRules?.contentRules ?? [];
-  const linkRestrictionsValue = posting?.linkRestrictions ?? legacyRules?.linkRestrictions ?? [];
+    content?.watermarksAllowed ?? (legacyRules as any)?.watermarksAllowed;
+  const sellingPolicyValue = content?.sellingPolicy ?? (legacyRules as any)?.sellingAllowed ?? 'unspecified';
+  const titleRulesValue = (content as any)?.titleRules ?? (legacyRules as any)?.titleRules ?? [];
+  const contentRulesValue = (content as any)?.contentRules ?? (legacyRules as any)?.contentRules ?? [];
+  const linkRestrictionsValue = (posting as any)?.linkRestrictions ?? (legacyRules as any)?.linkRestrictions ?? [];
 
   return {
     id: community.id,
