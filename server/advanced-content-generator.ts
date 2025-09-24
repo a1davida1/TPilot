@@ -59,6 +59,13 @@ export interface ToneStyle {
   titlePatterns?: TitlePatternDefinition[];
 }
 
+interface PersonalToneConfig {
+  openers: string[];
+  customPromptIntros: string[];
+  promoHooks: string[];
+  closers: string[];
+}
+
 type TitlePatternType = 'statement' | 'question' | 'fragment';
 
 interface TitlePatternDefinition {
@@ -479,6 +486,119 @@ const textToneStyles: Record<ContentParameters['textTone'], ToneStyle> = {
 
 const fallbackConnectors = ['with that', 'featuring a', 'serving up the', 'bringing some', 'showing off the'];
 
+const personalToneConfigs: Record<ContentParameters['textTone'], PersonalToneConfig> = {
+  confident: {
+    openers: [
+      'Hey you, figured you deserved first look.',
+      'Giving you the private drop before anyone else sees it.',
+      'You keep asking for the bold moments first, so here we go.'
+    ],
+    customPromptIntros: [
+      'You asked me to channel',
+      'You nudged me toward',
+      'Taking your cue, I wrapped the shoot around'
+    ],
+    promoHooks: [
+      'The rest is locked in the VIP vault waiting on you.',
+      'Slide in when you want the full set—I tucked it aside for you.',
+      'Your private feed has the uncut shots queued just for you.'
+    ],
+    closers: [
+      'You keep me sharpening every detail just for you.',
+      'Now tell me if it hits the way you imagined.',
+      'Stay close and keep pushing me—I love giving you more.'
+    ]
+  },
+  playful: {
+    openers: [
+      'Hey you, come peek at this before the crowd catches up.',
+      'Pssst, sliding this to you first.',
+      'You get the sneaky peek, okay?'
+    ],
+    customPromptIntros: [
+      'Because you whispered about',
+      'Since you dared me to try',
+      'Following your little request for'
+    ],
+    promoHooks: [
+      'I hid the bloopers and extra spice in your stash—come grab them.',
+      'The secret folder with the rest is already labelled with your name.',
+      'Hop over to our spot; the bonus clips are lounging there for you.'
+    ],
+    closers: [
+      'Now tell me if it makes you blush like it did me.',
+      'Only you get to giggle at the full story with me.',
+      'Text me your reaction—I live for that little gasp.'
+    ]
+  },
+  mysterious: {
+    openers: [
+      'Lean in, I saved this secret for you.',
+      'Only you get this shadowy glimpse.',
+      'Sharing a hush-hush moment with you alone.'
+    ],
+    customPromptIntros: [
+      'You hinted that you craved',
+      'Because you murmured about',
+      'Following your quiet wish for'
+    ],
+    promoHooks: [
+      'The rest waits in the dark corner reserved for you.',
+      'You know the hidden doorway—step through when you want the rest.',
+      'Our secret stash has more, but only when you come looking.'
+    ],
+    closers: [
+      'Keep this between us and tell me how it makes you feel.',
+      'Whisper back if you want me to reveal even more.',
+      'I trust you to hold this secret close.'
+    ]
+  },
+  authentic: {
+    openers: [
+      'Sending this straight to you because you always get me.',
+      "You're the one I wanted to share this real moment with first.",
+      "Only you understand why this matters, so it's yours first."
+    ],
+    customPromptIntros: [
+      'Since you asked for something honest with',
+      'You told me you wanted more of',
+      'Because you crave the realness of'
+    ],
+    promoHooks: [
+      'The rest of the story is sitting in our private space waiting for you.',
+      'Come sit with me in the members corner—everything else is there for you.',
+      'Your subscription feed has the full heart-on-sleeve set queued up.'
+    ],
+    closers: [
+      'Thanks for letting me be this open with you.',
+      'Tell me how it lands—I trust your take.',
+      'Stay close; sharing it with you makes it feel safe.'
+    ]
+  },
+  sassy: {
+    openers: [
+      'Alright you, soak this in before anyone gets jealous.',
+      "Told you I'd spoil you first, so don't waste it.",
+      "You know you love being the favorite—here's proof."
+    ],
+    customPromptIntros: [
+      "Because you couldn't stop talking about",
+      'You dared me to go bigger with',
+      'Per your dramatic request for'
+    ],
+    promoHooks: [
+      'The rest is locked up with your name on it—come earn it.',
+      'I parked the wildest shots in your private gallery, so move.',
+      'Snag the rest in our corner before I change my mind.'
+    ],
+    closers: [
+      'Now remind me why you deserve round two.',
+      "Tell me you can handle more and maybe I'll believe you.",
+      "Don't keep me waiting if you want the encore."
+    ]
+  }
+};
+
 const fallbackTitlePatterns: TitlePatternDefinition[] = [
   { template: '{starter} {connector} {theme} session{punct}{emoji}', type: 'statement' },
   { template: '{starter} {theme} vibes just dropped{punct}{emoji}', type: 'statement' },
@@ -535,6 +655,22 @@ function cleanGeneratedTitle(value: string): string {
     .replace(/,\s*/gu, ', ')
     .replace(/\s{2,}/gu, ' ')
     .trim();
+}
+
+function ensureTerminalPunctuation(value: string): string {
+  const trimmed = value.trim();
+  if (trimmed.length === 0) {
+    return '';
+  }
+  return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
+}
+
+function capitalizeSentence(value: string): string {
+  const trimmed = value.trim();
+  if (trimmed.length === 0) {
+    return '';
+  }
+  return `${trimmed.charAt(0).toUpperCase()}${trimmed.slice(1)}`;
 }
 
 function renderTitleFromPattern(pattern: TitlePatternDefinition, context: TitlePatternContext): string {
@@ -1227,51 +1363,67 @@ function generateTitles(params: ContentParameters, photoConfig: PhotoConfig, ton
 }
 
 function generateMainContent(params: ContentParameters, photoConfig: PhotoConfig, toneStyle: ToneStyle): string {
-  const tonePool = toneFragmentPools[params.textTone] ?? toneFragmentPools['authentic'];
-  const photoPool = photoTypeFragmentPools[params.photoType] ?? photoTypeFragmentPools['casual'];
-  const context = createFragmentContext(toneStyle, photoConfig, tonePool.fillers, params.photoType);
+  const themes = photoConfig.themes;
+  const settings = photoConfig.settings;
+  const descriptors = toneStyle.descriptors;
+  const endings = toneStyle.endings;
+  const emojis = toneStyle.emojis;
+  const personalTone = personalToneConfigs[params.textTone];
 
-  const introSection = buildSection(tonePool.intro, context, { min: 2, max: 3, skipChance: 0.2 });
-  const bodySection = buildSection(photoPool.body, context, { min: 2, max: 3, skipChance: 0.25 });
+  const segments: string[] = [];
+  const starter = pickRandom(toneStyle.starters);
+  const opener = pickRandom(personalTone.openers);
+  const descriptor = pickRandom(descriptors);
+  const theme = pickRandom(themes);
+  const setting = pickRandom(settings);
+  const emoji = pickRandom(emojis);
 
-  const contentParts: string[] = [];
-  if (introSection) {
-    contentParts.push(introSection);
+  segments.push(`${opener} ${starter} I curated some ${descriptor} ${theme} moments in my ${setting} just for you ${emoji}.`);
+
+  if (params.photoType === 'casual') {
+    segments.push('Just me being my natural self for you—coffee in hand, messy hair, and that perfect morning light while I imagined you here with me.');
+  } else if (params.photoType === 'workout') {
+    segments.push('Pushed past my limits because I know you crave that post-session glow—every drop of sweat proof that I was thinking about you.');
+  } else if (params.photoType === 'shower') {
+    segments.push('Water, steam, and a room full of thoughts about you while the mirror fogged up like our private secret.');
+  } else if (params.photoType === 'showing-skin') {
+    segments.push('Turned the lens into a love letter—each curve and shadow composed with you in mind.');
+  } else if (params.photoType === 'spicy') {
+    segments.push('Let the heat rise just for you: silk sliding, shadows flickering, my gaze locked where I picture you standing.');
+  } else if (params.photoType === 'very-spicy') {
+    segments.push('Dropped every guard because you can handle it—raw passion, unapologetic and saved for your eyes only.');
+  } else if (params.photoType === 'all-xs') {
+    segments.push('Let myself go completely with you in mind—no limits, just the unfiltered truth I keep for you.');
+  } else if (params.photoType === 'needs_review') {
+    segments.push('Created something special that only you deserve to see—carefully curated with your desires in mind.');
   }
 
-  if (bodySection) {
-    contentParts.push(bodySection);
+  const customPrompt = params.customPrompt?.trim();
+  if (customPrompt) {
+    const promptIntro = pickRandom(personalTone.customPromptIntros);
+    segments.push(ensureTerminalPunctuation(`${promptIntro} ${customPrompt}`));
   }
 
-  // Add custom prompt integration
-  if (params.customPrompt) {
-    const connectors = [...tonePool.connectors, ...photoPool.connectors, ...generalConnectors];
-    const customSegment = buildCustomPromptSegment(params.customPrompt, connectors);
-    if (customSegment) {
-      contentParts.push(customSegment);
-    }
-  }
-
-  // Promotion integration
   if (params.includePromotion) {
-    const promoSection = buildSection(tonePool.promo, context, { min: 2, max: 3, skipChance: 0.3 });
-    if (promoSection) {
-      contentParts.push(promoSection);
-    }
+    segments.push(pickRandom(personalTone.promoHooks));
   }
 
-  if (toneStyle.endings.length > 0) {
-    contentParts.push(pickRandom(toneStyle.endings));
+  const ending = capitalizeSentence(ensureTerminalPunctuation(pickRandom(endings)));
+  const closer = pickRandom(personalTone.closers);
+  segments.push(`${ending} ${closer}`);
+
+  let content = segments.filter(segment => segment.trim().length > 0).join(' ');
+
+  if (params.selectedHashtags.length > 0) {
+    content += ` ${params.selectedHashtags.join(' ')}`;
   }
 
-  const hashtags = params.selectedHashtags.length > 0 ? ` ${params.selectedHashtags.join(' ')}` : '';
-  const baseContent = contentParts.join(' ').trim();
-  const humanized = applyHumanization(baseContent, toneStyle, {
+  const humanized = applyHumanization(content, toneStyle, {
     maxQuirks: params.humanization?.maxQuirks,
     random: params.humanization?.random
   });
 
-  return `${humanized}${hashtags}`;
+  return humanized;
 }
 
 function generatePhotoInstructions(params: ContentParameters, photoConfig: PhotoConfig): GeneratedContent['photoInstructions'] {
