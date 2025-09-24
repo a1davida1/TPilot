@@ -4,12 +4,34 @@ import express from 'express';
 import type { Express } from 'express';
 import { storage } from '../../server/storage.js';
 
+interface Perk {
+  id: string;
+  name: string;
+  category: string;
+  tier: string;
+  description: string;
+  signupProcess: string;
+  estimatedEarnings: string;
+  status: string;
+  features: string[];
+  commissionRate?: string;
+  requirements?: string[];
+  officialLink?: string;
+}
+
 // Mock auth module to simulate different authentication states
-const mockUsers = new Map<number, any>();
-let currentMockUser: any = null;
+interface MockUser {
+  id: number;
+  subscriptionTier?: string;
+  username: string;
+  tier?: string;
+}
+
+const mockUsers = new Map<number, MockUser>();
+let currentMockUser: MockUser | null = null;
 
 // Mock the auth middleware to simulate real behavior
-const mockAuthMiddleware = vi.fn((req: any, res: any, next: any) => {
+const mockAuthMiddleware = vi.fn((req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
   if (currentMockUser) {
     req.user = currentMockUser;
   }
@@ -238,7 +260,7 @@ describe('Pro Resources Integration', () => {
       });
 
       // Verify that at least one affiliate perk is returned
-      const affiliatePerks = response.body.perks.filter((perk: any) => perk.category === 'affiliate');
+      const affiliatePerks = response.body.perks.filter((perk: Perk) => perk.category === 'affiliate');
       expect(affiliatePerks.length).toBeGreaterThan(0);
     });
   });
@@ -440,7 +462,7 @@ describe('Pro Resources Integration', () => {
         .expect(200);
 
       // Verify each perk has all required fields
-      response.body.perks.forEach((perk: any) => {
+      response.body.perks.forEach((perk: Perk) => {
         expect(perk).toMatchObject({
           id: expect.any(String),
           name: expect.any(String),
@@ -481,13 +503,13 @@ describe('Pro Resources Integration', () => {
         .set('Authorization', 'Bearer mock-pro-token')
         .expect(200);
 
-      const affiliatePerks = response.body.perks.filter((perk: any) => perk.category === 'affiliate');
+      const affiliatePerks = response.body.perks.filter((perk: Perk) => perk.category === 'affiliate');
       
       // This is the main regression test - ensure at least one affiliate perk exists
       expect(affiliatePerks.length).toBeGreaterThan(0);
       
       // Verify affiliate perks have commission rates
-      affiliatePerks.forEach((perk: any) => {
+      affiliatePerks.forEach((perk: Perk) => {
         expect(perk.commissionRate || perk.estimatedEarnings).toBeTruthy();
       });
     });

@@ -1,0 +1,125 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/server/routes/caption.ts b/server/routes/caption.ts
+index 75aa67d1b29af93155458cd686661217114f1a53..854955cff049374372b4c7ee48b6320407e91023 100644
+--- a/server/routes/caption.ts
++++ b/server/routes/caption.ts
+@@ -1,37 +1,44 @@
+-import { Router, type Request, type Response } from 'express';
++import { Router, type Response } from 'express';
+ import { pipeline, InvalidImageError } from '../caption/geminiPipeline';
+ import { pipelineTextOnly } from '../caption/textOnlyPipeline';
+ import { pipelineRewrite } from '../caption/rewritePipeline';
+ import { storage } from '../storage';
+ import { authenticateToken, type AuthRequest } from '../middleware/auth';
+-import { insertContentGenerationSchema } from '@shared/schema';
+ import { z } from 'zod';
+ import { logger } from '../bootstrap/logger';
+ 
+ const router = Router();
+ 
++const extractCaption = (value: unknown): string | null => {
++  if (typeof value !== 'object' || value === null) {
++    return null;
++  }
++  const candidate = (value as { caption?: unknown }).caption;
++  return typeof candidate === 'string' ? candidate : null;
++};
++
+ const generateSchema = z.object({
+   imageUrl: z.string(),
+   platform: z.enum(['instagram', 'x', 'reddit', 'tiktok']),
+   voice: z.string().optional(),
+   style: z.string().optional(),
+   mood: z.string().optional(),
+   nsfw: z.boolean().optional()
+ });
+ 
+ const generateTextSchema = z.object({
+   platform: z.enum(['instagram', 'x', 'reddit', 'tiktok']),
+   voice: z.string().optional(),
+   style: z.string().optional(),
+   mood: z.string().optional(),
+   theme: z.string(),
+   context: z.string().optional(),
+   nsfw: z.boolean().optional()
+ });
+ 
+ const rewriteSchema = z.object({
+   platform: z.enum(['instagram', 'x', 'reddit', 'tiktok']),
+   voice: z.string().optional(),
+   style: z.string().optional(),
+   mood: z.string().optional(),
+   existingCaption: z.string(),
+diff --git a/server/routes/caption.ts b/server/routes/caption.ts
+index 75aa67d1b29af93155458cd686661217114f1a53..854955cff049374372b4c7ee48b6320407e91023 100644
+--- a/server/routes/caption.ts
++++ b/server/routes/caption.ts
+@@ -117,59 +124,62 @@ router.post('/generate-text', authenticateToken, async (req: AuthRequest, res: R
+         logger.error('Failed to save generation to database', { error: dbError });
+         // Don't fail the request if database save fails
+       }
+     }
+     
+     return res.status(200).json(result);
+     
+   } catch (e: unknown) {
+     const message = e instanceof Error ? e.message : "generation failed";
+     logger.error('Text caption generation error', { error: message });
+     if (e instanceof InvalidImageError) {
+       return res.status(422).json({ error: message });
+     }
+     return res.status(500).json({ error: message });
+   }
+ });
+ 
+ router.post('/rewrite', authenticateToken, async (req: AuthRequest, res: Response) => {
+   try {
+     const { platform, voice, style, mood, existingCaption, imageUrl, nsfw } = rewriteSchema.parse(req.body ?? {});
+     
+     const result = await pipelineRewrite({ platform, voice, style, mood, existingCaption, imageUrl, nsfw: nsfw || false });
+     
+     // Save generation to database
+     if (req.user?.id && result.final) {
+-      const finalResult = result.final as Record<string, any>;
++      const captionText = extractCaption(result.final);
++      if (!captionText) {
++        logger.warn('Caption rewrite result missing caption field', { provider: result.provider });
++      }
+       try {
+         await storage.createGeneration({
+           userId: req.user.id,
+           platform,
+           style: style || voice || 'default',
+           theme: 'rewrite',
+-          titles: [finalResult.caption || 'Generated content'],
+-          content: finalResult.caption || '',
++          titles: [captionText || 'Generated content'],
++          content: captionText || '',
+           photoInstructions: {
+             lighting: 'Natural lighting',
+             cameraAngle: 'Eye level',
+             composition: 'Center composition',
+             styling: 'Authentic styling',
+             mood: 'Confident and natural',
+             technicalSettings: 'Auto settings'
+           },
+           prompt: `Rewrite existing content for ${platform}: "${existingCaption.substring(0, 100)}..."`,
+           generationType: 'ai',
+           allowsPromotion: nsfw || false
+         });
+       } catch (dbError) {
+         logger.error('Failed to save generation to database', { error: dbError });
+         // Don't fail the request if database save fails
+       }
+     }
+     
+     return res.status(200).json(result);
+     
+   } catch (e: unknown) {
+     const message = e instanceof Error ? e.message : "rewrite failed";
+     logger.error('Caption rewrite error', { error: message });
+     if (e instanceof InvalidImageError) {
+       return res.status(422).json({ error: message });
+ 
+EOF
+)

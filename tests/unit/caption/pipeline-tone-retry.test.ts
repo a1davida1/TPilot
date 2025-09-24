@@ -123,8 +123,21 @@ const configureTextModelMock = (
   });
 };
 
-const extractVariantPrompts = (calls: any[][]) => calls
-  .map(call => call[0]?.[0]?.text ?? '')
+// Define proper call structure for mock calls
+interface MockCallPart {
+  text?: string;
+}
+
+const extractVariantPrompts = (calls: unknown[][]) => calls
+  .map(call => {
+    // Type guard to ensure call structure is what we expect
+    const firstArg = call[0];
+    if (Array.isArray(firstArg) && firstArg.length > 0) {
+      const part = firstArg[0] as MockCallPart;
+      return part.text ?? '';
+    }
+    return '';
+  })
   .filter(text => text.includes('PLATFORM:'));
 
 describe('Gemini pipelines keep persona tone on retry', () => {

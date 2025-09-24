@@ -16,8 +16,8 @@ app.use(express.json());
 setupAuth(app);
 
 // Helper function to extract auth credentials from response
-function extractAuthCredentials(response: any) {
-  const cookies = response.headers['set-cookie'] ?? [];
+function extractAuthCredentials(response: { headers: { [key: string]: unknown }; body?: { token?: string; accessToken?: string } }) {
+  const cookies = (response.headers['set-cookie'] as string[]) ?? [];
   const authCookie = cookies.find((c: string) => 
     c.includes('authToken') || c.includes('session') || c.includes('auth')
   );

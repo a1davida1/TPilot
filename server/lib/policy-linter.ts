@@ -84,9 +84,9 @@ const DEFAULT_RULES: RuleSpec = {
 /**
  * Coerce stored rule spec to ensure it has proper structure
  */
-function coerceRuleSpec(rawRules: any): RuleSpec {
+function coerceRuleSpec(rawRules: unknown): RuleSpec {
   // Handle legacy test format
-  if ('titleRegex' in rawRules || 'prohibitedLinks' in rawRules || 'maxLength' in rawRules || 'minLength' in rawRules) {
+  if (typeof rawRules === 'object' && rawRules !== null && ('titleRegex' in rawRules || 'prohibitedLinks' in rawRules || 'maxLength' in rawRules || 'minLength' in rawRules)) {
     const testRules = rawRules as TestRuleSpec;
     return {
       bannedWords: testRules.bannedWords || [],

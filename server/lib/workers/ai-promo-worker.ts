@@ -118,27 +118,47 @@ export class AiPromoWorker {
     }
   }
 
-  private async updateGenerationResults(generationId: number, results: any[]) {
+  private async updateGenerationResults(generationId: number, results: { content?: string | { body?: string; titles?: string[] }[] }[]) {
     try {
       // Use the first result to update the generation record
-      const firstResult: any = results[0];
+      const firstResult = results[0];
       if (firstResult?.content && firstResult.content.length > 0) {
-        const content = firstResult.content[0];
-        await db
-          .update(contentGenerations)
-          .set({
-            content: content.body || '',
-            titles: content.titles || [],
-            photoInstructions: {
-              lighting: 'Natural lighting preferred',
-              cameraAngle: 'Eye level angle',
-              composition: 'Center composition',
-              styling: 'Authentic styling',
-              mood: 'Confident and natural',
-              technicalSettings: 'Auto settings'
-            },
-          })
-          .where(eq(contentGenerations.id, generationId));
+        // Type guard to ensure content is an array before indexing
+        if (Array.isArray(firstResult.content)) {
+          const content = firstResult.content[0];
+          await db
+            .update(contentGenerations)
+            .set({
+              content: content.body || '',
+              titles: content.titles || [],
+              photoInstructions: {
+                lighting: 'Natural lighting preferred',
+                cameraAngle: 'Eye level angle',
+                composition: 'Center composition',
+                styling: 'Authentic styling',
+                mood: 'Confident and natural',
+                technicalSettings: 'Auto settings'
+              },
+            })
+            .where(eq(contentGenerations.id, generationId));
+        } else {
+          // Handle case where content is a string
+          await db
+            .update(contentGenerations)
+            .set({
+              content: firstResult.content,
+              titles: [],
+              photoInstructions: {
+                lighting: 'Natural lighting preferred',
+                cameraAngle: 'Eye level angle',
+                composition: 'Center composition',
+                styling: 'Authentic styling',
+                mood: 'Confident and natural',
+                technicalSettings: 'Auto settings'
+              },
+            })
+            .where(eq(contentGenerations.id, generationId));
+        }
       }
 
     } catch (error) {

@@ -96,7 +96,7 @@ describe('Reddit Communities Schema Integration', () => {
     expect(Array.isArray(response.body)).toBe(true);
     
     // Find a community that has some of the new fields
-    const communityWithRules = response.body.find((community: any) => 
+    const communityWithRules = response.body.find((community: { rules?: { [key: string]: unknown } }) => 
       community.rules && Object.keys(community.rules).length > 2
     );
     

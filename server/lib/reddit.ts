@@ -1575,13 +1575,22 @@ export class RedditManager {
       const publicSubmissions = publicSubmissionsResult.submissions;
 
       // Create sets for easy comparison
-      const selfPostIds = new Set(recentSubmissions.map((sub: any) => sub.id));
+      interface SubmissionRecord {
+        id: string;
+        permalink: string;
+        title?: string;
+        num_comments?: number;
+        ups?: number;
+        created_utc?: number;
+      }
+      
+      const selfPostIds = new Set(recentSubmissions.map((sub: SubmissionRecord) => sub.id));
       const publicPostIds = new Set(publicSubmissions.map(sub => sub.id));
 
       // Find hidden posts (in self view but not in public view)
       const hiddenPosts = recentSubmissions
-        .filter((sub: any) => !publicPostIds.has(sub.id))
-        .map((sub: any) => ({
+        .filter((sub: SubmissionRecord) => !publicPostIds.has(sub.id))
+        .map((sub: SubmissionRecord) => ({
           id: sub.id,
           title: sub.title,
           createdUtc: sub.created_utc

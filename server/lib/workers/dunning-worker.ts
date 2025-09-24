@@ -6,6 +6,20 @@ import { eq } from "drizzle-orm";
 import { logger } from "../logger.js";
 import fetch from "node-fetch";
 
+interface SubscriptionRecord {
+  id: number;
+  userId: number;
+  amount: number;
+  stripeCustomerId?: string;
+  ccbillSubscriptionId?: string;
+  paymentMethodId?: string;
+}
+
+interface UserRecord {
+  id: number;
+  email: string;
+}
+
 interface RetryResult {
   success: boolean;
   provider: 'stripe' | 'ccbill';
@@ -125,7 +139,7 @@ export class DunningWorker {
     return subscription ?? null;
   }
 
-  private async retryPayment(subscription: any): Promise<RetryResult> {
+  private async retryPayment(subscription: SubscriptionRecord): Promise<RetryResult> {
     try {
       logger.info(`Attempting payment retry for subscription ${subscription.id}`);
       
@@ -144,7 +158,7 @@ export class DunningWorker {
     }
   }
 
-  private async retryStripePayment(subscription: any): Promise<RetryResult> {
+  private async retryStripePayment(subscription: SubscriptionRecord): Promise<RetryResult> {
     try {
       const { default: Stripe } = await import('stripe');
       const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -172,13 +186,14 @@ export class DunningWorker {
           provider: 'stripe'
         };
       }
-    } catch (error: any) {
-      const errorMessage = error?.decline_code || error?.message || 'Payment failed';
+    } catch (error: unknown) {
+      const errorObj = error as { decline_code?: string; message?: string };
+      const errorMessage = errorObj.decline_code || errorObj.message || 'Payment failed';
       return { success: false, error: errorMessage, provider: 'stripe' };
     }
   }
 
-  private async retryCCBillPayment(subscription: any): Promise<RetryResult> {
+  private async retryCCBillPayment(subscription: SubscriptionRecord): Promise<RetryResult> {
     try {
       const res = await fetch('https://datalink.ccbill.com/', {
         method: 'POST',

@@ -178,7 +178,7 @@ export async function variantsRewrite(params: RewriteVariantsParams) {
   const mandatoryTokens = params.doNotDrop && params.doNotDrop.length > 0
     ? `MANDATORY TOKENS: ${params.doNotDrop.join(" | ")}`
     : "";
-  const variants: any[] = [];
+  const variants: { caption: string; hashtags: string[]; cta?: string; alt?: string }[] = [];
 
   while (attempts < VARIANT_RETRY_LIMIT && variants.length < VARIANT_TARGET) {
     attempts += 1;

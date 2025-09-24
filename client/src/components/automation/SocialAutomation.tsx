@@ -15,7 +15,7 @@ export function SocialAutomation() {
   const [postFrequency, setPostFrequency] = useState([3]);
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['reddit', 'twitter']);
   const [jobId, setJobId] = useState<string | null>(null);
-  const [posts, setPosts] = useState<any[]>([]);
+  const [posts, setPosts] = useState<{ id: string; content: string; platform: string; status: string; timestamp: string }[]>([]);
 
   const handleQuickPost = async () => {
     const caption = localStorage.getItem('latestCaption') || '';

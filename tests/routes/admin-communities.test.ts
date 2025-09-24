@@ -54,7 +54,7 @@ describe('Admin Communities Routes', () => {
     
     // Reset mocks and setup default successful auth
     vi.clearAllMocks();
-    mockAuthenticateToken.mockImplementation((req: any, res: any, next: any) => {
+    mockAuthenticateToken.mockImplementation((req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
       req.user = {
         id: 1,
         username: 'admin',
@@ -65,7 +65,7 @@ describe('Admin Communities Routes', () => {
       };
       next();
     });
-    mockRequireAdmin.mockImplementation((req: any, res: any, next: any) => {
+    mockRequireAdmin.mockImplementation((req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
       next();
     });
   });
@@ -309,7 +309,7 @@ describe('Admin Communities Routes', () => {
 
   describe('Authentication and Authorization', () => {
     it('should return 401 when no authentication token is provided', async () => {
-      mockAuthenticateToken.mockImplementation((req: any, res: any, next: any) => {
+      mockAuthenticateToken.mockImplementation((req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
         res.status(401).json({ error: 'Access token required' });
       });
 
@@ -321,7 +321,7 @@ describe('Admin Communities Routes', () => {
     });
 
     it('should return 403 when user is not admin', async () => {
-      mockAuthenticateToken.mockImplementation((req: any, res: any, next: any) => {
+      mockAuthenticateToken.mockImplementation((req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
         req.user = {
           id: 2,
           username: 'regular_user',
@@ -333,7 +333,7 @@ describe('Admin Communities Routes', () => {
         next();
       });
       
-      mockRequireAdmin.mockImplementation((req: any, res: any, next: any) => {
+      mockRequireAdmin.mockImplementation((req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
         res.status(403).json({ message: 'Admin access required' });
       });
 

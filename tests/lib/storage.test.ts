@@ -21,7 +21,7 @@ vi.mock('../../server/db', () => ({ db: mockDb }));
 
 // Mock the storage layer
 const mockStorage = {
-  async createUser(userData: any) {
+  async createUser(userData: { username?: string; email?: string; tier?: string }) {
     return {
       id: 1,
       ...userData,

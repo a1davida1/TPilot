@@ -58,7 +58,7 @@ export async function openAICaptionFallback({
       alt: compliance.alt,
     });
   }
-  let messages: any[] = [];
+  let messages: { role: "system" | "user" | "assistant"; content: string | { type: string; image_url?: { url: string }; text?: string }[] }[] = [];
   const sanitizedExistingCaption = existingCaption ? serializePromptField(existingCaption) : undefined;
   const voiceContext = formatVoiceContext(voice);
   const systemVoiceSuffix = voiceContext ? `\n${voiceContext}` : '';

@@ -45,10 +45,25 @@ interface SyncResult {
   errors: string[];
 }
 
+interface SubredditData {
+  display_name?: string;
+  public_description?: string;
+  description?: string;
+  subscribers?: number;
+  active_user_count?: number;
+  subreddit_type?: string;
+}
+
+interface EngagementMetrics {
+  avgUpvotes: number;
+  avgComments: number;
+  postFrequency: number;
+}
+
 /**
  * Normalize subreddit data for database insertion
  */
-function normalizeSubredditData(subreddit: any, engagementMetrics: any) {
+function normalizeSubredditData(subreddit: SubredditData, engagementMetrics: EngagementMetrics) {
   const name = subreddit.display_name?.toLowerCase() || '';
   const displayName = subreddit.display_name || '';
   const description = subreddit.public_description || subreddit.description || '';
@@ -116,7 +131,7 @@ function normalizeSubredditData(subreddit: any, engagementMetrics: any) {
 /**
  * Calculate engagement metrics for a subreddit
  */
-async function calculateEngagementMetrics(reddit: snoowrap, subredditName: string): Promise<any> {
+async function calculateEngagementMetrics(reddit: snoowrap, subredditName: string): Promise<EngagementMetrics> {
   try {
     // Fetch recent posts to calculate engagement metrics
     const subreddit = reddit.getSubreddit(subredditName);
@@ -159,11 +174,11 @@ async function syncSubreddit(reddit: snoowrap, subredditName: string, retryCount
     logger.info(`Syncing r/${subredditName}...`);
     
     // Fetch subreddit info
-    const subreddit = await new Promise((resolve, reject) => {
+    const subreddit = await new Promise<SubredditData>((resolve, reject) => {
       reddit.getSubreddit(subredditName).fetch()
         .then(resolve)
         .catch(reject);
-    }) as any;
+    });
     
     // Calculate engagement metrics
     const engagementMetrics = await calculateEngagementMetrics(reddit, subredditName);

@@ -24,7 +24,7 @@ vi.mock('../../server/bootstrap/logger.js', () => ({
 
 // Mock authentication middleware to bypass JWT issues in tests
 vi.mock('../../server/middleware/auth.js', () => ({
-  authenticateToken: vi.fn((req: any, res: any, next: any) => {
+  authenticateToken: vi.fn((req: { headers: { authorization?: string }; user?: unknown }, res: { status: (code: number) => { json: (data: unknown) => unknown } }, next: () => unknown) => {
     // Mock user for authenticated requests
     const authHeader = req.headers['authorization'];
     if (authHeader && authHeader.startsWith('Bearer ')) {

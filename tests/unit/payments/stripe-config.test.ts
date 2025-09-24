@@ -4,14 +4,14 @@ import type { Logger } from "winston";
 
 // Test interfaces - Create a proper mock that matches Pick<Logger, "error">
 interface MockLogger {
-  error: (message: any, ...meta: any[]) => Logger;
+  error: (message: string | object, ...meta: unknown[]) => Logger;
 }
 
 describe("deriveStripeConfig", () => {
   test("returns null when secret key is absent", () => {
     const errors: string[] = [];
     const logger: MockLogger = {
-      error(message: any, ...meta: any[]): Logger {
+      error(message: string | object, ...meta: unknown[]): Logger {
         errors.push(typeof message === 'string' ? message : String(message));
         return this as Logger;
       },
@@ -29,7 +29,7 @@ describe("deriveStripeConfig", () => {
   test("returns configuration when key and version are valid", () => {
     const errors: string[] = [];
     const logger: MockLogger = {
-      error(message: any, ...meta: any[]): Logger {
+      error(message: string | object, ...meta: unknown[]): Logger {
         errors.push(typeof message === 'string' ? message : String(message));
         return this as Logger;
       },
@@ -53,7 +53,7 @@ describe("deriveStripeConfig", () => {
   test("throws when secret key exists but version is missing", () => {
     const errors: string[] = [];
     const logger: MockLogger = {
-      error(message: any, ...meta: any[]): Logger {
+      error(message: string | object, ...meta: unknown[]): Logger {
         errors.push(typeof message === 'string' ? message : String(message));
         return this as Logger;
       },
@@ -74,7 +74,7 @@ describe("deriveStripeConfig", () => {
   test("throws when version format is invalid", () => {
     const errors: string[] = [];
     const logger: MockLogger = {
-      error(message: any, ...meta: any[]): Logger {
+      error(message: string | object, ...meta: unknown[]): Logger {
         errors.push(typeof message === 'string' ? message : String(message));
         return this as Logger;
       },
@@ -95,7 +95,7 @@ describe("deriveStripeConfig", () => {
   });
 
   test("accepts valid date formats", () => {
-    const logger: MockLogger = { error: function(message: any, ...meta: any[]): Logger { return this as Logger; } };
+    const logger: MockLogger = { error: function(message: string | object, ...meta: unknown[]): Logger { return this as Logger; } };
     const validVersions = ["2023-10-16", "2024-01-01", "2025-12-31"];
 
     for (const version of validVersions) {

@@ -16,7 +16,7 @@ vi.mock('@tanstack/react-query', async () => {
 
   return {
     ...actual,
-    useQuery: (options: any) => mockUseQuery(options),
+    useQuery: (options: { queryKey: unknown[] }) => mockUseQuery(options),
     useMutation: () => mockUseMutation(),
     useQueryClient: () => ({
       invalidateQueries: mockInvalidateQueries,
@@ -164,7 +164,7 @@ describe('RedditPosting community picker', () => {
       },
     ];
 
-    mockUseQuery.mockImplementation(({ queryKey }: any) => {
+    mockUseQuery.mockImplementation(({ queryKey }: { queryKey: unknown[] }) => {
       const key = Array.isArray(queryKey) ? queryKey[0] : queryKey;
       switch (key) {
         case '/api/reddit/accounts':

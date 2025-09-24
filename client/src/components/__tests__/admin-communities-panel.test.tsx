@@ -20,9 +20,14 @@ vi.mock('@tanstack/react-query', async () => {
     '@tanstack/react-query'
   );
 
+  interface QueryOptions {
+    queryKey: string[];
+    [key: string]: unknown;
+  }
+
   return {
     ...actual,
-    useQuery: (options: any) => mockUseQuery(options),
+    useQuery: (options: QueryOptions) => mockUseQuery(options),
     useMutation: () => mockUseMutation(),
     useQueryClient: () => ({
       invalidateQueries: mockInvalidateQueries,
@@ -38,7 +43,7 @@ vi.mock('@/hooks/use-toast', () => ({
 // Helper to create structured rules
 const createStructuredRules = (
   sellingPolicy: RedditCommunitySellingPolicy,
-  overrides: any = {}
+  overrides: Record<string, unknown> = {}
 ) => {
   const baseRules = {
     content: {
@@ -58,7 +63,7 @@ const createStructuredRules = (
   };
 
   // Deep merge overrides
-  const mergeDeep = (target: any, source: any) => {
+  const mergeDeep = (target: Record<string, unknown>, source: Record<string, unknown>) => {
     for (const key in source) {
       if (source[key] instanceof Object && key in target && target[key] instanceof Object) {
         mergeDeep(target[key], source[key]);
@@ -73,7 +78,7 @@ const createStructuredRules = (
 };
 
 vi.mock('@/hooks/use-admin-communities', () => ({
-  useAdminCommunities: (filters?: any) => mockUseQuery({ queryKey: ['admin-communities', filters] }),
+  useAdminCommunities: (filters?: Record<string, unknown>) => mockUseQuery({ queryKey: ['admin-communities', filters] }),
   useCreateCommunity: () => mockUseMutation(),
   useUpdateCommunity: () => mockUseMutation(),
   useDeleteCommunity: () => mockUseMutation(),
