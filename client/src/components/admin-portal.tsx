@@ -152,9 +152,9 @@ export function AdminPortal() {
   });
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [actionType, setActionType] = useState<string | null>(null);
-  const [duration, setDuration] = useState<string>('24');
-  const [tempPassword, setTempPassword] = useState<string>('');
-  const [reason, setReason] = useState<string>('');
+  const [_duration, _setDuration] = useState<string>('24');
+  const [_tempPassword, _setTempPassword] = useState<string>('');
+  const [_reason, _setReason] = useState<string>('');
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
   
@@ -192,12 +192,12 @@ export function AdminPortal() {
   });
 
   // Fetch all users
-  const { data: users, isLoading: usersLoading, error: _usersError } = useQuery<unknown[]>({
+  const { data: users, isLoading: usersLoading, error: _usersError } = useQuery<UserData[]>({
     queryKey: ['/api/admin/users'],
     enabled: !!currentUser
   });
   
-  const typedUsers: UserData[] = users as UserData[] || [];
+  const typedUsers: UserData[] = users || [];
 
   // Create trial user mutation
   const createTrialMutation = useMutation({
@@ -279,7 +279,7 @@ export function AdminPortal() {
     }
   };
 
-  const handleAction = () => {
+  const _handleAction = () => {
     if (!selectedUser || !actionType) return;
     
     if (actionType === 'reset-password') {
@@ -291,7 +291,7 @@ export function AdminPortal() {
       actionMutation.mutate({ 
         userId: (selectedUser as any).id, 
         action: actionType, 
-        duration: actionType === 'suspend' ? duration : undefined 
+        duration: actionType === 'suspend' ? _duration : undefined 
       });
     }
   };
