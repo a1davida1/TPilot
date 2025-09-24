@@ -14,11 +14,11 @@ import {
   Search,
   Filter,
   Clock,
-  Zap,
   BarChart3,
   RefreshCw,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Zap
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 

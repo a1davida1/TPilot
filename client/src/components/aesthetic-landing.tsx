@@ -7,22 +7,14 @@ import {
   Sparkles, 
   Brain, 
   Shield, 
-  ImageIcon as _ImageIcon,
   TrendingUp,
-  Zap,
   Star,
-  ArrowRight as _ArrowRight,
   Check,
-  Globe as _Globe,
   Lock,
-  Palette as _Palette,
   Users,
-  Heart as _Heart,
   Eye,
-  MessageCircle,
   DollarSign,
   Target,
-  Rocket,
   Crown
 } from "lucide-react";
 import { EnhancedAIGenerator } from "@/components/enhanced-ai-generator";

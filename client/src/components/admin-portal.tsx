@@ -131,6 +131,18 @@ interface TrialRequest {
   tier: 'starter' | 'pro';
 }
 
+interface AdminActionRequest {
+  userId: number;
+  action: 'ban' | 'suspend' | 'unban' | 'reset-password' | 'force-logout';
+  reason?: string;
+  duration?: string;
+  hours?: number;
+}
+
+interface PasswordResetResponse {
+  tempPassword: string;
+}
+
 export function AdminPortal() {
   const [trialForm, setTrialForm] = useState<TrialRequest>({
     email: '',
@@ -1268,7 +1280,8 @@ function UserManagementTab({ authenticatedRequest, users }: { authenticatedReque
 
   const actionMutation = useMutation({
     mutationFn: async (data: unknown) => {
-      switch ((data as any).action) {
+      const actionData = data as AdminActionRequest;
+      switch (actionData.action) {
         case 'ban':
           return authenticatedRequest('/api/admin/ban-user', 'POST', data);
         case 'unban':
@@ -1282,14 +1295,15 @@ function UserManagementTab({ authenticatedRequest, users }: { authenticatedReque
       }
     },
     onSuccess: (data, variables) => {
-      if ((variables as any).action === 'reset-password') {
-        setTempPassword((data as any).tempPassword);
+      const actionVars = variables as AdminActionRequest;
+      if (actionVars.action === 'reset-password') {
+        setTempPassword((data as PasswordResetResponse).tempPassword);
         toast({ 
           title: "Password Reset Successful", 
           description: "Temporary password generated. User must change on next login."
         });
       } else {
-        toast({ title: `User ${(variables as any).action} successful` });
+        toast({ title: `User ${actionVars.action} successful` });
         setSelectedUser(null);
         setActionType(null);
         setReason('');
@@ -1308,14 +1322,14 @@ function UserManagementTab({ authenticatedRequest, users }: { authenticatedReque
     if (!selectedUser || !actionType) return;
     if (actionType !== 'reset-password' && !reason) return;
     
-    const actionData: unknown = {
-      userId: (selectedUser as any).id,
+    const actionData: AdminActionRequest = {
+      userId: (selectedUser as UserData).id,
       action: actionType,
       reason: actionType === 'reset-password' ? 'Admin password reset' : reason
     };
 
     if (actionType === 'suspend') {
-      (actionData as any).hours = parseInt(duration);
+      actionData.hours = parseInt(duration);
     }
 
     actionMutation.mutate(actionData);
