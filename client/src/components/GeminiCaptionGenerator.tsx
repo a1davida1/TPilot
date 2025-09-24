@@ -27,6 +27,19 @@ const VOICES = [
   { value: "cozy_girl", label: "Cozy Girl" }
 ];
 
+const FALLBACK_ERROR_INDICATORS = [
+  "invalid image",
+  "image data",
+  "failed to fetch image",
+  "unsupported content-type",
+  "could not process image",
+  "couldn't process image",
+  "unable to process image",
+  "image processing failed",
+  "image could not be processed",
+  "base64"
+];
+
 function isApiError(error: unknown): error is ApiError {
   return (
     typeof error === "object" &&
@@ -35,6 +48,19 @@ function isApiError(error: unknown): error is ApiError {
     typeof (error as { status: unknown }).status === "number" &&
     "statusText" in error &&
     typeof (error as { statusText: unknown }).statusText === "string"
+  );
+}
+
+function shouldUseTextFallback(error: ApiError): boolean {
+  if (error.status === 422) {
+    return true;
+  }
+
+  const normalizedMessage = `${error.userMessage ?? ""} ${error.message ?? ""} ${error.statusText ?? ""}`
+    .toLowerCase();
+
+  return FALLBACK_ERROR_INDICATORS.some(indicator =>
+    normalizedMessage.includes(indicator)
   );
 }
 
@@ -97,9 +123,37 @@ export function GeminiCaptionGenerator() {
       });
     } catch (err: unknown) {
       console.error('Generation error:', err);
-      const message = isApiError(err)
-        ? err.userMessage ?? err.message ?? 'Failed to generate caption'
-        : getErrorMessage(err);
+      let finalError: unknown = err;
+
+      if (isApiError(err) && shouldUseTextFallback(err)) {
+        try {
+          const fallbackResponse = await apiRequest('POST', '/api/caption/generate-text', {
+            platform,
+            voice,
+            style: 'authentic',
+            mood: 'engaging',
+            theme: 'Image fallback caption',
+            context: 'Auto-generated because the supplied image could not be processed.',
+            nsfw: false
+          });
+
+          const fallbackResult = await fallbackResponse.json();
+          setCaptionData(fallbackResult);
+          toast({
+            title: "Fallback caption generated",
+            description: "We couldn't process the image, so we created a text-based caption instead.",
+          });
+          return;
+        } catch (fallbackError: unknown) {
+          console.error('Fallback generation error:', fallbackError);
+          finalError = fallbackError;
+        }
+      }
+
+      const rawMessage = isApiError(finalError)
+        ? finalError.userMessage ?? finalError.message ?? 'Failed to generate caption'
+        : getErrorMessage(finalError);
+      const message = rawMessage ?? 'Failed to generate caption';
       setError(message);
       toast({
         title: "Generation failed",

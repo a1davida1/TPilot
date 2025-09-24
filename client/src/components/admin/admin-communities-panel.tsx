@@ -122,6 +122,19 @@ function parseList(value: string): string[] | undefined {
 }
 
 function communityToForm(community: AdminCommunity): CommunityFormState {
+  const eligibility = community.rules?.eligibility ?? null;
+  const content = community.rules?.content ?? null;
+  const posting = community.rules?.posting ?? null;
+  const legacyRules = community.rules ?? null;
+  const minKarmaValue = eligibility?.minKarma ?? legacyRules?.minKarma;
+  const minAccountAgeValue = eligibility?.minAccountAge ?? legacyRules?.minAccountAge;
+  const watermarksAllowedValue =
+    content?.watermarksAllowed ?? legacyRules?.watermarksAllowed;
+  const sellingPolicyValue = content?.sellingPolicy ?? legacyRules?.sellingAllowed ?? 'unspecified';
+  const titleRulesValue = content?.titleRules ?? legacyRules?.titleRules ?? [];
+  const contentRulesValue = content?.contentRules ?? legacyRules?.contentRules ?? [];
+  const linkRestrictionsValue = posting?.linkRestrictions ?? legacyRules?.linkRestrictions ?? [];
+
   return {
     id: community.id,
     name: community.name,
@@ -136,18 +149,18 @@ function communityToForm(community: AdminCommunity): CommunityFormState {
     postingLimitsCooldownHours: community.postingLimits?.cooldownHours
       ? String(community.postingLimits.cooldownHours)
       : '',
-    rulesMinKarma: community.rules?.eligibility?.minKarma !== undefined ? String(community.rules.eligibility.minKarma) : '',
-    rulesMinAccountAge: community.rules?.eligibility?.minAccountAgeDays !== undefined ? String(community.rules.eligibility.minAccountAgeDays) : '',
+    rulesMinKarma: minKarmaValue !== undefined ? String(minKarmaValue) : '',
+    rulesMinAccountAge: minAccountAgeValue !== undefined ? String(minAccountAgeValue) : '',
     rulesWatermarksAllowed:
-      community.rules?.content?.watermarksAllowed === true
+      watermarksAllowedValue === true
         ? 'allowed'
-        : community.rules?.content?.watermarksAllowed === false
+        : watermarksAllowedValue === false
           ? 'disallowed'
           : 'unspecified',
-    rulesSellingAllowed: community.rules?.content?.sellingPolicy ?? 'unspecified',
-    rulesTitleRules: (community.rules?.content?.titleGuidelines ?? []).join('\n'),
-    rulesContentRules: (community.rules?.content?.contentGuidelines ?? []).join('\n'),
-    rulesLinkRestrictions: (community.rules?.content?.linkRestrictions ?? []).join('\n'),
+    rulesSellingAllowed: sellingPolicyValue,
+    rulesTitleRules: titleRulesValue.join('\n'),
+    rulesContentRules: contentRulesValue.join('\n'),
+    rulesLinkRestrictions: linkRestrictionsValue.join('\n'),
     bestPostingTimes: (community.bestPostingTimes ?? []).join(', '),
     averageUpvotes: community.averageUpvotes !== null && community.averageUpvotes !== undefined
       ? String(community.averageUpvotes)
@@ -241,19 +254,31 @@ function formToPayload(form: CommunityFormState): CommunityPayload {
 
 function RuleSummary({ community }: { community: AdminCommunity }) {
   const ruleItems: string[] = [];
-  if (community.rules?.eligibility?.minKarma !== undefined) {
-    ruleItems.push(`Min Karma ${community.rules.eligibility.minKarma}`);
+  const rules = community.rules ?? null;
+  const eligibility = rules?.eligibility ?? null;
+  const content = rules?.content ?? null;
+  const posting = rules?.posting ?? null;
+
+  const minKarma = eligibility?.minKarma ?? rules?.minKarma;
+  const minAccountAge = eligibility?.minAccountAge ?? rules?.minAccountAge;
+  const watermarksAllowed = content?.watermarksAllowed ?? rules?.watermarksAllowed;
+  const titleRules = content?.titleRules ?? rules?.titleRules ?? [];
+  const contentRules = content?.contentRules ?? rules?.contentRules ?? [];
+  const linkRestrictions = posting?.linkRestrictions ?? rules?.linkRestrictions ?? [];
+  const sellingPolicy = content?.sellingPolicy ?? rules?.sellingAllowed;
+
+  if (minKarma !== undefined) {
+    ruleItems.push(`Min Karma ${minKarma}`);
   }
-  if (community.rules?.eligibility?.minAccountAgeDays !== undefined) {
-    ruleItems.push(`Account ${community.rules.eligibility.minAccountAgeDays}d`);
+  if (minAccountAge !== undefined) {
+    ruleItems.push(`Account ${minAccountAge}d`);
   }
-  if (community.rules?.content?.watermarksAllowed === true) {
+  if (watermarksAllowed === true) {
     ruleItems.push('Watermarks allowed');
   }
-  if (community.rules?.content?.watermarksAllowed === false) {
+  if (watermarksAllowed === false) {
     ruleItems.push('No watermarks');
   }
-  const sellingPolicy = community.rules?.content?.sellingPolicy;
   if (sellingPolicy === 'allowed') {
     ruleItems.push('Selling allowed');
   } else if (sellingPolicy === 'limited') {
@@ -263,13 +288,13 @@ function RuleSummary({ community }: { community: AdminCommunity }) {
   } else if (sellingPolicy === 'unknown') {
     ruleItems.push('Selling policy unknown');
   }
-  if ((community.rules?.content?.titleGuidelines?.length ?? 0) > 0) {
-    ruleItems.push(`${community.rules?.content?.titleGuidelines?.length ?? 0} title rules`);
+  if (titleRules.length > 0) {
+    ruleItems.push(`${titleRules.length} title rules`);
   }
-  if ((community.rules?.content?.contentGuidelines?.length ?? 0) > 0) {
-    ruleItems.push(`${community.rules?.content?.contentGuidelines?.length ?? 0} content rules`);
+  if (contentRules.length > 0) {
+    ruleItems.push(`${contentRules.length} content rules`);
   }
-  if ((community.rules?.content?.linkRestrictions?.length ?? 0) > 0) {
+  if (linkRestrictions.length > 0) {
     ruleItems.push('Link restrictions');
   }
   return (
@@ -333,7 +358,7 @@ export function AdminCommunitiesPanel({ canManage }: AdminCommunitiesPanelProps)
   const handleSubmit = async () => {
     try {
       const payload = formToPayload(formState);
-      
+
       if (editingCommunity) {
         await updateMutation.mutateAsync({ id: editingCommunity.id, payload });
         toast({ title: 'Community updated successfully' });
@@ -341,7 +366,7 @@ export function AdminCommunitiesPanel({ canManage }: AdminCommunitiesPanelProps)
         await createMutation.mutateAsync(payload);
         toast({ title: 'Community created successfully' });
       }
-      
+
       setIsCreateOpen(false);
       setEditingCommunity(null);
       setFormState(defaultFormState);
@@ -589,7 +614,7 @@ export function AdminCommunitiesPanel({ canManage }: AdminCommunitiesPanelProps)
                 : 'Add a new Reddit community to the directory.'}
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="grid gap-6">
             {/* Basic Information */}
             <div className="space-y-4">
@@ -668,7 +693,7 @@ export function AdminCommunitiesPanel({ canManage }: AdminCommunitiesPanelProps)
                   </Select>
                 </div>
               </div>
-              
+
               <div className="flex items-center space-x-2">
                 <Switch
                   id="verificationRequired"
@@ -741,7 +766,7 @@ export function AdminCommunitiesPanel({ canManage }: AdminCommunitiesPanelProps)
                   </Select>
                 </div>
               </div>
-              
+
               <div className="grid gap-4 md:grid-cols-3">
                 <div className="space-y-2">
                   <Label htmlFor="rulesTitleRules">Title Rules (one per line)</Label>
@@ -859,7 +884,7 @@ export function AdminCommunitiesPanel({ canManage }: AdminCommunitiesPanelProps)
                   </Select>
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
                 <Textarea
@@ -871,7 +896,7 @@ export function AdminCommunitiesPanel({ canManage }: AdminCommunitiesPanelProps)
                 />
               </div>
             </div>
-            
+
             {/* Action Buttons */}
             <div className="flex justify-end gap-2">
               <Button

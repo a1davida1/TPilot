@@ -47,7 +47,7 @@ interface AuthUser {
   isAdmin?: boolean;
 }
 
-// Auth request interface that includes user  
+// Auth request interface that includes user
 type SessionUser = typeof users.$inferSelect & { subscriptionTier?: string | null };
 
 interface AuthenticatedRequest extends express.Request {
@@ -112,10 +112,10 @@ function registerProResourcesRoutes(app: Express) {
   app.get('/api/pro-resources', authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       if (!req.user?.id) {
-        return res.status(403).json({ 
-          perks: [], 
+        return res.status(403).json({
+          perks: [],
           accessGranted: false,
-          message: "Authentication required for pro resources" 
+          message: "Authentication required for pro resources"
         });
       }
 
@@ -141,10 +141,10 @@ function registerProResourcesRoutes(app: Express) {
 
     } catch (error) {
       logger.error("Pro resources error:", error);
-      res.status(500).json({ 
-        perks: [], 
+      res.status(500).json({
+        perks: [],
         accessGranted: false,
-        message: "Failed to load pro resources" 
+        message: "Failed to load pro resources"
       });
     }
   });
@@ -210,7 +210,8 @@ import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage.js";
 import { getRandomTemplates, addWatermark, getTemplateByMood } from "./content-templates.js";
 import { generateAdvancedContent, type ContentParameters } from "./advanced-content-generator.js";
 // Reddit communities now handled in reddit-routes.ts
-import { getAvailablePerks, getPerksByCategory, getSignupInstructions, realProPerks, type ProPerk } from "./pro-perks.js";
+import { getAvailablePerks, getSignupInstructions } from "./pro-perks.js";
+import type { ProPerk } from "./pro-perks.js";
 import { ReferralManager } from './lib/referral-system.js';
 
 // API route modules
@@ -307,7 +308,7 @@ const deriveSharePercentage = (perk: ProPerk): number => {
     }
 
     const numericPercents = percentMatches
-      .map((match: RegExpMatchArray) => Number.parseFloat(match[1]))
+      .map(match => Number.parseFloat(match[1]))
       .filter((value): value is number => Number.isFinite(value));
 
     if (numericPercents.length === 0) {
@@ -399,7 +400,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
   });
 
   // CSRF protection for session-based routes
-  const csrfProtection: express.RequestHandler = csrf({ 
+  const csrfProtection: express.RequestHandler = csrf({
     cookie: {
       httpOnly: true,
       secure: IS_PRODUCTION,
@@ -513,8 +514,8 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
   app.post("/api/create-subscription", authenticateToken, async (req: AuthRequest, res) => {
     try {
       if (!stripe) {
-        return res.status(503).json({ 
-          message: "Payment system is not configured. Please try again later." 
+        return res.status(503).json({
+          message: "Payment system is not configured. Please try again later."
         });
       }
 
@@ -560,8 +561,8 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
             currency: 'usd',
             product_data: {
               name: plan === 'pro_plus' ? 'ThottoPilot Pro Plus' : 'ThottoPilot Pro',
-              description: plan === 'pro_plus' 
-                ? 'Premium content creation with advanced features' 
+              description: plan === 'pro_plus'
+                ? 'Premium content creation with advanced features'
                 : 'Professional content creation and protection'
             },
             unit_amount: amount,
@@ -588,8 +589,8 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
       });
     } catch (error: unknown) {
       logger.error("Subscription creation error:", error);
-      res.status(500).json({ 
-        message: "Error creating subscription: " + (error instanceof Error ? (error as Error).message : 'Unknown error') 
+      res.status(500).json({
+        message: "Error creating subscription: " + (error instanceof Error ? (error as Error).message : 'Unknown error')
       });
     }
   });
@@ -831,17 +832,17 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
 
       const generations = await storage.getGenerationsByUserId(req.user.id);
       const today = new Date();
-      const todayGenerations = generations.filter((g: ContentGeneration) => 
+      const todayGenerations = generations.filter((g: ContentGeneration) =>
         g.createdAt && new Date(g.createdAt).toDateString() === today.toDateString()
       );
 
       const stats = {
         total: generations.length,
         today: todayGenerations.length,
-        thisWeek: generations.filter((g: ContentGeneration) => g.createdAt && 
+        thisWeek: generations.filter((g: ContentGeneration) => g.createdAt &&
           new Date(g.createdAt) > new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
         ).length,
-        thisMonth: generations.filter((g: ContentGeneration) => g.createdAt && 
+        thisMonth: generations.filter((g: ContentGeneration) => g.createdAt &&
           new Date(g.createdAt).getMonth() === today.getMonth() &&
           new Date(g.createdAt).getFullYear() === today.getFullYear()
         ).length,
@@ -894,7 +895,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
       // Limit results and format for frontend
       const formattedHistory = history.slice(0, limit).map(gen => ({
         ...gen,
-        titles: Array.isArray(gen.titles) ? gen.titles : 
+        titles: Array.isArray(gen.titles) ? gen.titles :
                 typeof gen.titles === 'string' ? JSON.parse(gen.titles || '[]') : []
       }));
 
@@ -915,7 +916,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
   // Register Policy Routes
   registerPolicyRoutes(app);
 
-  // Register Reddit Routes  
+  // Register Reddit Routes
   registerRedditRoutes(app);
 
   // Register Analytics Routes
@@ -1301,8 +1302,8 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
         status: 'draft'
       });
 
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         postId: post.id,
         message: 'Content saved successfully'
       });
