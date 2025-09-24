@@ -1,5 +1,11 @@
+
 import fs from 'fs/promises';
 import path from 'path';
+
+export interface HumanizationConfig {
+  maxQuirks?: number;
+  random?: () => number;
+}
 
 export interface ContentParameters {
   photoType: 'casual' | 'workout' | 'shower' | 'showing-skin' | 'spicy' | 'very-spicy' | 'all-xs' | 'needs_review';
@@ -9,6 +15,7 @@ export interface ContentParameters {
   selectedHashtags: string[];
   customPrompt?: string;
   platform: string;
+  humanization?: HumanizationConfig;
 }
 
 export interface PhotoInstructions {
@@ -47,6 +54,28 @@ export interface ToneStyle {
   descriptors: string[];
   endings: string[];
   emojis: string[];
+  imperfectionTokens?: string[];
+  connectors?: string[];
+  titlePatterns?: TitlePatternDefinition[];
+}
+
+type TitlePatternType = 'statement' | 'question' | 'fragment';
+
+interface TitlePatternDefinition {
+  template: string;
+  type?: TitlePatternType;
+  emojiProbability?: number;
+}
+
+interface TitlePatternContext {
+  starter: string;
+  theme: string;
+  altTheme: string;
+  connector: string;
+  emoji: string;
+  punctuation: string;
+  hedge: string;
+  photoType: string;
 }
 
 interface FragmentDefinition {
@@ -74,6 +103,172 @@ interface FragmentRuntimeContext {
   pickFiller(): string;
   mood: string;
   photoType: ContentParameters['photoType'];
+}
+
+const DEFAULT_MAX_HUMANIZATION_QUIRKS = 2;
+
+type RandomGenerator = () => number;
+
+interface HumanizationOptions {
+  maxQuirks?: number;
+  random?: RandomGenerator;
+}
+
+interface HumanizationContext {
+  random: RandomGenerator;
+  toneStyle: ToneStyle;
+}
+
+interface HumanizationQuirk {
+  chance: number;
+  apply: (text: string, context: HumanizationContext) => string;
+}
+
+const LOWERCASE_INTERJECTIONS: readonly string[] = ['hmm', 'haha', 'um', 'oh'];
+
+const SPELLING_VARIATIONS: Array<{ pattern: RegExp; replacement: string }> = [
+  { pattern: /\bkind of\b/i, replacement: 'kinda' },
+  { pattern: /\bsort of\b/i, replacement: 'sorta' },
+  { pattern: /\bgoing to\b/i, replacement: 'gonna' },
+  { pattern: /\bwant to\b/i, replacement: 'wanna' }
+];
+
+export function applyHumanization(content: string, toneStyle: ToneStyle, options?: HumanizationOptions): string {
+  if (content.trim().length === 0) {
+    return content;
+  }
+
+  const random: RandomGenerator = options?.random ?? Math.random;
+  const requestedMax = options?.maxQuirks ?? DEFAULT_MAX_HUMANIZATION_QUIRKS;
+  const maxQuirks = Math.max(0, Math.floor(requestedMax));
+
+  if (maxQuirks === 0) {
+    return content;
+  }
+
+  const context: HumanizationContext = { random, toneStyle };
+
+  const quirks: HumanizationQuirk[] = [
+    { chance: 0.2, apply: addTrailingEllipsis },
+    { chance: 0.15, apply: insertLowercaseInterjection },
+    { chance: 0.1, apply: dropSentencePronoun },
+    { chance: 0.15, apply: applySpellingVariationQuirk }
+  ];
+
+  if (toneStyle.imperfectionTokens && toneStyle.imperfectionTokens.length > 0) {
+    quirks.push({ chance: 0.2, apply: injectImperfectionToken });
+  }
+
+  let result = content;
+  let applied = 0;
+
+  for (const quirk of quirks) {
+    if (applied >= maxQuirks) {
+      break;
+    }
+
+    if (random() < quirk.chance) {
+      const updated = quirk.apply(result, context);
+      if (updated !== result) {
+        result = updated;
+        applied += 1;
+      }
+    }
+  }
+
+  return result;
+}
+
+function addTrailingEllipsis(text: string): string {
+  const trailingWhitespaceMatch = text.match(/\s*$/);
+  const whitespace = trailingWhitespaceMatch ? trailingWhitespaceMatch[0] : '';
+  const trimmed = text.slice(0, text.length - whitespace.length);
+
+  if (trimmed.endsWith('...')) {
+    return text;
+  }
+
+  if (trimmed.endsWith('.')) {
+    return `${trimmed.slice(0, -1)}...${whitespace}`;
+  }
+
+  return `${trimmed}...${whitespace}`;
+}
+
+function insertLowercaseInterjection(text: string, context: HumanizationContext): string {
+  if (text.length === 0) {
+    return text;
+  }
+
+  const chosenIndex = Math.floor(context.random() * LOWERCASE_INTERJECTIONS.length);
+  const interjection = LOWERCASE_INTERJECTIONS[chosenIndex] ?? LOWERCASE_INTERJECTIONS[0];
+
+  const punctuationPattern = /([.!?])\s+/;
+  const match = punctuationPattern.exec(text);
+
+  if (match && match.index !== undefined) {
+    const insertAt = match.index + match[0].length;
+    return `${text.slice(0, insertAt)}${interjection}, ${text.slice(insertAt)}`;
+  }
+
+  return `${interjection}... ${text}`;
+}
+
+function dropSentencePronoun(text: string): string {
+  const pronounPattern = /(^|[.!?]\s+)I\s+/;
+  const match = pronounPattern.exec(text);
+
+  if (!match || match.index === undefined) {
+    return text;
+  }
+
+  const start = match.index + match[1].length;
+  const remainder = text.slice(start + 2);
+
+  if (remainder.length === 0) {
+    return text;
+  }
+
+  return `${text.slice(0, start)}${remainder[0].toUpperCase()}${remainder.slice(1)}`;
+}
+
+function applySpellingVariationQuirk(text: string): string {
+  for (const variation of SPELLING_VARIATIONS) {
+    const match = variation.pattern.exec(text);
+    if (match && match.index !== undefined) {
+      const matchedValue = match[0];
+      const replacement = matchedValue[0] === matchedValue[0].toUpperCase()
+        ? variation.replacement.charAt(0).toUpperCase() + variation.replacement.slice(1)
+        : variation.replacement;
+
+      return `${text.slice(0, match.index)}${replacement}${text.slice(match.index + matchedValue.length)}`;
+    }
+  }
+
+  return text;
+}
+
+function injectImperfectionToken(text: string, context: HumanizationContext): string {
+  const tokens = context.toneStyle.imperfectionTokens;
+  if (!tokens || tokens.length === 0) {
+    return text;
+  }
+
+  const choiceIndex = Math.floor(context.random() * tokens.length);
+  const token = tokens[choiceIndex] ?? tokens[0];
+  if (!token) {
+    return text;
+  }
+
+  const trimmed = text.trimEnd();
+  if (trimmed.toLowerCase().endsWith(token.toLowerCase())) {
+    return text;
+  }
+
+  const trailingWhitespaceMatch = text.match(/\s*$/);
+  const whitespace = trailingWhitespaceMatch ? trailingWhitespaceMatch[0] : '';
+
+  return `${trimmed} ${token}${whitespace}`;
 }
 
 // Photo Type Specific Content Variations
@@ -169,38 +364,216 @@ const photoTypeVariations = {
 };
 
 // Text Tone Styles
-const textToneStyles = {
+const textToneStyles: Record<ContentParameters['textTone'], ToneStyle> = {
   'confident': {
     starters: ["Just dropped", "Created some", "Brought you", "Here's what", "Made this"],
     descriptors: ["stunning", "powerful", "bold", "fierce", "incredible"],
     endings: ["and I'm proud of it", "feeling confident about this one", "own your power", "confidence is everything"],
-    emojis: ["💪", "🔥", "✨", "👑", "💎"]
+    emojis: ["💪", "🔥", "✨", "👑", "💎"],
+    imperfectionTokens: ['no doubt', 'for real'],
+    connectors: [
+      'locking in the',
+      'dialed into that',
+      'focused on delivering',
+      'serving up',
+      'owning that',
+      'delivering on this'
+    ],
+    titlePatterns: [
+      { template: '{starter} {connector} {theme} greatness{hedge}{punct}{emoji}', type: 'statement', emojiProbability: 0.8 },
+      { template: '{starter} {theme} takeover locked in{punct}{emoji}', type: 'statement', emojiProbability: 0.7 },
+      { template: '{theme} energy stays undefeated{punct}{emoji}', type: 'fragment', emojiProbability: 0.5 },
+      { template: 'Who else wants {theme} levels like this{punct}{emoji}', type: 'question', emojiProbability: 0.4 },
+      { template: 'Just{hedge} {theme} domination{punct}{emoji}', type: 'fragment', emojiProbability: 0.6 }
+    ]
   },
   'playful': {
     starters: ["Guess what", "Oops!", "Surprise!", "Hey there", "So..."],
     descriptors: ["cute", "silly", "adorable", "cheeky", "mischievous"],
     endings: ["hope you like it!", "whoops! 🙈", "couldn't resist!", "being a little naughty"],
-    emojis: ["😘", "🙈", "😇", "💕", "🎀"]
+    emojis: ["😘", "🙈", "😇", "💕", "🎀"],
+    imperfectionTokens: ['lol', 'hehe'],
+    connectors: [
+      'sneaking in some',
+      'dropping off some',
+      'slipping you some',
+      'serving up',
+      'sprinkling in',
+      'sharing a bit of'
+    ],
+    titlePatterns: [
+      { template: '{starter} {hedge} {theme} shenanigans just landed{punct}{emoji}', type: 'statement', emojiProbability: 0.85 },
+      { template: '{starter} {connector} {theme} giggles{punct}{emoji}', type: 'statement', emojiProbability: 0.8 },
+      { template: 'Could you handle {theme} chaos with me{punct}{emoji}', type: 'question', emojiProbability: 0.6 },
+      { template: 'Just{hedge} a little {theme} tease{punct}{emoji}', type: 'fragment', emojiProbability: 0.7 },
+      { template: '{theme} mood switched on{punct}{emoji}', type: 'fragment', emojiProbability: 0.5 }
+    ]
   },
   'mysterious': {
     starters: ["Something happened", "In the shadows", "Late night", "Behind closed doors", "Secret moment"],
     descriptors: ["hidden", "forbidden", "mysterious", "secretive", "enigmatic"],
     endings: ["but that's all I'll say", "the rest remains hidden", "some secrets are worth keeping", "only for those who understand"],
-    emojis: ["🌙", "🖤", "🕯️", "🔮", "💫"]
+    emojis: ["🌙", "🖤", "🕯️", "🔮", "💫"],
+    imperfectionTokens: ['lowkey', 'shh'],
+    connectors: [
+      'hinting at the',
+      'whispering about the',
+      'veiling the',
+      'masking those',
+      'keeping quiet about the',
+      'circling around these'
+    ],
+    titlePatterns: [
+      { template: '{starter} {connector} {theme}{punct}{emoji}', type: 'statement', emojiProbability: 0.5 },
+      { template: 'Just{hedge} a glimpse of {theme}{punct}{emoji}', type: 'fragment', emojiProbability: 0.4 },
+      { template: 'Could you decode these {theme} whispers{punct}{emoji}', type: 'question', emojiProbability: 0.4 },
+      { template: 'Behind closed doors it\'s {theme} everything{punct}{emoji}', type: 'statement', emojiProbability: 0.6 },
+      { template: 'Shadows guard my {theme} secrets{punct}{emoji}', type: 'fragment', emojiProbability: 0.5 }
+    ]
   },
   'authentic': {
     starters: ["Real talk", "Being honest", "Just me", "Genuine moment", "Truth is"],
     descriptors: ["real", "honest", "genuine", "authentic", "true"],
     endings: ["just being myself", "no filters needed", "this is who I am", "raw and real"],
-    emojis: ["💯", "✨", "🌸", "💗", "🌟"]
+    emojis: ["💯", "✨", "🌸", "💗", "🌟"],
+    imperfectionTokens: ['tbh', 'real talk'],
+    connectors: [
+      'sharing my',
+      'opening up about the',
+      'showing the',
+      'documenting my',
+      'living in this',
+      'leaning into the'
+    ],
+    titlePatterns: [
+      { template: '{starter} {connector} {theme} moments{punct}{emoji}', type: 'statement', emojiProbability: 0.7 },
+      { template: 'Just{hedge} {theme} realness{punct}{emoji}', type: 'fragment', emojiProbability: 0.6 },
+      { template: 'Anyone else feeling this {theme} energy{punct}{emoji}', type: 'question', emojiProbability: 0.5 },
+      { template: 'My day was all {theme}{punct}{emoji}', type: 'statement', emojiProbability: 0.6 },
+      { template: 'Letting you see the {theme} side{punct}{emoji}', type: 'fragment', emojiProbability: 0.5 }
+    ]
   },
   'sassy': {
     starters: ["Listen up", "Well well", "Oh please", "You think", "Honey"],
     descriptors: ["fierce", "bold", "attitude", "confidence", "sass"],
     endings: ["deal with it", "take it or leave it", "that's how I roll", "bow down"],
-    emojis: ["💅", "😏", "🔥", "👑", "💄"]
+    emojis: ["💅", "😏", "🔥", "👑", "💄"],
+    imperfectionTokens: ['periodt', 'mkay'],
+    connectors: [
+      'serving up',
+      'dropping that',
+      'bringing the',
+      'delivering full-on',
+      'throwing down the',
+      'flexing that'
+    ],
+    titlePatterns: [
+      { template: '{starter}, {connector} {theme} attitude{punct}{emoji}', type: 'statement', emojiProbability: 0.85 },
+      { template: 'Just{hedge} {theme} spice because I can{punct}{emoji}', type: 'statement', emojiProbability: 0.7 },
+      { template: 'Think you can handle this {theme} heat{punct}{emoji}', type: 'question', emojiProbability: 0.6 },
+      { template: 'Serving {theme} looks all day{punct}{emoji}', type: 'fragment', emojiProbability: 0.8 },
+      { template: '{starter} {theme} drama{punct}{emoji}', type: 'fragment', emojiProbability: 0.7 }
+    ]
   }
 };
+
+const fallbackConnectors = ['with that', 'featuring a', 'serving up the', 'bringing some', 'showing off the'];
+
+const fallbackTitlePatterns: TitlePatternDefinition[] = [
+  { template: '{starter} {connector} {theme} session{punct}{emoji}', type: 'statement' },
+  { template: '{starter} {theme} vibes just dropped{punct}{emoji}', type: 'statement' },
+  { template: 'Today was{hedge} all about {theme}{punct}{emoji}', type: 'statement' },
+  { template: 'Can you handle these {theme} moments{punct}{emoji}', type: 'question', emojiProbability: 0.5 },
+  { template: 'Just {theme} energy right now{punct}{emoji}', type: 'fragment', emojiProbability: 0.6 }
+];
+
+const punctuationOptions = ['!', '…', '.'] as const;
+const hedgeOptions = ['', '', '', '', 'kind of', 'sort of', 'maybe', 'almost', 'kinda', 'low-key', 'just about'] as const;
+
+const DEFAULT_EMOJI_PROBABILITY = 0.7;
+const MIN_TITLES = 3;
+const MAX_TITLES = 5;
+const MAX_TITLE_GENERATION_ATTEMPTS = 40;
+const patternPlaceholderRegex = /\{(starterLower|starter|themeAlt|theme|connector|hedge|punct|punctuation|emoji|photoType)\}/gu;
+
+function randomFromArray<T>(values: readonly T[]): T {
+  if (values.length === 0) {
+    throw new Error('Cannot select from an empty array');
+  }
+
+  return values[Math.floor(Math.random() * values.length)];
+}
+
+function pickAlternateTheme(themes: readonly string[], current: string): string {
+  const alternatives = themes.filter(theme => theme !== current);
+  return alternatives.length > 0 ? randomFromArray(alternatives) : current;
+}
+
+function choosePunctuation(type: TitlePatternType | undefined): string {
+  if (type === 'question') {
+    return '?';
+  }
+
+  if (type === 'fragment') {
+    return Math.random() < 0.5 ? '' : randomFromArray(punctuationOptions);
+  }
+
+  return randomFromArray(punctuationOptions);
+}
+
+function selectEmoji(emojis: readonly string[], probability: number): string {
+  if (emojis.length === 0 || Math.random() >= probability) {
+    return '';
+  }
+
+  return randomFromArray(emojis);
+}
+
+function cleanGeneratedTitle(value: string): string {
+  return value
+    .replace(/\s+([?!….,])/gu, '$1')
+    .replace(/,\s*/gu, ', ')
+    .replace(/\s{2,}/gu, ' ')
+    .trim();
+}
+
+function renderTitleFromPattern(pattern: TitlePatternDefinition, context: TitlePatternContext): string {
+  const replacements: Record<string, string> = {
+    starter: context.starter,
+    starterLower: context.starter.toLowerCase(),
+    theme: context.theme,
+    themeAlt: context.altTheme,
+    connector: context.connector,
+    hedge: context.hedge ? ` ${context.hedge}` : '',
+    punct: context.punctuation,
+    punctuation: context.punctuation,
+    emoji: context.emoji ? ` ${context.emoji}` : '',
+    photoType: context.photoType
+  };
+
+  let result = pattern.template.replace(patternPlaceholderRegex, (_match: string, key: string) => replacements[key] ?? '');
+
+  if (!pattern.template.includes('{punct}') && pattern.type !== 'fragment') {
+    result += context.punctuation;
+  }
+
+  if (pattern.type === 'question' && !result.trim().endsWith('?')) {
+    result = `${result.trim()}?`;
+  }
+
+  return cleanGeneratedTitle(result);
+}
+
+function shuffleArray<T>(values: T[]): T[] {
+  for (let index = values.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    const temp = values[index];
+    values[index] = values[swapIndex];
+    values[swapIndex] = temp;
+  }
+
+  return values;
+}
 
 export const toneFragmentPools: Record<ContentParameters['textTone'], ToneFragmentPool> = {
   'confident': {
@@ -555,7 +928,7 @@ function pickUniqueValue(values: string[], used: Set<string>): string {
   return choice;
 }
 
-function shuffleArray<T>(values: T[]): T[] {
+function shuffleArrayInPlace<T>(values: T[]): T[] {
   const copy = [...values];
   for (let index = copy.length - 1; index > 0; index -= 1) {
     const swapIndex = Math.floor(Math.random() * (index + 1));
@@ -624,7 +997,7 @@ function buildSection(pool: FragmentDefinition[], context: FragmentRuntimeContex
     return '';
   }
 
-  return cleanSpacing(shuffleArray(builtFragments).join(' '));
+  return cleanSpacing(shuffleArrayInPlace(builtFragments).join(' '));
 }
 
 function createFragmentContext(
@@ -761,26 +1134,96 @@ function getRandomPresetVariation(presetId: string): PresetVariation | null {
 }
 
 function generateTitles(params: ContentParameters, photoConfig: PhotoConfig, toneStyle: ToneStyle): string[] {
-  const titles: string[] = [];
+  const desiredTitleCount = Math.floor(Math.random() * (MAX_TITLES - MIN_TITLES + 1)) + MIN_TITLES;
   const themes = photoConfig.themes;
   const starters = toneStyle.starters;
   const emojis = toneStyle.emojis;
-
-  // Generate 3-5 varied titles
-  titles.push(`${starters[0]} what happened during my ${themes[0]} session ${emojis[0]}`);
-  titles.push(`${starters[1]} ${themes[1]} content just dropped ${emojis[1]}`);
-  titles.push(`${themes[2]} vibes hit different today ${emojis[2]}`);
+  
+  const connectorPool = (toneStyle.connectors ?? []).filter(connector => connector.trim().length > 0);
+  const connectors = connectorPool.length > 0 ? connectorPool : fallbackConnectors;
+  const basePatterns = toneStyle.titlePatterns && toneStyle.titlePatterns.length > 0 ? toneStyle.titlePatterns : fallbackTitlePatterns;
+  const specialPatterns: TitlePatternDefinition[] = [];
+  const readablePhotoType = params.photoType.replace(/-/g, ' ');
 
   if (params.photoType === 'all-xs') {
-    titles.push(`Warning: ${themes[3] || 'exclusive'} content ahead - not for everyone ${emojis[3] || '🔞'}`);
-    titles.push(`${starters[2]} the limits have been removed ${emojis[4] || '💎'}`);
+    specialPatterns.push(
+      { template: 'Warning: {theme} content ahead - not for everyone{punct}{emoji}', type: 'statement', emojiProbability: 0.5 },
+      { template: '{starter} the limits are gone tonight{punct}{emoji}', type: 'statement', emojiProbability: 0.6 }
+    );
   } else if (params.photoType === 'very-spicy') {
-    titles.push(`${starters[3] || starters[0]} intense ${themes[3] || 'exclusive'} content ${emojis[3]}`);
+    specialPatterns.push(
+      { template: '{starter} {theme} intensity unlocked{punct}{emoji}', type: 'statement', emojiProbability: 0.7 },
+      { template: 'Taking {themeAlt} right to the edge{punct}{emoji}', type: 'fragment', emojiProbability: 0.6 }
+    );
   } else if (params.photoType === 'spicy') {
-    titles.push(`${themes[3] || 'Spicy'} mood activated ${emojis[3]}`);
+    specialPatterns.push(
+      { template: '{theme} mood activated{punct}{emoji}', type: 'fragment', emojiProbability: 0.7 },
+      { template: '{starter} turning the {theme} heat way up{punct}{emoji}', type: 'statement', emojiProbability: 0.6 }
+    );
   }
 
-  return titles.slice(0, Math.random() > 0.5 ? 3 : 4);
+  const patternPool: TitlePatternDefinition[] = [
+    ...basePatterns,
+    ...specialPatterns,
+    ...(toneStyle.titlePatterns && toneStyle.titlePatterns.length > 0 ? fallbackTitlePatterns : [])
+  ];
+
+  const generatedTitles = new Set<string>();
+  let attempts = 0;
+
+  while (generatedTitles.size < desiredTitleCount && attempts < MAX_TITLE_GENERATION_ATTEMPTS) {
+    attempts += 1;
+
+    const pattern = randomFromArray(patternPool);
+    const starter = randomFromArray(starters);
+    const theme = randomFromArray(themes);
+    const altTheme = pickAlternateTheme(themes, theme);
+    const connector = randomFromArray(connectors);
+    const punctuation = choosePunctuation(pattern.type);
+    const emoji = selectEmoji(emojis, pattern.emojiProbability ?? DEFAULT_EMOJI_PROBABILITY);
+    const hedge = pattern.template.includes('{hedge}') ? randomFromArray(hedgeOptions) : '';
+
+    const context: TitlePatternContext = {
+      starter,
+      theme,
+      altTheme,
+      connector,
+      emoji,
+      punctuation,
+      hedge,
+      photoType: readablePhotoType
+    };
+
+    const candidate = renderTitleFromPattern(pattern, context);
+
+    if (candidate.length > 0) {
+      generatedTitles.add(candidate);
+    }
+  }
+
+  if (generatedTitles.size < MIN_TITLES) {
+    while (generatedTitles.size < MIN_TITLES) {
+      const fallbackStarter = randomFromArray(starters);
+      const fallbackTheme = randomFromArray(themes);
+      const fallbackPattern = fallbackTitlePatterns[generatedTitles.size % fallbackTitlePatterns.length];
+      const fallbackContext: TitlePatternContext = {
+        starter: fallbackStarter,
+        theme: fallbackTheme,
+        altTheme: pickAlternateTheme(themes, fallbackTheme),
+        connector: randomFromArray(connectors),
+        emoji: selectEmoji(emojis, DEFAULT_EMOJI_PROBABILITY),
+        punctuation: choosePunctuation(fallbackPattern.type),
+        hedge: fallbackPattern.template.includes('{hedge}') ? randomFromArray(hedgeOptions) : '',
+        photoType: readablePhotoType
+      };
+
+      generatedTitles.add(renderTitleFromPattern(fallbackPattern, fallbackContext));
+    }
+  }
+
+  const shuffledTitles = shuffleArray(Array.from(generatedTitles));
+
+  return shuffledTitles.slice(0, desiredTitleCount);
 }
 
 function generateMainContent(params: ContentParameters, photoConfig: PhotoConfig, toneStyle: ToneStyle): string {
@@ -821,11 +1264,14 @@ function generateMainContent(params: ContentParameters, photoConfig: PhotoConfig
     contentParts.push(pickRandom(toneStyle.endings));
   }
 
-  if (params.selectedHashtags.length > 0) {
-    contentParts.push(params.selectedHashtags.join(' '));
-  }
+  const hashtags = params.selectedHashtags.length > 0 ? ` ${params.selectedHashtags.join(' ')}` : '';
+  const baseContent = contentParts.join(' ').trim();
+  const humanized = applyHumanization(baseContent, toneStyle, {
+    maxQuirks: params.humanization?.maxQuirks,
+    random: params.humanization?.random
+  });
 
-  return cleanSpacing(contentParts.join(' '));
+  return `${humanized}${hashtags}`;
 }
 
 function generatePhotoInstructions(params: ContentParameters, photoConfig: PhotoConfig): GeneratedContent['photoInstructions'] {
