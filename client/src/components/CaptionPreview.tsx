@@ -4,18 +4,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Copy, Check, AlertCircle } from "lucide-react";
 import { useState } from "react";
+import type { CaptionObject, RankedResult, CaptionPreviewData } from '@shared/types/caption';
 
-export interface CaptionPreviewData {
-  final: string | { caption: string; alt?: string; hashtags?: string[]; mood?: string; style?: string; cta?: string; safety_level?: 'normal' | 'spicy_safe' | 'unsafe' };
-  ranked: string[];
-}
+// Re-export types from shared module for backward compatibility
+export type { CaptionObject, RankedResult, CaptionPreviewData } from '@shared/types/caption';
 
 export function CaptionPreview({ data }: { data: CaptionPreviewData | null | undefined }) {
   const [copiedCaption, setCopiedCaption] = useState(false);
   const [copiedJSON, setCopiedJSON] = useState(false);
 
-  // Debug logging to help understand data structure
-  console.log('CaptionPreview received data:', data);
 
   if (!data) return null;
   
@@ -23,7 +20,7 @@ export function CaptionPreview({ data }: { data: CaptionPreviewData | null | und
   if (!final) return null;
   
   // Handle different data formats - final could be a string or object with caption property
-  const captionText = typeof final === 'string' ? final : (final.caption || final);
+  const captionText = typeof final === 'string' ? final : final.caption;
   const charCount = captionText ? captionText.length : 0;
   
   if (!captionText) return null;
@@ -114,7 +111,7 @@ export function CaptionPreview({ data }: { data: CaptionPreviewData | null | und
             <AlertCircle className="h-4 w-4 text-blue-500 mt-0.5" />
             <div className="space-y-1">
               <p className="text-xs font-medium text-blue-700 dark:text-blue-400">Why this caption won</p>
-              <p className="text-xs text-blue-600 dark:text-blue-300">{typeof ranked === 'object' && (ranked as any).reason ? (ranked as any).reason : 'Based on engagement optimization'}</p>
+              <p className="text-xs text-blue-600 dark:text-blue-300">{typeof ranked === 'object' && ranked && !Array.isArray(ranked) && 'reason' in ranked ? ranked.reason : 'Based on engagement optimization'}</p>
             </div>
           </div>
         </div>

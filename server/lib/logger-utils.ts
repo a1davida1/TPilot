@@ -3,6 +3,7 @@
  */
 
 import { logger } from '../middleware/security.js';
+import type { User } from '../../shared/schema.js';
 
 // Sensitive field patterns to redact
 const SENSITIVE_PATTERNS = [
@@ -76,7 +77,7 @@ export function safeLog(level: 'info' | 'warn' | 'error', message: string, data?
 /**
  * Specific user data redaction for safe logging
  */
-export function redactUserData(user: any) {
+export function redactUserData(user: User | null | undefined) {
   if (!user) return user;
   
   return {

@@ -28,6 +28,8 @@ import {
   type GrowthTrend,
   type ActivityLevel,
   type CompetitionLevel,
+  type CommunityRules,
+  type PostingLimits,
   useAdminCommunities,
   useCreateCommunity,
   useUpdateCommunity,
@@ -139,11 +141,60 @@ interface RuleContext {
 
 function getRuleContext(community: AdminCommunity): RuleContext {
   const rules = community.rules ?? null;
+  const legacyRules = community.legacyRules ?? null;
   return {
-    eligibility: rules?.eligibility ?? rules?.legacy?.eligibility,
-    content: rules?.content ?? rules?.legacy?.content,
-    posting: rules?.posting ?? rules?.legacy?.posting,
-    legacy: rules?.legacy,
+    eligibility: rules?.eligibility ?? legacyRules,
+    content: rules?.content ?? legacyRules,
+    posting: rules?.posting ?? legacyRules,
+    legacy: legacyRules,
+  };
+}
+
+function formToPayload(formState: CommunityFormState): CommunityPayload {
+  const rules: Partial<CommunityRules> = {
+    eligibility: {
+      minKarma: parseNumber(formState.rulesMinKarma),
+      minAccountAgeDays: parseNumber(formState.rulesMinAccountAge),
+    },
+    content: {
+      watermarksAllowed: formState.rulesWatermarksAllowed === 'allowed' ? true : 
+                        formState.rulesWatermarksAllowed === 'disallowed' ? false : null,
+      sellingPolicy: formState.rulesSellingAllowed === 'unspecified' ? undefined : formState.rulesSellingAllowed as RedditCommunitySellingPolicy,
+      titleGuidelines: parseList(formState.rulesTitleRules),
+      contentGuidelines: parseList(formState.rulesContentRules),
+      linkRestrictions: parseList(formState.rulesLinkRestrictions),
+    },
+    posting: {
+      maxPostsPerDay: parseNumber(formState.postingLimitsPerDay),
+      cooldownHours: parseNumber(formState.postingLimitsCooldownHours),
+    }
+  };
+
+  const postingLimits: PostingLimits = {
+    perDay: parseNumber(formState.postingLimitsPerDay),
+    perWeek: parseNumber(formState.postingLimitsPerWeek),
+    cooldownHours: parseNumber(formState.postingLimitsCooldownHours),
+  };
+
+  return {
+    id: formState.id || undefined,
+    name: formState.name,
+    displayName: formState.displayName,
+    category: formState.category,
+    members: parseNumber(formState.members) || 0,
+    engagementRate: parseNumber(formState.engagementRate) || 0,
+    verificationRequired: formState.verificationRequired,
+    promotionAllowed: formState.promotionAllowed,
+    postingLimits: Object.values(postingLimits).some(v => v !== undefined) ? postingLimits : null,
+    rules: Object.values(rules).some(section => section && Object.values(section).some(v => v !== undefined && v !== null)) ? rules : null,
+    bestPostingTimes: parseList(formState.bestPostingTimes),
+    averageUpvotes: parseNumber(formState.averageUpvotes),
+    successProbability: parseNumber(formState.successProbability),
+    growthTrend: formState.growthTrend,
+    modActivity: formState.modActivity,
+    description: formState.description || null,
+    tags: parseList(formState.tags),
+    competitionLevel: formState.competitionLevel,
   };
 }
 
@@ -152,7 +203,7 @@ function communityToForm(community: AdminCommunity): CommunityFormState {
   const postingLimits = community.postingLimits ?? null;
   const titleGuidelines = content?.titleGuidelines ?? legacy?.titleRules ?? [];
   const contentGuidelines = content?.contentGuidelines ?? legacy?.contentRules ?? [];
-  const linkRestrictions = content?.linkRestrictions ?? legacy?.linkRestrictions ?? [];
+  const linkRestrictions = content?.linkRestrictions ?? [] as string[];
   const watermarksAllowed = content?.watermarksAllowed ?? legacy?.watermarksAllowed ?? null;
   const sellingPolicy = content?.sellingPolicy ?? legacy?.sellingAllowed ?? undefined;
   const minKarma = eligibility?.minKarma ?? legacy?.minKarma ?? null;
@@ -246,7 +297,7 @@ function RuleSummary({ community }: { community: AdminCommunity }) {
     ruleItems.push(`${contentGuidelines.length} content rules`);
   }
 
-  const linkRestrictions = content?.linkRestrictions ?? legacy?.linkRestrictions ?? [];
+  const linkRestrictions = content?.linkRestrictions ?? [] as string[];
   if (linkRestrictions.length > 0) {
     ruleItems.push('Link restrictions');
   }

@@ -13,6 +13,7 @@ import { Loader2, Sparkles, Upload, AlertCircle, Image as ImageIcon, Type, Edit3
 import { toast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { getErrorMessage } from '@/utils/errorHelpers';
+import type { GenerationResponse, CaptionPreviewData } from '@shared/types/caption';
 
 const PLATFORMS = [
   { value: "reddit", label: "Reddit" },
@@ -60,7 +61,7 @@ export function GeminiCaptionGeneratorTabs() {
   const [mood, setMood] = useState<string>("seductive");
   const [nsfw, setNsfw] = useState<boolean>(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [captionData, setCaptionData] = useState<any>(null);
+  const [captionData, setCaptionData] = useState<GenerationResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   
   // Image tab states
@@ -553,7 +554,7 @@ export function GeminiCaptionGeneratorTabs() {
       </Tabs>
 
       {captionData ? (
-        <CaptionPreview data={captionData as any} />
+        <CaptionPreview data={captionData as CaptionPreviewData} />
       ) : null}
     </div>
   );

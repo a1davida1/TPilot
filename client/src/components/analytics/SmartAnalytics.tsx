@@ -173,7 +173,10 @@ export default function SmartAnalytics() {
             : [],
           aiInsights: {
             bestPostingTimes: Array.isArray(analytics.bestPostingTimes) 
-              ? analytics.bestPostingTimes.map((t: any) => String((t as any)?.time || '12:00')).filter(Boolean)
+              ? analytics.bestPostingTimes.map((t: unknown) => {
+                  const timeItem = t as { time?: string } | string;
+                  return typeof timeItem === 'string' ? timeItem : String(timeItem?.time || '12:00');
+                }).filter(Boolean)
               : ['09:00', '19:00', '12:00'],
             topPerformingTags: ['#content', '#creator', '#engagement', '#growth'], // Safe fallback
             contentRecommendations: [

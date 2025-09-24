@@ -191,8 +191,8 @@ export class DatabaseStorage implements IStorage {
 
   async getAllUsers(): Promise<User[]> {
     try {
-      // Guard optional schema fields - use any to avoid TypeScript issues with conditional schema fields
-      let query: any = db.select().from(users);
+      // Guard optional schema fields - using db query pattern
+      let query = db.select().from(users);
       if ('isDeleted' in users) {
         query = query.where(eq((users as any).isDeleted, false));
       }

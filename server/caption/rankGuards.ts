@@ -1,5 +1,9 @@
 // Ranking guards utilities for detecting and sanitizing sparkle-filler content
 import { variantContainsBannedWord, replaceBannedWords, containsBannedWord } from "./bannedWords";
+import { CaptionArray } from "./schema";
+import type { z } from "zod";
+
+type CaptionVariant = z.infer<typeof CaptionArray>[number];
 
 export const HUMAN_CTA = "What do you think?";
 
@@ -82,7 +86,7 @@ export interface Violation {
   field: "caption" | "hashtags" | "cta";
 }
 
-export function detectVariantViolations(variant: any): Violation[] {
+export function detectVariantViolations(variant: CaptionVariant): Violation[] {
   const violations: Violation[] = [];
 
   // Check for banned words first
@@ -110,8 +114,8 @@ export function detectVariantViolations(variant: any): Violation[] {
 
   // Check hashtags for generic content
   if (Array.isArray(variant.hashtags)) {
-    const genericFound = variant.hashtags.some((tag: any) => 
-      typeof tag === "string" && GENERIC_HASHTAGS.has(tag.toLowerCase())
+    const genericFound = variant.hashtags.some((tag: string) => 
+      GENERIC_HASHTAGS.has(tag.toLowerCase())
     );
     if (genericFound) {
       violations.push({
@@ -216,7 +220,7 @@ export function formatViolationSummary(violations: Violation[]): string {
   return `Sanitized: ${summaries.join(", ")}`;
 }
 
-export function sanitizeFinalVariant(variant: any, platform?: string): any {
+export function sanitizeFinalVariant(variant: CaptionVariant, platform?: string): CaptionVariant {
   const sanitized = { ...variant };
 
   // Sanitize caption for banned words first

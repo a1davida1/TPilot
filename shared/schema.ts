@@ -494,7 +494,7 @@ export const normalizeRulesToStructured = (legacyRules: LegacyRedditCommunityRul
       nsfwRequired: legacyRules.nsfwRequired ?? false,
       titleGuidelines: legacyRules.titleRules ?? [],
       contentGuidelines: legacyRules.contentRules ?? [],
-      linkRestrictions: legacyRules.linkRestrictions ?? [],
+      linkRestrictions: [],
       bannedContent: legacyRules.bannedContent ?? [],
       formattingRequirements: legacyRules.formattingRequirements ?? [],
     },

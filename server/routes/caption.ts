@@ -8,6 +8,28 @@ import { insertContentGenerationSchema } from '@shared/schema';
 import { z } from 'zod';
 import { logger } from '../bootstrap/logger';
 
+// Local validation schema to prevent import issues
+const captionObjectSchema = z.object({
+  caption: z.string(),
+  alt: z.string().optional(),
+  hashtags: z.array(z.string()).optional(),
+  mood: z.string().optional(),
+  style: z.string().optional(),
+  cta: z.string().optional(),
+  safety_level: z.enum(['normal', 'spicy_safe', 'unsafe']).optional(),
+});
+
+const rankedResultSchema = z.object({
+  reason: z.string().optional(),
+}).catchall(z.unknown());
+
+const generationResponseSchema = z.object({
+  final: z.union([z.string(), captionObjectSchema]),
+  ranked: z.union([z.array(z.string()), rankedResultSchema]),
+  facts: z.record(z.string(), z.unknown()).optional(),
+  provider: z.string().optional(),
+}).catchall(z.unknown());
+
 const router = Router();
 
 const generateSchema = z.object({
@@ -45,6 +67,9 @@ router.post('/generate', authenticateToken, async (req: AuthRequest, res: Respon
     
     const result = await pipeline({ imageUrl, platform, voice, style, mood, nsfw: nsfw || false });
     
+    // Validate response payload matches expected schema
+    const validatedResult = generationResponseSchema.parse(result);
+    
     // Save generation to database
     if (req.user?.id && result.final) {
       try {
@@ -73,7 +98,7 @@ router.post('/generate', authenticateToken, async (req: AuthRequest, res: Respon
       }
     }
     
-    return res.status(200).json(result);
+    return res.status(200).json(validatedResult);
     
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "generation failed";
@@ -90,6 +115,9 @@ router.post('/generate-text', authenticateToken, async (req: AuthRequest, res: R
     const { platform, voice, style, mood, theme, context, nsfw } = generateTextSchema.parse(req.body ?? {});
     
     const result = await pipelineTextOnly({ platform, voice, style, mood, theme, context, nsfw: nsfw || false });
+    
+    // Validate response payload matches expected schema
+    const validatedResult = generationResponseSchema.parse(result);
     
     // Save generation to database
     if (req.user?.id && result.final) {
@@ -119,7 +147,7 @@ router.post('/generate-text', authenticateToken, async (req: AuthRequest, res: R
       }
     }
     
-    return res.status(200).json(result);
+    return res.status(200).json(validatedResult);
     
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "generation failed";
@@ -136,6 +164,9 @@ router.post('/rewrite', authenticateToken, async (req: AuthRequest, res: Respons
     const { platform, voice, style, mood, existingCaption, imageUrl, nsfw } = rewriteSchema.parse(req.body ?? {});
     
     const result = await pipelineRewrite({ platform, voice, style, mood, existingCaption, imageUrl, nsfw: nsfw || false });
+    
+    // Validate response payload matches expected schema
+    const validatedResult = generationResponseSchema.parse(result);
     
     // Save generation to database
     if (req.user?.id && result.final) {
@@ -166,7 +197,7 @@ router.post('/rewrite', authenticateToken, async (req: AuthRequest, res: Respons
       }
     }
     
-    return res.status(200).json(result);
+    return res.status(200).json(validatedResult);
     
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "rewrite failed";

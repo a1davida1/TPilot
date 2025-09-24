@@ -10,6 +10,7 @@ import { Loader2, Sparkles, Upload, AlertCircle, Image as _ImageIcon } from "luc
 import { toast } from "@/hooks/use-toast";
 import { apiRequest, type ApiError } from "@/lib/queryClient";
 import { getErrorMessage } from "@/utils/errorHelpers";
+import type { GenerationResponse, CaptionPreviewData } from '@shared/types/caption';
 
 const PLATFORMS = [
   { value: "instagram", label: "Instagram" },
@@ -69,7 +70,7 @@ export function GeminiCaptionGenerator() {
   const [platform, setPlatform] = useState<string>("instagram");
   const [voice, setVoice] = useState<string>("flirty_playful");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [captionData, setCaptionData] = useState<any>(null);
+  const [captionData, setCaptionData] = useState<GenerationResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -297,7 +298,7 @@ export function GeminiCaptionGenerator() {
 
       {captionData ? (
         <div className="space-y-4">
-          <CaptionPreview data={captionData as any} />
+          <CaptionPreview data={captionData as CaptionPreviewData} />
           
           {/* Regenerate Button */}
           <Button
@@ -316,7 +317,7 @@ export function GeminiCaptionGenerator() {
                 Debug: Image Facts
               </summary>
               <pre className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs overflow-x-auto">
-                {JSON.stringify((captionData as any).facts, null, 2)}
+                {JSON.stringify(captionData?.facts, null, 2)}
               </pre>
             </details>
           )}

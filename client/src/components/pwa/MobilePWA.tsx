@@ -59,7 +59,7 @@ export default function MobilePWA() {
           const battery = await (navigator as any).getBattery();
           setBatteryLevel(Math.round(battery.level * 100));
         } catch (error) {
-          console.log('Battery API not available');
+          // Battery API not available - silently ignore
         }
       }
     };

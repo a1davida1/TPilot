@@ -187,7 +187,6 @@ export function SocialAuth({ onSuccess, isLoading = false }: SocialAuthProps) {
             className="w-full h-12 border-2 border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 transition-all-smooth"
             onClick={() => {
               // Handle email signup - can be implemented later
-              console.log('Email signup clicked');
             }}
           >
             <Mail className="mr-3 h-5 w-5 text-gray-600" />

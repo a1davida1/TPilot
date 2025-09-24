@@ -1569,7 +1569,18 @@ function ContentModerationTab({ authenticatedRequest }: { authenticatedRequest: 
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {(flaggedContent as any[])?.map((flag: any) => (
+            {(flaggedContent as Array<{
+              id: string | number;
+              content?: {
+                platform?: string;
+                titles?: string[];
+                preview?: string;
+              };
+              reason?: string;
+              reportedBy?: string;
+              description?: string;
+              createdAt?: string;
+            }>)?.map((flag) => (
               <div key={flag.id} className="border rounded-lg p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 space-y-2">
@@ -1600,13 +1611,13 @@ function ContentModerationTab({ authenticatedRequest }: { authenticatedRequest: 
                   </div>
                   <div className="flex gap-2 ml-4">
                     <Button size="sm" variant="outline"
-                      onClick={() => moderateMutation.mutate({ flagId: flag.id, action: 'approve', reason: 'Content approved after review' })}
+                      onClick={() => moderateMutation.mutate({ flagId: Number(flag.id), action: 'approve', reason: 'Content approved after review' })}
                       data-testid={`button-approve-content-${flag.id}`}>
                       <CheckCircle className="h-3 w-3 mr-1" />
                       Approve
                     </Button>
                     <Button size="sm" variant="destructive"
-                      onClick={() => moderateMutation.mutate({ flagId: flag.id, action: 'remove', reason: 'Content removed for policy violation' })}
+                      onClick={() => moderateMutation.mutate({ flagId: Number(flag.id), action: 'remove', reason: 'Content removed for policy violation' })}
                       data-testid={`button-remove-content-${flag.id}`}>
                       <Trash2 className="h-3 w-3 mr-1" />
                       Remove
