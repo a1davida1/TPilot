@@ -16,6 +16,7 @@ export interface ContentParameters {
   customPrompt?: string;
   platform: string;
   humanization?: HumanizationConfig;
+  humanizedLevel?: number;
 }
 
 export interface PhotoInstructions {
@@ -57,6 +58,7 @@ export interface ToneStyle {
   imperfectionTokens?: string[];
   connectors?: string[];
   titlePatterns?: TitlePatternDefinition[];
+  interjections?: string[];
 }
 
 interface PersonalToneConfig {
@@ -112,6 +114,18 @@ interface FragmentRuntimeContext {
   photoType: ContentParameters['photoType'];
 }
 
+export interface ManualTypingOptions {
+  humanizedLevel?: number;
+  rng?: () => number;
+}
+
+type HashtagLayout = 'inline' | 'blankLine' | 'dotLadder';
+
+interface HashtagToken {
+  type: 'tag' | 'connector';
+  value: string;
+}
+
 const DEFAULT_MAX_HUMANIZATION_QUIRKS = 2;
 
 type RandomGenerator = () => number;
@@ -138,6 +152,42 @@ const SPELLING_VARIATIONS: Array<{ pattern: RegExp; replacement: string }> = [
   { pattern: /\bsort of\b/i, replacement: 'sorta' },
   { pattern: /\bgoing to\b/i, replacement: 'gonna' },
   { pattern: /\bwant to\b/i, replacement: 'wanna' }
+];
+
+const EM_DASH_ASIDES = [
+  'wait, let me brag for a sec',
+  'okay, mild obsession happening',
+  'small flex, forgive me',
+  'just being dramatic for effect'
+];
+
+const CORRECTION_SNIPPETS = [
+  'extra glow',
+  'actual vibe',
+  'soft focus',
+  'cozy energy',
+  'spicy detail'
+];
+
+const STRIKETHROUGH_EXCLUSIONS = ['~~'];
+
+const PLATFORM_LAYOUT_MAP: Record<string, HashtagLayout> = {
+  instagram: 'blankLine',
+  'instagram-stories': 'blankLine',
+  threads: 'blankLine',
+  twitter: 'inline',
+  x: 'inline',
+  bluesky: 'inline',
+  tiktok: 'dotLadder',
+  onlyfans: 'dotLadder'
+};
+
+const HASHTAG_CONNECTORS: readonly string[] = ['✨', '🔥', 'mood check', 'energy boost', 'vibes', 'glow up', '•', 'spark'];
+
+const HASHTAG_CASE_FORMATTERS: readonly ((tag: string) => string)[] = [
+  (value: string) => `#${value.replace(/\s+/g, '').toLowerCase()}`,
+  (value: string) => `#${toPascalCase(value)}`,
+  (value: string) => `#${value.replace(/\s+/g, '').toUpperCase()}`
 ];
 
 export function applyHumanization(content: string, toneStyle: ToneStyle, options?: HumanizationOptions): string {
@@ -278,6 +328,372 @@ function injectImperfectionToken(text: string, context: HumanizationContext): st
   return `${trimmed} ${token}${whitespace}`;
 }
 
+function clampHumanizedLevel(level: number): number {
+  if (!Number.isFinite(level)) {
+    return 0;
+  }
+  if (level < 0) {
+    return 0;
+  }
+  if (level > 1) {
+    return 1;
+  }
+  return level;
+}
+
+function isWhitespaceToken(token: string): boolean {
+  return /^\s+$/.test(token);
+}
+
+function extractTokenParts(token: string): { prefix: string; core: string; suffix: string } {
+  const prefixMatch = token.match(/^[^A-Za-z0-9'']+/u);
+  const prefix = prefixMatch ? prefixMatch[0] : '';
+  const suffixMatch = token.match(/[^A-Za-z0-9'']+$/u);
+  const suffix = suffixMatch ? suffixMatch[0] : '';
+  const core = token.slice(prefix.length, token.length - suffix.length);
+
+  return { prefix, core, suffix };
+}
+
+function tokenContainsUrlOrHashtag(token: string): boolean {
+  const trimmed = token.trim();
+  if (!trimmed) {
+    return false;
+  }
+  const lowered = trimmed.toLowerCase();
+  return trimmed.startsWith('#') || lowered.includes('http://') || lowered.includes('https://') || lowered.startsWith('www.');
+}
+
+function isSafeToken(token?: string): boolean {
+  if (!token) {
+    return false;
+  }
+  if (tokenContainsUrlOrHashtag(token) || token.includes('#')) {
+    return false;
+  }
+  const { core } = extractTokenParts(token);
+  return core.length > 0;
+}
+
+function pickRandomIndex(indices: number[], rng: () => number): number | undefined {
+  if (indices.length === 0) {
+    return undefined;
+  }
+  const rawIndex = Math.floor(rng() * indices.length);
+  const safeIndex = rawIndex >= indices.length ? indices.length - 1 : rawIndex;
+  return indices[safeIndex];
+}
+
+function pickRandomValue(values: string[], rng: () => number): string | undefined {
+  if (values.length === 0) {
+    return undefined;
+  }
+  const rawIndex = Math.floor(rng() * values.length);
+  const index = rawIndex >= values.length ? values.length - 1 : rawIndex;
+  return values[index];
+}
+
+function injectInterjection(text: string, interjection: string): string {
+  if (!interjection.trim()) {
+    return text;
+  }
+  const trimmed = text.trimStart();
+  if (trimmed.startsWith(interjection)) {
+    return text;
+  }
+  return `${interjection} ${text}`;
+}
+
+function injectDoubleSpace(text: string, rng: () => number): string {
+  const tokens = text.split(/(\s+)/);
+  const candidateIndices: number[] = [];
+
+  tokens.forEach((token, index) => {
+    if (token === ' ' && isSafeToken(tokens[index - 1]) && isSafeToken(tokens[index + 1])) {
+      candidateIndices.push(index);
+    }
+  });
+
+  const targetIndex = pickRandomIndex(candidateIndices, rng);
+  if (targetIndex === undefined) {
+    return text;
+  }
+
+  tokens[targetIndex] = '  ';
+  return tokens.join('');
+}
+
+function injectEmDashAside(text: string, rng: () => number): string {
+  const aside = pickRandomValue(EM_DASH_ASIDES, rng);
+  if (!aside) {
+    return text;
+  }
+
+  const tokens = text.split(/(\s+)/);
+  const candidateIndices: number[] = [];
+
+  tokens.forEach((token, index) => {
+    if (!isWhitespaceToken(token) && isSafeToken(token) && !token.includes('—')) {
+      candidateIndices.push(index);
+    }
+  });
+
+  const targetIndex = pickRandomIndex(candidateIndices, rng);
+  if (targetIndex === undefined) {
+    return text;
+  }
+
+  const { prefix, core, suffix } = extractTokenParts(tokens[targetIndex]);
+  if (!core) {
+    return text;
+  }
+
+  tokens[targetIndex] = `${prefix}${core} — ${aside} —${suffix}`;
+  return tokens.join('');
+}
+
+function injectCorrection(text: string, rng: () => number): string {
+  const correction = pickRandomValue(CORRECTION_SNIPPETS, rng);
+  if (!correction) {
+    return text;
+  }
+
+  const tokens = text.split(/(\s+)/);
+  const candidateIndices: number[] = [];
+
+  tokens.forEach((token, index) => {
+    if (!isWhitespaceToken(token) && isSafeToken(token) && !token.toLowerCase().includes('oops meant')) {
+      candidateIndices.push(index);
+    }
+  });
+
+  const targetIndex = pickRandomIndex(candidateIndices, rng);
+  if (targetIndex === undefined) {
+    return text;
+  }
+
+  const { prefix, core, suffix } = extractTokenParts(tokens[targetIndex]);
+  if (!core) {
+    return text;
+  }
+
+  tokens[targetIndex] = `${prefix}${core} (oops meant ${correction})${suffix}`;
+  return tokens.join('');
+}
+
+function injectStrikethrough(text: string, rng: () => number): string {
+  const tokens = text.split(/(\s+)/);
+  const candidateIndices: number[] = [];
+
+  tokens.forEach((token, index) => {
+    if (!isWhitespaceToken(token) && isSafeToken(token) && !STRIKETHROUGH_EXCLUSIONS.some((marker) => token.includes(marker))) {
+      const { core } = extractTokenParts(token);
+      if (core.length > 2 && !/\s/u.test(core)) {
+        candidateIndices.push(index);
+      }
+    }
+  });
+
+  const targetIndex = pickRandomIndex(candidateIndices, rng);
+  if (targetIndex === undefined) {
+    return text;
+  }
+
+  const { prefix, core, suffix } = extractTokenParts(tokens[targetIndex]);
+  if (!core) {
+    return text;
+  }
+
+  tokens[targetIndex] = `${prefix}~~${core}~~${suffix}`;
+  return tokens.join('');
+}
+
+function toPascalCase(value: string): string {
+  const segments = value.match(/[A-Za-z0-9]+/g);
+  if (!segments) {
+    return '';
+  }
+  return segments
+    .map(segment => segment.charAt(0).toUpperCase() + segment.slice(1).toLowerCase())
+    .join('');
+}
+
+function isHashtagLayout(value: string): value is HashtagLayout {
+  return value === 'inline' || value === 'blankLine' || value === 'dotLadder';
+}
+
+function extractLayoutOverride(platform: string): HashtagLayout | null {
+  const hint = platform.split(':').pop();
+  if (!hint) {
+    return null;
+  }
+  return isHashtagLayout(hint) ? hint : null;
+}
+
+function resolveHashtagLayout(platform: string): HashtagLayout {
+  const normalized = platform.trim().toLowerCase();
+  const override = extractLayoutOverride(normalized);
+  if (override) {
+    return override;
+  }
+  if (normalized in PLATFORM_LAYOUT_MAP) {
+    return PLATFORM_LAYOUT_MAP[normalized];
+  }
+  if (normalized.includes('instagram')) {
+    return 'blankLine';
+  }
+  if (normalized.includes('twitter') || normalized.includes('x')) {
+    return 'inline';
+  }
+  if (normalized.includes('tiktok')) {
+    return 'dotLadder';
+  }
+  return 'dotLadder';
+}
+
+function normalizeHashtag(rawTag: string): string {
+  return rawTag.replace(/^#+/, '').trim();
+}
+
+function applyRandomCasing(tag: string, random: () => number): string {
+  const formatterIndex = Math.floor(random() * HASHTAG_CASE_FORMATTERS.length);
+  const formatter = HASHTAG_CASE_FORMATTERS[formatterIndex];
+  const formatted = formatter(tag);
+  if (formatted.length <= 1) {
+    return `#${tag.replace(/\s+/g, '')}`;
+  }
+  return formatted;
+}
+
+function selectConnector(random: () => number, connectorPool: readonly string[]): string | null {
+  if (random() < 0.5) {
+    return null;
+  }
+  const index = Math.floor(random() * connectorPool.length);
+  return connectorPool[index];
+}
+
+function buildHashtagTokens(
+  hashtags: string[],
+  toneEmojis: readonly string[],
+  random: () => number
+): HashtagToken[] {
+  const tokens: HashtagToken[] = [];
+  const connectorPool: readonly string[] = toneEmojis.length > 0
+    ? [...HASHTAG_CONNECTORS, ...toneEmojis]
+    : HASHTAG_CONNECTORS;
+  hashtags.forEach((rawTag, index) => {
+    const normalized = normalizeHashtag(rawTag);
+    if (!normalized) {
+      return;
+    }
+    tokens.push({
+      type: 'tag',
+      value: applyRandomCasing(normalized, random)
+    });
+    if (index < hashtags.length - 1) {
+      const connector = selectConnector(random, connectorPool);
+      if (connector) {
+        tokens.push({ type: 'connector', value: connector });
+      }
+    }
+  });
+  return tokens;
+}
+
+function inlineHashtagText(tokens: HashtagToken[]): string {
+  const parts = tokens.map(token => token.value);
+  return parts.join(' ').replace(/\s+/g, ' ').trim();
+}
+
+function applyInlineHashtags(content: string, tokens: HashtagToken[]): string {
+  const inlineText = inlineHashtagText(tokens);
+  if (!inlineText) {
+    return content.trimEnd();
+  }
+  const trimmed = content.trimEnd();
+  const punctuationMatch = trimmed.match(/([.!?…]+)$/u);
+  if (!punctuationMatch) {
+    return `${trimmed} ${inlineText}`;
+  }
+  return `${trimmed.slice(0, -punctuationMatch[0].length)} ${inlineText}${punctuationMatch[0]}`;
+}
+
+function applyBlankLineHashtags(content: string, tokens: HashtagToken[]): string {
+  const trimmed = content.trimEnd();
+  const blockEntries = tokens.map(token => token.value);
+  if (blockEntries.length === 0) {
+    return trimmed;
+  }
+  return `${trimmed}\n\n${blockEntries.join('\n\n')}`;
+}
+
+function applyDotLadderHashtags(content: string, tokens: HashtagToken[], random: () => number): string {
+  const trimmed = content.trimEnd();
+  const blockEntries = tokens.map(token => token.value);
+  if (blockEntries.length === 0) {
+    return trimmed;
+  }
+  const ladderHeight = 4 + Math.floor(random() * 3); // 4-6 lines to hide hashtags
+  const ladder = Array.from({ length: ladderHeight }, () => '.').join('\n');
+  return `${trimmed}\n\n${ladder}\n${blockEntries.join('\n')}`;
+}
+
+function applyHashtagLayout(
+  content: string,
+  tokens: HashtagToken[],
+  layout: HashtagLayout,
+  random: () => number
+): string {
+  switch (layout) {
+    case 'inline':
+      return applyInlineHashtags(content, tokens);
+    case 'blankLine':
+      return applyBlankLineHashtags(content, tokens);
+    case 'dotLadder':
+    default:
+      return applyDotLadderHashtags(content, tokens, random);
+  }
+}
+
+export function simulateManualTyping(content: string, toneStyle: ToneStyle, options: ManualTypingOptions = {}): string {
+  const rng = options.rng ?? Math.random;
+  const normalizedLevel = clampHumanizedLevel(options.humanizedLevel ?? 0);
+
+  if (normalizedLevel <= 0) {
+    return content;
+  }
+
+  const shouldApply = (baseProbability: number): boolean => rng() < baseProbability * normalizedLevel;
+
+  let mutated = content;
+
+  if (toneStyle.interjections && toneStyle.interjections.length > 0 && shouldApply(0.25)) {
+    const interjection = pickRandomValue(toneStyle.interjections, rng);
+    if (interjection) {
+      mutated = injectInterjection(mutated, interjection);
+    }
+  }
+
+  if (shouldApply(0.2)) {
+    mutated = injectDoubleSpace(mutated, rng);
+  }
+
+  if (shouldApply(0.18)) {
+    mutated = injectEmDashAside(mutated, rng);
+  }
+
+  if (shouldApply(0.15)) {
+    mutated = injectCorrection(mutated, rng);
+  }
+
+  if (shouldApply(0.12)) {
+    mutated = injectStrikethrough(mutated, rng);
+  }
+
+  return mutated;
+}
+
 // Photo Type Specific Content Variations
 const photoTypeVariations = {
   'teasing': {
@@ -392,7 +808,8 @@ const textToneStyles: Record<ContentParameters['textTone'], ToneStyle> = {
       { template: '{theme} energy stays undefeated{punct}{emoji}', type: 'fragment', emojiProbability: 0.5 },
       { template: 'Who else wants {theme} levels like this{punct}{emoji}', type: 'question', emojiProbability: 0.4 },
       { template: 'Just{hedge} {theme} domination{punct}{emoji}', type: 'fragment', emojiProbability: 0.6 }
-    ]
+    ],
+    interjections: ["hang on, hyping myself up", "wait, had to flex", "oops, brag moment"]
   },
   'playful': {
     starters: ["Guess what", "Oops!", "Surprise!", "Hey there", "So..."],
@@ -414,7 +831,8 @@ const textToneStyles: Record<ContentParameters['textTone'], ToneStyle> = {
       { template: 'Could you handle {theme} chaos with me{punct}{emoji}', type: 'question', emojiProbability: 0.6 },
       { template: 'Just{hedge} a little {theme} tease{punct}{emoji}', type: 'fragment', emojiProbability: 0.7 },
       { template: '{theme} mood switched on{punct}{emoji}', type: 'fragment', emojiProbability: 0.5 }
-    ]
+    ],
+    interjections: ["lol, no wait...", "jk (kinda)", "brb hyping this"]
   },
   'mysterious': {
     starters: ["Something happened", "In the shadows", "Late night", "Behind closed doors", "Secret moment"],
@@ -436,7 +854,8 @@ const textToneStyles: Record<ContentParameters['textTone'], ToneStyle> = {
       { template: 'Could you decode these {theme} whispers{punct}{emoji}', type: 'question', emojiProbability: 0.4 },
       { template: 'Behind closed doors it\'s {theme} everything{punct}{emoji}', type: 'statement', emojiProbability: 0.6 },
       { template: 'Shadows guard my {theme} secrets{punct}{emoji}', type: 'fragment', emojiProbability: 0.5 }
-    ]
+    ],
+    interjections: ["shh, wait—", "hmm, maybe I said too much", "oops, almost spoiled it"]
   },
   'authentic': {
     starters: ["Real talk", "Being honest", "Just me", "Genuine moment", "Truth is"],
@@ -458,7 +877,8 @@ const textToneStyles: Record<ContentParameters['textTone'], ToneStyle> = {
       { template: 'Anyone else feeling this {theme} energy{punct}{emoji}', type: 'question', emojiProbability: 0.5 },
       { template: 'My day was all {theme}{punct}{emoji}', type: 'statement', emojiProbability: 0.6 },
       { template: 'Letting you see the {theme} side{punct}{emoji}', type: 'fragment', emojiProbability: 0.5 }
-    ]
+    ],
+    interjections: ["wait, let me be real", "oh, actually—", "haha, small stumble"]
   },
   'sassy': {
     starters: ["Listen up", "Well well", "Oh please", "You think", "Honey"],
@@ -480,7 +900,8 @@ const textToneStyles: Record<ContentParameters['textTone'], ToneStyle> = {
       { template: 'Think you can handle this {theme} heat{punct}{emoji}', type: 'question', emojiProbability: 0.6 },
       { template: 'Serving {theme} looks all day{punct}{emoji}', type: 'fragment', emojiProbability: 0.8 },
       { template: '{starter} {theme} drama{punct}{emoji}', type: 'fragment', emojiProbability: 0.7 }
-    ]
+    ],
+    interjections: ["ugh wait—", "hold on, I did not just", "lol no actually"]
   }
 };
 
@@ -1415,7 +1836,14 @@ function generateMainContent(params: ContentParameters, photoConfig: PhotoConfig
   let content = segments.filter(segment => segment.trim().length > 0).join(' ');
 
   if (params.selectedHashtags.length > 0) {
-    content += ` ${params.selectedHashtags.join(' ')}`;
+    const layout = resolveHashtagLayout(params.platform);
+    const tokens = buildHashtagTokens(params.selectedHashtags, emojis, Math.random);
+    content = applyHashtagLayout(content, tokens, layout, Math.random);
+  }
+
+  const humanizedLevel = params.humanizedLevel ?? 0;
+  if (humanizedLevel > 0) {
+    content = simulateManualTyping(content, toneStyle, { humanizedLevel });
   }
 
   const humanized = applyHumanization(content, toneStyle, {
