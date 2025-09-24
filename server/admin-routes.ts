@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { storage } from './storage';
 import { emailService } from './services/email-service';
-import { type User } from '@shared/schema';
+import { type User, systemHealthSchema, analyticsSchema, completenessSchema } from '../shared/schema.js';
 
 // Admin route interfaces
 interface UserSession {
@@ -367,6 +367,7 @@ export function setupAdminRoutes(app: Express) {
   app.get('/api/admin/system-health', requireAdmin, async (req, res) => {
     try {
       const health = {
+        status: 'healthy', // Added top-level status for client compatibility
         database: {
           status: 'healthy',
           uptime: '99.9%',
@@ -384,7 +385,9 @@ export function setupAdminRoutes(app: Express) {
         }
       };
       
-      res.json(health);
+      // Validate response shape with Zod schema
+      const validatedHealth = systemHealthSchema.parse(health);
+      res.json(validatedHealth);
     } catch (error) {
       console.error('Error fetching system health:', error);
       res.status(500).json({ message: 'Error fetching system health' });
@@ -406,20 +409,22 @@ export function setupAdminRoutes(app: Express) {
         pageViews: Math.floor(baseVisitors * 2.8) + Math.floor(Math.random() * 60),
         bounceRate: 0.28 + (Math.random() * 0.25), // 28-53% bounce rate
         topPages: [
-          { path: '/', views: Math.floor(baseVisitors * 0.4) },
-          { path: '/content-creator', views: Math.floor(baseVisitors * 0.28) },
-          { path: '/login', views: Math.floor(baseVisitors * 0.12) },
-          { path: '/admin', views: Math.floor(baseVisitors * 0.08) },
-          { path: '/register', views: Math.floor(baseVisitors * 0.12) }
+          { page: '/', path: '/', views: Math.floor(baseVisitors * 0.4) },
+          { page: '/content-creator', path: '/content-creator', views: Math.floor(baseVisitors * 0.28) },
+          { page: '/login', path: '/login', views: Math.floor(baseVisitors * 0.12) },
+          { page: '/admin', path: '/admin', views: Math.floor(baseVisitors * 0.08) },
+          { page: '/register', path: '/register', views: Math.floor(baseVisitors * 0.12) }
         ],
         trafficSources: [
-          { source: 'Direct', visitors: Math.floor(baseVisitors * 0.45) },
-          { source: 'Search', visitors: Math.floor(baseVisitors * 0.35) },
-          { source: 'Social', visitors: Math.floor(baseVisitors * 0.20) }
+          { source: 'Direct', visitors: Math.floor(baseVisitors * 0.45), visits: Math.floor(baseVisitors * 0.45) },
+          { source: 'Search', visitors: Math.floor(baseVisitors * 0.35), visits: Math.floor(baseVisitors * 0.35) },
+          { source: 'Social', visitors: Math.floor(baseVisitors * 0.20), visits: Math.floor(baseVisitors * 0.20) }
         ]
       };
       
-      res.json(analytics);
+      // Validate response shape with Zod schema
+      const validatedAnalytics = analyticsSchema.parse(analytics);
+      res.json(validatedAnalytics);
     } catch (error) {
       console.error('Error fetching analytics:', error);
       res.status(500).json({ message: 'Error fetching analytics' });
@@ -453,16 +458,16 @@ export function setupAdminRoutes(app: Express) {
         bounceRate: 0.28 + (Math.random() * 0.25), // 28-53% bounce rate
         averageSessionDuration: 180 + Math.floor(Math.random() * 120), // 3-5 minutes
         topPages: [
-          { path: '/', views: Math.floor(baseVisitors * 0.4) },
-          { path: '/content-creator', views: Math.floor(baseVisitors * 0.28) },
-          { path: '/login', views: Math.floor(baseVisitors * 0.12) },
-          { path: '/admin', views: Math.floor(baseVisitors * 0.08) },
-          { path: '/register', views: Math.floor(baseVisitors * 0.12) }
+          { page: '/', path: '/', views: Math.floor(baseVisitors * 0.4) },
+          { page: '/content-creator', path: '/content-creator', views: Math.floor(baseVisitors * 0.28) },
+          { page: '/login', path: '/login', views: Math.floor(baseVisitors * 0.12) },
+          { page: '/admin', path: '/admin', views: Math.floor(baseVisitors * 0.08) },
+          { page: '/register', path: '/register', views: Math.floor(baseVisitors * 0.12) }
         ],
         trafficSources: [
-          { source: 'Direct', visitors: Math.floor(baseVisitors * 0.45) },
-          { source: 'Search', visitors: Math.floor(baseVisitors * 0.35) },
-          { source: 'Social', visitors: Math.floor(baseVisitors * 0.20) }
+          { source: 'Direct', visitors: Math.floor(baseVisitors * 0.45), visits: Math.floor(baseVisitors * 0.45) },
+          { source: 'Search', visitors: Math.floor(baseVisitors * 0.35), visits: Math.floor(baseVisitors * 0.35) },
+          { source: 'Social', visitors: Math.floor(baseVisitors * 0.20), visits: Math.floor(baseVisitors * 0.20) }
         ],
         hourlyTraffic: Array.from({ length: 24 }, (_, i) => ({
           hour: i,
@@ -501,7 +506,9 @@ export function setupAdminRoutes(app: Express) {
         completionPercentage: 78
       };
       
-      res.json(completeness);
+      // Validate response shape with Zod schema
+      const validatedCompleteness = completenessSchema.parse(completeness);
+      res.json(validatedCompleteness);
     } catch (error) {
       console.error('Error fetching completeness:', error);
       res.status(500).json({ message: 'Error fetching completeness' });

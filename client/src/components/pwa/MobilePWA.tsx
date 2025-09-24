@@ -68,7 +68,7 @@ export default function MobilePWA() {
     const getNetworkInfo = () => {
       if ('connection' in navigator) {
         const connection = (navigator as typeof navigator & { connection?: { effectiveType?: string } }).connection;
-        setNetworkType(connection.effectiveType || 'unknown');
+        setNetworkType(connection?.effectiveType || 'unknown');
       }
     };
 

@@ -263,6 +263,69 @@ export const modActivitySchema = z.enum(['low', 'medium', 'high', 'unknown']).nu
 export type ModActivity = z.infer<typeof modActivitySchema>;
 
 // ==========================================
+// ADMIN ENDPOINT SCHEMAS
+// ==========================================
+
+export const systemHealthSchema = z.object({
+  status: z.string().default('healthy'),
+  database: z.object({
+    status: z.string(),
+    uptime: z.string().optional(),
+    lastCheck: z.date().optional(),
+    message: z.string().optional()
+  }).optional(),
+  services: z.object({
+    gemini: z.boolean().optional(),
+    openai: z.boolean().optional(),
+    email: z.boolean().optional()
+  }),
+  performance: z.object({
+    avgResponseTime: z.string().optional(),
+    errorRate: z.string().optional(),
+    throughput: z.string().optional()
+  }).optional()
+});
+
+export const analyticsSchema = z.object({
+  visitors: z.number().optional(),
+  pageViews: z.number(),
+  sessions: z.number().optional(),
+  conversionRate: z.number().optional(),
+  uniqueVisitors: z.number().optional(),
+  bounceRate: z.number().optional(),
+  topPages: z.array(z.object({
+    page: z.string().optional(),
+    path: z.string().optional(),
+    views: z.number()
+  })).optional(),
+  trafficSources: z.array(z.object({
+    source: z.string(),
+    visits: z.number().optional(),
+    visitors: z.number().optional()
+  })).optional(),
+  hourlyTraffic: z.array(z.object({
+    hour: z.number(),
+    visitors: z.number()
+  })).optional()
+});
+
+export const completenessSchema = z.object({
+  percentage: z.number().optional(),
+  completionPercentage: z.number().optional(),
+  items: z.array(z.object({
+    name: z.string(),
+    status: z.boolean()
+  })).optional(),
+  core: z.record(z.string(), z.boolean()).optional(),
+  features: z.record(z.string(), z.boolean()).optional(),
+  integrations: z.record(z.string(), z.boolean()).optional()
+});
+
+export type SystemHealth = z.infer<typeof systemHealthSchema>;
+export type Analytics = z.infer<typeof analyticsSchema>;
+export type Completeness = z.infer<typeof completenessSchema>;
+
+// ==========================================
 // CANONICALIZATION FUNCTIONS
 // ==========================================
 

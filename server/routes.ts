@@ -570,7 +570,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
             recurring: {
               interval: 'month',
             },
-          },
+          } as any, // Explicit cast to handle Stripe type variations
         }],
         payment_behavior: 'default_incomplete',
         payment_settings: { save_default_payment_method: 'on_subscription' },
