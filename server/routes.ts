@@ -220,7 +220,8 @@ import { registerPolicyRoutes } from "./policy-routes.js";
 import { registerRedditRoutes } from "./reddit-routes.js";
 import { registerAnalyticsRoutes } from "./analytics-routes.js";
 import { createLead, confirmLead } from "./api/leads.js";
-import { getLeads } from "./api/admin-leads.js";
+import { getLeads } from './api/admin-leads.js';
+import { getComplianceStatus } from './api/compliance-status.js';
 import { captionRouter } from "./routes/caption.js";
 import { contentGenerationLimiter } from "./middleware/tiered-rate-limit.js";
 import { registerSocialMediaRoutes } from "./social-media-routes.js";
@@ -383,7 +384,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
   app.use(passport.session());
 
   // Configure Passport serialization for admin
-  passport.serializeUser((user: Express.User, done) => {
+  passport.serializeUser((user, done) => {
     done(null, (user as AuthUser).id);
   });
 
@@ -985,7 +986,10 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
   // Lead API routes (waitlist functionality)
   app.post("/api/leads", createLead);
   app.get("/api/leads/confirm", confirmLead);
-  app.get("/api/admin/leads", getLeads);
+  app.get('/api/admin/leads', getLeads);
+
+  // Compliance dashboard endpoint
+  app.get('/api/admin/compliance', getComplianceStatus);
 
   // Reddit Communities Admin Routes (temporarily disabled for compilation)
   // TODO: Implement storage methods and re-enable routes

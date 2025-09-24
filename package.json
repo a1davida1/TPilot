@@ -20,7 +20,9 @@
     "backfill:post-rate-limits": "tsx scripts/backfill-post-rate-limits.ts",
     "test:coverage": "vitest run --config vitest.unit.config.ts --coverage",
     "test:full": "vitest run --config vitest.config.ts",
-    "test:e2e": "tsx vendor/playwright-test/runner.ts"
+    "test:e2e": "tsx vendor/playwright-test/runner.ts",
+    "env:audit": "tsx scripts/audit-env.ts",
+    "validate:env": "tsx scripts/validate-production-env.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.37.0",
