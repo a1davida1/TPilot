@@ -1,4 +1,3 @@
-
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -16,7 +15,6 @@ export interface ContentParameters {
   customPrompt?: string;
   platform: string;
   humanization?: HumanizationConfig;
-  humanizedLevel?: number;
 }
 
 export interface PhotoInstructions {
@@ -58,7 +56,6 @@ export interface ToneStyle {
   imperfectionTokens?: string[];
   connectors?: string[];
   titlePatterns?: TitlePatternDefinition[];
-  interjections?: string[];
 }
 
 interface PersonalToneConfig {
@@ -114,16 +111,20 @@ interface FragmentRuntimeContext {
   photoType: ContentParameters['photoType'];
 }
 
-export interface ManualTypingOptions {
-  humanizedLevel?: number;
-  rng?: () => number;
+interface PlatformPostProcessContext {
+  emojiPool: string[];
+  emojiCount: number;
 }
 
-type HashtagLayout = 'inline' | 'blankLine' | 'dotLadder';
-
-interface HashtagToken {
-  type: 'tag' | 'connector';
-  value: string;
+interface PlatformProfile {
+  maxSentenceLength: number[];
+  paragraphCounts: number[];
+  emojiDensity: number[];
+  callToActions: string[];
+  paragraphSeparator: string;
+  sentenceSeparator: string;
+  postProcessContent?: (content: string, context: PlatformPostProcessContext) => string;
+  postProcessTitle?: (title: string, context: PlatformPostProcessContext) => string;
 }
 
 const DEFAULT_MAX_HUMANIZATION_QUIRKS = 2;
@@ -152,42 +153,6 @@ const SPELLING_VARIATIONS: Array<{ pattern: RegExp; replacement: string }> = [
   { pattern: /\bsort of\b/i, replacement: 'sorta' },
   { pattern: /\bgoing to\b/i, replacement: 'gonna' },
   { pattern: /\bwant to\b/i, replacement: 'wanna' }
-];
-
-const EM_DASH_ASIDES = [
-  'wait, let me brag for a sec',
-  'okay, mild obsession happening',
-  'small flex, forgive me',
-  'just being dramatic for effect'
-];
-
-const CORRECTION_SNIPPETS = [
-  'extra glow',
-  'actual vibe',
-  'soft focus',
-  'cozy energy',
-  'spicy detail'
-];
-
-const STRIKETHROUGH_EXCLUSIONS = ['~~'];
-
-const PLATFORM_LAYOUT_MAP: Record<string, HashtagLayout> = {
-  instagram: 'blankLine',
-  'instagram-stories': 'blankLine',
-  threads: 'blankLine',
-  twitter: 'inline',
-  x: 'inline',
-  bluesky: 'inline',
-  tiktok: 'dotLadder',
-  onlyfans: 'dotLadder'
-};
-
-const HASHTAG_CONNECTORS: readonly string[] = ['✨', '🔥', 'mood check', 'energy boost', 'vibes', 'glow up', '•', 'spark'];
-
-const HASHTAG_CASE_FORMATTERS: readonly ((tag: string) => string)[] = [
-  (value: string) => `#${value.replace(/\s+/g, '').toLowerCase()}`,
-  (value: string) => `#${toPascalCase(value)}`,
-  (value: string) => `#${value.replace(/\s+/g, '').toUpperCase()}`
 ];
 
 export function applyHumanization(content: string, toneStyle: ToneStyle, options?: HumanizationOptions): string {
@@ -328,372 +293,6 @@ function injectImperfectionToken(text: string, context: HumanizationContext): st
   return `${trimmed} ${token}${whitespace}`;
 }
 
-function clampHumanizedLevel(level: number): number {
-  if (!Number.isFinite(level)) {
-    return 0;
-  }
-  if (level < 0) {
-    return 0;
-  }
-  if (level > 1) {
-    return 1;
-  }
-  return level;
-}
-
-function isWhitespaceToken(token: string): boolean {
-  return /^\s+$/.test(token);
-}
-
-function extractTokenParts(token: string): { prefix: string; core: string; suffix: string } {
-  const prefixMatch = token.match(/^[^A-Za-z0-9'']+/u);
-  const prefix = prefixMatch ? prefixMatch[0] : '';
-  const suffixMatch = token.match(/[^A-Za-z0-9'']+$/u);
-  const suffix = suffixMatch ? suffixMatch[0] : '';
-  const core = token.slice(prefix.length, token.length - suffix.length);
-
-  return { prefix, core, suffix };
-}
-
-function tokenContainsUrlOrHashtag(token: string): boolean {
-  const trimmed = token.trim();
-  if (!trimmed) {
-    return false;
-  }
-  const lowered = trimmed.toLowerCase();
-  return trimmed.startsWith('#') || lowered.includes('http://') || lowered.includes('https://') || lowered.startsWith('www.');
-}
-
-function isSafeToken(token?: string): boolean {
-  if (!token) {
-    return false;
-  }
-  if (tokenContainsUrlOrHashtag(token) || token.includes('#')) {
-    return false;
-  }
-  const { core } = extractTokenParts(token);
-  return core.length > 0;
-}
-
-function pickRandomIndex(indices: number[], rng: () => number): number | undefined {
-  if (indices.length === 0) {
-    return undefined;
-  }
-  const rawIndex = Math.floor(rng() * indices.length);
-  const safeIndex = rawIndex >= indices.length ? indices.length - 1 : rawIndex;
-  return indices[safeIndex];
-}
-
-function pickRandomValue(values: string[], rng: () => number): string | undefined {
-  if (values.length === 0) {
-    return undefined;
-  }
-  const rawIndex = Math.floor(rng() * values.length);
-  const index = rawIndex >= values.length ? values.length - 1 : rawIndex;
-  return values[index];
-}
-
-function injectInterjection(text: string, interjection: string): string {
-  if (!interjection.trim()) {
-    return text;
-  }
-  const trimmed = text.trimStart();
-  if (trimmed.startsWith(interjection)) {
-    return text;
-  }
-  return `${interjection} ${text}`;
-}
-
-function injectDoubleSpace(text: string, rng: () => number): string {
-  const tokens = text.split(/(\s+)/);
-  const candidateIndices: number[] = [];
-
-  tokens.forEach((token, index) => {
-    if (token === ' ' && isSafeToken(tokens[index - 1]) && isSafeToken(tokens[index + 1])) {
-      candidateIndices.push(index);
-    }
-  });
-
-  const targetIndex = pickRandomIndex(candidateIndices, rng);
-  if (targetIndex === undefined) {
-    return text;
-  }
-
-  tokens[targetIndex] = '  ';
-  return tokens.join('');
-}
-
-function injectEmDashAside(text: string, rng: () => number): string {
-  const aside = pickRandomValue(EM_DASH_ASIDES, rng);
-  if (!aside) {
-    return text;
-  }
-
-  const tokens = text.split(/(\s+)/);
-  const candidateIndices: number[] = [];
-
-  tokens.forEach((token, index) => {
-    if (!isWhitespaceToken(token) && isSafeToken(token) && !token.includes('—')) {
-      candidateIndices.push(index);
-    }
-  });
-
-  const targetIndex = pickRandomIndex(candidateIndices, rng);
-  if (targetIndex === undefined) {
-    return text;
-  }
-
-  const { prefix, core, suffix } = extractTokenParts(tokens[targetIndex]);
-  if (!core) {
-    return text;
-  }
-
-  tokens[targetIndex] = `${prefix}${core} — ${aside} —${suffix}`;
-  return tokens.join('');
-}
-
-function injectCorrection(text: string, rng: () => number): string {
-  const correction = pickRandomValue(CORRECTION_SNIPPETS, rng);
-  if (!correction) {
-    return text;
-  }
-
-  const tokens = text.split(/(\s+)/);
-  const candidateIndices: number[] = [];
-
-  tokens.forEach((token, index) => {
-    if (!isWhitespaceToken(token) && isSafeToken(token) && !token.toLowerCase().includes('oops meant')) {
-      candidateIndices.push(index);
-    }
-  });
-
-  const targetIndex = pickRandomIndex(candidateIndices, rng);
-  if (targetIndex === undefined) {
-    return text;
-  }
-
-  const { prefix, core, suffix } = extractTokenParts(tokens[targetIndex]);
-  if (!core) {
-    return text;
-  }
-
-  tokens[targetIndex] = `${prefix}${core} (oops meant ${correction})${suffix}`;
-  return tokens.join('');
-}
-
-function injectStrikethrough(text: string, rng: () => number): string {
-  const tokens = text.split(/(\s+)/);
-  const candidateIndices: number[] = [];
-
-  tokens.forEach((token, index) => {
-    if (!isWhitespaceToken(token) && isSafeToken(token) && !STRIKETHROUGH_EXCLUSIONS.some((marker) => token.includes(marker))) {
-      const { core } = extractTokenParts(token);
-      if (core.length > 2 && !/\s/u.test(core)) {
-        candidateIndices.push(index);
-      }
-    }
-  });
-
-  const targetIndex = pickRandomIndex(candidateIndices, rng);
-  if (targetIndex === undefined) {
-    return text;
-  }
-
-  const { prefix, core, suffix } = extractTokenParts(tokens[targetIndex]);
-  if (!core) {
-    return text;
-  }
-
-  tokens[targetIndex] = `${prefix}~~${core}~~${suffix}`;
-  return tokens.join('');
-}
-
-function toPascalCase(value: string): string {
-  const segments = value.match(/[A-Za-z0-9]+/g);
-  if (!segments) {
-    return '';
-  }
-  return segments
-    .map(segment => segment.charAt(0).toUpperCase() + segment.slice(1).toLowerCase())
-    .join('');
-}
-
-function isHashtagLayout(value: string): value is HashtagLayout {
-  return value === 'inline' || value === 'blankLine' || value === 'dotLadder';
-}
-
-function extractLayoutOverride(platform: string): HashtagLayout | null {
-  const hint = platform.split(':').pop();
-  if (!hint) {
-    return null;
-  }
-  return isHashtagLayout(hint) ? hint : null;
-}
-
-function resolveHashtagLayout(platform: string): HashtagLayout {
-  const normalized = platform.trim().toLowerCase();
-  const override = extractLayoutOverride(normalized);
-  if (override) {
-    return override;
-  }
-  if (normalized in PLATFORM_LAYOUT_MAP) {
-    return PLATFORM_LAYOUT_MAP[normalized];
-  }
-  if (normalized.includes('instagram')) {
-    return 'blankLine';
-  }
-  if (normalized.includes('twitter') || normalized.includes('x')) {
-    return 'inline';
-  }
-  if (normalized.includes('tiktok')) {
-    return 'dotLadder';
-  }
-  return 'dotLadder';
-}
-
-function normalizeHashtag(rawTag: string): string {
-  return rawTag.replace(/^#+/, '').trim();
-}
-
-function applyRandomCasing(tag: string, random: () => number): string {
-  const formatterIndex = Math.floor(random() * HASHTAG_CASE_FORMATTERS.length);
-  const formatter = HASHTAG_CASE_FORMATTERS[formatterIndex];
-  const formatted = formatter(tag);
-  if (formatted.length <= 1) {
-    return `#${tag.replace(/\s+/g, '')}`;
-  }
-  return formatted;
-}
-
-function selectConnector(random: () => number, connectorPool: readonly string[]): string | null {
-  if (random() < 0.5) {
-    return null;
-  }
-  const index = Math.floor(random() * connectorPool.length);
-  return connectorPool[index];
-}
-
-function buildHashtagTokens(
-  hashtags: string[],
-  toneEmojis: readonly string[],
-  random: () => number
-): HashtagToken[] {
-  const tokens: HashtagToken[] = [];
-  const connectorPool: readonly string[] = toneEmojis.length > 0
-    ? [...HASHTAG_CONNECTORS, ...toneEmojis]
-    : HASHTAG_CONNECTORS;
-  hashtags.forEach((rawTag, index) => {
-    const normalized = normalizeHashtag(rawTag);
-    if (!normalized) {
-      return;
-    }
-    tokens.push({
-      type: 'tag',
-      value: applyRandomCasing(normalized, random)
-    });
-    if (index < hashtags.length - 1) {
-      const connector = selectConnector(random, connectorPool);
-      if (connector) {
-        tokens.push({ type: 'connector', value: connector });
-      }
-    }
-  });
-  return tokens;
-}
-
-function inlineHashtagText(tokens: HashtagToken[]): string {
-  const parts = tokens.map(token => token.value);
-  return parts.join(' ').replace(/\s+/g, ' ').trim();
-}
-
-function applyInlineHashtags(content: string, tokens: HashtagToken[]): string {
-  const inlineText = inlineHashtagText(tokens);
-  if (!inlineText) {
-    return content.trimEnd();
-  }
-  const trimmed = content.trimEnd();
-  const punctuationMatch = trimmed.match(/([.!?…]+)$/u);
-  if (!punctuationMatch) {
-    return `${trimmed} ${inlineText}`;
-  }
-  return `${trimmed.slice(0, -punctuationMatch[0].length)} ${inlineText}${punctuationMatch[0]}`;
-}
-
-function applyBlankLineHashtags(content: string, tokens: HashtagToken[]): string {
-  const trimmed = content.trimEnd();
-  const blockEntries = tokens.map(token => token.value);
-  if (blockEntries.length === 0) {
-    return trimmed;
-  }
-  return `${trimmed}\n\n${blockEntries.join('\n\n')}`;
-}
-
-function applyDotLadderHashtags(content: string, tokens: HashtagToken[], random: () => number): string {
-  const trimmed = content.trimEnd();
-  const blockEntries = tokens.map(token => token.value);
-  if (blockEntries.length === 0) {
-    return trimmed;
-  }
-  const ladderHeight = 4 + Math.floor(random() * 3); // 4-6 lines to hide hashtags
-  const ladder = Array.from({ length: ladderHeight }, () => '.').join('\n');
-  return `${trimmed}\n\n${ladder}\n${blockEntries.join('\n')}`;
-}
-
-function applyHashtagLayout(
-  content: string,
-  tokens: HashtagToken[],
-  layout: HashtagLayout,
-  random: () => number
-): string {
-  switch (layout) {
-    case 'inline':
-      return applyInlineHashtags(content, tokens);
-    case 'blankLine':
-      return applyBlankLineHashtags(content, tokens);
-    case 'dotLadder':
-    default:
-      return applyDotLadderHashtags(content, tokens, random);
-  }
-}
-
-export function simulateManualTyping(content: string, toneStyle: ToneStyle, options: ManualTypingOptions = {}): string {
-  const rng = options.rng ?? Math.random;
-  const normalizedLevel = clampHumanizedLevel(options.humanizedLevel ?? 0);
-
-  if (normalizedLevel <= 0) {
-    return content;
-  }
-
-  const shouldApply = (baseProbability: number): boolean => rng() < baseProbability * normalizedLevel;
-
-  let mutated = content;
-
-  if (toneStyle.interjections && toneStyle.interjections.length > 0 && shouldApply(0.25)) {
-    const interjection = pickRandomValue(toneStyle.interjections, rng);
-    if (interjection) {
-      mutated = injectInterjection(mutated, interjection);
-    }
-  }
-
-  if (shouldApply(0.2)) {
-    mutated = injectDoubleSpace(mutated, rng);
-  }
-
-  if (shouldApply(0.18)) {
-    mutated = injectEmDashAside(mutated, rng);
-  }
-
-  if (shouldApply(0.15)) {
-    mutated = injectCorrection(mutated, rng);
-  }
-
-  if (shouldApply(0.12)) {
-    mutated = injectStrikethrough(mutated, rng);
-  }
-
-  return mutated;
-}
-
 // Photo Type Specific Content Variations
 const photoTypeVariations = {
   'teasing': {
@@ -808,8 +407,7 @@ const textToneStyles: Record<ContentParameters['textTone'], ToneStyle> = {
       { template: '{theme} energy stays undefeated{punct}{emoji}', type: 'fragment', emojiProbability: 0.5 },
       { template: 'Who else wants {theme} levels like this{punct}{emoji}', type: 'question', emojiProbability: 0.4 },
       { template: 'Just{hedge} {theme} domination{punct}{emoji}', type: 'fragment', emojiProbability: 0.6 }
-    ],
-    interjections: ["hang on, hyping myself up", "wait, had to flex", "oops, brag moment"]
+    ]
   },
   'playful': {
     starters: ["Guess what", "Oops!", "Surprise!", "Hey there", "So..."],
@@ -831,8 +429,7 @@ const textToneStyles: Record<ContentParameters['textTone'], ToneStyle> = {
       { template: 'Could you handle {theme} chaos with me{punct}{emoji}', type: 'question', emojiProbability: 0.6 },
       { template: 'Just{hedge} a little {theme} tease{punct}{emoji}', type: 'fragment', emojiProbability: 0.7 },
       { template: '{theme} mood switched on{punct}{emoji}', type: 'fragment', emojiProbability: 0.5 }
-    ],
-    interjections: ["lol, no wait...", "jk (kinda)", "brb hyping this"]
+    ]
   },
   'mysterious': {
     starters: ["Something happened", "In the shadows", "Late night", "Behind closed doors", "Secret moment"],
@@ -854,8 +451,7 @@ const textToneStyles: Record<ContentParameters['textTone'], ToneStyle> = {
       { template: 'Could you decode these {theme} whispers{punct}{emoji}', type: 'question', emojiProbability: 0.4 },
       { template: 'Behind closed doors it\'s {theme} everything{punct}{emoji}', type: 'statement', emojiProbability: 0.6 },
       { template: 'Shadows guard my {theme} secrets{punct}{emoji}', type: 'fragment', emojiProbability: 0.5 }
-    ],
-    interjections: ["shh, wait—", "hmm, maybe I said too much", "oops, almost spoiled it"]
+    ]
   },
   'authentic': {
     starters: ["Real talk", "Being honest", "Just me", "Genuine moment", "Truth is"],
@@ -877,8 +473,7 @@ const textToneStyles: Record<ContentParameters['textTone'], ToneStyle> = {
       { template: 'Anyone else feeling this {theme} energy{punct}{emoji}', type: 'question', emojiProbability: 0.5 },
       { template: 'My day was all {theme}{punct}{emoji}', type: 'statement', emojiProbability: 0.6 },
       { template: 'Letting you see the {theme} side{punct}{emoji}', type: 'fragment', emojiProbability: 0.5 }
-    ],
-    interjections: ["wait, let me be real", "oh, actually—", "haha, small stumble"]
+    ]
   },
   'sassy': {
     starters: ["Listen up", "Well well", "Oh please", "You think", "Honey"],
@@ -900,8 +495,7 @@ const textToneStyles: Record<ContentParameters['textTone'], ToneStyle> = {
       { template: 'Think you can handle this {theme} heat{punct}{emoji}', type: 'question', emojiProbability: 0.6 },
       { template: 'Serving {theme} looks all day{punct}{emoji}', type: 'fragment', emojiProbability: 0.8 },
       { template: '{starter} {theme} drama{punct}{emoji}', type: 'fragment', emojiProbability: 0.7 }
-    ],
-    interjections: ["ugh wait—", "hold on, I did not just", "lol no actually"]
+    ]
   }
 };
 
@@ -1173,18 +767,18 @@ export const toneFragmentPools: Record<ContentParameters['textTone'], ToneFragme
         builder: context => `${formatFiller(context.pickFiller())} I went ${context.pickDescriptor()} with this ${context.pickTheme()} idea.`
       },
       {
-        builder: context => `I\'m giggling because that ${context.pickSetting()} turned into something ${context.pickDescriptor()} real fast.`
+        builder: context => `I'm giggling because that ${context.pickSetting()} turned into something ${context.pickDescriptor()} real fast.`
       },
       {
-        builder: context => `Tell me why I\'m obsessed with this ${context.pickTheme()} moment ${context.pickEmoji()}`
+        builder: context => `Tell me why I'm obsessed with this ${context.pickTheme()} moment ${context.pickEmoji()}`
       },
       {
-        builder: context => `I kinda let the ${context.pickDescriptor()} vibes run wild today and I\'m not sorry.`
+        builder: context => `I kinda let the ${context.pickDescriptor()} vibes run wild today and I'm not sorry.`
       }
     ],
     promo: [
       {
-        builder: context => `If you wanna peek at the rest, it\'s hiding in my VIP corner being all ${context.pickDescriptor()}.`
+        builder: context => `If you wanna peek at the rest, it's hiding in my VIP corner being all ${context.pickDescriptor()}.`
       },
       {
         weight: 2,
@@ -1204,13 +798,13 @@ export const toneFragmentPools: Record<ContentParameters['textTone'], ToneFragme
         builder: context => `${formatFiller(context.pickFiller())} I wandered through a ${context.pickTheme()} night and captured the whispers.`
       },
       {
-        builder: context => `There\'s a ${context.pickDescriptor()} hush in that ${context.pickSetting()} that I can\'t shake.`
+        builder: context => `There's a ${context.pickDescriptor()} hush in that ${context.pickSetting()} that I can't shake.`
       },
       {
         builder: context => `Some ${context.pickTheme()} secrets slipped out and I just let the camera listen ${context.pickEmoji()}`
       },
       {
-        builder: context => `Let\'s just say the ${context.pickDescriptor()} mood got recorded quietly.`
+        builder: context => `Let's just say the ${context.pickDescriptor()} mood got recorded quietly.`
       }
     ],
     promo: [
@@ -1232,21 +826,21 @@ export const toneFragmentPools: Record<ContentParameters['textTone'], ToneFragme
     intro: [
       {
         weight: 2,
-        builder: context => `${formatFiller(context.pickFiller())} it\'s just me leaning into that ${context.pickTheme()} story.`
+        builder: context => `${formatFiller(context.pickFiller())} it's just me leaning into that ${context.pickTheme()} story.`
       },
       {
         builder: context => `I kept it ${context.pickDescriptor()} in the ${context.pickSetting()} — nothing staged, promise.`
       },
       {
-        builder: context => `I\'m sharing the ${context.pickTheme()} moment exactly how it felt ${context.pickEmoji()}`
+        builder: context => `I'm sharing the ${context.pickTheme()} moment exactly how it felt ${context.pickEmoji()}`
       },
       {
-        builder: () => `I\'m just letting the candid vibes breathe today.`
+        builder: () => `I'm just letting the candid vibes breathe today.`
       }
     ],
     promo: [
       {
-        builder: context => `If you vibe with the realness, the full gallery stays cozy with my subs — it\'s all ${context.pickDescriptor()}.`
+        builder: context => `If you vibe with the realness, the full gallery stays cozy with my subs — it's all ${context.pickDescriptor()}.`
       },
       {
         builder: () => `I dropped more raw takes for members — zero polish, just truth.`
@@ -1263,21 +857,21 @@ export const toneFragmentPools: Record<ContentParameters['textTone'], ToneFragme
     intro: [
       {
         weight: 3,
-        builder: context => `${formatFiller(context.pickFiller())} I snapped ${context.pickDescriptor()} shots and I\'m feeling myself.`
+        builder: context => `${formatFiller(context.pickFiller())} I snapped ${context.pickDescriptor()} shots and I'm feeling myself.`
       },
       {
         builder: context => `Try keeping up with this ${context.pickDescriptor()} attitude coming straight from the ${context.pickSetting()}.`
       },
       {
-        builder: context => `I let the ${context.pickTheme()} fantasy play and now you\'re welcome ${context.pickEmoji()}`
+        builder: context => `I let the ${context.pickTheme()} fantasy play and now you're welcome ${context.pickEmoji()}`
       },
       {
-        builder: () => `I\'m not toning it down — why would I?`
+        builder: () => `I'm not toning it down — why would I?`
       }
     ],
     promo: [
       {
-        builder: context => `If you\'re bold enough, the premium feed is stacked with unapologetic ${context.pickDescriptor()} clips.`
+        builder: context => `If you're bold enough, the premium feed is stacked with unapologetic ${context.pickDescriptor()} clips.`
       },
       {
         builder: () => `VIPs get the talk-back moments — the spice, the shade, all of it.`
@@ -1302,10 +896,10 @@ export const photoTypeFragmentPools: Record<ContentParameters['photoType'], Phot
         builder: context => `Messy hair, comfy layers, and the ${context.mood} vibe kinda took over.`
       },
       {
-        builder: context => `It\'s just me and that ${context.pickTheme()} slice of life — nothing forced, just ease.`
+        builder: context => `It's just me and that ${context.pickTheme()} slice of life — nothing forced, just ease.`
       },
       {
-        builder: context => `We\'re talking soft laughs, bare feet, and a ${context.pickDescriptor()} calm.`
+        builder: context => `We're talking soft laughs, bare feet, and a ${context.pickDescriptor()} calm.`
       }
     ]
   },
@@ -1314,13 +908,13 @@ export const photoTypeFragmentPools: Record<ContentParameters['photoType'], Phot
     body: [
       {
         weight: 2,
-        builder: context => `Sweat dripping in the ${context.pickSetting()} and I\'m feeling ${context.pickDescriptor()} strong.`
+        builder: context => `Sweat dripping in the ${context.pickSetting()} and I'm feeling ${context.pickDescriptor()} strong.`
       },
       {
         builder: context => `That ${context.pickTheme()} grind left my pulse racing and my smile all kinds of wild.`
       },
       {
-        builder: context => `I\'m flexing, laughing, and letting the ${context.mood} glow show.`
+        builder: context => `I'm flexing, laughing, and letting the ${context.mood} glow show.`
       },
       {
         builder: context => `Endorphins hit, music stayed loud, and the camera caught the ${context.pickDescriptor()} finish.`
@@ -1338,10 +932,10 @@ export const photoTypeFragmentPools: Record<ContentParameters['photoType'], Phot
         builder: context => `Water traced my shoulders while that ${context.pickTheme()} idea soaked in.`
       },
       {
-        builder: context => `It\'s all warm tiles, slick skin, and a ${context.mood} hush.`
+        builder: context => `It's all warm tiles, slick skin, and a ${context.mood} hush.`
       },
       {
-        builder: context => `I\'m letting the droplets tell the ${context.pickDescriptor()} story.`
+        builder: context => `I'm letting the droplets tell the ${context.pickDescriptor()} story.`
       }
     ]
   },
@@ -1356,7 +950,7 @@ export const photoTypeFragmentPools: Record<ContentParameters['photoType'], Phot
         builder: context => `Shadow lines on skin made that ${context.pickTheme()} story glow.`
       },
       {
-        builder: context => `I\'m celebrating the body, the light, and that ${context.mood} confidence.`
+        builder: context => `I'm celebrating the body, the light, and that ${context.mood} confidence.`
       },
       {
         builder: context => `The lens lingered because every angle felt ${context.pickDescriptor()} and intentional.`
@@ -1392,7 +986,7 @@ export const photoTypeFragmentPools: Record<ContentParameters['photoType'], Phot
         builder: context => `Every ${context.pickTheme()} whisper turned louder and I didn\'t flinch.`
       },
       {
-        builder: context => `It\'s bare skin, raw edges, and a ${context.mood} surrender.`
+        builder: context => `It's bare skin, raw edges, and a ${context.mood} surrender.`
       },
       {
         builder: context => `I held the pose until the fire looked right back.`
@@ -1413,7 +1007,7 @@ export const photoTypeFragmentPools: Record<ContentParameters['photoType'], Phot
         builder: context => `We played with every angle until the art felt limitless and ${context.pickDescriptor()}.`
       },
       {
-        builder: context => `It\'s wild, raw, and dripping in ${context.mood} abandon.`
+        builder: context => `It's wild, raw, and dripping in ${context.mood} abandon.`
       }
     ]
   },
@@ -1421,14 +1015,14 @@ export const photoTypeFragmentPools: Record<ContentParameters['photoType'], Phot
     connectors: ['keeping it safe,', 'in that locked room,', 'between us,', 'meanwhile,', 'carefully,'],
     body: [
       {
-        builder: context => `There\'s explicit artistry here — ${context.pickDescriptor()} and unapologetic.`
+        builder: context => `There's explicit artistry here — ${context.pickDescriptor()} and unapologetic.`
       },
       {
         weight: 2,
         builder: context => `Every ${context.pickTheme()} scene pushes the frame with intent.`
       },
       {
-        builder: context => `I\'m curating what feels right, keeping the ${context.mood} promise intact.`
+        builder: context => `I'm curating what feels right, keeping the ${context.mood} promise intact.`
       },
       {
         builder: context => `Handled every shot carefully so it stays ${context.pickDescriptor()} and respectful.`
@@ -1601,6 +1195,225 @@ function buildCustomPromptSegment(customPrompt: string, connectors: string[]): s
   return cleanSpacing(parts.join(' '));
 }
 
+// Helper functions for platform-specific processing
+function applyEmojiDensity(text: string, emojiPool: string[], targetDensity: number): string {
+  const currentEmojis = (text.match(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu) || []).length;
+  const emojisToAdd = Math.max(0, targetDensity - currentEmojis);
+
+  if (emojisToAdd === 0 || emojiPool.length === 0) {
+    return text;
+  }
+
+  let result = text;
+  for (let i = 0; i < emojisToAdd; i++) {
+    const emoji = pickRandom(emojiPool);
+    const insertionPoint = Math.floor(Math.random() * (result.length + 1));
+    result = `${result.slice(0, insertionPoint)}${emoji}${result.slice(insertionPoint)}`;
+  }
+
+  return result;
+}
+
+function clampSentenceLength(text: string, maxLengths: number[]): string {
+  if (maxLengths.length === 0) {
+    return text;
+  }
+
+  const maxLength = pickRandom(maxLengths);
+  const sentences = text.split(/(?<=[.!?])\s+/); // Split while keeping punctuation
+
+  if (sentences.length === 0) {
+    return text;
+  }
+
+  let currentLength = 0;
+  const clampedSentences: string[] = [];
+
+  for (const sentence of sentences) {
+    if (currentLength + sentence.length + 1 <= maxLength) {
+      clampedSentences.push(sentence);
+      currentLength += sentence.length + 1;
+    } else {
+      // If the current sentence itself is too long, truncate it
+      if (sentence.length > maxLength) {
+        clampedSentences.push(sentence.substring(0, maxLength));
+      } else {
+        clampedSentences.push(sentence);
+      }
+      break; // Stop adding sentences once limit is reached
+    }
+  }
+
+  return clampedSentences.join(' ');
+}
+
+// Platform Profiles
+const platformProfiles: Record<string, PlatformProfile> = {
+  'default': {
+    maxSentenceLength: [100, 120, 140],
+    paragraphCounts: [2, 3, 4],
+    emojiDensity: [1, 2, 3],
+    callToActions: ['See you there!', 'Check it out!', 'Link in bio!'],
+    paragraphSeparator: '\n\n',
+    sentenceSeparator: ' ',
+    postProcessContent: (content, context) => {
+      content = applyEmojiDensity(content, context.emojiPool, context.emojiCount);
+      const sentences = content.split(/(?<=[.!?])\s+/);
+      let processedContent = '';
+      let currentParagraphLength = 0;
+      const paragraphCount = pickRandom(platformProfiles.default.paragraphCounts);
+
+      for (let i = 0; i < sentences.length; i++) {
+        const sentence = sentences[i];
+        processedContent += sentence + platformProfiles.default.sentenceSeparator;
+        currentParagraphLength += sentence.length + platformProfiles.default.sentenceSeparator.length;
+
+        // Check if a new paragraph should start
+        if (i < sentences.length - 1 && Math.random() < 0.5 && currentParagraphLength > 60) {
+          // Start a new paragraph if the current one is long enough and we haven't reached the desired count
+          if (processedContent.split(platformProfiles.default.paragraphSeparator).length < paragraphCount) {
+            processedContent += platformProfiles.default.paragraphSeparator;
+            currentParagraphLength = 0;
+          }
+        }
+      }
+      return processedContent.trim();
+    }
+  },
+  'instagram': {
+    maxSentenceLength: [90, 100, 110],
+    paragraphCounts: [3, 4, 5],
+    emojiDensity: [2, 3, 4],
+    callToActions: ['Link in bio!', 'DM for details!', 'Tap the link!'],
+    paragraphSeparator: '\n\n',
+    sentenceSeparator: ' ',
+    postProcessTitle: (title, context) => {
+      title = applyEmojiDensity(title, context.emojiPool, context.emojiCount);
+      return clampSentenceLength(title, [90, 100]);
+    },
+    postProcessContent: (content, context) => {
+      content = applyEmojiDensity(content, context.emojiPool, context.emojiCount);
+      const sentences = content.split(/(?<=[.!?])\s+/);
+      let processedContent = '';
+      let currentParagraphLength = 0;
+      const paragraphCount = pickRandom(platformProfiles.instagram.paragraphCounts);
+
+      for (let i = 0; i < sentences.length; i++) {
+        const sentence = sentences[i];
+        processedContent += sentence + platformProfiles.instagram.sentenceSeparator;
+        currentParagraphLength += sentence.length + platformProfiles.instagram.sentenceSeparator.length;
+
+        if (i < sentences.length - 1 && Math.random() < 0.6 && currentParagraphLength > 50) {
+          if (processedContent.split(platformProfiles.instagram.paragraphSeparator).length < paragraphCount) {
+            processedContent += platformProfiles.instagram.paragraphSeparator;
+            currentParagraphLength = 0;
+          }
+        }
+      }
+      return processedContent.trim();
+    }
+  },
+  'twitter': {
+    maxSentenceLength: [80, 90, 100],
+    paragraphCounts: [1, 2],
+    emojiDensity: [0, 1, 2],
+    callToActions: ['Check it out!', 'Read more!', 'Link below 👇'],
+    paragraphSeparator: '\n',
+    sentenceSeparator: ' ',
+    postProcessTitle: (title, context) => {
+      title = applyEmojiDensity(title, context.emojiPool, context.emojiCount);
+      return clampSentenceLength(title, [80, 90]);
+    },
+    postProcessContent: (content, context) => {
+      content = applyEmojiDensity(content, context.emojiPool, context.emojiCount);
+      const sentences = content.split(/(?<=[.!?])\s+/);
+      let processedContent = '';
+      let currentParagraphLength = 0;
+      const paragraphCount = pickRandom(platformProfiles.twitter.paragraphCounts);
+
+      for (let i = 0; i < sentences.length; i++) {
+        const sentence = sentences[i];
+        processedContent += sentence + platformProfiles.twitter.sentenceSeparator;
+        currentParagraphLength += sentence.length + platformProfiles.twitter.sentenceSeparator.length;
+
+        if (i < sentences.length - 1 && Math.random() < 0.3 && currentParagraphLength > 40) {
+          if (processedContent.split(platformProfiles.twitter.paragraphSeparator).length < paragraphCount) {
+            processedContent += platformProfiles.twitter.paragraphSeparator;
+            currentParagraphLength = 0;
+          }
+        }
+      }
+      return processedContent.trim();
+    }
+  },
+  'facebook': {
+    maxSentenceLength: [110, 130, 150],
+    paragraphCounts: [3, 4, 5],
+    emojiDensity: [2, 3, 4, 5],
+    callToActions: ['Learn more!', 'Visit our page!', 'Click here!'],
+    paragraphSeparator: '\n\n',
+    sentenceSeparator: ' ',
+    postProcessTitle: (title, context) => {
+      title = applyEmojiDensity(title, context.emojiPool, context.emojiCount);
+      return clampSentenceLength(title, [100, 110]);
+    },
+    postProcessContent: (content, context) => {
+      content = applyEmojiDensity(content, context.emojiPool, context.emojiCount);
+      const sentences = content.split(/(?<=[.!?])\s+/);
+      let processedContent = '';
+      let currentParagraphLength = 0;
+      const paragraphCount = pickRandom(platformProfiles.facebook.paragraphCounts);
+
+      for (let i = 0; i < sentences.length; i++) {
+        const sentence = sentences[i];
+        processedContent += sentence + platformProfiles.facebook.sentenceSeparator;
+        currentParagraphLength += sentence.length + platformProfiles.facebook.sentenceSeparator.length;
+
+        if (i < sentences.length - 1 && Math.random() < 0.7 && currentParagraphLength > 70) {
+          if (processedContent.split(platformProfiles.facebook.paragraphSeparator).length < paragraphCount) {
+            processedContent += platformProfiles.facebook.paragraphSeparator;
+            currentParagraphLength = 0;
+          }
+        }
+      }
+      return processedContent.trim();
+    }
+  },
+  'tiktok': {
+    maxSentenceLength: [70, 80, 90],
+    paragraphCounts: [1, 2, 3],
+    emojiDensity: [3, 4, 5],
+    callToActions: ['Link in bio!', 'Follow for more!', 'Check the comments!'],
+    paragraphSeparator: '\n',
+    sentenceSeparator: ' ',
+    postProcessTitle: (title, context) => {
+      title = applyEmojiDensity(title, context.emojiPool, context.emojiCount);
+      return clampSentenceLength(title, [70, 80]);
+    },
+    postProcessContent: (content, context) => {
+      content = applyEmojiDensity(content, context.emojiPool, context.emojiCount);
+      const sentences = content.split(/(?<=[.!?])\s+/);
+      let processedContent = '';
+      let currentParagraphLength = 0;
+      const paragraphCount = pickRandom(platformProfiles.tiktok.paragraphCounts);
+
+      for (let i = 0; i < sentences.length; i++) {
+        const sentence = sentences[i];
+        processedContent += sentence + platformProfiles.tiktok.sentenceSeparator;
+        currentParagraphLength += sentence.length + platformProfiles.tiktok.sentenceSeparator.length;
+
+        if (i < sentences.length - 1 && Math.random() < 0.4 && currentParagraphLength > 40) {
+          if (processedContent.split(platformProfiles.tiktok.paragraphSeparator).length < paragraphCount) {
+            processedContent += platformProfiles.tiktok.paragraphSeparator;
+            currentParagraphLength = 0;
+          }
+        }
+      }
+      return processedContent.trim();
+    }
+  }
+};
+
 // Generate content based on all parameters
 export function generateAdvancedContent(params: ContentParameters): GeneratedContent {
   // Check if this is a preset request and use preset variations
@@ -1626,7 +1439,7 @@ export function generateAdvancedContent(params: ContentParameters): GeneratedCon
   const photoConfig = photoTypeVariations[params.photoType as keyof typeof photoTypeVariations] || photoTypeVariations['casual'] as PhotoConfig;
   const toneStyle = textToneStyles[params.textTone as keyof typeof textToneStyles] || textToneStyles['authentic'] as ToneStyle;
 
-  const titles = generateTitles(params, photoConfig, toneStyle);
+  const titles = generateTitles(params, photoConfig, toneStyle, platformProfiles);
   const content = generateMainContent(params, photoConfig, toneStyle);
   const photoInstructions = generatePhotoInstructions(params, photoConfig);
   const tags = generateTags(params, photoConfig);
@@ -1690,12 +1503,26 @@ function getRandomPresetVariation(presetId: string): PresetVariation | null {
   return null;
 }
 
-function generateTitles(params: ContentParameters, photoConfig: PhotoConfig, toneStyle: ToneStyle): string[] {
+function generateTitles(
+  params: ContentParameters,
+  photoConfig: PhotoConfig,
+  toneStyle: ToneStyle,
+  profiles: Record<string, PlatformProfile>
+): string[] {
+  const profile = profiles[params.platform] ?? profiles.default;
+  const maxSentenceLength = pickRandom(profile.maxSentenceLength);
+  const emojiCount = pickRandom(profile.emojiDensity);
+  const callToAction = pickRandom(profile.callToActions);
+  const context: PlatformPostProcessContext = {
+    emojiPool: toneStyle.emojis,
+    emojiCount
+  };
+
   const desiredTitleCount = Math.floor(Math.random() * (MAX_TITLES - MIN_TITLES + 1)) + MIN_TITLES;
   const themes = photoConfig.themes;
   const starters = toneStyle.starters;
   const emojis = toneStyle.emojis;
-  
+
   const connectorPool = (toneStyle.connectors ?? []).filter(connector => connector.trim().length > 0);
   const connectors = connectorPool.length > 0 ? connectorPool : fallbackConnectors;
   const basePatterns = toneStyle.titlePatterns && toneStyle.titlePatterns.length > 0 ? toneStyle.titlePatterns : fallbackTitlePatterns;
@@ -1740,7 +1567,7 @@ function generateTitles(params: ContentParameters, photoConfig: PhotoConfig, ton
     const emoji = selectEmoji(emojis, pattern.emojiProbability ?? DEFAULT_EMOJI_PROBABILITY);
     const hedge = pattern.template.includes('{hedge}') ? randomFromArray(hedgeOptions) : '';
 
-    const context: TitlePatternContext = {
+    const titleContext: TitlePatternContext = {
       starter,
       theme,
       altTheme,
@@ -1751,7 +1578,7 @@ function generateTitles(params: ContentParameters, photoConfig: PhotoConfig, ton
       photoType: readablePhotoType
     };
 
-    const candidate = renderTitleFromPattern(pattern, context);
+    const candidate = renderTitleFromPattern(pattern, titleContext);
 
     if (candidate.length > 0) {
       generatedTitles.add(candidate);
@@ -1778,9 +1605,19 @@ function generateTitles(params: ContentParameters, photoConfig: PhotoConfig, ton
     }
   }
 
-  const shuffledTitles = shuffleArray(Array.from(generatedTitles));
+  const titles = shuffleArray(Array.from(generatedTitles));
 
-  return shuffledTitles.slice(0, desiredTitleCount);
+  if (titles.length > 0) {
+    titles[0] = `${titles[0]} ${callToAction}`.trim();
+  }
+
+  const processedTitles = titles
+    .map(title => applyEmojiDensity(title, emojis, emojiCount))
+    .map(title => clampSentenceLength(title, maxSentenceLength))
+    .map(title => (profile.postProcessTitle ? profile.postProcessTitle(title, context) : title))
+    .map(title => clampSentenceLength(title, maxSentenceLength));
+
+  return processedTitles.slice(0, desiredTitleCount);
 }
 
 function generateMainContent(params: ContentParameters, photoConfig: PhotoConfig, toneStyle: ToneStyle): string {
@@ -1790,6 +1627,7 @@ function generateMainContent(params: ContentParameters, photoConfig: PhotoConfig
   const endings = toneStyle.endings;
   const emojis = toneStyle.emojis;
   const personalTone = personalToneConfigs[params.textTone];
+  const profile = platformProfiles[params.platform] ?? platformProfiles.default;
 
   const segments: string[] = [];
   const starter = pickRandom(toneStyle.starters);
@@ -1833,17 +1671,10 @@ function generateMainContent(params: ContentParameters, photoConfig: PhotoConfig
   const closer = pickRandom(personalTone.closers);
   segments.push(`${ending} ${closer}`);
 
-  let content = segments.filter(segment => segment.trim().length > 0).join(' ');
+  let content = segments.filter(segment => segment.trim().length > 0).join(` ${profile.sentenceSeparator} `);
 
   if (params.selectedHashtags.length > 0) {
-    const layout = resolveHashtagLayout(params.platform);
-    const tokens = buildHashtagTokens(params.selectedHashtags, emojis, Math.random);
-    content = applyHashtagLayout(content, tokens, layout, Math.random);
-  }
-
-  const humanizedLevel = params.humanizedLevel ?? 0;
-  if (humanizedLevel > 0) {
-    content = simulateManualTyping(content, toneStyle, { humanizedLevel });
+    content += ` ${params.selectedHashtags.join(' ')}`;
   }
 
   const humanized = applyHumanization(content, toneStyle, {
@@ -1851,12 +1682,19 @@ function generateMainContent(params: ContentParameters, photoConfig: PhotoConfig
     random: params.humanization?.random
   });
 
-  return humanized;
+  const context: PlatformPostProcessContext = {
+    emojiPool: toneStyle.emojis,
+    emojiCount: pickRandom(profile.emojiDensity)
+  };
+
+  const processedContent = profile.postProcessContent ? profile.postProcessContent(humanized, context) : humanized;
+
+  return processedContent;
 }
 
 function generatePhotoInstructions(params: ContentParameters, photoConfig: PhotoConfig): GeneratedContent['photoInstructions'] {
   return {
-    lighting: photoConfig.lighting + (params.photoType === 'shower' ? ', emphasis on steam and water reflections' : 
+    lighting: photoConfig.lighting + (params.photoType === 'shower' ? ', emphasis on steam and water reflections' :
                params.photoType === 'workout' ? ', bright and energetic to show determination' :
                params.photoType === 'very-spicy' || params.photoType === 'all-xs' ? ', dramatic contrasts and artistic shadows' : ''),
     angles: photoConfig.angles + (params.textTone === 'confident' ? ', powerful perspective shots' :
