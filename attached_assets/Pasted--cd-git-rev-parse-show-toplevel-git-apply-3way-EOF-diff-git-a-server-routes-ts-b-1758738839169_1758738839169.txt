@@ -1,0 +1,230 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/server/routes.ts b/server/routes.ts
+index d4da561b658205717169299047dc74ff1010aa6b..c8b94d6a5c0a1636d3a4cb1ee282b6db7f11b20e 100644
+--- a/server/routes.ts
++++ b/server/routes.ts
+@@ -1,40 +1,41 @@
+ import type { Express, Response, NextFunction } from "express";
+ import express from "express";
+ import { createServer, type Server } from "http";
+ import session from 'express-session';
+ import path from 'path';
+ import connectPgSimple from 'connect-pg-simple';
+ import * as connectRedis from 'connect-redis';
+ import { Pool } from 'pg';
+ import Redis from 'ioredis';
+ import Stripe from 'stripe';
+ import passport from 'passport';
+ 
+ // Security and middleware
+ import { validateEnvironment, securityMiddleware, ipLoggingMiddleware, errorHandler, logger, generationLimiter } from "./middleware/security.js";
+ import { AppError, CircuitBreaker } from "./lib/errors.js";
++import { ReferralManager } from "./lib/referral-system.js";
+ import { authenticateToken } from "./middleware/auth.js";
+ 
+ // Route modules
+ // import { authRoutes } from "./routes/auth.js"; // Removed - using server/auth.ts instead
+ import { uploadRoutes, applyImageShieldProtection, protectionPresets } from "./routes/upload.js";
+ import { mediaRoutes } from "./routes/media.js";
+ import { analyticsRouter } from "./routes/analytics.js";
+ import { registerExpenseRoutes } from "./expense-routes.js";
+ import { adminCommunitiesRouter } from "./routes/admin-communities.js";
+ 
+ // Core imports
+ import { storage } from "./storage.js";
+ import { setupAuth } from "./auth.js";
+ import { setupAdminRoutes } from "./admin-routes.js";
+ import { configureSocialAuth, socialAuthRoutes } from "./social-auth-config.js";
+ import { visitorAnalytics } from "./visitor-analytics.js";
+ import { makePaxum, makeCoinbase, makeStripe } from "./payments/payment-providers.js";
+ import { deriveStripeConfig } from "./payments/stripe-config.js";
+ // Analytics request type
+ interface AnalyticsRequest extends express.Request {
+   sessionID: string;
+ }
+ 
+ // Import users table for type inference
+ import { users, type ContentGeneration } from "@shared/schema";
+diff --git a/server/routes.ts b/server/routes.ts
+index d4da561b658205717169299047dc74ff1010aa6b..c8b94d6a5c0a1636d3a4cb1ee282b6db7f11b20e 100644
+--- a/server/routes.ts
++++ b/server/routes.ts
+@@ -84,50 +85,79 @@ function registerProResourcesRoutes(app: Express) {
+     const tierFromUser = resolveTier(user.tier);
+     if (tierFromUser) {
+       return tierFromUser;
+     }
+ 
+     try {
+       const persistedUser = await storage.getUserById(user.id);
+       if (persistedUser) {
+         const persistedTier = resolveTier(
+           (persistedUser as SessionUser).subscriptionTier ?? persistedUser.tier
+         );
+         if (persistedTier) {
+           return persistedTier;
+         }
+       }
+     } catch (storageError) {
+       logger.warn('Failed to resolve user tier from storage', {
+         userId: user.id,
+         error: storageError instanceof Error ? storageError.message : String(storageError)
+       });
+     }
+ 
+     return 'free';
+   };
+ 
++  const deriveSharePercentage = (perk: ProPerk): number => {
++    if (!perk.commissionRate) {
++      return 20;
++    }
++
++    const percentMatches = Array.from(perk.commissionRate.matchAll(/(\d+(?:\.\d+)?)\s*%/g));
++    if (percentMatches.length === 0) {
++      return 20;
++    }
++
++    const numericPercents = percentMatches
++      .map(match => Number.parseFloat(match[1]))
++      .filter((value): value is number => Number.isFinite(value));
++
++    if (numericPercents.length === 0) {
++      return 20;
++    }
++
++    const normalizedPercents = numericPercents.map(value => {
++      const rounded = Math.round(value);
++      if (Number.isNaN(rounded)) {
++        return 20;
++      }
++      return Math.min(100, Math.max(1, rounded));
++    });
++
++    return Math.max(...normalizedPercents);
++  };
++
+ 
+   // GET /api/pro-resources - List all perks for authenticated users
+   app.get('/api/pro-resources', authenticateToken, async (req: AuthenticatedRequest, res) => {
+     try {
+       if (!req.user?.id) {
+         return res.status(403).json({ 
+           perks: [], 
+           accessGranted: false,
+           message: "Authentication required for pro resources" 
+         });
+       }
+ 
+       const userTier = await getUserTier(req.user);
+       
+       // Only pro/premium users get access
+       if (userTier === 'free' || userTier === 'starter') {
+         return res.status(403).json({
+           perks: [],
+           accessGranted: false,
+           message: "Pro subscription required to access these resources"
+         });
+       }
+ 
+       const availablePerks = userTier === 'premium'
+         ? getAvailablePerks('pro')
+diff --git a/server/routes.ts b/server/routes.ts
+index d4da561b658205717169299047dc74ff1010aa6b..c8b94d6a5c0a1636d3a4cb1ee282b6db7f11b20e 100644
+--- a/server/routes.ts
++++ b/server/routes.ts
+@@ -192,84 +222,87 @@ function registerProResourcesRoutes(app: Express) {
+     try {
+       if (!req.user?.id) {
+         return res.status(401).json({ message: "Authentication required" });
+       }
+ 
+       const userTier = await getUserTier(req.user);
+       if (userTier === 'free' || userTier === 'starter') {
+         return res.status(403).json({ message: "Pro subscription required" });
+       }
+ 
+       const perkId = req.params.id;
+       if (!perkId) {
+         return res.status(400).json({ message: "Perk ID required" });
+       }
+ 
+       // Verify the perk exists and user has access
+       const availablePerks = userTier === 'premium'
+         ? getAvailablePerks('pro')
+         : getAvailablePerks(userTier);
+       const perk = availablePerks.find(p => p.id === perkId);
+       
+       if (!perk) {
+         return res.status(404).json({ message: "Perk not found or not accessible" });
+       }
+ 
+-      const referralCode = generateReferralCode(req.user.id, perkId);
+-      
++      const sharePct = deriveSharePercentage(perk);
++      const referralCode = await ReferralManager.getUserReferralCode(req.user.id);
++
+       res.json({
+-        referralCode
++        referralCode,
++        sharePct
+       });
+ 
+     } catch (error) {
+       logger.error("Referral code generation error:", error);
+       res.status(500).json({ message: "Failed to generate referral code" });
+     }
+   });
+ }
+ 
+ // Session interface with Reddit OAuth properties
+ interface RedditSessionData {
+   redditOAuthState?: string;
+   redditConnected?: boolean;
+ }
+ 
+ declare module 'express-session' {
+   interface SessionData extends RedditSessionData {}
+ }
+ 
+ // Service imports
+ import { generateContent } from "./services/content-generator.js";
+ import { generateAIContent, analyzeImageForContent } from "./services/ai-generator.js";
+ import { generateWithMultiProvider, getProviderStatus } from "./services/multi-ai-provider.js";
+ import { generateUnifiedAIContent, analyzeImage } from "./services/unified-ai-service.js";
+ import { generateImageCaption, imageToBase64, validateImageFormat } from "./image-caption-generator.js";
+ import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage.js";
+ import { getRandomTemplates, addWatermark, getTemplateByMood } from "./content-templates.js";
+ import { generateAdvancedContent, type ContentParameters } from "./advanced-content-generator.js";
+ // Reddit communities now handled in reddit-routes.ts
+-import { getAvailablePerks, getPerksByCategory, generateReferralCode, getSignupInstructions, realProPerks } from "./pro-perks.js";
++import { getAvailablePerks, getSignupInstructions } from "./pro-perks.js";
++import type { ProPerk } from "./pro-perks.js";
+ 
+ // API route modules
+ import { registerApiRoutes } from "./api-routes.js";
+ import { registerPolicyRoutes } from "./policy-routes.js";
+ import { registerRedditRoutes } from "./reddit-routes.js";
+ import { registerAnalyticsRoutes } from "./analytics-routes.js";
+ import { createLead, confirmLead } from "./api/leads.js";
+ import { getLeads } from "./api/admin-leads.js";
+ import { captionRouter } from "./routes/caption.js";
+ import { contentGenerationLimiter } from "./middleware/tiered-rate-limit.js";
+ import { registerSocialMediaRoutes } from "./social-media-routes.js";
+ 
+ // Schema imports
+ import { insertContentGenerationSchema, insertUserImageSchema } from "@shared/schema";
+ 
+ // Core dependencies
+ import multer from 'multer';
+ import fs from 'fs/promises';
+ import crypto from 'crypto';
+ import jwt from 'jsonwebtoken';
+ import bcrypt from 'bcrypt';
+ import csrf from 'csurf';
+ 
+ // Get secure environment variables (no fallbacks)
+ const rawSessionSecret = process.env.SESSION_SECRET;
+ 
+EOF
+)
