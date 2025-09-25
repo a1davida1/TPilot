@@ -781,9 +781,9 @@ export function UnifiedContentCreator({
                 // Load selected generation as current content
                 const displayData: GeneratedContentDisplay = {
                   ...generation,
-                  userId: (generation as any).userId || 0,
-                  subreddit: (generation as any).subreddit || null,
-                  generationType: (generation as any).generationType || 'ai',
+                  userId: (generation as Record<string, unknown>).userId as number || 0,
+                  subreddit: (generation as Record<string, unknown>).subreddit as string || null,
+                  generationType: (generation as Record<string, unknown>).generationType as string || 'ai',
                   createdAt: typeof generation.createdAt === 'string' 
                     ? new Date(generation.createdAt) 
                     : generation.createdAt || new Date(),

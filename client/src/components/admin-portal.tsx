@@ -282,14 +282,15 @@ export function AdminPortal() {
   const _handleAction = () => {
     if (!selectedUser || !actionType) return;
     
+    const userWithId = selectedUser as { id: number };
     if (actionType === 'reset-password') {
       actionMutation.mutate({ 
-        userId: (selectedUser as any).id, 
+        userId: userWithId.id, 
         action: actionType 
       });
     } else {
       actionMutation.mutate({ 
-        userId: (selectedUser as any).id, 
+        userId: userWithId.id, 
         action: actionType, 
         duration: actionType === 'suspend' ? _duration : undefined 
       });
@@ -1435,7 +1436,7 @@ function UserManagementTab({ authenticatedRequest, users }: { authenticatedReque
         <Card className="border-2 border-red-500/50">
           <CardHeader>
             <CardTitle className="text-red-600">
-              {actionType.toUpperCase()} User: {(selectedUser as any).username}
+              {actionType.toUpperCase()} User: {(selectedUser as { username?: string }).username}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">

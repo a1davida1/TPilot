@@ -310,19 +310,21 @@ export async function initializeSentry(): Promise<typeof import('@sentry/node') 
           // Filter out non-critical errors in development
           if (process.env.NODE_ENV === 'development') {
             // Don't send client-side errors in development
-            if ((event as any).request?.url?.includes('/_vite/')) {
+            if ((event as Record<string, unknown>).request && 
+                typeof (event as Record<string, unknown>).request === 'object' &&
+                ((event as Record<string, unknown>).request as Record<string, unknown>)?.url?.toString().includes('/_vite/')) {
               return null;
             }
           }
           
           // Filter out known non-critical errors
-          const error = (hint as any)?.originalException;
+          const error = (hint as Record<string, unknown>)?.originalException;
           if (error?.message?.includes('ECONNRESET') || 
               error?.message?.includes('EPIPE')) {
             return null; // Don't send network errors
           }
           
-          return event as any;
+          return event as Record<string, unknown>;
         },
         
         // Enhanced release tracking

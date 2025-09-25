@@ -437,8 +437,9 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
                   <Button
                     key={provider.id}
                     onClick={() => {
-                      if ((provider as any).handler) {
-                        (provider as any).handler();
+                      const providerWithHandler = provider as typeof provider & { handler?: () => void };
+                      if (providerWithHandler.handler) {
+                        providerWithHandler.handler();
                       } else if (provider.url) {
                         handleSocialAuth(provider.url);
                       }

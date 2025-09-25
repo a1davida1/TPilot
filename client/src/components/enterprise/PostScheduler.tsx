@@ -280,11 +280,11 @@ export default function PostScheduler() {
                       </div>
                     </div>
                     
-                    {post.status === 'sent' && (post.resultJson as any)?.url && (
+                    {post.status === 'sent' && (post.resultJson as Record<string, unknown>)?.url && (
                       <div className="flex items-center gap-2 text-sm">
                         <CheckCircle2 className="h-4 w-4 text-green-500" />
                         <a 
-                          href={(post.resultJson as any).url}
+                          href={(post.resultJson as Record<string, unknown>).url as string}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-blue-500 hover:underline"
@@ -294,10 +294,10 @@ export default function PostScheduler() {
                       </div>
                     )}
                     
-                    {post.status === 'failed' && (post.resultJson as any)?.error && (
+                    {post.status === 'failed' && (post.resultJson as Record<string, unknown>)?.error && (
                       <div className="flex items-center gap-2 text-sm text-red-600">
                         <XCircle className="h-4 w-4" />
-                        <span>Failed: {(post.resultJson as any).error}</span>
+                        <span>Failed: {(post.resultJson as Record<string, unknown>).error as string}</span>
                       </div>
                     )}
                   </div>

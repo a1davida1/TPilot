@@ -333,8 +333,8 @@ export function GettingStarted({ userTier = 'free', onSectionSelect, isAtBottom 
                           )}
                         </div>
                         <p className="text-sm text-gray-600 mb-2">{step.description}</p>
-                        {(step as any).details && (
-                          <p className="text-xs text-gray-500 mb-2 italic">{(step as any).details}</p>
+                        {(step as typeof step & { details?: string }).details && (
+                          <p className="text-xs text-gray-500 mb-2 italic">{(step as typeof step & { details?: string }).details}</p>
                         )}
                         <div className="flex items-center space-x-2 mt-1">
                           <Badge variant="outline" className="text-xs">

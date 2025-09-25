@@ -15,7 +15,7 @@ interface ProcessorConfig<T = unknown> {
 }
 
 export class PgQueue implements IQueue {
-  private processors = new Map<string, ProcessorConfig<any>>();
+  private processors = new Map<string, ProcessorConfig<unknown>>();
   private polling = false;
   private pollInterval = 2000; // 2 seconds
   private pollTimer?: NodeJS.Timeout;
@@ -159,7 +159,7 @@ export class PgQueue implements IQueue {
       );
   }
 
-  private async processQueueJobs(queueName: string, processor: ProcessorConfig<any>): Promise<void> {
+  private async processQueueJobs(queueName: string, processor: ProcessorConfig<unknown>): Promise<void> {
     // Use PostgreSQL FOR UPDATE SKIP LOCKED for job claiming
     const jobs = await db
       .select()
@@ -180,7 +180,7 @@ export class PgQueue implements IQueue {
 
   private async processJob(
     job: typeof queueJobs.$inferSelect,
-    handler: QueueJobHandler<any>
+    handler: QueueJobHandler<unknown>
   ): Promise<void> {
     try {
       // Mark job as active

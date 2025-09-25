@@ -31,11 +31,11 @@ describe('RedditManager.canPostToSubreddit Safety Checks', () => {
   
   beforeEach(() => {
     vi.clearAllMocks();
-    mockSafetyManager = SafetyManager as any;
+    mockSafetyManager = SafetyManager as typeof SafetyManager;
     
     // Mock checkSubredditEligibility to always pass
     vi.doMock('../../../server/lib/reddit.js', async () => {
-      const original = await vi.importActual('../../../server/lib/reddit.js') as any;
+      const original = await vi.importActual('../../../server/lib/reddit.js') as Record<string, unknown>;
       return {
         ...original,
         RedditManager: {

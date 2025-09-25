@@ -72,7 +72,8 @@ export class AiService {
       console.error('Gemini generation failed:', error);
       
       // Check if Gemini has quota issues too
-      if ((error as any)?.status === 429 || (error as any)?.message?.includes('quota')) {
+      const errorObj = error as Record<string, unknown>;
+      if (errorObj?.status === 429 || (errorObj?.message as string)?.includes('quota')) {
         console.log('Gemini quota exceeded, trying OpenAI fallback...');
       }
       
@@ -85,7 +86,7 @@ export class AiService {
         console.error('OpenAI fallback failed:', fallbackError);
         
         // Check if it's a quota error
-        const fe = fallbackError as any;
+        const fe = fallbackError as Record<string, unknown>;
         if (fe?.code === 'insufficient_quota' || fe?.status === 429) {
           console.log('API quota exceeded, using template fallback...');
           const platforms = inputData.platforms || ['reddit'];
@@ -336,9 +337,9 @@ Return ONLY the JSON object above with actual content. No other text.`;
         outputJson: result,
       });
     } catch (error: unknown) {
-      console.warn('Failed to cache AI result (non-fatal):', (error as any).message);
+      console.warn('Failed to cache AI result (non-fatal):', (error as Error).message);
       // Check for foreign key constraint violation
-      const err = error as any;
+      const err = error as Record<string, unknown>;
       if (err?.code === '23503' && err?.constraint?.includes('user_id')) {
         console.warn(`User ID ${userId} not found in database, skipping cache`);
       }

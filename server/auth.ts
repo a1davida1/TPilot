@@ -647,7 +647,7 @@ export function setupAuth(app: Express) {
       // Check if it's a JWT token or database token
       try {
         // Try JWT first (from forgot-password flow)
-        const decoded = jwt.verify(decodedToken, JWT_SECRET_VALIDATED) as any;
+        const decoded = jwt.verify(decodedToken, JWT_SECRET_VALIDATED) as jwt.JwtPayload & { type?: string; email?: string };
 
         if (decoded.type !== 'password-reset') {
           return res.status(400).json({ message: 'Invalid token type' });

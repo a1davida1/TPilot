@@ -81,7 +81,7 @@ export default function MobilePWA() {
     window.addEventListener('offline', handleOffline);
 
     return () => {
-      window.removeEventListener('beforeinstallprompt' as any, handleBeforeInstallPrompt as any);
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt as EventListener);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
@@ -148,7 +148,7 @@ export default function MobilePWA() {
       return;
     }
 
-    const result = await (installPrompt as any).prompt();
+    const result = await (installPrompt as { prompt: () => Promise<{ outcome: string }> }).prompt();
     
     if (result.outcome === 'accepted') {
       setIsInstalled(true);
@@ -170,7 +170,7 @@ export default function MobilePWA() {
         });
       } catch (error) {
         // Fallback to clipboard
-        (navigator as any).clipboard.writeText(window.location.href);
+        (navigator as Navigator & { clipboard: { writeText: (text: string) => void } }).clipboard.writeText(window.location.href);
         toast({
           title: "Link Copied",
           description: "App URL has been copied to your clipboard.",

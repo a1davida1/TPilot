@@ -734,7 +734,7 @@ export function AppleInspiredApp() {
                           ].map((level) => (
                             <button
                               key={level.value}
-                              onClick={() => setProtectionLevel(level.value as any)}
+                              onClick={() => setProtectionLevel(level.value as "smart" | "balanced" | "maximum")}
                               className={cn(
                                 "p-3 rounded-xl text-center transition-all",
                                 protectionLevel === level.value

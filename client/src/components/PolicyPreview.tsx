@@ -55,9 +55,10 @@ export function PolicyPreview({ subreddit, title, body, hasLink = false, onPrevi
       return response.json();
     },
     onSuccess: (result: unknown) => {
+      const resultData = result as { policyState: 'ok' | 'warn' | 'block'; warnings: string[] };
       const policyResult: PolicyResult = {
-        state: (result as any).policyState,
-        warnings: (result as any).warnings
+        state: resultData.policyState,
+        warnings: resultData.warnings
       };
       setLastPreviewResult(policyResult);
       onPreviewComplete?.(policyResult);

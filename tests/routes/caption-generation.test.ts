@@ -32,8 +32,8 @@ vi.mock('../../server/caption/openaiFallback.js', () => ({
 interface MockResponse {
   response: {
     text: () => string;
-    functionCall: any;
-    functionCalls: any;
+    functionCall?: Record<string, unknown>;
+    functionCalls?: Record<string, unknown>[];
   };
 }
 

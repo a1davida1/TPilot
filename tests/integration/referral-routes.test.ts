@@ -81,7 +81,7 @@ describe('Referral Routes Integration Tests', () => {
     });
     app = testApp;
     
-    mockReferralManager = ReferralManager as any;
+    mockReferralManager = ReferralManager as typeof ReferralManager;
   });
 
   const createAuthToken = (userId: number = validUserId): string => {

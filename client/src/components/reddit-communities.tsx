@@ -430,7 +430,7 @@ export function RedditCommunities() {
                       <TableCell>
                         <div className="text-xs text-gray-400">
                           {(() => {
-                            const limits = community.postingLimits as any | null;
+                            const limits = community.postingLimits as Record<string, unknown> | null;
                             const postsPerDay = limits?.perDay ?? limits?.daily;
                             const cooldown = limits?.cooldownHours;
 

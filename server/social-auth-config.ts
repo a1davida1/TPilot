@@ -86,7 +86,7 @@ export function configureSocialAuth() {
           callbackURL: '/api/reddit/callback',
           scope: ['identity'],
           state: true,
-        } as any,
+        } as RedditStrategy.StrategyOptions,
         async (accessToken, refreshToken, profile, done) => {
           await handleSocialAuth(
             'reddit',
@@ -94,7 +94,7 @@ export function configureSocialAuth() {
               id: profile.id,
               username: profile.name,
               emails: [],
-              photos: [{ value: (profile as any).icon_img }],
+              photos: [{ value: (profile as Record<string, unknown>).icon_img as string }],
             },
             done,
           );

@@ -197,12 +197,12 @@ export default function Phase4Dashboard() {
             {/* Quick Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {quickStats.map((stat, index) => {
-                const IconComponent = getIconComponent(stat.icon) as any;
+                const IconComponent = getIconComponent(stat.icon) as React.ComponentType<React.SVGProps<SVGSVGElement>>;
                 return (
                   <Card key={index} className="bg-gradient-to-r from-gray-900/80 to-gray-800/80 border-gray-700/50 backdrop-blur-sm">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium text-gray-400">{stat.title}</CardTitle>
-                      {IconComponent && React.createElement(IconComponent as any, {
+                      {IconComponent && React.createElement(IconComponent, {
                         className: `h-5 w-5 ${stat.color}`
                       })}
                     </CardHeader>
@@ -218,14 +218,14 @@ export default function Phase4Dashboard() {
             {/* Feature Overview */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {phase4Features.map((feature) => {
-                const IconComponent = getIconComponent(feature.icon) as any;
+                const IconComponent = getIconComponent(feature.icon) as React.ComponentType<React.SVGProps<SVGSVGElement>>;
                 return (
                   <Card key={feature.id} className="bg-gradient-to-r from-gray-900/80 to-gray-800/80 border-gray-700/50 backdrop-blur-sm overflow-hidden">
                     <div className={`h-1 bg-gradient-to-r ${feature.color}`} />
                     <CardHeader className="flex flex-row items-center justify-between space-y-0">
                       <div className="flex items-center space-x-3">
                         <div className={`p-3 rounded-lg bg-gradient-to-r ${feature.color} bg-opacity-20`}>
-                          {IconComponent && React.createElement(IconComponent as any, {
+                          {IconComponent && React.createElement(IconComponent, {
                             className: "h-6 w-6 text-white"
                           })}
                         </div>
@@ -321,7 +321,7 @@ export default function Phase4Dashboard() {
                   return (
                     <div key={activity.id} className="flex items-center space-x-4 p-3 rounded-lg bg-gray-800/20 border border-gray-700/30">
                       <div className="p-2 rounded-lg bg-gray-700/50">
-                        {IconComponent && React.createElement(IconComponent as any, {
+                        {IconComponent && React.createElement(IconComponent, {
                           className: `h-4 w-4 ${activity.color}`
                         })}
                       </div>

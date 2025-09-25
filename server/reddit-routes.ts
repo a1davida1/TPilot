@@ -251,8 +251,8 @@ export function registerRedditRoutes(app: Express) {
         username: account.platformUsername || account.handle,
         isActive: account.isActive,
         connectedAt: account.createdAt,
-        karma: (account.metadata as any)?.karma || 0,
-        verified: (account.metadata as any)?.verified || false,
+        karma: (account.metadata as Record<string, unknown>)?.karma as number || 0,
+        verified: (account.metadata as Record<string, unknown>)?.verified as boolean || false,
       })));
 
     } catch (error) {
