@@ -510,6 +510,7 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
   const uniqueVariants: z.infer<typeof CaptionItem>[] = [];
   const existingCaptions: string[] = [];
   const duplicatesThisAttempt: string[] = [];
+  let hasBannedWords = false;
   const isTest = process.env.NODE_ENV === 'test';
   const maxAttempts = isTest ? 2 : 5; // Allow 2 attempts in test for retry logic testing
 
@@ -522,7 +523,10 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
       : (() => {
           // Build complete base hint with variety clause first, then pass to buildRetryHint
           const baseHintWithVariety = `${sanitizedBaseHint ? `${sanitizedBaseHint} ` : ""}Need much more variety across tone, structure, and imagery.`;
-          return buildRetryHint(baseHintWithVariety, duplicatesThisAttempt, needed);
+          const baseHintWithModeration = hasBannedWords
+            ? `${baseHintWithVariety} ${BANNED_WORDS_HINT}`.trim()
+            : baseHintWithVariety;
+          return buildRetryHint(baseHintWithModeration, duplicatesThisAttempt, needed);
         })();
 
     const rawVariants = await fetchVariants(varietyHint, existingCaptions);
@@ -534,6 +538,11 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
 
       const sanitized = sanitizeVariant(raw as Record<string, unknown>);
       const captionText = sanitized.caption as string;
+
+      if (variantContainsBannedWord(sanitized as { caption?: unknown; cta?: unknown; hashtags?: unknown; alt?: unknown })) {
+        hasBannedWords = true;
+        continue;
+      }
 
       const isDuplicate = existingCaptions.some(existing => captionsAreSimilar(existing, captionText));
       if (isDuplicate) {

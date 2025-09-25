@@ -66,7 +66,7 @@ const protectionPresets: Record<string, ProtectionSettings> = {
 
 // Apply ImageShield protection server-side for receipts
 async function applyReceiptImageShieldProtection(
-  inputBuffer: Buffer, 
+  inputBuffer: Buffer,
   protectionLevel: 'light' | 'standard' | 'heavy' = 'light',
   addWatermark: boolean = false
 ): Promise<Buffer> {
@@ -113,7 +113,7 @@ async function applyReceiptImageShieldProtection(
           </text>
         </svg>
       `);
-      
+
       pipeline = pipeline.composite([{
         input: watermarkText,
         top: 0,
@@ -415,14 +415,14 @@ export function registerExpenseRoutes(app: Express) {
   app.get('/api/expenses/tax-guidance', async (req, res) => {
     try {
       const category = req.query.category as string;
-      
+
       let guidance;
       if (category && category !== 'all') {
         guidance = await storage.getTaxDeductionInfoByCategory(category);
       } else {
         guidance = await storage.getTaxDeductionInfo();
       }
-      
+
       res.json(guidance);
     } catch (error) {
       console.error('Error fetching tax deduction guidance:', error);
@@ -482,8 +482,8 @@ export function registerExpenseRoutes(app: Express) {
       } else {
         const uploadDir = path.join(process.cwd(), 'uploads', 'receipts');
         await fs.mkdir(uploadDir, { recursive: true });
-        const timestampedFileName = `protected_${Date.now()}-${safeOriginalName}`;
-        const fileName = timestampedFileName;
+        const uniqueSuffix = crypto.randomUUID();
+        const fileName = `protected_${uniqueSuffix}-${safeOriginalName}`;
         await fs.writeFile(path.join(uploadDir, fileName), receiptBuffer);
         receiptUrl = `/uploads/receipts/${fileName}`;
         receiptFileName = fileName;
