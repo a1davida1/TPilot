@@ -1,5 +1,5 @@
 /* eslint-env node, jest */
-import { describe, test, expect, vi, beforeEach, type MockInstance } from 'vitest';
+import { describe, test, expect, vi, beforeEach, type MockInstance, type Mock } from 'vitest';
 import request from 'supertest';
 import express from 'express';
 import fs from 'fs/promises';
@@ -226,8 +226,8 @@ describe('Receipt Upload with ImageShield Protection', () => {
       expect(firstUpdate.receiptFileName).toMatch(/^protected_\d+-invoice\.pdf$/u);
       expect(firstUpdate.receiptUrl).toMatch(/\/uploads\/receipts\/protected_\d+-invoice\.pdf$/u);
 
-      const writeMock = fs.writeFile as unknown as MockInstance<[string, Buffer], unknown>;
-      expect(writeMock).toHaveBeenCalledWith(expect.stringMatching(/protected_\d+-invoice\.pdf$/u), expect.any(Buffer));
+      const writeMock = fs.writeFile as unknown as Mock;
+      expect(writeMock).toHaveBeenCalledWith(expect.stringMatching(/protected_\d+-invoice\.pdf$/u), expect.any(Buffer) as Buffer);
       const firstCall = writeMock.mock.calls[0];
       expect(firstCall).toBeDefined();
       const [writtenPath, storedBuffer] = firstCall;
@@ -276,7 +276,7 @@ describe('Receipt Upload with ImageShield Protection', () => {
       expect(storedFileNames[1]).toMatch(/^protected_\d+-invoice\.pdf$/u);
       expect(new Set(storedFileNames).size).toBe(2);
 
-      const writeMock = fs.writeFile as unknown as MockInstance<[string, Buffer], unknown>;
+      const writeMock = fs.writeFile as unknown as Mock;
       expect(writeMock).toHaveBeenCalledTimes(2);
       const firstPath = writeMock.mock.calls[0]?.[0];
       const secondPath = writeMock.mock.calls[1]?.[0];
@@ -312,7 +312,7 @@ describe('Receipt Upload with ImageShield Protection', () => {
 
       expect(response.body.receiptFileName).toBe('invoice.pdf');
       expect(mockMediaManager.uploadFile).toHaveBeenCalledWith(
-        expect.any(Buffer),
+        expect.any(Buffer) as Buffer,
         expect.objectContaining({
           userId: 1,
           filename: 'invoice.pdf',
@@ -361,7 +361,7 @@ describe('Receipt Upload with ImageShield Protection', () => {
         .expect(200);
 
       expect(mockMediaManager.uploadFile).toHaveBeenCalledWith(
-        expect.any(Buffer), // Protected buffer
+        expect.any(Buffer) as Buffer, // Protected buffer
         expect.objectContaining({
           userId: 1,
           filename: expect.stringContaining('protected_'),

@@ -117,8 +117,8 @@ describe('Expense Categories Unit Tests', () => {
         id: 4, // Mocked ID
         ...categoryData,
         isDefault: false, // Default value in mock
-        createdAt: expect.any(Date),
-        updatedAt: expect.any(Date)
+        createdAt: expect.any(Date) as Date,
+        updatedAt: expect.any(Date) as Date
       };
 
       const result = await storage.createExpenseCategory(categoryData);
@@ -185,7 +185,7 @@ describe('Expense Categories Unit Tests', () => {
         description: 'Updated description',
         deductionPercentage: 75,
         isActive: true,
-        updatedAt: expect.any(Date)
+        updatedAt: expect.any(Date) as Date
       });
     });
 

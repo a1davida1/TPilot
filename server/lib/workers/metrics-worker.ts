@@ -6,6 +6,25 @@ import { eq } from "drizzle-orm";
 import { RedditManager } from "../reddit.js";
 import { logger } from "../logger.js";
 
+interface RedditSubmission {
+  score: number;
+  upvote_ratio: number;
+  num_comments: number;
+  view_count?: number;
+}
+
+interface RedditAPI {
+  getSubmission(postId: string): Promise<RedditSubmission>;
+}
+
+interface PostMetrics {
+  score: number;
+  upvoteRatio: number;
+  numComments: number;
+  views: number;
+  collectedAt: Date;
+}
+
 export class MetricsWorker {
   private initialized = false;
 
@@ -95,10 +114,10 @@ export class MetricsWorker {
     }
   }
 
-  private async fetchPostMetrics(reddit: unknown, redditPostId: string) {
+  private async fetchPostMetrics(reddit: RedditAPI, redditPostId: string) {
     try {
       // Use Reddit API to get post details
-      const post = await (reddit as any).getSubmission(redditPostId);
+      const post = await reddit.getSubmission(redditPostId);
       
       return {
         score: post.score || 0,
@@ -113,15 +132,15 @@ export class MetricsWorker {
     }
   }
 
-  private async updatePostMetrics(postJobId: number, metrics: unknown) {
+  private async updatePostMetrics(postJobId: number, metrics: PostMetrics) {
     try {
       // Update the post job with latest metrics
       const currentMetrics = {
-        score: (metrics as any).score,
-        upvoteRatio: (metrics as any).upvoteRatio,
-        comments: (metrics as any).numComments,
-        views: (metrics as any).views,
-        lastCollected: (metrics as any).collectedAt.toISOString(),
+        score: metrics.score,
+        upvoteRatio: metrics.upvoteRatio,
+        comments: metrics.numComments,
+        views: metrics.views,
+        lastCollected: metrics.collectedAt.toISOString(),
       };
 
       await db

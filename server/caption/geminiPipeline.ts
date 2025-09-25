@@ -39,6 +39,21 @@ interface CaptionResult {
   ranked?: z.infer<typeof RankResult>;
 }
 
+// Text model interfaces for type safety
+interface TextModelFunction {
+  (prompt: Array<{ text: string }>): Promise<unknown>;
+}
+
+interface TextModelObject {
+  generateContent(prompt: Array<{ text: string }>): Promise<unknown>;
+}
+
+interface GeminiResponse {
+  response?: {
+    text(): string;
+  };
+}
+
 const MAX_VARIANT_ATTEMPTS = 4;
 const VARIANT_TARGET = 5;
 const VARIANT_RETRY_LIMIT = 4;
@@ -600,10 +615,10 @@ function normalizeGeminiFinal(
 async function invokeTextModel(prompt: Array<{ text: string }>): Promise<unknown> {
   if (typeof textModel === 'function') {
     // Function-based textModel
-    return await (textModel as any)(prompt);
-  } else if (textModel && typeof (textModel as any).generateContent === 'function') {
+    return await (textModel as TextModelFunction)(prompt);
+  } else if (textModel && typeof (textModel as TextModelObject).generateContent === 'function') {
     // Object-based textModel with generateContent method
-    return await (textModel as any).generateContent(prompt);
+    return await (textModel as TextModelObject).generateContent(prompt);
   } else {
     throw new Error('textModel is neither a function nor has a generateContent method');
   }
@@ -630,8 +645,8 @@ async function requestGeminiRanking(
     throw error;
   }
   let json = stripToJSON(
-    (res as any)?.response?.text
-      ? (res as any).response.text()
+    (res as GeminiResponse)?.response?.text
+      ? (res as GeminiResponse).response.text()
       : typeof res === 'string'
         ? res
         : JSON.stringify(res)

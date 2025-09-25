@@ -708,7 +708,7 @@ Create content that feels authentic, drives engagement, and perfectly matches th
 
   // Helper methods
   private getLightingForStyle(style: string): string {
-    const lighting = {
+    const lighting: Record<string, string> = {
       playful: "Bright, natural daylight",
       mysterious: "Dramatic side lighting with shadows",
       bold: "High contrast studio lighting",
@@ -718,11 +718,11 @@ Create content that feels authentic, drives engagement, and perfectly matches th
       sassy: "Colorful LED accent lighting",
       professional: "Balanced three-point lighting"
     };
-    return (lighting as any)[style] || "Natural lighting";
+    return lighting[style] || "Natural lighting";
   }
 
   private getCameraAngleForStyle(style: string): string {
-    const angles = {
+    const angles: Record<string, string> = {
       playful: "Dynamic, varying angles",
       mysterious: "Low angle for drama",
       bold: "Direct, eye-level",
@@ -732,11 +732,11 @@ Create content that feels authentic, drives engagement, and perfectly matches th
       sassy: "Dutch angles for attitude",
       professional: "Traditional portrait angle"
     };
-    return (angles as any)[style] || "Eye level";
+    return angles[style] || "Eye level";
   }
 
   private getBackgroundForStyle(style: string): string {
-    const backgrounds = {
+    const backgrounds: Record<string, string> = {
       playful: "Colorful, fun environment",
       mysterious: "Dark, textured backdrop",
       bold: "Clean, minimal background",
@@ -746,11 +746,11 @@ Create content that feels authentic, drives engagement, and perfectly matches th
       sassy: "Vibrant, personality-filled area",
       professional: "Clean, professional setting"
     };
-    return (backgrounds as any)[style] || "Simple, uncluttered background";
+    return backgrounds[style] || "Simple, uncluttered background";
   }
 
   private getOutfitForStyle(style: string): string {
-    const outfits = {
+    const outfits: Record<string, string> = {
       playful: "Bright colors, fun patterns, casual wear",
       mysterious: "Dark tones, flowing fabrics, layers",
       bold: "Statement pieces, strong silhouettes",
@@ -760,11 +760,11 @@ Create content that feels authentic, drives engagement, and perfectly matches th
       sassy: "Trendy, eye-catching pieces",
       professional: "Polished, business casual"
     };
-    return (outfits as any)[style] || "Comfortable, flattering outfit";
+    return outfits[style] || "Comfortable, flattering outfit";
   }
 
   private getExpressionForStyle(style: string): string {
-    const expressions = {
+    const expressions: Record<string, string> = {
       playful: "Genuine smile, laughing eyes",
       mysterious: "Enigmatic, slight smile",
       bold: "Confident, direct gaze",
@@ -774,22 +774,22 @@ Create content that feels authentic, drives engagement, and perfectly matches th
       sassy: "Playful smirk, raised eyebrow",
       professional: "Warm, approachable smile"
     };
-    return (expressions as any)[style] || "Natural expression";
+    return expressions[style] || "Natural expression";
   }
 
   private suggestProps(contentType?: string): string[] {
-    const props = {
+    const props: Record<string, string[]> = {
       teasing: ["silk scarf", "feather", "mirror"],
       engagement: ["coffee cup", "book", "flowers"],
       lifestyle: ["yoga mat", "healthy snacks", "plants"],
       announcement: ["balloons", "confetti", "signs"],
       educational: ["notebook", "glasses", "laptop"]
     };
-    return (props as any)[contentType || 'engagement'] || [];
+    return props[contentType || 'engagement'] || [];
   }
 
   private suggestLocation(style: string): string {
-    const locations = {
+    const locations: Record<string, string> = {
       playful: "Bright, colorful room or outdoor park",
       mysterious: "Dimly lit boudoir or artistic studio",
       bold: "Modern loft or urban rooftop",
@@ -799,11 +799,11 @@ Create content that feels authentic, drives engagement, and perfectly matches th
       sassy: "Trendy boutique or neon-lit space",
       professional: "Office or co-working space"
     };
-    return (locations as any)[style] || "Comfortable indoor setting";
+    return locations[style] || "Comfortable indoor setting";
   }
 
   private suggestTimeOfDay(style: string): string {
-    const times = {
+    const times: Record<string, string> = {
       playful: "Mid-morning for best natural light",
       mysterious: "Blue hour or twilight",
       bold: "High noon for strong shadows",
@@ -813,22 +813,22 @@ Create content that feels authentic, drives engagement, and perfectly matches th
       sassy: "Night with artificial lights",
       professional: "Morning for fresh look"
     };
-    return (times as any)[style] || "Golden hour (sunrise/sunset)";
+    return times[style] || "Golden hour (sunrise/sunset)";
   }
 
   private getPlatformHashtags(platform: string): string[] {
-    const tags = {
+    const tags: Record<string, string[]> = {
       reddit: [], // Reddit doesn't use hashtags
       twitter: ['#TwitterAfterDark', '#content', '#creator'],
       instagram: ['#instadaily', '#photooftheday', '#instagood', '#instamood'],
       tiktok: ['#fyp', '#foryoupage', '#viral', '#trending'],
       onlyfans: ['#onlyfans', '#exclusivecontent', '#subscribe']
     };
-    return (tags as any)[platform] || [];
+    return tags[platform] || [];
   }
 
   private getStyleHashtags(style: string): string[] {
-    const tags = {
+    const tags: Record<string, string[]> = {
       playful: ['#playful', '#fun', '#flirty', '#cute'],
       mysterious: ['#mysterious', '#intrigue', '#shadow', '#mood'],
       bold: ['#bold', '#confident', '#fierce', '#powerful'],
@@ -838,7 +838,7 @@ Create content that feels authentic, drives engagement, and perfectly matches th
       sassy: ['#sassy', '#attitude', '#fierce', '#personality'],
       professional: ['#professional', '#business', '#success', '#career']
     };
-    return (tags as any)[style] || ['#content', '#creator'];
+    return tags[style] || ['#content', '#creator'];
   }
 
   private getNicheHashtags(niche: string): string[] {

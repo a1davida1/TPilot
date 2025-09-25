@@ -28,8 +28,27 @@ vi.mock('../../server/caption/openaiFallback.js', () => ({
   }),
 }));
 
-const asMock = <T extends (...args: any[]) => any>(fn: T) =>
-  fn as unknown as Mock;
+// Type interfaces for test safety
+interface MockResponse {
+  response: {
+    text: () => string;
+    functionCall: any;
+    functionCalls: any;
+  };
+}
+
+interface CaptionResult {
+  caption: string;
+  hashtags: string[];
+  safety_level: string;
+  mood: string;
+  style: string;
+  cta: string;
+  alt: string;
+  nsfw: boolean;
+}
+
+const asMock = <T>(fn: T) => fn as unknown as Mock;
 
 vi.mock('../../server/storage.ts', () => ({
   storage: {
@@ -46,8 +65,9 @@ describe('Caption Generation', () => {
     (textModel.generateContent as Mock | undefined)?.mockReset?.();
     (visionModel.generateContent as Mock | undefined)?.mockReset?.();
     const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.js');
-    (openAICaptionFallback as Mock).mockReset();
-    openAICaptionFallback.mockResolvedValue({
+    const mockOpenAI = vi.mocked(openAICaptionFallback);
+    mockOpenAI.mockReset();
+    mockOpenAI.mockResolvedValue({
       caption: 'Fallback caption',
       hashtags: ['#fallback1', '#fallback2', '#fallback3'],
       safety_level: 'normal',
@@ -230,7 +250,7 @@ describe('Caption Generation', () => {
 
       expect(openAICaptionFallback).not.toHaveBeenCalled();
       expect(result.final).toMatchObject({
-        caption: expect.any(String),
+        caption: expect.any(String) as string,
         safety_level: expect.stringMatching(/safe|low|spicy_safe|normal/),
       });
     });
@@ -544,8 +564,8 @@ describe('Caption Generation', () => {
       };
 
       const { textModel, visionModel } = await import('../../server/lib/gemini.js');
-      (visionModel.generateContent as any).mockResolvedValueOnce(mockFactsResponse);
-      (textModel.generateContent as any)
+      (visionModel.generateContent as Mock).mockResolvedValueOnce(mockFactsResponse);
+      (textModel.generateContent as Mock)
         .mockResolvedValueOnce(firstVariantsResponse)
         .mockResolvedValueOnce(firstRankResponse)
         .mockResolvedValueOnce(retryVariantsResponse)
@@ -559,7 +579,7 @@ describe('Caption Generation', () => {
         mood,
       });
 
-      const variantRetryCall = (textModel.generateContent as any).mock.calls[2]?.[0]?.[0]?.text;
+      const variantRetryCall = (textModel.generateContent as Mock).mock.calls[2]?.[0]?.[0]?.text;
       expect(variantRetryCall).toContain(`STYLE: ${style}`);
       expect(variantRetryCall).toContain(`MOOD: ${mood}`);
 
@@ -1220,7 +1240,7 @@ describe('Caption Generation', () => {
       };
 
       const { textModel } = await import('../../server/lib/gemini.js');
-      const genSpy = vi.spyOn(textModel, 'generateContent').mockResolvedValue(mockResponse as any);
+      const genSpy = vi.spyOn(textModel, 'generateContent').mockResolvedValue(mockResponse as MockResponse);
 
       const result = await pipelineRewrite({
         platform: 'instagram',
@@ -1228,9 +1248,9 @@ describe('Caption Generation', () => {
         existingCaption,
       });
 
-      expect(result.final.caption).not.toBe(existingCaption);
-      expect(result.final.caption).toContain('Enhanced');
-      expect(result.final.caption).not.toContain('✨ Enhanced with engaging content and call-to-action that drives better engagement!');
+      expect((result.final as CaptionResult).caption).not.toBe(existingCaption);
+      expect((result.final as CaptionResult).caption).toContain('Enhanced');
+      expect((result.final as CaptionResult).caption).not.toContain('✨ Enhanced with engaging content and call-to-action that drives better engagement!');
 
       genSpy.mockRestore();
     });
@@ -1333,9 +1353,9 @@ describe('Caption Generation', () => {
         existingCaption,
       });
 
-      expect(result.final.caption).toBe(longCaption);
-      expect(result.final.caption.length).toBeGreaterThan(existingCaption.length);
-      expect(result.final.caption).not.toContain('✨ Enhanced with engaging content and call-to-action that drives better engagement!');
+      expect((result.final as CaptionResult).caption).toBe(longCaption);
+      expect((result.final as CaptionResult).caption.length).toBeGreaterThan(existingCaption.length);
+      expect((result.final as CaptionResult).caption).not.toContain('✨ Enhanced with engaging content and call-to-action that drives better engagement!');
       expect(generateSpy).toHaveBeenCalledTimes(4);
 
       const secondAttemptCall = generateSpy.mock.calls[2]?.[0]?.[0]?.text;
@@ -1446,9 +1466,9 @@ describe('Caption Generation', () => {
         existingCaption,
       });
 
-      expect((result.final as any).caption.length).toBeGreaterThan(existingCaption.length);
-      expect((result.final as any).caption).toBe(longerCaption);
-      expect((result.final as any).caption).not.toContain('Enhanced with engaging content and call-to-action that drives better engagement');
+      expect((result.final as CaptionResult).caption.length).toBeGreaterThan(existingCaption.length);
+      expect((result.final as CaptionResult).caption).toBe(longerCaption);
+      expect((result.final as CaptionResult).caption).not.toContain('Enhanced with engaging content and call-to-action that drives better engagement');
 
       const promptCalls = [...generateContentMock.mock.calls];
       expect(promptCalls).toHaveLength(4);
@@ -1536,13 +1556,13 @@ describe('Caption Generation', () => {
       expect(promptCalls[2]?.[0]?.[0]?.text).toContain('ABSOLUTE RULE: Keep these tokens verbatim in the caption');
       expect(promptCalls[2]?.[0]?.[0]?.text).not.toContain('Fix platform issue');
       expect(result.provider).toBe('gemini');
-      expect(result.final.caption).toBe(enforcedCaption);
-      expect(result.final.caption).toContain('https://example.com/launch');
-      expect(result.final.caption).toContain('@LaunchHQ');
-      expect(result.final.caption).toContain('#LaunchDay');
-      expect(result.final.caption).toContain('12/25');
-      expect(result.final.caption).toContain('"Mega Launch"');
-      expect(result.final.caption).toContain('MegaCorp™');
+      expect((result.final as CaptionResult).caption).toBe(enforcedCaption);
+      expect((result.final as CaptionResult).caption).toContain('https://example.com/launch');
+      expect((result.final as CaptionResult).caption).toContain('@LaunchHQ');
+      expect((result.final as CaptionResult).caption).toContain('#LaunchDay');
+      expect((result.final as CaptionResult).caption).toContain('12/25');
+      expect((result.final as CaptionResult).caption).toContain('"Mega Launch"');
+      expect((result.final as CaptionResult).caption).toContain('MegaCorp™');
 
       textGenerateMock.mockReset();
     });

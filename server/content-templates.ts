@@ -1276,18 +1276,18 @@ export function getRandomTemplates(
   }
   
   if (promotionLevel) {
-    filtered = filtered.filter(t => (t as any).promotionLevel === promotionLevel || !t.hasOwnProperty('promotionLevel'));
+    filtered = filtered.filter(t => (t as ContentTemplate).promotionLevel === promotionLevel || !t.hasOwnProperty('promotionLevel'));
   }
   
   if (subCategory) {
-    filtered = filtered.filter(t => (t as any).subCategory === subCategory);
+    filtered = filtered.filter(t => (t as ContentTemplate).subCategory === subCategory);
   }
   
   // Prioritize exact matches, then partial matches
   const exactMatches = filtered.filter(t => 
     (!category || t.category === category) &&
     (!style || t.style === style) &&
-    (!promotionLevel || (t as any).promotionLevel === promotionLevel)
+    (!promotionLevel || (t as ContentTemplate).promotionLevel === promotionLevel)
   );
   
   const results = exactMatches.length >= count ? exactMatches : [...exactMatches, ...filtered];

@@ -120,9 +120,9 @@ function coerceRuleSpec(rawRules: unknown): RuleSpec {
   // Apply overrides if present (merge overrides onto base spec)
   if (spec.overrides) {
     Object.keys(spec.overrides).forEach(key => {
-      const overrideValue = (spec.overrides as any)?.[key];
+      const overrideValue = (spec.overrides as Record<string, unknown>)?.[key];
       if (overrideValue !== undefined && overrideValue !== null) {
-        (result as any)[key] = overrideValue;
+        (result as Record<string, unknown>)[key] = overrideValue;
       }
     });
   }

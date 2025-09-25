@@ -70,10 +70,14 @@ vi.mock('../../server/middleware/auth.js', () => ({
 }));
 
 // Mock storage for testing fallback behavior
+type MockedStorage = {
+  getUserById: ReturnType<typeof vi.fn>;
+};
+
 vi.mock('../../server/storage.js', () => ({
   storage: {
     getUserById: vi.fn()
-  }
+  } as MockedStorage
 }));
 
 describe('Pro Resources Integration', () => {
@@ -248,12 +252,12 @@ describe('Pro Resources Integration', () => {
       expect(response.body).toMatchObject({
         perks: expect.arrayContaining([
           expect.objectContaining({
-            id: expect.any(String),
-            name: expect.any(String),
+            id: expect.stringMatching(/^[a-z0-9-]+$/),
+            name: expect.stringMatching(/.+/),
             category: expect.stringMatching(/^(affiliate|integration|tools|community|pro)$/),
-            description: expect.any(String),
+            description: expect.stringMatching(/.+/),
             status: expect.stringMatching(/^(available|application-required|coming-soon)$/),
-            features: expect.any(Array)
+            features: expect.arrayContaining([])
           })
         ]),
         accessGranted: true
@@ -314,10 +318,10 @@ describe('Pro Resources Integration', () => {
 
       expect(response.body).toMatchObject({
         instructions: {
-          steps: expect.any(Array),
-          requirements: expect.any(Array),
-          timeline: expect.any(String),
-          support: expect.any(String)
+          steps: expect.arrayContaining([]),
+          requirements: expect.arrayContaining([]),
+          timeline: expect.stringMatching(/.+/),
+          support: expect.stringMatching(/.+/)
         }
       });
 
@@ -377,7 +381,7 @@ describe('Pro Resources Integration', () => {
         .expect(200);
 
       expect(response.body).toMatchObject({
-        referralCode: expect.any(String)
+        referralCode: expect.stringMatching(/^TP\d+/)
       });
 
       // Verify referral code format matches our mock implementation
@@ -464,15 +468,15 @@ describe('Pro Resources Integration', () => {
       // Verify each perk has all required fields
       response.body.perks.forEach((perk: Perk) => {
         expect(perk).toMatchObject({
-          id: expect.any(String),
-          name: expect.any(String),
+          id: expect.stringMatching(/^[a-z0-9-]+$/),
+          name: expect.stringMatching(/.+/),
           category: expect.stringMatching(/^(affiliate|integration|tools|community|pro)$/),
           tier: expect.stringMatching(/^(starter|pro)$/),
-          description: expect.any(String),
-          signupProcess: expect.any(String),
-          estimatedEarnings: expect.any(String),
+          description: expect.stringMatching(/.+/),
+          signupProcess: expect.stringMatching(/.+/),
+          estimatedEarnings: expect.stringMatching(/.+/),
           status: expect.stringMatching(/^(available|application-required|coming-soon)$/),
-          features: expect.any(Array)
+          features: expect.arrayContaining([])
         });
 
         // Optional fields should be proper types when present
@@ -526,7 +530,8 @@ describe('Pro Resources Integration', () => {
 
       // Mock storage to return pro user
       const storedUser = createStoredUser('pro', { id: 123 });
-      (storage.getUserById as any).mockResolvedValue(storedUser);
+      const mockGetUserById = storage.getUserById as ReturnType<typeof vi.fn>;
+      mockGetUserById.mockResolvedValue(storedUser);
 
       const response = await request(app)
         .get('/api/pro-resources')
@@ -554,7 +559,8 @@ describe('Pro Resources Integration', () => {
       };
 
       // Mock storage to throw error
-      (storage.getUserById as any).mockRejectedValue(new Error('Storage unavailable'));
+      const mockGetUserById = storage.getUserById as ReturnType<typeof vi.fn>;
+      mockGetUserById.mockRejectedValue(new Error('Storage unavailable'));
 
       const response = await request(app)
         .get('/api/pro-resources')
@@ -584,8 +590,9 @@ describe('Pro Resources Integration', () => {
         id: 789,
         tier: 'pro'
       });
-      (storedUser as any).subscriptionTier = 'pro';
-      (storage.getUserById as any).mockResolvedValue(storedUser);
+      const extendedStoredUser = { ...storedUser, subscriptionTier: 'pro' } as StoredUser & { subscriptionTier: string };
+      const mockGetUserById = storage.getUserById as ReturnType<typeof vi.fn>;
+      mockGetUserById.mockResolvedValue(extendedStoredUser);
 
       const response = await request(app)
         .post('/api/pro-resources/onlyfans-referral/referral-code')

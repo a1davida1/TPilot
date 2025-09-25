@@ -44,6 +44,14 @@ interface AccountMetadata {
   [key: string]: unknown;
 }
 
+interface PostingLimitsData {
+  daily?: number;
+  perDay?: number;
+  per24h?: number;
+  cooldownMinutes?: number;
+  cooldownHours?: number;
+}
+
 interface RulePredicateInput {
   subreddit: string;
   community?: {
@@ -1251,9 +1259,9 @@ export class RedditManager {
         evaluatedAt: now,
         postsInLast24h,
         maxPostsPer24h: communityData?.postingLimits ?
-          (communityData.postingLimits as any)?.daily ||
-          (communityData.postingLimits as any)?.perDay ||
-          (communityData.postingLimits as any)?.per24h || 3 : 3,
+          (communityData.postingLimits as PostingLimitsData)?.daily ||
+          (communityData.postingLimits as PostingLimitsData)?.perDay ||
+          (communityData.postingLimits as PostingLimitsData)?.per24h || 3 : 3,
         ruleSummary: rules ? {
           linkPolicy: rules.linkPolicy,
           cooldownMinutes: deriveCooldownMinutes(rules) ?? undefined,

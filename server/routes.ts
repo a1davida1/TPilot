@@ -57,6 +57,22 @@ interface AuthenticatedRequest extends express.Request {
 // User tier type
 type UserTier = 'free' | 'starter' | 'pro' | 'premium';
 
+// Additional interfaces for type safety
+interface PhotoInstructionsData {
+  cameraAngle?: string;
+  mood?: string;
+  technicalSettings?: string;
+  lighting?: string;
+  angles?: string[];
+  composition?: string;
+  styling?: string;
+  technical?: string[];
+}
+
+interface SessionWithReddit extends express.Session {
+  redditOAuthState?: string;
+}
+
 // ==========================================
 // PRO RESOURCES ROUTES
 // ==========================================
@@ -570,7 +586,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
             recurring: {
               interval: 'month',
             },
-          } as any, // Explicit cast to handle Stripe type variations
+          } as Stripe.PriceCreateParams
         }],
         payment_behavior: 'default_incomplete',
         payment_settings: { save_default_payment_method: 'on_subscription' },
@@ -628,7 +644,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
           hasSubscription: true,
           plan,
           subscriptionId: subscription.id,
-          currentPeriodEnd: (subscription as any).current_period_end,
+          currentPeriodEnd: (subscription as Stripe.Subscription).current_period_end,
         });
       }
 
@@ -698,17 +714,17 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
           : result.photoInstructions.lighting || 'Natural lighting',
         cameraAngle: Array.isArray(result.photoInstructions.angles)
           ? result.photoInstructions.angles[0]
-          : (result.photoInstructions as any).cameraAngle || 'Eye level',
+          : (result.photoInstructions as PhotoInstructionsData).cameraAngle || 'Eye level',
         composition: Array.isArray(result.photoInstructions.composition)
           ? result.photoInstructions.composition[0]
           : result.photoInstructions.composition || 'Center composition',
         styling: Array.isArray(result.photoInstructions.styling)
           ? result.photoInstructions.styling[0]
           : result.photoInstructions.styling || 'Casual styling',
-        mood: (result.photoInstructions as any).mood || 'Confident and natural',
+        mood: (result.photoInstructions as PhotoInstructionsData).mood || 'Confident and natural',
         technicalSettings: Array.isArray(result.photoInstructions.technical)
           ? result.photoInstructions.technical[0]
-          : (result.photoInstructions as any).technicalSettings || 'Auto settings'
+          : (result.photoInstructions as PhotoInstructionsData).technicalSettings || 'Auto settings'
       };
       await storage.createContentGeneration({
         userId: req.user.id,
@@ -998,7 +1014,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
   app.get('/api/debug/reddit-session', (req, res) => {
     res.json({
       sessionID: req.sessionID,
-      redditState: (req.session as any).redditOAuthState,
+      redditState: (req.session as SessionWithReddit).redditOAuthState,
       hasSession: !!req.session,
       cookies: req.headers.cookie,
       sessionData: req.session
@@ -1271,7 +1287,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
             status: sub.status,
             plan: sub.metadata?.plan || user.tier,
             amount: sub.items.data[0].price.unit_amount,
-            nextBillDate: new Date((sub as any).current_period_end * 1000).toISOString(),
+            nextBillDate: new Date((sub as Stripe.Subscription).current_period_end * 1000).toISOString(),
             createdAt: new Date(sub.created * 1000).toISOString()
           },
           isPro: ['pro', 'starter'].includes(user.tier || ''),
