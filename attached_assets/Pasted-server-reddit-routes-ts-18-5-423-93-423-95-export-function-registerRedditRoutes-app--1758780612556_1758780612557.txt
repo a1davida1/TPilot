@@ -1,0 +1,609 @@
+server/reddit-routes.ts
++18
+-5
+
+@@ -423,93 +423,95 @@ export function registerRedditRoutes(app: Express) {
+    const subreddit = typeof req.body?.subreddit === 'string' ? req.body.subreddit : undefined;
+
+    try {
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const { title, body, url, nsfw, spoiler, postType, imageData } = req.body;
+
+      if (!subreddit || !title) {
+        return res.status(400).json({ error: 'Subreddit and title are required' });
+      }
+
+      // Get Reddit manager
+      const reddit = await RedditManager.forUser(userId);
+      if (!reddit) {
+        return res.status(404).json({ 
+          error: 'No active Reddit account found. Please connect your Reddit account first.' 
+        });
+      }
+
+      let result: RedditPostResult;
+
+      // Handle different post types
+      switch (postType || 'text') {
+        case 'image':
+        case 'image': {
+          // Single image post
+          if (!imageData && !url) {
+            return res.status(400).json({ error: 'Image data or URL required for image post' });
+          }
+
+          let imageBuffer: Buffer | undefined;
+          if (imageData) {
+            // Convert base64 to buffer if needed
+            const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
+            imageBuffer = Buffer.from(base64Data, 'base64');
+          }
+
+          result = await reddit.submitImagePost({
+            subreddit,
+            title,
+            imageBuffer,
+            imageUrl: url,
+            nsfw: nsfw || false,
+            spoiler: spoiler || false
+          });
+          break;
+        }
+
+        case 'gallery':
+        case 'gallery': {
+          // Multiple images
+          if (!req.body.images || !Array.isArray(req.body.images)) {
+            return res.status(400).json({ error: 'Images array required for gallery post' });
+          }
+
+          const typedImages =
+            req.body.images as Array<{ url: string; caption?: string }>;
+          const images = typedImages.map(img => ({
+            url: img.url,
+            caption: img.caption || ''
+          }));
+
+          result = await reddit.submitGalleryPost({
+            subreddit,
+            title,
+            images,
+            nsfw: nsfw || false
+          });
+          break;
+        }
+
+        case 'link':
+          // Link post
+          if (!url) {
+            return res.status(400).json({ error: 'URL required for link post' });
+          }
+
+          result = await reddit.submitPost({
+            subreddit,
+            title,
+            url,
+            nsfw: nsfw || false,
+            spoiler: spoiler || false
+          });
+          break;
+
+        case 'text':
+        default:
+          // Text post
+          result = await reddit.submitPost({
+            subreddit,
+            title,
+            body: body || '',
+            nsfw: nsfw || false,
+            spoiler: spoiler || false
+@@ -718,50 +720,61 @@ export function registerRedditRoutes(app: Express) {
+        reasonCount: Object.keys(summary.byReason).length
+      });
+
+      res.json(summary);
+
+    } catch (error) {
+      logger.error('Error fetching compliance removal summary', { 
+        userId: req.user?.id, 
+        error: error instanceof Error ? error.message : String(error)
+      });
+
+      res.status(500).json({
+        total: 0,
+        byReason: {},
+        error: 'Failed to fetch removal summary'
+      });
+    }
+  });
+
+  // Admin CRUD endpoints
+  app.post('/api/reddit/communities', authenticateToken, async (req: AuthRequest, res) => {
+    if (!req.user?.isAdmin) return res.status(403).json({ error: 'Forbidden' });
+    try {
+      const community = await createCommunity(req.body);
+      res.json(community);
+    } catch (e) {
+    } catch (error) {
+      logger.error('Failed to create community', {
+        error: error instanceof Error ? error.message : String(error)
+      });
+      res.status(400).json({ error: 'Invalid community data' });
+    }
+  });
+
+  app.put('/api/reddit/communities/:id', authenticateToken, async (req: AuthRequest, res) => {
+    if (!req.user?.isAdmin) return res.status(403).json({ error: 'Forbidden' });
+    try {
+      const community = await updateCommunity(req.params.id, req.body);
+      res.json(community);
+    } catch (e) {
+    } catch (error) {
+      logger.error('Failed to update community', {
+        communityId: req.params.id,
+        error: error instanceof Error ? error.message : String(error)
+      });
+      res.status(400).json({ error: 'Invalid community data' });
+    }
+  });
+
+  app.delete('/api/reddit/communities/:id', authenticateToken, async (req: AuthRequest, res) => {
+    if (!req.user?.isAdmin) return res.status(403).json({ error: 'Forbidden' });
+    try {
+      await deleteCommunity(req.params.id);
+      res.json({ success: true });
+    } catch (e) {
+    } catch (error) {
+      logger.error('Failed to delete community', {
+        communityId: req.params.id,
+        error: error instanceof Error ? error.message : String(error)
+      });
+      res.status(500).json({ error: 'Failed to delete community' });
+    }
+  });
+}
+server/routes.ts
++13
+-90
+
+import type { Express, Response, NextFunction } from "express";
+import type { Express } from "express";
+import express from "express";
+import { createServer, type Server } from "http";
+import session from 'express-session';
+import path from 'path';
+import connectPgSimple from 'connect-pg-simple';
+import * as connectRedis from 'connect-redis';
+import { Pool } from 'pg';
+import Redis from 'ioredis';
+import Stripe from 'stripe';
+import passport from 'passport';
+
+// Security and middleware
+import { validateEnvironment, securityMiddleware, ipLoggingMiddleware, errorHandler, logger, generationLimiter } from "./middleware/security.js";
+import { AppError, CircuitBreaker } from "./lib/errors.js";
+import { authenticateToken } from "./middleware/auth.js";
+
+// Route modules
+// import { authRoutes } from "./routes/auth.js"; // Removed - using server/auth.ts instead
+import { uploadRoutes, applyImageShieldProtection, protectionPresets } from "./routes/upload.js";
+import { mediaRoutes } from "./routes/media.js";
+import { analyticsRouter } from "./routes/analytics.js";
+import { referralRouter } from "./routes/referrals.js";
+import { registerExpenseRoutes } from "./expense-routes.js";
+import { adminCommunitiesRouter } from "./routes/admin-communities.js";
+
+// Core imports
+import { storage } from "./storage.js";
+import { setupAuth } from "./auth.js";
+import { setupAdminRoutes } from "./admin-routes.js";
+import { configureSocialAuth, socialAuthRoutes } from "./social-auth-config.js";
+import { visitorAnalytics } from "./visitor-analytics.js";
+import { makePaxum, makeCoinbase, makeStripe } from "./payments/payment-providers.js";
+import { deriveStripeConfig } from "./payments/stripe-config.js";
+// Analytics request type
+interface AnalyticsRequest extends express.Request {
+  sessionID: string;
+}
+
+// Import users table for type inference
+import { users, type ContentGeneration } from "@shared/schema";
+
+// AuthUser interface for passport serialization
+interface AuthUser {
+  id: number;
+  username?: string;
+  isAdmin?: boolean;
+}
+
+// Auth request interface that includes user
+type SessionUser = typeof users.$inferSelect & { subscriptionTier?: string | null };
+
+interface AuthenticatedRequest extends express.Request {
+  user?: SessionUser;
+}
+
+// User tier type
+type UserTier = 'free' | 'starter' | 'pro' | 'premium';
+
+// Additional interfaces for type safety
+interface PhotoInstructionsData {
+  cameraAngle?: string;
+  mood?: string;
+  technicalSettings?: string;
+@@ -184,196 +178,134 @@ function registerProResourcesRoutes(app: Express) {
+
+      // Verify the perk exists and user has access
+      const availablePerks = userTier === 'premium'
+        ? getAvailablePerks('pro')
+        : getAvailablePerks(userTier);
+      const perk = availablePerks.find(p => p.id === perkId);
+
+      if (!perk) {
+        return res.status(404).json({ message: "Perk not found or not accessible" });
+      }
+
+      const instructions = getSignupInstructions(perkId);
+
+      res.json({
+        instructions
+      });
+
+    } catch (error) {
+      logger.error("Signup instructions error:", error);
+      res.status(500).json({ message: "Failed to load signup instructions" });
+    }
+  });
+
+}
+
+// Session interface with Reddit OAuth properties
+interface RedditSessionData {
+  redditOAuthState?: string;
+  redditConnected?: boolean;
+}
+
+declare module 'express-session' {
+  interface SessionData extends RedditSessionData {}
+  interface SessionData {
+    redditOAuthState?: string;
+    redditConnected?: boolean;
+  }
+}
+
+// Service imports
+import { generateContent } from "./services/content-generator.js";
+import { generateAIContent, analyzeImageForContent } from "./services/ai-generator.js";
+import { generateWithMultiProvider, getProviderStatus } from "./services/multi-ai-provider.js";
+import { generateUnifiedAIContent, analyzeImage } from "./services/unified-ai-service.js";
+import { generateImageCaption, imageToBase64, validateImageFormat } from "./image-caption-generator.js";
+import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage.js";
+import { getRandomTemplates, addWatermark, getTemplateByMood } from "./content-templates.js";
+import { generateAdvancedContent, type ContentParameters } from "./advanced-content-generator.js";
+import { generateUnifiedAIContent } from "./services/unified-ai-service.js";
+import { imageToBase64, validateImageFormat } from "./image-caption-generator.js";
+
+// Reddit communities now handled in reddit-routes.ts
+import { getAvailablePerks, getPerksByCategory, generateReferralCode, getSignupInstructions } from "./pro-perks.js";
+import { getAvailablePerks, getSignupInstructions } from "./pro-perks.js";
+
+type SentryInstance = typeof import('@sentry/node');
+
+interface RegisterRoutesOptions {
+  sentry?: SentryInstance | null;
+}
+import type { ProPerk } from "./pro-perks.js";
+import { ReferralManager } from './lib/referral-system.js';
+
+// API route modules
+import { registerApiRoutes } from "./api-routes.js";
+import { registerPolicyRoutes } from "./policy-routes.js";
+import { registerRedditRoutes } from "./reddit-routes.js";
+import { registerAnalyticsRoutes } from "./analytics-routes.js";
+import { createLead, confirmLead } from "./api/leads.js";
+import { getLeads } from './api/admin-leads.js';
+import { getComplianceStatus } from './api/compliance-status.js';
+import { captionRouter } from "./routes/caption.js";
+import { contentGenerationLimiter } from "./middleware/tiered-rate-limit.js";
+import { registerSocialMediaRoutes } from "./social-media-routes.js";
+
+// Schema imports
+import { insertContentGenerationSchema, insertUserImageSchema } from "@shared/schema";
+
+// Core dependencies
+import multer from 'multer';
+import fs from 'fs/promises';
+import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
+import csrf from 'csurf';
+
+// Get secure environment variables (no fallbacks)
+const rawSessionSecret = process.env.SESSION_SECRET;
+if (!rawSessionSecret) {
+  throw new Error('SESSION_SECRET missing');
+}
+const SESSION_SECRET: string = rawSessionSecret;
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+const DATABASE_URL = process.env.DATABASE_URL;
+const REDIS_URL = process.env.REDIS_URL;
+const stripeConfig = deriveStripeConfig({
+  env: process.env,
+  logger,
+});
+
+// Initialize Stripe if configured
+const stripe = stripeConfig ? new Stripe(stripeConfig.secretKey, {
+  apiVersion: stripeConfig.apiVersion as Stripe.LatestApiVersion,
+}) : null;
+
+// Configure multer for optional image uploads
+const upload = multer({
+  dest: 'uploads/',
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed!'));
+    }
+  }
+});
+
+// Auth request interface
+interface AuthRequest extends express.Request {
+  user?: typeof users.$inferSelect;
+}
+
+interface GenerationRequestBody {
+  mode?: string;
+  prompt?: string;
+  mode: string;
+  prompt: string;
+  platform?: string;
+  style?: string;
+  theme?: string;
+  includePromotion?: boolean | string;
+  customInstructions?: string;
+}
+
+interface PhotoInstructionsResult {
+  lighting?: string | string[];
+  angles?: string | string[];
+  cameraAngle?: string;
+  composition?: string | string[];
+  styling?: string | string[];
+  mood?: string;
+  technical?: string | string[];
+  technicalSettings?: string;
+}
+
+// ==========================================
+// PRO PERKS HELPER FUNCTIONS
+// ==========================================
+const deriveSharePercentage = (perk: ProPerk): number => {
+    if (!perk.commissionRate) {
+      return 20;
+    }
+
+    const percentMatches = Array.from(perk.commissionRate.matchAll(/(\d+(?:\.\d+)?)\s*%/g));
+    if (percentMatches.length === 0) {
+      return 20;
+    }
+
+    const numericPercents = percentMatches
+      .map(match => Number.parseFloat(match[1]))
+      .filter((value): value is number => Number.isFinite(value));
+
+    if (numericPercents.length === 0) {
+      return 20;
+    }
+
+    const normalizedPercents = numericPercents.map(value => {
+      const rounded = Math.round(value);
+      if (Number.isNaN(rounded)) {
+        return 20;
+      }
+      return Math.min(100, Math.max(1, rounded));
+    });
+
+    return Math.max(...normalizedPercents);
+  };
+
+
+export async function registerRoutes(app: Express, apiPrefix: string = '/api', options?: RegisterRoutesOptions): Promise<Server> {
+export async function registerRoutes(app: Express, _apiPrefix: string = '/api', options?: RegisterRoutesOptions): Promise<Server> {
+  // ==========================================
+  // VALIDATE ENVIRONMENT & APPLY SECURITY
+  // ==========================================
+
+  // Set trust proxy securely for rate limiters
+  app.set('trust proxy', (ip: string) => {
+    // Trust localhost and private network ranges
+    return ['127.0.0.1', '::1'].includes(ip) || ip.startsWith('10.') || ip.startsWith('192.168.');
+  });
+
+  // Validate required environment variables first
+  validateEnvironment();
+
+  // Log IPs first so downstream middleware can use req.userIP
+  app.use(ipLoggingMiddleware);
+  app.use(securityMiddleware);
+
+  // Session configuration (MUST BE BEFORE AUTH ROUTES)
+  let store: session.Store | undefined;
+
+  if (IS_PRODUCTION) {
+    if (REDIS_URL) {
+      const { RedisStore } = connectRedis as { RedisStore: new (options: { client: unknown; prefix: string }) => session.Store };
+      const redisClient = new Redis(REDIS_URL);
+      store = new RedisStore({ client: redisClient, prefix: 'sess:' });
+@@ -746,59 +678,50 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api', o
+          ? result.photoInstructions.technical[0]
+          : (result.photoInstructions as PhotoInstructionsData).technicalSettings || 'Auto settings'
+      };
+      await storage.createContentGeneration({
+        userId: req.user.id,
+        titles: result.titles || [],
+        content: result.content || '',
+        photoInstructions,
+        platform: platform || "reddit",
+        style: style || 'playful',
+        theme: theme || 'lingerie',
+        createdAt: new Date()
+      });
+      res.json(result);
+    } catch (error: unknown) {
+      if (options?.sentry) {
+        options.sentry.captureException(error);
+      }
+      next(error instanceof AppError ? error : new AppError('Failed to generate content', 500));
+    }
+  });
+
+  // Unified AI generation endpoint - handles both text and image workflows
+  app.post('/api/generate-unified', generationLimiter, authenticateToken, upload.single('image'), async (req: AuthRequest, res, next) => {
+    try {
+      interface GenerationRequestBody {
+        mode: string;
+        prompt: string;
+        platform?: string;
+        style?: string;
+        theme?: string;
+        includePromotion?: boolean;
+        customInstructions?: string;
+      }
+      const body = req.body as Partial<GenerationRequestBody>;
+      if (!body.mode || !body.prompt) {
+        return res.status(400).json({ error: 'mode and prompt are required' });
+      }
+      const {
+        mode,
+        prompt,
+        platform,
+        style,
+        theme,
+        includePromotion,
+        customInstructions
+      } = body;
+
+      if (req.user?.id) {
+        const user = await storage.getUser(req.user.id);
+        if (!user) {
+          return res.status(401).json({ error: 'User not found' });
+        }
+        const userTier = user.tier || 'free';
+        const dailyCount = await storage.getDailyGenerationCount(req.user.id);
+        let dailyLimit = 5;
+        if (userTier === 'pro') dailyLimit = 50;
+        else if (userTier === 'starter') dailyLimit = 25;
+        if (dailyLimit !== -1 && dailyCount >= dailyLimit) {
+@@ -1161,51 +1084,51 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api', o
+        pro: 5 * 1024 * 1024 * 1024
+      }[userTier] || 100 * 1024 * 1024;
+
+      res.json({
+        usedBytes: totalBytes,
+        quotaBytes: quotaBytes,
+        usedPercentage: Math.round((totalBytes / quotaBytes) * 100),
+        assetsCount: images.length,
+        proUpgrade: {
+          quotaBytes: 5 * 1024 * 1024 * 1024,
+          features: ['5GB storage', 'Unlimited uploads', 'Advanced protection']
+        }
+      });
+    } catch (error) {
+      logger.error('Failed to fetch storage usage:', error);
+      if (options?.sentry) {
+        options.sentry.captureException(error);
+      }
+      res.status(500).json({ message: 'Failed to fetch storage usage' });
+    }
+  });
+
+  // AI generation endpoint - REAL
+  app.post('/api/ai/generate', authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { prompt, platforms, styleHints, variants } = req.body;
+      const { prompt, platforms, styleHints } = req.body;
+
+      const results = await Promise.all(
+        platforms.map(async (platform: string) => {
+          const generated = await generateUnifiedAIContent({
+            mode: 'text',
+            prompt: prompt,
+            platform: platform,
+            style: styleHints?.[0] || 'authentic',
+            theme: 'general',
+            includePromotion: false,
+            customInstructions: prompt
+          });
+
+          return {
+            platform,
+            titles: generated.titles,
+            body: generated.content,
+            photoInstructions: generated.photoInstructions,
+            hashtags: generated.hashtags || [],
+            style: styleHints?.[0] || 'authentic',
+            confidence: 0.95
+          };
+        })
+      );
+
+@@ -1349,51 +1272,51 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api', o
+          isPro: ['pro', 'starter'].includes(user.tier || ''),
+          tier: user.tier || 'free'
+        });
+      }
+
+      res.json({
+        subscription: null,
+        isPro: false,
+        tier: user.tier || 'free'
+      });
+    } catch (error) {
+      logger.error('Failed to fetch subscription:', error);
+      if (options?.sentry) {
+        options.sentry.captureException(error);
+      }
+      res.status(500).json({ message: 'Failed to fetch subscription' });
+    }
+  });
+
+  // Social media quick post endpoint - REAL
+  app.post('/api/social-media/quick-post', authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      const { platform, content, title, subreddit } = req.body;
+      const { platform, content } = req.body;
+
+      const post = await storage.createSocialMediaPost({
+        userId: req.user.id,
+        platform: platform,
+        content: content,
+        accountId: req.user.id,
+        status: 'draft'
+      });
+
+      res.json({
+        success: true,
+        postId: post.id,
+        message: 'Content saved successfully'
+      });
+    } catch (error) {
+      logger.error('Failed to post content:', error);
+      if (options?.sentry) {
+        options.sentry.captureException(error);
+      }
+      res.status(500).json({ message: 'Failed to post content' });
+    }
+  });
+
+  // Social media posts history - REAL
+  app.get('/api/social-media/posts', authenticateToken, async (req: AuthenticatedRequest, res) => {
