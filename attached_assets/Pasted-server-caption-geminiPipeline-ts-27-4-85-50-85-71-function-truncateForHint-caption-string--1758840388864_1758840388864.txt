@@ -1,0 +1,680 @@
+server/caption/geminiPipeline.ts
++27-4
+@@ -85,50 +85,71 @@ function truncateForHint(caption: string): string {
+  return `${trimmed.slice(0, 57)}...`;
+}
+
+function buildRetryHint(
+  baseHint: string | undefined,
+  duplicates: string[],
+  needed: number
+): string {
+  const parts: string[] = [];
+  if (baseHint && baseHint.trim().length > 0) {
+    parts.push(baseHint.trim());
+  }
+  if (duplicates.length > 0) {
+    const lastDuplicate = duplicates[duplicates.length - 1];
+    parts.push(
+      `You already wrote "${truncateForHint(lastDuplicate)}". Deliver a fresh angle and add ${needed} more unique caption${needed > 1 ? "s" : ""}.`
+    );
+  } else {
+    parts.push(
+      `Need ${needed} more unique caption${needed > 1 ? "s" : ""}. Explore a different perspective with new imagery details.`
+    );
+  }
+  return parts.join(" ").trim();
+}
+
+function sanitizeHintForRetry(hint: string | undefined): string | undefined {
+  if (!hint) {
+    return undefined;
+  }
+
+  let sanitized = "";
+  for (let index = 0; index < hint.length; index += 1) {
+    const char = hint[index];
+    const code = hint.charCodeAt(index);
+    if (char === "\n") {
+      sanitized += char;
+    } else if (code < 32 || code === 127) {
+      sanitized += " ";
+    } else {
+      sanitized += char;
+    }
+  }
+
+  return sanitized;
+}
+
+function normalizeVariantFields(
+  variant: Record<string, unknown>,
+  platform: "instagram" | "x" | "reddit" | "tiktok",
+  facts?: Record<string, unknown>,
+  existingCaption?: string
+): z.infer<typeof CaptionItem> {
+  const next: Record<string, unknown> = { ...variant };
+  next.safety_level = normalizeSafetyLevel(
+    typeof next.safety_level === "string" ? next.safety_level : "normal"
+  );
+  if (typeof next.mood !== "string" || next.mood.trim().length < 2) next.mood = "engaging";
+  if (typeof next.style !== "string" || next.style.trim().length < 2) next.style = "authentic";
+
+  // Use helper for contextual fallbacks
+  const fallback = ensureFallbackCompliance(
+    {
+      caption: typeof next.caption === 'string' ? next.caption : undefined,
+      hashtags: Array.isArray(next.hashtags) ? next.hashtags.filter((tag): tag is string => typeof tag === 'string') : undefined,
+      cta: typeof next.cta === 'string' ? next.cta : undefined,
+      alt: typeof next.alt === 'string' ? next.alt : undefined,
+    },
+    {
+      platform,
+      facts,
+      existingCaption: existingCaption || (typeof next.caption === 'string' ? next.caption : undefined),
+@@ -442,84 +463,86 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
+  };
+
+  const buildUserPrompt = (varietyHint: string | undefined, existingCaptions: string[]): string => {
+    const lines = [
+      `PLATFORM: ${params.platform}`,
+      `VOICE: ${params.voice}`
+    ];
+
+    if (params.style) lines.push(`STYLE: ${params.style}`);
+    if (params.mood) lines.push(`MOOD: ${params.mood}`);
+
+    lines.push(`IMAGE_FACTS: ${JSON.stringify(params.facts)}`);
+    lines.push(`NSFW: ${params.nsfw ?? false}`);
+
+    const hintParts: string[] = [];
+    if (varietyHint) {
+      hintParts.push(varietyHint.trim());
+    }
+    if (existingCaptions.length > 0) {
+      hintParts.push(
+        `Avoid repeating or lightly editing these captions: ${existingCaptions.join(" | ")}.`
+      );
+    }
+    hintParts.push("Provide five options that vary tone, structure, and specific imagery.");
+
+    const combinedHint = hintParts.filter(Boolean).join(" ");
+    const serializedHint = serializePromptField(combinedHint, { block: true });
+    const currentHint = hintParts.filter(Boolean).join(" ");
+    const serializedHint = serializePromptField(currentHint, { block: true });
+    lines.push(`HINT:${serializedHint}`);
+
+    return lines.join("\n");
+  };
+
+  const fetchVariants = async (varietyHint: string | undefined, existingCaptions: string[]) => {
+    const user = buildUserPrompt(varietyHint, existingCaptions);
+    try {
+      const res = await textModel.generateContent([
+        { text: `${sys}\n${guard}\n${prompt}\n${user}` }
+      ]);
+      const json = stripToJSON(res.response.text()) as unknown;
+      return Array.isArray(json) ? json : [];
+    } catch (error) {
+      console.error("Gemini textModel.generateContent failed:", error);
+      throw error;
+    }
+  };
+
+  const uniqueVariants: z.infer<typeof CaptionItem>[] = [];
+  const existingCaptions: string[] = [];
+  const duplicatesThisAttempt: string[] = [];
+  const isTest = process.env.NODE_ENV === 'test';
+  const maxAttempts = isTest ? 2 : 5; // Allow 2 attempts in test for retry logic testing
+
+  const sanitizedBaseHint = sanitizeHintForRetry(params.hint);
+
+  for (let attempt = 0; attempt < maxAttempts && uniqueVariants.length < 5; attempt += 1) {
+    const needed = 5 - uniqueVariants.length;
+    const varietyHint = attempt === 0
+      ? params.hint
+      ? sanitizedBaseHint ?? params.hint
+      : (() => {
+          // Build complete base hint with variety clause first, then pass to buildRetryHint
+          const baseHintWithVariety = `${params.hint ? `${params.hint} ` : ""}Need much more variety across tone, structure, and imagery.`;
+          const baseHintWithVariety = `${sanitizedBaseHint ? `${sanitizedBaseHint} ` : ""}Need much more variety across tone, structure, and imagery.`;
+          return buildRetryHint(baseHintWithVariety, duplicatesThisAttempt, needed);
+        })();
+
+    const rawVariants = await fetchVariants(varietyHint, existingCaptions);
+    duplicatesThisAttempt.length = 0; // Reset for this attempt
+
+    for (const raw of rawVariants) {
+      if (uniqueVariants.length >= 5) break;
+      if (typeof raw !== "object" || raw === null) continue;
+
+      const sanitized = sanitizeVariant(raw as Record<string, unknown>);
+      const captionText = sanitized.caption as string;
+
+      const isDuplicate = existingCaptions.some(existing => captionsAreSimilar(existing, captionText));
+      if (isDuplicate) {
+        duplicatesThisAttempt.push(captionText); // Track duplicates for retry hint
+        continue;
+      }
+
+      uniqueVariants.push(sanitized as z.infer<typeof CaptionItem>);
+      existingCaptions.push(captionText);
+    }
+  }
+
+  // Pad variants if we don't have enough, instead of throwing in tests
+server/caption/textOnlyPipeline.ts
++28-4
+@@ -47,50 +47,71 @@ function truncateForHint(caption: string): string {
+  return `${trimmed.slice(0, 57)}...`;
+}
+
+function buildRetryHint(
+  baseHint: string | undefined,
+  duplicates: string[],
+  needed: number
+): string {
+  const parts: string[] = [];
+  if (baseHint && baseHint.trim().length > 0) {
+    parts.push(baseHint.trim());
+  }
+  if (duplicates.length > 0) {
+    const lastDuplicate = duplicates[duplicates.length - 1];
+    parts.push(
+      `You already wrote "${truncateForHint(lastDuplicate)}". Deliver a fresh angle and add ${needed} more unique caption${needed > 1 ? "s" : ""}.`
+    );
+  } else {
+    parts.push(
+      `Need ${needed} more unique caption${needed > 1 ? "s" : ""}. Explore a different perspective with new imagery details.`
+    );
+  }
+  return parts.join(" ").trim();
+}
+
+function sanitizeHintForRetry(hint: string | undefined): string | undefined {
+  if (!hint) {
+    return undefined;
+  }
+
+  let sanitized = "";
+  for (let index = 0; index < hint.length; index += 1) {
+    const char = hint[index];
+    const code = hint.charCodeAt(index);
+    if (char === "\n") {
+      sanitized += char;
+    } else if (code < 32 || code === 127) {
+      sanitized += " ";
+    } else {
+      sanitized += char;
+    }
+  }
+
+  return sanitized;
+}
+
+function normalizeVariantFields(
+  variant: Record<string, unknown>, 
+  platform: "instagram" | "x" | "reddit" | "tiktok",
+  theme?: string,
+  context?: string,
+  existingCaption?: string
+): z.infer<typeof CaptionItem> {
+  const next: Record<string, unknown> = { ...variant };
+  next.safety_level = normalizeSafetyLevel(
+    typeof next.safety_level === "string" ? next.safety_level : "normal"
+  );
+  if (typeof next.mood !== "string" || next.mood.trim().length < 2) next.mood = "engaging";
+  if (typeof next.style !== "string" || next.style.trim().length < 2) next.style = "authentic";
+  
+  // Use helper for contextual fallbacks
+  const fallback = ensureFallbackCompliance(
+    {
+      caption: typeof next.caption === 'string' ? next.caption : undefined,
+      hashtags: Array.isArray(next.hashtags) ? next.hashtags.filter((tag): tag is string => typeof tag === 'string') : undefined,
+      cta: typeof next.cta === 'string' ? next.cta : undefined,
+      alt: typeof next.alt === 'string' ? next.alt : undefined,
+    },
+    {
+      platform,
+      theme,
+@@ -235,83 +256,86 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
+
+  const buildUserPrompt = (varietyHint: string | undefined, existingCaptions: string[]): string => {
+    const lines = [
+      `PLATFORM: ${params.platform}`,
+      `VOICE: ${params.voice}`,
+      `THEME: ${serializePromptField(params.theme)}`,
+      `CONTEXT: ${serializePromptField(params.context || "")}`
+    ];
+
+    if (params.style) lines.push(`STYLE: ${params.style}`);
+    if (params.mood) lines.push(`MOOD: ${params.mood}`);
+
+    lines.push(`NSFW: ${params.nsfw ?? false}`);
+
+    const hintParts: string[] = [];
+    if (varietyHint) {
+      hintParts.push(varietyHint.trim());
+    }
+    if (existingCaptions.length > 0) {
+      hintParts.push(
+        `Avoid repeating or lightly editing these captions: ${existingCaptions.join(" | ")}.`
+      );
+    }
+    hintParts.push("Provide five options that vary tone, structure, and specific content themes.");
+
+    const combinedHint = hintParts.filter(Boolean).join(" ");
+    lines.push(`HINT: ${combinedHint}`);
+    const currentHint = hintParts.filter(Boolean).join(" ");
+    const serializedHint = serializePromptField(currentHint, { block: true });
+    lines.push(`HINT:${serializedHint}`);
+
+    return lines.join("\n");
+  };
+
+  const fetchVariants = async (varietyHint: string | undefined, existingCaptions: string[]) => {
+    const user = buildUserPrompt(varietyHint, existingCaptions);
+    try {
+      const res = await textModel.generateContent([
+        { text: `${sys}\n${guard}\n${prompt}\n${user}` }
+      ]);
+      const json = stripToJSON(res.response.text());
+      return Array.isArray(json) ? json : [];
+    } catch (error) {
+      console.error("Gemini textModel.generateContent failed:", error);
+      throw error;
+    }
+  };
+
+  const uniqueVariants: z.infer<typeof CaptionItem>[] = [];
+  const existingCaptions: string[] = [];
+  const duplicatesThisAttempt: string[] = [];
+  const isTest = process.env.NODE_ENV === 'test';
+  const maxAttempts = isTest ? 2 : 5; // Allow 2 attempts in test for retry logic testing
+
+  const sanitizedBaseHint = sanitizeHintForRetry(params.hint);
+
+  for (let attempt = 0; attempt < maxAttempts && uniqueVariants.length < 5; attempt += 1) {
+    const needed = 5 - uniqueVariants.length;
+    const varietyHint = attempt === 0
+      ? params.hint
+      ? sanitizedBaseHint ?? params.hint
+      : (() => {
+          // Build complete base hint with variety clause first, then pass to buildRetryHint
+          const baseHintWithVariety = `${params.hint ? `${params.hint} ` : ""}Need much more variety across tone, structure, and themes.`;
+          const baseHintWithVariety = `${sanitizedBaseHint ? `${sanitizedBaseHint} ` : ""}Need much more variety across tone, structure, and themes.`;
+          return buildRetryHint(baseHintWithVariety, duplicatesThisAttempt, needed);
+        })();
+
+    const rawVariants = await fetchVariants(varietyHint, existingCaptions);
+    duplicatesThisAttempt.length = 0; // Reset for this attempt
+
+    for (const raw of rawVariants) {
+      if (uniqueVariants.length >= 5) break;
+      if (typeof raw !== "object" || raw === null) continue;
+
+      const sanitized = sanitizeVariant(raw as Record<string, unknown>);
+      const captionText = sanitized.caption as string;
+
+      const isDuplicate = existingCaptions.some(existing => captionsAreSimilar(existing, captionText));
+      if (isDuplicate) {
+        duplicatesThisAttempt.push(captionText); // Track duplicates for retry hint
+        continue;
+      }
+
+      uniqueVariants.push(sanitized as z.infer<typeof CaptionItem>);
+      existingCaptions.push(captionText);
+    }
+  }
+
+  // Pad variants if we don't have enough, instead of throwing in tests
+tests/routes/caption-generation.test.ts
++247-0
+@@ -924,50 +924,173 @@ describe('Caption Generation', () => {
+      const { generateVariants } = await import('../../server/caption/geminiPipeline.js');
+      const baseHint = 'Line1\nLine2 "quoted"';
+      await generateVariants({
+        platform: 'instagram',
+        voice: 'flirty_playful',
+        facts: { objects: ['retry'] },
+        hint: baseHint,
+      });
+
+      expect(textGenerateMock).toHaveBeenCalledTimes(2);
+      const firstPrompt = textGenerateMock.mock.calls[0][0][0].text as string;
+      const secondPrompt = textGenerateMock.mock.calls[1][0][0].text as string;
+
+      const { serializePromptField } = await import('../../server/caption/promptUtils.js');
+      const sanitizedBaseHint = serializePromptField(baseHint, { block: true });
+      expect(firstPrompt).toContain(`\nHINT:${sanitizedBaseHint}`);
+      expect(firstPrompt).not.toContain('HINT:Line1\nLine2 "quoted"');
+
+      const retryHintRaw = `${baseHint} Need much more variety across tone, structure, and imagery.`;
+      const sanitizedRetryHint = serializePromptField(retryHintRaw, { block: true });
+      expect(secondPrompt).toContain(`\nHINT:${sanitizedRetryHint}`);
+      expect(secondPrompt).not.toContain(
+        'HINT:Line1\nLine2 "quoted" Need much more variety across tone, structure, and imagery.'
+      );
+    });
+
+    it('retries cleanly when duplicates include quotes and newlines', async () => {
+      const duplicateCaption = 'Echoed "glam"\nline two energy';
+      const duplicateVariant = {
+        caption: duplicateCaption,
+        hashtags: ['#echoed', '#glam', '#energy'],
+        safety_level: 'normal',
+        mood: 'playful',
+        style: 'bold',
+        cta: 'Share your angle',
+        alt: 'Alt content emphasizing duplicate handling with embedded quotes and newlines.',
+        nsfw: false,
+      };
+
+      const duplicateBatch = Array.from({ length: 5 }, () => ({ ...duplicateVariant }));
+
+      const uniqueBatch = [
+        {
+          caption: 'Fresh spark under city glow tonight',
+          hashtags: ['#city', '#spark', '#style'],
+          safety_level: 'normal',
+          mood: 'excited',
+          style: 'vibrant',
+          cta: 'Share your vibe',
+          alt: 'Alt copy describing a lively city-inspired outfit for uniqueness',
+          nsfw: false,
+        },
+        {
+          caption: 'Silky shadows with a fearless smile',
+          hashtags: ['#silky', '#fearless', '#smile'],
+          safety_level: 'normal',
+          mood: 'confident',
+          style: 'sleek',
+          cta: 'Drop a 🔥 if you feel it',
+          alt: 'Detailed alt content to keep schema happy during retry testing',
+          nsfw: false,
+        },
+        {
+          caption: 'Electric hues and a mischievous wink',
+          hashtags: ['#electric', '#wink', '#glam'],
+          safety_level: 'normal',
+          mood: 'playful',
+          style: 'edgy',
+          cta: 'Tell me your bold color',
+          alt: 'Alt text showing the energetic neon scene for retry testing',
+          nsfw: false,
+        },
+        {
+          caption: 'Velvet mood with playful winks and attitude',
+          hashtags: ['#velvet', '#playful', '#attitude'],
+          safety_level: 'normal',
+          mood: 'flirty',
+          style: 'whimsical',
+          cta: 'Drop a secret emoji',
+          alt: 'Detailed caption-friendly alt text for unique variant coverage testing.',
+          nsfw: false,
+        },
+        {
+          caption: 'Golden hour glow with rose-hued whispers',
+          hashtags: ['#golden', '#glow', '#rose'],
+          safety_level: 'normal',
+          mood: 'romantic',
+          style: 'elegant',
+          cta: 'Share the mood',
+          alt: 'Extended alt content to meet schema standards effortlessly for tests.',
+          nsfw: false,
+        },
+      ];
+
+      const mockRankResponse = {
+        response: {
+          text: () =>
+            JSON.stringify({
+              winner_index: 0,
+              scores: [5, 4, 3, 2, 1],
+              reason: 'Selected based on engagement potential',
+              final: uniqueBatch[0],
+            }),
+        },
+      };
+
+      const { textModel } = await import('../../server/lib/gemini.js');
+      const textGenerateMock = asMock(textModel.generateContent);
+      textGenerateMock
+        .mockResolvedValueOnce({ response: { text: () => JSON.stringify(duplicateBatch) } })
+        .mockResolvedValueOnce({ response: { text: () => JSON.stringify(uniqueBatch) } })
+        .mockResolvedValueOnce(mockRankResponse);
+
+      const { generateVariants } = await import('../../server/caption/geminiPipeline.js');
+      const hint = 'Spacing "line"\nline two';
+      const result = await generateVariants({
+        platform: 'instagram',
+        voice: 'flirty_playful',
+        facts: { objects: ['retry'] },
+        hint,
+      });
+
+      expect(result).toHaveLength(5);
+      expect(textGenerateMock).toHaveBeenCalledTimes(3);
+
+      const secondPrompt = textGenerateMock.mock.calls[1][0][0].text as string;
+      const hintLine = secondPrompt.split('\n').find(line => line.startsWith('HINT:')) ?? '';
+      expect(hintLine.includes('\n')).toBe(true);
+      expect(hintLine).not.toContain(duplicateCaption);
+
+      const truncateForHint = (caption: string): string => {
+        const trimmed = caption.trim();
+        if (trimmed.length <= 60) {
+          return trimmed;
+        }
+        return `${trimmed.slice(0, 57)}...`;
+      };
+
+      const expectedRawRetryHint = (() => {
+        const needed = 5;
+        const base = `${hint} Need much more variety across tone, structure, and imagery.`;
+        const lastDuplicate = truncateForHint(duplicateCaption);
+        return `${base} You already wrote "${lastDuplicate}". Deliver a fresh angle and add ${needed} more unique captions.`;
+      })();
+
+      const { serializePromptField } = await import('../../server/caption/promptUtils.js');
+      expect(hintLine).toBe(`HINT:${serializePromptField(expectedRawRetryHint, { block: true })}`);
+    });
+  });
+
+  describe('Text-Only Pipeline', () => {
+    it('should generate content without image context', async () => {
+      const variantPayload = [
+        {
+          caption: 'Motivational content for today!',
+          hashtags: ['#motivation', '#mindset', '#focus'],
+          safety_level: 'normal',
+          mood: 'inspiring',
+          style: 'authentic',
+          cta: 'What motivates you?',
+          alt: 'Alt text describing a motivated creator writing plans for the day.',
+          nsfw: false,
+        },
+        {
+          caption: 'Morning mantra: own the sunrise',
+          hashtags: ['#sunrise', '#grind', '#purpose'],
+          safety_level: 'normal',
+          mood: 'driven',
+          style: 'uplifting',
+          cta: 'Share your mantra',
+          alt: 'Alt text illustrating a sunrise workout with determined energy.',
+          nsfw: false,
+        },
+@@ -1195,50 +1318,174 @@ describe('Caption Generation', () => {
+      ];
+
+      const { textModel } = await import('../../server/lib/gemini.js');
+      const textGenerateMock = asMock(textModel.generateContent);
+      textGenerateMock
+        .mockResolvedValueOnce({
+          response: { text: () => JSON.stringify(duplicateBatch) },
+        })
+        .mockResolvedValueOnce({
+          response: { text: () => JSON.stringify(uniqueBatch) },
+        });
+
+      const { generateVariantsTextOnly } = await import('../../server/caption/textOnlyPipeline.js');
+      const result = await generateVariantsTextOnly({
+        platform: 'instagram',
+        voice: 'inspiring',
+        theme: 'motivation',
+        context: 'morning motivation post',
+      });
+
+      expect(textGenerateMock).toHaveBeenCalledTimes(2);
+      const secondPrompt = textGenerateMock.mock.calls[1][0][0].text as string;
+      expect(secondPrompt).toContain('HINT:You already wrote');
+      expect(new Set(result.map(v => v.caption.toLowerCase().slice(0, 80))).size).toBe(5);
+    });
+
+    it('sanitizes retries when text-only duplicates contain quotes and newlines', async () => {
+      const duplicateCaption = 'Motivation "ignite"\nline two';
+      const duplicateVariant = {
+        caption: duplicateCaption,
+        hashtags: ['#motivation', '#ignite', '#newline'],
+        safety_level: 'normal',
+        mood: 'driven',
+        style: 'authentic',
+        cta: 'Share your mantra',
+        alt: 'Alt text covering duplicate handling for text-only prompts with control characters.',
+        nsfw: false,
+      };
+
+      const duplicateBatch = Array.from({ length: 5 }, () => ({ ...duplicateVariant }));
+
+      const uniqueBatch = [
+        {
+          caption: 'Fresh slate energy: breathe and begin',
+          hashtags: ['#fresh', '#breathe', '#begin'],
+          safety_level: 'normal',
+          mood: 'calm',
+          style: 'grounded',
+          cta: 'Tell us how you reset',
+          alt: 'Alt narrative describing a calm reset moment for uniqueness',
+          nsfw: false,
+        },
+        {
+          caption: 'Progress report: tiny steps count big',
+          hashtags: ['#progress', '#steps', '#count'],
+          safety_level: 'normal',
+          mood: 'encouraging',
+          style: 'practical',
+          cta: 'Tag a teammate',
+          alt: 'Detailed alt text celebrating incremental progress for the set',
+          nsfw: false,
+        },
+        {
+          caption: 'Spark your ambition with a mid-day mantra',
+          hashtags: ['#spark', '#ambition', '#midday'],
+          safety_level: 'normal',
+          mood: 'energized',
+          style: 'vibrant',
+          cta: 'Drop your go-to phrase',
+          alt: 'Alt description fueling midday motivation for duplicate testing',
+          nsfw: false,
+        },
+        {
+          caption: 'Refocus, refuel, and repeat your mission',
+          hashtags: ['#refocus', '#refuel', '#mission'],
+          safety_level: 'normal',
+          mood: 'focused',
+          style: 'encouraging',
+          cta: 'Share your repeatable habit',
+          alt: 'Alt copy illustrating a repeatable mission-building routine',
+          nsfw: false,
+        },
+        {
+          caption: 'Evening reflection: celebrate the subtle wins',
+          hashtags: ['#evening', '#reflection', '#wins'],
+          safety_level: 'normal',
+          mood: 'grateful',
+          style: 'reflective',
+          cta: 'Name one small victory today',
+          alt: 'Reflective alt text encouraging users to acknowledge daily progress',
+          nsfw: false,
+        },
+      ];
+
+      const mockRankResponse = {
+        response: {
+          text: () =>
+            JSON.stringify({
+              winner_index: 0,
+              scores: [5, 4, 3, 2, 1],
+              reason: 'Picked the most energizing option',
+              final: uniqueBatch[0],
+            }),
+        },
+      };
+
+      const { textModel } = await import('../../server/lib/gemini.js');
+      const textGenerateMock = asMock(textModel.generateContent);
+      textGenerateMock
+        .mockResolvedValueOnce({ response: { text: () => JSON.stringify(duplicateBatch) } })
+        .mockResolvedValueOnce({ response: { text: () => JSON.stringify(uniqueBatch) } })
+        .mockResolvedValueOnce(mockRankResponse);
+
+      const { generateVariantsTextOnly } = await import('../../server/caption/textOnlyPipeline.js');
+      const hint = 'Anchor it "here"\nline break';
+      const result = await generateVariantsTextOnly({
+        platform: 'instagram',
+        voice: 'inspiring',
+        theme: 'motivation',
+        context: 'morning motivation post',
+        hint,
+      });
+
+      expect(result).toHaveLength(5);
+      expect(textGenerateMock).toHaveBeenCalledTimes(3);
+
+      const secondPrompt = textGenerateMock.mock.calls[1][0][0].text as string;
+      const hintLine = secondPrompt.split('\n').find(line => line.startsWith('HINT:')) ?? '';
+      expect(hintLine.includes('\n')).toBe(true);
+      expect(hintLine).not.toContain(duplicateCaption);
+
+      const truncateForHint = (caption: string): string => {
+        const trimmed = caption.trim();
+        if (trimmed.length <= 60) {
+          return trimmed;
+        }
+        return `${trimmed.slice(0, 57)}...`;
+      };
+
+      const expectedRawRetryHint = (() => {
+        const needed = 5;
+        const base = `${hint} Need much more variety across tone, structure, and themes.`;
+        const lastDuplicate = truncateForHint(duplicateCaption);
+        return `${base} You already wrote "${lastDuplicate}". Deliver a fresh angle and add ${needed} more unique captions.`;
+      })();
+
+      const { serializePromptField } = await import('../../server/caption/promptUtils.js');
+      expect(hintLine).toBe(`HINT:${serializePromptField(expectedRawRetryHint, { block: true })}`);
+    });
+  });
+
+  describe('Rewrite Pipeline', () => {
+    it('should improve existing captions', async () => {
+      const existingCaption = 'Basic caption here';
+      const mockResponse = {
+        response: {
+          text: () => JSON.stringify([
+            {
+              caption: 'Enhanced and engaging caption! ✨',
+              hashtags: ['#enhanced', '#content'],
+              safety_level: 'normal',
+              mood: 'engaging',
+              style: 'authentic',
+              cta: 'What do you think?',
+              alt: 'An engaging social media post with vibrant energy and compelling call to action',
+              nsfw: false,
+            },
+          ]),
+        },
+      };
+
+      const { textModel } = await import('../../server/lib/gemini.js');
+      const genSpy = vi.spyOn(textModel, 'generateContent').mockResolvedValue(mockResponse as MockResponse);
