@@ -195,9 +195,9 @@ async function generateWithOpenAI(prompt: string) {
 }
 
 function validateAndFormatResponse(result: unknown) {
-  const res = result as any;
-  let content = res?.content;
-  if (!content || content === 'Generated content' || content.length < 20) {
+  const res = result as Record<string, unknown>;
+  let content = res?.content as string;
+  if (!content || content === 'Generated content' || (typeof content === 'string' && content.length < 20)) {
     // Create engaging fallback content based on titles
     const firstTitle = Array.isArray(res?.titles) && res.titles[0] ? res.titles[0] : 'New content';
     content = `${firstTitle}\n\nHey everyone! 💕 Just wanted to share this moment with you all. There's something magical about capturing authentic moments that show who you really are. This one definitely has that special energy I love to share with you.\n\nWhat do you think? Drop a comment and let me know your thoughts! ✨`;
@@ -207,12 +207,12 @@ function validateAndFormatResponse(result: unknown) {
     titles: Array.isArray(res?.titles) ? res.titles.slice(0, 3) : ['Generated Title'],
     content: content,
     photoInstructions: {
-      lighting: res?.photoInstructions?.lighting || 'Natural lighting preferred',
-      cameraAngle: res?.photoInstructions?.cameraAngle || 'Eye level angle',
-      composition: res?.photoInstructions?.composition || 'Center composition',
-      styling: res?.photoInstructions?.styling || 'Casual styling',
-      mood: res?.photoInstructions?.mood || 'Confident and natural',
-      technicalSettings: res?.photoInstructions?.technicalSettings || 'Auto settings'
+      lighting: (res?.photoInstructions as Record<string, unknown>)?.lighting as string || 'Natural lighting preferred',
+      cameraAngle: (res?.photoInstructions as Record<string, unknown>)?.cameraAngle as string || 'Eye level angle',
+      composition: (res?.photoInstructions as Record<string, unknown>)?.composition as string || 'Center composition',
+      styling: (res?.photoInstructions as Record<string, unknown>)?.styling as string || 'Casual styling',
+      mood: (res?.photoInstructions as Record<string, unknown>)?.mood as string || 'Confident and natural',
+      technicalSettings: (res?.photoInstructions as Record<string, unknown>)?.technicalSettings as string || 'Auto settings'
     },
     provider: 'unknown',
     estimatedCost: 0

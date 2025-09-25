@@ -221,9 +221,9 @@ async function applyExistingOverrides(subreddit: string, newSpec: RuleSpecBase):
 
         // Apply override logic
         Object.keys(existingSpec.overrides).forEach(key => {
-          const overrideValue = (existingSpec.overrides as any)[key];
+          const overrideValue = (existingSpec.overrides as Record<string, unknown>)[key];
           if (overrideValue !== undefined && overrideValue !== null) {
-            (mergedSpec as any)[key] = overrideValue;
+            (mergedSpec as Record<string, unknown>)[key] = overrideValue;
           }
         });
 

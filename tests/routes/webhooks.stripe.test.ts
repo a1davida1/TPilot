@@ -87,7 +87,7 @@ vi.mock('../../server/db.js', () => {
 
   return {
     db: dbMock as unknown as typeof DbType,
-    pool: {} as any,
+    pool: {} as Record<string, unknown>,
     closeDatabaseConnections: async () => undefined
   };
 });

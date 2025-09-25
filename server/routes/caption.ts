@@ -5,6 +5,7 @@ import { pipelineRewrite } from '../caption/rewritePipeline';
 import { storage } from '../storage';
 import { authenticateToken, type AuthRequest } from '../middleware/auth';
 import { insertContentGenerationSchema } from '@shared/schema';
+import { type CaptionObject } from '@shared/types/caption';
 import { z } from 'zod';
 import { logger } from '../bootstrap/logger';
 
@@ -170,7 +171,7 @@ router.post('/rewrite', authenticateToken, async (req: AuthRequest, res: Respons
     
     // Save generation to database
     if (req.user?.id && result.final) {
-      const finalResult = result.final as Record<string, any>;
+      const finalResult = result.final as CaptionObject;
       try {
         await storage.createGeneration({
           userId: req.user.id,

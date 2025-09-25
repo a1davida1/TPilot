@@ -138,7 +138,7 @@ export const socialAuthRoutes = {
   redditAuth: passport.authenticate('reddit', { 
     state: 'reddit-auth-state',
     duration: 'permanent' 
-  } as any),
+  }),
   redditCallback: passport.authenticate('reddit', { 
     failureRedirect: '/login?error=reddit_auth_failed',
     successRedirect: '/dashboard?reddit=connected' 

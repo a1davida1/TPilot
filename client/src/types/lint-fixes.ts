@@ -19,5 +19,25 @@ export type FormEvent = React.FormEvent<HTMLFormElement>;
 export type ChangeEvent = React.ChangeEvent<HTMLInputElement>;
 export type ClickEvent = React.MouseEvent<HTMLButtonElement>;
 
+// API request types for content generation
+export interface GenerationRequest {
+  platform?: string;
+  style?: string;
+  theme?: string;
+  customPrompt?: string;
+  imageUrl?: string;
+  nsfw?: boolean;
+  allowsPromotion?: string | boolean;
+  generationType?: string;
+  userProfile?: {
+    toneOfVoice?: string;
+    contentStyle?: string;
+    personalBrand?: string;
+    contentLength?: string;
+    includeEmojis?: boolean;
+    promotionLevel?: string;
+  };
+}
+
 // Replace common any patterns
 export type TodoAny = unknown; // Temporary type for gradual migration

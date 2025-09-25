@@ -63,12 +63,12 @@ export async function seedPolicyData() {
         .insert(subredditRules)
         .values({
           subreddit,
-          rulesJson: rules as any
+          rulesJson: rules
         })
         .onConflictDoUpdate({
           target: subredditRules.subreddit,
           set: {
-            rulesJson: rules as any,
+            rulesJson: rules,
             updatedAt: new Date()
           }
         });

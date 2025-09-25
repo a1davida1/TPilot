@@ -567,7 +567,7 @@ function parseUserAgent(userAgent?: string): DeviceInfo {
 async function getLocationFromIP(ipAddress: string): Promise<{ country?: string; city?: string } | null> {
   if (!geoReader) return null;
   try {
-    const record = await (geoReader as any).city(ipAddress);
+    const record = await geoReader.city(ipAddress);
     return {
       country: record.country?.isoCode,
       city: record.city?.names?.en,

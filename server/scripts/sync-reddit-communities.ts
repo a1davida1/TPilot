@@ -250,7 +250,14 @@ export async function syncRedditCommunities(config?: { subreddits?: string[]; ru
   });
   
   // Initialize Reddit client with proper authentication
-  const redditConfig: any = {
+  const redditConfig: {
+    userAgent: string;
+    clientId: string;
+    clientSecret: string;
+    refreshToken?: string;
+    username?: string;
+    password?: string;
+  } = {
     userAgent: env.REDDIT_USER_AGENT,
     clientId: env.REDDIT_CLIENT_ID,
     clientSecret: env.REDDIT_CLIENT_SECRET,

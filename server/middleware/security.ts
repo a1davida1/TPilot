@@ -494,7 +494,7 @@ export const errorHandler = async (
 
   if (!appError.isOperational) {
     Sentry.captureException(err, {
-      user: (req as any).user?.id,
+      user: { id: (req as { user?: { id?: string | number } }).user?.id },
       tags: { endpoint: req.path }
     });
   }

@@ -177,7 +177,7 @@ export default function MobilePWA() {
         });
       }
     } else {
-      (navigator as any).clipboard.writeText(window.location.href);
+      (navigator as Navigator & { clipboard: { writeText: (text: string) => Promise<void> } }).clipboard.writeText(window.location.href);
       toast({
         title: "Link Copied",
         description: "App URL has been copied to your clipboard.",

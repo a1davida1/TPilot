@@ -66,7 +66,7 @@ class PerformanceMonitor {
         // Call original end function
         return originalEnd.apply(this, args);
       };
-      res.end = monitoredEnd as any;
+      res.end = monitoredEnd as typeof res.end;
 
       next();
     };

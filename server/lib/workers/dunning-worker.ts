@@ -9,10 +9,14 @@ import fetch from "node-fetch";
 interface SubscriptionRecord {
   id: number;
   userId: number;
-  amount: number;
-  stripeCustomerId?: string;
-  ccbillSubscriptionId?: string;
-  paymentMethodId?: string;
+  status: string;
+  plan: string;
+  priceCents: number;
+  processor: string;
+  processorSubId: string | null;
+  currentPeriodEnd: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 interface UserRecord {
@@ -144,9 +148,9 @@ export class DunningWorker {
       logger.info(`Attempting payment retry for subscription ${subscription.id}`);
       
       // Try to process payment using the configured payment provider
-      if (process.env.STRIPE_SECRET_KEY && subscription.stripeCustomerId) {
+      if (process.env.STRIPE_SECRET_KEY && subscription.processor === 'stripe') {
         return await this.retryStripePayment(subscription);
-      } else if (process.env.CCBILL_ACCOUNT_NUMBER && subscription.ccbillSubscriptionId) {
+      } else if (process.env.CCBILL_ACCOUNT_NUMBER && subscription.processor === 'ccbill') {
         return await this.retryCCBillPayment(subscription);
       } else {
         logger.warn('No payment provider configured for retry');
@@ -165,10 +169,9 @@ export class DunningWorker {
       
       // Attempt to charge the customer's default payment method
       const paymentIntent = await stripe.paymentIntents.create({
-        amount: subscription.amount,
+        amount: subscription.priceCents,
         currency: 'usd',
-        customer: subscription.stripeCustomerId,
-        payment_method: subscription.paymentMethodId,
+        customer: subscription.processorSubId || undefined,
         confirm: true,
         off_session: true, // Indicates this is for an existing customer
       });
@@ -198,8 +201,8 @@ export class DunningWorker {
       const res = await fetch('https://datalink.ccbill.com/', {
         method: 'POST',
         body: new URLSearchParams({
-          subscriptionId: subscription.ccbillSubscriptionId,
-          amount: String(subscription.amount),
+          subscriptionId: subscription.processorSubId || '',
+          amount: String(subscription.priceCents),
         }),
       });
       if (!res.ok) {
@@ -262,7 +265,7 @@ export class DunningWorker {
 
   private async sendRecoveryNotification(user: unknown, subscription: unknown) {
     // In full implementation, this would send an email
-    logger.info(`Sending recovery notification to ${(user as any).email} for subscription ${(subscription as any).id}`);
+    logger.info(`Sending recovery notification to ${(user as { email?: string }).email} for subscription ${(subscription as { id?: string | number }).id}`);
     
     // Would integrate with email service (SendGrid, etc.)
     // await EmailService.send({
@@ -274,7 +277,7 @@ export class DunningWorker {
 
   private async sendSuspensionNotification(user: unknown, subscription: unknown) {
     // In full implementation, this would send an email
-    logger.info(`Sending suspension notification to ${(user as any).email} for subscription ${(subscription as any).id}`);
+    logger.info(`Sending suspension notification to ${(user as { email?: string }).email} for subscription ${(subscription as { id?: string | number }).id}`);
     
     // Would integrate with email service
     // await EmailService.send({

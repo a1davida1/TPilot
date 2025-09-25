@@ -132,7 +132,7 @@ describe.each(scenarios)('Ranking Integration Tests ($label)', ({ applyGeminiMoc
         reason: "Engaging content"
       });
 
-      (textModelMock as any)
+      (textModelMock as ReturnType<typeof vi.fn>)
         .mockResolvedValueOnce(mockBannedResponse)  // First attempt
         .mockResolvedValueOnce(mockBannedResponse); // Rerank also fails
 
@@ -170,7 +170,7 @@ describe.each(scenarios)('Ranking Integration Tests ($label)', ({ applyGeminiMoc
         reason: "Clean, authentic content"
       });
 
-      (textModelMock as any).mockResolvedValueOnce(mockCleanResponse);
+      (textModelMock as ReturnType<typeof vi.fn>).mockResolvedValueOnce(mockCleanResponse);
 
       const variants: CaptionItemType[] = [
         {
@@ -207,7 +207,7 @@ describe.each(scenarios)('Ranking Integration Tests ($label)', ({ applyGeminiMoc
         reason: "Good content"
       });
 
-      (textModelMock as any).mockResolvedValueOnce(mockResponse);
+      (textModelMock as ReturnType<typeof vi.fn>).mockResolvedValueOnce(mockResponse);
 
       const variants: CaptionItemType[] = [
         {
@@ -238,7 +238,7 @@ describe.each(scenarios)('Ranking Integration Tests ($label)', ({ applyGeminiMoc
         reason: "Good content"
       });
 
-      (textModelMock as any).mockResolvedValueOnce(mockResponse);
+      (textModelMock as ReturnType<typeof vi.fn>).mockResolvedValueOnce(mockResponse);
 
       const variants: CaptionItemType[] = [
         {

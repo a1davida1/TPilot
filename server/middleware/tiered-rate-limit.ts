@@ -101,11 +101,11 @@ async function getUserTier(userId: string | number): Promise<string> {
 
 // Create rate limiter based on user tier
 export function createTieredRateLimiter(feature?: keyof typeof featureLimits) {
-  const limiters = new Map<string, any>();
+  const limiters = new Map<string, ReturnType<typeof rateLimit>>();
   
   return async (req: Request & { user?: unknown }, res: Response, next: NextFunction) => {
     // Get user ID from request
-    const userId = (req.user as any)?.id ?? req.headers['x-user-id'] ?? 'anonymous';
+    const userId = (req.user as { id?: string | number })?.id ?? req.headers['x-user-id'] ?? 'anonymous';
     
     // Get user tier
     const tier = await getUserTier(String(userId));
@@ -155,7 +155,11 @@ export function createTieredRateLimiter(feature?: keyof typeof featureLimits) {
     }
     
     const limiter = limiters.get(key);
-    limiter(req, res, next);
+    if (limiter) {
+      limiter(req, res, next);
+    } else {
+      next();
+    }
   };
 }
 
