@@ -225,8 +225,15 @@ import { generateImageCaption, imageToBase64, validateImageFormat } from "./imag
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage.js";
 import { getRandomTemplates, addWatermark, getTemplateByMood } from "./content-templates.js";
 import { generateAdvancedContent, type ContentParameters } from "./advanced-content-generator.js";
+
 // Reddit communities now handled in reddit-routes.ts
-import { getAvailablePerks, getSignupInstructions } from "./pro-perks.js";
+import { getAvailablePerks, getPerksByCategory, generateReferralCode, getSignupInstructions } from "./pro-perks.js";
+
+type SentryInstance = typeof import('@sentry/node');
+
+interface RegisterRoutesOptions {
+  sentry?: SentryInstance | null;
+}
 import type { ProPerk } from "./pro-perks.js";
 import { ReferralManager } from './lib/referral-system.js';
 
@@ -344,7 +351,7 @@ const deriveSharePercentage = (perk: ProPerk): number => {
   };
 
 
-export async function registerRoutes(app: Express, apiPrefix: string = '/api'): Promise<Server> {
+export async function registerRoutes(app: Express, apiPrefix: string = '/api', options?: RegisterRoutesOptions): Promise<Server> {
   // ==========================================
   // VALIDATE ENVIRONMENT & APPLY SECURITY
   // ==========================================
@@ -439,6 +446,10 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
         message: 'Invalid CSRF token',
         code: 'CSRF_TOKEN_INVALID'
       });
+    }
+    // If Sentry is configured, capture the error
+    if (options?.sentry) {
+      options.sentry.captureException(err);
     }
     next(err);
   });
@@ -606,6 +617,9 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
       });
     } catch (error: unknown) {
       logger.error("Subscription creation error:", error);
+      if (options?.sentry) {
+        options.sentry.captureException(error);
+      }
       res.status(500).json({
         message: "Error creating subscription: " + (error instanceof Error ? (error as Error).message : 'Unknown error')
       });
@@ -651,6 +665,9 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
       return res.json({ hasSubscription: false, plan: 'free' });
     } catch (error) {
       logger.error("Subscription status error:", error);
+      if (options?.sentry) {
+        options.sentry.captureException(error);
+      }
       res.status(500).json({ message: "Failed to get subscription status" });
     }
   });
@@ -683,6 +700,9 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
       });
     } catch (error) {
       logger.error("Subscription cancellation error:", error);
+      if (options?.sentry) {
+        options.sentry.captureException(error);
+      }
       res.status(500).json({ message: "Failed to cancel subscription" });
     }
   });
@@ -738,6 +758,9 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
       });
       res.json(result);
     } catch (error: unknown) {
+      if (options?.sentry) {
+        options.sentry.captureException(error);
+      }
       next(error instanceof AppError ? error : new AppError('Failed to generate content', 500));
     }
   });
@@ -825,6 +848,9 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
 
       res.json({ ...result });
     } catch (error: unknown) {
+      if (options?.sentry) {
+        options.sentry.captureException(error);
+      }
       next(error instanceof AppError ? error : new AppError('Failed to generate content', 500));
     }
   });
@@ -895,6 +921,9 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
       res.json(userStats);
     } catch (error) {
       logger.error("User stats error:", error);
+      if (options?.sentry) {
+        options.sentry.captureException(error);
+      }
       res.status(500).json({ message: "Failed to get user stats" });
     }
   });
@@ -919,6 +948,9 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
       res.json(formattedHistory);
     } catch (error) {
       logger.error("Generation history error:", error);
+      if (options?.sentry) {
+        options.sentry.captureException(error);
+      }
       res.status(500).json({ message: "Failed to get generation history" });
     }
   });
@@ -956,6 +988,9 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
     app.use('/api/dashboard', dashboardRouter);
   }).catch(err => {
     logger.error('Failed to load dashboard routes:', err);
+    if (options?.sentry) {
+      options.sentry.captureException(err);
+    }
   });
 
   // ==========================================
@@ -973,6 +1008,9 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
       res.json(generations);
     } catch (error: unknown) {
       logger.error("Failed to get content generations:", error);
+      if (options?.sentry) {
+        options.sentry.captureException(error);
+      }
       res.status(500).json({ message: "Failed to retrieve content history" });
     }
   });
@@ -995,6 +1033,9 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
       res.json({ success: true });
     } catch (error: unknown) {
       logger.error("Failed to delete content generation:", error);
+      if (options?.sentry) {
+        options.sentry.captureException(error);
+      }
       res.status(500).json({ message: "Failed to delete content generation" });
     }
   });
@@ -1132,6 +1173,9 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
       });
     } catch (error) {
       logger.error('Failed to fetch storage usage:', error);
+      if (options?.sentry) {
+        options.sentry.captureException(error);
+      }
       res.status(500).json({ message: 'Failed to fetch storage usage' });
     }
   });
@@ -1188,6 +1232,9 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
       });
     } catch (error) {
       logger.error('AI generation failed:', error);
+      if (options?.sentry) {
+        options.sentry.captureException(error);
+      }
       res.status(500).json({ message: 'Generation failed' });
     }
   });
@@ -1217,6 +1264,9 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
       res.json({ paymentUrl: url });
     } catch (error) {
       logger.error('Failed to generate payment link:', error);
+      if (options?.sentry) {
+        options.sentry.captureException(error);
+      }
       res.status(500).json({ message: 'Failed to generate payment link' });
     }
   });
@@ -1240,6 +1290,9 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
       });
     } catch (error) {
       logger.error('Failed to fetch settings:', error);
+      if (options?.sentry) {
+        options.sentry.captureException(error);
+      }
       res.status(500).json({ message: 'Failed to fetch settings' });
     }
   });
@@ -1253,6 +1306,9 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
       res.json({ success: true, settings: updated });
   } catch (error) {
       logger.error('Failed to update settings:', error);
+      if (options?.sentry) {
+        options.sentry.captureException(error);
+      }
       res.status(500).json({ message: 'Failed to update settings' });
     }
   });
@@ -1302,6 +1358,9 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
       });
     } catch (error) {
       logger.error('Failed to fetch subscription:', error);
+      if (options?.sentry) {
+        options.sentry.captureException(error);
+      }
       res.status(500).json({ message: 'Failed to fetch subscription' });
     }
   });
@@ -1329,6 +1388,9 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
       });
     } catch (error) {
       logger.error('Failed to post content:', error);
+      if (options?.sentry) {
+        options.sentry.captureException(error);
+      }
       res.status(500).json({ message: 'Failed to post content' });
     }
   });
@@ -1349,6 +1411,9 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
       res.json(posts);
     } catch (error) {
       logger.error('Failed to fetch posts:', error);
+      if (options?.sentry) {
+        options.sentry.captureException(error);
+      }
       res.status(500).json({ message: 'Failed to fetch posts' });
     }
   });
@@ -1374,6 +1439,9 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'): 
       res.json({ success: true, protectedUrl: `/uploads/${protectedName}`, message: 'Image protected successfully' });
     } catch (error: unknown) {
       logger.error('Failed to protect image:', error);
+      if (options?.sentry) {
+        options.sentry.captureException(error);
+      }
       res.status(500).json({ message: 'Failed to protect image' });
     }
   });

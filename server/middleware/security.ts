@@ -101,6 +101,15 @@ export const envSchema = z
     }
   });
 
+const parseBoolean = (value: string | undefined): boolean => {
+  if (!value) {
+    return false;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  return ['true', '1', 'yes', 'y', 'on'].includes(normalized);
+};
+
 export function validateEnvironment() {
   const resolvedNodeEnv = process.env.NODE_ENV ?? "development";
   process.env.NODE_ENV = resolvedNodeEnv;
@@ -151,6 +160,13 @@ export function validateEnvironment() {
         log(`Invalid SENTRY_DSN detected: ${errorMessage}`);
       });
     }
+  }
+
+  const env = result.data;
+  const usePgQueue = parseBoolean(process.env.USE_PG_QUEUE);
+
+  if (env.NODE_ENV === 'production' && !env.REDIS_URL && !usePgQueue) {
+    throw new Error('Production deployments must configure REDIS_URL or set USE_PG_QUEUE=true to enable persistent queues and sessions');
   }
 }
 

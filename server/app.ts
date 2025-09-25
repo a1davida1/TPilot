@@ -11,6 +11,9 @@ import { mountBillingRoutes } from './routes/billing.js';
 import { logger } from './bootstrap/logger.js';
 import { startQueue } from './bootstrap/queue.js';
 import { prepareResponseLogPayload, truncateLogLine } from './lib/request-logger.js';
+import passport from 'passport'; // Assuming passport is imported elsewhere or needs to be imported here
+import { createSessionMiddleware } from './middleware/session.js'; // Assuming this middleware is defined
+import { initializeSentry } from './bootstrap/sentry.js'; // Assuming Sentry initialization function
 
 export interface CreateAppOptions {
   startQueue?: boolean;
@@ -238,6 +241,9 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
   app.use(cookieParser());
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ extended: false, limit: '50mb' }));
+  app.use(createSessionMiddleware());
+  app.use(passport.initialize());
+  app.use(passport.session());
 
   applyRequestLogging(app);
 
@@ -260,12 +266,14 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
       logger.info('Queue startup disabled for current execution context.');
     }
 
-    setupAuth(app);
-    setupSocialAuth(app);
-    mountStripeWebhook(app, API_PREFIX);
+    const sentry = await initializeSentry();
+
+    setupAuth(app, API_PREFIX);
+    setupSocialAuth(app, API_PREFIX);  // Register social auth routes including logout
+    mountStripeWebhook(app);
     mountBillingRoutes(app);
 
-    const server = await registerRoutes(app, API_PREFIX);
+    const server = await registerRoutes(app, API_PREFIX, { sentry });
 
     if (configureStaticOption) {
       await configureStaticAssets(app, server, enableVite);
