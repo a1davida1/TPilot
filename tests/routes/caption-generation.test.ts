@@ -261,14 +261,15 @@ describe('Caption Generation', () => {
         '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP///////////////wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACP/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8Af//Z';
       const mockPlatform = 'instagram';
       const mockVoice = 'flirty_playful';
+      const expectedHashtags = fallbackHashtags(mockPlatform);
+      const minimumHashtags = 3;
 
       // Mock successful facts response
       const mockFactsResponse = {
         response: {
           text: () => JSON.stringify({
-            objects: ['lingerie'],
-            setting: 'bedroom',
-            mood: 'confident',
+            objects: ['camera'],
+            setting: 'studio',
           }),
         },
       };
@@ -366,14 +367,14 @@ describe('Caption Generation', () => {
 
       const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.js');
 
-      // When Gemini returns variants with missing or empty hashtags, 
+      // When Gemini returns variants with missing or empty hashtags,
       // the pipeline should fall back to OpenAI which provides safe defaults
       expect(openAICaptionFallback).toHaveBeenCalledWith({
         imageUrl: mockImageUrl,
         platform: mockPlatform,
         voice: mockVoice,
       });
-      
+
       // Verify the result has the expected structure from OpenAI fallback
       expect(result.final).toMatchObject({
         caption: 'Fallback caption',
@@ -385,7 +386,7 @@ describe('Caption Generation', () => {
         cta: 'Check this out',
         nsfw: false,
       });
-      
+
       // Verify the fallback hashtags don't contain banned words
       const fallbackHashtags = ['#fallback1', '#fallback2', '#fallback3'];
       fallbackHashtags.forEach((tag) => {
@@ -1573,13 +1574,13 @@ describe('Caption Generation', () => {
       const facts = { camera: 'Canon 5D', setting: 'rooftop at sunset' };
       const caption = 'Having fun today';
       const alt = 'Photo description';
-      
+
       const result = ensureFactCoverage({ facts, caption, alt });
-      
+
       // Test that ensureFactCoverage returns expected structure
       expect(result).toHaveProperty('ok');
       expect(typeof result.ok).toBe('boolean');
-      
+
       if (!result.ok) {
         expect(result).toHaveProperty('hint');
         expect(typeof result.hint).toBe('string');

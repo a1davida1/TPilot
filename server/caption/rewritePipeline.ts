@@ -446,8 +446,7 @@ export async function pipelineRewrite({ platform, voice="flirty_playful", style,
     let successfulAttempt: { variants: CaptionArrayResult; ranked: RankResultType; final: CaptionItemType } | undefined;
 
     for (const hint of attemptHints) {
-      let attempt = await performAttempt(hint);
-      attempt = await enforceMandatoryTokens(attempt, hint);
+      const attempt = await performAttempt(hint);
       lastAttempt = attempt;
       if (attempt.final.caption.length > existingCaption.length) {
         successfulAttempt = attempt;
@@ -471,9 +470,8 @@ export async function pipelineRewrite({ platform, voice="flirty_playful", style,
       let coverage = ensureFactCoverage({ facts, caption: out.caption, alt: out.alt });
       while (!coverage.ok && coverage.hint && attempts < 2) {
         attempts += 1;
-        let nextAttempt = await performAttempt(coverage.hint);
-        nextAttempt = await enforceMandatoryTokens(nextAttempt, coverage.hint);
-        ({ variants, ranked, final: out } = nextAttempt);
+        const nextAttempt = await performAttempt(coverage.hint);
+        ({ variants, ranked, final: out } = await enforceMandatoryTokens(nextAttempt, coverage.hint));
         coverage = ensureFactCoverage({ facts, caption: out.caption, alt: out.alt });
       }
     };
@@ -486,8 +484,9 @@ export async function pipelineRewrite({ platform, voice="flirty_playful", style,
 
     const err = platformChecks(platform, out);
     if (err) {
-      let platformAttempt = await performAttempt(`Fix: ${err}. Be specific, human, and avoid clichés while staying platform safe.`);
-      platformAttempt = await enforceMandatoryTokens(platformAttempt, `Fix: ${err}. Be specific, human, and avoid clichés while staying platform safe.`);
+      const platformHint = `Fix: ${err}. Be specific, human, and avoid clichés while staying platform safe.`;
+      const platformAttempt = await performAttempt(platformHint);
+      ({ variants, ranked, final: out } = await enforceMandatoryTokens(platformAttempt, platformHint));
       if (platformAttempt.final.caption.length <= existingCaption.length) {
         throw new Error('Platform-specific rewrite failed to improve length');
       }
@@ -495,7 +494,6 @@ export async function pipelineRewrite({ platform, voice="flirty_playful", style,
       if (platformErr) {
         throw new Error(platformErr);
       }
-      ({ variants, ranked, final: out } = platformAttempt);
       await enforceCoverage();
       if (out.caption.length <= existingCaption.length) {
         throw new Error('Platform-specific rewrite failed to improve length');

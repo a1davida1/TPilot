@@ -118,16 +118,24 @@ export function dedupeVariantsForRanking(
     typeof fallbackData?.cta === "string" && fallbackData.cta.trim().length >= 2
       ? fallbackData.cta.trim()
       : HUMAN_CTA;
-  const base = uniques[0] ?? duplicates[0] ?? {
-    caption: SAFE_DEFAULT_CAPTION,
-    alt: fallbackAlt,
-    hashtags: [...fallbackTags],
-    cta: fallbackCta,
-    mood: "engaging",
-    style: "authentic",
-    safety_level: "normal",
-    nsfw: false,
-  } as CaptionVariant;
+  const baseSource = uniques[0] ?? duplicates[0];
+  const base: CaptionVariant = baseSource
+    ? {
+        ...baseSource,
+        alt: fallbackAlt,
+        hashtags: [...fallbackTags],
+        cta: fallbackCta,
+      }
+    : {
+        caption: SAFE_DEFAULT_CAPTION,
+        alt: fallbackAlt,
+        hashtags: [...fallbackTags],
+        cta: fallbackCta,
+        mood: "engaging",
+        style: "authentic",
+        safety_level: "normal",
+        nsfw: false,
+      };
 
   while (uniques.length < targetLength) {
     const source = duplicates.shift() ?? base;

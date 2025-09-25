@@ -69,6 +69,27 @@ function buildRetryHint(
   return parts.join(" ").trim();
 }
 
+function sanitizeHintForRetry(hint: string | undefined): string | undefined {
+  if (!hint) {
+    return undefined;
+  }
+
+  let sanitized = "";
+  for (let index = 0; index < hint.length; index += 1) {
+    const char = hint[index];
+    const code = hint.charCodeAt(index);
+    if (char === "\n") {
+      sanitized += char;
+    } else if (code < 32 || code === 127) {
+      sanitized += " ";
+    } else {
+      sanitized += char;
+    }
+  }
+
+  return sanitized;
+}
+
 function normalizeVariantFields(
   variant: Record<string, unknown>, 
   platform: "instagram" | "x" | "reddit" | "tiktok",
@@ -203,7 +224,7 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
 
     const caption = typeof variant.caption === "string" && variant.caption.trim().length > 0
       ? variant.caption
-      : "Check out this amazing content!";
+      : "Sharing something I'm proud of today.";
     variant.caption = caption;
 
     variant.mood = typeof variant.mood === "string" && variant.mood.trim().length >= 2
@@ -214,11 +235,11 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
       : "authentic";
     variant.cta = typeof variant.cta === "string" && variant.cta.trim().length >= 2
       ? variant.cta
-      : "Check it out";
+      : HUMAN_CTA;
 
     const alt = typeof variant.alt === "string" && variant.alt.trim().length >= 20
       ? variant.alt
-      : "Engaging social media content that highlights the visual story.";
+      : "Engaging description that highlights the visual story.";
     variant.alt = alt;
 
     const hashtags = Array.isArray(variant.hashtags)
@@ -226,7 +247,8 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
           .map(tag => (typeof tag === "string" ? tag.trim() : ""))
           .filter(tag => tag.length > 0)
       : [];
-    variant.hashtags = hashtags.length > 0 ? hashtags.slice(0, 10) : ["#content", "#creative", "#amazing"];
+    const fallbackTags = fallbackHashtags(params.platform);
+    variant.hashtags = hashtags.length > 0 ? hashtags.slice(0, 10) : [...fallbackTags];
 
     variant.nsfw = typeof variant.nsfw === "boolean" ? variant.nsfw : false;
 
@@ -257,8 +279,9 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
     }
     hintParts.push("Provide five options that vary tone, structure, and specific content themes.");
 
-    const combinedHint = hintParts.filter(Boolean).join(" ");
-    lines.push(`HINT: ${combinedHint}`);
+    const currentHint = hintParts.filter(Boolean).join(" ");
+    const serializedHint = serializePromptField(currentHint, { block: true });
+    lines.push(`HINT:${serializedHint}`);
 
     return lines.join("\n");
   };
@@ -283,13 +306,15 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
   const isTest = process.env.NODE_ENV === 'test';
   const maxAttempts = isTest ? 2 : 5; // Allow 2 attempts in test for retry logic testing
 
+  const sanitizedBaseHint = sanitizeHintForRetry(params.hint);
+
   for (let attempt = 0; attempt < maxAttempts && uniqueVariants.length < 5; attempt += 1) {
     const needed = 5 - uniqueVariants.length;
     const varietyHint = attempt === 0
-      ? params.hint
+      ? sanitizedBaseHint ?? params.hint
       : (() => {
           // Build complete base hint with variety clause first, then pass to buildRetryHint
-          const baseHintWithVariety = `${params.hint ? `${params.hint} ` : ""}Need much more variety across tone, structure, and themes.`;
+          const baseHintWithVariety = `${sanitizedBaseHint ? `${sanitizedBaseHint} ` : ""}Need much more variety across tone, structure, and themes.`;
           return buildRetryHint(baseHintWithVariety, duplicatesThisAttempt, needed);
         })();
 
@@ -317,10 +342,10 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
   // Pad variants if we don't have enough, instead of throwing in tests
   while (uniqueVariants.length < 5) {
     const baseVariant = uniqueVariants[0] || {
-      caption: "Text-only social media content",
+      caption: "Sharing a highlight from today",
       alt: "Detailed alt text describing the theme",
-      hashtags: ["#social", "#content"],
-      cta: "Check it out",
+      hashtags: fallbackHashtags(params.platform),
+      cta: HUMAN_CTA,
       mood: "engaging",
       style: "authentic",
       safety_level: "normal",
