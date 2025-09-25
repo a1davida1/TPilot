@@ -412,9 +412,7 @@ type GeminiVariantParams = {
   facts: Record<string, unknown>;
   hint?: string;
   nsfw?: boolean;
-  style?: string;
-  mood?: string;
-};
+} & ToneOptions;
 
 export async function generateVariants(params: GeminiVariantParams): Promise<z.infer<typeof CaptionArray>> {
   const [sys, guard, prompt] = await Promise.all([
@@ -798,9 +796,7 @@ type GeminiPipelineArgs = {
   platform: "instagram" | "x" | "reddit" | "tiktok";
   voice?: string;
   nsfw?: boolean;
-  style?: string;
-  mood?: string;
-};
+} & ToneOptions;
 
 /**
  * Primary image captioning pipeline backed by Gemini vision + text models.
@@ -810,9 +806,9 @@ type GeminiPipelineArgs = {
  * retries. When platform validation fails we re-run Gemini with the exact same tone
  * payload so the caller's requested persona stays intact.
  */
-export async function pipeline({ imageUrl, platform, voice = "flirty_playful", nsfw = false, style, mood, ...toneRest }: GeminiPipelineArgs): Promise<CaptionResult> {
+export async function pipeline({ imageUrl, platform, voice = "flirty_playful", nsfw = false, ...toneInput }: GeminiPipelineArgs): Promise<CaptionResult> {
   try {
-    const tone = extractToneOptions(toneRest);
+    const tone = extractToneOptions(toneInput);
     const facts = await extractFacts(imageUrl);
     let variants = await generateVariants({ platform, voice, facts, nsfw, ...tone });
     variants = dedupeVariantsForRanking(variants, 5, { platform, facts });
@@ -839,11 +835,10 @@ export async function pipeline({ imageUrl, platform, voice = "flirty_playful", n
       variants = await generateVariants({
         platform,
         voice,
-        style,
-        mood,
         facts,
         hint: `Fix: ${err}. Use IMAGE_FACTS nouns/colors/setting explicitly.`,
-        nsfw
+        nsfw,
+        ...tone
       });
       ranked = await rankAndSelect(variants);
       out = ranked.final;

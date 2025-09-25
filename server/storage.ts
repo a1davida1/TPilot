@@ -848,15 +848,23 @@ export class DatabaseStorage implements IStorage {
   async updateExpense(id: number, userId: number, updates: Partial<Expense>): Promise<Expense> {
     try {
       let updatesToApply: Partial<Expense> = { ...updates };
-      const businessPurposeValue = updates.businessPurpose;
+      
+      const hasBusinessPurposeField = Object.prototype.hasOwnProperty.call(updates, 'businessPurpose');
+      const businessPurposeValue = hasBusinessPurposeField ? updates.businessPurpose : undefined;
       const hasEmptyBusinessPurpose =
         typeof businessPurposeValue === 'string' && businessPurposeValue.trim().length === 0;
+      const isBusinessPurposeUndefined = hasBusinessPurposeField && businessPurposeValue === undefined;
+      const isClearingBusinessPurpose =
+        hasBusinessPurposeField &&
+        businessPurposeValue !== null &&
+        (isBusinessPurposeUndefined || hasEmptyBusinessPurpose);
 
-      if (hasEmptyBusinessPurpose) {
-        delete updatesToApply.businessPurpose;
+      if (hasEmptyBusinessPurpose || isBusinessPurposeUndefined) {
+        // Clear businessPurpose if it's explicitly set to empty string or undefined
+        updatesToApply.businessPurpose = null;
       }
 
-      const needsExistingExpenseLookup = updates.categoryId !== undefined || hasEmptyBusinessPurpose;
+      const needsExistingExpenseLookup = updates.categoryId !== undefined || isClearingBusinessPurpose;
       let existingExpense: Expense | undefined;
       if (needsExistingExpenseLookup) {
         existingExpense = await this.getExpense(id, userId);
@@ -876,32 +884,22 @@ export class DatabaseStorage implements IStorage {
             };
 
             const shouldApplyDefaultBusinessPurpose =
-              (businessPurposeValue === undefined ||
-                (typeof businessPurposeValue === 'string' && businessPurposeValue.trim().length === 0)) &&
+              (businessPurposeValue === undefined || hasEmptyBusinessPurpose) &&
               businessPurposeValue !== null;
 
             if (shouldApplyDefaultBusinessPurpose && categoryDefaults.defaultBusinessPurpose) {
-              updatesToApply = {
-                ...updatesToApply,
-                businessPurpose: categoryDefaults.defaultBusinessPurpose,
-              };
+              updatesToApply.businessPurpose = categoryDefaults.defaultBusinessPurpose;
             }
           }
 
           if (hasEmptyBusinessPurpose && categoryDefaults.defaultBusinessPurpose) {
-            updatesToApply = {
-              ...updatesToApply,
-              businessPurpose: categoryDefaults.defaultBusinessPurpose,
-            };
+            updatesToApply.businessPurpose = categoryDefaults.defaultBusinessPurpose;
           }
         }
-      } else if (hasEmptyBusinessPurpose && existingExpense?.categoryId !== undefined) {
+      } else if (isClearingBusinessPurpose && existingExpense?.categoryId !== undefined) {
         const category = await this.getExpenseCategory(existingExpense.categoryId);
         if (category?.defaultBusinessPurpose) {
-          updatesToApply = {
-            ...updatesToApply,
-            businessPurpose: category.defaultBusinessPurpose,
-          };
+          updatesToApply.businessPurpose = category.defaultBusinessPurpose;
         }
       }
 

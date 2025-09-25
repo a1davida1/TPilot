@@ -159,9 +159,7 @@ type RewriteVariantsParams = {
   hint?:string;
   nsfw?:boolean;
   doNotDrop?: string[];
-  style?: string;
-  mood?: string
-};
+} & ToneOptions;
 
 const VARIANT_TARGET = 5;
 const VARIANT_RETRY_LIMIT = 3;
@@ -377,9 +375,7 @@ type RewritePipelineArgs = {
   existingCaption:string;
   imageUrl?:string;
   nsfw?:boolean;
-  style?: string;
-  mood?: string;
-};
+} & ToneOptions;
 
 /**
  * Caption rewriting pipeline that enhances existing captions while preserving tone.
@@ -393,8 +389,7 @@ type CaptionItemType = z.infer<typeof CaptionItem>;
 type CaptionArrayResult = z.infer<typeof CaptionArray>;
 type RankResultType = z.infer<typeof RankResult>;
 
-export async function pipelineRewrite({ platform, voice="flirty_playful", style, mood, existingCaption, imageUrl, nsfw=false }:{
-  platform:"instagram"|"x"|"reddit"|"tiktok", voice?:string, style?:string, mood?:string, existingCaption:string, imageUrl?:string, nsfw?:boolean }){
+export async function pipelineRewrite({ platform, voice="flirty_playful", existingCaption, imageUrl, nsfw=false, ...toneInput }:RewritePipelineArgs){
   try {
     const facts = imageUrl ? await extractFacts(imageUrl) : undefined;
 
@@ -408,7 +403,8 @@ export async function pipelineRewrite({ platform, voice="flirty_playful", style,
         : "Make it 25% longer with a natural hook and CTA; weave in concrete sensory imagery and stay grounded.",
     ];
 
-    const baseParams = { platform, voice, style, mood, existingCaption, facts, nsfw, doNotDrop } as const;
+    const tone = extractToneOptions(toneInput);
+    const baseParams = { platform, voice, existingCaption, facts, nsfw, doNotDrop, ...tone } as const;
 
     type AttemptResult = { variants: CaptionArrayResult; ranked: RankResultType; final: CaptionItemType };
 

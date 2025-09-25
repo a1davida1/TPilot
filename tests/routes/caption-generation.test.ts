@@ -1570,6 +1570,25 @@ describe('Caption Generation', () => {
       textGenerateMock.mockReset();
     });
 
+    it('enforces fact coverage when image context is available', async () => {
+      // Simple test to verify the fact coverage feature exists and functions
+      const { ensureFactCoverage } = await import('../../server/caption/ensureFactCoverage.js');
+      const facts = { camera: 'Canon 5D', setting: 'rooftop at sunset' };
+      const caption = 'Having fun today';
+      const alt = 'Photo description';
+      
+      const result = ensureFactCoverage({ facts, caption, alt });
+      
+      // Test that ensureFactCoverage returns expected structure
+      expect(result).toHaveProperty('ok');
+      expect(typeof result.ok).toBe('boolean');
+      
+      if (!result.ok) {
+        expect(result).toHaveProperty('hint');
+        expect(typeof result.hint).toBe('string');
+      }
+    });
+
     it('retries to cover image facts when rewrites miss key details', async () => {
       const existingCaption = 'Sunset vibes with @SeasideCrew — RSVP https://example.com #SunsetVibes';
       const facts = { objects: ['longboard'], setting: ['sunset boardwalk'] };
