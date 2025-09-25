@@ -445,7 +445,7 @@ export function registerRedditRoutes(app: Express) {
 
       // Handle different post types
       switch (postType || 'text') {
-        case 'image':
+        case 'image': {
           // Single image post
           if (!imageData && !url) {
             return res.status(400).json({ error: 'Image data or URL required for image post' });
@@ -467,8 +467,9 @@ export function registerRedditRoutes(app: Express) {
             spoiler: spoiler || false
           });
           break;
+        }
 
-        case 'gallery':
+        case 'gallery': {
           // Multiple images
           if (!req.body.images || !Array.isArray(req.body.images)) {
             return res.status(400).json({ error: 'Images array required for gallery post' });
@@ -488,6 +489,7 @@ export function registerRedditRoutes(app: Express) {
             nsfw: nsfw || false
           });
           break;
+        }
 
         case 'link':
           // Link post
@@ -740,7 +742,10 @@ export function registerRedditRoutes(app: Express) {
     try {
       const community = await createCommunity(req.body);
       res.json(community);
-    } catch (e) {
+    } catch (error) {
+      logger.error('Failed to create community', {
+        error: error instanceof Error ? error.message : String(error)
+      });
       res.status(400).json({ error: 'Invalid community data' });
     }
   });
@@ -750,7 +755,11 @@ export function registerRedditRoutes(app: Express) {
     try {
       const community = await updateCommunity(req.params.id, req.body);
       res.json(community);
-    } catch (e) {
+    } catch (error) {
+      logger.error('Failed to update community', {
+        communityId: req.params.id,
+        error: error instanceof Error ? error.message : String(error)
+      });
       res.status(400).json({ error: 'Invalid community data' });
     }
   });
@@ -761,6 +770,10 @@ export function registerRedditRoutes(app: Express) {
       await deleteCommunity(req.params.id);
       res.json({ success: true });
     } catch (e) {
+      logger.error('Failed to delete community', {
+        communityId: req.params.id,
+        error: e instanceof Error ? e.message : String(e)
+      });
       res.status(500).json({ error: 'Failed to delete community' });
     }
   });

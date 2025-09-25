@@ -1,4 +1,4 @@
-import type { Express, Response, NextFunction } from "express";
+import type { Express } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
 import session from 'express-session';
@@ -351,7 +351,7 @@ const deriveSharePercentage = (perk: ProPerk): number => {
   };
 
 
-export async function registerRoutes(app: Express, apiPrefix: string = '/api', options?: RegisterRoutesOptions): Promise<Server> {
+export async function registerRoutes(app: Express, _apiPrefix: string = '/api', options?: RegisterRoutesOptions): Promise<Server> {
   // ==========================================
   // VALIDATE ENVIRONMENT & APPLY SECURITY
   // ==========================================
@@ -1183,7 +1183,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api', o
   // AI generation endpoint - REAL
   app.post('/api/ai/generate', authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      const { prompt, platforms, styleHints, variants } = req.body;
+      const { prompt, platforms, styleHints } = req.body;
 
       const results = await Promise.all(
         platforms.map(async (platform: string) => {
@@ -1371,7 +1371,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api', o
       if (!req.user?.id) {
         return res.status(401).json({ message: "Authentication required" });
       }
-      const { platform, content, title, subreddit } = req.body;
+      const { platform, content } = req.body;
 
       const post = await storage.createSocialMediaPost({
         userId: req.user.id,
