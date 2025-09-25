@@ -1,28 +1,10 @@
 import { registerProcessor } from "../queue-factory.js";
 import { QUEUE_NAMES, type DunningJobData } from "../queue/index.js";
 import { db } from "../../db.js";
-import { users, eventLogs, subscriptions } from "@shared/schema";
+import { users, eventLogs, subscriptions, type Subscription, type User } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { logger } from "../logger.js";
 import fetch from "node-fetch";
-
-interface SubscriptionRecord {
-  id: number;
-  userId: number;
-  status: string;
-  plan: string;
-  priceCents: number;
-  processor: string;
-  processorSubId: string | null;
-  currentPeriodEnd: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-interface UserRecord {
-  id: number;
-  email: string;
-}
 
 interface RetryResult {
   success: boolean;
@@ -134,7 +116,7 @@ export class DunningWorker {
     }
   }
 
-  private async getSubscriptionDetails(subscriptionId: number) {
+  private async getSubscriptionDetails(subscriptionId: number): Promise<Subscription | null> {
     const [subscription] = await db
       .select()
       .from(subscriptions)
@@ -143,7 +125,7 @@ export class DunningWorker {
     return subscription ?? null;
   }
 
-  private async retryPayment(subscription: SubscriptionRecord): Promise<RetryResult> {
+  private async retryPayment(subscription: Subscription): Promise<RetryResult> {
     try {
       logger.info(`Attempting payment retry for subscription ${subscription.id}`);
       
@@ -162,7 +144,7 @@ export class DunningWorker {
     }
   }
 
-  private async retryStripePayment(subscription: SubscriptionRecord): Promise<RetryResult> {
+  private async retryStripePayment(subscription: Subscription): Promise<RetryResult> {
     try {
       const { default: Stripe } = await import('stripe');
       const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -196,7 +178,7 @@ export class DunningWorker {
     }
   }
 
-  private async retryCCBillPayment(subscription: SubscriptionRecord): Promise<RetryResult> {
+  private async retryCCBillPayment(subscription: Subscription): Promise<RetryResult> {
     try {
       const res = await fetch('https://datalink.ccbill.com/', {
         method: 'POST',
@@ -263,9 +245,9 @@ export class DunningWorker {
     }
   }
 
-  private async sendRecoveryNotification(user: unknown, subscription: unknown) {
+  private async sendRecoveryNotification(user: User, subscription: Subscription) {
     // In full implementation, this would send an email
-    logger.info(`Sending recovery notification to ${(user as { email?: string }).email} for subscription ${(subscription as { id?: string | number }).id}`);
+    logger.info(`Sending recovery notification to ${user.email} for subscription ${subscription.id}`);
     
     // Would integrate with email service (SendGrid, etc.)
     // await EmailService.send({
@@ -275,9 +257,9 @@ export class DunningWorker {
     // });
   }
 
-  private async sendSuspensionNotification(user: unknown, subscription: unknown) {
+  private async sendSuspensionNotification(user: User, subscription: Subscription) {
     // In full implementation, this would send an email
-    logger.info(`Sending suspension notification to ${(user as { email?: string }).email} for subscription ${(subscription as { id?: string | number }).id}`);
+    logger.info(`Sending suspension notification to ${user.email} for subscription ${subscription.id}`);
     
     // Would integrate with email service
     // await EmailService.send({

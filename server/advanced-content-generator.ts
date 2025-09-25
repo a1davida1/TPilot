@@ -24,6 +24,11 @@ import {
   type ExperimentAssignment
 } from './engagement-experiments.js';
 
+// Utility type for making properties mutable
+type Mutable<T> = {
+  -readonly [P in keyof T]: T[P];
+};
+
 export interface HumanizationConfig {
   maxQuirks?: number;
   random?: () => number;

@@ -18,7 +18,8 @@ import {
   BarChart3,
   DollarSign,
   Crown,
-  Play
+  Play,
+  ArrowRight
 } from "lucide-react";
 
 export function UnifiedLanding() {

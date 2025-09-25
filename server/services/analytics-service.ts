@@ -44,9 +44,14 @@ export interface RevenueData {
   ltv: number;
 }
 
+interface SessionData {
+  id: string;
+  startTime: Date;
+}
+
 class AnalyticsService {
   private events: AnalyticsEvent[] = [];
-  private sessionData: Map<string, any> = new Map();
+  private sessionData: Map<string, SessionData> = new Map();
 
   // Core event tracking methods
   async trackSignup(userId: string, source: string) {
@@ -218,7 +223,7 @@ class AnalyticsService {
   }
 
   // Helper methods
-  private async trackEvent(userId: string, event: string, properties: Record<string, any>) {
+  private async trackEvent(userId: string, event: string, properties: Record<string, unknown>) {
     const eventData: AnalyticsEvent = {
       userId,
       event,
@@ -250,7 +255,8 @@ class AnalyticsService {
         startTime: new Date()
       });
     }
-    return this.sessionData.get(userId).id;
+    const sessionData = this.sessionData.get(userId);
+    return sessionData!.id; // Safe because we just set it above
   }
 
   private getDeviceInfo() {

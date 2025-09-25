@@ -13,6 +13,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { type GenerationRequest } from "@/types/lint-fixes";
 
 interface GeneratedContent {
   titles: string[];
@@ -43,7 +44,7 @@ export function SimpleContentGenerator({ isGuestMode = false, onContentGenerated
   const generateContentMutation = useMutation({
     mutationFn: async (data: unknown) => {
       const response = await apiRequest("POST", "/api/generate-ai", {
-        ...(data as Record<string, any>),
+        ...(data as GenerationRequest),
         generationType: "prompt",
         userProfile: {
           toneOfVoice: "confident",
