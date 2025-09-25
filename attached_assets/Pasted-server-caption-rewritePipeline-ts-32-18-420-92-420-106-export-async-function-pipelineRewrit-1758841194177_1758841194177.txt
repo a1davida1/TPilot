@@ -1,0 +1,310 @@
+server/caption/rewritePipeline.ts
++32-18
+@@ -420,92 +420,106 @@ export async function pipelineRewrite({ platform, voice="flirty_playful", style,
+
+    const enforceMandatoryTokens = async (
+      attempt: AttemptResult,
+      priorHint?: string
+    ): Promise<AttemptResult> => {
+      if (doNotDrop.length === 0) {
+        return attempt;
+      }
+      const missing = doNotDrop.filter((token) => !attempt.final.caption.includes(token));
+      if (missing.length === 0) {
+        return attempt;
+      }
+      const messageParts = [
+        priorHint,
+        `ABSOLUTE RULE: Keep these tokens verbatim in the caption: ${doNotDrop.join(", ")}`,
+        `Previous attempt removed: ${missing.join(", ")}`
+      ].filter((part): part is string => Boolean(part && part.trim()));
+      const retried = await performAttempt(messageParts.join(" "));
+      const retryMissing = doNotDrop.filter((token) => !retried.final.caption.includes(token));
+      if (retryMissing.length > 0) {
+        throw new Error(`Missing mandatory tokens after retry: ${retryMissing.join(", ")}`);
+      }
+      return retried;
+    };
+
+    const enforceFactCoverageLoop = async (
+      attempt: AttemptResult,
+      priorHint?: string
+    ): Promise<AttemptResult> => {
+      if (!facts) {
+        return attempt;
+      }
+
+      let current = attempt;
+      let attempts = 0;
+      let coverage = ensureFactCoverage({ facts, caption: current.final.caption, alt: current.final.alt });
+      let accumulatedHint = priorHint;
+
+      while (!coverage.ok && coverage.hint && attempts < 2) {
+        attempts += 1;
+        const combinedHint = [coverage.hint, accumulatedHint].filter((segment): segment is string => Boolean(segment && segment.trim()))
+          .join(" ");
+        current = await performAttempt(combinedHint);
+        current = await enforceMandatoryTokens(current, combinedHint);
+        coverage = ensureFactCoverage({ facts, caption: current.final.caption, alt: current.final.alt });
+        accumulatedHint = combinedHint;
+      }
+
+      if (!coverage.ok && coverage.hint) {
+        throw new Error(`Failed to cover image facts: ${coverage.missing.join(", ")}`);
+      }
+
+      return current;
+    };
+
+    let lastAttempt: { variants: CaptionArrayResult; ranked: RankResultType; final: CaptionItemType } | undefined;
+    let successfulAttempt: { variants: CaptionArrayResult; ranked: RankResultType; final: CaptionItemType } | undefined;
+
+    for (const hint of attemptHints) {
+      let attempt = await performAttempt(hint);
+      attempt = await enforceMandatoryTokens(attempt, hint);
+      attempt = await enforceFactCoverageLoop(attempt, hint);
+      lastAttempt = attempt;
+      if (attempt.final.caption.length > existingCaption.length) {
+        successfulAttempt = attempt;
+        break;
+      }
+    }
+
+    const chosenAttempt = successfulAttempt ?? lastAttempt;
+
+    if (!chosenAttempt || chosenAttempt.final.caption.length <= existingCaption.length) {
+      throw new Error('Rewrite did not produce a longer caption');
+    }
+
+    let { variants, ranked, final: out } = chosenAttempt;
+
+    const enforceCoverage = async () => {
+      if (!facts) {
+        return;
+      }
+      let attempts = 0;
+      let coverage = ensureFactCoverage({ facts, caption: out.caption, alt: out.alt });
+      while (!coverage.ok && coverage.hint && attempts < 2) {
+        attempts += 1;
+        let nextAttempt = await performAttempt(coverage.hint);
+        nextAttempt = await enforceMandatoryTokens(nextAttempt, coverage.hint);
+        ({ variants, ranked, final: out } = nextAttempt);
+        coverage = ensureFactCoverage({ facts, caption: out.caption, alt: out.alt });
+      }
+    };
+
+    await enforceCoverage();
+
+    if (out.caption.length <= existingCaption.length) {
+      throw new Error('Rewrite did not produce a longer caption');
+    }
+
+    const err = platformChecks(platform, out);
+    if (err) {
+      let platformAttempt = await performAttempt(`Fix: ${err}. Be specific, human, and avoid clichés while staying platform safe.`);
+      platformAttempt = await enforceMandatoryTokens(platformAttempt, `Fix: ${err}. Be specific, human, and avoid clichés while staying platform safe.`);
+      platformAttempt = await enforceFactCoverageLoop(platformAttempt, `Fix: ${err}. Be specific, human, and avoid clichés while staying platform safe.`);
+      if (platformAttempt.final.caption.length <= existingCaption.length) {
+        throw new Error('Platform-specific rewrite failed to improve length');
+      }
+      const platformErr = platformChecks(platform, platformAttempt.final);
+      if (platformErr) {
+        throw new Error(platformErr);
+      }
+      ({ variants, ranked, final: out } = platformAttempt);
+      await enforceCoverage();
+      if (out.caption.length <= existingCaption.length) {
+        throw new Error('Platform-specific rewrite failed to improve length');
+      }
+    }
+
+    return { provider: 'gemini', facts, variants, ranked, final: out };
+  } catch (error) {
+    const { openAICaptionFallback } = await import('./openaiFallback');
+    const final = await openAICaptionFallback({ platform, voice, existingCaption, imageUrl });
+    return { provider: 'openai', final } as CaptionResult;
+  }
+}
+tests/routes/caption-generation.test.ts
++116-0
+@@ -1531,64 +1531,180 @@ describe('Caption Generation', () => {
+            scores: [5, 4, 3, 2, 1],
+            reason: 'Retry keeps mandatory tokens',
+            final: variantFactory(enforcedCaption),
+          }),
+        },
+      };
+
+      const { textModel } = await import('../../server/lib/gemini.js');
+      const textGenerateMock = asMock(textModel.generateContent);
+      textGenerateMock
+        .mockResolvedValueOnce(missingVariants)
+        .mockResolvedValueOnce(missingRank)
+        .mockResolvedValueOnce(enforcedVariants)
+        .mockResolvedValueOnce(enforcedRank);
+
+      const result = await pipelineRewrite({
+        platform: 'instagram',
+        voice: 'engaging',
+        existingCaption,
+      });
+
+      const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.js');
+      expect(openAICaptionFallback).not.toHaveBeenCalled();
+      expect(textGenerateMock).toHaveBeenCalledTimes(4);
+      const promptCalls = [...textGenerateMock.mock.calls];
+      expect(promptCalls[0]?.[0]?.[0]?.text).toContain('MANDATORY TOKENS:');
+      expect(promptCalls[2]?.[0]?.[0]?.text).toContain('ABSOLUTE RULE: Keep these tokens verbatim in the caption');
+      expect(promptCalls[2]?.[0]?.[0]?.text).not.toContain('Fix platform issue');
+      expect(result.provider).toBe('gemini');
+      expect((result.final as CaptionResult).caption).toBe(enforcedCaption);
+      expect((result.final as CaptionResult).caption).toContain('https://example.com/launch');
+      expect((result.final as CaptionResult).caption).toContain('@LaunchHQ');
+      expect((result.final as CaptionResult).caption).toContain('#LaunchDay');
+      expect((result.final as CaptionResult).caption).toContain('12/25');
+      expect((result.final as CaptionResult).caption).toContain('"Mega Launch"');
+      expect((result.final as CaptionResult).caption).toContain('MegaCorp™');
+
+      textGenerateMock.mockReset();
+    });
+
+    it('retries to cover image facts when rewrites miss key details', async () => {
+      const existingCaption = 'Sunset vibes with @SeasideCrew — RSVP https://example.com #SunsetVibes';
+      const facts = { objects: ['longboard'], setting: ['sunset boardwalk'] };
+
+      const encoded = new TextEncoder().encode('mock-image');
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        arrayBuffer: () => Promise.resolve(encoded),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      const { textModel, visionModel } = await import('../../server/lib/gemini.js');
+      const visionGenerateMock = asMock(visionModel.generateContent);
+      visionGenerateMock.mockResolvedValueOnce({
+        response: { text: () => JSON.stringify(facts) },
+      });
+
+      const variantFactory = (caption: string, alt: string) => ({
+        caption,
+        hashtags: ['#SunsetVibes', '#CrewMode', '#RSVP'],
+        safety_level: 'normal',
+        mood: 'engaging',
+        style: 'authentic',
+        cta: 'Drop a comment',
+        alt,
+        nsfw: false,
+      });
+
+      const missingFactsCaption =
+        'Rolling into the night with the crew — lock in your spot now! @SeasideCrew RSVP: https://example.com #SunsetVibes';
+      const missingAlt =
+        'Detailed alt text describing friends laughing together after sunset, without mentioning the setting specifics or gear.';
+      const coverageCaption =
+        'Longboard cruising down the sunset boardwalk with @SeasideCrew — RSVP https://example.com #SunsetVibes and ride with us!';
+      const coverageAlt =
+        'Friends with a longboard on the sunset boardwalk inviting followers to join in.';
+
+      const missingVariants = {
+        response: {
+          text: () =>
+            JSON.stringify(
+              Array.from({ length: 5 }, () => variantFactory(missingFactsCaption, missingAlt))
+            ),
+        },
+      } satisfies MockResponse;
+
+      const missingRank = {
+        response: {
+          text: () =>
+            JSON.stringify({
+              winner_index: 0,
+              scores: [5, 4, 3, 2, 1],
+              reason: 'Initial rewrite selection',
+              final: variantFactory(missingFactsCaption, missingAlt),
+            }),
+        },
+      } satisfies MockResponse;
+
+      const coverageVariants = {
+        response: {
+          text: () =>
+            JSON.stringify(
+              Array.from({ length: 5 }, () => variantFactory(coverageCaption, coverageAlt))
+            ),
+        },
+      } satisfies MockResponse;
+
+      const coverageRank = {
+        response: {
+          text: () =>
+            JSON.stringify({
+              winner_index: 0,
+              scores: [5, 4, 3, 2, 1],
+              reason: 'Coverage-aware rewrite',
+              final: variantFactory(coverageCaption, coverageAlt),
+            }),
+        },
+      } satisfies MockResponse;
+
+      const textGenerateMock = asMock(textModel.generateContent);
+      textGenerateMock
+        .mockResolvedValueOnce(missingVariants)
+        .mockResolvedValueOnce(missingRank)
+        .mockResolvedValueOnce(coverageVariants)
+        .mockResolvedValueOnce(coverageRank);
+
+      try {
+        const result = await pipelineRewrite({
+          platform: 'instagram',
+          voice: 'engaging',
+          existingCaption,
+          imageUrl: 'https://example.com/photo.jpg',
+        });
+
+        expect(result.provider).toBe('gemini');
+        const finalCaption = (result.final as CaptionResult).caption;
+        expect(finalCaption).toContain('sunset boardwalk');
+        expect(finalCaption).toContain('Longboard');
+        expect(finalCaption).toContain('@SeasideCrew');
+        expect(finalCaption).toContain('https://example.com');
+        expect(finalCaption).toContain('#SunsetVibes');
+
+        const promptCalls = [...textGenerateMock.mock.calls];
+        expect(promptCalls[0]?.[0]?.[0]?.text).toContain('MANDATORY TOKENS:');
+        expect(promptCalls[2]?.[0]?.[0]?.text).toContain('Work in IMAGE_FACTS');
+        expect(promptCalls[2]?.[0]?.[0]?.text).toContain('sunset boardwalk');
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+      } finally {
+        textGenerateMock.mockReset();
+        visionGenerateMock.mockReset();
+        vi.unstubAllGlobals();
+      }
+    });
+
+    it('enforces fact coverage when image context is available', async () => {
+      // Simple test to verify the fact coverage feature exists and functions
+      const { ensureFactCoverage } = await import('../../server/caption/ensureFactCoverage.js');
+      const facts = { camera: 'Canon 5D', setting: 'rooftop at sunset' };
+      const caption = 'Having fun today';
+      const alt = 'Photo description';
+      
+      const result = ensureFactCoverage({ facts, caption, alt });
+      
+      // Test that ensureFactCoverage returns expected structure
+      expect(result).toHaveProperty('ok');
+      expect(typeof result.ok).toBe('boolean');
+      
+      if (!result.ok) {
+        expect(result).toHaveProperty('hint');
+        expect(typeof result.hint).toBe('string');
+      }
+    });
+  });
+});
+
+describe('extractKeyEntities', () => {
+  it('captures urls, handles, hashtags, numbers, quotes, and branded terms', () => {
+    const caption = 'Launch day 2024! RSVP at https://example.com/launch with @LaunchHQ on 12/25 for the "Mega Launch" by MegaCorp™ and NASA #LaunchDay';
+    const entities = extractKeyEntities(caption);
