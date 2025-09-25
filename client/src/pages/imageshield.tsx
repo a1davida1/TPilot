@@ -1,3 +1,4 @@
+
 import { ImageShield } from "@/components/image-shield";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -12,6 +13,8 @@ export default function ImageShieldPage() {
       'guest': 'free', 
       'basic': 'starter',
       'premium': 'pro',
+      'pro_plus': 'pro',
+      'founder': 'pro',
       'free': 'free',
       'starter': 'starter',
       'pro': 'pro'
