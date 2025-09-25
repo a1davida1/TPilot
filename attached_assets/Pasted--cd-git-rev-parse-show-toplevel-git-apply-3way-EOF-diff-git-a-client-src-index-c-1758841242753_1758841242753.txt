@@ -1,0 +1,357 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/client/src/index.css b/client/src/index.css
+index 9f0aa087847393fbd372f4bce2ed2af17fdeb1de..7e31091cf43c05ca4568bc7e37f5f0cb0adf69d8 100644
+--- a/client/src/index.css
++++ b/client/src/index.css
+@@ -507,55 +507,50 @@ td {
+ 
+ .animate-fadeIn {
+   animation: fadeIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+ }
+ 
+ .animate-slideIn {
+   animation: slideIn 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+ }
+ 
+ .animate-pulse-slow {
+   animation: pulse-slow 6s ease-in-out infinite;
+ }
+ 
+ .animate-shimmer {
+   background: linear-gradient(
+     90deg,
+     transparent,
+     rgba(255, 255, 255, 0.3),
+     rgba(236, 72, 153, 0.1),
+     transparent
+   );
+   background-size: 1000px 100%;
+   animation: shimmer 3s infinite;
+ }
+ 
+-/* DISABLED - Causing caption generator issues
+-.animate-float {
+-  animation: float 4s ease-in-out infinite;
+-} */
+-
+ .animate-glow {
+   animation: glow 3s ease-in-out infinite;
+ }
+ 
+ .animate-breathe {
+   animation: breathe 4s ease-in-out infinite;
+ }
+ 
+ .animate-ripple {
+   animation: ripple 0.6s linear;
+ }
+ 
+ /* Glassmorphism effects */
+ .glass-dark {
+   background: rgba(0, 0, 0, 0.5);
+   backdrop-filter: blur(20px) saturate(180%);
+   -webkit-backdrop-filter: blur(20px) saturate(180%);
+   border: 1px solid rgba(255, 255, 255, 0.1);
+ }
+ 
+ /* Token-based Theme System Utilities */
+ @layer utilities {
+   /* Accessible text utilities - WCAG AA compliant */
+   .text-readable {
+     color: hsl(var(--foreground)) !important;
+diff --git a/client/src/index.css b/client/src/index.css
+index 9f0aa087847393fbd372f4bce2ed2af17fdeb1de..7e31091cf43c05ca4568bc7e37f5f0cb0adf69d8 100644
+--- a/client/src/index.css
++++ b/client/src/index.css
+@@ -858,93 +853,50 @@ td {
+ 
+ .btn-premium:active {
+   transform: translateY(-1px) scale(1.01);
+ }
+ 
+ .btn-premium::before {
+   content: '';
+   position: absolute;
+   top: 0;
+   left: -100%;
+   width: 100%;
+   height: 100%;
+   background: linear-gradient(
+     90deg,
+     transparent,
+     rgba(255, 255, 255, 0.2),
+     transparent
+   );
+   transition: left 0.5s;
+ }
+ 
+ .btn-premium:hover::before {
+   left: 100%;
+ }
+ 
+-/* Enhanced Premium Bubble Card Effects - DISABLED FOR CAPTION GENERATOR FIX */
+-/* .card-hover {
+-  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+-  border-radius: 1.75rem;
+-  background: hsl(var(--card));
+-  border: 1px solid hsl(var(--border));
+-  position: relative;
+-  overflow: hidden;
+-  box-shadow: 
+-    0 6px 25px rgba(236, 72, 153, 0.12),
+-    0 4px 15px rgba(244, 114, 182, 0.08),
+-    0 2px 8px rgba(251, 191, 36, 0.05),
+-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+-}
+-
+-.card-hover::before {
+-  content: '';
+-  position: absolute;
+-  top: -50%;
+-  left: -50%;
+-  width: 200%;
+-  height: 200%;
+-  background: linear-gradient(45deg, transparent, rgba(236, 72, 153, 0.03), transparent);
+-  transform: rotate(45deg);
+-  transition: all 0.5s ease;
+-  opacity: 0;
+-}
+-
+-.card-hover:hover {
+-  transform: translateY(-8px) scale(1.02) rotateX(5deg);
+-  box-shadow: 
+-    0 25px 60px rgba(236, 72, 153, 0.2),
+-    0 15px 35px rgba(244, 114, 182, 0.15),
+-    0 8px 20px rgba(251, 191, 36, 0.12),
+-    0 4px 10px rgba(236, 72, 153, 0.08);
+-  border-color: hsl(var(--primary) / 0.4);
+-}
+-
+-.card-hover:hover::before {
+-  opacity: 1;
+-  animation: shimmer 2s ease-in-out;
+-} */
+-
+ /* Gradient text animations */
+ @keyframes gradient-shift {
+   0% {
+     background-position: 0% 50%;
+   }
+   50% {
+     background-position: 100% 50%;
+   }
+   100% {
+     background-position: 0% 50%;
+   }
+ }
+ 
+ .text-gradient-animate {
+   background: linear-gradient(
+     270deg,
+     #ec4899,
+     #f472b6,
+     #f9a8d4,
+     #fbcfe8,
+     #fce7f3,
+     #fbbf24
+   );
+   background-size: 400% 400%;
+   -webkit-background-clip: text;
+diff --git a/client/src/index.css b/client/src/index.css
+index 9f0aa087847393fbd372f4bce2ed2af17fdeb1de..7e31091cf43c05ca4568bc7e37f5f0cb0adf69d8 100644
+--- a/client/src/index.css
++++ b/client/src/index.css
+@@ -1147,56 +1099,50 @@ td {
+   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+ }
+ 
+ .btn-premium:hover {
+   transform: translateY(-2px);
+   animation: premium-glow 2s ease infinite;
+ }
+ 
+ .btn-premium:active {
+   transform: translateY(0px);
+ }
+ 
+ /* Premium Text Gradients */
+ .text-gradient-premium {
+   background: linear-gradient(135deg, #ec4899, #a855f7, #f59e0b);
+   background-size: 200% 200%;
+   -webkit-background-clip: text;
+   background-clip: text;
+   -webkit-text-fill-color: transparent;
+   animation: gradient-shift 4s ease infinite;
+   font-weight: 700;
+ }
+ 
+ /* Venture Capital Level Polish */
+ 
+-/* Floating Elements */
+-/* DISABLED - Causing caption generator issues
+-.float-gentle {
+-  animation: glass-float 6s ease-in-out infinite;
+-} */
+-
+ /* Premium Shadows */
+ .shadow-premium {
+   box-shadow: 
+     0 4px 20px rgba(236, 72, 153, 0.15),
+     0 1px 3px rgba(0, 0, 0, 0.1);
+ }
+ 
+ .shadow-premium-lg {
+   box-shadow: 
+     0 20px 60px rgba(236, 72, 153, 0.2),
+     0 8px 25px rgba(0, 0, 0, 0.1),
+     inset 0 1px 0 rgba(255, 255, 255, 0.2);
+ }
+ 
+ /* Premium Input Styling with Glass Effects */
+ input, textarea, select {
+   @apply transition-all duration-300 ease-out;
+   border-radius: 1rem !important;
+   border: 2px solid hsl(var(--border)) !important;
+   background: hsl(var(--input)) !important;
+   color: hsl(var(--foreground)) !important;
+   font-weight: 500 !important;
+   padding: 0.875rem 1.25rem !important;
+   font-size: 1rem !important;
+   box-shadow: 
+diff --git a/client/src/index.css b/client/src/index.css
+index 9f0aa087847393fbd372f4bce2ed2af17fdeb1de..7e31091cf43c05ca4568bc7e37f5f0cb0adf69d8 100644
+--- a/client/src/index.css
++++ b/client/src/index.css
+@@ -1284,59 +1230,50 @@ button, .btn, nav {
+   user-select: none;
+ }
+ 
+ /* Loading states */
+ @keyframes skeleton-loading {
+   0% {
+     background-position: -200% 0;
+   }
+   100% {
+     background-position: 200% 0;
+   }
+ }
+ 
+ .skeleton {
+   background: linear-gradient(
+     90deg,
+     rgba(0, 0, 0, 0.05) 25%,
+     rgba(0, 0, 0, 0.1) 50%,
+     rgba(0, 0, 0, 0.05) 75%
+   );
+   background-size: 200% 100%;
+   animation: skeleton-loading 1.5s infinite;
+ }
+ 
+ /* Premium hover states */
+-/* DISABLED - Causing caption generator issues
+-.hover-lift {
+-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+-}
+-
+-.hover-lift:hover {
+-  transform: translateY(-2px);
+-} */
+-
+ /* Subtle animations for micro-interactions */
+ @keyframes micro-bounce {
+   0%, 100% {
+     transform: translateY(0);
+   }
+   50% {
+     transform: translateY(-3px);
+   }
+ }
+ 
+ .micro-bounce {
+   animation: micro-bounce 0.3s ease;
+ }
+ 
+ /* Mobile-first responsive design */
+ @media (max-width: 768px) {
+   .container {
+     padding: 1rem;
+   }
+ 
+   .grid {
+     grid-template-columns: 1fr;
+   }
+ 
+   /* Fix dashboard layout on mobile */
+diff --git a/client/src/index.css b/client/src/index.css
+index 9f0aa087847393fbd372f4bce2ed2af17fdeb1de..7e31091cf43c05ca4568bc7e37f5f0cb0adf69d8 100644
+--- a/client/src/index.css
++++ b/client/src/index.css
+@@ -1359,65 +1296,50 @@ button, .btn, nav {
+   .nav-container {
+     flex-direction: column;
+     gap: 0.5rem;
+   }
+ }
+ 
+ /* Fix overflow issues */
+ .overflow-fix {
+   overflow-x: hidden;
+   max-width: 100vw;
+ }
+ 
+ /* Fix button layouts */
+ .button-group {
+   display: flex;
+   flex-wrap: wrap;
+   gap: 0.5rem;
+ }
+ 
+ @media (max-width: 640px) {
+   .button-group {
+     flex-direction: column;
+   }
+ }
+ 
+-/* 3D Transform Effects - Enhanced */
+-/* DISABLED - Causing caption generator issues
+-.card-3d {
+-  transform-style: preserve-3d;
+-  perspective: 1000px;
+-  transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+-}
+-
+-.card-3d:hover {
+-  transform: rotateX(5deg) rotateY(5deg) scale(1.02);
+-  box-shadow: 
+-    0 20px 60px rgba(236, 72, 153, 0.2),
+-    0 10px 30px rgba(244, 114, 182, 0.15);
+-} */
+-
+ /* Neon Glow Effects - Premium */
+ .neon-glow {
+   position: relative;
+   transition: all 0.3s ease;
+ }
+ 
+ .neon-glow:hover {
+   box-shadow: 
+     0 0 5px currentColor,
+     0 0 10px currentColor,
+     0 0 20px currentColor,
+     0 0 40px currentColor;
+   animation: neon-pulse 2s ease-in-out infinite alternate;
+ }
+ 
+ @keyframes neon-pulse {
+   from {
+     text-shadow: 
+       0 0 10px currentColor,
+       0 0 20px currentColor,
+       0 0 30px currentColor,
+       0 0 40px currentColor;
+   }
+   to {
+     text-shadow: 
+ 
+EOF
+)

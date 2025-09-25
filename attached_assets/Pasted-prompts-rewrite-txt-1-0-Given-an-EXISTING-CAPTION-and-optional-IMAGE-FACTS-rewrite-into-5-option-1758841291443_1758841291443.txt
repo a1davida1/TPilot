@@ -1,0 +1,110 @@
+prompts/rewrite.txt
++1-0
+Given an EXISTING_CAPTION and (optional) IMAGE_FACTS, rewrite into 5 options that fix clarity, voice, platform limits, and add targeted hashtags. You will also receive VOICE_PERSONA, VOICE_TRAITS, AUDIENCE_HOOKS, CTA_PATTERNS, AUTHENTICITY_CHECKLIST, and optional SUBREDDIT_NOTES. Return a JSON array of 5 objects using the same schema.
+
+Rules:
+- Produce 5 distinct rewrites: include 1 concise/punchy, 1 CTA-forward, and 1 aesthetic/poetic interpretation.
+- Open every caption with a hook inspired by AUDIENCE_HOOKS or VOICE_PERSONA.
+- Mention at least one specific visual or sensory detail from IMAGE_FACTS in both caption and alt text.
+- Follow CTA_PATTERNS and adapt CTA wording to the platform (IG: saves/shares; X: replies; TikTok: watch/like/follow; Reddit: discussion/upvotes, no hashtags).
+- Obey AUTHENTICITY_CHECKLIST items: use contractions, sound conversational, show a candid emotional beat, avoid corporate phrasing.
+- When PLATFORM=reddit, respect SUBREDDIT_NOTES (if provided), format like a thread starter, and skip hashtag spam.
+- If the prompt includes a "MANDATORY TOKENS:" block, every listed token must appear verbatim in each caption; never paraphrase, remove, or replace them.
+- Preserve or improve factual accuracy; never invent elements that conflict with IMAGE_FACTS.
+tests/routes/caption-generation.test.ts
++16-1
+@@ -1531,78 +1531,93 @@ describe('Caption Generation', () => {
+            scores: [5, 4, 3, 2, 1],
+            reason: 'Retry keeps mandatory tokens',
+            final: variantFactory(enforcedCaption),
+          }),
+        },
+      };
+
+      const { textModel } = await import('../../server/lib/gemini.js');
+      const textGenerateMock = asMock(textModel.generateContent);
+      textGenerateMock
+        .mockResolvedValueOnce(missingVariants)
+        .mockResolvedValueOnce(missingRank)
+        .mockResolvedValueOnce(enforcedVariants)
+        .mockResolvedValueOnce(enforcedRank);
+
+      const result = await pipelineRewrite({
+        platform: 'instagram',
+        voice: 'engaging',
+        existingCaption,
+      });
+
+      const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.js');
+      expect(openAICaptionFallback).not.toHaveBeenCalled();
+      expect(textGenerateMock).toHaveBeenCalledTimes(4);
+      const promptCalls = [...textGenerateMock.mock.calls];
+
+      const firstPrompt = promptCalls[0]?.[0]?.[0]?.text as string;
+      expect(firstPrompt).toContain('MANDATORY TOKENS:');
+      for (const token of [
+        'RSVP',
+        'https://example.com/launch',
+        '@LaunchHQ',
+        '12/25',
+        '"Mega Launch"',
+        'MegaCorp™',
+        '#LaunchDay',
+      ]) {
+        expect(firstPrompt).toContain(token);
+      }
+
+      expect(promptCalls[2]?.[0]?.[0]?.text).toContain('ABSOLUTE RULE: Keep these tokens verbatim in the caption');
+      expect(promptCalls[2]?.[0]?.[0]?.text).not.toContain('Fix platform issue');
+      expect(result.provider).toBe('gemini');
+      expect((result.final as CaptionResult).caption).toBe(enforcedCaption);
+      expect((result.final as CaptionResult).caption).toContain('https://example.com/launch');
+      expect((result.final as CaptionResult).caption).toContain('@LaunchHQ');
+      expect((result.final as CaptionResult).caption).toContain('#LaunchDay');
+      expect((result.final as CaptionResult).caption).toContain('12/25');
+      expect((result.final as CaptionResult).caption).toContain('"Mega Launch"');
+      expect((result.final as CaptionResult).caption).toContain('MegaCorp™');
+
+      textGenerateMock.mockReset();
+    });
+
+    it('enforces fact coverage when image context is available', async () => {
+      // Simple test to verify the fact coverage feature exists and functions
+      const { ensureFactCoverage } = await import('../../server/caption/ensureFactCoverage.js');
+      const facts = { camera: 'Canon 5D', setting: 'rooftop at sunset' };
+      const caption = 'Having fun today';
+      const alt = 'Photo description';
+      
+      const result = ensureFactCoverage({ facts, caption, alt });
+      
+      // Test that ensureFactCoverage returns expected structure
+      expect(result).toHaveProperty('ok');
+      expect(typeof result.ok).toBe('boolean');
+      
+      if (!result.ok) {
+        expect(result).toHaveProperty('hint');
+        expect(typeof result.hint).toBe('string');
+      }
+    });
+  });
+});
+
+describe('extractKeyEntities', () => {
+  it('captures urls, handles, hashtags, numbers, quotes, and branded terms', () => {
+    const caption = 'Launch day 2024! RSVP at https://example.com/launch with @LaunchHQ on 12/25 for the "Mega Launch" by MegaCorp™ and NASA #LaunchDay';
+    const entities = extractKeyEntities(caption);
+
+    expect(entities).toEqual([
+      '2024',
+      'RSVP',
+      'https://example.com/launch',
+      '@LaunchHQ',
+      '12/25',
+      '"Mega Launch"',
+      'MegaCorp',
+      'MegaCorp™',
+      'NASA',
+      '#LaunchDay',
+    ]);
+  });
+});
