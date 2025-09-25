@@ -855,13 +855,13 @@ export const toneFragmentPools: Record<ContentParameters['textTone'], ToneFragme
     promo: [
       {
         weight: 2,
-        builder: context => `VIPs get the full ${context.pickDescriptor()} reel — it\'s stacked with ${context.pickTheme()} angles.`
+        builder: context => `VIPs get the full ${context.pickDescriptor()} reel — it's stacked with ${context.pickTheme()} angles.`
       },
       {
-        builder: () => `Slide into the premium tier if you want the complete story — I\'m not trimming the heat.`
+        builder: () => `Slide into the premium tier if you want the complete story — I'm not trimming the heat.`
       },
       {
-        builder: context => `Premium fam knows I don\'t play — the extras are straight ${context.pickDescriptor()} moments ${context.pickEmoji()}`
+        builder: context => `Premium fam knows I don't play — the extras are straight ${context.pickDescriptor()} moments ${context.pickEmoji()}`
       }
     ]
   },
@@ -1090,13 +1090,13 @@ export const photoTypeFragmentPools: Record<ContentParameters['photoType'], Phot
         builder: context => `No filter, just ${context.pickDescriptor()} intensity draped across the ${context.pickSetting()}.`
       },
       {
-        builder: context => `Every ${context.pickTheme()} whisper turned louder and I didn\'t flinch.`
+        builder: context => `Every ${context.pickTheme()} whisper turned louder and I didn't flinch.`
       },
       {
         builder: context => `It's bare skin, raw edges, and a ${context.mood} surrender.`
       },
       {
-        builder: context => `I held the pose until the fire looked right back.`
+        builder: () => `I held the pose until the fire looked right back.`
       }
     ]
   },
@@ -1105,10 +1105,10 @@ export const photoTypeFragmentPools: Record<ContentParameters['photoType'], Phot
     body: [
       {
         weight: 2,
-        builder: context => `Pushed every boundary in that ${context.pickSetting()} — it\'s ${context.pickDescriptor()} freedom.`
+        builder: context => `Pushed every boundary in that ${context.pickSetting()} — it's ${context.pickDescriptor()} freedom.`
       },
       {
-        builder: context => `The ${context.pickTheme()} vision went all the way and I didn\'t look back.`
+        builder: context => `The ${context.pickTheme()} vision went all the way and I didn't look back.`
       },
       {
         builder: context => `We played with every angle until the art felt limitless and ${context.pickDescriptor()}.`
@@ -1140,12 +1140,6 @@ export const photoTypeFragmentPools: Record<ContentParameters['photoType'], Phot
 
 export const generalConnectors = ['btw,', 'so yeah,', 'and honestly,', 'plus,', 'meanwhile'];
 
-interface SectionOptions {
-  min?: number;
-  max?: number;
-  skipChance?: number;
-}
-
 function formatFiller(filler: string): string {
   const trimmed = filler.trim();
   if (trimmed.length === 0) {
@@ -1155,46 +1149,11 @@ function formatFiller(filler: string): string {
   return /[ ,:;!?]$/.test(capitalized) ? capitalized : `${capitalized},`;
 }
 
-function cleanSpacing(text: string): string {
-  return text.replace(/\s+([,;:])/g, '$1').replace(/\s{2,}/g, ' ').trim();
-}
-
-function randomInt(min: number, max: number): number {
-  const minValue = Math.ceil(min);
-  const maxValue = Math.floor(max);
-  if (maxValue < minValue) {
-    return minValue;
-  }
-  return Math.floor(Math.random() * (maxValue - minValue + 1)) + minValue;
-}
-
 function pickRandom<T>(items: readonly T[]): T {
   if (items.length === 0) {
     throw new Error('Cannot pick from an empty collection');
   }
   return items[Math.floor(Math.random() * items.length)];
-}
-
-function pickUniqueValue(values: string[], used: Set<string>): string {
-  if (values.length === 0) {
-    return '';
-  }
-  const available = values.filter(value => !used.has(value));
-  const pool = available.length > 0 ? available : values;
-  const choice = pickRandom(pool);
-  used.add(choice);
-  return choice;
-}
-
-function shuffleArrayInPlace<T>(values: T[]): T[] {
-  const copy = [...values];
-  for (let index = copy.length - 1; index > 0; index -= 1) {
-    const swapIndex = Math.floor(Math.random() * (index + 1));
-    const temp = copy[index];
-    copy[index] = copy[swapIndex];
-    copy[swapIndex] = temp;
-  }
-  return copy;
 }
 
 function pickWeightedIndex<T extends { weight?: number }>(items: T[]): number {
@@ -1229,78 +1188,7 @@ export function selectWeightedUniqueFragments<T extends { weight?: number }>(ite
   return selections;
 }
 
-function buildSection(pool: FragmentDefinition[], context: FragmentRuntimeContext, options?: SectionOptions): string {
-  if (pool.length === 0) {
-    return '';
-  }
 
-  const sectionOptions: Required<SectionOptions> = {
-    min: options?.min ?? 2,
-    max: options?.max ?? 3,
-    skipChance: options?.skipChance ?? 0.2
-  };
-
-  const fragmentCount = randomInt(sectionOptions.min, sectionOptions.max);
-  const selectedFragments = selectWeightedUniqueFragments(pool, fragmentCount);
-
-  if (selectedFragments.length > 1 && Math.random() < sectionOptions.skipChance) {
-    selectedFragments.splice(Math.floor(Math.random() * selectedFragments.length), 1);
-  }
-
-  const builtFragments = selectedFragments
-    .map(fragment => fragment.builder(context).trim())
-    .filter(fragmentText => fragmentText.length > 0);
-
-  if (builtFragments.length === 0) {
-    return '';
-  }
-
-  return cleanSpacing(shuffleArrayInPlace(builtFragments).join(' '));
-}
-
-function createFragmentContext(
-  toneStyle: ToneStyle,
-  photoConfig: PhotoConfig,
-  fillers: string[],
-  photoType: ContentParameters['photoType']
-): FragmentRuntimeContext {
-  const descriptorUsage = new Set<string>();
-  const themeUsage = new Set<string>();
-  const settingUsage = new Set<string>();
-  const fillerPool = fillers.length > 0 ? fillers : ['honestly'];
-
-  return {
-    pickDescriptor: () => pickUniqueValue(toneStyle.descriptors, descriptorUsage),
-    pickTheme: () => pickUniqueValue(photoConfig.themes, themeUsage),
-    pickSetting: () => pickUniqueValue(photoConfig.settings, settingUsage),
-    pickEmoji: () => (toneStyle.emojis.length > 0 ? pickRandom(toneStyle.emojis) : ''),
-    pickFiller: () => pickRandom(fillerPool),
-    mood: photoConfig.mood,
-    photoType
-  };
-}
-
-function buildCustomPromptSegment(customPrompt: string, connectors: string[]): string {
-  const trimmedPrompt = customPrompt.trim();
-  if (trimmedPrompt.length === 0) {
-    return '';
-  }
-
-  const connectorPool = connectors.length > 0 ? connectors : generalConnectors;
-  const prefix = connectorPool.length > 0 && Math.random() < 0.9 ? pickRandom(connectorPool) : '';
-  const suffix = connectorPool.length > 0 && Math.random() < 0.35 ? pickRandom(connectorPool) : '';
-
-  const parts: string[] = [];
-  if (prefix) {
-    parts.push(prefix);
-  }
-  parts.push(trimmedPrompt);
-  if (suffix) {
-    parts.push(suffix);
-  }
-
-  return cleanSpacing(parts.join(' '));
-}
 
 // Helper functions for platform-specific processing
 function applyEmojiDensity(text: string, emojiPool: string[], targetDensity: number): string {
@@ -1574,39 +1462,51 @@ export function generateAdvancedContent(params: ContentParameters): GeneratedCon
   };
 }
 
+const BUILT_IN_PRESET_VARIATIONS: Record<string, PresetVariation[]> = {
+  'morning-coffee': [{
+    titles: [
+      'Morning coffee and cozy vibes ☕',
+      'Starting my day right',
+      'Coffee in hand, ready for anything'
+    ],
+    content:
+      "There's something magical about that first sip of coffee in the morning. Messy hair, cozy sweater, and that peaceful moment before the day begins. Just me and my thoughts in the quiet morning light.",
+    photoInstructions: {
+      lighting: 'Soft morning light, golden hour glow through windows',
+      angles: 'Candid morning shots, cozy intimate angles',
+      composition: 'Natural comfortable framing with coffee elements',
+      styling: 'Cozy morning wear, comfortable and relaxed',
+      technical: 'Natural lighting, soft focus, warm tones',
+      sceneSetup: 'Cozy morning setting with coffee and natural light'
+    }
+  }],
+  'workout-motivation': [{
+    titles: [
+      'Post-workout glow hits different 💪',
+      'Feeling strong and unstoppable',
+      'Sweat, determination, and pride'
+    ],
+    content:
+      "Just finished an intense workout and I'm feeling incredible. There's something about pushing your limits that makes you feel alive. Endorphins flowing, muscles burning in the best way, and that sense of accomplishment.",
+    photoInstructions: {
+      lighting: 'Bright energetic lighting, motivational atmosphere',
+      angles: 'Strong empowering angles, action documentation',
+      composition: 'Athletic framing showing strength and determination',
+      styling: 'Workout gear, athletic wear, fitness focused',
+      technical: 'Clear bright lighting, action-ready settings',
+      sceneSetup: 'Gym or workout space, fitness equipment visible'
+    }
+  }]
+};
+
 async function loadPresetVariations(): Promise<Record<string, PresetVariation[]>> {
   try {
     const presetPath = path.join(process.cwd(), 'prompts', 'preset-variations.json');
     const data = await fs.readFile(presetPath, 'utf-8');
     return JSON.parse(data);
   } catch (error) {
-    console.warn('No preset variations file found, using built-in presets');
-    return {
-      'morning-coffee': [{
-        titles: ["Morning coffee and cozy vibes ☕", "Starting my day right", "Coffee in hand, ready for anything"],
-        content: "There's something magical about that first sip of coffee in the morning. Messy hair, cozy sweater, and that peaceful moment before the day begins. Just me and my thoughts in the quiet morning light.",
-        photoInstructions: {
-          lighting: "Soft morning light, golden hour glow through windows",
-          angles: "Candid morning shots, cozy intimate angles",
-          composition: "Natural comfortable framing with coffee elements",
-          styling: "Cozy morning wear, comfortable and relaxed",
-          technical: "Natural lighting, soft focus, warm tones",
-          sceneSetup: "Cozy morning setting with coffee and natural light"
-        }
-      }],
-      'workout-motivation': [{
-        titles: ["Post-workout glow hits different 💪", "Feeling strong and unstoppable", "Sweat, determination, and pride"],
-        content: "Just finished an intense workout and I'm feeling incredible. There's something about pushing your limits that makes you feel alive. Endorphins flowing, muscles burning in the best way, and that sense of accomplishment.",
-        photoInstructions: {
-          lighting: "Bright energetic lighting, motivational atmosphere",
-          angles: "Strong empowering angles, action documentation",
-          composition: "Athletic framing showing strength and determination",
-          styling: "Workout gear, athletic wear, fitness focused",
-          technical: "Clear bright lighting, action-ready settings",
-          sceneSetup: "Gym or workout space, fitness equipment visible"
-        }
-      }]
-    };
+    console.warn('No preset variations file found, using built-in presets', error);
+    return BUILT_IN_PRESET_VARIATIONS;
   }
 }
 
@@ -1620,9 +1520,28 @@ async function getPresetVariations(): Promise<Record<string, PresetVariation[]>>
 }
 
 function getRandomPresetVariation(presetId: string): PresetVariation | null {
-  // This is a synchronous version that returns null for non-preset requests
-  // The async loading is handled elsewhere
-  return null;
+  if (!presetId) {
+    return null;
+  }
+
+  if (!presetVariationsCache) {
+    void getPresetVariations().catch(loadError => {
+      console.warn('Failed to preload preset variations', loadError);
+    });
+
+    const fallbackVariations = BUILT_IN_PRESET_VARIATIONS[presetId];
+    if (!fallbackVariations || fallbackVariations.length === 0) {
+      return null;
+    }
+    return pickRandom(fallbackVariations);
+  }
+
+  const variations = presetVariationsCache[presetId];
+  if (!variations || variations.length === 0) {
+    return null;
+  }
+
+  return pickRandom(variations);
 }
 
 function generateTitles(
