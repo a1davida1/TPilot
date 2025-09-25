@@ -24,7 +24,9 @@ import {
   Activity
 } from 'lucide-react';
 
-type IconType = any;
+import type { LucideIcon } from 'lucide-react';
+
+type IconType = LucideIcon;
 
 export default function Phase4Dashboard() {
   const [activeTab, setActiveTab] = useState('overview');

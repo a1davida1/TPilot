@@ -126,9 +126,9 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
       const responseData = await response.json();
 
       if (!response.ok) {
-        const error = new Error(responseData.message || 'Authentication failed');
-        (error as any).code = responseData.code;
-        (error as any).email = responseData.email;
+        const error = new Error(responseData.message || 'Authentication failed') as Error & AuthError;
+        error.code = responseData.code;
+        error.email = responseData.email;
         throw error;
       }
 

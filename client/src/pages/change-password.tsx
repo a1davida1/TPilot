@@ -2,6 +2,7 @@ import { useLocation } from 'wouter';
 import { PasswordChangeForm } from '@/components/PasswordChangeForm';
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect } from 'react';
+import type { User } from '@shared/schema';
 
 export default function ChangePasswordPage() {
   const [location, navigate] = useLocation();
@@ -13,7 +14,7 @@ export default function ChangePasswordPage() {
 
   useEffect(() => {
     // If user is already logged in normally (not requiring password change), redirect to dashboard
-    if (user && !(user as any).mustChangePassword) {
+    if (user && !(user as User).mustChangePassword) {
       navigate('/dashboard');
     }
   }, [user, navigate]);

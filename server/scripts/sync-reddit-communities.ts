@@ -210,9 +210,10 @@ async function syncSubreddit(reddit: snoowrap, subredditName: string, retryCount
       });
     
     logger.info(`✅ Successfully synced r/${subredditName} (${subreddit.subscribers} members)`);
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Handle rate limiting and authentication errors
-    if (error.statusCode === 429 || error.statusCode === 401 || error.statusCode === 403) {
+    const errorObj = error as { statusCode?: number };
+    if (errorObj.statusCode === 429 || errorObj.statusCode === 401 || errorObj.statusCode === 403) {
       if (retryCount < maxRetries) {
         const delay = baseDelay * Math.pow(2, retryCount) + Math.random() * 1000; // Exponential backoff with jitter
         logger.warn(`Rate limited or auth error for r/${subredditName}, retrying in ${delay}ms (attempt ${retryCount + 1}/${maxRetries})`);

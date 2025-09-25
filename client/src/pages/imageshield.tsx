@@ -4,13 +4,19 @@ import { useAuth } from "@/hooks/useAuth";
 export default function ImageShieldPage() {
   const { user } = useAuth();
   const baseTier = user?.tier || 'free';
-  // Map tiers for ImageShield component compatibility
+  // Map tiers for ImageShield component compatibility  
   const getUserTier = (): "free" | "starter" | "pro" => {
-    if (baseTier === 'admin' as any) return 'pro';
-    if (baseTier === 'guest' as any) return 'free';
-    if (baseTier === 'basic' as any) return 'starter'; // Map old 'basic' to 'starter'
-    if (baseTier === 'premium' as any) return 'pro'; // Map old 'premium' to 'pro'
-    return baseTier as "free" | "starter" | "pro";
+    // Handle legacy tier values
+    const tierMap: Record<string, "free" | "starter" | "pro"> = {
+      'admin': 'pro',
+      'guest': 'free', 
+      'basic': 'starter',
+      'premium': 'pro',
+      'free': 'free',
+      'starter': 'starter',
+      'pro': 'pro'
+    };
+    return tierMap[baseTier] || 'free';
   };
   const userTier = getUserTier();
   const isGuestMode = !user;

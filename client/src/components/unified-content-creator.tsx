@@ -207,7 +207,7 @@ export function UnifiedContentCreator({
 
   const generateContentMutation = useMutation({
     mutationFn: async (_data: unknown) => {
-      const data = _data as any; // Type assertion for mutation data
+      const data = _data as Record<string, string | string[] | unknown>; // Type assertion for mutation data
       // Use FormData for unified endpoint that handles both text and images
       const formData = new FormData();
 
@@ -217,18 +217,18 @@ export function UnifiedContentCreator({
         formData.append('image', imageFile);
       } else {
         formData.append('mode', 'text');
-        formData.append('prompt', data.customPrompt || data.prompt || '');
+        formData.append('prompt', String(data.customPrompt || data.prompt || ''));
       }
 
       // Add common parameters
-      formData.append('platform', data.platform || platform);
-      formData.append('style', data.style || 'playful');
-      formData.append('theme', data.theme || '');
+      formData.append('platform', String(data.platform || platform));
+      formData.append('style', String(data.style || 'playful'));
+      formData.append('theme', String(data.theme || ''));
       formData.append('includePromotion', String(data.allowsPromotion === 'high'));
-      formData.append('customInstructions', data.customPrompt || '');
-      formData.append('photoType', data.photoType || selectedPhotoType);
-      formData.append('textTone', data.textTone || selectedTextTone);
-      formData.append('hashtags', data.hashtags?.join(',') || selectedHashtags.join(','));
+      formData.append('customInstructions', String(data.customPrompt || ''));
+      formData.append('photoType', String(data.photoType || selectedPhotoType));
+      formData.append('textTone', String(data.textTone || selectedTextTone));
+      formData.append('hashtags', Array.isArray(data.hashtags) ? data.hashtags.join(',') : selectedHashtags.join(','));
 
 
       // Send to unified endpoint  

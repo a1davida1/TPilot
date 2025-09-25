@@ -299,7 +299,7 @@ export function usePerformanceOptimization() {
 
   useEffect(() => {
     // Detect slow connections
-    const connection = (navigator as any).connection;
+    const connection = (navigator as ExtendedNavigator).connection;
     if (connection) {
       setIsSlowConnection(connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g');
     }

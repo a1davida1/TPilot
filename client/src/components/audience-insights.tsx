@@ -16,6 +16,12 @@ interface AudienceData {
   };
 }
 
+interface SubredditInsight {
+  name: string;
+  members: string;
+  growth: string;
+}
+
 export function AudienceInsights() {
   // Fetch real audience insights from analytics
   const { data: insightsData, isLoading } = useQuery({
@@ -138,7 +144,7 @@ export function AudienceInsights() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {topSubreddits.map((subreddit: any, index: number) => (
+            {topSubreddits.map((subreddit: SubredditInsight, index: number) => (
               <div key={subreddit.name} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
                 <div className="flex items-center gap-3">
                   <span className="text-lg font-bold text-gray-500">#{index + 1}</span>
