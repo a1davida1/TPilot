@@ -7,7 +7,6 @@ import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
 import { extractToneOptions, ToneOptions } from "./toneOptions";
 import { BANNED_WORDS_HINT, variantContainsBannedWord } from "./bannedWords";
 import { buildVoiceGuideBlock } from "./stylePack";
-import { formatVoiceContext } from "./voiceTraits";
 import { serializePromptField } from "./promptUtils";
 import { inferFallbackFromFacts, ensureFallbackCompliance } from "./inferFallbackFromFacts";
 import { dedupeVariantsForRanking } from "./dedupeVariants";
@@ -194,43 +193,59 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
     load("variants_textonly.txt")
   ]);
 
+  const voiceGuide = buildVoiceGuideBlock(params.voice);
+  const isRecord = (value: unknown): value is Record<string, unknown> =>
+    typeof value === "object" && value !== null;
+
   const sanitizeVariant = (item: Record<string, unknown>): Record<string, unknown> => {
     const variant = { ...item } as Record<string, unknown>;
+    // ... rest of the function
 
-    variant.safety_level = normalizeSafetyLevel(
-      typeof variant.safety_level === "string" ? variant.safety_level : "normal"
+  const sanitizeVariant = (item: Record<string, unknown>): z.infer<typeof CaptionItem> => {
+    const safetyLevel = normalizeSafetyLevel(
+      typeof item.safety_level === "string" ? item.safety_level : "normal"
     );
 
-    const caption = typeof variant.caption === "string" && variant.caption.trim().length > 0
-      ? variant.caption
-      : "Check out this amazing content!";
-    variant.caption = caption;
 
-    variant.mood = typeof variant.mood === "string" && variant.mood.trim().length >= 2
-      ? variant.mood
+    const caption = typeof item.caption === "string" && item.caption.trim().length > 0
+      ? item.caption
+      : "Sharing something I'm proud of today.";
+
+    const mood = typeof item.mood === "string" && item.mood.trim().length >= 2
+      ? item.mood
       : "engaging";
-    variant.style = typeof variant.style === "string" && variant.style.trim().length >= 2
-      ? variant.style
+    const style = typeof item.style === "string" && item.style.trim().length >= 2
+      ? item.style
       : "authentic";
-    variant.cta = typeof variant.cta === "string" && variant.cta.trim().length >= 2
-      ? variant.cta
-      : "Check it out";
+  variant.cta = typeof item.cta === "string" && item.cta.trim().length >= 2
+    ? item.cta
+    : HUMAN_CTA;  // Use the constant from "theirs"
 
-    const alt = typeof variant.alt === "string" && variant.alt.trim().length >= 20
-      ? variant.alt
-      : "Engaging social media content that highlights the visual story.";
-    variant.alt = alt;
+  variant.alt = typeof item.alt === "string" && item.alt.trim().length >= 20
+    ? item.alt
+    : "Engaging description that highlights the visual story.";  // Use the text from "theirs"
 
-    const hashtags = Array.isArray(variant.hashtags)
-      ? variant.hashtags
+    const hashtags = Array.isArray(item.hashtags)
+      ? item.hashtags
           .map(tag => (typeof tag === "string" ? tag.trim() : ""))
-          .filter(tag => tag.length > 0)
+          .filter((tag): tag is string => tag.length > 0)
       : [];
-    variant.hashtags = hashtags.length > 0 ? hashtags.slice(0, 10) : ["#content", "#creative", "#amazing"];
 
-    variant.nsfw = typeof variant.nsfw === "boolean" ? variant.nsfw : false;
+    const fallbackTags = fallbackHashtags(params.platform);
+    const resolvedHashtags = hashtags.length > 0 ? hashtags.slice(0, 10) : [...fallbackTags];
 
-    return variant;
+    const nsfw = typeof item.nsfw === "boolean" ? item.nsfw : false;
+
+    return CaptionItem.parse({
+      caption,
+      alt,
+      hashtags: resolvedHashtags,
+      cta,
+      mood,
+      style,
+      safety_level: safetyLevel,
+      nsfw,
+    });
   };
 
   const buildUserPrompt = (varietyHint: string | undefined, existingCaptions: string[]): string => {
@@ -297,11 +312,14 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
     duplicatesThisAttempt.length = 0; // Reset for this attempt
 
     for (const raw of rawVariants) {
-      if (uniqueVariants.length >= 5) break;
-      if (typeof raw !== "object" || raw === null) continue;
 
-      const sanitized = sanitizeVariant(raw as Record<string, unknown>);
-      const captionText = sanitized.caption as string;
+      if (uniqueVariants.length >= VARIANT_TARGET) break;
+      if (!isRecord(raw)) continue;
+
+      const sanitized = sanitizeVariant(raw);
+      const captionText = sanitized.caption;
+      const key = uniqueCaptionKey(captionText);
+
 
       const isDuplicate = existingCaptions.some(existing => captionsAreSimilar(existing, captionText));
       if (isDuplicate) {
@@ -309,23 +327,67 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
         continue;
       }
 
-      uniqueVariants.push(sanitized as z.infer<typeof CaptionItem>);
+
+      if (seenKeys.has(key)) {
+        duplicatesForHint.push(captionText);
+        continue;
+      }
+
+      const hasBannedWord = variantContainsBannedWord({
+        caption: sanitized.caption,
+        hashtags: sanitized.hashtags,
+        cta: sanitized.cta,
+        alt: sanitized.alt,
+      });
+
+      if (hasBannedWord) {
+        bannedDetected = true;
+        continue;
+      }
+
+      seenKeys.add(key);
+      uniqueVariants.push(sanitized);
       existingCaptions.push(captionText);
     }
+
+    if (duplicatesForHint.length === 0 && uniqueVariants.length < VARIANT_TARGET) {
+      const fallbackDuplicate = rawVariants.find((candidate): candidate is Record<string, unknown> & { caption: string } => {
+        if (!isRecord(candidate)) return false;
+        return typeof candidate.caption === "string";
+      });
+      if (fallbackDuplicate) {
+        duplicatesForHint.push(fallbackDuplicate.caption);
+      }
+    }
+
+    needsBannedHint = bannedDetected;
+
+    attempt += 1;
   }
 
-  // Pad variants if we don't have enough, instead of throwing in tests
-  while (uniqueVariants.length < 5) {
-    const baseVariant = uniqueVariants[0] || {
-      caption: "Text-only social media content",
-      alt: "Detailed alt text describing the theme",
-      hashtags: ["#social", "#content"],
-      cta: "Check it out",
+  if (uniqueVariants.length < VARIANT_TARGET) {
+    const baseVariant = uniqueVariants[0] ?? CaptionItem.parse({
+      caption: safeFallbackCaption,
+      alt: safeFallbackAlt,
+      hashtags: [...safeFallbackHashtags],
+      cta: safeFallbackCta,
       mood: "engaging",
       style: "authentic",
       safety_level: "normal",
-      nsfw: false
-    };
+      nsfw: false,
+    });
+
+    while (uniqueVariants.length < VARIANT_TARGET) {
+      const index = uniqueVariants.length + 1;
+      const captionSeed = baseVariant.caption || safeFallbackCaption;
+      uniqueVariants.push({
+        ...baseVariant,
+        caption: `${captionSeed} (retry filler ${index})`,
+        alt: `${baseVariant.alt} (retry filler ${index})`,
+      });
+    }
+  }
+
 
     // Create a slight variation by appending index
     const paddedVariant = {
@@ -334,8 +396,41 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
       alt: `${baseVariant.alt} (variation ${uniqueVariants.length + 1})`
     };
 
-    uniqueVariants.push(paddedVariant as z.infer<typeof CaptionItem>);
+
+// Helper function to prepare variants for ranking, ensuring correct count and deduplication
+function prepareVariantsForRanking(
+  variants: z.infer<typeof CaptionArray>,
+  params: { platform?: string; theme?: string; context?: string },
+  options: { targetLength: number }
+): z.infer<typeof CaptionArray> {
+  let preparedVariants = variants.slice(0, options.targetLength);
+  if (preparedVariants.length < options.targetLength) {
+    // If not enough variants, duplicate existing ones or add fallbacks if none exist
+    const baseVariant = preparedVariants[0] ?? CaptionItem.parse({
+      caption: safeFallbackCaption,
+      alt: safeFallbackAlt,
+      hashtags: [...safeFallbackHashtags],
+      cta: safeFallbackCta,
+      mood: "engaging",
+      style: "authentic",
+      safety_level: "normal",
+      nsfw: false,
+    });
+
+    while (preparedVariants.length < options.targetLength) {
+      const index = preparedVariants.length + 1;
+      const captionSeed = baseVariant.caption || safeFallbackCaption;
+      preparedVariants.push({
+        ...baseVariant,
+        caption: `${captionSeed} (filler ${index})`,
+        alt: `${baseVariant.alt} (filler ${index})`,
+      });
+    }
   }
+  // Deduplicate variants based on similarity if needed, though `generateVariantsTextOnly` already aims for uniqueness
+  return dedupeCaptionVariants(preparedVariants).slice(0, options.targetLength);
+}
+
 
   return CaptionArray.parse(uniqueVariants);
 }
