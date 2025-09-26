@@ -1,12 +1,26 @@
 const DEFAULT_LENGTH_GAP_THRESHOLD = 16;
 
-export function dedupeCaptionVariants<T extends { caption: string }>(
-  variants: T[],
+type CaptionCarrier = { caption?: unknown };
+
+type CaptionWithString<T extends CaptionCarrier> = T & { caption: string };
+
+function hasStringCaption<T extends CaptionCarrier>(
+  variant: T
+): variant is CaptionWithString<T> {
+  return typeof variant.caption === "string";
+}
+
+export function dedupeCaptionVariants<T extends CaptionCarrier>(
+  variants: readonly T[],
   lengthGapThreshold: number = DEFAULT_LENGTH_GAP_THRESHOLD
-): T[] {
-  const unique: T[] = [];
+): Array<CaptionWithString<T>> {
+  const unique: Array<CaptionWithString<T>> = [];
 
   variants.forEach(variant => {
+    if (!hasStringCaption(variant)) {
+      return;
+    }
+
     const caption = variant.caption.trim();
     if (!caption) {
       return;

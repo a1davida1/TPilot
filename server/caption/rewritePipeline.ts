@@ -1,7 +1,8 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { z } from "zod";
-import { textModel, visionModel } from "../lib/gemini";
+import { visionModel } from "../lib/gemini";
+import { variantsRewrite, rankAndSelect } from "./geminiPipeline";
 import { CaptionArray, RankResult, platformChecks, CaptionItem } from "./schema";
 import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
 import { BANNED_WORDS_HINT, variantContainsBannedWord } from "./bannedWords";

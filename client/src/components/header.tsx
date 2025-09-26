@@ -25,20 +25,38 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 
-export function Header() {
+type HeaderProps = {
+  onReplayWalkthrough?: () => void;
+};
+
+export function Header({ onReplayWalkthrough }: HeaderProps) {
   const { isAuthenticated, isLoading, user, logout } = useAuth();
   const [location] = useLocation();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Assume this function exists and handles the walkthrough replay
+  const handleReplayWalkthrough = () => {
+    console.log("Replaying walkthrough...");
+    onReplayWalkthrough?.();
+    // In a real app, you would trigger the walkthrough replay logic here.
+    // For example, using a state management or a dedicated hook.
+  };
   const handleLogout = () => {
     // Redirect to logout page which handles the logout process
     window.location.href = '/logout';
   };
 
   const isAdmin = user && (user.id === 999 || user.username === 'admin');
-  
+
+  // Determine if the walkthrough replay feature should be visible
+  // This logic might depend on the current route or user settings.
+  // For this example, let's assume it's visible on the dashboard and settings pages.
+  const canReplayWalkthrough =
+    Boolean(onReplayWalkthrough) &&
+    isAuthenticated &&
+    (location === '/dashboard' || location === '/settings');
   const navigationItems = [
     { href: '/dashboard', label: 'Dashboard', authenticated: true },
     { href: '/reddit', label: 'Reddit', authenticated: null },

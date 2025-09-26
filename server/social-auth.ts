@@ -2,13 +2,23 @@ import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as FacebookStrategy } from 'passport-facebook';
 import { Strategy as RedditStrategy } from 'passport-reddit';
-import type { Express, Request, Response } from 'express';
+import type { Express, NextFunction, Request, Response } from 'express';
 import type { AuthenticateOptions } from 'passport';
 import type { User } from '@shared/schema';
 import { storage } from './storage';
 import jwt from 'jsonwebtoken';
 import { blacklistToken } from './lib/tokenBlacklist';
 import { logger } from './bootstrap/logger';
+
+type RedditAuthenticateOptions = AuthenticateOptions & {
+  state?: string;
+  duration?: 'temporary' | 'permanent';
+};
+
+const redditCallbackOptions: RedditAuthenticateOptions = {
+  failureRedirect: '/login?error=reddit_failed',
+  successRedirect: '/dashboard?connected=reddit'
+};
 
 export function setupSocialAuth(app: Express) {
   // Note: passport.initialize() and passport.session() are now called from routes.ts
@@ -158,14 +168,15 @@ function setupAuthRoutes(app: Express) {
   );
 
   // Reddit routes
-  app.get('/api/auth/reddit',
-    passport.authenticate('reddit', { 
+  app.get('/api/auth/reddit', (req: Request, res: Response, next: NextFunction) => {
+    const redditAuthOptions: RedditAuthenticateOptions = {
       state: Math.random().toString(36).substring(7)
-    } as (AuthenticateOptions & { state: string }))
-  );
+    };
+    return passport.authenticate('reddit', redditAuthOptions)(req, res, next);
+  });
 
   app.get('/api/auth/reddit/callback',
-    passport.authenticate('reddit', { failureRedirect: '/login?error=reddit_failed' }),
+    passport.authenticate('reddit', redditCallbackOptions),
     (req, res) => {
       res.redirect('/dashboard?connected=reddit');
     }

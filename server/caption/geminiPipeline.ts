@@ -146,6 +146,19 @@ function normalizeVariantFields(
   return CaptionItem.parse(next);
 }
 
+type RewriteVariantsParams = {
+  platform: "instagram" | "x" | "reddit" | "tiktok";
+  voice: string;
+  existingCaption: string;
+  facts?: Record<string, unknown>;
+  hint?: string;
+  nsfw?: boolean;
+  doNotDrop?: string[];
+  style?: string;
+  mood?: string;
+  toneExtras?: Record<string, string>;
+};
+
 async function load(p: string): Promise<string> {
   return fs.readFile(path.join(process.cwd(), "prompts", p), "utf8");
 }
@@ -175,6 +188,154 @@ function stripToJSON(txt: string): unknown {
   const i = Math.min(...[txt.indexOf("{"), txt.indexOf("[")].filter(x => x >= 0));
   const j = Math.max(txt.lastIndexOf("}"), txt.lastIndexOf("]"));
   return JSON.parse((i >= 0 && j >= 0) ? txt.slice(i, j + 1) : txt);
+}
+
+export async function variantsRewrite(
+  params: RewriteVariantsParams
+): Promise<z.infer<typeof CaptionArray>> {
+  const [sys, guard, prompt] = await Promise.all([
+    load("system.txt"),
+    load("guard.txt"),
+    load("rewrite.txt")
+  ]);
+
+  const voiceGuide = buildVoiceGuideBlock(params.voice);
+  const sanitizedBaseHint = sanitizeHintForRetry(params.hint);
+  const mandatoryTokensLine = params.doNotDrop && params.doNotDrop.length > 0
+    ? `MANDATORY TOKENS: ${params.doNotDrop.join(" | ")}`
+    : undefined;
+
+  const collectedVariants: z.infer<typeof CaptionItem>[] = [];
+  const capturedCaptions: string[] = [];
+  const duplicatesThisAttempt: string[] = [];
+  let hasBannedWords = false;
+
+  const buildUserPrompt = (varietyHint: string | undefined): string => {
+    const toneLines = params.toneExtras
+      ? Object.entries(params.toneExtras).map(([key, value]) => `${key.toUpperCase()}: ${value}`)
+      : [];
+    const voiceContext = formatVoiceContext(params.voice);
+
+    const lines = [
+      `PLATFORM: ${params.platform}`,
+      `VOICE: ${params.voice}`,
+      voiceContext && voiceContext.trim().length > 0 ? voiceContext : undefined,
+      params.style ? `STYLE: ${params.style}` : undefined,
+      params.mood ? `MOOD: ${params.mood}` : undefined,
+      ...toneLines,
+      `EXISTING_CAPTION: ${serializePromptField(params.existingCaption, { block: true })}`,
+      params.facts ? `IMAGE_FACTS: ${JSON.stringify(params.facts)}` : undefined,
+      `NSFW: ${params.nsfw ?? false}`,
+      mandatoryTokensLine,
+      varietyHint ? `HINT:${serializePromptField(varietyHint, { block: true })}` : undefined,
+    ];
+
+    return lines.filter((line): line is string => Boolean(line && line.trim().length > 0)).join("\n");
+  };
+
+  for (let attempt = 0; attempt < VARIANT_RETRY_LIMIT && collectedVariants.length < VARIANT_TARGET; attempt += 1) {
+    const needed = VARIANT_TARGET - collectedVariants.length;
+    const baseHintWithVariety = `${sanitizedBaseHint ? `${sanitizedBaseHint} ` : ""}Need much more variety across tone, structure, concrete imagery, and CTA while keeping mandatory tokens verbatim.`.trim();
+    const moderationHint = hasBannedWords
+      ? `${baseHintWithVariety} ${BANNED_WORDS_HINT}`.trim()
+      : baseHintWithVariety;
+    const attemptHint = attempt === 0
+      ? sanitizedBaseHint ?? params.hint
+      : buildRetryHint(moderationHint, duplicatesThisAttempt, needed);
+
+    const userPrompt = buildUserPrompt(attemptHint);
+    const promptSections = [sys, guard, prompt, userPrompt];
+    if (voiceGuide) {
+      promptSections.push(voiceGuide);
+    }
+
+    let res: unknown;
+    try {
+      res = await textModel.generateContent([
+        { text: promptSections.join("\n") }
+      ]);
+    } catch (error) {
+      console.error("Gemini textModel.generateContent failed:", error);
+      throw error;
+    }
+
+    const rawText = (res as GeminiResponse)?.response?.text
+      ? (res as GeminiResponse).response?.text()
+      : typeof res === "string"
+        ? res
+        : JSON.stringify(res);
+    const json = stripToJSON(rawText) as unknown;
+
+    duplicatesThisAttempt.length = 0;
+
+    if (!Array.isArray(json)) {
+      continue;
+    }
+
+    for (const raw of json) {
+      if (collectedVariants.length >= VARIANT_TARGET) {
+        break;
+      }
+      if (typeof raw !== "object" || raw === null) {
+        continue;
+      }
+
+      const normalized = normalizeVariantFields(
+        raw as Record<string, unknown>,
+        params.platform,
+        params.facts,
+        params.existingCaption
+      );
+
+      if (variantContainsBannedWord(normalized)) {
+        hasBannedWords = true;
+        continue;
+      }
+
+      const caption = normalized.caption;
+      if (
+        captionsAreSimilar(params.existingCaption, caption) ||
+        capturedCaptions.some(existing => captionsAreSimilar(existing, caption))
+      ) {
+        duplicatesThisAttempt.push(caption);
+        continue;
+      }
+
+      collectedVariants.push(normalized);
+      capturedCaptions.push(caption);
+    }
+  }
+
+  if (collectedVariants.length < VARIANT_TARGET) {
+    const fallbackBase = normalizeVariantFields(
+      {
+        caption: params.existingCaption || safeFallbackCaption,
+        alt: safeFallbackAlt,
+        hashtags: [...safeFallbackHashtags],
+        cta: safeFallbackCta,
+        mood: params.mood ?? "engaging",
+        style: params.style ?? "authentic",
+        safety_level: "normal",
+        nsfw: params.nsfw ?? false,
+      },
+      params.platform,
+      params.facts,
+      params.existingCaption
+    );
+
+    while (collectedVariants.length < VARIANT_TARGET) {
+      const index = collectedVariants.length + 1;
+      collectedVariants.push({
+        ...fallbackBase,
+        caption: `${fallbackBase.caption} (rewrite filler ${index})`,
+        alt: `${fallbackBase.alt} (rewrite filler ${index})`
+      });
+    }
+  }
+
+  const capped = collectedVariants.slice(0, VARIANT_TARGET);
+  const deduped = dedupeCaptionVariants(capped);
+  return CaptionArray.parse(deduped.slice(0, VARIANT_TARGET));
 }
 
 function normalizeCaptionText(caption: string): string {

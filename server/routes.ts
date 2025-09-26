@@ -1,5 +1,7 @@
 import type { Express, Response, NextFunction } from "express";
 import express from "express";
+import type { Session } from 'express-session';
+import type { Session } from "express-session";
 import { createServer, type Server } from "http";
 import session from 'express-session';
 import path from 'path';
@@ -14,6 +16,7 @@ import passport from 'passport';
 import { validateEnvironment, securityMiddleware, ipLoggingMiddleware, errorHandler, logger, generationLimiter } from "./middleware/security.js";
 import { AppError, CircuitBreaker } from "./lib/errors.js";
 import { authenticateToken } from "./middleware/auth.js";
+import { createSessionMiddleware } from './bootstrap/session.js';
 
 // Route modules
 // import { authRoutes } from "./routes/auth.js"; // Removed - using server/auth.ts instead
@@ -32,6 +35,7 @@ import { configureSocialAuth, socialAuthRoutes } from "./social-auth-config.js";
 import { visitorAnalytics } from "./visitor-analytics.js";
 import { makePaxum, makeCoinbase, makeStripe } from "./payments/payment-providers.js";
 import { deriveStripeConfig } from "./payments/stripe-config.js";
+import { createSessionMiddleware } from "./bootstrap/session.js";
 // Analytics request type
 interface AnalyticsRequest extends express.Request {
   sessionID: string;
@@ -62,14 +66,14 @@ interface PhotoInstructionsData {
   cameraAngle?: string;
   mood?: string;
   technicalSettings?: string;
-  lighting?: string;
-  angles?: string[];
-  composition?: string;
-  styling?: string;
-  technical?: string[];
+  lighting?: string | string[];
+  angles?: string | string[];
+  composition?: string | string[];
+  styling?: string | string[];
+  technical?: string | string[];
 }
 
-interface SessionWithReddit extends express.Session {
+interface SessionWithReddit extends Session {
   redditOAuthState?: string;
 }
 
@@ -227,7 +231,7 @@ import { getRandomTemplates, addWatermark, getTemplateByMood } from "./content-t
 import { generateAdvancedContent, type ContentParameters } from "./advanced-content-generator.js";
 
 // Reddit communities now handled in reddit-routes.ts
-import { getAvailablePerks, getPerksByCategory, generateReferralCode, getSignupInstructions } from "./pro-perks.js";
+import { getAvailablePerks, getPerksByCategory, getSignupInstructions } from "./pro-perks.js";
 
 type SentryInstance = typeof import('@sentry/node');
 
@@ -310,13 +314,95 @@ interface GenerationRequestBody {
 interface PhotoInstructionsResult {
   lighting?: string | string[];
   angles?: string | string[];
-  cameraAngle?: string;
+  cameraAngle?: string | string[];
   composition?: string | string[];
   styling?: string | string[];
-  mood?: string;
-  technical?: string | string[];
-  technicalSettings?: string;
+  technicalSettings?: string | string[];
 }
+
+const normalizeInstructionValue = (value: string | string[] | undefined): string | undefined => {
+  if (Array.isArray(value)) {
+    const normalized = value
+      .map(entry => entry?.trim())
+      .filter((entry): entry is string => Boolean(entry && entry.length > 0))
+      .join(', ');
+    return normalized.length > 0 ? normalized : undefined;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+  }
+
+  return undefined;
+};
+
+// Helper function to normalize photo instructions
+function normalizePhotoInstructions(
+  instructions: PhotoInstructionsResult | Record<string, unknown> | null | undefined
+): PhotoInstructionsData {
+  const result: PhotoInstructionsData = {};
+
+  if (!instructions) return result;
+
+  result.lighting = normalizeInstructionValue(instructions.lighting);
+  result.cameraAngle = normalizeInstructionValue(instructions.cameraAngle ?? instructions.angles);
+  result.angles = normalizeInstructionValue(instructions.angles);
+  result.composition = normalizeInstructionValue(instructions.composition);
+  result.styling = normalizeInstructionValue(instructions.styling);
+  result.mood = normalizeInstructionValue(instructions.mood) ?? instructions.mood;
+  result.technical = normalizeInstructionValue(instructions.technical);
+  result.technicalSettings = normalizeInstructionValue(instructions.technicalSettings ?? instructions.technical);
+
+  return result;
+}
+
+const addIntervalToStart = (
+  start: number,
+  interval: Stripe.Plan.Interval,
+  intervalCount: number
+): number => {
+  const startDate = new Date(start * 1000);
+
+  switch (interval) {
+    case 'day':
+      startDate.setUTCDate(startDate.getUTCDate() + intervalCount);
+      break;
+    case 'week':
+      startDate.setUTCDate(startDate.getUTCDate() + intervalCount * 7);
+      break;
+    case 'month':
+      startDate.setUTCMonth(startDate.getUTCMonth() + intervalCount);
+      break;
+    case 'year':
+      startDate.setUTCFullYear(startDate.getUTCFullYear() + intervalCount);
+      break;
+    default:
+      break;
+  }
+
+  return Math.floor(startDate.getTime() / 1000);
+};
+
+const resolveBillingPeriodEnd = (subscription: Stripe.Subscription): number => {
+  const primaryItem = subscription.items?.data?.[0];
+
+  if (primaryItem) {
+    if (typeof primaryItem.current_period_end === 'number' && Number.isFinite(primaryItem.current_period_end)) {
+      return primaryItem.current_period_end;
+    }
+
+    const start = primaryItem.current_period_start;
+    const interval = primaryItem.plan?.interval;
+    const intervalCount = primaryItem.plan?.interval_count ?? 1;
+
+    if (typeof start === 'number' && interval) {
+      return addIntervalToStart(start, interval, intervalCount);
+    }
+  }
+
+  return subscription.current_period_end;
+};
 
 // ==========================================
 // PRO PERKS HELPER FUNCTIONS
@@ -581,23 +667,39 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api', o
         await storage.updateUser(req.user.id, { stripeCustomerId: customerId });
       }
 
+      const priceData: Stripe.SubscriptionCreateParams.Item.PriceData = {
+        currency: 'usd',
+        product_data: {
+          name: plan === 'pro_plus' ? 'ThottoPilot Pro Plus' : 'ThottoPilot Pro',
+          description: plan === 'pro_plus'
+            ? 'Premium content creation with advanced features'
+            : 'Professional content creation and protection'
+        },
+        unit_amount: amount,
+        recurring: {
+          interval: 'month',
+        },
+      };
+
       // Create subscription with trial period
+      const priceData: Stripe.SubscriptionCreateParams.Item.PriceData = {
+        currency: 'usd',
+        product_data: {
+          name: plan === 'pro_plus' ? 'ThottoPilot Pro Plus' : 'ThottoPilot Pro',
+          description: plan === 'pro_plus'
+            ? 'Premium content creation with advanced features'
+            : 'Professional content creation and protection'
+        },
+        unit_amount: amount,
+        recurring: {
+          interval: 'month'
+        }
+      };
+
       const subscription = await stripe.subscriptions.create({
         customer: customerId,
         items: [{
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: plan === 'pro_plus' ? 'ThottoPilot Pro Plus' : 'ThottoPilot Pro',
-              description: plan === 'pro_plus'
-                ? 'Premium content creation with advanced features'
-                : 'Professional content creation and protection'
-            },
-            unit_amount: amount,
-            recurring: {
-              interval: 'month',
-            },
-          } as Stripe.PriceCreateParams
+          price_data: priceData
         }],
         payment_behavior: 'default_incomplete',
         payment_settings: { save_default_payment_method: 'on_subscription' },
@@ -610,10 +712,12 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api', o
 
       const invoice = subscription.latest_invoice as Stripe.Invoice;
       const paymentIntent = (invoice as { payment_intent?: Stripe.PaymentIntent }).payment_intent as Stripe.PaymentIntent;
+      const billingPeriodEnd = resolveBillingPeriodEnd(subscription);
 
       res.json({
         subscriptionId: subscription.id,
         clientSecret: paymentIntent.client_secret,
+        currentPeriodEnd: billingPeriodEnd
       });
     } catch (error: unknown) {
       logger.error("Subscription creation error:", error);
@@ -652,13 +756,19 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api', o
 
       if (subscriptions.data.length > 0) {
         const subscription = subscriptions.data[0];
+        if ('deleted' in subscription && subscription.deleted) {
+          return res.json({ hasSubscription: false, plan: 'free' });
+        }
+        const activeSubscription = subscription as Stripe.Subscription;
         const plan = subscription.metadata?.plan || 'pro';
+        const currentPeriodEnd = resolveBillingPeriodEnd(subscription);
 
         return res.json({
           hasSubscription: true,
           plan,
           subscriptionId: subscription.id,
-          currentPeriodEnd: (subscription as Stripe.Subscription).current_period_end,
+          currentPeriodEnd: activeSubscription.current_period_end,
+          currentPeriodEnd
         });
       }
 
@@ -728,23 +838,20 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api', o
         timing,
         allowsPromotion
       );
+      const normalizedPhotoInstructions = normalizePhotoInstructions(result.photoInstructions);
+      const toNormalizedString = (value: string | string[] | undefined, fallback: string): string => {
+        const normalized = normalizeInstructionValue(value);
+        return normalized ?? fallback;
+      };
+
+      const normalizedInstructions = normalizePhotoInstructions(result.photoInstructions ?? {});
       const photoInstructions = {
-        lighting: Array.isArray(result.photoInstructions.lighting)
-          ? result.photoInstructions.lighting[0]
-          : result.photoInstructions.lighting || 'Natural lighting',
-        cameraAngle: Array.isArray(result.photoInstructions.angles)
-          ? result.photoInstructions.angles[0]
-          : (result.photoInstructions as PhotoInstructionsData).cameraAngle || 'Eye level',
-        composition: Array.isArray(result.photoInstructions.composition)
-          ? result.photoInstructions.composition[0]
-          : result.photoInstructions.composition || 'Center composition',
-        styling: Array.isArray(result.photoInstructions.styling)
-          ? result.photoInstructions.styling[0]
-          : result.photoInstructions.styling || 'Casual styling',
-        mood: (result.photoInstructions as PhotoInstructionsData).mood || 'Confident and natural',
-        technicalSettings: Array.isArray(result.photoInstructions.technical)
-          ? result.photoInstructions.technical[0]
-          : (result.photoInstructions as PhotoInstructionsData).technicalSettings || 'Auto settings'
+        lighting: normalizedInstructions.lighting ?? 'Natural lighting',
+        cameraAngle: normalizedInstructions.cameraAngle ?? 'Eye level',
+        composition: normalizedInstructions.composition ?? 'Center composition',
+        styling: normalizedInstructions.styling ?? 'Casual styling',
+        mood: normalizedInstructions.mood ?? 'Confident and natural',
+        technicalSettings: normalizedInstructions.technicalSettings ?? 'Auto settings'
       };
       await storage.createContentGeneration({
         userId: req.user.id,
@@ -1337,13 +1444,30 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api', o
 
       if (subscriptions.data.length > 0) {
         const sub = subscriptions.data[0];
+        if ('deleted' in sub && sub.deleted) {
+          return res.json({
+            subscription: null,
+            isPro: false,
+            tier: user.tier || 'free'
+          });
+        }
+        const activeSubscription = sub as Stripe.Subscription;
+        return res.json({
+          subscription: {
+            id: activeSubscription.id,
+            status: activeSubscription.status,
+            plan: activeSubscription.metadata?.plan || user.tier,
+            amount: activeSubscription.items.data[0]?.price.unit_amount,
+            nextBillDate: new Date(activeSubscription.current_period_end * 1000).toISOString(),
+            createdAt: new Date(activeSubscription.created * 1000).toISOString()
+        const currentPeriodEnd = resolveBillingPeriodEnd(sub);
         return res.json({
           subscription: {
             id: sub.id,
             status: sub.status,
             plan: sub.metadata?.plan || user.tier,
             amount: sub.items.data[0].price.unit_amount,
-            nextBillDate: new Date((sub as Stripe.Subscription).current_period_end * 1000).toISOString(),
+            nextBillDate: new Date(currentPeriodEnd * 1000).toISOString(),
             createdAt: new Date(sub.created * 1000).toISOString()
           },
           isPro: ['pro', 'starter'].includes(user.tier || ''),
