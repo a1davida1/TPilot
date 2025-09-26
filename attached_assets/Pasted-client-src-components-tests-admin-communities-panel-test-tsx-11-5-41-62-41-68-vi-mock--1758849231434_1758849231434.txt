@@ -1,0 +1,1937 @@
+client/src/components/__tests__/admin-communities-panel.test.tsx
++11-5
+@@ -41,62 +41,68 @@ vi.mock('@/hooks/use-toast', () => ({
+}));
+
+// Helper to create structured rules
+const createStructuredRules = (
+  sellingPolicy: RedditCommunitySellingPolicy,
+  overrides: Record<string, unknown> = {}
+) => {
+  const baseRules = {
+    content: {
+      sellingPolicy: sellingPolicy,
+      promotionalLinks: 'limited',
+      watermarksAllowed: true,
+      titleGuidelines: [],
+      contentGuidelines: [],
+      bannedContent: [],
+      formattingRequirements: []
+    },
+    eligibility: {
+      minKarma: 100,
+      minAccountAgeDays: 30,
+      verificationRequired: false
+    }
+  };
+
+  // Deep merge overrides
+  const isRecord = (value: unknown): value is Record<string, unknown> => (
+    typeof value === 'object' && value !== null && !Array.isArray(value)
+  );
+
+  const mergeDeep = (target: Record<string, unknown>, source: Record<string, unknown>) => {
+    for (const key in source) {
+      if (source[key] instanceof Object && key in target && target[key] instanceof Object) {
+        mergeDeep(target[key], source[key]);
+    for (const [key, sourceValue] of Object.entries(source)) {
+      const targetValue = target[key];
+      if (isRecord(targetValue) && isRecord(sourceValue)) {
+        mergeDeep(targetValue, sourceValue);
+      } else {
+        target[key] = source[key];
+        target[key] = sourceValue;
+      }
+    }
+    return target;
+  };
+
+  return mergeDeep(JSON.parse(JSON.stringify(baseRules)), overrides);
+  const baseRulesClone: Record<string, unknown> = JSON.parse(JSON.stringify(baseRules));
+  return mergeDeep(baseRulesClone, overrides);
+};
+
+vi.mock('@/hooks/use-admin-communities', () => ({
+  useAdminCommunities: (filters?: Record<string, unknown>) => mockUseQuery({ queryKey: ['admin-communities', filters] }),
+  useCreateCommunity: () => mockUseMutation(),
+  useUpdateCommunity: () => mockUseMutation(),
+  useDeleteCommunity: () => mockUseMutation(),
+  GROWTH_TRENDS: ['up', 'stable', 'down'],
+  GROWTH_TREND_LABELS: {
+    up: 'Growing',
+    stable: 'Stable',
+    down: 'Declining'
+  },
+  getGrowthTrendLabel: (trend: GrowthTrend | null | undefined) => {
+    if (!trend) return 'Unknown';
+    const labels = { up: 'Growing', stable: 'Stable', down: 'Declining' };
+    return labels[trend];
+  }
+}));
+
+// Mock global ResizeObserver and scrollIntoView
+const globalScope = globalThis as typeof globalThis & {
+  React?: typeof React;
+  IS_REACT_ACT_ENVIRONMENT?: boolean;
+};
+client/src/components/__tests__/sample-upload.test.tsx
++1-1
+@@ -163,51 +163,51 @@ async function findByTestId(testId: string): Promise<HTMLElement> {
+    const element = queryByTestId(testId);
+    if (!element) {
+      throw new Error("Test id not found");
+    }
+    return element;
+  });
+}
+
+function getButtonByText(matcher: string | RegExp): HTMLButtonElement {
+  const button = Array.from(document.body.querySelectorAll("button") as NodeListOf<HTMLButtonElement>).find((element) =>
+    textMatches(element.textContent?.trim() ?? "", matcher),
+  );
+  if (!button) {
+    throw new Error(`Button with text ${String(matcher)} not found`);
+  }
+  return button;
+}
+
+function click(element: HTMLElement) {
+  act(() => {
+    element.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+  });
+}
+
+const clipboardDescriptor = Object.getOwnPropertyDescriptor(navigator, "clipboard");
+const clipboardWriteMock = vi.fn<[], Promise<void>>();
+const clipboardWriteMock = vi.fn<() => Promise<void>>();
+
+describe("SampleUpload", () => {
+  beforeEach(() => {
+    cleanup();
+    mockUseQuery.mockReset();
+    mockUseMutation.mockReset();
+    toastMock.mockReset();
+    invalidateQueriesMock.mockReset();
+    apiRequestMock.mockReset();
+    clipboardWriteMock.mockReset();
+
+    mockUseMutation.mockImplementation(() => ({ mutate: vi.fn(), isPending: false }));
+
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: clipboardWriteMock,
+      },
+    });
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+client/src/components/unified-content-creator.tsx
++18-3
+@@ -49,50 +49,54 @@ const textTones = [
+  { id: 'casual', label: 'Casual', emoji: '😊' },
+];
+const availableHashtags = ['#model', '#photography', '#fashion', '#lifestyle', '#beauty', '#art', '#portrait', '#creative', '#outfit', '#style'];
+
+// Extended interface for frontend display with dynamic server properties
+interface GeneratedContentDisplay extends Omit<ContentGeneration, 'photoInstructions'> {
+  aiProvider?: string;
+  estimatedCost?: number;
+  upgradeMessage?: string;
+  userTier?: string;
+  variationCount?: number;
+  apiStatus?: string;
+  contentSource?: string;
+  quotaExceeded?: boolean;
+  titles: string[]; // Ensure titles is always an array
+  photoInstructions: {
+    lighting: string;
+    cameraAngle: string;
+    composition: string;
+    styling: string;
+    mood: string;
+    technicalSettings: string;
+  }; // Match the exact schema type
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> => (
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+);
+
+interface UnifiedContentCreatorProps {
+  onContentGenerated: (generation: ContentGeneration) => void;
+  isGuestMode?: boolean;
+  userTier?: "free" | "starter" | "pro";
+}
+
+export function UnifiedContentCreator({ 
+  onContentGenerated, 
+  isGuestMode = false,
+  userTier = "free" 
+}: UnifiedContentCreatorProps) {
+  const [workflowMode, setWorkflowMode] = useState<'text' | 'image' | 'presets' | 'history'>('presets');
+  const [customPrompt, setCustomPrompt] = useState("");
+  const [platform, setPlatform] = useState("reddit");
+  const [subreddit, setSubreddit] = useState("");
+  const [allowsPromotion, setAllowsPromotion] = useState("moderate");
+  const [useAdvancedSettings, setUseAdvancedSettings] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState("auto");
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  // State for photo types and text tones
+  const [selectedPhotoType, setSelectedPhotoType] = useState(photoTypes[0].id);
+  const [selectedTextTone, setSelectedTextTone] = useState(textTones[0].id);
+  const [selectedHashtags, setSelectedHashtags] = useState<string[]>([]);
+
+@@ -757,55 +761,66 @@ export function UnifiedContentCreator({
+                                src={protectedImageUrl}
+                                alt="Protected"
+                                className="w-full h-32 object-cover rounded-lg border border-purple-500"
+                              />
+                            </div>
+                          </div>
+                          {(isGuestMode || userTier === 'free') && (
+                            <p className="text-xs text-orange-600 text-center">
+                              ⚠️ Watermark applied - Upgrade to Pro to remove
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Generation History */}
+          <TabsContent value="history" className="space-y-4">
+            <GenerationHistory 
+              onSelectGeneration={(generation) => {
+                // Load selected generation as current content
+                const generationRecord: Record<string, unknown> = isRecord(generation as unknown)
+                  ? (generation as unknown as Record<string, unknown>)
+                  : {};
+                const userIdValue = generationRecord.userId;
+                const subredditValue = generationRecord.subreddit;
+                const generationTypeValue = generationRecord.generationType;
+
+                const displayData: GeneratedContentDisplay = {
+                  ...generation,
+                  userId: (generation as Record<string, unknown>).userId as number || 0,
+                  subreddit: (generation as Record<string, unknown>).subreddit as string || null,
+                  generationType: (generation as Record<string, unknown>).generationType as string || 'ai',
+                  userId: typeof userIdValue === 'number'
+                    ? userIdValue
+                    : typeof userIdValue === 'string'
+                      ? Number.parseInt(userIdValue, 10) || 0
+                      : 0,
+                  subreddit: typeof subredditValue === 'string' ? subredditValue : null,
+                  generationType: typeof generationTypeValue === 'string' ? generationTypeValue : 'ai',
+                  createdAt: typeof generation.createdAt === 'string' 
+                    ? new Date(generation.createdAt) 
+                    : generation.createdAt || new Date(),
+                  titles: generation.titles || [],
+                  photoInstructions: (generation.photoInstructions && typeof generation.photoInstructions === 'object' && 'lighting' in generation.photoInstructions) 
+                    ? generation.photoInstructions as {
+                        lighting: string;
+                        cameraAngle: string;
+                        composition: string;
+                        styling: string;
+                        mood: string;
+                        technicalSettings: string;
+                      }
+                    : {
+                        lighting: '',
+                        cameraAngle: '',
+                        composition: '',
+                        styling: '',
+                        mood: '',
+                        technicalSettings: ''
+                      }
+                };
+                setGeneratedContent(displayData);
+                toast({
+                  title: "Generation Loaded",
+client/src/lib/analytics-tracker.ts
++7-5
+@@ -179,59 +179,59 @@ class AnalyticsTracker {
+    this.trackEvent('click', { element, ...metadata });
+  }
+
+  public trackEvent(type: string, metadata?: Record<string, string | number | boolean | undefined>, value?: number) {
+    const event: AnalyticsEvent = {
+      type,
+      page: this.currentPage,
+      metadata,
+      value
+    };
+
+    this.session.events.push(event);
+    this.sendEvent('engagement_event', event);
+    this.updateActivity();
+  }
+
+  public trackContentView(contentId: number, platform: string, subreddit?: string) {
+    this.sendEvent('content_view', {
+      contentId,
+      platform,
+      subreddit,
+      viewType: 'internal'
+    });
+  }
+
+  public trackContentGeneration(success: boolean, platform: string, metadata?: Record<string, unknown>) {
+  public trackContentGeneration(success: boolean, platform: string, metadata?: Record<string, string | number | boolean | undefined>) {
+    this.trackEvent('content_generation', {
+      success,
+      platform,
+      ...metadata
+    });
+  }
+
+  public trackFeatureUsage(feature: string, action: string, metadata?: Record<string, unknown>) {
+  public trackFeatureUsage(feature: string, action: string, metadata?: Record<string, string | number | boolean | undefined>) {
+    this.trackEvent('feature_usage', {
+      feature,
+      action,
+      ...metadata
+    });
+  }
+
+  private async sendEvent(eventType: string, data: unknown) {
+    if (!this.isTracking) return;
+
+    const eventData = {
+      type: 'page_view' as const,
+      page: window.location.pathname,
+      eventType,
+      sessionId: this.sessionId,
+      userId: this.userId,
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      url: window.location.href,
+      referrer: document.referrer,
+      ...(data as Record<string, unknown>)
+    };
+
+    this.eventQueue.push(eventData);
+
+@@ -307,30 +307,32 @@ class AnalyticsTracker {
+          func.apply(this, args);
+          lastExecTime = Date.now();
+        }, delay - (currentTime - lastExecTime));
+      }
+    };
+  }
+
+  public disable() {
+    this.isTracking = false;
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+    }
+  }
+
+  public enable() {
+    this.isTracking = true;
+    this.startHeartbeat();
+  }
+}
+
+// Global analytics instance
+export const analytics = new AnalyticsTracker();
+
+// Convenience methods for common tracking
+export const trackPageView = (path: string, title?: string) => analytics.trackPageView(path, title);
+export const trackEvent = (type: string, metadata?: Record<string, unknown>, value?: number) => analytics.trackEvent(type, metadata, value);
+type EventMetadata = Record<string, string | number | boolean | undefined>;
+
+export const trackEvent = (type: string, metadata?: EventMetadata, value?: number) => analytics.trackEvent(type, metadata, value);
+export const trackContentView = (contentId: number, platform: string, subreddit?: string) => analytics.trackContentView(contentId, platform, subreddit);
+export const trackContentGeneration = (success: boolean, platform: string, metadata?: Record<string, unknown>) => analytics.trackContentGeneration(success, platform, metadata);
+export const trackFeatureUsage = (feature: string, action: string, metadata?: Record<string, unknown>) => analytics.trackFeatureUsage(feature, action, metadata);
+export const trackContentGeneration = (success: boolean, platform: string, metadata?: EventMetadata) => analytics.trackContentGeneration(success, platform, metadata);
+export const trackFeatureUsage = (feature: string, action: string, metadata?: EventMetadata) => analytics.trackFeatureUsage(feature, action, metadata);
+export const setUserId = (userId: string) => analytics.setUserId(userId);
+client/src/pages/phase4.tsx
++1-1
+@@ -295,51 +295,51 @@ export default function Phase4Dashboard() {
+                          <Badge variant="outline" className="text-xs border-purple-500/30 text-purple-400">
+                            {insight.confidence}%
+                          </Badge>
+                        </div>
+                        <Button size="sm" variant="outline" className="border-gray-600 hover:border-purple-500">
+                          {insight.action}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            {/* Recent Activity */}
+            <Card className="bg-gradient-to-r from-gray-900/80 to-gray-800/80 border-gray-700/50 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-white">
+                  <Activity className="h-5 w-5 text-purple-400" />
+                  Recent AI Activity
+                </CardTitle>
+                <p className="text-sm text-gray-400">Latest automated actions and their results</p>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {recentActivity.map((activity) => {
+                  const IconComponent = getIconComponent(activity.icon);
+                  const IconComponent = getIconComponent(activity.icon) as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+                  return (
+                    <div key={activity.id} className="flex items-center space-x-4 p-3 rounded-lg bg-gray-800/20 border border-gray-700/30">
+                      <div className="p-2 rounded-lg bg-gray-700/50">
+                        {IconComponent && React.createElement(IconComponent, {
+                          className: `h-4 w-4 ${activity.color}`
+                        })}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-white text-sm">{activity.action}</p>
+                        <div className="flex items-center justify-between mt-1">
+                          <span className="text-xs text-gray-500">{activity.time}</span>
+                          <span className="text-xs text-green-400">{activity.result}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="automation">
+            <SocialAutomation />
+          </TabsContent>
+
+server/analytics-routes.ts
++2-2
+// PHASE 1: Analytics API Routes - Real Data Collection & Processing
+// Backend endpoints for comprehensive analytics and user behavior tracking
+
+import { Request, Response, Express } from 'express';
+import Stripe from 'stripe';
+import { z } from 'zod';
+import { db } from './db.js';
+import { 
+  userSessions, 
+  pageViews, 
+  contentViews, 
+  engagementEvents, 
+  socialMetrics, 
+  analyticsMetrics,
+  contentGenerations,
+  users
+} from '@shared/schema';
+import { eq, desc, gte, lte, and, count, sum, avg, sql } from 'drizzle-orm';
+import { Reader } from '@maxmind/geoip2-node';
+import { Reader, ReaderModel } from '@maxmind/geoip2-node';
+
+let geoReader: Reader | null = null;
+let geoReader: ReaderModel | null = null;
+export async function initGeoReader() {
+  if (process.env.MAXMIND_DB_PATH) {
+    geoReader = await Reader.open(process.env.MAXMIND_DB_PATH);
+  }
+}
+
+// Type Definitions moved to Helper Functions section for better organization
+
+// Validation schemas
+const baseEventSchema = z.object({
+  eventType: z.string().min(1),
+  sessionId: z.string().min(1),
+  userId: z.string().optional(),
+  timestamp: z.string(),
+  userAgent: z.string().optional(),
+  url: z.string().url(),
+  referrer: z.string().optional(),
+});
+
+const pageViewSchema = baseEventSchema.extend({
+  eventType: z.literal('page_view'),
+  path: z.string(),
+  title: z.string(),
+});
+
+server/app.ts
++5-5
+import express from 'express';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
+import { v4 as uuidv4 } from 'uuid';
+import { registerRoutes } from './routes.js';
+import { authLimiter, generalLimiter, sanitize, notFoundHandler } from './middleware/security.js';
+import { setupAuth } from './auth.js';
+import { setupSocialAuth } from './social-auth.js';
+import { mountStripeWebhook } from './routes/webhooks.stripe.js';
+import { mountBillingRoutes } from './routes/billing.js';
+import { logger } from './bootstrap/logger.js';
+import { startQueue } from './bootstrap/queue.js';
+import { prepareResponseLogPayload, truncateLogLine } from './lib/request-logger.js';
+import passport from 'passport'; // Assuming passport is imported elsewhere or needs to be imported here
+import { createSessionMiddleware } from './middleware/session.js'; // Assuming this middleware is defined
+import { initializeSentry } from './bootstrap/sentry.js'; // Assuming Sentry initialization function
+import { createSessionMiddleware } from './bootstrap/session.js';
+import { initializeSentry } from './bootstrap/logger.js';
+
+export interface CreateAppOptions {
+  startQueue?: boolean;
+  configureStaticAssets?: boolean;
+  enableVite?: boolean;
+}
+
+export interface CreateAppResult {
+  app: express.Express;
+  server: import('http').Server;
+}
+
+export const API_PREFIX = '/api/v1';
+
+declare global {
+  namespace Express {
+    interface Request {
+      id: string;
+    }
+  }
+}
+
+function configureCors(app: express.Express): void {
+  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map((origin) => origin.trim()) ?? [];
+
+@@ -246,42 +246,42 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
+  app.use(passport.session());
+
+  applyRequestLogging(app);
+
+  const startQueueOption = options.startQueue ?? true;
+  const configureStaticOption = options.configureStaticAssets ?? true;
+  const enableVite = options.enableVite ?? (app.get('env') === 'development');
+  const queuePrerequisitesPresent = Boolean(process.env.REDIS_URL || process.env.DATABASE_URL);
+  const shouldStartQueue = startQueueOption && queuePrerequisitesPresent;
+
+  try {
+    app.use(`${API_PREFIX}/auth`, authLimiter);
+
+    if (shouldStartQueue) {
+      await startQueue();
+    } else if (startQueueOption) {
+      logger.info(
+        'Queue startup skipped: provide REDIS_URL or DATABASE_URL environment variables to enable background workers.'
+      );
+    } else {
+      logger.info('Queue startup disabled for current execution context.');
+    }
+
+    const sentry = await initializeSentry();
+
+    setupAuth(app, API_PREFIX);
+    setupSocialAuth(app, API_PREFIX);  // Register social auth routes including logout
+    mountStripeWebhook(app);
+    setupAuth(app);
+    setupSocialAuth(app);  // Register social auth routes including logout
+    mountStripeWebhook(app, API_PREFIX);
+    mountBillingRoutes(app);
+
+    const server = await registerRoutes(app, API_PREFIX, { sentry });
+
+    if (configureStaticOption) {
+      await configureStaticAssets(app, server, enableVite);
+    }
+
+    return { app, server };
+  } catch (error) {
+    logger.error('Failed to initialise application:', error);
+    throw error;
+  }
+}
+server/bootstrap/logger.ts
++28-14
+import winston from 'winston';
+import DailyRotateFile from 'winston-daily-rotate-file';
+import path from 'path';
+import fs from 'fs';
+import type { NodeOptions } from '@sentry/node';
+
+// Ensure logs directory exists
+const logsDir = path.join(process.cwd(), 'logs');
+if (!fs.existsSync(logsDir)) {
+  fs.mkdirSync(logsDir, { recursive: true });
+}
+
+// Common log format for file transports
+const fileFormat = winston.format.combine(
+  winston.format.timestamp(),
+  winston.format.errors({ stack: true }),
+  winston.format.json()
+);
+
+// Common format for console output
+const consoleFormat = winston.format.combine(
+  winston.format.timestamp(),
+  winston.format.errors({ stack: true }),
+  winston.format.printf(({ timestamp, level, message, requestId, stack, ...meta }) => {
+    const metaStr = Object.keys(meta).length ? ` ${JSON.stringify(meta)}` : "";
+    const stackStr = stack ? `\n${stack}` : "";
+    return `${timestamp} [${level}]${requestId ? ` [${requestId}]` : ""} ${message}${metaStr}${stackStr}`;
+  })
+);
+
+// Configure log rotation for different levels
+const createRotatingTransport = (level: string, filename: string) => {
+  return new DailyRotateFile({
+    level,
+    filename: path.join(logsDir, `${filename}-%DATE%.log`),
+    datePattern: 'YYYY-MM-DD',
+    zippedArchive: true,
+    maxSize: '20m', // Rotate when file reaches 20MB
+    maxFiles: '14d', // Keep logs for 14 days
+    format: fileFormat,
+    auditFile: path.join(logsDir, `.${filename}-audit.json`),
+    createSymlink: true,
+    symlinkName: `${filename}-current.log`
+  });
+};
+
+const isErrorWithMessage = (value: unknown): value is { message: string } => (
+  typeof value === 'object'
+  && value !== null
+  && 'message' in value
+  && typeof (value as { message: unknown }).message === 'string'
+);
+
+const hasRequestUrl = (event: unknown): event is { request?: { url?: unknown } } => (
+  typeof event === 'object'
+  && event !== null
+  && 'request' in event
+);
+
+// Create transports array
+const transports: winston.transport[] = [
+  // Console transport (always enabled)
+  new winston.transports.Console({
+    format: winston.format.combine(
+      winston.format.colorize(),
+      consoleFormat
+    )
+  })
+];
+
+// Add file transports in non-test environments
+if (process.env.NODE_ENV !== 'test') {
+  transports.push(
+    // Combined logs (info and above)
+    createRotatingTransport('info', 'combined'),
+    
+    // Error logs only
+    createRotatingTransport('error', 'error'),
+    
+    // Debug logs (in development)
+    ...(process.env.NODE_ENV === 'development' ? [
+      createRotatingTransport('debug', 'debug')
+    ] : []),
+    
+@@ -276,77 +290,77 @@ export async function initializeSentry(): Promise<typeof import('@sentry/node')
+  // Log errors and exit early if invalid
+  if (!configValidation.isValid) {
+    configValidation.errors.forEach(error => {
+      logger.error(`Sentry configuration error: ${error}`);
+    });
+    return null;
+  }
+  
+  const dsn = process.env.SENTRY_DSN;
+  if (!dsn) {
+    return null; // Not configured, but that's okay
+  }
+  
+  try {
+    // Dynamic import with proper error handling for optional dependency
+    let SentryModule: (typeof import("@sentry/node")) | null = null;
+    try {
+      SentryModule = await import("@sentry/node");
+    } catch {
+      SentryModule = null;
+    }
+    if (SentryModule) {
+      Sentry = SentryModule;
+      
+      // Enhanced Sentry configuration
+      const sentryConfig = {
+      const sentryConfig: NodeOptions = {
+        dsn,
+        environment: process.env.NODE_ENV,
+        tracesSampleRate: parseFloat(process.env.SENTRY_SAMPLE_RATE || '0.1'),
+        profilesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+        integrations: [Sentry.expressIntegration()],
+        
+
+        // Enhanced error filtering
+        beforeSend(event: unknown, hint: unknown) {
+        beforeSend(event, hint) {
+          // Filter out non-critical errors in development
+          if (process.env.NODE_ENV === 'development') {
+            // Don't send client-side errors in development
+            if ((event as Record<string, unknown>).request && 
+                typeof (event as Record<string, unknown>).request === 'object' &&
+                ((event as Record<string, unknown>).request as Record<string, unknown>)?.url?.toString().includes('/_vite/')) {
+          if (process.env.NODE_ENV === 'development' && hasRequestUrl(event)) {
+            const requestUrl = event.request?.url;
+            if (typeof requestUrl === 'string' && requestUrl.includes('/_vite/')) {
+              return null;
+            }
+          }
+          
+
+          // Filter out known non-critical errors
+          const error = (hint as Record<string, unknown>)?.originalException;
+          if (error?.message?.includes('ECONNRESET') || 
+              error?.message?.includes('EPIPE')) {
+          const originalException = (hint as { originalException?: unknown } | undefined)?.originalException;
+          if (isErrorWithMessage(originalException) && (
+            originalException.message.includes('ECONNRESET')
+            || originalException.message.includes('EPIPE')
+          )) {
+            return null; // Don't send network errors
+          }
+          
+          return event as Record<string, unknown>;
+
+          return event;
+        },
+        
+        // Enhanced release tracking
+        release: process.env.GIT_COMMIT_SHA,
+        
+        // Set user context
+        initialScope: {
+          tags: {
+            component: 'backend',
+            node_env: process.env.NODE_ENV
+          }
+        }
+      };
+      
+      Sentry.init(sentryConfig);
+      
+      logger.info('Sentry initialized successfully', {
+        environment: sentryConfig.environment,
+        tracesSampleRate: sentryConfig.tracesSampleRate,
+        release: sentryConfig.release
+      });
+      
+    } else {
+      logger.warn("Sentry module not available, continuing without error tracking");
+    }
+server/bootstrap/session.ts
++40-9
+
+import session from 'express-session';
+import connectPgSimple from 'connect-pg-simple';
+import connectRedis from 'connect-redis';
+import { RedisStore } from 'connect-redis';
+import Redis from 'ioredis';
+import createMemoryStore from 'memorystore';
+import type { Store } from 'express-session';
+import type { Redis as RedisClient } from 'ioredis';
+import { logger } from './logger.js';
+
+const ONE_DAY_MS = 86_400_000;
+
+const parseBoolean = (value: string | undefined): boolean => {
+  if (!value) {
+    return false;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  return ['true', '1', 'yes', 'y', 'on'].includes(normalized);
+};
+
+const parseInteger = (value: string | undefined, fallback: number): number => {
+  if (!value) {
+    return fallback;
+  }
+
+  const parsed = Number.parseInt(value, 10);
+  return Number.isNaN(parsed) ? fallback : parsed;
+};
+
+interface RedisStoreConstructor {
+  new (options: { client: RedisClient; prefix?: string; disableTouch?: boolean; ttl?: number }): Store;
+}
+type RedisStoreClient = {
+  on(event: 'error', listener: (err: unknown) => void): void;
+  get(key: string): Promise<string | null>;
+  set(key: string, value: string, options?: { expiration?: { type: 'EX'; value: number } }): Promise<unknown>;
+  del(keys: string[]): Promise<number>;
+  expire(key: string, ttl: number): Promise<number>;
+  mGet(keys: string[]): Promise<(string | null)[]>;
+  scanIterator(config: { MATCH: string; COUNT: number }): AsyncIterable<string[]>;
+};
+
+export function createSessionMiddleware(): ReturnType<typeof session> {
+  const secret = process.env.SESSION_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error('SESSION_SECRET must be set to a strong value for session encryption');
+  }
+
+  const isProduction = process.env.NODE_ENV === 'production';
+  const redisUrl = process.env.REDIS_URL;
+  const usePgQueue = parseBoolean(process.env.USE_PG_QUEUE);
+  const cookieDomain = process.env.SESSION_COOKIE_DOMAIN?.trim();
+
+  const baseCookie: session.CookieOptions = {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: isProduction,
+    maxAge: parseInteger(process.env.SESSION_MAX_AGE_MS, ONE_DAY_MS * 7),
+  };
+
+  if (cookieDomain) {
+    baseCookie.domain = cookieDomain;
+  }
+
+  const sessionOptions: session.SessionOptions = {
+    name: process.env.SESSION_COOKIE_NAME ?? 'tpilot.sid',
+    secret,
+    resave: false,
+    saveUninitialized: false,
+    rolling: true,
+    cookie: baseCookie,
+  };
+
+  if (redisUrl) {
+    const RedisStore = connectRedis(session) as unknown as RedisStoreConstructor;
+    const redisClient = new Redis(redisUrl, {
+      lazyConnect: false,
+      maxRetriesPerRequest: null,
+      enableAutoPipelining: true,
+    });
+
+    redisClient.on('error', (error) => {
+      logger.error('Redis session store error', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    });
+
+    sessionOptions.store = new RedisStore({
+      client: redisClient,
+    const redisStoreClient: RedisStoreClient = {
+      on: redisClient.on.bind(redisClient),
+      get: (key) => redisClient.get(key),
+      set: async (key, value, options) => {
+        const expiration = options?.expiration;
+        if (expiration?.type === 'EX') {
+          return redisClient.set(key, value, 'EX', expiration.value);
+        }
+        return redisClient.set(key, value);
+      },
+      del: async (keys) => redisClient.del(...keys),
+      expire: (key, ttl) => redisClient.expire(key, ttl),
+      mGet: (keys) => redisClient.mget(...keys),
+      scanIterator: async function* ({ MATCH, COUNT }) {
+        let cursor = '0';
+        do {
+          const [nextCursor, keys] = await redisClient.scan(cursor, 'MATCH', MATCH, 'COUNT', COUNT);
+          if (keys.length > 0) {
+            yield keys;
+          }
+          cursor = nextCursor;
+        } while (cursor !== '0');
+      }
+    };
+
+    const redisStoreOptions: ConstructorParameters<typeof RedisStore>[0] = {
+      client: redisStoreClient as unknown as ConstructorParameters<typeof RedisStore>[0]['client'],
+      prefix: process.env.REDIS_SESSION_PREFIX ?? 'tpilot:sess:',
+      disableTouch: false,
+      ttl: parseInteger(process.env.SESSION_TTL_SECONDS, (ONE_DAY_MS / 1000) * 7),
+    });
+    };
+
+    sessionOptions.store = new RedisStore(redisStoreOptions);
+
+    logger.info('Session store configured with Redis backend');
+  } else if (usePgQueue || isProduction) {
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      logger.error('DATABASE_URL is required when REDIS_URL is not set');
+      throw new Error('DATABASE_URL must be set when using PostgreSQL-backed sessions');
+    }
+
+    const PgStore = connectPgSimple(session);
+    const pgStoreOptions: ConstructorParameters<typeof PgStore>[0] = {
+      conString: databaseUrl,
+      tableName: process.env.SESSION_TABLE_NAME ?? 'user_sessions',
+      schemaName: process.env.SESSION_SCHEMA ?? 'public',
+      createTableIfMissing: true,
+      pruneSessionInterval: parseInteger(process.env.SESSION_PRUNE_INTERVAL, ONE_DAY_MS / 1000),
+    };
+
+    sessionOptions.store = new PgStore(pgStoreOptions);
+    logger.info('Session store configured with PostgreSQL backend');
+  } else {
+    const MemoryStore = createMemoryStore(session);
+    sessionOptions.store = new MemoryStore({
+      checkPeriod: parseInteger(process.env.SESSION_CHECK_PERIOD_MS, ONE_DAY_MS),
+      max: parseInteger(process.env.SESSION_MEMORY_MAX, 5_000),
+server/caption/openaiFallback.ts
++2-1
+import OpenAI from 'openai';
+import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
+import { z } from 'zod';
+import { ensureFallbackCompliance, type FallbackInferenceInput } from './inferFallbackFromFacts';
+import { CaptionItem } from './schema';
+import { serializePromptField } from './promptUtils';
+import { formatVoiceContext } from './voiceTraits';
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || '' });
+
+export interface FallbackParams {
+  platform: 'instagram' | 'x' | 'reddit' | 'tiktok';
+  voice?: string;
+  imageUrl?: string;
+  theme?: string;
+  context?: string;
+  existingCaption?: string;
+}
+
+export async function openAICaptionFallback({
+  platform,
+  voice = "flirty_playful",
+  imageUrl,
+  existingCaption,
+  context,
+  theme,
+}: FallbackParams): Promise<z.infer<typeof CaptionItem>> {
+@@ -36,51 +37,51 @@ export async function openAICaptionFallback({
+      alt: "Test fallback alt text for deterministic testing",
+      nsfw: false
+    };
+    const compliance = ensureFallbackCompliance(
+      {
+        caption: base.caption,
+        hashtags: base.hashtags,
+        cta: base.cta,
+        alt: base.alt,
+      },
+      {
+        platform,
+        context: context ?? existingCaption,
+        existingCaption,
+        theme,
+      }
+    );
+
+    return CaptionItem.parse({
+      ...base,
+      hashtags: compliance.hashtags,
+      cta: compliance.cta,
+      alt: compliance.alt,
+    });
+  }
+  let messages: { role: "system" | "user" | "assistant"; content: string | { type: string; image_url?: { url: string }; text?: string }[] }[] = [];
+  let messages: ChatCompletionMessageParam[] = [];
+  const sanitizedExistingCaption = existingCaption ? serializePromptField(existingCaption) : undefined;
+  const voiceContext = formatVoiceContext(voice);
+  const systemVoiceSuffix = voiceContext ? `\n${voiceContext}` : '';
+
+  const fallbackContext = context ?? existingCaption ?? sanitizedExistingCaption;
+  const fallbackParamsForCompliance: FallbackInferenceInput = {
+    platform,
+    context: fallbackContext,
+    existingCaption,
+    theme,
+  };
+
+  if (imageUrl && openai) {
+    try {
+      console.log('OpenAI fallback: Analyzing image for accurate captions');
+
+      if (imageUrl.startsWith('data:')) {
+        // For data URLs, we can send directly to OpenAI vision
+        messages = [
+          {
+            role: "system",
+            content: `You are an expert social media caption writer. Analyze the image carefully and create engaging ${voice} content for ${platform} that directly relates to what you see.${systemVoiceSuffix}
+
+Return ONLY a JSON object with this structure:
+{
+server/caption/rewritePipeline.ts
++9-8
+@@ -216,65 +216,66 @@ export async function variantsRewrite(params: RewriteVariantsParams) {
+      json.forEach((item) => {
+        const variant = item as Record<string, unknown>;
+
+        // Normalize variant fields first
+        variant.safety_level = normalizeSafetyLevel(
+          typeof variant.safety_level === 'string' ? variant.safety_level : 'normal'
+        );
+        if (typeof variant.mood !== 'string' || variant.mood.length < 2) variant.mood = "engaging";
+        if (typeof variant.style !== 'string' || variant.style.length < 2) variant.style = "authentic";
+
+        // Use helper for contextual fallbacks
+        const fallback = ensureFallbackCompliance(
+          {
+            caption: typeof variant.caption === 'string' ? variant.caption : undefined,
+            hashtags: Array.isArray(variant.hashtags) ? variant.hashtags.filter((tag): tag is string => typeof tag === 'string') : undefined,
+            cta: typeof variant.cta === 'string' ? variant.cta : undefined,
+            alt: typeof variant.alt === 'string' ? variant.alt : undefined,
+          },
+          {
+            platform: params.platform,
+            facts: params.facts,
+            existingCaption: params.existingCaption,
+          }
+        );
+
+        variant.hashtags = fallback.hashtags;
+        variant.cta = fallback.cta;
+        variant.alt = fallback.alt;
+
+        if (typeof variant.caption !== 'string' || variant.caption.length < 1) {
+          variant.caption = params.existingCaption || "Here's something I'm proud of today.";
+        }
+        const captionText = typeof variant.caption === 'string' && variant.caption.length > 0
+          ? variant.caption
+          : params.existingCaption || "Here's something I'm proud of today.";
+
+        // Check for banned words after normalization
+        if (variantContainsBannedWord(variant)) {
+          hasBannedWords = true;
+          return; // Skip this variant
+        }
+
+        variants.push(variant);
+        variants.push({
+          caption: captionText,
+          hashtags: fallback.hashtags,
+          cta: fallback.cta,
+          alt: fallback.alt,
+        });
+      });
+    }
+
+    // If we don't have enough variants, build retry hint
+    if (variants.length < VARIANT_TARGET) {
+      const needed = VARIANT_TARGET - variants.length;
+      let retryHint = `Generate ${needed} more unique, distinct variants.`;
+
+      // Add banned words hint if detected
+      if (hasBannedWords) {
+        retryHint = retryHint ? `${retryHint} ${BANNED_WORDS_HINT}` : BANNED_WORDS_HINT;
+      }
+
+      currentHint = retryHint;
+    }
+  }
+
+  // Ensure exactly 5 variants by padding with variations if needed
+  while (variants.length < VARIANT_TARGET) {
+    const fallbackContent = inferFallbackFromFacts({
+      platform: params.platform,
+      facts: params.facts,
+      existingCaption: params.existingCaption,
+    });
+
+server/lib/ai-service.ts
++3-1
+@@ -318,51 +318,53 @@ Return ONLY the JSON object above with actual content. No other text.`;
+
+      // Check if user exists before trying to cache
+      const userExists = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+
+      if (userExists.length === 0) {
+        console.warn(`User ID ${userId} not found in database, skipping cache`);
+        return;
+      }
+
+      await db.insert(aiGenerations).values({
+        userId,
+        provider,
+        model: result.model,
+        inputHash,
+        inputJson: inputData,
+        outputJson: result,
+      });
+    } catch (error: unknown) {
+      console.warn('Failed to cache AI result (non-fatal):', (error as Error).message);
+      // Check for foreign key constraint violation
+      const err = error as Record<string, unknown>;
+      if (err?.code === '23503' && err?.constraint?.includes('user_id')) {
+      const constraint = typeof err?.constraint === 'string' ? err.constraint : null;
+      const code = typeof err?.code === 'string' ? err.code : null;
+      if (code === '23503' && constraint?.includes('user_id')) {
+        console.warn(`User ID ${userId} not found in database, skipping cache`);
+      }
+      // Non-fatal error, continue without caching
+    }
+  }
+  
+  // Image analysis for context-aware content generation
+  static async analyzeImage(imageBuffer: Buffer): Promise<{
+    description: string;
+    mood: string;
+    suggestions: string[];
+  }> {
+    try {
+      if (process.env.OPENAI_API_KEY) {
+        const base64Image = imageBuffer.toString('base64');
+        
+        const response = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [{
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "Analyze this image for social media content creation. Describe the mood, setting, and suggest content themes. Return JSON with description, mood, and suggestions array."
+              },
+server/lib/reddit.ts
++14-0
+@@ -808,50 +808,64 @@ export class RedditManager {
+              nsfw: options.nsfw,
+              spoiler: options.spoiler
+            });
+          }
+          throw imgError;
+        }
+      }
+
+      // No image provided
+      return {
+        success: false,
+        error: 'No image provided for upload',
+        decision: permission,
+      };
+
+    } catch (error: unknown) {
+      console.error('Image submission failed:', error);
+      return {
+        success: false,
+        error: (error as { message?: string }).message ?? 'Failed to upload image',
+        decision: permission,
+      };
+    }
+  }
+
+  async getSubmission(postId: string) {
+    const reddit = await this.initReddit();
+    const submission = await (reddit as unknown as {
+      getSubmission(id: string): { fetch(): Promise<{ score?: number; upvote_ratio?: number; num_comments?: number; view_count?: number }> };
+    }).getSubmission(postId).fetch();
+
+    return {
+      score: submission.score ?? 0,
+      upvote_ratio: submission.upvote_ratio ?? 0,
+      num_comments: submission.num_comments ?? 0,
+      view_count: submission.view_count ?? undefined,
+    };
+  }
+
+  /**
+   * Submit gallery post with multiple images
+   */
+  async submitGalleryPost(options: {
+    subreddit: string;
+    title: string;
+    images: Array<{
+      url?: string;
+      buffer?: Buffer;
+      caption?: string;
+    }>;
+    nsfw?: boolean;
+  }): Promise<RedditPostResult> {
+    let permission: PostingPermission | undefined;
+    try {
+      // Check posting permission (gallery uploads are not link posts)
+      const gallerySummary = (options.images || [])
+        .map((img) => img.caption || img.url || '')
+        .filter(Boolean)
+        .join('\n');
+
+      permission = await RedditManager.canPostToSubreddit(this.userId, options.subreddit, {
+        hasLink: false, // Gallery uploads are not link posts
+        intendedAt: new Date(),
+        title: options.title,
+server/routes.ts
++119-35
+import type { Express, Response, NextFunction } from "express";
+import express from "express";
+import { createServer, type Server } from "http";
+import session from 'express-session';
+import type { Session as ExpressSession } from 'express-session';
+import path from 'path';
+import connectPgSimple from 'connect-pg-simple';
+import * as connectRedis from 'connect-redis';
+import { Pool } from 'pg';
+import Redis from 'ioredis';
+import Stripe from 'stripe';
+import passport from 'passport';
+
+// Security and middleware
+import { validateEnvironment, securityMiddleware, ipLoggingMiddleware, errorHandler, logger, generationLimiter } from "./middleware/security.js";
+import { AppError, CircuitBreaker } from "./lib/errors.js";
+import { authenticateToken } from "./middleware/auth.js";
+
+// Route modules
+// import { authRoutes } from "./routes/auth.js"; // Removed - using server/auth.ts instead
+import { uploadRoutes, applyImageShieldProtection, protectionPresets } from "./routes/upload.js";
+import { mediaRoutes } from "./routes/media.js";
+import { analyticsRouter } from "./routes/analytics.js";
+import { referralRouter } from "./routes/referrals.js";
+import { registerExpenseRoutes } from "./expense-routes.js";
+import { adminCommunitiesRouter } from "./routes/admin-communities.js";
+
+// Core imports
+import { storage } from "./storage.js";
+import { setupAuth } from "./auth.js";
+@@ -47,51 +48,135 @@ interface AuthUser {
+  isAdmin?: boolean;
+}
+
+// Auth request interface that includes user
+type SessionUser = typeof users.$inferSelect & { subscriptionTier?: string | null };
+
+interface AuthenticatedRequest extends express.Request {
+  user?: SessionUser;
+}
+
+// User tier type
+type UserTier = 'free' | 'starter' | 'pro' | 'premium';
+
+// Additional interfaces for type safety
+interface PhotoInstructionsData {
+  cameraAngle?: string;
+  mood?: string;
+  technicalSettings?: string;
+  lighting?: string;
+  angles?: string[];
+  composition?: string;
+  styling?: string;
+  technical?: string[];
+}
+
+interface SessionWithReddit extends express.Session {
+type NormalizedPhotoInstructions = {
+  lighting: string;
+  cameraAngle: string;
+  composition: string;
+  styling: string;
+  mood: string;
+  technicalSettings: string;
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> => (
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+);
+
+const extractFirstString = (value: unknown): string | undefined => {
+  if (typeof value === 'string' && value.trim().length > 0) {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    const candidate = value.find((item): item is string => typeof item === 'string' && item.trim().length > 0);
+    if (candidate) {
+      return candidate;
+    }
+  }
+
+  return undefined;
+};
+
+const normalizePhotoInstructions = (input: unknown): NormalizedPhotoInstructions => {
+  if (!isRecord(input)) {
+    return {
+      lighting: 'Natural lighting',
+      cameraAngle: 'Eye level',
+      composition: 'Center composition',
+      styling: 'Casual styling',
+      mood: 'Confident and natural',
+      technicalSettings: 'Auto settings',
+    };
+  }
+
+  const lighting = extractFirstString(input.lighting) ?? 'Natural lighting';
+  const anglesSource = input.angles ?? input.cameraAngle;
+  const cameraAngle = extractFirstString(anglesSource) ?? 'Eye level';
+  const composition = extractFirstString(input.composition) ?? 'Center composition';
+  const styling = extractFirstString(input.styling) ?? 'Casual styling';
+  const mood = extractFirstString(input.mood) ?? 'Confident and natural';
+  const technical = extractFirstString(input.technical ?? input.technicalSettings) ?? 'Auto settings';
+
+  return {
+    lighting,
+    cameraAngle,
+    composition,
+    styling,
+    mood,
+    technicalSettings: technical,
+  };
+};
+
+const pickFirstDefined = (...values: Array<string | undefined>): string | null => {
+  for (const value of values) {
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value;
+    }
+  }
+  return null;
+};
+
+const resolvePriceIdForPlan = (plan: 'pro' | 'pro_plus'): string | null => {
+  if (plan === 'pro') {
+    return pickFirstDefined(
+      process.env.STRIPE_PRICE_PRO,
+      process.env.STRIPE_PRICE_PRO_29,
+      process.env.STRIPE_PRICE_PRO_39,
+      process.env.STRIPE_PRICE_PRO_49,
+    );
+  }
+
+  return pickFirstDefined(
+    process.env.STRIPE_PRICE_PRO_PLUS,
+    process.env.STRIPE_PRICE_PRO_PLUS_MONTHLY,
+    process.env.STRIPE_PRICE_PRO_49,
+  );
+};
+
+interface SessionWithReddit extends ExpressSession {
+  redditOAuthState?: string;
+}
+
+// ==========================================
+// PRO RESOURCES ROUTES
+// ==========================================
+
+function registerProResourcesRoutes(app: Express) {
+  const resolveTier = (tierValue: string | null | undefined): UserTier | undefined => {
+    if (tierValue === 'pro' || tierValue === 'premium' || tierValue === 'starter') {
+      return tierValue;
+    }
+    if (tierValue === 'free') {
+      return 'free';
+    }
+    return undefined;
+  };
+
+  // Helper to get user tier with storage fallback when session lacks tier information
+  const getUserTier = async (user: SessionUser | undefined): Promise<UserTier> => {
+    if (!user?.id) {
+      return 'free';
+    }
+
+    if (user.subscriptionTier !== undefined && user.subscriptionTier !== null) {
+@@ -205,51 +290,51 @@ function registerProResourcesRoutes(app: Express) {
+  });
+
+}
+
+// Session interface with Reddit OAuth properties
+interface RedditSessionData {
+  redditOAuthState?: string;
+  redditConnected?: boolean;
+}
+
+declare module 'express-session' {
+  interface SessionData extends RedditSessionData {}
+}
+
+// Service imports
+import { generateContent } from "./services/content-generator.js";
+import { generateAIContent, analyzeImageForContent } from "./services/ai-generator.js";
+import { generateWithMultiProvider, getProviderStatus } from "./services/multi-ai-provider.js";
+import { generateUnifiedAIContent, analyzeImage } from "./services/unified-ai-service.js";
+import { generateImageCaption, imageToBase64, validateImageFormat } from "./image-caption-generator.js";
+import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage.js";
+import { getRandomTemplates, addWatermark, getTemplateByMood } from "./content-templates.js";
+import { generateAdvancedContent, type ContentParameters } from "./advanced-content-generator.js";
+
+// Reddit communities now handled in reddit-routes.ts
+import { getAvailablePerks, getPerksByCategory, generateReferralCode, getSignupInstructions } from "./pro-perks.js";
+import { getAvailablePerks, getPerksByCategory, getSignupInstructions } from "./pro-perks.js";
+
+type SentryInstance = typeof import('@sentry/node');
+
+interface RegisterRoutesOptions {
+  sentry?: SentryInstance | null;
+}
+import type { ProPerk } from "./pro-perks.js";
+import { ReferralManager } from './lib/referral-system.js';
+
+// API route modules
+import { registerApiRoutes } from "./api-routes.js";
+import { registerPolicyRoutes } from "./policy-routes.js";
+import { registerRedditRoutes } from "./reddit-routes.js";
+import { registerAnalyticsRoutes } from "./analytics-routes.js";
+import { createLead, confirmLead } from "./api/leads.js";
+import { getLeads } from './api/admin-leads.js';
+import { getComplianceStatus } from './api/compliance-status.js';
+import { captionRouter } from "./routes/caption.js";
+import { contentGenerationLimiter } from "./middleware/tiered-rate-limit.js";
+import { registerSocialMediaRoutes } from "./social-media-routes.js";
+
+// Schema imports
+import { insertContentGenerationSchema, insertUserImageSchema } from "@shared/schema";
+
+// Core dependencies
+@@ -540,86 +625,96 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api', o
+
+  // Create subscription payment intent
+  app.post("/api/create-subscription", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      if (!stripe) {
+        return res.status(503).json({
+          message: "Payment system is not configured. Please try again later."
+        });
+      }
+
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const { plan, amount } = req.body;
+
+      // Validate plan and amount
+      if (!plan || !amount) {
+        return res.status(400).json({ message: "Plan and amount are required" });
+      }
+
+      if (plan !== 'pro' && plan !== 'pro_plus') {
+        return res.status(400).json({ message: "Invalid plan selected" });
+      }
+
+      const priceId = resolvePriceIdForPlan(plan);
+      if (!priceId) {
+        return res.status(503).json({ message: "Subscription pricing is not configured" });
+      }
+
+      const price = await stripe.prices.retrieve(priceId);
+      const expectedAmount = price.unit_amount;
+
+      if (!expectedAmount) {
+        return res.status(503).json({ message: "Subscription price is unavailable" });
+      }
+
+      const normalizedAmount = typeof amount === 'number' ? amount : Number.parseInt(amount, 10);
+      if (normalizedAmount !== expectedAmount) {
+        logger.warn('Subscription amount mismatch detected', {
+          plan,
+          expectedAmount,
+          providedAmount: amount,
+        });
+      }
+
+      // Get or create Stripe customer
+      const user = await storage.getUser(req.user.id);
+      let customerId = user?.stripeCustomerId;
+
+      if (!customerId) {
+        // Create new Stripe customer
+        const customer = await stripe.customers.create({
+          email: user?.email || undefined,
+          metadata: {
+            userId: req.user.id.toString(),
+            plan: plan
+          }
+        });
+        customerId = customer.id;
+
+        // Save customer ID to database
+        await storage.updateUser(req.user.id, { stripeCustomerId: customerId });
+      }
+
+      // Create subscription with trial period
+      const subscription = await stripe.subscriptions.create({
+        customer: customerId,
+        items: [{
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: plan === 'pro_plus' ? 'ThottoPilot Pro Plus' : 'ThottoPilot Pro',
+              description: plan === 'pro_plus'
+                ? 'Premium content creation with advanced features'
+                : 'Professional content creation and protection'
+            },
+            unit_amount: amount,
+            recurring: {
+              interval: 'month',
+            },
+          } as Stripe.PriceCreateParams
+          price: priceId,
+          quantity: 1,
+        }],
+        payment_behavior: 'default_incomplete',
+        payment_settings: { save_default_payment_method: 'on_subscription' },
+        expand: ['latest_invoice.payment_intent'],
+        metadata: {
+          userId: req.user.id.toString(),
+          plan: plan
+        }
+      });
+
+      const invoice = subscription.latest_invoice as Stripe.Invoice;
+      const paymentIntent = (invoice as { payment_intent?: Stripe.PaymentIntent }).payment_intent as Stripe.PaymentIntent;
+
+      res.json({
+        subscriptionId: subscription.id,
+        clientSecret: paymentIntent.client_secret,
+      });
+    } catch (error: unknown) {
+      logger.error("Subscription creation error:", error);
+      if (options?.sentry) {
+        options.sentry.captureException(error);
+      }
+      res.status(500).json({
+        message: "Error creating subscription: " + (error instanceof Error ? (error as Error).message : 'Unknown error')
+      });
+@@ -631,56 +726,59 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api', o
+    try {
+      if (!stripe) {
+        return res.json({ hasSubscription: false, plan: 'free' });
+      }
+
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const user = await storage.getUser(req.user.id);
+
+      if (!user?.stripeCustomerId) {
+        return res.json({ hasSubscription: false, plan: 'free' });
+      }
+
+      // Get active subscriptions for this customer
+      const subscriptions = await stripe.subscriptions.list({
+        customer: user.stripeCustomerId,
+        status: 'active',
+        limit: 1
+      });
+
+      if (subscriptions.data.length > 0) {
+        const subscription = subscriptions.data[0];
+        const plan = subscription.metadata?.plan || 'pro';
+        const currentPeriodEnd = ('current_period_end' in subscription && typeof subscription.current_period_end === 'number')
+          ? subscription.current_period_end
+          : undefined;
+
+        return res.json({
+          hasSubscription: true,
+          plan,
+          subscriptionId: subscription.id,
+          currentPeriodEnd: (subscription as Stripe.Subscription).current_period_end,
+          currentPeriodEnd,
+        });
+      }
+
+      return res.json({ hasSubscription: false, plan: 'free' });
+    } catch (error) {
+      logger.error("Subscription status error:", error);
+      if (options?.sentry) {
+        options.sentry.captureException(error);
+      }
+      res.status(500).json({ message: "Failed to get subscription status" });
+    }
+  });
+
+  // Cancel subscription
+  app.post("/api/cancel-subscription", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      if (!stripe) {
+        return res.status(503).json({ message: "Payment system not configured" });
+      }
+
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const { subscriptionId } = req.body;
+@@ -706,68 +804,51 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api', o
+      res.status(500).json({ message: "Failed to cancel subscription" });
+    }
+  });
+
+  // ==========================================
+  // CONTENT GENERATION ENDPOINTS
+  // ==========================================
+
+  const generateContentBreaker = new CircuitBreaker(generateContent);
+  const unifiedBreaker = new CircuitBreaker(generateUnifiedAIContent);
+
+  // Generate content with rate limiting
+  app.post("/api/generate-content", generationLimiter, authenticateToken, async (req: AuthRequest, res, next) => {
+    if (!req.user?.id) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    const { platform, style, theme, timing, allowsPromotion } = req.body;
+    try {
+      const result = await generateContentBreaker.call(
+        platform || 'reddit',
+        style || 'playful',
+        theme || 'lingerie',
+        timing,
+        allowsPromotion
+      );
+      const photoInstructions = {
+        lighting: Array.isArray(result.photoInstructions.lighting)
+          ? result.photoInstructions.lighting[0]
+          : result.photoInstructions.lighting || 'Natural lighting',
+        cameraAngle: Array.isArray(result.photoInstructions.angles)
+          ? result.photoInstructions.angles[0]
+          : (result.photoInstructions as PhotoInstructionsData).cameraAngle || 'Eye level',
+        composition: Array.isArray(result.photoInstructions.composition)
+          ? result.photoInstructions.composition[0]
+          : result.photoInstructions.composition || 'Center composition',
+        styling: Array.isArray(result.photoInstructions.styling)
+          ? result.photoInstructions.styling[0]
+          : result.photoInstructions.styling || 'Casual styling',
+        mood: (result.photoInstructions as PhotoInstructionsData).mood || 'Confident and natural',
+        technicalSettings: Array.isArray(result.photoInstructions.technical)
+          ? result.photoInstructions.technical[0]
+          : (result.photoInstructions as PhotoInstructionsData).technicalSettings || 'Auto settings'
+      };
+      const photoInstructions = normalizePhotoInstructions(result.photoInstructions);
+      await storage.createContentGeneration({
+        userId: req.user.id,
+        titles: result.titles || [],
+        content: result.content || '',
+        photoInstructions,
+        platform: platform || "reddit",
+        style: style || 'playful',
+        theme: theme || 'lingerie',
+        createdAt: new Date()
+      });
+      res.json(result);
+    } catch (error: unknown) {
+      if (options?.sentry) {
+        options.sentry.captureException(error);
+      }
+      next(error instanceof AppError ? error : new AppError('Failed to generate content', 500));
+    }
+  });
+
+  // Unified AI generation endpoint - handles both text and image workflows
+  app.post('/api/generate-unified', generationLimiter, authenticateToken, upload.single('image'), async (req: AuthRequest, res, next) => {
+    try {
+      interface GenerationRequestBody {
+        mode: string;
+        prompt: string;
+@@ -1315,57 +1396,60 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api', o
+
+  // Subscription status endpoint - REAL
+  app.get('/api/subscription', authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      const user = await storage.getUser(req.user.id);
+
+      if (!user?.stripeCustomerId || !stripe) {
+        return res.json({
+          subscription: null,
+          isPro: false,
+          tier: user?.tier || 'free'
+        });
+      }
+
+      const subscriptions = await stripe.subscriptions.list({
+        customer: user.stripeCustomerId,
+        status: 'active',
+        limit: 1
+      });
+
+      if (subscriptions.data.length > 0) {
+        const sub = subscriptions.data[0];
+        const nextBillDateSeconds = ('current_period_end' in sub && typeof sub.current_period_end === 'number')
+          ? sub.current_period_end
+          : null;
+        return res.json({
+          subscription: {
+            id: sub.id,
+            status: sub.status,
+            plan: sub.metadata?.plan || user.tier,
+            amount: sub.items.data[0].price.unit_amount,
+            nextBillDate: new Date((sub as Stripe.Subscription).current_period_end * 1000).toISOString(),
+            nextBillDate: nextBillDateSeconds ? new Date(nextBillDateSeconds * 1000).toISOString() : null,
+            createdAt: new Date(sub.created * 1000).toISOString()
+          },
+          isPro: ['pro', 'starter'].includes(user.tier || ''),
+          tier: user.tier || 'free'
+        });
+      }
+
+      res.json({
+        subscription: null,
+        isPro: false,
+        tier: user.tier || 'free'
+      });
+    } catch (error) {
+      logger.error('Failed to fetch subscription:', error);
+      if (options?.sentry) {
+        options.sentry.captureException(error);
+      }
+      res.status(500).json({ message: 'Failed to fetch subscription' });
+    }
+  });
+
+  // Social media quick post endpoint - REAL
+  app.post('/api/social-media/quick-post', authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      if (!req.user?.id) {
+server/social-auth-config.ts
++46-16
+import passport from 'passport';
+import type { AuthenticateOptions } from 'passport';
+import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+import { Strategy as FacebookStrategy } from 'passport-facebook';
+// Explicitly import compiled entry to avoid Node's extensionless main deprecation
+import * as redditStrategyPkg from 'passport-reddit/lib/passport-reddit/index.js';
+const RedditStrategy = (
+  redditStrategyPkg as unknown as { Strategy: typeof import('passport-reddit').Strategy }
+).Strategy;
+import { storage } from './storage';
+import type { User } from '@shared/schema';
+
+interface RedditStrategyOptions {
+  clientID: string;
+  clientSecret: string;
+  callbackURL: string;
+  scope?: string[];
+  state?: boolean;
+  duration?: 'temporary' | 'permanent';
+}
+
+type RedditAuthenticateOptions = AuthenticateOptions & { state?: string; duration?: 'temporary' | 'permanent' };
+
+const extractRedditPhotos = (profile: unknown): { value: string }[] => {
+  if (typeof profile === 'object' && profile !== null && 'icon_img' in profile) {
+    const icon = (profile as { icon_img?: unknown }).icon_img;
+    if (typeof icon === 'string' && icon.trim().length > 0) {
+      return [{ value: icon }];
+    }
+  }
+  return [];
+};
+
+// Helper function to handle social auth user creation/update
+async function handleSocialAuth(
+  provider: string,
+  profile: { id: string; emails?: { value: string }[]; username?: string; displayName?: string; photos?: { value: string }[]; },
+  done: (error: Error | null, user?: User) => void
+) {
+  try {
+    const email = profile.emails?.[0]?.value || `${profile.id}@${provider}.social`;
+    const username = profile.username || profile.displayName || `${provider}_${profile.id}`;
+    
+    // Check if user exists by email or social provider ID
+    let user = await storage.getUserByEmail(email);
+    
+    if (!user) {
+      // Create new user with social provider info
+      user = await storage.createUser({
+        email,
+        username,
+        password: '', // No password for social login
+        tier: 'free',
+        provider: provider,
+        providerId: profile.id,
+        avatar: profile.photos?.[0]?.value,
+        emailVerified: true // Auto-verify social accounts
+      });
+@@ -56,91 +78,99 @@ export function configureSocialAuth() {
+  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    passport.use(new GoogleStrategy({
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: '/api/auth/google/callback',
+      scope: ['profile', 'email']
+    }, async (accessToken, refreshToken, profile, done) => {
+      await handleSocialAuth('google', profile, done);
+    }));
+  }
+
+  // Facebook OAuth Strategy
+  if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
+    passport.use(new FacebookStrategy({
+      clientID: process.env.FACEBOOK_APP_ID,
+      clientSecret: process.env.FACEBOOK_APP_SECRET,
+      callbackURL: '/api/auth/facebook/callback',
+      profileFields: ['id', 'emails', 'displayName', 'photos']
+    }, async (accessToken, refreshToken, profile, done) => {
+      await handleSocialAuth('facebook', profile, done);
+    }));
+  }
+
+  // Reddit OAuth Strategy
+  if (process.env.REDDIT_CLIENT_ID && process.env.REDDIT_CLIENT_SECRET) {
+    const redditOptions: RedditStrategyOptions = {
+      clientID: process.env.REDDIT_CLIENT_ID,
+      clientSecret: process.env.REDDIT_CLIENT_SECRET,
+      callbackURL: '/api/reddit/callback',
+      scope: ['identity'],
+      state: true,
+    };
+    passport.use(
+      new RedditStrategy(
+        {
+          clientID: process.env.REDDIT_CLIENT_ID,
+          clientSecret: process.env.REDDIT_CLIENT_SECRET,
+          callbackURL: '/api/reddit/callback',
+          scope: ['identity'],
+          state: true,
+        } as RedditStrategy.StrategyOptions,
+        async (accessToken, refreshToken, profile, done) => {
+        redditOptions,
+        async (
+          accessToken: string,
+          refreshToken: string,
+          profile: { id: string; name?: string; icon_img?: string },
+          done
+        ) => {
+          await handleSocialAuth(
+            'reddit',
+            {
+              id: profile.id,
+              username: profile.name,
+              emails: [],
+              photos: [{ value: (profile as Record<string, unknown>).icon_img as string }],
+              photos: extractRedditPhotos(profile),
+            },
+            done,
+          );
+        },
+      ),
+    );
+  }
+
+  // Serialize and deserialize user
+  passport.serializeUser((user: unknown, done) => {
+    done(null, (user as User).id);
+  });
+
+  passport.deserializeUser(async (id: number, done) => {
+    try {
+      const user = await storage.getUser(id);
+      done(null, user);
+    } catch (error) {
+      done(error);
+    }
+  });
+}
+
+// Social auth route handlers
+const redditAuthenticateOptions: RedditAuthenticateOptions = {
+  state: 'reddit-auth-state',
+  duration: 'permanent',
+};
+
+export const socialAuthRoutes = {
+  // Google routes
+  googleAuth: passport.authenticate('google', { scope: ['profile', 'email'] }),
+  googleCallback: passport.authenticate('google', { 
+  googleCallback: passport.authenticate('google', {
+    failureRedirect: '/login?error=google_auth_failed',
+    successRedirect: '/dashboard' 
+  }),
+
+  // Facebook routes
+  facebookAuth: passport.authenticate('facebook', { scope: ['email'] }),
+  facebookCallback: passport.authenticate('facebook', { 
+    failureRedirect: '/login?error=facebook_auth_failed',
+    successRedirect: '/dashboard' 
+  }),
+
+  // Reddit routes
+  redditAuth: passport.authenticate('reddit', { 
+    state: 'reddit-auth-state',
+    duration: 'permanent' 
+  }),
+  redditCallback: passport.authenticate('reddit', { 
+  redditAuth: passport.authenticate('reddit', redditAuthenticateOptions),
+  redditCallback: passport.authenticate('reddit', {
+    failureRedirect: '/login?error=reddit_auth_failed',
+    successRedirect: '/dashboard?reddit=connected' 
+    successRedirect: '/dashboard?reddit=connected'
+  })
+};
+server/storage.ts
++8-8
+@@ -170,58 +170,58 @@ export interface IStorage {
+  getPlatformEngagement(accountId: number, date?: Date): Promise<PlatformEngagement[]>;
+
+  createPostSchedule(schedule: InsertPostSchedule): Promise<PostSchedule>;
+  getUserScheduledPosts(userId: number): Promise<PostSchedule[]>;
+  getPostSchedule(scheduleId: number): Promise<PostSchedule | undefined>;
+  updatePostSchedule(scheduleId: number, updates: Partial<PostSchedule>): Promise<PostSchedule>;
+  deletePostSchedule(scheduleId: number): Promise<void>;
+}
+
+export class DatabaseStorage implements IStorage {
+  // User operations
+  async getUser(id: number): Promise<User | undefined> {
+    try {
+      const result = await db.select().from(users).where(eq(users.id, id)).limit(1).execute();
+      const [user] = result;
+      return user ?? undefined;
+    } catch (error) {
+      safeLog('error', 'Storage operation failed - getting user:', { error: (error as Error).message });
+      return undefined;
+    }
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    try {
+      // Guard optional schema fields - using db query pattern
+      let query = db.select().from(users);
+      if ('isDeleted' in users) {
+        query = query.where(eq(users.isDeleted, false));
+      }
+      if ('createdAt' in users) {
+        query = query.orderBy(desc(users.createdAt));
+      }
+      const allUsers = await query.execute();
+      const baseQuery = db.select().from(users);
+      const filteredQuery = 'isDeleted' in users
+        ? baseQuery.where(eq(users.isDeleted, false))
+        : baseQuery;
+      const orderedQuery = 'createdAt' in users
+        ? filteredQuery.orderBy(desc(users.createdAt))
+        : filteredQuery;
+      const allUsers = await orderedQuery.execute();
+      return allUsers;
+    } catch (error) {
+      safeLog('error', 'Storage operation failed - getting all users:', { error: (error as Error).message });
+      return [];
+    }
+  }
+
+  async getUserByUsername(username: string, verified?: boolean): Promise<User | undefined> {
+    try {
+      // Build conditions array to avoid boolean leaks
+      const conditions = [
+        eq(users.username, username)
+      ];
+
+      // Only add emailVerified condition if explicitly provided
+      if (verified !== undefined) {
+        conditions.push(eq(users.emailVerified, verified));
+      }
+
+      const result = await db.select().from(users).where(and(...conditions)).limit(1).execute();
+      return result[0];
+    } catch (error) {
+      safeLog('error', 'Storage operation failed - getting user by username:', { error: (error as Error).message });
+      return undefined;
+    }
