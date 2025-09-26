@@ -173,7 +173,7 @@ function UnauthenticatedRoutes() {
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
-  const { shouldShowOnboarding, markWalkthroughCompleted, showOnboarding: _showOnboarding } = useOnboarding();
+  const { shouldShowOnboarding, markWalkthroughCompleted, showOnboarding } = useOnboarding();
   const [location] = useLocation();
 
   // Phase 1: Track page views and user authentication
@@ -200,7 +200,7 @@ function Router() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      <Header onReplayWalkthrough={showOnboarding} />
       <main>
         <Suspense fallback={<div className="p-4">Loading...</div>}>
           {isAuthenticated ? <AuthenticatedRoutes /> : <UnauthenticatedRoutes />}

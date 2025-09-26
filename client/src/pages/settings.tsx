@@ -1,4 +1,5 @@
-import { useState } from 'react';
+
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -27,6 +28,21 @@ import {
 } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 
+type UserSettings = {
+  theme: string;
+  notifications: boolean;
+  emailUpdates: boolean;
+  autoSave: boolean;
+  defaultPlatform: string;
+};
+
+type UpdateSettingsPayload = UserSettings;
+
+type UpdateSettingsResponse = {
+  success: boolean;
+  settings: UserSettings;
+};
+
 export default function SettingsPage() {
   const [theme, setTheme] = useState('light');
   const [notifications, setNotifications] = useState(true);
@@ -37,9 +53,33 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: _userSettings } = useQuery({
+  const syncStateFromSettings = (settings: Partial<UserSettings>) => {
+    if (typeof settings.theme === 'string') {
+      setTheme(settings.theme);
+    }
+    if (typeof settings.notifications === 'boolean') {
+      setNotifications(settings.notifications);
+    }
+    if (typeof settings.emailUpdates === 'boolean') {
+      setEmailUpdates(settings.emailUpdates);
+    }
+    if (typeof settings.autoSave === 'boolean') {
+      setAutoSave(settings.autoSave);
+    }
+    if (typeof settings.defaultPlatform === 'string') {
+      setDefaultPlatform(settings.defaultPlatform);
+    }
+  };
+
+  const { data: userSettings } = useQuery<UserSettings>({
     queryKey: ['/api/user/settings'],
   });
+
+  useEffect(() => {
+    if (userSettings) {
+      syncStateFromSettings(userSettings);
+    }
+  }, [userSettings]);
 
   const { data: subscriptionData } = useQuery<{
     subscription: { id: string; status: string; plan: string; nextBillDate?: string; amount?: number } | null;
@@ -49,11 +89,16 @@ export default function SettingsPage() {
     queryKey: ['/api/subscription'],
   });
 
-  const updateSettingsMutation = useMutation({
-    mutationFn: async (settings: Record<string, unknown>) => {
-      return apiRequest('PATCH', '/api/user/settings', settings);
+  const updateSettingsMutation = useMutation<UpdateSettingsResponse, Error, UpdateSettingsPayload>({
+    mutationFn: async (settings) => {
+      const response = await apiRequest('PATCH', '/api/user/settings', settings);
+      return response.json() as Promise<UpdateSettingsResponse>;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      if (data.settings) {
+        syncStateFromSettings(data.settings);
+        queryClient.setQueryData(['/api/user/settings'], data.settings);
+      }
       queryClient.invalidateQueries({ queryKey: ['/api/user/settings'] });
       toast({
         title: "Settings updated",
@@ -87,7 +132,7 @@ export default function SettingsPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `promotionpro-data-${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `thottopilot-data-${new Date().toISOString().split('T')[0]}.json`;
       a.click();
       URL.revokeObjectURL(url);
       toast({
@@ -98,13 +143,14 @@ export default function SettingsPage() {
   });
 
   const handleSaveSettings = () => {
-    updateSettingsMutation.mutate({
+    const payload: UpdateSettingsPayload = {
       theme,
       notifications,
       emailUpdates,
       autoSave,
       defaultPlatform
-    });
+    };
+    updateSettingsMutation.mutate(payload);
   };
 
   const [, setLocation] = useLocation();
@@ -130,327 +176,287 @@ export default function SettingsPage() {
               </Link>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 flex items-center">
-                  <Settings className="mr-2 h-6 w-6 text-blue-600" />
+                  <Settings className="mr-2 h-6 w-6" />
                   Settings
                 </h1>
+                <p className="text-sm text-gray-600">Manage your account preferences and settings</p>
               </div>
             </div>
+            {subscriptionData?.isPro ? (
+              <Badge className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white">
+                <Crown className="h-3 w-3 mr-1" />
+                PRO USER
+              </Badge>
+            ) : (
+              <Button onClick={handleUpgrade} className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
+                <Crown className="h-4 w-4 mr-2" />
+                Upgrade to Pro
+              </Button>
+            )}
           </div>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-8">
-          
-          {/* Subscription Status */}
-          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+      {/* Main Content */}
+      <div className="max-w-4xl mx-auto p-6 space-y-6">
+        {/* Account Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <User className="mr-2 h-5 w-5" />
+              Account Settings
+            </CardTitle>
+            <CardDescription>
+              Manage your profile and account preferences
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Theme Settings */}
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-base">Theme</Label>
+                <div className="text-sm text-muted-foreground">
+                  Choose how ThottoPilot looks to you
+                </div>
+              </div>
+              <Select value={theme} onValueChange={setTheme}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="light">
+                    <div className="flex items-center">
+                      <Sun className="mr-2 h-4 w-4" />
+                      Light
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="dark">
+                    <div className="flex items-center">
+                      <Moon className="mr-2 h-4 w-4" />
+                      Dark
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Separator />
+
+            {/* Default Platform */}
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-base">Default Platform</Label>
+                <div className="text-sm text-muted-foreground">
+                  Your preferred platform for content generation
+                </div>
+              </div>
+              <Select value={defaultPlatform} onValueChange={setDefaultPlatform}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="reddit">Reddit</SelectItem>
+                  <SelectItem value="twitter">Twitter</SelectItem>
+                  <SelectItem value="instagram">Instagram</SelectItem>
+                  <SelectItem value="onlyfans">OnlyFans</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Notification Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Bell className="mr-2 h-5 w-5" />
+              Notifications
+            </CardTitle>
+            <CardDescription>
+              Configure how you receive updates
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-base">Push Notifications</Label>
+                <div className="text-sm text-muted-foreground">
+                  Receive notifications about content generation and account updates
+                </div>
+              </div>
+              <Switch
+                checked={notifications}
+                onCheckedChange={setNotifications}
+              />
+            </div>
+
+            <Separator />
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-base">Email Updates</Label>
+                <div className="text-sm text-muted-foreground">
+                  Get notified about new features and important updates
+                </div>
+              </div>
+              <Switch
+                checked={emailUpdates}
+                onCheckedChange={setEmailUpdates}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Content Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Zap className="mr-2 h-5 w-5" />
+              Content Settings
+            </CardTitle>
+            <CardDescription>
+              Customize your content creation experience
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-base">Auto-Save Drafts</Label>
+                <div className="text-sm text-muted-foreground">
+                  Automatically save your work as you create content
+                </div>
+              </div>
+              <Switch
+                checked={autoSave}
+                onCheckedChange={setAutoSave}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* API Usage */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Key className="mr-2 h-5 w-5" />
+              API Usage
+            </CardTitle>
+            <CardDescription>
+              Monitor your AI generation usage
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Generations Used</span>
+                <span>{apiUsage.used} / {apiUsage.limit}</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full" 
+                  style={{ width: `${(apiUsage.used / apiUsage.limit) * 100}%` }}
+                ></div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Resets monthly • {subscriptionData?.isPro ? 'Unlimited' : 'Upgrade for more'}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Subscription Info */}
+        {subscriptionData && (
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Crown className="h-5 w-5 mr-2 text-yellow-600" />
-                Subscription & Usage
+                <CreditCard className="mr-2 h-5 w-5" />
+                Subscription
               </CardTitle>
               <CardDescription>
-                Manage your plan and monitor API usage
+                Manage your billing and subscription
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-medium">Current Plan</h3>
-                  <p className="text-sm text-gray-600">
-                    {subscriptionData?.subscription?.plan === 'admin' ? 'Admin' : 
-                     subscriptionData?.subscription?.plan || 'Free'} Plan
-                  </p>
-                </div>
-                <div className="text-right">
-                  <Badge 
-                    className={`mb-2 ${
-                      subscriptionData?.subscription?.plan === 'admin' ? 'bg-gradient-to-r from-red-600 to-orange-600 text-white' :
-                      subscriptionData?.subscription?.plan === 'pro' ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white' :
-                      subscriptionData?.subscription?.plan === 'starter' ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white' :
-                      'bg-gray-100 text-gray-800 border border-gray-300'
-                    }`}
-                  >
-                    {subscriptionData?.subscription?.plan === 'admin' ? 'ADMIN' : 
-                     subscriptionData?.subscription?.plan === 'free' ? 'Free' : 
-                     subscriptionData?.subscription?.plan || 'Free'}
-                  </Badge>
-                  <br />
-                  {subscriptionData?.subscription?.plan !== 'admin' && (
-                    <Button onClick={handleUpgrade} className="bg-gradient-to-r from-purple-600 to-blue-600">
-                      <Zap className="h-4 w-4 mr-2" />
-                      Upgrade Plan
-                    </Button>
-                  )}
-                </div>
-              </div>
-              
-              <Separator />
-              
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium">API Usage This Month</span>
-                  <span className="text-sm text-gray-600">{apiUsage.used} / {apiUsage.limit}</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${(apiUsage.used / apiUsage.limit) * 100}%` }}
-                  ></div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Profile Settings */}
-          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <User className="h-5 w-5 mr-2 text-blue-600" />
-                Profile Settings
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="displayName">Display Name</Label>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="bio">Bio</Label>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* App Preferences */}
-          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Globe className="h-5 w-5 mr-2 text-blue-600" />
-                App Preferences
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="theme">Theme</Label>
-                  <p className="text-sm text-gray-600">Choose your preferred theme</p>
-                </div>
-                <Select value={theme} onValueChange={setTheme}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="light">
-                      <div className="flex items-center">
-                        <Sun className="h-4 w-4 mr-2" />
-                        Light
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="dark">
-                      <div className="flex items-center">
-                        <Moon className="h-4 w-4 mr-2" />
-                        Dark
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="defaultPlatform">Default Platform</Label>
-                  <p className="text-sm text-gray-600">Your preferred content platform</p>
-                </div>
-                <Select value={defaultPlatform} onValueChange={setDefaultPlatform}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="reddit">Reddit</SelectItem>
-                    <SelectItem value="twitter">Twitter</SelectItem>
-                    <SelectItem value="instagram">Instagram</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="autoSave">Auto-save content</Label>
-                  <p className="text-sm text-gray-600">Automatically save generated content</p>
-                </div>
-                <Switch
-                  id="autoSave"
-                  checked={autoSave}
-                  onCheckedChange={setAutoSave}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Notifications */}
-          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Bell className="h-5 w-5 mr-2 text-blue-600" />
-                Notifications
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="notifications">Push notifications</Label>
-                  <p className="text-sm text-gray-600">Get notified about important updates</p>
-                </div>
-                <Switch
-                  id="notifications"
-                  checked={notifications}
-                  onCheckedChange={setNotifications}
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="emailUpdates">Email updates</Label>
-                  <p className="text-sm text-gray-600">Receive product updates via email</p>
-                </div>
-                <Switch
-                  id="emailUpdates"
-                  checked={emailUpdates}
-                  onCheckedChange={setEmailUpdates}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Privacy & Security */}
-          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Shield className="h-5 w-5 mr-2 text-blue-600" />
-                Privacy & Security
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Button variant="outline" className="w-full justify-start">
-                <Key className="h-4 w-4 mr-2" />
-                Change Password
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                className="w-full justify-start"
-                onClick={() => exportDataMutation.mutate()}
-                disabled={exportDataMutation.isPending}
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Export My Data
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Payment Information */}
-          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <CreditCard className="h-5 w-5 mr-2 text-blue-600" />
-                Billing & Payment
-              </CardTitle>
-              <CardDescription>
-                Manage your subscription and payment methods
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-medium">Payment Method</h4>
-                    <p className="text-sm text-gray-600">
-                      {subscriptionData?.subscription?.plan === 'free' ? 
-                        'No payment method on file' : 
-                        'Card ending in •••• (managed by Stripe)'}
-                    </p>
+                  <span>Current Plan</span>
+                  <Badge variant={subscriptionData.isPro ? "default" : "outline"}>
+                    {subscriptionData.tier.toUpperCase()}
+                  </Badge>
+                </div>
+                
+                {subscriptionData.subscription?.nextBillDate && (
+                  <div className="flex items-center justify-between">
+                    <span>Next Billing Date</span>
+                    <span className="text-sm text-muted-foreground">
+                      {new Date(subscriptionData.subscription.nextBillDate).toLocaleDateString()}
+                    </span>
                   </div>
-                  {subscriptionData?.subscription?.plan !== 'free' && (
-                    <Button variant="outline" size="sm">
-                      Update Card
-                    </Button>
-                  )}
-                </div>
-                
-                <Separator />
-                
-                <div className="space-y-2">
-                  <h4 className="font-medium">Billing History</h4>
-                  <p className="text-sm text-gray-600">
-                    View and download your past invoices
-                  </p>
-                  <Button variant="outline" size="sm" className="w-full">
-                    <Download className="h-4 w-4 mr-2" />
-                    View Billing History
+                )}
+
+                {!subscriptionData.isPro && (
+                  <Button 
+                    onClick={handleUpgrade} 
+                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                  >
+                    <Crown className="h-4 w-4 mr-2" />
+                    Upgrade to Pro
                   </Button>
-                </div>
-                
-                {subscriptionData?.subscription?.plan !== 'free' && (
-                  <>
-                    <Separator />
-                    <div className="space-y-2">
-                      <h4 className="font-medium text-red-600">Cancel Subscription</h4>
-                      <p className="text-sm text-gray-600">
-                        Cancel your subscription at any time. You&apos;ll retain access until the end of your billing period.
-                      </p>
-                      <Button variant="outline" size="sm" className="w-full border-red-300 text-red-600 hover:bg-red-50">
-                        Cancel Subscription
-                      </Button>
-                    </div>
-                  </>
                 )}
               </div>
             </CardContent>
           </Card>
+        )}
 
-          {/* Danger Zone */}
-          <Card className="shadow-lg border-red-200 bg-red-50/80 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center text-red-600">
-                <Trash2 className="h-5 w-5 mr-2" />
-                Danger Zone
-              </CardTitle>
-              <CardDescription>
-                Irreversible actions that affect your account
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button 
-                variant="destructive" 
-                onClick={() => {
-                  if (confirm('Are you sure you want to delete your account? This cannot be undone.')) {
-                    deleteAccountMutation.mutate();
-                  }
-                }}
-                disabled={deleteAccountMutation.isPending}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete Account
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Save Button */}
-          <div className="flex justify-end">
-            <Button 
-              onClick={handleSaveSettings}
-              disabled={updateSettingsMutation.isPending}
-              className="bg-gradient-to-r from-purple-600 to-blue-600"
+        {/* Data & Privacy */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Shield className="mr-2 h-5 w-5" />
+              Data & Privacy
+            </CardTitle>
+            <CardDescription>
+              Manage your data and privacy settings
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button
+              variant="outline"
+              onClick={() => exportDataMutation.mutate()}
+              disabled={exportDataMutation.isPending}
+              className="w-full justify-start"
             >
-              {updateSettingsMutation.isPending ? 'Saving...' : 'Save Settings'}
+              <Download className="h-4 w-4 mr-2" />
+              {exportDataMutation.isPending ? 'Exporting...' : 'Export My Data'}
             </Button>
-          </div>
+
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+                  deleteAccountMutation.mutate();
+                }
+              }}
+              disabled={deleteAccountMutation.isPending}
+              className="w-full justify-start"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              {deleteAccountMutation.isPending ? 'Deleting...' : 'Delete Account'}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Save Button */}
+        <div className="flex justify-end">
+          <Button
+            onClick={handleSaveSettings}
+            disabled={updateSettingsMutation.isPending}
+            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+          >
+            {updateSettingsMutation.isPending ? 'Saving...' : 'Save Settings'}
+          </Button>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
