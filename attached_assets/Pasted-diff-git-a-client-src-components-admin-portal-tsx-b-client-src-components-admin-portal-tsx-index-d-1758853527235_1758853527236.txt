@@ -1,0 +1,234 @@
+diff --git a/client/src/components/admin-portal.tsx b/client/src/components/admin-portal.tsx
+index d3088c029ab469f0329156fd3191d24733ab3df8..019005e771d9329b4adfdefc335ae0bd06ca1a93 100644
+--- a/client/src/components/admin-portal.tsx
++++ b/client/src/components/admin-portal.tsx
+@@ -975,121 +975,200 @@ function LiveDashboardTab({ authenticatedRequest }: { authenticatedRequest: Auth
+             </CardTitle>
+           </CardHeader>
+           <CardContent>
+             <div className="space-y-2">
+               {(liveData as LiveDataType)?.recentActivity?.map((activity, index) => (
+                 <div key={index} className="flex items-center justify-between py-2 border-b last:border-b-0">
+                   <div>
+                     <p className="text-sm font-medium">{activity.user}</p>
+                     <p className="text-xs text-gray-600 dark:text-gray-400">
+                       {activity.action} {activity.target ? `• ${activity.target}` : ''} {activity.platform ? `on ${activity.platform}` : ''}
+                     </p>
+                   </div>
+                   <p className="text-xs text-gray-500">{new Date(activity.time).toLocaleTimeString()}</p>
+                 </div>
+               ))}
+             </div>
+           </CardContent>
+         </Card>
+       </div>
+     </div>
+   );
+ }
+ 
+ // FEATURE 1: IP Tracking Component
+ function IPTrackingTab({ authenticatedRequest }: { authenticatedRequest: AuthenticatedRequest }) {
++  interface IPTrackingUserSummary {
++    id: number;
++    name?: string;
++    email?: string;
++  }
++
++  interface IPTrackingRecord {
++    ip: string;
++    location: string;
++    lastSeen: string;
++    flagged: boolean;
++    userId?: number;
++    primaryUserId?: number;
++    userCount?: number;
++    users?: IPTrackingUserSummary[] | IPTrackingUserSummary | number;
++  }
++
++  const resolveUserCount = (record: IPTrackingRecord): number => {
++    if (typeof record.userCount === 'number') {
++      return record.userCount;
++    }
++
++    if (Array.isArray(record.users)) {
++      return record.users.filter((user) => typeof user?.id === 'number').length || record.users.length;
++    }
++
++    if (typeof record.users === 'number') {
++      return record.users;
++    }
++
++    if (record.users && typeof record.users === 'object') {
++      const singleUser = record.users as IPTrackingUserSummary;
++      return typeof singleUser.id === 'number' ? 1 : 0;
++    }
++
++    return 0;
++  };
++
++  const resolvePrimaryUserId = (record: IPTrackingRecord): number | null => {
++    if (typeof record.userId === 'number') {
++      return record.userId;
++    }
++
++    if (typeof record.primaryUserId === 'number') {
++      return record.primaryUserId;
++    }
++
++    if (Array.isArray(record.users)) {
++      const firstUserWithId = record.users.find((user) => typeof user?.id === 'number');
++      return firstUserWithId?.id ?? null;
++    }
++
++    if (record.users && typeof record.users === 'object') {
++      const singleUser = record.users as IPTrackingUserSummary;
++      return typeof singleUser.id === 'number' ? singleUser.id : null;
++    }
++
++    return null;
++  };
++
+   const { data: ipData } = useQuery({
+     queryKey: ['/api/admin/ip-tracking'],
+     queryFn: () => authenticatedRequest('/api/admin/ip-tracking'),
+   });
+ 
+-  const [selectedUserId, _setSelectedUserId] = useState<number | null>(null);
++  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+   const { data: userActivity } = useQuery({
+     queryKey: ['/api/admin/user-activity', selectedUserId],
+-    queryFn: () => authenticatedRequest(`/api/admin/user-activity/${selectedUserId}`),
+-    enabled: !!selectedUserId
++    queryFn: () => {
++      if (selectedUserId === null) {
++        throw new Error('User ID is required to fetch activity');
++      }
++
++      return authenticatedRequest(`/api/admin/user-activity/${selectedUserId}`);
++    },
++    enabled: selectedUserId !== null
+   });
+ 
+   return (
+     <div className="space-y-6">
+       <Card>
+         <CardHeader>
+           <CardTitle className="flex items-center gap-2">
+             <Eye className="h-5 w-5 text-blue-500" />
+             IP Address Tracking
+           </CardTitle>
+           <CardDescription>Monitor user IP addresses and suspicious activity</CardDescription>
+         </CardHeader>
+         <CardContent>
+           <div className="overflow-x-auto">
+             <table className="w-full text-sm">
+               <thead>
+                 <tr className="border-b">
+                   <th className="text-left p-2">IP Address</th>
+                   <th className="text-left p-2">Users</th>
+                   <th className="text-left p-2">Location</th>
+                   <th className="text-left p-2">Last Seen</th>
+                   <th className="text-left p-2">Status</th>
+                   <th className="text-left p-2">Actions</th>
+                 </tr>
+               </thead>
+               <tbody>
+-                {(ipData as Array<{ip: string; users: number; location: string; lastSeen: string; flagged: boolean}>)?.map((ip) => (
+-                  <tr key={ip.ip} className="border-b hover:bg-gray-50 dark:hover:bg-gray-800">
+-                    <td className="p-2 font-mono text-sm">{ip.ip}</td>
+-                    <td className="p-2">{ip.users}</td>
+-                    <td className="p-2">
+-                      <div className="flex items-center gap-1">
+-                        <MapPin className="h-3 w-3 text-gray-500" />
+-                        {ip.location}
+-                      </div>
+-                    </td>
+-                    <td className="p-2">{new Date(ip.lastSeen).toLocaleDateString()}</td>
+-                    <td className="p-2">
+-                      <Badge className={ip.flagged ? 'bg-red-500' : 'bg-green-500'}>
+-                        {ip.flagged ? 'Flagged' : 'Clean'}
+-                      </Badge>
+-                    </td>
+-                    <td className="p-2">
+-                      <Button size="sm" variant="outline"
+-                        data-testid={`button-view-activity-${ip.ip.replace(/\./g, '-')}`}>
+-                        View Activity
+-                      </Button>
+-                    </td>
+-                  </tr>
+-                ))}
++                {(ipData as IPTrackingRecord[] | undefined)?.map((ip) => {
++                  const primaryUserId = resolvePrimaryUserId(ip);
++                  const userCount = resolveUserCount(ip);
++
++                  return (
++                    <tr key={ip.ip} className="border-b hover:bg-gray-50 dark:hover:bg-gray-800">
++                      <td className="p-2 font-mono text-sm">{ip.ip}</td>
++                      <td className="p-2">{userCount}</td>
++                      <td className="p-2">
++                        <div className="flex items-center gap-1">
++                          <MapPin className="h-3 w-3 text-gray-500" />
++                          {ip.location}
++                        </div>
++                      </td>
++                      <td className="p-2">{new Date(ip.lastSeen).toLocaleDateString()}</td>
++                      <td className="p-2">
++                        <Badge className={ip.flagged ? 'bg-red-500' : 'bg-green-500'}>
++                          {ip.flagged ? 'Flagged' : 'Clean'}
++                        </Badge>
++                      </td>
++                      <td className="p-2">
++                        <Button
++                          size="sm"
++                          variant="outline"
++                          data-testid={`button-view-activity-${ip.ip.replace(/\./g, '-')}`}
++                          onClick={() => setSelectedUserId(primaryUserId)}
++                          disabled={primaryUserId === null}
++                        >
++                          View Activity
++                        </Button>
++                      </td>
++                    </tr>
++                  );
++                })}
+               </tbody>
+             </table>
+           </div>
+         </CardContent>
+       </Card>
+ 
+       {/* User Session Details */}
+-      {selectedUserId && (
++      {selectedUserId !== null && (
+         <Card>
+-          <CardHeader>
++          <CardHeader className="flex items-center justify-between">
+             <CardTitle>User Session Details</CardTitle>
++            <Button variant="ghost" size="sm" onClick={() => setSelectedUserId(null)}>
++              Clear
++            </Button>
+           </CardHeader>
+           <CardContent>
+             <div className="space-y-3">
+               {(userActivity as Array<{id: string; ipAddress: string; isActive: boolean; deviceType: string; browser: string; os: string; location?: {city: string; country: string}; loginAt: string; lastActivity: string}>)?.map((session) => (
+                 <div key={session.id} className="p-3 border rounded-lg">
+                   <div className="flex items-center justify-between">
+                     <div className="space-y-1">
+                       <div className="flex items-center gap-2">
+                         <span className="font-mono text-sm">{session.ipAddress}</span>
+                         <Badge className={session.isActive ? 'bg-green-500' : 'bg-gray-500'}>
+                           {session.isActive ? 'Active' : 'Inactive'}
+                         </Badge>
+                       </div>
+                       <p className="text-sm text-gray-600 dark:text-gray-400">
+                         {session.deviceType} • {session.browser} • {session.os}
+                       </p>
+                       <p className="text-xs text-gray-500">
+                         {session.location?.city}, {session.location?.country}
+                       </p>
+                     </div>
+                     <div className="text-right text-xs text-gray-500">
+                       <p>Login: {new Date(session.loginAt).toLocaleString()}</p>
+                       <p>Last: {new Date(session.lastActivity).toLocaleString()}</p>
+                     </div>
+                   </div>
