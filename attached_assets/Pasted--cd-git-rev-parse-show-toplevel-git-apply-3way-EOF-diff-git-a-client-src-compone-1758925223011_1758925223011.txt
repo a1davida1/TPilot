@@ -1,0 +1,353 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/client/src/components/enhanced-ai-generator.tsx b/client/src/components/enhanced-ai-generator.tsx
+index 0824776885f7f0954c281de4697cd31135a429b5..3443581137f4e4b4fb0f5119e432eec45d51b90c 100644
+--- a/client/src/components/enhanced-ai-generator.tsx
++++ b/client/src/components/enhanced-ai-generator.tsx
+@@ -1,34 +1,35 @@
+ import React, { useState } from "react";
+ import { useMutation, useQueryClient } from "@tanstack/react-query";
+ import { useAuth } from "@/hooks/useAuth";
+ import { useToast } from "@/hooks/use-toast";
+ import { Button } from "@/components/ui/button";
+ import { Label } from "@/components/ui/label";
+ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+ import { Badge } from "@/components/ui/badge";
+ import { Textarea } from "@/components/ui/textarea";
++import { AuthModal } from "@/components/auth-modal";
+ import { apiRequest, type ApiError } from "@/lib/queryClient";
+ import type { ContentGeneration } from "@shared/schema";
+ import { Sparkles, Brain, RefreshCw, Settings, Copy, Hash } from "lucide-react";
+ 
+ // Define types for mutation variables and response
+ interface GenerateContentVariables {
+   platform?: string;
+   style?: string;
+   theme?: string;
+   subreddit?: string;
+   customPrompt?: string;
+   prompt?: string;
+   includePromotion?: boolean;
+   allowsPromotion?: "none" | "subtle" | "direct";
+ }
+ 
+ // Assuming GeneratedContent is defined elsewhere and matches the structure of UnifiedAIResponse or similar
+ interface GeneratedContent {
+   titles?: string[] | string;
+   content?: string;
+   photoInstructions?:
+     | {
+         lighting: string;
+         cameraAngle: string;
+         composition: string;
+diff --git a/client/src/components/enhanced-ai-generator.tsx b/client/src/components/enhanced-ai-generator.tsx
+index 0824776885f7f0954c281de4697cd31135a429b5..3443581137f4e4b4fb0f5119e432eec45d51b90c 100644
+--- a/client/src/components/enhanced-ai-generator.tsx
++++ b/client/src/components/enhanced-ai-generator.tsx
+@@ -74,50 +75,52 @@ const toneOptions = [
+   { value: "mysterious", label: "Mysterious" },
+   { value: "friendly", label: "Friendly" },
+ ];
+ 
+ interface EnhancedAIGeneratorProps {
+   onContentGenerated: (content: ContentGeneration) => void;
+   userTier?: string;
+   canGenerate?: boolean;
+ }
+ 
+ export function EnhancedAIGenerator({
+   onContentGenerated,
+   userTier = "guest",
+   canGenerate = true
+ }: EnhancedAIGeneratorProps) {
+   const { isAuthenticated } = useAuth();
+   const { toast } = useToast();
+   const queryClient = useQueryClient();
+ 
+   // Form state
+   const [photoType, setPhotoType] = useState<string>("selfie");
+   const [tone, setTone] = useState<string>("confident");
+   const [customPrompt, setCustomPrompt] = useState<string>("");
+   const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
+   const [copiedItem, setCopiedItem] = useState<string | null>(null);
++  const [showAuthModal, setShowAuthModal] = useState(false);
++  const [authModalMode, setAuthModalMode] = useState<"login" | "signup">("signup");
+ 
+   const isGuestMode = !isAuthenticated || userTier === 'guest';
+ 
+   const tierConfig = {
+     guest: {
+       dailyLimit: 3,
+       color: 'bg-gradient-to-br from-orange-50 to-amber-100 hover:from-orange-100 hover:to-amber-200 text-orange-900 border-2 border-orange-200 hover:border-orange-300 shadow-sm hover:shadow-md'
+     },
+     free: {
+       dailyLimit: 10,
+       color: 'bg-gradient-to-br from-orange-50 to-amber-100 hover:from-orange-100 hover:to-amber-200 text-orange-900 border-2 border-orange-200 hover:border-orange-300 shadow-sm hover:shadow-md'
+     },
+     pro: {
+       dailyLimit: 100,
+       color: 'bg-gradient-to-br from-orange-50 to-amber-100 hover:from-orange-100 hover:to-amber-200 text-orange-900 border-2 border-orange-200 hover:border-orange-300 shadow-sm hover:shadow-md'
+     }
+   };
+ 
+   const currentTierConfig = tierConfig[userTier as keyof typeof tierConfig] || tierConfig.guest;
+ 
+   const basePhotoInstructions: ContentGeneration["photoInstructions"] = {
+     lighting: "Soft natural lighting",
+     cameraAngle: "Eye-level framing",
+     composition: "Balanced composition highlighting the subject",
+     styling: "Signature outfit and accessories",
+diff --git a/client/src/components/enhanced-ai-generator.tsx b/client/src/components/enhanced-ai-generator.tsx
+index 0824776885f7f0954c281de4697cd31135a429b5..3443581137f4e4b4fb0f5119e432eec45d51b90c 100644
+--- a/client/src/components/enhanced-ai-generator.tsx
++++ b/client/src/components/enhanced-ai-generator.tsx
+@@ -260,59 +263,81 @@ export function EnhancedAIGenerator({
+         id,
+         userId,
+         platform: resolvedPlatform,
+         style: resolvedStyle,
+         theme: resolvedTheme,
+         titles: normalizedTitles,
+         content: contentText,
+         photoInstructions: normalizedPhotoInstructions,
+         prompt: resolvedPrompt || null,
+         subreddit: resolvedSubreddit || null,
+         allowsPromotion: resolvedAllowsPromotion,
+         generationType,
+         createdAt
+       };
+ 
+       onContentGenerated(structuredGeneration);
+ 
+       toast({
+         title: "Content Generated Successfully!",
+         description: structuredGeneration.titles[0] || "Your AI content is ready."
+       });
+ 
+       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+     },
+     onError: (error: Error) => {
++      const apiError = error as ApiError;
++
++      if (apiError?.isAuthError) {
++        setAuthModalMode("login");
++        setShowAuthModal(true);
++        toast({
++          title: "Authentication required",
++          description: apiError.userMessage || "Please log in or create an account to generate content.",
++        });
++        return;
++      }
++
+       toast({
+         title: "Generation Failed",
+-        description: error.message || "Failed to generate content. Please try again.",
++        description: apiError?.message || "Failed to generate content. Please try again.",
+         variant: "destructive",
+       });
+     },
+   });
+ 
+   const handleGenerate = () => {
++    if (isGuestMode) {
++      setAuthModalMode("signup");
++      setShowAuthModal(true);
++      toast({
++        title: "Create an account to continue",
++        description: "Sign in or sign up to unlock AI content generation.",
++      });
++      return;
++    }
++
+     generateContentMutation.mutate({
+       platform: "reddit",
+       style: tone,
+       theme: photoType,
+       customPrompt: customPrompt.trim() || undefined,
+     });
+   };
+ 
+   const copyToClipboard = async (text: string, type: string) => {
+     try {
+       await navigator.clipboard.writeText(text);
+       setCopiedItem(type);
+       toast({
+         title: `${type} copied!`,
+         description: "Content copied to clipboard",
+       });
+       setTimeout(() => setCopiedItem(null), 2000);
+     } catch (_error) {
+       toast({
+         title: "Copy failed",
+         description: "Unable to copy to clipboard",
+         variant: "destructive",
+       });
+     }
+   };
+diff --git a/client/src/components/enhanced-ai-generator.tsx b/client/src/components/enhanced-ai-generator.tsx
+index 0824776885f7f0954c281de4697cd31135a429b5..3443581137f4e4b4fb0f5119e432eec45d51b90c 100644
+--- a/client/src/components/enhanced-ai-generator.tsx
++++ b/client/src/components/enhanced-ai-generator.tsx
+@@ -372,68 +397,82 @@ export function EnhancedAIGenerator({
+                       <div className="text-xs opacity-80">{type.description}</div>
+                     </div>
+                   </Button>
+                 ))}
+               </div>
+             </div>
+ 
+             <div className="space-y-2">
+               <Label className="text-base font-medium text-amber-600">Text Tone</Label>
+               <Select value={tone} onValueChange={setTone}>
+                 <SelectTrigger className="border-amber-200 focus:ring-amber-500">
+                   <SelectValue placeholder="Select tone" />
+                 </SelectTrigger>
+                 <SelectContent>
+                   {toneOptions.map((option) => (
+                     <SelectItem key={option.value} value={option.value}>
+                       {option.label}
+                     </SelectItem>
+                   ))}
+                 </SelectContent>
+               </Select>
+             </div>
+           </div>
+         </div>
+ 
+-        <Button
+-          onClick={handleGenerate}
+-          disabled={generateContentMutation.isPending}
+-          className="w-full bg-gradient-to-r from-orange-500 via-amber-500 to-red-500 hover:from-orange-600 hover:via-amber-500 hover:to-red-500 text-white font-medium"
+-          size="lg"
+-        >
+-          {generateContentMutation.isPending ? (
+-            <>
+-              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+-              Generating...
+-            </>
+-          ) : (
+-            <>
+-              <Sparkles className="mr-2 h-4 w-4" />
+-              Generate Content
+-            </>
+-          )}
+-        </Button>
++        {isGuestMode ? (
++          <Button
++            onClick={() => {
++              setAuthModalMode("signup");
++              setShowAuthModal(true);
++            }}
++            className="w-full bg-gradient-to-r from-orange-500 via-amber-500 to-red-500 hover:from-orange-600 hover:via-amber-500 hover:to-red-500 text-white font-medium"
++            size="lg"
++          >
++            <Sparkles className="mr-2 h-4 w-4" />
++            Log in to generate content
++          </Button>
++        ) : (
++          <Button
++            onClick={handleGenerate}
++            disabled={generateContentMutation.isPending}
++            className="w-full bg-gradient-to-r from-orange-500 via-amber-500 to-red-500 hover:from-orange-600 hover:via-amber-500 hover:to-red-500 text-white font-medium"
++            size="lg"
++          >
++            {generateContentMutation.isPending ? (
++              <>
++                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
++                Generating...
++              </>
++            ) : (
++              <>
++                <Sparkles className="mr-2 h-4 w-4" />
++                Generate Content
++              </>
++            )}
++          </Button>
++        )}
+ 
+         {generatedContent && (
+           <div className="space-y-4 p-4 bg-gradient-to-br from-orange-50 via-amber-50 to-rose-100 rounded-lg border border-orange-200">
+             <h4 className="font-semibold text-lg text-orange-800 flex items-center gap-2">
+               <Sparkles className="h-4 w-4 text-orange-500" />
+               Generated Content
+             </h4>
+ 
+             {generatedContent.titles && Array.isArray(generatedContent.titles) && generatedContent.titles.length > 0 && (
+               <div className="space-y-2">
+                 <Label className="text-sm font-medium text-orange-700">Titles:</Label>
+                 {generatedContent.titles.map((title, index) => (
+                   <div key={`${title}-${index}`} className="relative p-3 bg-white rounded-lg border group">
+                     <p className="text-sm font-medium pr-8">{title}</p>
+                     <Button
+                       variant="ghost"
+                       size="sm"
+                       onClick={() => copyToClipboard(title, "Title")}
+                       className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-orange-600"
+                     >
+                       <Copy className="h-3 w-3" />
+                     </Button>
+                   </div>
+                 ))}
+               </div>
+diff --git a/client/src/components/enhanced-ai-generator.tsx b/client/src/components/enhanced-ai-generator.tsx
+index 0824776885f7f0954c281de4697cd31135a429b5..3443581137f4e4b4fb0f5119e432eec45d51b90c 100644
+--- a/client/src/components/enhanced-ai-generator.tsx
++++ b/client/src/components/enhanced-ai-generator.tsx
+@@ -509,35 +548,52 @@ export function EnhancedAIGenerator({
+                     <div key={key} className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1">
+                       <dt className="font-semibold text-orange-700">{label}</dt>
+                       <dd className="sm:text-right">{generatedContent.photoInstructions[key]}</dd>
+                     </div>
+                   ))}
+                 </dl>
+                 <Button
+                   variant="ghost"
+                   size="sm"
+                   onClick={() =>
+                     copyToClipboard(JSON.stringify(generatedContent.photoInstructions, null, 2), "Photo Instructions")
+                   }
+                   className="absolute top-2 right-2 h-7 px-2 text-xs opacity-70 hover:opacity-100 text-orange-600"
+                 >
+                   <Copy className="h-3 w-3 mr-1" />
+                   Copy JSON
+                 </Button>
+               </div>
+             </div>
+           </div>
+         )}
+ 
+         {isGuestMode && (
+           <div className="text-center p-4 bg-orange-50 border border-orange-200 rounded-lg">
+             <p className="text-sm text-orange-700">
+-              <a href="/login" className="text-orange-800 underline ml-1 font-medium">
++              Ready for unlimited generations?
++              <button
++                type="button"
++                onClick={() => {
++                  setAuthModalMode("signup");
++                  setShowAuthModal(true);
++                }}
++                className="text-orange-800 underline ml-1 font-medium"
++              >
+                 Sign up for full access
+-              </a>
++              </button>
+             </p>
+           </div>
+         )}
+       </div>
++      <AuthModal
++        isOpen={showAuthModal}
++        initialMode={authModalMode}
++        onClose={() => setShowAuthModal(false)}
++        onSuccess={() => {
++          setShowAuthModal(false);
++          window.location.reload();
++        }}
++      />
+     </div>
+   );
+-}
++}
+ 
+EOF
+)

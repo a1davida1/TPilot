@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { AuthModal } from "@/components/auth-modal";
 import { apiRequest, type ApiError } from "@/lib/queryClient";
 import type { ContentGeneration } from "@shared/schema";
-import { Sparkles, Brain, RefreshCw, Copy, Hash, Lock } from "lucide-react";
+import { Sparkles, Brain, RefreshCw, Copy, Hash } from "lucide-react";
 
 // Define types for mutation variables and response
 interface GenerateContentVariables {
@@ -102,12 +102,9 @@ export function EnhancedAIGenerator({
   const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
   const [copiedItem, setCopiedItem] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<"login" | "signup">("signup");
 
   const isGuestMode = !isAuthenticated || userTier === "guest";
-
-  const openAuthModal = () => {
-    setShowAuthModal(true);
-  };
 
   const tierConfig = {
     guest: {
@@ -292,35 +289,34 @@ export function EnhancedAIGenerator({
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
     },
     onError: (error) => {
-      let toastTitle = "Generation Failed";
-      let description = "Failed to generate content. Please try again.";
+      const apiError = error as ApiError;
 
-      if (isApiError(error)) {
-        if (error.isAuthError) {
-          toastTitle = "Sign in to generate content";
-          description =
-            error.userMessage ?? "Please log in or create an account to continue generating AI content.";
-          openAuthModal();
-        } else {
-          description = error.userMessage ?? error.message;
-        }
-      } else if (error instanceof Error) {
-        description = error.message;
+      if (apiError?.isAuthError) {
+        setAuthModalMode("login");
+        setShowAuthModal(true);
+        toast({
+          title: "Authentication required",
+          description: apiError.userMessage || "Please log in or create an account to generate content.",
+        });
+        return;
       }
 
       toast({
-        title: toastTitle,
-        description,
+        title: "Generation Failed",
+        description: apiError?.message || "Failed to generate content. Please try again.",
         variant: "destructive",
       });
     },
   });
 
-  const isGenerateDisabled = isGuestMode || generateContentMutation.isPending;
-
   const handleGenerate = () => {
     if (isGuestMode) {
-      openAuthModal();
+      setAuthModalMode("signup");
+      setShowAuthModal(true);
+      toast({
+        title: "Create an account to continue",
+        description: "Sign in or sign up to unlock AI content generation.",
+      });
       return;
     }
 
@@ -429,17 +425,20 @@ export function EnhancedAIGenerator({
 
         {isGuestMode ? (
           <Button
-            onClick={openAuthModal}
-            className="w-full bg-gradient-to-r from-gray-400 via-gray-500 to-gray-600 hover:from-gray-500 hover:via-gray-600 hover:to-gray-700 text-white font-medium"
+            onClick={() => {
+              setAuthModalMode("signup");
+              setShowAuthModal(true);
+            }}
+            className="w-full bg-gradient-to-r from-orange-500 via-amber-500 to-red-500 hover:from-orange-600 hover:via-amber-500 hover:to-red-500 text-white font-medium"
             size="lg"
           >
-            <Lock className="mr-2 h-4 w-4" />
-            Sign In to Generate Content
+            <Sparkles className="mr-2 h-4 w-4" />
+            Log in to generate content
           </Button>
         ) : (
           <Button
             onClick={handleGenerate}
-            disabled={isGenerateDisabled}
+            disabled={generateContentMutation.isPending}
             className="w-full bg-gradient-to-r from-orange-500 via-amber-500 to-red-500 hover:from-orange-600 hover:via-amber-500 hover:to-red-500 text-white font-medium"
             size="lg"
           >
@@ -451,7 +450,7 @@ export function EnhancedAIGenerator({
             ) : (
               <>
                 <Sparkles className="mr-2 h-4 w-4" />
-                Generate AI Content
+                Generate Content
               </>
             )}
           </Button>
@@ -584,7 +583,18 @@ export function EnhancedAIGenerator({
       </div>
 
       {showAuthModal && (
-        <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} defaultView="signin" />
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          onSuccess={() => {
+            setShowAuthModal(false);
+            toast({
+              title: "Welcome!",
+              description: "You can now generate AI content.",
+            });
+          }}
+          initialMode={authModalMode}
+        />
       )}
     </div>
   );
