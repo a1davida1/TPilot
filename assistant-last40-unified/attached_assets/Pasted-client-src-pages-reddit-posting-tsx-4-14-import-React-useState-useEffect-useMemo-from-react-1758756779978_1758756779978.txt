@@ -1,0 +1,1149 @@
+client/src/pages/reddit-posting.tsx
++4-14
+import React, { useState, useEffect, useMemo } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { apiRequest, type ApiError } from '@/lib/queryClient';
+import { AuthModal } from '@/components/auth-modal';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator
+} from '@/components/ui/command';
+import {
+  Send,
+  Calendar,
+  User,
+  Eye,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  Link as LinkIcon,
+  Globe,
+  Settings,
+  Clock,
+  BarChart3,
+  Users,
+  TrendingUp,
+  Zap,
+  Shield,
+  FileText,
+  TestTube,
+  ExternalLink,
+  ImageIcon,
+  Images,
+  LogIn,
+  UserCheck,
+  ChevronsUpDown,
+  RefreshCcw,
+  Loader2
+} from 'lucide-react';
+import { MediaLibrarySelector } from '@/components/MediaLibrarySelector';
+import type { 
+  ShadowbanStatusType, 
+import type {
+  ShadowbanStatusType,
+  ShadowbanCheckApiResponse,
+  ShadowbanSubmissionSummary,
+  RedditCommunitySellingPolicy 
+  ShadowbanSubmissionSummary
+} from '@shared/schema';
+import type { SubredditCommunity } from '@/types/reddit';
+
+function isApiError(error: unknown): error is ApiError {
+  return error instanceof Error && 'status' in error && typeof (error as { status?: unknown }).status === 'number';
+}
+
+interface RedditAccount {
+  id: number;
+  username: string;
+  isActive: boolean;
+  connectedAt: string;
+  karma: number;
+  verified: boolean;
+  accountAgeDays?: number;
+}
+
+// SubredditCommunity type now imported from @/types/reddit
+
+// API response interfaces
+interface ConnectionTestResponse {
+  connected: boolean;
+  profile?: {
+    username: string;
+    karma: number;
+@@ -106,52 +101,50 @@ interface SchedulePostResponse {
+}
+
+interface MediaAsset {
+  id: number;
+  filename: string;
+  signedUrl?: string;
+  downloadUrl?: string;
+  createdAt: string;
+}
+
+interface PostData {
+  subreddit: string;
+  title: string;
+  nsfw: boolean;
+  spoiler: boolean;
+  postType: 'text' | 'link' | 'image' | 'gallery';
+  body?: string;
+  url?: string;
+  imageData?: string;
+  images?: Array<{
+    url: string;
+    caption?: string;
+  }>;
+}
+
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+interface CommunityEligibility {
+  community: SubredditCommunity;
+  isEligible: boolean;
+  reasons: string[];
+  badges: {
+    karmaOk: boolean;
+    ageOk: boolean;
+    sellingOk: boolean;
+    watermarkOk: boolean;
+  };
+}
+
+function checkCommunityEligibility(
+  community: SubredditCommunity,
+  account: RedditAccount | null
+): CommunityEligibility {
+  const reasons: string[] = [];
+  let isEligible = true;
+
+  const badges = {
+    karmaOk: true,
+    ageOk: true,
+    sellingOk: true,
+    watermarkOk: true,
+  };
+@@ -192,71 +185,68 @@ function checkCommunityEligibility(
+    isEligible = false;
+  }
+
+  if (community.rules?.content?.sellingPolicy === 'unknown') {
+    badges.sellingOk = false;
+    reasons.push('Selling policy unclear - check community rules');
+  }
+
+  if (community.rules?.content?.watermarksAllowed === false) {
+    badges.watermarkOk = false;
+    reasons.push('Watermarks not allowed in this community');
+    isEligible = false;
+  }
+
+  return {
+    community,
+    isEligible,
+    reasons,
+    badges,
+  };
+}
+
+export default function RedditPostingPage() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
+
+  // Form state
+  const [subreddit, setSubreddit] = useState('');
+  const [communityPickerOpen, setCommunityPickerOpen] = useState(false);
+  const [title, setTitle] = useState('');
+  const [body, setBody] = useState('');
+  const [url, setUrl] = useState('');
+  const [nsfw, setNsfw] = useState(false);
+  const [spoiler, setSpoiler] = useState(false);
+  const [postType, setPostType] = useState<'text' | 'link' | 'image' | 'gallery'>('image');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
+  const [selectedMediaIds, setSelectedMediaIds] = useState<number[]>([]);
+  const [mediaCaptions, setMediaCaptions] = useState<Record<number, string>>({});
+  const [scheduledAt, setScheduledAt] = useState('');
+  const isGalleryFeatureEnabled = false;
+
+  // UI state
+  const [selectedAccount, setSelectedAccount] = useState<string>('');
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  // Add image handling functions
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const toggleMediaSelection = (assetId: number) => {
+    setSelectedMediaIds((prev) => {
+      if (prev.includes(assetId)) {
+        return prev.filter((id) => id !== assetId);
+      }
+      return [...prev, assetId];
+    });
+  };
+
+  const handleCaptionChange = (assetId: number, caption: string) => {
+client/src/pages/referral.tsx
++3-3
+@@ -3,84 +3,84 @@ import { Copy, Check, Share2, Users, DollarSign, Gift, Sparkles } from 'lucide-r
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
+
+export default function ReferralPage() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [copied, setCopied] = useState(false);
+
+  // Generate referral code from user ID (simple example)
+  const referralCode = user?.id ? `THOTTO${user.id.toString().padStart(6, '0')}` : 'THOTTO000000';
+  const referralUrl = `${window.location.origin}/signup?ref=${referralCode}`;
+
+  const handleCopyReferralCode = async () => {
+    try {
+      await navigator.clipboard.writeText(referralCode);
+      setCopied(true);
+      toast({
+        title: 'Copied!',
+        description: 'Referral code copied to clipboard',
+      });
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+    } catch (_error) {
+      toast({
+        title: 'Failed to copy',
+        description: 'Please try selecting and copying manually',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleCopyReferralUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(referralUrl);
+      toast({
+        title: 'Copied!',
+        description: 'Referral link copied to clipboard',
+      });
+    } catch (err) {
+    } catch (_error) {
+      toast({
+        title: 'Failed to copy',
+        description: 'Please try selecting and copying manually',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Join ThottoPilot with my referral code!',
+          text: 'Get exclusive content creation tools and earn rewards with my referral code.',
+          url: referralUrl,
+        });
+      } catch (err) {
+      } catch (_error) {
+        // User cancelled share or sharing failed
+        handleCopyReferralUrl();
+      }
+    } else {
+      // Fallback to copying URL
+      handleCopyReferralUrl();
+    }
+  };
+
+  // Mock data for referral stats (would come from API in real implementation)
+  const referralStats = {
+    totalReferrals: 12,
+    activeReferrals: 8,
+    totalEarnings: 240.00,
+    pendingEarnings: 60.00,
+    thisMonthReferrals: 3,
+    thisMonthEarnings: 75.00
+  };
+
+  const rewardTiers = [
+    { referrals: 1, reward: '$20 credit', bonus: 'Welcome bonus' },
+    { referrals: 5, reward: '$50 credit', bonus: '1 month free Pro' },
+    { referrals: 10, reward: '$120 credit', bonus: 'Exclusive features access' },
+    { referrals: 25, reward: '$300 credit', bonus: 'VIP support tier' },
+    { referrals: 50, reward: '$650 credit', bonus: 'Lifetime Pro features' },
+client/src/types/reddit.ts
++1-1
+export interface ShadowbanStatusResponse {
+  isShadowbanned: boolean;
+  statusMessage: string;
+  checkedAt: string;
+  publicCount: number;
+  totalSelfPosts: number;
+  hiddenPosts: Array<{
+    id: string;
+    title: string;
+    createdUtc: number;
+  }>;
+  error?: string;
+}
+
+export interface RedditAccount {
+  id: number;
+  username: string;
+  isActive: boolean;
+  connectedAt: string;
+  karma: number;
+  verified: boolean;
+  accountAgeDays?: number;
+}
+
+import type { RedditCommunitySellingPolicy, RedditCommunityRuleSet } from '@shared/schema';
+import type { RedditCommunityRuleSet } from '@shared/schema';
+
+export interface SubredditCommunity {
+  id: string;
+  name: string;
+  displayName: string;
+  members: number;
+  engagementRate: number;
+  category: string;
+  promotionAllowed: string;
+  bestPostingTimes: string[];
+  averageUpvotes: number;
+  successProbability: number;
+  description: string;
+  rules?: RedditCommunityRuleSet;
+}
+
+export interface ConnectionTestResponse {
+  connected: boolean;
+  profile?: {
+    username: string;
+    karma: number;
+  };
+}
+
+export interface ConnectRedditResponse {
+server/admin-routes.ts
++17-11
+@@ -90,62 +90,62 @@ export const requireAdmin = (req: AdminRequest & { isAuthenticated?: () => boole
+  }
+  // Try cookie-based authentication 
+  else if (req.cookies && req.cookies.authToken) {
+    token = req.cookies.authToken;
+  }
+  // Fallback to Bearer token authentication  
+  else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+    token = req.headers.authorization.substring(7);
+  }
+  
+  // If we have a token, verify it (only check JWT_SECRET for actual JWT tokens)
+  if (token) {
+    // Only require JWT_SECRET for Bearer tokens, not cookie tokens (which may be session-based)
+    const isFromBearerHeader = req.headers.authorization && req.headers.authorization.startsWith('Bearer ');
+    
+    if (isFromBearerHeader) {
+      const jwtSecret = resolveJwtSecret();
+      
+      if (!jwtSecret) {
+        return res.status(500).json({ message: MISSING_JWT_SECRET_MESSAGE });
+      }
+      
+      try {
+        const decoded = jwt.verify(token, jwtSecret) as { id: number; username?: string; isAdmin?: boolean; iat: number; exp: number };
+        user = decoded;
+      } catch (error) {
+      } catch (_error) {
+        // JWT is invalid, user remains null
+      }
+    } else {
+      // For cookie tokens, try JWT verification but don't fail if JWT_SECRET is missing (dev environment)
+      const jwtSecret = resolveJwtSecret();
+      
+      if (jwtSecret) {
+        try {
+          const decoded = jwt.verify(token, jwtSecret) as { id: number; username?: string; isAdmin?: boolean; iat: number; exp: number };
+          user = decoded;
+        } catch (error) {
+        } catch (_error) {
+          // JWT is invalid, user remains null - continue to session auth fallback
+        }
+      }
+    }
+  }
+
+  if (!user) {
+    return res.status(401).json({ message: 'Admin access required' });
+  }
+
+  // Check if user has verified admin privileges
+  const typedUser = user as { id: number; username?: string | null; isAdmin?: boolean | null; role?: string | null };
+  if (!typedUser.isAdmin && typedUser.role !== 'admin') {
+    return res.status(403).json({ message: 'Admin access required' });
+  }
+
+  // Set user on request for later use
+  req.user = user as User;
+  next();
+};
+
+export function setupAdminRoutes(app: Express) {
+
+  // Reset user password (Admin only)
+  app.post('/api/admin/reset-password', requireAdmin, async (req, res) => {
+@@ -372,58 +372,59 @@ export function setupAdminRoutes(app: Express) {
+          uptime: '99.9%',
+          lastCheck: new Date()
+        },
+        services: {
+          gemini: !!process.env.GOOGLE_GENAI_API_KEY,
+          openai: !!process.env.OPENAI_API_KEY,
+          email: !!process.env.SENDGRID_API_KEY
+        },
+        performance: {
+          avgResponseTime: '245ms',
+          errorRate: '0.02%',
+          throughput: '150 req/min'
+        }
+      };
+      
+      res.json(health);
+    } catch (error) {
+      console.error('Error fetching system health:', error);
+      res.status(500).json({ message: 'Error fetching system health' });
+    }
+  });
+
+  // Get analytics data (legacy endpoint with query parameter)
+  app.get('/api/admin/analytics', requireAdmin, async (req, res) => {
+    try {
+      const period = req.query.period || '7d';
+      const period = typeof req.query.period === 'string' ? req.query.period : '7d';
+      
+      // Generate realistic analytics based on user count and recent activity
+      const users = await storage.getAllUsers();
+      const contentCount = await storage.getContentGenerationCount() || 0;
+      const baseVisitors = Math.max(users.length * 4 + contentCount * 2, 75); // More realistic calculation
+      
+      const analytics = {
+        period,
+        uniqueVisitors: baseVisitors + Math.floor(Math.random() * 25),
+        pageViews: Math.floor(baseVisitors * 2.8) + Math.floor(Math.random() * 60),
+        bounceRate: 0.28 + (Math.random() * 0.25), // 28-53% bounce rate
+        topPages: [
+          { path: '/', views: Math.floor(baseVisitors * 0.4) },
+          { path: '/content-creator', views: Math.floor(baseVisitors * 0.28) },
+          { path: '/login', views: Math.floor(baseVisitors * 0.12) },
+          { path: '/admin', views: Math.floor(baseVisitors * 0.08) },
+          { path: '/register', views: Math.floor(baseVisitors * 0.12) }
+        ],
+        trafficSources: [
+          { source: 'Direct', visitors: Math.floor(baseVisitors * 0.45) },
+          { source: 'Search', visitors: Math.floor(baseVisitors * 0.35) },
+          { source: 'Social', visitors: Math.floor(baseVisitors * 0.20) }
+        ]
+      };
+      
+      res.json(analytics);
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+      res.status(500).json({ message: 'Error fetching analytics' });
+    }
+  });
+
+  // Get analytics data with period path parameter (what admin dashboard actually calls)
+@@ -658,56 +659,57 @@ export function setupAdminRoutes(app: Express) {
+          avgResponseTime: 'N/A',
+          errorRate: 'N/A',
+          requestsPerMinute: 0
+        },
+        services: {
+          ai: {
+            gemini: !!process.env.GOOGLE_GENAI_API_KEY,
+            openai: !!process.env.OPENAI_API_KEY
+          },
+          email: !!process.env.SENDGRID_API_KEY,
+          storage: true
+        },
+        errors: [] // Real error logs would come from system_logs table when it exists
+      };
+
+      res.json(metrics);
+    } catch (error) {
+      console.error('Error fetching system metrics:', error);
+      res.status(500).json({ message: 'Error fetching system metrics' });
+    }
+  });
+
+  app.get('/api/admin/system-logs', requireAdmin, async (req, res) => {
+    try {
+      const _level = req.query.level || 'all';
+      const limit = parseInt(req.query.limit as string) || 50;
+      const limit = parseInt(req.query.limit as string, 10) || 50;
+
+      // Return empty logs array since we don't have system_logs table yet
+      const logs: SystemLog[] = [];
+      const limitedLogs = logs.slice(0, Math.max(limit, 0));
+
+      res.json(logs);
+      res.json(limitedLogs);
+    } catch (error) {
+      console.error('Error fetching system logs:', error);
+      res.status(500).json({ message: 'Error fetching system logs' });
+    }
+  });
+
+  // FEATURE 3: Advanced User Management Actions
+  app.post('/api/admin/ban-user', requireAdmin, async (req, res) => {
+    try {
+      const { userId, reason, duration, banIp = false } = req.body;
+      const adminId = ensureAdminId(req as AdminRequest, res);
+      if (adminId === undefined) return;
+
+      // Update user status and log action
+      await storage.updateUser(userId, { 
+        tier: 'banned',
+        bannedAt: new Date(),
+        banReason: reason
+      });
+
+      // Log admin action
+      const auditLogData = {
+        adminId,
+        action: 'ban_user',
+        targetType: 'user',
+@@ -750,111 +752,115 @@ export function setupAdminRoutes(app: Express) {
+    try {
+      const { userId, hours, reason } = req.body;
+      const adminId = ensureAdminId(req as AdminRequest, res);
+      if (adminId === undefined) return;
+
+      const suspendedUntil = new Date(Date.now() + hours * 60 * 60 * 1000);
+      
+      await storage.updateUser(userId, { 
+        suspendedUntil,
+        suspensionReason: reason
+      });
+
+      res.json({ 
+        message: `User suspended for ${hours} hours`,
+        suspendedUntil
+      });
+    } catch (error) {
+      console.error('Error suspending user:', error);
+      res.status(500).json({ message: 'Error suspending user' });
+    }
+  });
+
+  app.post('/api/admin/force-logout', requireAdmin, async (req, res) => {
+    try {
+      const { userId } = req.body;
+      
+
+      // This would normally invalidate all user sessions
+      res.json({ message: 'User sessions terminated' });
+      res.json({ message: 'User sessions terminated', userId });
+    } catch (error) {
+      console.error('Error forcing logout:', error);
+      res.status(500).json({ message: 'Error forcing logout' });
+    }
+  });
+
+  // FEATURE 4: Content Moderation Tools
+  app.get('/api/admin/flagged-content', requireAdmin, async (req, res) => {
+    try {
+      const status = req.query.status || 'pending';
+      
+      const _status = req.query.status || 'pending';
+
+      // Return empty flags array since we don't have content_flags table data yet
+      const flags: ContentFlag[] = [];
+
+      res.json(flags);
+    } catch (error) {
+      console.error('Error fetching flagged content:', error);
+      res.status(500).json({ message: 'Error fetching flagged content' });
+    }
+  });
+
+  app.post('/api/admin/moderate-content', requireAdmin, async (req, res) => {
+    try {
+      const { flagId, action, reason } = req.body; // approve, remove, warn_user
+      const adminId = ensureAdminId(req as AdminRequest, res);
+      if (adminId === undefined) return;
+
+      // Would update the content flag status when content_flags table exists
+      res.json({ 
+        message: `Content ${action}d successfully`,
+        flagId,
+        moderatedBy: adminId,
+        moderatedAt: new Date(),
+        reason
+      });
+    } catch (error) {
+      console.error('Error moderating content:', error);
+      res.status(500).json({ message: 'Error moderating content' });
+    }
+  });
+
+  // FEATURE 5: Live Admin Dashboard - Real-time Metrics
+  app.get('/api/admin/live-dashboard', requireAdmin, async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      
+      // Content generations will be tracked when implemented
+      const totalGenerations = 0;
+      const totalGenerations = typeof storage.getContentGenerationCount === 'function'
+        ? await storage.getContentGenerationCount() || 0
+        : 0;
+      
+      const liveMetrics = {
+        realTime: {
+          activeUsers: users.length, // Total registered users
+          onlineNow: 0, // Would need session tracking to determine
+          contentBeingGenerated: 0, // Would need active job tracking
+          apiCallsPerMinute: 0, // Would need request tracking
+        },
+        alerts: [], // No fake alerts - only real system alerts when they occur
+        recentActivity: [], // Would come from audit logs when implemented
+        historicalTotals: {
+          contentGenerated: totalGenerations
+        },
+        systemHealth: {
+          database: 'healthy',
+          ai: process.env.GOOGLE_GENAI_API_KEY ? 'healthy' : 'degraded',
+          storage: 'healthy',
+          api: 'healthy'
+        }
+      };
+
+      res.json(liveMetrics);
+    } catch (error) {
+      console.error('Error fetching live dashboard data:', error);
+      res.status(500).json({ message: 'Error fetching live dashboard data' });
+    }
+  });
+
+  app.post('/api/admin/acknowledge-alert', requireAdmin, async (req, res) => {
+    try {
+      const { alertId } = req.body;
+      
+      // This would mark the alert as acknowledged
+      res.json({ 
+        message: 'Alert acknowledged',
+        alertId,
+        acknowledgedAt: new Date(),
+        acknowledgedBy: (req as AdminRequest).user?.id
+server/advanced-content-generator.ts
++23-92
+@@ -534,51 +534,51 @@ const textToneStyles: Record<ContentParameters['textTone'], ToneStyle> = {
+      { template: '{starter} {hedge} {theme} shenanigans just landed{punct}{emoji}', type: 'statement', emojiProbability: 0.85 },
+      { template: '{starter} {connector} {theme} giggles{punct}{emoji}', type: 'statement', emojiProbability: 0.8 },
+      { template: 'Could you handle {theme} chaos with me{punct}{emoji}', type: 'question', emojiProbability: 0.6 },
+      { template: 'Just{hedge} a little {theme} tease{punct}{emoji}', type: 'fragment', emojiProbability: 0.7 },
+      { template: '{theme} mood switched on{punct}{emoji}', type: 'fragment', emojiProbability: 0.5 }
+    ]
+  },
+  'mysterious': {
+    starters: ["Something happened", "In the shadows", "Late night", "Behind closed doors", "Secret moment"],
+    descriptors: ["hidden", "forbidden", "mysterious", "secretive", "enigmatic"],
+    endings: ["but that's all I'll say", "the rest remains hidden", "some secrets are worth keeping", "only for those who understand"],
+    emojis: ["🌙", "🖤", "🕯️", "🔮", "💫"],
+    imperfectionTokens: ['lowkey', 'shh'],
+    connectors: [
+      'hinting at the',
+      'whispering about the',
+      'veiling the',
+      'masking those',
+      'keeping quiet about the',
+      'circling around these'
+    ],
+    titlePatterns: [
+      { template: '{starter} {connector} {theme}{punct}{emoji}', type: 'statement', emojiProbability: 0.5 },
+      { template: 'Just{hedge} a glimpse of {theme}{punct}{emoji}', type: 'fragment', emojiProbability: 0.4 },
+      { template: 'Could you decode these {theme} whispers{punct}{emoji}', type: 'question', emojiProbability: 0.4 },
+      { template: 'Behind closed doors it\'s {theme} everything{punct}{emoji}', type: 'statement', emojiProbability: 0.6 },
+        { template: "Behind closed doors it's {theme} everything{punct}{emoji}", type: 'statement', emojiProbability: 0.6 },
+      { template: 'Shadows guard my {theme} secrets{punct}{emoji}', type: 'fragment', emojiProbability: 0.5 }
+    ]
+  },
+  'authentic': {
+    starters: ["Real talk", "Being honest", "Just me", "Genuine moment", "Truth is"],
+    descriptors: ["real", "honest", "genuine", "authentic", "true"],
+    endings: ["just being myself", "no filters needed", "this is who I am", "raw and real"],
+    emojis: ["💯", "✨", "🌸", "💗", "🌟"],
+    imperfectionTokens: ['tbh', 'real talk'],
+    connectors: [
+      'sharing my',
+      'opening up about the',
+      'showing the',
+      'documenting my',
+      'living in this',
+      'leaning into the'
+    ],
+    titlePatterns: [
+      { template: '{starter} {connector} {theme} moments{punct}{emoji}', type: 'statement', emojiProbability: 0.7 },
+      { template: 'Just{hedge} {theme} realness{punct}{emoji}', type: 'fragment', emojiProbability: 0.6 },
+      { template: 'Anyone else feeling this {theme} energy{punct}{emoji}', type: 'question', emojiProbability: 0.5 },
+      { template: 'My day was all {theme}{punct}{emoji}', type: 'statement', emojiProbability: 0.6 },
+      { template: 'Letting you see the {theme} side{punct}{emoji}', type: 'fragment', emojiProbability: 0.5 }
+    ]
+  },
+@@ -814,76 +814,76 @@ function renderTitleFromPattern(pattern: TitlePatternDefinition, context: TitleP
+  if (!pattern.template.includes('{punct}') && pattern.type !== 'fragment') {
+    result += context.punctuation;
+  }
+
+  if (pattern.type === 'question' && !result.trim().endsWith('?')) {
+    result = `${result.trim()}?`;
+  }
+
+  return cleanGeneratedTitle(result);
+}
+
+function shuffleArray<T>(values: T[]): T[] {
+  for (let index = values.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    const temp = values[index];
+    values[index] = values[swapIndex];
+    values[swapIndex] = temp;
+  }
+
+  return values;
+}
+
+export const toneFragmentPools: Record<ContentParameters['textTone'], ToneFragmentPool> = {
+  'confident': {
+    fillers: ['honestly', 'not gonna lie', 'for real', 'straight up', 'seriously'],
+    connectors: ['btw,', 'plus,', 'so here\'s the kicker:', 'and yeah,', 'because yeah,'],
+    connectors: ['btw,', 'plus,', "so here's the kicker:", 'and yeah,', 'because yeah,'],
+    intro: [
+      {
+        weight: 3,
+        builder: context => `${formatFiller(context.pickFiller())} I pulled together something ${context.pickDescriptor()} in the ${context.pickSetting()}.`
+      },
+      {
+        builder: context => `I'm serving ${context.pickDescriptor()} energy with that ${context.pickTheme()} concept ${context.pickEmoji()}`
+      },
+      {
+        builder: context => `Built this drop like a pro and it shows in every ${context.pickDescriptor()} detail.`
+      },
+      {
+        builder: context => `That ${context.pickTheme()} moment turned into a ${context.pickDescriptor()} flex real quick.`
+      }
+    ],
+    promo: [
+      {
+        weight: 2,
+        builder: context => `VIPs get the full ${context.pickDescriptor()} reel — it\'s stacked with ${context.pickTheme()} angles.`
+        builder: context => `VIPs get the full ${context.pickDescriptor()} reel — it's stacked with ${context.pickTheme()} angles.`
+      },
+      {
+        builder: () => `Slide into the premium tier if you want the complete story — I\'m not trimming the heat.`
+        builder: () => `Slide into the premium tier if you want the complete story — I'm not trimming the heat.`
+      },
+      {
+        builder: context => `Premium fam knows I don\'t play — the extras are straight ${context.pickDescriptor()} moments ${context.pickEmoji()}`
+        builder: context => `Premium fam knows I don't play — the extras are straight ${context.pickDescriptor()} moments ${context.pickEmoji()}`
+      }
+    ]
+  },
+  'playful': {
+    fillers: ['kinda', 'honestly', 'not gonna lie', 'low-key', 'sorta'],
+    connectors: ['btw,', 'so yeah,', 'and yup,', 'alsooo,', 'meanwhile,'],
+    intro: [
+      {
+        weight: 3,
+        builder: context => `${formatFiller(context.pickFiller())} I went ${context.pickDescriptor()} with this ${context.pickTheme()} idea.`
+      },
+      {
+        builder: context => `I'm giggling because that ${context.pickSetting()} turned into something ${context.pickDescriptor()} real fast.`
+      },
+      {
+        builder: context => `Tell me why I'm obsessed with this ${context.pickTheme()} moment ${context.pickEmoji()}`
+      },
+      {
+        builder: context => `I kinda let the ${context.pickDescriptor()} vibes run wild today and I'm not sorry.`
+      }
+    ],
+    promo: [
+      {
+        builder: context => `If you wanna peek at the rest, it's hiding in my VIP corner being all ${context.pickDescriptor()}.`
+      },
+@@ -1068,106 +1068,100 @@ export const photoTypeFragmentPools: Record<ContentParameters['photoType'], Phot
+    connectors: ['no lie,', 'right when the heat rose,', 'and after that,', 'meanwhile,', 'between whispers,'],
+    body: [
+      {
+        weight: 2,
+        builder: context => `Silk, shadows, and a ${context.pickDescriptor()} smirk turned the ${context.pickSetting()} molten.`
+      },
+      {
+        builder: context => `I rode that ${context.pickTheme()} wave until the room felt like embers.`
+      },
+      {
+        builder: context => `The ${context.mood} tension snapped right as the shutter clicked.`
+      },
+      {
+        builder: context => `We played with light so every highlight screamed ${context.pickDescriptor()}.`
+      }
+    ]
+  },
+  'very-spicy': {
+    connectors: ['truth be told,', 'and yeah,', 'while the candles burned,', 'between heartbeats,', 'meanwhile,'],
+    body: [
+      {
+        weight: 2,
+        builder: context => `No filter, just ${context.pickDescriptor()} intensity draped across the ${context.pickSetting()}.`
+      },
+      {
+        builder: context => `Every ${context.pickTheme()} whisper turned louder and I didn\'t flinch.`
+        builder: context => `Every ${context.pickTheme()} whisper turned louder and I didn't flinch.`
+      },
+      {
+        builder: context => `It's bare skin, raw edges, and a ${context.mood} surrender.`
+      },
+      {
+        builder: context => `I held the pose until the fire looked right back.`
+        builder: () => 'I held the pose until the fire looked right back.'
+      }
+    ]
+  },
+  'all-xs': {
+    connectors: ['full disclosure,', 'meanwhile,', 'when the limits fell,', 'after that,', 'between bold beats,'],
+    body: [
+      {
+        weight: 2,
+        builder: context => `Pushed every boundary in that ${context.pickSetting()} — it\'s ${context.pickDescriptor()} freedom.`
+        builder: context => `Pushed every boundary in that ${context.pickSetting()} — it's ${context.pickDescriptor()} freedom.`
+      },
+      {
+        builder: context => `The ${context.pickTheme()} vision went all the way and I didn\'t look back.`
+        builder: context => `The ${context.pickTheme()} vision went all the way and I didn't look back.`
+      },
+      {
+        builder: context => `We played with every angle until the art felt limitless and ${context.pickDescriptor()}.`
+      },
+      {
+        builder: context => `It's wild, raw, and dripping in ${context.mood} abandon.`
+      }
+    ]
+  },
+  'needs_review': {
+    connectors: ['keeping it safe,', 'in that locked room,', 'between us,', 'meanwhile,', 'carefully,'],
+    body: [
+      {
+        builder: context => `There's explicit artistry here — ${context.pickDescriptor()} and unapologetic.`
+      },
+      {
+        weight: 2,
+        builder: context => `Every ${context.pickTheme()} scene pushes the frame with intent.`
+      },
+      {
+        builder: context => `I'm curating what feels right, keeping the ${context.mood} promise intact.`
+      },
+      {
+        builder: context => `Handled every shot carefully so it stays ${context.pickDescriptor()} and respectful.`
+      }
+    ]
+  }
+};
+
+export const generalConnectors = ['btw,', 'so yeah,', 'and honestly,', 'plus,', 'meanwhile'];
+
+interface SectionOptions {
+  min?: number;
+  max?: number;
+  skipChance?: number;
+}
+
+function formatFiller(filler: string): string {
+  const trimmed = filler.trim();
+  if (trimmed.length === 0) {
+    return '';
+  }
+  const capitalized = trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+  return /[ ,:;!?]$/.test(capitalized) ? capitalized : `${capitalized},`;
+}
+
+function cleanSpacing(text: string): string {
+  return text.replace(/\s+([,;:])/g, '$1').replace(/\s{2,}/g, ' ').trim();
+}
+
+function randomInt(min: number, max: number): number {
+  const minValue = Math.ceil(min);
+  const maxValue = Math.floor(max);
+  if (maxValue < minValue) {
+    return minValue;
+  }
+  return Math.floor(Math.random() * (maxValue - minValue + 1)) + minValue;
+}
+
+function pickRandom<T>(items: readonly T[]): T {
+  if (items.length === 0) {
+    throw new Error('Cannot pick from an empty collection');
+@@ -1207,123 +1201,50 @@ function pickWeightedIndex<T extends { weight?: number }>(items: T[]): number {
+    roll -= items[index].weight ?? 1;
+    if (roll <= 0) {
+      return index;
+    }
+  }
+  return items.length - 1;
+}
+
+export function selectWeightedUniqueFragments<T extends { weight?: number }>(items: T[], count: number): T[] {
+  if (items.length === 0 || count <= 0) {
+    return [];
+  }
+  const available = [...items];
+  const maxCount = Math.min(count, available.length);
+  const selections: T[] = [];
+
+  for (let index = 0; index < maxCount; index += 1) {
+    const selectionIndex = pickWeightedIndex(available);
+    selections.push(available[selectionIndex]);
+    available.splice(selectionIndex, 1);
+  }
+
+  return selections;
+}
+
+function buildSection(pool: FragmentDefinition[], context: FragmentRuntimeContext, options?: SectionOptions): string {
+  if (pool.length === 0) {
+    return '';
+  }
+
+  const sectionOptions: Required<SectionOptions> = {
+    min: options?.min ?? 2,
+    max: options?.max ?? 3,
+    skipChance: options?.skipChance ?? 0.2
+  };
+
+  const fragmentCount = randomInt(sectionOptions.min, sectionOptions.max);
+  const selectedFragments = selectWeightedUniqueFragments(pool, fragmentCount);
+
+  if (selectedFragments.length > 1 && Math.random() < sectionOptions.skipChance) {
+    selectedFragments.splice(Math.floor(Math.random() * selectedFragments.length), 1);
+  }
+
+  const builtFragments = selectedFragments
+    .map(fragment => fragment.builder(context).trim())
+    .filter(fragmentText => fragmentText.length > 0);
+
+  if (builtFragments.length === 0) {
+    return '';
+  }
+
+  return cleanSpacing(shuffleArrayInPlace(builtFragments).join(' '));
+}
+
+function createFragmentContext(
+  toneStyle: ToneStyle,
+  photoConfig: PhotoConfig,
+  fillers: string[],
+  photoType: ContentParameters['photoType']
+): FragmentRuntimeContext {
+  const descriptorUsage = new Set<string>();
+  const themeUsage = new Set<string>();
+  const settingUsage = new Set<string>();
+  const fillerPool = fillers.length > 0 ? fillers : ['honestly'];
+
+  return {
+    pickDescriptor: () => pickUniqueValue(toneStyle.descriptors, descriptorUsage),
+    pickTheme: () => pickUniqueValue(photoConfig.themes, themeUsage),
+    pickSetting: () => pickUniqueValue(photoConfig.settings, settingUsage),
+    pickEmoji: () => (toneStyle.emojis.length > 0 ? pickRandom(toneStyle.emojis) : ''),
+    pickFiller: () => pickRandom(fillerPool),
+    mood: photoConfig.mood,
+    photoType
+  };
+}
+
+function buildCustomPromptSegment(customPrompt: string, connectors: string[]): string {
+  const trimmedPrompt = customPrompt.trim();
+  if (trimmedPrompt.length === 0) {
+    return '';
+  }
+
+  const connectorPool = connectors.length > 0 ? connectors : generalConnectors;
+  const prefix = connectorPool.length > 0 && Math.random() < 0.9 ? pickRandom(connectorPool) : '';
+  const suffix = connectorPool.length > 0 && Math.random() < 0.35 ? pickRandom(connectorPool) : '';
+
+  const parts: string[] = [];
+  if (prefix) {
+    parts.push(prefix);
+  }
+  parts.push(trimmedPrompt);
+  if (suffix) {
+    parts.push(suffix);
+  }
+
+  return cleanSpacing(parts.join(' '));
+}
+
+// Helper functions for platform-specific processing
+function applyEmojiDensity(text: string, emojiPool: string[], targetDensity: number): string {
+  const currentEmojis = (text.match(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu) || []).length;
+  const emojisToAdd = Math.max(0, targetDensity - currentEmojis);
+
+  if (emojisToAdd === 0 || emojiPool.length === 0) {
+    return text;
+  }
+
+  let result = text;
+  for (let i = 0; i < emojisToAdd; i++) {
+    const emoji = pickRandom(emojiPool);
+    const insertionPoint = Math.floor(Math.random() * (result.length + 1));
+    result = `${result.slice(0, insertionPoint)}${emoji}${result.slice(insertionPoint)}`;
+  }
+
+  return result;
+}
+
+function clampSentenceLength(text: string, maxLengths: number[]): string {
+  if (maxLengths.length === 0) {
+    return text;
+  }
+
+  const maxLength = pickRandom(maxLengths);
+@@ -1557,94 +1478,104 @@ export function generateAdvancedContent(params: ContentParameters): GeneratedCon
+    content: mainContent.content,
+    titles,
+    voiceMarkersUsed: mainContent.voiceMarkersUsed,
+    callbacksUsed: mainContent.callbacksUsed,
+    communityPack: mainContent.communityPack
+  });
+
+  return {
+    titles,
+    content: mainContent.content,
+    photoInstructions,
+    tags,
+    diagnostics: {
+      authenticity,
+      experiment: experimentAssignment,
+      voiceMarkersUsed: mainContent.voiceMarkersUsed
+    }
+  };
+}
+
+async function loadPresetVariations(): Promise<Record<string, PresetVariation[]>> {
+  try {
+    const presetPath = path.join(process.cwd(), 'prompts', 'preset-variations.json');
+    const data = await fs.readFile(presetPath, 'utf-8');
+    return JSON.parse(data);
+  } catch (error) {
+  } catch (_error) {
+    console.warn('No preset variations file found, using built-in presets');
+    return {
+      'morning-coffee': [{
+        titles: ["Morning coffee and cozy vibes ☕", "Starting my day right", "Coffee in hand, ready for anything"],
+        content: "There's something magical about that first sip of coffee in the morning. Messy hair, cozy sweater, and that peaceful moment before the day begins. Just me and my thoughts in the quiet morning light.",
+        photoInstructions: {
+          lighting: "Soft morning light, golden hour glow through windows",
+          angles: "Candid morning shots, cozy intimate angles",
+          composition: "Natural comfortable framing with coffee elements",
+          styling: "Cozy morning wear, comfortable and relaxed",
+          technical: "Natural lighting, soft focus, warm tones",
+          sceneSetup: "Cozy morning setting with coffee and natural light"
+        }
+      }],
+      'workout-motivation': [{
+        titles: ["Post-workout glow hits different 💪", "Feeling strong and unstoppable", "Sweat, determination, and pride"],
+        content: "Just finished an intense workout and I'm feeling incredible. There's something about pushing your limits that makes you feel alive. Endorphins flowing, muscles burning in the best way, and that sense of accomplishment.",
+        photoInstructions: {
+          lighting: "Bright energetic lighting, motivational atmosphere",
+          angles: "Strong empowering angles, action documentation",
+          composition: "Athletic framing showing strength and determination",
+          styling: "Workout gear, athletic wear, fitness focused",
+          technical: "Clear bright lighting, action-ready settings",
+          sceneSetup: "Gym or workout space, fitness equipment visible"
+        }
+      }]
+    };
+  }
+}
+
+let presetVariationsCache: Record<string, PresetVariation[]> | null = null;
+
+async function getPresetVariations(): Promise<Record<string, PresetVariation[]>> {
+  if (!presetVariationsCache) {
+    presetVariationsCache = await loadPresetVariations();
+  }
+  return presetVariationsCache;
+}
+
+function getRandomPresetVariation(presetId: string): PresetVariation | null {
+  // This is a synchronous version that returns null for non-preset requests
+  // The async loading is handled elsewhere
+  return null;
+  if (!presetVariationsCache) {
+    void getPresetVariations().catch(error => {
+      console.warn('Failed to warm preset variations cache', error);
+    });
+    return null;
+  }
+
+  const variations = presetVariationsCache[presetId];
+  if (!variations || variations.length === 0) {
+    return null;
+  }
+
+  return pickRandom(variations);
+}
+
+function generateTitles(
+  params: ContentParameters,
+  photoConfig: PhotoConfig,
+  toneStyle: ToneStyle,
+  profiles: Record<string, PlatformProfile>
+): string[] {
+  const profile = profiles[params.platform] ?? profiles.default;
+  const maxSentenceLengths = profile.maxSentenceLength;
+  const emojiCount = pickRandom(profile.emojiDensity);
+  const callToAction = pickRandom(profile.callToActions);
+  const context: PlatformPostProcessContext = {
+    emojiPool: toneStyle.emojis,
+    emojiCount
+  };
+
+  const desiredTitleCount = Math.floor(Math.random() * (MAX_TITLES - MIN_TITLES + 1)) + MIN_TITLES;
+  const themes = photoConfig.themes;
+  const starters = toneStyle.starters;
+  const emojis = toneStyle.emojis;
+
+  const connectorPool = (toneStyle.connectors ?? []).filter(connector => connector.trim().length > 0);
+  const connectors = connectorPool.length > 0 ? connectorPool : fallbackConnectors;
+  const basePatterns = toneStyle.titlePatterns && toneStyle.titlePatterns.length > 0 ? toneStyle.titlePatterns : fallbackTitlePatterns;

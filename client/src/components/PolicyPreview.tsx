@@ -6,8 +6,7 @@ import { AlertTriangle, CheckCircle, XCircle, Shield, Clock } from 'lucide-react
 import { Alert, AlertDescription } from '@/components/ui/alert';
 // import { Progress } from '@/components/ui/progress';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useToast } from '@/hooks/use-toast';
-import { apiRequest, type ApiError } from '@/lib/queryClient';
+import { apiRequest as _apiRequest } from '@/lib/queryClient';
 
 interface PolicyResult {
   state: 'ok' | 'warn' | 'block';
@@ -32,7 +31,6 @@ interface PolicyPreviewProps {
 export function PolicyPreview({ subreddit, title, body, hasLink = false, onPreviewComplete }: PolicyPreviewProps) {
   const queryClient = useQueryClient();
   const [lastPreviewResult, setLastPreviewResult] = useState<PolicyResult | null>(null);
-  const { toast } = useToast();
 
   // Get user's preview gate stats
   const { data: previewStats, isLoading: statsLoading } = useQuery<PreviewStats>({
@@ -46,57 +44,33 @@ export function PolicyPreview({ subreddit, title, body, hasLink = false, onPrevi
   });
 
   // Preview content mutation
-  const isApiError = (error: unknown): error is ApiError => {
-    if (!error || typeof error !== 'object') {
-      return false;
-    }
-
-    return 'status' in error && 'statusText' in error;
-  };
-
   const previewMutation = useMutation({
     mutationFn: async (previewData: { subreddit: string; title: string; body: string; hasLink: boolean }) => {
-      const response = await apiRequest('POST', '/api/preview', previewData);
-      const resultData = await response.json() as { policyState: 'ok' | 'warn' | 'block'; warnings?: string[] };
-      return {
-        policyState: resultData.policyState,
-        warnings: Array.isArray(resultData.warnings) ? resultData.warnings : [],
-      };
+      const response = await fetch('/api/preview', {
+        method: 'POST',
+        body: JSON.stringify(previewData),
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (!response.ok) throw new Error('Preview failed');
+      return response.json();
     },
-    onSuccess: (result) => {
+    onSuccess: (result: unknown) => {
+      const resultData = result as { policyState: 'ok' | 'warn' | 'block'; warnings: string[] };
       const policyResult: PolicyResult = {
-        state: result.policyState,
-        warnings: result.warnings,
+        state: resultData.policyState,
+        warnings: resultData.warnings
       };
       setLastPreviewResult(policyResult);
       onPreviewComplete?.(policyResult);
-
+      
       // Refresh preview stats
       queryClient.invalidateQueries({ queryKey: ['/api/user/previewStats'] });
     },
-    onError: (error: unknown) => {
+    onError: (error) => {
       console.error('Preview error:', error);
-      let toastTitle = 'Preview failed';
-      let description = 'Content review temporarily unavailable';
-
-      if (isApiError(error)) {
-        if (error.isAuthError) {
-          toastTitle = 'Please log in';
-        }
-        description = error.userMessage ?? error.message;
-      } else if (error instanceof Error) {
-        description = error.message;
-      }
-
-      toast({
-        title: toastTitle,
-        description,
-        variant: 'destructive',
-      });
-
       setLastPreviewResult({
         state: 'warn',
-        warnings: [description]
+        warnings: ['Content review temporarily unavailable']
       });
     }
   });

@@ -1,0 +1,129 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/server/bootstrap/logger.ts b/server/bootstrap/logger.ts
+index ea0cbc250b794a5fa68fdfcaeaa232b8dad40f14..efbff52e2d238edc035157cdb6012c9be12fd20d 100644
+--- a/server/bootstrap/logger.ts
++++ b/server/bootstrap/logger.ts
+@@ -1,29 +1,30 @@
+ import winston from 'winston';
+ import DailyRotateFile from 'winston-daily-rotate-file';
+ import path from 'path';
+ import fs from 'fs';
++import type { Event, EventHint } from '@sentry/node';
+ 
+ // Ensure logs directory exists
+ const logsDir = path.join(process.cwd(), 'logs');
+ if (!fs.existsSync(logsDir)) {
+   fs.mkdirSync(logsDir, { recursive: true });
+ }
+ 
+ // Common log format for file transports
+ const fileFormat = winston.format.combine(
+   winston.format.timestamp(),
+   winston.format.errors({ stack: true }),
+   winston.format.json()
+ );
+ 
+ // Common format for console output
+ const consoleFormat = winston.format.combine(
+   winston.format.timestamp(),
+   winston.format.errors({ stack: true }),
+   winston.format.printf(({ timestamp, level, message, requestId, stack, ...meta }) => {
+     const metaStr = Object.keys(meta).length ? ` ${JSON.stringify(meta)}` : "";
+     const stackStr = stack ? `\n${stack}` : "";
+     return `${timestamp} [${level}]${requestId ? ` [${requestId}]` : ""} ${message}${metaStr}${stackStr}`;
+   })
+ );
+ 
+diff --git a/server/bootstrap/logger.ts b/server/bootstrap/logger.ts
+index ea0cbc250b794a5fa68fdfcaeaa232b8dad40f14..efbff52e2d238edc035157cdb6012c9be12fd20d 100644
+--- a/server/bootstrap/logger.ts
++++ b/server/bootstrap/logger.ts
+@@ -284,69 +285,74 @@ export async function initializeSentry(): Promise<typeof import('@sentry/node')
+   const dsn = process.env.SENTRY_DSN;
+   if (!dsn) {
+     return null; // Not configured, but that's okay
+   }
+   
+   try {
+     // Dynamic import with proper error handling for optional dependency
+     let SentryModule: (typeof import("@sentry/node")) | null = null;
+     try {
+       SentryModule = await import("@sentry/node");
+     } catch {
+       SentryModule = null;
+     }
+     if (SentryModule) {
+       Sentry = SentryModule;
+       
+       // Enhanced Sentry configuration
+       const sentryConfig = {
+         dsn,
+         environment: process.env.NODE_ENV,
+         tracesSampleRate: parseFloat(process.env.SENTRY_SAMPLE_RATE || '0.1'),
+         profilesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+         integrations: [Sentry.expressIntegration()],
+         
+         // Enhanced error filtering
+-        beforeSend(event: unknown, hint: unknown) {
++        beforeSend(event: Event, hint: EventHint): Event | null {
+           // Filter out non-critical errors in development
+           if (process.env.NODE_ENV === 'development') {
+             // Don't send client-side errors in development
+-            if ((event as Record<string, unknown>).request && 
+-                typeof (event as Record<string, unknown>).request === 'object' &&
+-                ((event as Record<string, unknown>).request as Record<string, unknown>)?.url?.toString().includes('/_vite/')) {
++            const requestUrl = event.request?.url;
++            if (typeof requestUrl === 'string' && requestUrl.includes('/_vite/')) {
+               return null;
+             }
+           }
+-          
++
+           // Filter out known non-critical errors
+-          const error = (hint as Record<string, unknown>)?.originalException;
+-          if (error?.message?.includes('ECONNRESET') || 
+-              error?.message?.includes('EPIPE')) {
+-            return null; // Don't send network errors
++          const error = hint?.originalException;
++          if (error instanceof Error) {
++            if (error.message.includes('ECONNRESET') || error.message.includes('EPIPE')) {
++              return null; // Don't send network errors
++            }
++          } else if (typeof error === 'object' && error !== null && 'message' in error) {
++            const message = (error as { message?: unknown }).message;
++            if (typeof message === 'string' && (message.includes('ECONNRESET') || message.includes('EPIPE'))) {
++              return null; // Don't send network errors
++            }
+           }
+-          
+-          return event as Record<string, unknown>;
++
++          return event;
+         },
+         
+         // Enhanced release tracking
+         release: process.env.GIT_COMMIT_SHA,
+         
+         // Set user context
+         initialScope: {
+           tags: {
+             component: 'backend',
+             node_env: process.env.NODE_ENV
+           }
+         }
+       };
+       
+       Sentry.init(sentryConfig);
+       
+       logger.info('Sentry initialized successfully', {
+         environment: sentryConfig.environment,
+         tracesSampleRate: sentryConfig.tracesSampleRate,
+         release: sentryConfig.release
+       });
+       
+     } else {
+       logger.warn("Sentry module not available, continuing without error tracking");
+     }
+ 
+EOF
+)

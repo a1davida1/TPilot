@@ -152,12 +152,12 @@ export function AdminPortal() {
   });
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [actionType, setActionType] = useState<string | null>(null);
-  const [duration, setDuration] = useState<string>('24');
-  const [tempPassword, setTempPassword] = useState<string>('');
-  const [reason, setReason] = useState<string>('');
+  const [_duration, _setDuration] = useState<string>('24');
+  const [_tempPassword, _setTempPassword] = useState<string>('');
+  const [_reason, _setReason] = useState<string>('');
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
-
+  
   // Authenticated API request with cookie-based auth
   const authenticatedRequest = async (url: string, method: string = 'GET', data?: unknown) => {
     const response = await fetch(url, {
@@ -168,7 +168,7 @@ export function AdminPortal() {
       credentials: 'include', // Include cookies for session-based auth
       body: data ? JSON.stringify(data) : undefined
     });
-
+    
     if (!response.ok) {
       const errorText = await response.text();
       let errorMessage;
@@ -180,7 +180,7 @@ export function AdminPortal() {
       }
       throw new Error(errorMessage);
     }
-
+    
     return response.json();
   };
 
@@ -192,11 +192,11 @@ export function AdminPortal() {
   });
 
   // Fetch all users
-  const { data: users, isLoading: usersLoading, error: usersError } = useQuery<UserData[]>({
+  const { data: users, isLoading: usersLoading, error: _usersError } = useQuery<UserData[]>({
     queryKey: ['/api/admin/users'],
     enabled: !!currentUser
   });
-
+  
   const typedUsers: UserData[] = users || [];
 
   // Create trial user mutation
@@ -281,7 +281,7 @@ export function AdminPortal() {
 
   const _handleAction = () => {
     if (!selectedUser || !actionType) return;
-
+    
     const userWithId = selectedUser as { id: number };
     if (actionType === 'reset-password') {
       actionMutation.mutate({ 
@@ -292,7 +292,7 @@ export function AdminPortal() {
       actionMutation.mutate({ 
         userId: userWithId.id, 
         action: actionType, 
-        duration: actionType === 'suspend' ? duration : undefined 
+        duration: actionType === 'suspend' ? _duration : undefined 
       });
     }
   };
@@ -321,77 +321,70 @@ export function AdminPortal() {
       </Card>
 
       {/* Statistics Dashboard */}
-      {_statsLoading ? (
-        <div className="text-center py-8">
-          <RefreshCw className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
-          <p className="text-muted-foreground mt-2">Loading statistics...</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border-blue-500/20">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Users</p>
-                  <p className="text-3xl font-bold">{stats?.totalUsers ?? 0}</p>
-                  <p className="text-xs text-green-600 mt-1">
-                    +{stats?.newUsersToday ?? 0} today
-                  </p>
-                </div>
-                <Users className="h-8 w-8 text-blue-500" />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border-blue-500/20">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Users</p>
+                <p className="text-3xl font-bold">{stats?.totalUsers ?? 0}</p>
+                <p className="text-xs text-green-600 mt-1">
+                  +{stats?.newUsersToday ?? 0} today
+                </p>
               </div>
-            </CardContent>
-          </Card>
+              <Users className="h-8 w-8 text-blue-500" />
+            </div>
+          </CardContent>
+        </Card>
 
-          <Card className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/20">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Pro/Premium</p>
-                  <p className="text-3xl font-bold">
-                    {(stats?.proUsers ?? 0) + (stats?.premiumUsers ?? 0)}
-                  </p>
-                  <p className="text-xs text-purple-600 mt-1">
-                    {stats?.trialUsers ?? 0} trials active
-                  </p>
-                </div>
-                <Crown className="h-8 w-8 text-purple-500" />
+        <Card className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/20">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Pro/Premium</p>
+                <p className="text-3xl font-bold">
+                  {(stats?.proUsers ?? 0) + (stats?.premiumUsers ?? 0)}
+                </p>
+                <p className="text-xs text-purple-600 mt-1">
+                  {stats?.trialUsers ?? 0} trials active
+                </p>
               </div>
-            </CardContent>
-          </Card>
+              <Crown className="h-8 w-8 text-purple-500" />
+            </div>
+          </CardContent>
+        </Card>
 
-          <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/20">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Monthly Revenue</p>
-                  <p className="text-3xl font-bold">${stats?.revenue ?? 0}</p>
-                  <p className="text-xs text-green-600 mt-1">
-                    <TrendingUp className="h-3 w-3 inline mr-1" />
-                    12% increase
-                  </p>
-                </div>
-                <DollarSign className="h-8 w-8 text-green-500" />
+        <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/20">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Monthly Revenue</p>
+                <p className="text-3xl font-bold">${stats?.revenue ?? 0}</p>
+                <p className="text-xs text-green-600 mt-1">
+                  <TrendingUp className="h-3 w-3 inline mr-1" />
+                  12% increase
+                </p>
               </div>
-            </CardContent>
-          </Card>
+              <DollarSign className="h-8 w-8 text-green-500" />
+            </div>
+          </CardContent>
+        </Card>
 
-          <Card className="bg-gradient-to-br from-orange-500/10 to-red-500/10 border-orange-500/20">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Active Today</p>
-                  <p className="text-3xl font-bold">{stats?.activeToday ?? 0}</p>
-                  <p className="text-xs text-orange-600 mt-1">
-                    Real-time activity
-                  </p>
-                </div>
-                <Activity className="h-8 w-8 text-orange-500" />
+        <Card className="bg-gradient-to-br from-orange-500/10 to-red-500/10 border-orange-500/20">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Active Today</p>
+                <p className="text-3xl font-bold">{stats?.activeToday ?? 0}</p>
+                <p className="text-xs text-orange-600 mt-1">
+                  Real-time activity
+                </p>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+              <Activity className="h-8 w-8 text-orange-500" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Management Tabs */}
       <Tabs defaultValue="live-dashboard" className="w-full">
@@ -776,10 +769,6 @@ export function AdminPortal() {
                     <RefreshCw className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
                     <p className="text-muted-foreground mt-2">Loading users...</p>
                   </div>
-                ) : usersError ? (
-                  <Alert variant="destructive">
-                    <AlertDescription>{getErrorMessage(usersError)}</AlertDescription>
-                  </Alert>
                 ) : (
                   typedUsers.slice(0, 10).map((user) => (
                     <div key={user.id} className="flex items-center justify-between p-4 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
@@ -833,7 +822,7 @@ export function AdminPortal() {
                   <strong>Email System:</strong> {stats?.emailConfigured ? 'Configured ✓' : 'Not configured - Add SendGrid API key'}
                 </AlertDescription>
               </Alert>
-
+              
               <Alert className="border-blue-500/30 bg-blue-500/5">
                 <Shield className="h-4 w-4 text-blue-600" />
                 <AlertDescription>
@@ -1008,82 +997,16 @@ function LiveDashboardTab({ authenticatedRequest }: { authenticatedRequest: Auth
 
 // FEATURE 1: IP Tracking Component
 function IPTrackingTab({ authenticatedRequest }: { authenticatedRequest: AuthenticatedRequest }) {
-  interface IPTrackingUserSummary {
-    id: number;
-    name?: string;
-    email?: string;
-  }
-
-  interface IPTrackingRecord {
-    ip: string;
-    location: string;
-    lastSeen: string;
-    flagged: boolean;
-    userId?: number;
-    primaryUserId?: number;
-    userCount?: number;
-    users?: IPTrackingUserSummary[] | IPTrackingUserSummary | number;
-  }
-
-  const resolveUserCount = (record: IPTrackingRecord): number => {
-    if (typeof record.userCount === 'number') {
-      return record.userCount;
-    }
-
-    if (Array.isArray(record.users)) {
-      return record.users.filter((user) => typeof user?.id === 'number').length || record.users.length;
-    }
-
-    if (typeof record.users === 'number') {
-      return record.users;
-    }
-
-    if (record.users && typeof record.users === 'object') {
-      const singleUser = record.users as IPTrackingUserSummary;
-      return typeof singleUser.id === 'number' ? 1 : 0;
-    }
-
-    return 0;
-  };
-
-  const resolvePrimaryUserId = (record: IPTrackingRecord): number | null => {
-    if (typeof record.userId === 'number') {
-      return record.userId;
-    }
-
-    if (typeof record.primaryUserId === 'number') {
-      return record.primaryUserId;
-    }
-
-    if (Array.isArray(record.users)) {
-      const firstUserWithId = record.users.find((user) => typeof user?.id === 'number');
-      return firstUserWithId?.id ?? null;
-    }
-
-    if (record.users && typeof record.users === 'object') {
-      const singleUser = record.users as IPTrackingUserSummary;
-      return typeof singleUser.id === 'number' ? singleUser.id : null;
-    }
-
-    return null;
-  };
-
   const { data: ipData } = useQuery({
     queryKey: ['/api/admin/ip-tracking'],
     queryFn: () => authenticatedRequest('/api/admin/ip-tracking'),
   });
 
-  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [selectedUserId, _setSelectedUserId] = useState<number | null>(null);
   const { data: userActivity } = useQuery({
     queryKey: ['/api/admin/user-activity', selectedUserId],
-    queryFn: () => {
-      if (selectedUserId === null) {
-        throw new Error('User ID is required to fetch activity');
-      }
-
-      return authenticatedRequest(`/api/admin/user-activity/${selectedUserId}`);
-    },
-    enabled: selectedUserId !== null
+    queryFn: () => authenticatedRequest(`/api/admin/user-activity/${selectedUserId}`),
+    enabled: !!selectedUserId
   });
 
   return (
@@ -1110,40 +1033,30 @@ function IPTrackingTab({ authenticatedRequest }: { authenticatedRequest: Authent
                 </tr>
               </thead>
               <tbody>
-                {(ipData as IPTrackingRecord[] | undefined)?.map((ip) => {
-                  const primaryUserId = resolvePrimaryUserId(ip);
-                  const userCount = resolveUserCount(ip);
-
-                  return (
-                    <tr key={ip.ip} className="border-b hover:bg-gray-50 dark:hover:bg-gray-800">
-                      <td className="p-2 font-mono text-sm">{ip.ip}</td>
-                      <td className="p-2">{userCount}</td>
-                      <td className="p-2">
-                        <div className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3 text-gray-500" />
-                          {ip.location}
-                        </div>
-                      </td>
-                      <td className="p-2">{new Date(ip.lastSeen).toLocaleDateString()}</td>
-                      <td className="p-2">
-                        <Badge className={ip.flagged ? 'bg-red-500' : 'bg-green-500'}>
-                          {ip.flagged ? 'Flagged' : 'Clean'}
-                        </Badge>
-                      </td>
-                      <td className="p-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          data-testid={`button-view-activity-${ip.ip.replace(/\./g, '-')}`}
-                          onClick={() => setSelectedUserId(primaryUserId)}
-                          disabled={primaryUserId === null}
-                        >
-                          View Activity
-                        </Button>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {(ipData as Array<{ip: string; users: number; location: string; lastSeen: string; flagged: boolean}>)?.map((ip) => (
+                  <tr key={ip.ip} className="border-b hover:bg-gray-50 dark:hover:bg-gray-800">
+                    <td className="p-2 font-mono text-sm">{ip.ip}</td>
+                    <td className="p-2">{ip.users}</td>
+                    <td className="p-2">
+                      <div className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3 text-gray-500" />
+                        {ip.location}
+                      </div>
+                    </td>
+                    <td className="p-2">{new Date(ip.lastSeen).toLocaleDateString()}</td>
+                    <td className="p-2">
+                      <Badge className={ip.flagged ? 'bg-red-500' : 'bg-green-500'}>
+                        {ip.flagged ? 'Flagged' : 'Clean'}
+                      </Badge>
+                    </td>
+                    <td className="p-2">
+                      <Button size="sm" variant="outline"
+                        data-testid={`button-view-activity-${ip.ip.replace(/\./g, '-')}`}>
+                        View Activity
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -1151,13 +1064,10 @@ function IPTrackingTab({ authenticatedRequest }: { authenticatedRequest: Authent
       </Card>
 
       {/* User Session Details */}
-      {selectedUserId !== null && (
+      {selectedUserId && (
         <Card>
-          <CardHeader className="flex items-center justify-between">
+          <CardHeader>
             <CardTitle>User Session Details</CardTitle>
-            <Button variant="ghost" size="sm" onClick={() => setSelectedUserId(null)}>
-              Clear
-            </Button>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -1412,7 +1322,7 @@ function UserManagementTab({ authenticatedRequest, users }: { authenticatedReque
   const handleAction = () => {
     if (!selectedUser || !actionType) return;
     if (actionType !== 'reset-password' && !reason) return;
-
+    
     const actionData: AdminActionRequest = {
       userId: (selectedUser as UserData).id,
       action: actionType,

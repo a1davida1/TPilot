@@ -1,0 +1,17 @@
+
+Given:
+PLATFORM: <instagram|x|reddit|tiktok>
+VOICE: <flirty_playful|gamer_nerdy|luxury_minimal|arts_muse|gym_energy|cozy_girl>
+VOICE_CONTEXT:
+- persona + trait bullets for the selected voice
+THEME: "<short description of the post>"
+CONTEXT: "<optional notes>"
+NSFW: <true|false>
+(Optional) HINT: <revision instructions>
+
+Return ONLY a JSON array of 5 objects using schema:
+{"caption":"","alt":"","hashtags":[],"cta":"","mood":"","style":"","safety_level":"","nsfw":false}
+
+Rules:
+- Follow VOICE_GUIDE details exactly; if anything conflicts, the VOICE_GUIDE overrides other instructions.
+- Follow the same Rules of play and Authenticity Checklist as variants.txt, adapting IMAGE_FACTS references to THEME/CONTEXT details. Keep hooks, CTA, and platform guardrails identical.

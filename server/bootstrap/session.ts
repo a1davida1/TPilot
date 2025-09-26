@@ -1,10 +1,11 @@
 
-
 import session from 'express-session';
 import connectPgSimple from 'connect-pg-simple';
-import { RedisStore } from 'connect-redis';
+import connectRedis from 'connect-redis';
 import Redis from 'ioredis';
 import createMemoryStore from 'memorystore';
+import type { Store } from 'express-session';
+import type { Redis as RedisClient } from 'ioredis';
 import { logger } from './logger.js';
 
 const ONE_DAY_MS = 86_400_000;
@@ -26,6 +27,10 @@ const parseInteger = (value: string | undefined, fallback: number): number => {
   const parsed = Number.parseInt(value, 10);
   return Number.isNaN(parsed) ? fallback : parsed;
 };
+
+interface RedisStoreConstructor {
+  new (options: { client: RedisClient; prefix?: string; disableTouch?: boolean; ttl?: number }): Store;
+}
 
 export function createSessionMiddleware(): ReturnType<typeof session> {
   const secret = process.env.SESSION_SECRET;
@@ -59,6 +64,7 @@ export function createSessionMiddleware(): ReturnType<typeof session> {
   };
 
   if (redisUrl) {
+    const RedisStore = connectRedis(session) as unknown as RedisStoreConstructor;
     const redisClient = new Redis(redisUrl, {
       lazyConnect: false,
       maxRetriesPerRequest: null,
@@ -109,4 +115,3 @@ export function createSessionMiddleware(): ReturnType<typeof session> {
 
   return session(sessionOptions);
 }
-

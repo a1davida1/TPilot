@@ -192,16 +192,14 @@ export class DatabaseStorage implements IStorage {
   async getAllUsers(): Promise<User[]> {
     try {
       // Guard optional schema fields - using db query pattern
-      const baseQuery = db.select().from(users);
-      const queryWithDeletedFilter =
-        'isDeleted' in users
-          ? baseQuery.where(eq(users.isDeleted, false))
-          : baseQuery;
-      const orderedQuery =
-        'createdAt' in users
-          ? queryWithDeletedFilter.orderBy(desc(users.createdAt))
-          : queryWithDeletedFilter;
-      const allUsers = await orderedQuery.execute();
+      let query = db.select().from(users);
+      if ('isDeleted' in users) {
+        query = query.where(eq(users.isDeleted, false));
+      }
+      if ('createdAt' in users) {
+        query = query.orderBy(desc(users.createdAt));
+      }
+      const allUsers = await query.execute();
       return allUsers;
     } catch (error) {
       safeLog('error', 'Storage operation failed - getting all users:', { error: (error as Error).message });
@@ -850,23 +848,15 @@ export class DatabaseStorage implements IStorage {
   async updateExpense(id: number, userId: number, updates: Partial<Expense>): Promise<Expense> {
     try {
       let updatesToApply: Partial<Expense> = { ...updates };
-      
-      const hasBusinessPurposeField = Object.prototype.hasOwnProperty.call(updates, 'businessPurpose');
-      const businessPurposeValue = hasBusinessPurposeField ? updates.businessPurpose : undefined;
+      const businessPurposeValue = updates.businessPurpose;
       const hasEmptyBusinessPurpose =
         typeof businessPurposeValue === 'string' && businessPurposeValue.trim().length === 0;
-      const isBusinessPurposeUndefined = hasBusinessPurposeField && businessPurposeValue === undefined;
-      const isClearingBusinessPurpose =
-        hasBusinessPurposeField &&
-        businessPurposeValue !== null &&
-        (isBusinessPurposeUndefined || hasEmptyBusinessPurpose);
 
-      if (hasEmptyBusinessPurpose || isBusinessPurposeUndefined) {
-        // Clear businessPurpose if it's explicitly set to empty string or undefined
-        updatesToApply.businessPurpose = null;
+      if (hasEmptyBusinessPurpose) {
+        delete updatesToApply.businessPurpose;
       }
 
-      const needsExistingExpenseLookup = updates.categoryId !== undefined || isClearingBusinessPurpose;
+      const needsExistingExpenseLookup = updates.categoryId !== undefined || hasEmptyBusinessPurpose;
       let existingExpense: Expense | undefined;
       if (needsExistingExpenseLookup) {
         existingExpense = await this.getExpense(id, userId);
@@ -886,22 +876,32 @@ export class DatabaseStorage implements IStorage {
             };
 
             const shouldApplyDefaultBusinessPurpose =
-              (businessPurposeValue === undefined || hasEmptyBusinessPurpose) &&
+              (businessPurposeValue === undefined ||
+                (typeof businessPurposeValue === 'string' && businessPurposeValue.trim().length === 0)) &&
               businessPurposeValue !== null;
 
             if (shouldApplyDefaultBusinessPurpose && categoryDefaults.defaultBusinessPurpose) {
-              updatesToApply.businessPurpose = categoryDefaults.defaultBusinessPurpose;
+              updatesToApply = {
+                ...updatesToApply,
+                businessPurpose: categoryDefaults.defaultBusinessPurpose,
+              };
             }
           }
 
           if (hasEmptyBusinessPurpose && categoryDefaults.defaultBusinessPurpose) {
-            updatesToApply.businessPurpose = categoryDefaults.defaultBusinessPurpose;
+            updatesToApply = {
+              ...updatesToApply,
+              businessPurpose: categoryDefaults.defaultBusinessPurpose,
+            };
           }
         }
-      } else if (isClearingBusinessPurpose && existingExpense?.categoryId !== undefined) {
+      } else if (hasEmptyBusinessPurpose && existingExpense?.categoryId !== undefined) {
         const category = await this.getExpenseCategory(existingExpense.categoryId);
         if (category?.defaultBusinessPurpose) {
-          updatesToApply.businessPurpose = category.defaultBusinessPurpose;
+          updatesToApply = {
+            ...updatesToApply,
+            businessPurpose: category.defaultBusinessPurpose,
+          };
         }
       }
 

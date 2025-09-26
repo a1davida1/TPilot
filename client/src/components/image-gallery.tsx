@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { protectImage, downloadProtectedImage } from '@/lib/image-protection';
-import { Upload, Shield, Download, Trash2, Eye, Tag } from 'lucide-react';
+import { Upload, Shield, Download, Trash2, Eye, Tag, Plus } from 'lucide-react';
 
 // Import MediaAsset type from schema
 import type { MediaAsset } from '@shared/schema.js';
@@ -53,8 +53,7 @@ export function ImageGallery() {
       try {
         const errorJson = JSON.parse(errorText);
         errorMessage = errorJson.message || errorText;
-      } catch (parseError) {
-        console.error('Failed to parse error response:', parseError);
+      } catch {
         errorMessage = errorText || response.statusText;
       }
       throw new Error(errorMessage);

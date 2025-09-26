@@ -1,7 +1,12 @@
-import type { Express } from "express";
+import type { Express, Response, NextFunction } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
+import session from 'express-session';
 import path from 'path';
+import connectPgSimple from 'connect-pg-simple';
+import * as connectRedis from 'connect-redis';
+import { Pool } from 'pg';
+import Redis from 'ioredis';
 import Stripe from 'stripe';
 import passport from 'passport';
 
@@ -313,29 +318,6 @@ interface PhotoInstructionsResult {
   technicalSettings?: string;
 }
 
-// Helper function to normalize photo instructions
-function normalizePhotoInstructions(instructions: PhotoInstructionsResult | any): PhotoInstructionsData {
-  const result: PhotoInstructionsData = {};
-
-  if (!instructions) return result;
-
-  const extractFirst = (value: string | string[] | undefined): string | undefined => {
-    if (Array.isArray(value)) {
-      return value.length > 0 ? value[0] : undefined;
-    }
-    return value;
-  };
-
-  result.lighting = extractFirst(instructions.lighting) || instructions.lighting;
-  result.cameraAngle = extractFirst(instructions.angles) || instructions.cameraAngle;
-  result.composition = extractFirst(instructions.composition) || instructions.composition;
-  result.styling = extractFirst(instructions.styling) || instructions.styling;
-  result.mood = instructions.mood;
-  result.technicalSettings = extractFirst(instructions.technical) || instructions.technicalSettings;
-
-  return result;
-}
-
 // ==========================================
 // PRO PERKS HELPER FUNCTIONS
 // ==========================================
@@ -369,7 +351,7 @@ const deriveSharePercentage = (perk: ProPerk): number => {
   };
 
 
-export async function registerRoutes(app: Express, _apiPrefix: string = '/api', options?: RegisterRoutesOptions): Promise<Server> {
+export async function registerRoutes(app: Express, apiPrefix: string = '/api', options?: RegisterRoutesOptions): Promise<Server> {
   // ==========================================
   // VALIDATE ENVIRONMENT & APPLY SECURITY
   // ==========================================
@@ -387,8 +369,38 @@ export async function registerRoutes(app: Express, _apiPrefix: string = '/api', 
   app.use(ipLoggingMiddleware);
   app.use(securityMiddleware);
 
-  // Session configuration using middleware
-  app.use(createSessionMiddleware());
+  // Session configuration (MUST BE BEFORE AUTH ROUTES)
+  let store: session.Store | undefined;
+
+  if (IS_PRODUCTION) {
+    if (REDIS_URL) {
+      const { RedisStore } = connectRedis as { RedisStore: new (options: { client: unknown; prefix: string }) => session.Store };
+      const redisClient = new Redis(REDIS_URL);
+      store = new RedisStore({ client: redisClient, prefix: 'sess:' });
+    } else if (DATABASE_URL) {
+      const PgStore = connectPgSimple(session);
+      store = new PgStore({
+        pool: new Pool({ connectionString: DATABASE_URL })
+      });
+    } else {
+      throw new Error('No REDIS_URL or DATABASE_URL set in production; persistent session store required.');
+    }
+  }
+
+  app.use(session({
+    store,
+    secret: SESSION_SECRET,
+    resave: false, // Prevent session fixation
+    saveUninitialized: false, // Only create sessions when needed
+    cookie: {
+      secure: IS_PRODUCTION, // HTTPS-only in production
+      httpOnly: true,
+      sameSite: 'lax', // Allows OAuth redirects
+      maxAge: 1000 * 60 * 60 * 24 * 7 // 1 week
+    },
+    name: 'thottopilot.sid', // Custom session name
+    rolling: true // Refresh session on activity
+  }));
 
   // Initialize Passport after session middleware
   app.use(passport.initialize());
@@ -828,7 +840,7 @@ export async function registerRoutes(app: Express, _apiPrefix: string = '/api', 
           theme: theme || 'general',
           titles: result.titles,
           content: result.content,
-          photoInstructions: normalizePhotoInstructions(result.photoInstructions),
+          photoInstructions: result.photoInstructions,
           prompt: prompt || customInstructions,
           allowsPromotion: Boolean(includePromotion)
         });
@@ -1171,7 +1183,7 @@ export async function registerRoutes(app: Express, _apiPrefix: string = '/api', 
   // AI generation endpoint - REAL
   app.post('/api/ai/generate', authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      const { prompt, platforms, styleHints } = req.body;
+      const { prompt, platforms, styleHints, variants } = req.body;
 
       const results = await Promise.all(
         platforms.map(async (platform: string) => {
@@ -1189,7 +1201,7 @@ export async function registerRoutes(app: Express, _apiPrefix: string = '/api', 
             platform,
             titles: generated.titles,
             body: generated.content,
-            photoInstructions: normalizePhotoInstructions(generated.photoInstructions),
+            photoInstructions: generated.photoInstructions,
             hashtags: generated.hashtags || [],
             style: styleHints?.[0] || 'authentic',
             confidence: 0.95
@@ -1206,7 +1218,7 @@ export async function registerRoutes(app: Express, _apiPrefix: string = '/api', 
             theme: 'general',
             titles: result.titles,
             content: result.body,
-            photoInstructions: normalizePhotoInstructions(result.photoInstructions),
+            photoInstructions: result.photoInstructions,
             prompt: prompt
           });
         }
@@ -1359,7 +1371,7 @@ export async function registerRoutes(app: Express, _apiPrefix: string = '/api', 
       if (!req.user?.id) {
         return res.status(401).json({ message: "Authentication required" });
       }
-      const { platform, content } = req.body;
+      const { platform, content, title, subreddit } = req.body;
 
       const post = await storage.createSocialMediaPost({
         userId: req.user.id,

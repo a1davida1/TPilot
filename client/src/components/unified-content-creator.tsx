@@ -30,7 +30,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import type { ContentGeneration } from "@shared/schema.js";
-import { GenerationHistory, type GenerationHistoryEntry } from "./generation-history";
+import { GenerationHistory } from "./generation-history";
 import { AuthModal } from "./auth-modal";
 import { protectImage, protectionPresets, downloadProtectedImage } from "@/lib/image-protection";
 
@@ -50,11 +50,8 @@ const textTones = [
 ];
 const availableHashtags = ['#model', '#photography', '#fashion', '#lifestyle', '#beauty', '#art', '#portrait', '#creative', '#outfit', '#style'];
 
-// Define PhotoInstructions type for clarity
-type PhotoInstructions = ContentGeneration["photoInstructions"];
-
 // Extended interface for frontend display with dynamic server properties
-interface GeneratedContentDisplay extends Omit<GenerationHistoryEntry, "createdAt" | "photoInstructions"> {
+interface GeneratedContentDisplay extends Omit<ContentGeneration, 'photoInstructions'> {
   aiProvider?: string;
   estimatedCost?: number;
   upgradeMessage?: string;
@@ -64,8 +61,14 @@ interface GeneratedContentDisplay extends Omit<GenerationHistoryEntry, "createdA
   contentSource?: string;
   quotaExceeded?: boolean;
   titles: string[]; // Ensure titles is always an array
-  createdAt: Date;
-  photoInstructions: PhotoInstructions | string;
+  photoInstructions: {
+    lighting: string;
+    cameraAngle: string;
+    composition: string;
+    styling: string;
+    mood: string;
+    technicalSettings: string;
+  }; // Match the exact schema type
 }
 
 interface UnifiedContentCreatorProps {
@@ -97,7 +100,7 @@ export function UnifiedContentCreator({
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
+  
   // ImageShield protection states
   const [autoProtect, setAutoProtect] = useState(false);
   const [protectionLevel, setProtectionLevel] = useState<'light' | 'standard' | 'heavy'>('standard');
@@ -230,7 +233,7 @@ export function UnifiedContentCreator({
 
       // Send to unified endpoint  
       const token = localStorage.getItem('authToken');
-
+      
       const response = await fetch('/api/generate-unified', {
         method: 'POST',
         headers: {
@@ -249,10 +252,10 @@ export function UnifiedContentCreator({
     onSuccess: (data) => {
       // Clear existing content first to ensure overwrite
       setGeneratedContent(null);
-
+      
       // Invalidate user stats to refresh daily generation counter
       queryClient.invalidateQueries({ queryKey: ['/api/user/stats'] });
-
+      
       // Ensure proper data structure for display
       const displayData: GeneratedContentDisplay = {
         ...data,
@@ -295,7 +298,7 @@ export function UnifiedContentCreator({
         description: error.message || 'Failed to generate content',
         variant: "destructive"
       });
-
+      
       // If auth error, suggest login
       if (error.message?.includes('Authentication') || error.message?.includes('Invalid token')) {
         setTimeout(() => {
@@ -316,7 +319,7 @@ export function UnifiedContentCreator({
       reader.onload = (e) => {
         const uploadedImageUrl = e.target?.result as string;
         setUploadedImage(uploadedImageUrl);
-
+        
         if (autoProtect) {
           applyImageShieldProtection(file);
           toast({ title: "Image Uploaded", description: "Image uploaded and protection applied automatically!" });
@@ -335,12 +338,12 @@ export function UnifiedContentCreator({
       // Apply watermark for free users (Pro/Premium users get watermark-free)
       const shouldAddWatermark = userTier === 'free' || isGuestMode;
       const protectedBlob = await protectImage(_file, settings, shouldAddWatermark);
-
+      
       // Create preview URL for protected image
       const protectedUrl = URL.createObjectURL(protectedBlob);
       setProtectedImageUrl(protectedUrl);
       setShowProtectionComparison(true);
-
+      
       toast({
         title: "Image Protected!",
         description: `${protectionLevel} protection applied${shouldAddWatermark ? ' with watermark' : ''}`,
@@ -365,14 +368,14 @@ export function UnifiedContentCreator({
       });
       return;
     }
-
+    
     await applyImageShieldProtection(imageFile);
   };
 
   // Download protected image
   const downloadCurrentProtectedImage = () => {
     if (!protectedImageUrl || !imageFile) return;
-
+    
     fetch(protectedImageUrl)
       .then(response => response.blob())
       .then(blob => {
@@ -392,10 +395,10 @@ export function UnifiedContentCreator({
 
   const handleGenerate = () => {
     if (!requireAuth("generate content")) return;
-
+    
     // Clear existing content before new generation
     setGeneratedContent(null);
-
+    
     if (workflowMode === 'text') {
       if (!customPrompt.trim()) {
         toast({
@@ -465,10 +468,10 @@ export function UnifiedContentCreator({
 
   const handlePresetGenerate = (preset: typeof contentPresets[0]) => {
     if (!requireAuth("generate content")) return;
-
+    
     // Clear existing content before new generation
     setGeneratedContent(null);
-
+    
     generateContentMutation.mutate({
       platform,
       customPrompt: preset.prompt,
@@ -722,7 +725,7 @@ export function UnifiedContentCreator({
                           <div className="flex items-center justify-center w-4 h-4 mr-2">🛡️</div>
                           Protect Image
                         </Button>
-
+                        
                         {protectedImageUrl && (
                           <Button
                             onClick={downloadCurrentProtectedImage}
@@ -776,32 +779,33 @@ export function UnifiedContentCreator({
             <GenerationHistory 
               onSelectGeneration={(generation) => {
                 // Load selected generation as current content
-                const {
-                  createdAt,
-                  photoInstructions,
-                  titles,
-                  ...rest
-                } = generation;
-
-                const parsedCreatedAt = createdAt ? new Date(createdAt) : new Date();
-                const normalizedCreatedAt = Number.isNaN(parsedCreatedAt.getTime())
-                  ? new Date()
-                  : parsedCreatedAt;
-
-                const normalizedPhotoInstructions: GeneratedContentDisplay["photoInstructions"] =
-                  typeof photoInstructions === "string"
-                    ? photoInstructions
-                    : photoInstructions
-                      ? photoInstructions
-                      : "";
-
                 const displayData: GeneratedContentDisplay = {
-                  ...rest,
-                  createdAt: normalizedCreatedAt,
-                  titles: Array.isArray(titles) ? titles : [],
-                  photoInstructions: normalizedPhotoInstructions,
+                  ...generation,
+                  userId: (generation as Record<string, unknown>).userId as number || 0,
+                  subreddit: (generation as Record<string, unknown>).subreddit as string || null,
+                  generationType: (generation as Record<string, unknown>).generationType as string || 'ai',
+                  createdAt: typeof generation.createdAt === 'string' 
+                    ? new Date(generation.createdAt) 
+                    : generation.createdAt || new Date(),
+                  titles: generation.titles || [],
+                  photoInstructions: (generation.photoInstructions && typeof generation.photoInstructions === 'object' && 'lighting' in generation.photoInstructions) 
+                    ? generation.photoInstructions as {
+                        lighting: string;
+                        cameraAngle: string;
+                        composition: string;
+                        styling: string;
+                        mood: string;
+                        technicalSettings: string;
+                      }
+                    : {
+                        lighting: '',
+                        cameraAngle: '',
+                        composition: '',
+                        styling: '',
+                        mood: '',
+                        technicalSettings: ''
+                      }
                 };
-
                 setGeneratedContent(displayData);
                 toast({
                   title: "Generation Loaded",

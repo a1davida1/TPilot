@@ -1,0 +1,1085 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+  Calendar,
+  Plus,
+  TrendingUp,
+  FileText,
+  Calculator,
+  Info,
+  DollarSign,
+  Receipt,
+  Sparkles,
+  Upload,
+  X,
+  AlertCircle
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiRequest, type ApiError } from '@/lib/queryClient';
+// Temporarily disabled framer-motion to fix runtime errors
+// import { motion, AnimatePresence } from 'framer-motion';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
+
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  Sparkles,
+  Receipt,
+  Calculator,
+  TrendingUp,
+  FileText,
+  DollarSign
+};
+
+interface TaxTrackerProps {
+  userTier?: 'guest' | 'free' | 'pro' | 'premium';
+}
+
+interface ExpenseCategory {
+  id: number;
+  name: string;
+  deductionPercentage: number;
+  icon: string;
+  color?: string;
+  description?: string;
+  examples: string[];
+  legalExplanation?: string;
+}
+
+interface Expense {
+  id: number;
+  description: string;
+  amount: number;
+  categoryId: number;
+  expenseDate: string;
+  taxYear: number;
+  receiptUrl?: string;
+  receiptFileName?: string;
+  notes?: string;
+  category: ExpenseCategory | null;
+  date?: string;
+}
+
+interface ExpenseFormState {
+  description: string;
+  amount: string;
+  category: string;
+  date: string;
+  notes: string;
+  taxYear: string;
+}
+
+interface TaxDeductionGuidance {
+  id: number;
+  title: string;
+  category: string;
+  description: string;
+  legalBasis: string;
+  requirements: string[];
+  riskLevel: string;
+}
+
+const usdFormatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2
+});
+
+const formatCurrency = (amountInCents: number | null | undefined) =>
+  usdFormatter.format((amountInCents ?? 0) / 100);
+
+const DEDUCTION_FALLBACK_TEXT = '—% Deductible';
+
+const formatDeductionPercentage = (deductionPercentage: number | null | undefined): string => {
+  if (typeof deductionPercentage !== 'number' || Number.isNaN(deductionPercentage)) {
+    return '—%';
+  }
+
+  return `${deductionPercentage}%`;
+};
+
+const formatDeductionBadgeText = (
+  deductionPercentage: number | null | undefined,
+  label?: string | null
+): string => {
+  const percentageText = formatDeductionPercentage(deductionPercentage);
+
+  if (percentageText === '—%') {
+    return DEDUCTION_FALLBACK_TEXT;
+  }
+
+  const trimmedLabel = label?.trim();
+  const shouldShowLabel =
+    typeof deductionPercentage === 'number' &&
+    deductionPercentage < 100 &&
+    Boolean(trimmedLabel);
+
+  const labelSuffix = shouldShowLabel ? ` (${trimmedLabel})` : '';
+
+  return `${percentageText} Deductible${labelSuffix}`;
+};
+
+const formatCategoryDeduction = (
+  category: Pick<ExpenseCategory, 'deductionPercentage' | 'name'> | null | undefined
+): string => formatDeductionBadgeText(category?.deductionPercentage, category?.name);
+
+const riskLevelStyles: Record<string, string> = {
+  low: 'bg-green-100 text-green-700',
+  medium: 'bg-yellow-100 text-yellow-700',
+  high: 'bg-red-100 text-red-700'
+};
+
+const getRiskBadgeClassName = (riskLevel: string) => {
+  const normalizedRisk = riskLevel.toLowerCase();
+  return riskLevelStyles[normalizedRisk] ?? 'bg-gray-100 text-gray-700';
+};
+
+const formatRiskLabel = (riskLevel: string) => {
+  if (!riskLevel) {
+    return 'Unknown';
+  }
+  return riskLevel.charAt(0).toUpperCase() + riskLevel.slice(1);
+};
+
+const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier: _userTier = 'free' }) => {
+  const currentYear = new Date().getFullYear();
+  const earliestTaxYear = 2000;
+  const latestTaxYear = currentYear + 1;
+
+  // Determine user access levels based on tier
+  const hasProAccess = _userTier === 'pro' || _userTier === 'premium';
+  const hasPremiumInsights = _userTier === 'premium';
+  const isFreeOrGuest = _userTier === 'guest' || _userTier === 'free';
+
+  const createDefaultExpenseForm = (): ExpenseFormState => ({
+    description: '',
+    amount: '',
+    category: '',
+    date: format(new Date(), 'yyyy-MM-dd'),
+    notes: '',
+    taxYear: String(currentYear)
+  });
+
+  const [selectedCategory, setSelectedCategory] = useState<ExpenseCategory | null>(null);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [calendarDate, setCalendarDate] = useState<Date>(new Date());
+  const [expenseForm, setExpenseForm] = useState<ExpenseFormState>(createDefaultExpenseForm);
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptExpenseId, setReceiptExpenseId] = useState('');
+  const [expenseError, setExpenseError] = useState<string | null>(null);
+  const [guidanceCategoryFilter, setGuidanceCategoryFilter] = useState<string>('all');
+
+  const queryClient = useQueryClient();
+
+  const { data: expenseCategories = [], isLoading: categoriesLoading, error: categoriesError } = useQuery<ExpenseCategory[]>({
+    queryKey: ['/api/expense-categories'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/expense-categories');
+      return res.json();
+    }
+  });
+
+  useEffect(() => {
+    if (!selectedCategory && expenseCategories.length > 0) {
+      setSelectedCategory(expenseCategories[0]);
+    }
+  }, [expenseCategories, selectedCategory]);
+
+  const guidanceCategoryOptions = useMemo(() => {
+    const uniqueCategories = new Set<string>();
+    expenseCategories.forEach((category) => {
+      if (category.name) {
+        uniqueCategories.add(category.name);
+      }
+    });
+    return Array.from(uniqueCategories);
+  }, [expenseCategories]);
+
+
+  // Fetch expense totals
+  const { data: expenseTotals = { total: 0, deductible: 0, byCategory: {} }, isLoading: totalsLoading, error: totalsError } =
+    useQuery({
+    queryKey: ['/api/expenses/totals'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/expenses/totals');
+      return res.json();
+    }
+  });
+
+  const estimatedSavings = Math.round((expenseTotals?.deductible || 0) * 0.22);
+
+  // Fetch recent expenses
+  const { data: recentExpenses = [], isLoading: recentLoading, error: recentError } = useQuery<Expense[]>({
+    queryKey: ['/api/expenses'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/expenses');
+      return res.json();
+    }
+  });
+
+  // Fetch calendar expenses
+  const { data: calendarExpenses = [], isLoading: calendarLoading, error: calendarError } = useQuery<Expense[]>({
+    queryKey: ['/api/expenses/range', format(startOfMonth(calendarDate), 'yyyy-MM-dd'), format(endOfMonth(calendarDate), 'yyyy-MM-dd')],
+    enabled: activeTab === 'calendar',
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        startDate: format(startOfMonth(calendarDate), 'yyyy-MM-dd'),
+        endDate: format(endOfMonth(calendarDate), 'yyyy-MM-dd')
+      });
+      const res = await apiRequest('GET', `/api/expenses/range?${params.toString()}`);
+      return res.json();
+    }
+  });
+
+  const {
+    data: taxGuidance = [],
+    isLoading: guidanceLoading,
+    isError: guidanceHasError,
+    error: guidanceError,
+    refetch: refetchGuidance,
+    isFetching: guidanceFetching
+  } = useQuery<TaxDeductionGuidance[], ApiError>({
+    queryKey: ['/api/expenses/tax-guidance', guidanceCategoryFilter],
+    queryFn: async ({ queryKey }) => {
+      const [endpoint, category] = queryKey as [string, string];
+      const params = new URLSearchParams();
+      if (category && category !== 'all') {
+        params.set('category', category);
+      }
+      const url = params.size > 0 ? `${endpoint}?${params.toString()}` : endpoint;
+      const res = await apiRequest('GET', url);
+      return res.json();
+    },
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 15
+  });
+
+  // Create expense mutation
+  const createExpenseMutation = useMutation({
+    mutationFn: async (expenseData: Omit<Expense, 'id' | 'category'>) => {
+      const response = await apiRequest('POST', '/api/expenses', expenseData);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/expenses/totals'] });
+      setShowExpenseModal(false);
+      setExpenseForm(createDefaultExpenseForm());
+      setExpenseError(null);
+    },
+    onError: (error: unknown) => {
+      const apiError = error as ApiError;
+      setExpenseError(apiError.userMessage ?? apiError.message);
+    }
+  });
+
+  const uploadReceiptMutation = useMutation({
+    mutationFn: async ({ expenseId, file }: { expenseId: string; file: File }) => {
+      const formData = new FormData();
+      formData.append('receipt', file);
+      const res = await apiRequest('POST', `/api/expenses/${expenseId}/receipt`, formData);
+      return res.json();
+    },
+    onSuccess: (updatedExpense: Expense) => {
+      queryClient.setQueryData<Expense[]>(['/api/expenses'], (old = []) =>
+        old.map((exp: Expense) => (exp.id === updatedExpense.id ? updatedExpense : exp))
+      );
+      queryClient.invalidateQueries({ queryKey: ['/api/expenses/range'] });
+      setShowReceiptModal(false);
+      setReceiptFile(null);
+      setReceiptExpenseId('');
+    }
+  });
+
+  const handleCreateExpense = () => {
+    if (!expenseForm.description || !expenseForm.amount || !expenseForm.category || !expenseForm.taxYear) {
+      setExpenseError('Please complete all required fields before submitting.');
+      return;
+    }
+
+    const amountValue = Number.parseFloat(expenseForm.amount);
+    if (!Number.isFinite(amountValue) || amountValue <= 0) {
+      setExpenseError('Please enter a valid expense amount greater than zero.');
+      return;
+    }
+
+    const parsedCategoryId = Number.parseInt(expenseForm.category, 10);
+    if (Number.isNaN(parsedCategoryId)) {
+      setExpenseError('Please select a valid expense category.');
+      return;
+    }
+
+    const parsedTaxYear = Number.parseInt(expenseForm.taxYear, 10);
+    if (
+      Number.isNaN(parsedTaxYear) ||
+      parsedTaxYear < earliestTaxYear ||
+      parsedTaxYear > latestTaxYear
+    ) {
+      setExpenseError(`Please enter a tax year between ${earliestTaxYear} and ${latestTaxYear}.`);
+      return;
+    }
+
+    setExpenseError(null);
+    createExpenseMutation.mutate({
+      description: expenseForm.description,
+      amount: amountValue,
+      categoryId: parsedCategoryId,
+      expenseDate: expenseForm.date,
+      notes: expenseForm.notes,
+      taxYear: parsedTaxYear
+    });
+  };
+
+  const handleReceiptUpload = () => {
+    if (!receiptFile || !receiptExpenseId) return;
+    uploadReceiptMutation.mutate({ expenseId: receiptExpenseId, file: receiptFile });
+  };
+
+  const getDaysWithExpenses = () => {
+    const daysInMonth = eachDayOfInterval({
+      start: startOfMonth(calendarDate),
+      end: endOfMonth(calendarDate)
+    });
+
+    return daysInMonth.map(day => {
+      const dayExpenses = calendarExpenses.filter(expense =>
+        isSameDay(parseISO(expense.expenseDate), day)
+      );
+      const totalAmount = dayExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+      const hasReceipt = dayExpenses.some(expense => expense.receiptUrl);
+
+      return {
+        date: day,
+        expenses: dayExpenses,
+        totalAmount,
+        hasReceipt
+      };
+    });
+  };
+
+  if (categoriesLoading || totalsLoading || recentLoading || calendarLoading) {
+    return <div>Loading...</div>;
+  }
+  if (categoriesError || totalsError || recentError || calendarError) {
+    return <div>Error loading tax data.</div>;
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-purple-50">
+      <div className="max-w-7xl mx-auto p-6 space-y-8">
+
+        {/* Header */}
+        <div className="text-center space-y-4">
+          <div className="flex items-center justify-center space-x-3">
+            <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl shadow-lg">
+              <Calculator className="h-8 w-8 text-white" />
+            </div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              Tax Tracker
+            </h1>
+          </div>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            Almost everything in your life as a content creator is tax deductible. 
+            Track your expenses and maximize your savings with confidence.
+          </p>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300">
+            <CardContent className="p-6">
+              <div className="flex items-center space-x-4">
+                <div className="p-3 bg-blue-100 rounded-xl">
+                  <DollarSign className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Total Expenses</p>
+                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(expenseTotals?.total ?? 0)}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300">
+            <CardContent className="p-6">
+              <div className="flex items-center space-x-4">
+                <div className="p-3 bg-green-100 rounded-xl">
+                  <FileText className="h-6 w-6 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Tax Deductions</p>
+                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(expenseTotals?.deductible ?? 0)}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300">
+            <CardContent className="p-6">
+              <div className="flex items-center space-x-4">
+                <div className="p-3 bg-purple-100 rounded-xl">
+                  <TrendingUp className="h-6 w-6 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Estimated Savings</p>
+                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(estimatedSavings)}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {hasProAccess ? (
+            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300">
+              <CardContent className="p-6">
+                <div className="flex items-start space-x-4">
+                  <div className="p-3 bg-amber-100 rounded-xl">
+                    <Sparkles className="h-6 w-6 text-amber-600" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-gray-500">
+                      {hasPremiumInsights ? 'Premium AI Monitoring' : 'Pro Automations'}
+                    </p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {hasPremiumInsights ? 'Real-time' : 'Active'}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {hasPremiumInsights
+                        ? 'Premium subscribers receive proactive audit alerts as deductions sync.'
+                        : 'Your account is auto-categorizing receipts and deductions in the background.'}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="bg-white/60 border border-dashed border-purple-200 shadow-inner">
+              <CardContent className="p-6">
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Pro Automations</p>
+                      <p className="text-2xl font-bold text-gray-900">Locked</p>
+                    </div>
+                    <Sparkles className="h-6 w-6 text-purple-300" />
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Unlock automated receipt syncing and AI audit monitoring with a Pro subscription.
+                  </p>
+                  {isFreeOrGuest && (
+                    <Button asChild className="mt-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg">
+                      <a href="/checkout">Upgrade to Pro</a>
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Main Content */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4 bg-white/80 backdrop-blur-sm border-0 shadow-lg p-1">
+            <TabsTrigger value="overview" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white">
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="categories" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white">
+              Categories
+            </TabsTrigger>
+            <TabsTrigger value="calendar" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white">
+              Calendar
+            </TabsTrigger>
+            <TabsTrigger value="insights" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white">
+              Tax Tips
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Quick Actions */}
+              <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Plus className="h-5 w-5 text-purple-600" />
+                    <span>Quick Actions</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Button 
+                    onClick={() => setShowExpenseModal(true)}
+                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg"
+                    data-testid="button-add-expense"
+                    aria-label="Open form to add a new tax-deductible expense"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add New Expense
+                  </Button>
+                  <Button 
+                    onClick={() => setShowReceiptModal(true)}
+                    variant="outline" 
+                    className="w-full border-purple-200 hover:bg-purple-50"
+                    data-testid="button-upload-receipt"
+                    aria-label="Upload receipt image or PDF for existing expense"
+                  >
+                    <Receipt className="mr-2 h-4 w-4" />
+                    Upload Receipt
+                  </Button>
+                  <Button 
+                    onClick={() => setActiveTab('calendar')}
+                    variant="outline" 
+                    className="w-full border-purple-200 hover:bg-purple-50"
+                    data-testid="button-view-calendar"
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
+                    View Calendar
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Recent Expenses */}
+              <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
+                <CardHeader>
+                  <CardTitle>Recent Expenses</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {recentExpenses.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Receipt className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-500 mb-4">No expenses tracked yet</p>
+                      <Button 
+                        onClick={() => setShowExpenseModal(true)}
+                        size="sm"
+                        className="bg-gradient-to-r from-purple-500 to-pink-500"
+                      >
+                        Add Your First Expense
+                      </Button>
+                    </div>
+                  ) : (
+                    recentExpenses.slice(0, 3).map((expense, _index) => (
+                      <div 
+                        key={expense.id}
+                        className="flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
+                      >
+                        <div>
+                          <p className="font-medium text-gray-900">{expense.description}</p>
+                          <p className="text-sm text-gray-500">{expense.category?.name ?? 'Uncategorized'} • {format(parseISO(expense.date || expense.expenseDate), 'MMM d, yyyy')}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-gray-900">{formatCurrency(expense.amount)}</p>
+                          <Badge
+                            variant="secondary"
+                            className="bg-green-100 text-green-700"
+                            data-testid="recent-expense-deduction-badge"
+                          >
+                            {formatCategoryDeduction(expense.category)}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="categories" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {categoriesLoading ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Loading categories...</p>
+                </div>
+              ) : (
+                expenseCategories.map((category, _index) => {
+                  const IconComponent = iconMap[category.icon] || Sparkles;
+                  return (
+                    <div key={category.id}>
+                      <Card 
+                        className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300 cursor-pointer group"
+                        onClick={() => setSelectedCategory(category)}
+                      >
+                        <CardContent className="p-6">
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <div 
+                                className="p-3 rounded-xl text-white shadow-lg"
+                                style={{ backgroundColor: category.color }}
+                              >
+                                <IconComponent className="h-6 w-6" />
+                              </div>
+                              <Badge className="bg-green-100 text-green-700">
+                                {formatCategoryDeduction(category)}
+                              </Badge>
+                            </div>
+
+                          <div>
+                            <h3 className="font-bold text-lg text-gray-900 group-hover:text-purple-600 transition-colors">
+                              {category.name}
+                            </h3>
+                            <p className="text-sm text-gray-600 mt-1">
+                              {category.description}
+                            </p>
+                          </div>
+
+                          <div className="pt-2 border-t border-gray-100">
+                            <p className="text-xs text-gray-500 mb-2">Examples:</p>
+                            <div className="flex flex-wrap gap-1">
+                              {category.examples.slice(0, 3).map((example, idx) => (
+                                <Badge key={idx} variant="outline" className="text-xs">
+                                  {example}
+                                </Badge>
+                              ))}
+                              {category.examples.length > 3 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{category.examples.length - 3} more
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                );
+              })
+              )}
+            </div>
+
+            {/* Selected Category Details */}
+            {selectedCategory && (
+              <div>
+                  <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
+                    <CardHeader>
+                      <CardTitle className="flex items-center space-x-3">
+                        <div 
+                          className="p-2 rounded-lg text-white"
+                          style={{ backgroundColor: selectedCategory.color }}
+                        >
+                          {(() => {
+                            const IconComponent = iconMap[selectedCategory.icon] || Sparkles;
+                            return <IconComponent className="h-5 w-5" />;
+                          })()}
+                        </div>
+                        <span>{selectedCategory.name} - Legal Details</span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="p-4 bg-blue-50 rounded-xl border border-blue-200">
+                        <div className="flex items-start space-x-3">
+                          <Info className="h-5 w-5 text-blue-600 mt-0.5" />
+                          <div>
+                            <h4 className="font-semibold text-blue-900 mb-2">Tax Deduction Explanation</h4>
+                            <p className="text-blue-800 text-sm leading-relaxed">
+                              {selectedCategory.legalExplanation}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <h4 className="font-semibold text-gray-900 mb-3">What's Included:</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          {selectedCategory.examples.map((example: string, _idx: number) => (
+                            <div key={_idx} className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
+                              <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                              <span className="text-sm text-gray-700">{example}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+          </TabsContent>
+
+          <TabsContent value="calendar" className="space-y-6">
+            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="h-5 w-5 text-purple-600" />
+                    <span>Expense Calendar</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1))}
+                    >
+                      Previous
+                    </Button>
+                    <span className="text-sm font-medium min-w-[120px] text-center">
+                      {format(calendarDate, 'MMMM yyyy')}
+                    </span>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1))}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-7 gap-2 mb-4">
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                    <div key={day} className="text-center text-sm font-medium text-gray-500 py-2">
+                      {day}
+                    </div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-7 gap-2">
+                  {getDaysWithExpenses().map((dayData, index) => (
+                    <div 
+                      key={index}
+                      className={`
+                        min-h-[80px] p-2 border border-gray-200 rounded-lg cursor-pointer
+                        hover:bg-gray-50 transition-colors
+                        ${isSameDay(dayData.date, new Date()) ? 'bg-purple-50 border-purple-200' : 'bg-white'}
+                      `}
+                    >
+                      <div className="text-sm font-medium text-gray-900 mb-1">
+                        {format(dayData.date, 'd')}
+                      </div>
+                      {dayData.totalAmount > 0 && (
+                        <div className="space-y-1">
+                          <div className="text-xs font-medium text-green-600">
+                            {formatCurrency(dayData.totalAmount)}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {dayData.expenses.length} {dayData.expenses.length === 1 ? 'expense' : 'expenses'}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="insights" className="space-y-6">
+            <div className="bg-white/80 backdrop-blur-sm border border-purple-100 shadow-xl rounded-2xl p-6 space-y-4">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-purple-600" />
+                    <h3 className="text-xl font-semibold text-gray-900">Tax Deduction Guidance</h3>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    These cards pull directly from our compliance knowledge base, giving you the latest deduction rules for content creators.
+                  </p>
+                </div>
+                <div className="w-full md:w-auto">
+                  <Select value={guidanceCategoryFilter} onValueChange={setGuidanceCategoryFilter}>
+                    <SelectTrigger className="w-full md:w-64 border-purple-200">
+                      <SelectValue placeholder="Filter by category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All categories</SelectItem>
+                      {guidanceCategoryOptions.map((categoryName) => (
+                        <SelectItem key={categoryName} value={categoryName}>
+                          {categoryName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {guidanceLoading || guidanceFetching ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                  <span className="ml-3 text-gray-600">Loading guidance...</span>
+                </div>
+              ) : guidanceHasError ? (
+                <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                  <AlertCircle className="h-12 w-12 text-red-500" />
+                  <div className="text-center">
+                    <h4 className="text-lg font-medium text-gray-900">Unable to load guidance</h4>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {guidanceError?.userMessage || guidanceError?.message || 'Something went wrong'}
+                    </p>
+                  </div>
+                  <Button onClick={() => refetchGuidance()} variant="outline" size="sm">
+                    Try again
+                  </Button>
+                </div>
+              ) : taxGuidance.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 space-y-2">
+                  <Info className="h-12 w-12 text-gray-400" />
+                  <h4 className="text-lg font-medium text-gray-900">No guidance found</h4>
+                  <p className="text-sm text-gray-600">
+                    {guidanceCategoryFilter === 'all' 
+                      ? 'No tax guidance is available at the moment.' 
+                      : `No guidance found for "${guidanceCategoryFilter}" category.`}
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {taxGuidance.map((guidance) => (
+                    <Card key={guidance.id} className="border border-gray-200 shadow-lg hover:shadow-xl transition-shadow">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <CardTitle className="text-lg font-semibold text-gray-900 leading-tight">
+                            {guidance.title}
+                          </CardTitle>
+                          <Badge 
+                            className={`ml-2 ${getRiskBadgeClassName(guidance.riskLevel)} border-0 text-xs font-medium px-2 py-1`}
+                          >
+                            {formatRiskLabel(guidance.riskLevel)} Risk
+                          </Badge>
+                        </div>
+                        <Badge variant="outline" className="text-xs w-fit">
+                          {guidance.category}
+                        </Badge>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <p className="text-sm text-gray-700">{guidance.description}</p>
+
+                        <div>
+                          <h5 className="text-sm font-medium text-gray-900 mb-2">Legal Basis</h5>
+                          <p className="text-xs text-gray-600 bg-gray-50 p-2 rounded border">
+                            {guidance.legalBasis}
+                          </p>
+                        </div>
+
+                        <div>
+                          <h5 className="text-sm font-medium text-gray-900 mb-2">Requirements</h5>
+                          <ul className="space-y-1">
+                            {guidance.requirements.map((req, idx) => (
+                              <li key={idx} className="text-xs text-gray-600 flex items-start">
+                                <span className="w-1 h-1 rounded-full bg-purple-400 mt-2 mr-2 flex-shrink-0"></span>
+                                {req}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
+
+        {/* Add Expense Modal */}
+        <Dialog
+          open={showExpenseModal}
+          onOpenChange={(open) => {
+            setShowExpenseModal(open);
+            if (!open) setExpenseError(null);
+          }}
+        >
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2">
+                <Plus className="h-5 w-5 text-purple-600" />
+                <span>Add New Expense</span>
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              {expenseError && (
+                <p className="text-sm text-red-600" data-testid="expense-error-message">
+                  {expenseError}
+                </p>
+              )}
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Input
+                  id="description"
+                  value={expenseForm.description}
+                  onChange={(e) => setExpenseForm({...expenseForm, description: e.target.value})}
+                  data-testid="input-expense-description"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="amount">Amount</Label>
+                <Input
+                  id="amount"
+                  type="number"
+                  step="0.01"
+                  value={expenseForm.amount}
+                  onChange={(e) => setExpenseForm({...expenseForm, amount: e.target.value})}
+                  data-testid="input-expense-amount"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="category">Category</Label>
+                <Select 
+                  value={expenseForm.category} 
+                  onValueChange={(value) => setExpenseForm({...expenseForm, category: value})}
+                >
+                  <SelectTrigger className="w-full" data-testid="select-expense-category">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {expenseCategories.map(category => (
+                      <SelectItem key={category.id} value={category.id.toString()}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="date">Date</Label>
+                <Input
+                  id="date"
+                  type="date"
+                  value={expenseForm.date}
+                  onChange={(e) => setExpenseForm({...expenseForm, date: e.target.value})}
+                  data-testid="input-expense-date"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="taxYear">Tax Year</Label>
+                <Input
+                  id="taxYear"
+                  type="number"
+                  min={earliestTaxYear}
+                  max={latestTaxYear}
+                  step={1}
+                  value={expenseForm.taxYear}
+                  onChange={(e) => setExpenseForm({...expenseForm, taxYear: e.target.value})}
+                  data-testid="input-expense-tax-year"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Enter the filing year for this deduction ({earliestTaxYear} - {latestTaxYear}).
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="notes">Notes (Optional)</Label>
+                <Textarea
+                  id="notes"
+                  value={expenseForm.notes}
+                  onChange={(e) => setExpenseForm({...expenseForm, notes: e.target.value})}
+                  data-testid="textarea-expense-notes"
+                />
+              </div>
+
+              <div className="flex space-x-2 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowExpenseModal(false)}
+                  className="flex-1"
+                  data-testid="button-cancel-expense"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleCreateExpense}
+                  disabled={!expenseForm.description || !expenseForm.amount || !expenseForm.category || !expenseForm.taxYear || createExpenseMutation.isPending}
+                  className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500"
+                  data-testid="button-create-expense"
+                >
+                  {createExpenseMutation.isPending ? 'Adding...' : 'Add Expense'}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Upload Receipt Modal */}
+        <Dialog open={showReceiptModal} onOpenChange={setShowReceiptModal}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2">
+                <Upload className="h-5 w-5 text-purple-600" />
+                <span>Upload Receipt</span>
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <Select value={receiptExpenseId} onValueChange={setReceiptExpenseId}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select expense" />
+                </SelectTrigger>
+                <SelectContent>
+                  {recentExpenses.map((exp: Expense) => (
+                    <SelectItem key={exp.id} value={String(exp.id)}>
+                      {exp.description}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                {receiptFile ? (
+                  <div className="space-y-2">
+                    <Receipt className="h-12 w-12 text-green-600 mx-auto" />
+                    <p className="text-sm font-medium text-gray-900">{receiptFile.name}</p>
+                    <p className="text-xs text-gray-500">{(receiptFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setReceiptFile(null)}
+                      data-testid="button-remove-receipt"
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Remove
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Upload className="h-12 w-12 text-gray-400 mx-auto" />
+                    <p className="text-sm text-gray-600">Drag and drop your receipt here</p>
+                    <p className="text-xs text-gray-500">or click to browse</p>
+                    <Input
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
+                      className="hidden"
+                      id="receipt-upload"
+                      data-testid="input-receipt-file"
+                    />
+                    <Label 
+                      htmlFor="receipt-upload"
+                      className="cursor-pointer inline-block px-4 py-2 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 transition-colors"
+                    >
+                      Choose File
+                    </Label>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex space-x-2 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowReceiptModal(false)}
+                  className="flex-1"
+                  data-testid="button-cancel-receipt"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleReceiptUpload}
+                  disabled={!receiptFile}
+                  className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500"
+                  data-testid="button-upload-receipt"
+                >
+                  Upload Receipt
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </div>
+  );
+};
+
+export default TaxTracker;

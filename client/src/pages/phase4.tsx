@@ -26,10 +26,7 @@ import {
 
 import type { LucideIcon } from 'lucide-react';
 
-const getIconComponent = (
-  IconComponent: LucideIcon
-): React.ComponentType<React.SVGProps<SVGSVGElement>> =>
-  IconComponent as unknown as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+type IconType = LucideIcon;
 
 export default function Phase4Dashboard() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -167,6 +164,8 @@ export default function Phase4Dashboard() {
     }
   ];
 
+  const getIconComponent = (IconComponent: React.ComponentType): React.ComponentType => IconComponent;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -198,7 +197,7 @@ export default function Phase4Dashboard() {
             {/* Quick Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {quickStats.map((stat, index) => {
-                const IconComponent = getIconComponent(stat.icon);
+                const IconComponent = getIconComponent(stat.icon) as React.ComponentType<React.SVGProps<SVGSVGElement>>;
                 return (
                   <Card key={index} className="bg-gradient-to-r from-gray-900/80 to-gray-800/80 border-gray-700/50 backdrop-blur-sm">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -219,7 +218,7 @@ export default function Phase4Dashboard() {
             {/* Feature Overview */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {phase4Features.map((feature) => {
-                const IconComponent = getIconComponent(feature.icon);
+                const IconComponent = getIconComponent(feature.icon) as React.ComponentType<React.SVGProps<SVGSVGElement>>;
                 return (
                   <Card key={feature.id} className="bg-gradient-to-r from-gray-900/80 to-gray-800/80 border-gray-700/50 backdrop-blur-sm overflow-hidden">
                     <div className={`h-1 bg-gradient-to-r ${feature.color}`} />

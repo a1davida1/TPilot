@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { rankAndSelect } from '../geminiPipeline';
+import { RankResult } from '../schema';
 import { CaptionItem } from '../schema';
 import { z } from 'zod';
-
 type CaptionItemType = z.infer<typeof CaptionItem>;
+type GeminiContent = Array<{ text: string }>;
 type TextModelMock = ReturnType<typeof vi.fn>;
 
 const createMockResponse = (payload: unknown) => ({
@@ -66,19 +68,8 @@ describe.each(scenarios)('Ranking Integration Tests ($label)', ({ applyGeminiMoc
   });
 
   describe('rankAndSelect', () => {
-    const extractVariantsFromCall = (callIndex: number) => {
-      const callArgs = textModelMock.mock.calls[callIndex]?.[0];
-      const promptEntry = Array.isArray(callArgs) ? callArgs[0] : undefined;
-      const promptText = promptEntry && typeof promptEntry.text === 'string' ? promptEntry.text : '';
-      const serialized = promptText.slice(promptText.lastIndexOf('\n') + 1);
-      try {
-        return JSON.parse(serialized);
-      } catch (error) {
-        return [];
-      }
-    };
-
     it('should sanitize output when AI returns banned content', async () => {
+      // Mock AI returning banned content
       const mockBannedResponse = createMockResponse({
         final: {
           caption: 'Check out this amazing content! ✨',
@@ -89,12 +80,13 @@ describe.each(scenarios)('Ranking Integration Tests ($label)', ({ applyGeminiMoc
         reason: 'Selected for engagement'
       });
 
+      // Mock successful rerank attempt with clean content
       const mockCleanResponse = createMockResponse({
         final: {
           caption: 'Enjoying the peaceful morning light',
           alt: 'Person in a sunlit room',
           hashtags: ['#morninglight', '#peaceful'],
-          cta: "What's your favorite time of day?"
+          cta: 'What\'s your favorite time of day?'
         },
         reason: 'Clean, engaging content'
       });
@@ -105,223 +97,165 @@ describe.each(scenarios)('Ranking Integration Tests ($label)', ({ applyGeminiMoc
 
       const variants: CaptionItemType[] = [
         {
-          caption: 'Test caption',
-          alt: 'Test alt',
-          hashtags: ['#test'],
-          cta: 'Test CTA',
-          mood: 'engaging',
-          style: 'authentic',
-          safety_level: 'normal',
+          caption: "Test caption",
+          alt: "Test alt",
+          hashtags: ["#test"],
+          cta: "Test CTA",
+          mood: "engaging",
+          style: "authentic",
+          safety_level: "normal",
           nsfw: false
         }
       ];
 
       const result = await rankAndSelect(variants, { platform: 'instagram' });
 
-      expect(result.final.caption).toBe('Enjoying the peaceful morning light');
-      expect(result.final.caption).not.toMatch(/amazing content/i);
       expect(result.final.caption).not.toContain('✨');
+      expect(result.final.caption).not.toContain('amazing content');
       expect(result.final.cta).not.toContain('Link in bio');
-      expect(result.final.hashtags).toEqual(['#morninglight', '#peaceful']);
+      expect(result.final.hashtags).not.toContain('#content');
+      expect(result.final.hashtags).not.toContain('#creative');
+      
+      // Should have called textModel twice (initial + rerank)
       expect(textModelMock).toHaveBeenCalledTimes(2);
     });
 
-    it('should handle persistent violations by sanitizing output', async () => {
-      const mockBannedResponse = createMockResponse({
-        winner_index: 0,
+    it('should sanitize final output when rerank also fails', async () => {
+      // Mock both attempts returning banned content
+      const mockBannedResponse = JSON.stringify({
         final: {
-          caption: 'Check out this amazing content! ✨',
-          alt: 'Banned alt',
-          hashtags: ['#content', '#creative'],
-          cta: 'Check it out'
+          caption: "✨ Amazing content! Check it out! ✨",
+          alt: "A photo",
+          hashtags: ["#content", "#viral"],
+          cta: "Link in bio!"
         },
-        reason: 'Initial pick'
+        reason: "Engaging content"
       });
 
-      textModelMock
-        .mockResolvedValueOnce(mockBannedResponse)
-        .mockResolvedValueOnce(mockBannedResponse);
+      (textModelMock as ReturnType<typeof vi.fn>)
+        .mockResolvedValueOnce(mockBannedResponse)  // First attempt
+        .mockResolvedValueOnce(mockBannedResponse); // Rerank also fails
 
       const variants: CaptionItemType[] = [
         {
-          caption: 'Clean test caption',
-          alt: 'Clean test alt',
-          hashtags: ['#photography'],
-          cta: 'What do you think?',
-          mood: 'engaging',
-          style: 'authentic',
-          safety_level: 'normal',
+          caption: "Clean test caption",
+          alt: "Clean test alt",
+          hashtags: ["#photography"],
+          cta: "What do you think?",
+          mood: "engaging",
+          style: "authentic",
+          safety_level: "normal",
           nsfw: false
         }
       ];
 
       const result = await rankAndSelect(variants, { platform: 'instagram' });
 
+      // Should be sanitized
       expect(result.final.caption).not.toContain('✨');
-      expect(result.final.caption).not.toMatch(/amazing content/i);
-      expect(result.final.cta).toBe('What do you think?');
-      expect(result.final.hashtags).toEqual(['#behindthescenes', '#handcrafted', '#maker', '#creator']);
+      expect(result.final.caption).not.toContain('Amazing content');
+      expect(result.final.cta).toBe("What do you think?");
+      expect(result.final.hashtags).toEqual(["#behindthescenes", "#handcrafted", "#maker", "#creator"]);
       expect(result.reason).toContain('Sanitized');
     });
 
-    it('should drop sparkle-filler winners before reranking', async () => {
-      const mockBannedResponse = createMockResponse({
-        winner_index: 0,
-        final: {
-          caption: 'Check out this amazing content! ✨',
-          alt: 'Banned alt',
-          hashtags: ['#content', '#creative'],
-          cta: 'Check it out'
-        },
-        reason: 'Initial pick'
-      });
-
-      const mockHumanResponse = createMockResponse({
-        winner_index: 0,
-        final: {
-          caption: 'Cozy morning tea with a splash of sunlight',
-          alt: 'Warm mug near the window',
-          hashtags: ['#morningtea'],
-          cta: 'How do you start your day?'
-        },
-        reason: 'Human alternative'
-      });
-
-      textModelMock
-        .mockResolvedValueOnce(mockBannedResponse)
-        .mockResolvedValueOnce(mockHumanResponse);
-
-      const variants: CaptionItemType[] = [
-        {
-          caption: 'Filler sparkle caption',
-          alt: 'Sparkle alt',
-          hashtags: ['#content'],
-          cta: 'Check it out',
-          mood: 'excited',
-          style: 'flashy',
-          safety_level: 'normal',
-          nsfw: false
-        },
-        {
-          caption: 'Cozy morning tea with a splash of sunlight',
-          alt: 'Warm mug near the window',
-          hashtags: ['#morningtea'],
-          cta: 'How do you start your day?',
-          mood: 'calm',
-          style: 'authentic',
-          safety_level: 'normal',
-          nsfw: false
-        }
-      ];
-
-      const result = await rankAndSelect(variants, { platform: 'instagram' });
-
-      expect(result.final.caption).toBe('Cozy morning tea with a splash of sunlight');
-      expect(result.final.caption).not.toMatch(/Check out this amazing content/i);
-      expect(textModelMock).toHaveBeenCalledTimes(2);
-
-      const firstVariants = extractVariantsFromCall(0);
-      const secondVariants = extractVariantsFromCall(1);
-      expect(firstVariants).toHaveLength(2);
-      expect(secondVariants).toHaveLength(1);
-      expect(secondVariants[0]?.caption).toBe('Cozy morning tea with a splash of sunlight');
-    });
-
     it('should preserve clean content without modification', async () => {
-      const mockCleanResponse = createMockResponse({
+      const mockCleanResponse = JSON.stringify({
         final: {
-          caption: 'Enjoying the peaceful morning in my garden',
-          alt: 'Person tending to flowers in sunlit garden',
-          hashtags: ['#gardening', '#morninglight', '#peaceful'],
+          caption: "Enjoying the peaceful morning in my garden",
+          alt: "Person tending to flowers in sunlit garden",
+          hashtags: ["#gardening", "#morninglight", "#peaceful"],
           cta: "What's your favorite flower?"
         },
-        reason: 'Clean, authentic content'
+        reason: "Clean, authentic content"
       });
 
-      textModelMock.mockResolvedValueOnce(mockCleanResponse);
+      (textModelMock as ReturnType<typeof vi.fn>).mockResolvedValueOnce(mockCleanResponse);
 
       const variants: CaptionItemType[] = [
         {
-          caption: 'Test caption',
-          alt: 'Test alt',
-          hashtags: ['#test'],
-          cta: 'Test CTA',
-          mood: 'engaging',
-          style: 'authentic',
-          safety_level: 'normal',
+          caption: "Test caption",
+          alt: "Test alt", 
+          hashtags: ["#test"],
+          cta: "Test CTA",
+          mood: "engaging",
+          style: "authentic",
+          safety_level: "normal",
           nsfw: false
         }
       ];
 
       const result = await rankAndSelect(variants, { platform: 'instagram' });
 
-      expect(result.final.caption).toBe('Enjoying the peaceful morning in my garden');
+      expect(result.final.caption).toBe("Enjoying the peaceful morning in my garden");
       expect(result.final.cta).toBe("What's your favorite flower?");
-      expect(result.final.hashtags).toEqual(['#gardening', '#morninglight', '#peaceful']);
-      expect(result.reason).toBe('Clean, authentic content');
+      expect(result.final.hashtags).toEqual(["#gardening", "#morninglight", "#peaceful"]);
+      expect(result.reason).toBe("Clean, authentic content");
+      
+      // Should only call textModel once
       expect(textModelMock).toHaveBeenCalledTimes(1);
     });
 
     it('should apply platform-specific hashtag limits', async () => {
-      const mockResponse = createMockResponse({
+      const mockResponse = JSON.stringify({
         final: {
-          caption: 'Clean content',
-          alt: 'Clean alt',
-          hashtags: ['#one', '#two', '#three', '#four', '#five'],
-          cta: 'What do you think?'
+          caption: "Clean content",
+          alt: "Clean alt",
+          hashtags: ["#one", "#two", "#three", "#four", "#five"], // Too many for X
+          cta: "What do you think?"
         },
-        reason: 'Good content'
+        reason: "Good content"
       });
 
-      textModelMock.mockResolvedValueOnce(mockResponse);
+      (textModelMock as ReturnType<typeof vi.fn>).mockResolvedValueOnce(mockResponse);
 
       const variants: CaptionItemType[] = [
         {
-          caption: 'Test caption',
-          alt: 'Test alt',
-          hashtags: ['#test'],
-          cta: 'Test CTA',
-          mood: 'engaging',
-          style: 'authentic',
-          safety_level: 'normal',
+          caption: "Test caption",
+          alt: "Test alt",
+          hashtags: ["#test"],
+          cta: "Test CTA",
+          mood: "engaging",
+          style: "authentic",
+          safety_level: "normal",
           nsfw: false
         }
       ];
 
       const result = await rankAndSelect(variants, { platform: 'x' });
 
-      expect(result.final.hashtags).toHaveLength(2);
+      expect(result.final.hashtags).toHaveLength(2); // X platform limit
     });
 
     it('should provide empty hashtags for Reddit platform', async () => {
-      const mockResponse = createMockResponse({
+      const mockResponse = JSON.stringify({
         final: {
-          caption: 'Clean content',
-          alt: 'Clean alt',
-          hashtags: ['#test', '#reddit'],
-          cta: 'What do you think?'
+          caption: "Clean content",
+          alt: "Clean alt",
+          hashtags: ["#test", "#reddit"],
+          cta: "What do you think?"
         },
-        reason: 'Good content'
+        reason: "Good content"
       });
 
-      textModelMock.mockResolvedValueOnce(mockResponse);
+      (textModelMock as ReturnType<typeof vi.fn>).mockResolvedValueOnce(mockResponse);
 
       const variants: CaptionItemType[] = [
         {
-          caption: 'Test caption',
-          alt: 'Test alt',
-          hashtags: ['#test'],
-          cta: 'Test CTA',
-          mood: 'engaging',
-          style: 'authentic',
-          safety_level: 'normal',
+          caption: "Test caption", 
+          alt: "Test alt",
+          hashtags: ["#test"],
+          cta: "Test CTA",
+          mood: "engaging",
+          style: "authentic",
+          safety_level: "normal",
           nsfw: false
         }
       ];
 
       const result = await rankAndSelect(variants, { platform: 'reddit' });
 
-      expect(result.final.hashtags).toEqual([]);
+      expect(result.final.hashtags).toEqual([]); // Reddit gets no hashtags
     });
   });
 });

@@ -1,0 +1,39 @@
+{
+  "include": [
+    "server/**/*.ts",
+    "shared/**/*.ts",
+    "client/**/*.ts",
+    "client/**/*.tsx",
+    "client/vite-env.d.ts"
+  ],
+  "exclude": ["node_modules", "dist"],
+  "compilerOptions": {
+    "incremental": false,
+    "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo",
+    "noEmit": false,
+    "module": "ESNext",
+    "target": "ES2022",
+    "strict": false,
+    "skipLibCheck": true,
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+    "strictFunctionTypes": false,
+    "strictBindCallApply": false,
+    "lib": ["esnext", "dom", "dom.iterable"],
+    "jsx": "preserve",
+    "esModuleInterop": true,
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "downlevelIteration": true,
+    "baseUrl": ".",
+    "rootDir": ".",
+    "types": ["node", "vite/client"],
+    "paths": {
+      "@shared/*": ["shared/*"],
+      "@server/*": ["server/*"],
+      "@/*": ["client/src/*"]
+    },
+    "preserveSymlinks": true,
+    "outDir": "dist"
+  }
+}

@@ -1,0 +1,193 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/client/src/pages/settings.tsx b/client/src/pages/settings.tsx
+index 0853b26fa770a7c203ace26679453c67012cd45a..1c389bb295777ea93245a528ef0614204015c636 100644
+--- a/client/src/pages/settings.tsx
++++ b/client/src/pages/settings.tsx
+@@ -1,132 +1,175 @@
+-import { useState } from 'react';
++import { useEffect, useState } from 'react';
+ import { Button } from '@/components/ui/button';
+ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+ import { Label } from '@/components/ui/label';
+ import { Switch } from '@/components/ui/switch';
+ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+ import { Separator } from '@/components/ui/separator';
+ import { Badge } from '@/components/ui/badge';
+ import { useToast } from '@/hooks/use-toast';
+ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+ import { apiRequest } from '@/lib/queryClient';
+ import { 
+   Settings, 
+   User, 
+   Bell, 
+   Shield, 
+   CreditCard, 
+   Moon, 
+   Sun, 
+   Globe, 
+   Download, 
+   Trash2, 
+   Key,
+   ArrowLeft,
+   Crown,
+   Zap
+ } from 'lucide-react';
+ import { Link, useLocation } from 'wouter';
+ 
++type UserSettingsResponse = {
++  theme?: string;
++  notifications?: boolean;
++  emailUpdates?: boolean;
++  autoSave?: boolean;
++  defaultPlatform?: string;
++  defaultStyle?: string;
++  watermarkPosition?: string;
++};
++
++type UpdateSettingsResponse = {
++  success: boolean;
++  settings: UserSettingsResponse;
++};
++
++type UserSettingsPayload = {
++  theme: string;
++  notifications: boolean;
++  emailUpdates: boolean;
++  autoSave: boolean;
++  defaultPlatform: string;
++};
++
+ export default function SettingsPage() {
+   const [theme, setTheme] = useState('light');
+   const [notifications, setNotifications] = useState(true);
+   const [emailUpdates, setEmailUpdates] = useState(true);
+   const [autoSave, setAutoSave] = useState(true);
+   const [defaultPlatform, setDefaultPlatform] = useState('reddit');
+   const [apiUsage] = useState({ used: 0, limit: 1000 });
+   const { toast } = useToast();
+   const queryClient = useQueryClient();
+ 
+-  const { data: _userSettings } = useQuery({
++  const { data: userSettings } = useQuery<UserSettingsResponse>({
+     queryKey: ['/api/user/settings'],
+   });
+ 
+   const { data: subscriptionData } = useQuery<{
+     subscription: { id: string; status: string; plan: string; nextBillDate?: string; amount?: number } | null;
+     isPro: boolean;
+     tier: string;
+   }>({
+     queryKey: ['/api/subscription'],
+   });
+ 
+-  const updateSettingsMutation = useMutation({
+-    mutationFn: async (settings: Record<string, unknown>) => {
+-      return apiRequest('PATCH', '/api/user/settings', settings);
++  useEffect(() => {
++    if (!userSettings) {
++      return;
++    }
++
++    setTheme(userSettings.theme ?? 'light');
++    setNotifications(userSettings.notifications ?? true);
++    setEmailUpdates(userSettings.emailUpdates ?? true);
++    setAutoSave(userSettings.autoSave ?? true);
++    setDefaultPlatform(userSettings.defaultPlatform ?? 'reddit');
++  }, [userSettings]);
++
++  const updateSettingsMutation = useMutation<UpdateSettingsResponse, Error, UserSettingsPayload>({
++    mutationFn: async (settings) => {
++      const response = await apiRequest('PATCH', '/api/user/settings', settings);
++      return response.json() as Promise<UpdateSettingsResponse>;
+     },
+-    onSuccess: () => {
+-      queryClient.invalidateQueries({ queryKey: ['/api/user/settings'] });
++    onSuccess: (data) => {
++      queryClient.setQueryData(['/api/user/settings'], data.settings);
++      setTheme(data.settings.theme ?? 'light');
++      setNotifications(data.settings.notifications ?? true);
++      setEmailUpdates(data.settings.emailUpdates ?? true);
++      setAutoSave(data.settings.autoSave ?? true);
++      setDefaultPlatform(data.settings.defaultPlatform ?? 'reddit');
+       toast({
+         title: "Settings updated",
+         description: "Your preferences have been saved.",
+       });
+     }
+   });
+ 
+   const deleteAccountMutation = useMutation({
+     mutationFn: async () => {
+       return apiRequest('DELETE', '/api/user/account');
+     },
+     onSuccess: () => {
+       toast({
+         title: "Account deleted",
+         description: "Your account has been permanently deleted.",
+       });
+       localStorage.removeItem('authToken');
+       localStorage.removeItem('user');
+       setLocation('/login');
+     }
+   });
+ 
+   const exportDataMutation = useMutation({
+     mutationFn: async () => {
+       const response = await apiRequest('GET', '/api/user/export');
+       return response.json();
+     },
+     onSuccess: (data) => {
+       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+       const url = URL.createObjectURL(blob);
+       const a = document.createElement('a');
+       a.href = url;
+       a.download = `promotionpro-data-${new Date().toISOString().split('T')[0]}.json`;
+       a.click();
+       URL.revokeObjectURL(url);
+       toast({
+         title: "Data exported",
+         description: "Your data has been downloaded.",
+       });
+     }
+   });
+ 
+   const handleSaveSettings = () => {
+-    updateSettingsMutation.mutate({
++    const payload: UserSettingsPayload = {
+       theme,
+       notifications,
+       emailUpdates,
+       autoSave,
+       defaultPlatform
+-    });
++    };
++
++    updateSettingsMutation.mutate(payload);
+   };
+ 
+   const [, setLocation] = useLocation();
+   
+   const handleUpgrade = () => {
+     // Navigate to Stripe checkout page
+     const selectedPlan = subscriptionData?.subscription?.plan === 'free' ? 'pro' : 'pro_plus';
+     setLocation(`/checkout?plan=${selectedPlan}`);
+   };
+ 
+   return (
+     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+       {/* Header */}
+       <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
+         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+           <div className="flex justify-between items-center h-16">
+             <div className="flex items-center space-x-4">
+               <Link href="/dashboard">
+                 <Button variant="ghost" size="sm">
+                   <ArrowLeft className="h-4 w-4 mr-2" />
+                   Back to Dashboard
+                 </Button>
+               </Link>
+               <div>
+                 <h1 className="text-2xl font-bold text-gray-900 flex items-center">
+ 
+EOF
+)

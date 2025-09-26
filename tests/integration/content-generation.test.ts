@@ -1,31 +1,18 @@
-import { describe, test, beforeEach, beforeAll, expect, vi } from 'vitest';
 import request from 'supertest';
-import express from 'express';
+import { describe, test, beforeAll, beforeEach, expect, vi } from 'vitest';
+import express, { type Request, type Response, type NextFunction } from 'express';
 
-const authState: { user?: { id: number; email: string } } = {};
+process.env.NODE_ENV = process.env.NODE_ENV ?? 'test';
+process.env.JWT_SECRET = process.env.JWT_SECRET ?? 'integration-test-secret';
+process.env.GOOGLE_GENAI_API_KEY = process.env.GOOGLE_GENAI_API_KEY ?? 'integration-gemini-key';
 
-const createPipelineResult = (overrides: Record<string, unknown> = {}) => {
-  const result = {
-    content: 'Generated content text',
-    titles: ['Title 1', 'Title 2', 'Title 3'],
-    photoInstructions: ['Photo instruction 1', 'Photo instruction 2'],
-    platform: 'instagram'
-  };
+interface TestUser {
+  id: number;
+  email: string;
+}
 
-  if (overrides.content) {
-    result.content = overrides.content as string;
-  }
-  if (overrides.titles) {
-    result.titles = overrides.titles as string[];
-  }
-  if (overrides.photoInstructions) {
-    result.photoInstructions = overrides.photoInstructions as string[];
-  }
-  if (overrides.platform) {
-    result.platform = overrides.platform as string;
-  }
-
-  return result;
+const authState: { user: TestUser | undefined } = {
+  user: { id: 42, email: 'user@example.com' }
 };
 
 const pipelineMock = vi.fn();
@@ -41,11 +28,11 @@ vi.mock('../../server/caption/geminiPipeline.js', () => ({
 }));
 
 vi.mock('../../server/caption/textOnlyPipeline.js', () => ({
-  pipeline: pipelineTextOnlyMock
+  pipelineTextOnly: pipelineTextOnlyMock
 }));
 
 vi.mock('../../server/caption/rewritePipeline.js', () => ({
-  pipeline: pipelineRewriteMock
+  pipelineRewrite: pipelineRewriteMock
 }));
 
 vi.mock('../../server/storage.js', () => ({
@@ -54,96 +41,86 @@ vi.mock('../../server/storage.js', () => ({
   }
 }));
 
-vi.mock('../../server/middleware/auth.js', () => ({
-  requireAuth: (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    if (!req.headers.authorization) {
-      return res.status(401).json({ message: 'Access token required' });
+vi.mock('../../server/middleware/auth.js', () => {
+  type AuthenticatedRequest = Request & { user?: TestUser };
+  const authenticateToken = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      res.status(401).json({ message: 'Access token required' });
+      return;
     }
-    (req as unknown as { user: typeof authState.user }).user = authState.user;
-    next();
-  }
-}));
 
-const createPipelineResult_old = (overrides: Record<string, unknown> = {}) => {
-  const result = {
-    content: 'Generated content text',
-    titles: ['Title 1', 'Title 2', 'Title 3'],
-    photoInstructions: ['Photo instruction 1', 'Photo instruction 2'],
-    platform: 'instagram',
-    imageAnalyzed: false,
-    cached: false,
-    fallbackUsed: false,
-    tone: 'professional',
-    mood: 'upbeat',
-    facts: [] as string[],
-    hashtags: ['#generated', '#content'],
-    alt: 'Alt text for image',
-    cta: 'Call to action',
-    style: 'modern',
-    safety_level: 'safe',
-    nsfw: false,
-    ranked: [] as string[],
-    variants: [] as string[]
+    const token = authHeader.replace('Bearer ', '').trim();
+    if (token !== 'valid-token') {
+      res.status(401).json({ message: 'Access token required' });
+      return;
+    }
+
+    if (authState.user) {
+      req.user = authState.user;
+    }
+
+    next();
   };
 
-  // Apply overrides
-  for (const [key, value] of Object.entries(overrides)) {
-    if (key === 'content' && typeof value === 'string') {
-      result.content = value;
+  return { authenticateToken };
+});
+
+type MockCaption = {
+  caption: string;
+  alt?: string;
+  hashtags?: string[];
+  cta?: string;
+  mood?: string;
+  style?: string;
+};
+
+type MockPipelineResult = {
+  provider: string;
+  final?: MockCaption;
+  ranked?: Record<string, unknown>;
+  variants?: Array<Record<string, unknown>>;
+  facts?: Record<string, unknown>;
+};
+
+const createPipelineResult = (overrides?: Partial<MockPipelineResult>): MockPipelineResult => {
+  const baseFinal: MockCaption = {
+    caption: 'Generated caption from pipeline',
+    alt: 'Alt text for generated caption',
+    hashtags: ['#spark', '#glow'],
+    cta: 'Tap to explore more',
+    mood: 'confident',
+    style: 'playful'
+  };
+
+  const result: MockPipelineResult = {
+    provider: 'gemini',
+    final: { ...baseFinal },
+    ranked: { final: { ...baseFinal }, reason: 'Top pick' },
+    variants: [
+      { caption: 'Generated caption from pipeline', hashtags: ['#spark'] },
+      { caption: 'Second angle caption', hashtags: ['#glow'] }
+    ],
+    facts: { palette: ['sunset'], subject: 'creator' }
+  };
+
+  if (overrides) {
+    if (Object.prototype.hasOwnProperty.call(overrides, 'final')) {
+      result.final = overrides.final
+        ? { ...baseFinal, ...overrides.final }
+        : undefined;
     }
-    if (key === 'titles' && Array.isArray(value)) {
-      result.titles = value as string[];
-    }
-    if (key === 'photoInstructions' && Array.isArray(value)) {
-      result.photoInstructions = value as string[];
-    }
-    if (key === 'platform' && typeof value === 'string') {
-      result.platform = value;
-    }
-    if (key === 'imageAnalyzed' && typeof value === 'boolean') {
-      result.imageAnalyzed = value;
-    }
-    if (key === 'cached' && typeof value === 'boolean') {
-      result.cached = value;
-    }
-    if (key === 'fallbackUsed' && typeof value === 'boolean') {
-      result.fallbackUsed = value;
-    }
-    if (overrides.tone) {
-      result.tone = overrides.tone as string;
-    }
-    if (overrides.mood) {
-      result.mood = overrides.mood as string;
-    }
-    if (overrides.facts) {
-      result.facts = overrides.facts as string[];
-    }
-    if (overrides.hashtags) {
-      result.hashtags = overrides.hashtags as string[];
-    }
-    if (overrides.alt) {
-      result.alt = overrides.alt as string;
-    }
-    if (overrides.cta) {
-      result.cta = overrides.cta as string;
-    }
-    if (overrides.style) {
-      result.style = overrides.style as string;
-    }
-    if (overrides.safety_level) {
-      result.safety_level = overrides.safety_level as string;
-    }
-    if (overrides.nsfw) {
-      result.nsfw = overrides.nsfw as boolean;
+    if (overrides.provider) {
+      result.provider = overrides.provider;
     }
     if (overrides.ranked) {
-      result.ranked = overrides.ranked as string[];
+      result.ranked = overrides.ranked;
     }
     if (overrides.variants) {
-      result.variants = overrides.variants as string[];
+      result.variants = overrides.variants;
     }
     if (overrides.facts) {
-      result.facts = overrides.facts as string[];
+      result.facts = overrides.facts;
     }
   }
 
@@ -210,12 +187,14 @@ describe('Caption generation route contract', () => {
     });
   });
 
-  test('forwards persona request fields to the pipeline', async () => {
+  test('forwards persona options to the pipeline when present', async () => {
     const personaRequest = {
       imageUrl,
-      platform: 'tiktok',
-      voice: 'funny',
-      mood: 'upbeat'
+      platform: 'instagram',
+      voice: 'bold_voice',
+      style: 'vibrant',
+      mood: 'dramatic',
+      nsfw: true
     };
 
     await sendGenerateRequest(personaRequest);
@@ -224,12 +203,15 @@ describe('Caption generation route contract', () => {
     expect(pipelineMock).toHaveBeenCalledWith(personaRequest);
   });
 
-  test('returns the pipeline response data directly on success', async () => {
+  test('returns the pipeline payload and persists the generation', async () => {
     const pipelineResponse = createPipelineResult({
-      content: 'Custom generated content',
-      titles: ['Custom Title 1', 'Custom Title 2'],
-      photoInstructions: ['Custom instruction'],
-      platform: 'instagram'
+      final: {
+        caption: 'Stored caption',
+        hashtags: ['#stored'],
+        alt: 'Stored alt text',
+        mood: 'confident',
+        style: 'studio'
+      }
     });
     pipelineMock.mockResolvedValueOnce(pipelineResponse);
 
@@ -241,16 +223,19 @@ describe('Caption generation route contract', () => {
     expect(createGenerationMock).toHaveBeenCalledWith(expect.objectContaining({
       userId: 42,
       platform: 'instagram',
-      style: 'studio'
+      style: 'studio',
+      theme: 'image_based',
+      titles: ['Stored caption'],
+      content: 'Stored caption',
+      allowsPromotion: false
     }));
   });
 
-  test('stores generations with the appropriate style field for TikTok voice personas', async () => {
+  test('falls back to the voice as style when no explicit style is provided', async () => {
     const pipelineResponse = createPipelineResult({
-      content: 'TikTok content',
-      titles: ['TikTok Title'],
-      photoInstructions: ['TikTok instruction'],
-      platform: 'tiktok'
+      final: {
+        caption: 'Voice guided caption'
+      }
     });
     pipelineMock.mockResolvedValueOnce(pipelineResponse);
 
@@ -263,7 +248,7 @@ describe('Caption generation route contract', () => {
     }));
   });
 
-  test('skips storage for unauthenticated requests', async () => {
+  test('skips persistence when the authenticated user is not attached', async () => {
     authState.user = undefined;
     const pipelineResponse = createPipelineResult();
     pipelineMock.mockResolvedValueOnce(pipelineResponse);
@@ -275,10 +260,11 @@ describe('Caption generation route contract', () => {
     expect(createGenerationMock).not.toHaveBeenCalled();
   });
 
-  test('returns a 200 response even when storage fails', async () => {
+  test('does not fail the response when storage.createGeneration throws', async () => {
     const pipelineResponse = createPipelineResult({
-      content: 'Pipeline succeeded',
-      platform: 'instagram'
+      final: {
+        caption: 'Resilient caption'
+      }
     });
     pipelineMock.mockResolvedValueOnce(pipelineResponse);
     createGenerationMock.mockRejectedValueOnce(new Error('database offline'));

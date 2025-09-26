@@ -1,4 +1,3 @@
-
 Given:
 PLATFORM: <instagram|x|reddit|tiktok>
 VOICE: <flirty_playful|gamer_nerdy|luxury_minimal|arts_muse|gym_energy|cozy_girl>
@@ -18,24 +17,12 @@ IMAGE_FACTS: <json>
 Write 5 options. Return JSON array of 5 objects ONLY:
 {"caption":"","alt":"","hashtags":[],"cta":"","mood":"","style":"","safety_level":""}
 
-Hooks & Audience Focus
-- Deliver 5 distinct angles; include at least one short/punchy take, one CTA-forward version, and one aesthetic/poetic treatment.
-- Open every caption with a hook that uses AUDIENCE_HOOKS or VOICE_PERSONA language to name or include the target community within the first sentence (<=125 characters on IG).
-
-Sensory Accuracy
+Rules:
+- 5 different angles; include 1 short/punchy, 1 CTA-forward, 1 aesthetic/poetic.
+- Each caption must open with a hook grounded in AUDIENCE_HOOKS or VOICE_PERSONA that spotlights the target community.
 - Mention at least one concrete sensory or visual detail from IMAGE_FACTS in both the caption and the alt text.
-- Use nouns, colors, textures, and setting facts exactly as described—no inventions or contradictions.
-
-CTA & Platform Norms
-- Build CTA lines from CTA_PATTERNS and adapt phrasing to the PLATFORM (IG: saves/shares; X: replies/quote chains; TikTok: watch/like/follow; Reddit: discussion/upvotes with zero hashtags).
-- Respect platform limits: IG total<=2200 characters with 3–8 hashtags; X<=250 characters with 0–3 hashtags; TikTok 150–220 characters with 2–5 hashtags; Reddit skip hashtag spam entirely.
-
-Authenticity Checklist
-- Apply every AUTHENTICITY_CHECKLIST item: mention a concrete visual detail, use colloquial contractions, show a candid emotional beat, and avoid corporate phrasing.
-
-Subreddit Norms
-- When PLATFORM=reddit, follow SUBREDDIT_NOTES exactly (if provided), format like a thread starter with compact paragraphs, and never use emoji spam.
-
-Quality Control
-- Keep tone aligned with VOICE_TRAITS and weave persona energy throughout.
-- Ensure hashtags, CTA, mood, and style fields reflect the selected angle and stay platform-appropriate.
+- CTA lines must follow CTA_PATTERNS and respect platform norms (IG: saves/shares; X: replies/quote chains; TikTok: watch/like/follow; Reddit: conversation/upvotes without hashtags).
+- Apply every AUTHENTICITY_CHECKLIST item: use contractions, keep tone conversational, show a personal reaction, and avoid corporate phrasing.
+- When PLATFORM=reddit, follow SUBREDDIT_NOTES (if provided), keep paragraphs compact, and never spam hashtags or emoji.
+- Use nouns/colors/setting from IMAGE_FACTS.
+- Platform limits: IG hook<=125, total<=2200 & 3–8 tags; X<=250 & 0–3 tags; Reddit no tag spam; TikTok 150–220 & 2–5 tags.

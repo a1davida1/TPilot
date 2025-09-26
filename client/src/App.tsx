@@ -1,4 +1,4 @@
-import { useEffect, Suspense } from "react";
+import React, { useEffect, Suspense } from "react";
 import { Switch, Route, Redirect, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -94,11 +94,6 @@ function AuthenticatedRoutes() {
   const { user } = useAuth();
   const isAdmin = Boolean(user?.isAdmin);
   const userTier = user?.tier || 'free';
-  const rawUserTier = user?.tier ?? 'free';
-  const normalizedUserTier: 'guest' | 'free' | 'pro' | 'premium' =
-    rawUserTier === 'pro' || rawUserTier === 'premium'
-      ? rawUserTier
-      : 'free';
 
   return (
     <Switch>
@@ -118,9 +113,9 @@ function AuthenticatedRoutes() {
       <Route path="/reddit" component={RedditPostingPage} />
       <Route path="/communities" component={() => <CommunitiesPage />} />
       <Route path="/gallery" component={() => <GalleryPage />} />
-      <Route path="/tax-tracker" component={() => <TaxTracker userTier={normalizedUserTier} />} />
+      <Route path="/tax-tracker" component={() => <TaxTracker />} />
       {/* Pro user only route */}
-      {normalizedUserTier === 'pro' && (
+      {userTier === 'pro' && (
         <Route path="/referral" component={ReferralPage} />
       )}
       <Route path="/history" component={History} />
@@ -178,7 +173,7 @@ function UnauthenticatedRoutes() {
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
-  const { shouldShowOnboarding, markWalkthroughCompleted, showOnboarding } = useOnboarding();
+  const { shouldShowOnboarding, markWalkthroughCompleted, showOnboarding: _showOnboarding } = useOnboarding();
   const [location] = useLocation();
 
   // Phase 1: Track page views and user authentication
@@ -205,7 +200,7 @@ function Router() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header onReplayWalkthrough={showOnboarding} />
+      <Header />
       <main>
         <Suspense fallback={<div className="p-4">Loading...</div>}>
           {isAuthenticated ? <AuthenticatedRoutes /> : <UnauthenticatedRoutes />}

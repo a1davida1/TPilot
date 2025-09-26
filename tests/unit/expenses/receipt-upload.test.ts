@@ -1,5 +1,5 @@
 /* eslint-env node, jest */
-import { describe, test, expect, vi, beforeEach, type Mock } from 'vitest';
+import { describe, test, expect, vi, beforeEach, type MockInstance, type Mock } from 'vitest';
 import request from 'supertest';
 import express from 'express';
 import fs from 'fs/promises';
@@ -39,13 +39,13 @@ describe('Receipt Upload with ImageShield Protection', () => {
     vi.clearAllMocks();
     app = express();
     app.use(express.json());
-
+    
     // Mock auth middleware to pass through with user
     mockAuthenticateToken.mockImplementation((req: express.Request & { user?: { id: number; tier: string } }, res: express.Response, next: express.NextFunction) => {
       req.user = { id: 1, tier: 'free' };
       next();
     });
-
+    
     registerExpenseRoutes(app);
   });
 
@@ -205,20 +205,17 @@ describe('Receipt Upload with ImageShield Protection', () => {
         .expect(200);
 
       expect(mockMediaManager.uploadFile).not.toHaveBeenCalled();
-      const protectedPdfPattern = /\/uploads\/receipts\/protected_[0-9a-f-]+-invoice\.pdf$/u;
-      const protectedPdfFilePattern = /^protected_[0-9a-f-]+-invoice\.pdf$/u;
-
       expect(mockStorage.updateExpense).toHaveBeenCalledWith(
         4,
         1,
         expect.objectContaining({
-          receiptUrl: expect.stringMatching(protectedPdfPattern),
-          receiptFileName: expect.stringMatching(protectedPdfFilePattern),
+          receiptUrl: expect.stringMatching(/\/uploads\/receipts\/protected_\d+-invoice\.pdf$/u),
+          receiptFileName: expect.stringMatching(/^protected_\d+-invoice\.pdf$/u),
         })
       );
 
-      expect(response.body.receiptFileName).toMatch(protectedPdfFilePattern);
-      expect(response.body.receiptUrl).toMatch(protectedPdfPattern);
+      expect(response.body.receiptFileName).toMatch(/^protected_\d+-invoice\.pdf$/u);
+      expect(response.body.receiptUrl).toMatch(/\/uploads\/receipts\/protected_\d+-invoice\.pdf$/u);
 
       const firstUpdate = updateCalls[0];
       expect(firstUpdate).toBeDefined();
@@ -226,16 +223,16 @@ describe('Receipt Upload with ImageShield Protection', () => {
         throw new Error('Expected updateExpense to be called with receipt metadata.');
       }
 
-      expect(firstUpdate.receiptFileName).toMatch(protectedPdfFilePattern);
-      expect(firstUpdate.receiptUrl).toMatch(protectedPdfPattern);
+      expect(firstUpdate.receiptFileName).toMatch(/^protected_\d+-invoice\.pdf$/u);
+      expect(firstUpdate.receiptUrl).toMatch(/\/uploads\/receipts\/protected_\d+-invoice\.pdf$/u);
 
       const writeMock = fs.writeFile as unknown as Mock;
-      expect(writeMock).toHaveBeenCalledWith(expect.stringMatching(/protected_[0-9a-f-]+-invoice\.pdf$/u), expect.any(Buffer) as Buffer);
+      expect(writeMock).toHaveBeenCalledWith(expect.stringMatching(/protected_\d+-invoice\.pdf$/u), expect.any(Buffer) as Buffer);
       const firstCall = writeMock.mock.calls[0];
       expect(firstCall).toBeDefined();
       const [writtenPath, storedBuffer] = firstCall;
       expect(typeof writtenPath).toBe('string');
-      expect(writtenPath).toMatch(/protected_[0-9a-f-]+-invoice\.pdf$/u);
+      expect(writtenPath).toMatch(/protected_\d+-invoice\.pdf$/u);
       expect(Buffer.isBuffer(storedBuffer)).toBe(true);
       expect(storedBuffer.equals(pdfBuffer)).toBe(true);
     });
@@ -256,10 +253,9 @@ describe('Receipt Upload with ImageShield Protection', () => {
         };
       });
 
-      const uuidSpy = vi.spyOn(crypto, 'randomUUID');
-      uuidSpy
-        .mockImplementationOnce(() => '11111111-1111-1111-1111-111111111111')
-        .mockImplementationOnce(() => '22222222-2222-2222-2222-222222222222');
+      const nowSpy = vi.spyOn(Date, 'now');
+      let callIndex = 0;
+      nowSpy.mockImplementation(() => 1700000000000 + callIndex++ * 1000);
 
       try {
         await request(app)
@@ -272,12 +268,12 @@ describe('Receipt Upload with ImageShield Protection', () => {
           .attach('receipt', pdfBuffer, { filename: 'invoice.pdf', contentType: 'application/pdf' })
           .expect(200);
       } finally {
-        uuidSpy.mockRestore();
+        nowSpy.mockRestore();
       }
 
       expect(storedFileNames).toHaveLength(2);
-      expect(storedFileNames[0]).toBe('protected_11111111-1111-1111-1111-111111111111-invoice.pdf');
-      expect(storedFileNames[1]).toBe('protected_22222222-2222-2222-2222-222222222222-invoice.pdf');
+      expect(storedFileNames[0]).toMatch(/^protected_\d+-invoice\.pdf$/u);
+      expect(storedFileNames[1]).toMatch(/^protected_\d+-invoice\.pdf$/u);
       expect(new Set(storedFileNames).size).toBe(2);
 
       const writeMock = fs.writeFile as unknown as Mock;
@@ -339,7 +335,7 @@ describe('Receipt Upload with ImageShield Protection', () => {
     test('should use S3 when configured', async () => {
       // Mock S3 environment
       process.env.S3_BUCKET_MEDIA = 'test-bucket';
-
+      
       const mockAsset = {
         downloadUrl: 'https://s3.amazonaws.com/test-bucket/protected_test.jpg',
         filename: 'protected_test.jpg',

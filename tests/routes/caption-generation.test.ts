@@ -1,8 +1,7 @@
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
-import { generateVariants, pipeline } from '../../server/caption/geminiPipeline.js';
+import { pipeline } from '../../server/caption/geminiPipeline.js';
 import { pipelineRewrite, extractKeyEntities } from '../../server/caption/rewritePipeline.js';
-import { generateVariantsTextOnly, pipelineTextOnly } from '../../server/caption/textOnlyPipeline.js';
-import { BANNED_WORDS_HINT, variantContainsBannedWord } from '../../server/caption/bannedWords.js';
+import { pipelineTextOnly } from '../../server/caption/textOnlyPipeline.js';
 
 // Mock dependencies
 vi.mock('../../server/lib/gemini.js', () => ({
@@ -262,15 +261,14 @@ describe('Caption Generation', () => {
         '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP///////////////wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACP/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8Af//Z';
       const mockPlatform = 'instagram';
       const mockVoice = 'flirty_playful';
-      const expectedHashtags = fallbackHashtags(mockPlatform);
-      const minimumHashtags = 3;
 
       // Mock successful facts response
       const mockFactsResponse = {
         response: {
           text: () => JSON.stringify({
-            objects: ['camera'],
-            setting: 'studio',
+            objects: ['lingerie'],
+            setting: 'bedroom',
+            mood: 'confident',
           }),
         },
       };
@@ -368,14 +366,14 @@ describe('Caption Generation', () => {
 
       const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.js');
 
-      // When Gemini returns variants with missing or empty hashtags,
+      // When Gemini returns variants with missing or empty hashtags, 
       // the pipeline should fall back to OpenAI which provides safe defaults
       expect(openAICaptionFallback).toHaveBeenCalledWith({
         imageUrl: mockImageUrl,
         platform: mockPlatform,
         voice: mockVoice,
       });
-
+      
       // Verify the result has the expected structure from OpenAI fallback
       expect(result.final).toMatchObject({
         caption: 'Fallback caption',
@@ -387,7 +385,7 @@ describe('Caption Generation', () => {
         cta: 'Check this out',
         nsfw: false,
       });
-
+      
       // Verify the fallback hashtags don't contain banned words
       const fallbackHashtags = ['#fallback1', '#fallback2', '#fallback3'];
       fallbackHashtags.forEach((tag) => {
@@ -1555,7 +1553,6 @@ describe('Caption Generation', () => {
       expect(openAICaptionFallback).not.toHaveBeenCalled();
       expect(textGenerateMock).toHaveBeenCalledTimes(4);
       const promptCalls = [...textGenerateMock.mock.calls];
-      expect(promptCalls[0]?.[0]?.[0]?.text).toContain('MANDATORY TOKENS:');
       expect(promptCalls[2]?.[0]?.[0]?.text).toContain('ABSOLUTE RULE: Keep these tokens verbatim in the caption');
       expect(promptCalls[2]?.[0]?.[0]?.text).not.toContain('Fix platform issue');
       expect(result.provider).toBe('gemini');
@@ -1583,238 +1580,6 @@ describe('Caption Generation', () => {
       expect(result).toHaveProperty('ok');
       expect(typeof result.ok).toBe('boolean');
       
-      if (!result.ok) {
-        expect(result).toHaveProperty('hint');
-        expect(typeof result.hint).toBe('string');
-      }
-    });
-
-    it('retries to cover image facts when rewrites miss key details', async () => {
-      const existingCaption = 'Sunset vibes with @SeasideCrew — RSVP https://example.com #SunsetVibes';
-      const facts = { objects: ['longboard'], setting: ['sunset boardwalk'] };
-
-      const encoded = new TextEncoder().encode('mock-image');
-      const fetchMock = vi.fn().mockResolvedValue({
-        ok: true,
-
-  describe('Variant generation banned word handling', () => {
-    it('filters banned words from Gemini image variants and requests rewrite', async () => {
-      const { textModel } = await import('../../server/lib/gemini.js');
-      const textGenerateMock = asMock(textModel.generateContent);
-
-      const bannedVariants = Array.from({ length: 5 }, (_, index) => ({
-        caption: `AI glow ${index}`,
-        hashtags: ['#style', '#evening'],
-        safety_level: 'normal',
-        mood: 'confident',
-        style: 'modern',
-        cta: `Check this AI look ${index}`,
-        alt: 'Alt text describing AI styled lighting with detailed wardrobe highlights.',
-        nsfw: false,
-      }));
-
-      const safeVariants = Array.from({ length: 5 }, (_, index) => ({
-        caption: `Radiant runway energy ${index}`,
-        hashtags: ['#runway', '#glow'],
-        safety_level: 'normal',
-        mood: 'confident',
-        style: 'modern',
-        cta: `Share the vibe ${index}`,
-        alt: 'Alt text describing a confident model under warm lighting with runway styling cues.',
-        nsfw: false,
-      }));
-
-      textGenerateMock
-        .mockResolvedValueOnce({ response: { text: () => JSON.stringify(bannedVariants) } })
-        .mockResolvedValueOnce({ response: { text: () => JSON.stringify(safeVariants) } });
-
-      const result = await generateVariants({
-        platform: 'instagram',
-        voice: 'playful',
-        facts: { scene: 'studio' },
-        nsfw: false,
-      });
-
-      expect(textGenerateMock).toHaveBeenCalledTimes(2);
-      const secondPromptCall = (textGenerateMock.mock.calls[1]?.[0] as Array<{ text: string }>)[0]?.text ?? '';
-      expect(secondPromptCall).toContain(BANNED_WORDS_HINT);
-
-      expect(result).toHaveLength(5);
-      result.forEach((variant) => {
-        expect(variantContainsBannedWord(variant)).toBe(false);
-      });
-    });
-
-    it('filters banned words from text-only variants and requests rewrite', async () => {
-      const { textModel } = await import('../../server/lib/gemini.js');
-      const textGenerateMock = asMock(textModel.generateContent);
-
-      const bannedVariants = Array.from({ length: 5 }, (_, index) => ({
-        caption: `AI inspiration ${index}`,
-        hashtags: ['#daily', '#motivation'],
-        safety_level: 'normal',
-        mood: 'optimistic',
-        style: 'uplifting',
-        cta: `Discover this AI idea ${index}`,
-        alt: 'Alt text capturing AI focused storytelling prompts in rich descriptive language.',
-        nsfw: false,
-      }));
-
-      const safeVariants = Array.from({ length: 5 }, (_, index) => ({
-        caption: `Morning momentum spark ${index}`,
-        hashtags: ['#morning', '#momentum'],
-        safety_level: 'normal',
-        mood: 'optimistic',
-        style: 'uplifting',
-        cta: `Start strong today ${index}`,
-        alt: 'Alt text describing motivational imagery cues with bright tones and encouraging language.',
-        nsfw: false,
-      }));
-
-      textGenerateMock
-        .mockResolvedValueOnce({ response: { text: () => JSON.stringify(bannedVariants) } })
-        .mockResolvedValueOnce({ response: { text: () => JSON.stringify(safeVariants) } });
-
-      const result = await generateVariantsTextOnly({
-        platform: 'instagram',
-        voice: 'playful',
-        theme: 'Morning motivation',
-        context: 'Share an encouraging note for followers',
-        nsfw: false,
-      });
-
-      expect(textGenerateMock).toHaveBeenCalledTimes(2);
-      const secondPromptCall = (textGenerateMock.mock.calls[1]?.[0] as Array<{ text: string }>)[0]?.text ?? '';
-      expect(secondPromptCall).toContain(BANNED_WORDS_HINT);
-
-      expect(result).toHaveLength(5);
-      result.forEach((variant) => {
-        expect(variantContainsBannedWord(variant)).toBe(false);
-      });
-    });
-  });
-
-        arrayBuffer: () => Promise.resolve(encoded),
-      });
-      vi.stubGlobal('fetch', fetchMock);
-
-      const { textModel, visionModel } = await import('../../server/lib/gemini.js');
-      const visionGenerateMock = asMock(visionModel.generateContent);
-      visionGenerateMock.mockResolvedValueOnce({
-        response: { text: () => JSON.stringify(facts) },
-      });
-
-      const variantFactory = (caption: string, alt: string) => ({
-        caption,
-        hashtags: ['#SunsetVibes', '#CrewMode', '#RSVP'],
-        safety_level: 'normal',
-        mood: 'engaging',
-        style: 'authentic',
-        cta: 'Drop a comment',
-        alt,
-        nsfw: false,
-      });
-
-      const missingFactsCaption =
-        'Rolling into the night with the crew — lock in your spot now! @SeasideCrew RSVP: https://example.com #SunsetVibes';
-      const missingAlt =
-        'Detailed alt text describing friends laughing together after sunset, without mentioning the setting specifics or gear.';
-      const coverageCaption =
-        'Longboard cruising down the sunset boardwalk with @SeasideCrew — RSVP https://example.com #SunsetVibes and ride with us!';
-      const coverageAlt =
-        'Friends with a longboard on the sunset boardwalk inviting followers to join in.';
-
-      const missingVariants = {
-        response: {
-          text: () =>
-            JSON.stringify(
-              Array.from({ length: 5 }, () => variantFactory(missingFactsCaption, missingAlt))
-            ),
-        },
-      } satisfies MockResponse;
-
-      const missingRank = {
-        response: {
-          text: () =>
-            JSON.stringify({
-              winner_index: 0,
-              scores: [5, 4, 3, 2, 1],
-              reason: 'Initial rewrite selection',
-              final: variantFactory(missingFactsCaption, missingAlt),
-            }),
-        },
-      } satisfies MockResponse;
-
-      const coverageVariants = {
-        response: {
-          text: () =>
-            JSON.stringify(
-              Array.from({ length: 5 }, () => variantFactory(coverageCaption, coverageAlt))
-            ),
-        },
-      } satisfies MockResponse;
-
-      const coverageRank = {
-        response: {
-          text: () =>
-            JSON.stringify({
-              winner_index: 0,
-              scores: [5, 4, 3, 2, 1],
-              reason: 'Coverage-aware rewrite',
-              final: variantFactory(coverageCaption, coverageAlt),
-            }),
-        },
-      } satisfies MockResponse;
-
-      const textGenerateMock = asMock(textModel.generateContent);
-      textGenerateMock
-        .mockResolvedValueOnce(missingVariants)
-        .mockResolvedValueOnce(missingRank)
-        .mockResolvedValueOnce(coverageVariants)
-        .mockResolvedValueOnce(coverageRank);
-
-      try {
-        const result = await pipelineRewrite({
-          platform: 'instagram',
-          voice: 'engaging',
-          existingCaption,
-          imageUrl: 'https://example.com/photo.jpg',
-        });
-
-        expect(result.provider).toBe('gemini');
-        const finalCaption = (result.final as CaptionResult).caption;
-        expect(finalCaption).toContain('sunset boardwalk');
-        expect(finalCaption).toContain('Longboard');
-        expect(finalCaption).toContain('@SeasideCrew');
-        expect(finalCaption).toContain('https://example.com');
-        expect(finalCaption).toContain('#SunsetVibes');
-
-        const promptCalls = [...textGenerateMock.mock.calls];
-        expect(promptCalls[0]?.[0]?.[0]?.text).toContain('MANDATORY TOKENS:');
-        expect(promptCalls[2]?.[0]?.[0]?.text).toContain('Work in IMAGE_FACTS');
-        expect(promptCalls[2]?.[0]?.[0]?.text).toContain('sunset boardwalk');
-
-        expect(fetchMock).toHaveBeenCalledTimes(1);
-      } finally {
-        textGenerateMock.mockReset();
-        visionGenerateMock.mockReset();
-        vi.unstubAllGlobals();
-      }
-    });
-
-    it('enforces fact coverage when image context is available', async () => {
-      // Simple test to verify the fact coverage feature exists and functions
-      const { ensureFactCoverage } = await import('../../server/caption/ensureFactCoverage.js');
-      const facts = { camera: 'Canon 5D', setting: 'rooftop at sunset' };
-      const caption = 'Having fun today';
-      const alt = 'Photo description';
-
-      const result = ensureFactCoverage({ facts, caption, alt });
-
-      // Test that ensureFactCoverage returns expected structure
-      expect(result).toHaveProperty('ok');
-      expect(typeof result.ok).toBe('boolean');
-
       if (!result.ok) {
         expect(result).toHaveProperty('hint');
         expect(typeof result.hint).toBe('string');

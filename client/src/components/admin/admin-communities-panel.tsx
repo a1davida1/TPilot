@@ -203,7 +203,7 @@ function communityToForm(community: AdminCommunity): CommunityFormState {
   const postingLimits = community.postingLimits ?? null;
   const titleGuidelines = content?.titleGuidelines ?? legacy?.titleRules ?? [];
   const contentGuidelines = content?.contentGuidelines ?? legacy?.contentRules ?? [];
-  const linkRestrictions = content?.linkRestrictions ?? legacy?.linkRestrictions ?? [];
+  const linkRestrictions = content?.linkRestrictions ?? [] as string[];
   const watermarksAllowed = content?.watermarksAllowed ?? legacy?.watermarksAllowed ?? null;
   const sellingPolicy = content?.sellingPolicy ?? legacy?.sellingAllowed ?? undefined;
   const minKarma = eligibility?.minKarma ?? legacy?.minKarma ?? null;
@@ -297,7 +297,7 @@ function RuleSummary({ community }: { community: AdminCommunity }) {
     ruleItems.push(`${contentGuidelines.length} content rules`);
   }
 
-  const linkRestrictions = content?.linkRestrictions ?? legacy?.linkRestrictions ?? [];
+  const linkRestrictions = content?.linkRestrictions ?? [] as string[];
   if (linkRestrictions.length > 0) {
     ruleItems.push('Link restrictions');
   }

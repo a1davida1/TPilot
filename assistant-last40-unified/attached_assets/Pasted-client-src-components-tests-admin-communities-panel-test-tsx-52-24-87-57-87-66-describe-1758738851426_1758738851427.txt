@@ -1,0 +1,540 @@
+client/src/components/__tests__/admin-communities-panel.test.tsx
++52-24
+@@ -87,57 +87,66 @@ describe('AdminCommunitiesPanel Component', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUseMutation.mockReturnValue({
+      mutate: mockMutate,
+      mutateAsync: mockMutateAsync,
+      isPending: false,
+      reset: vi.fn()
+    });
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  describe('Selling Policy Enum Variations', () => {
+    const createCommunityWithSellingPolicy = (sellingPolicy: RedditCommunitySellingPolicy, promotionPolicy: PromotionPolicy = 'limited'): AdminCommunity => ({
+      id: `community-${sellingPolicy}`,
+      name: `community${sellingPolicy}`,
+      displayName: `Community ${sellingPolicy}`,
+      category: 'general',
+      members: 1000,
+      engagementRate: 50,
+      verificationRequired: false,
+      promotionAllowed: promotionPolicy,
+      rules: {
+        sellingAllowed: sellingPolicy,
+        minKarma: 100,
+        minAccountAge: 30,
+        watermarksAllowed: true,
+        titleRules: [],
+        contentRules: [],
+        linkRestrictions: []
+        eligibility: {
+          minKarma: 100,
+          minAccountAge: 30
+        },
+        moderation: {
+          verificationRequired: false
+        },
+        content: {
+          sellingPolicy,
+          watermarksAllowed: true,
+          titleRules: [],
+          contentRules: []
+        },
+        posting: {
+          linkRestrictions: []
+        }
+      },
+      growthTrend: 'stable',
+      modActivity: 'medium',
+      competitionLevel: 'medium'
+    });
+
+    it('should display allowed selling policy badge correctly', async () => {
+      const community = createCommunityWithSellingPolicy('allowed', 'yes');
+      mockUseQuery.mockReturnValue({
+        data: [community],
+        isLoading: false,
+        error: null
+      });
+
+      const container = document.createElement('div');
+      document.body.appendChild(container);
+      const root = createRoot(container);
+
+      await act(async () => {
+        root.render(<AdminCommunitiesPanel canManage={true} />);
+      });
+
+      await act(async () => {
+        await flushPromises();
+      });
+@@ -233,88 +242,98 @@ describe('AdminCommunitiesPanel Component', () => {
+      });
+
+      const promotionBadge = container.querySelector('[data-testid="row-community-community-unknown"]');
+      expect(promotionBadge).toBeTruthy();
+      expect(promotionBadge?.textContent).toContain('unknown');
+
+      await act(async () => {
+        root.unmount();
+      });
+      container.remove();
+    });
+  });
+
+  describe('Rule Summary Display', () => {
+    it('should display comprehensive rule summary with selling policy', async () => {
+      const community: AdminCommunity = {
+        id: 'detailed-rules',
+        name: 'detailedrules',
+        displayName: 'Detailed Rules Community',
+        category: 'photography',
+        members: 2500,
+        engagementRate: 65,
+        verificationRequired: true,
+        promotionAllowed: 'limited',
+        rules: {
+          sellingAllowed: 'limited',
+          minKarma: 500,
+          minAccountAge: 90,
+          watermarksAllowed: false,
+          verificationRequired: true,
+          titleRules: ['Clear descriptive titles', 'No clickbait'],
+          contentRules: ['High quality images only', 'OC preferred'],
+          linkRestrictions: ['No direct sales links', 'Portfolio links OK']
+          eligibility: {
+            minKarma: 500,
+            minAccountAge: 90
+          },
+          moderation: {
+            verificationRequired: true
+          },
+          content: {
+            sellingPolicy: 'limited',
+            watermarksAllowed: false,
+            titleRules: ['Clear descriptive titles', 'No clickbait'],
+            contentRules: ['High quality images only', 'OC preferred']
+          },
+          posting: {
+            linkRestrictions: ['No direct sales links', 'Portfolio links OK']
+          }
+        },
+        growthTrend: 'up',
+        modActivity: 'high',
+        competitionLevel: 'medium'
+      };
+
+      mockUseQuery.mockReturnValue({
+        data: [community],
+        isLoading: false,
+        error: null
+      });
+
+      const container = document.createElement('div');
+      document.body.appendChild(container);
+      const root = createRoot(container);
+
+      await act(async () => {
+        root.render(<AdminCommunitiesPanel canManage={true} />);
+      });
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      // Check for rule summary elements
+      const rulesSummary = container.querySelector('[data-testid="row-community-detailed-rules"]');
+      expect(rulesSummary).toBeTruthy();
+      
+      // The RuleSummary component should display the selling policy
+      expect(container.textContent).toContain('limited');
+      // The RuleSummary component should display bucketed rule details
+      expect(rulesSummary?.textContent).toContain('Limited selling');
+      expect(rulesSummary?.textContent).toContain('No watermarks');
+      expect(rulesSummary?.textContent).toContain('Link restrictions');
+
+      await act(async () => {
+        root.unmount();
+      });
+      container.remove();
+    });
+
+    it('should handle communities with no structured rules', async () => {
+      const community: AdminCommunity = {
+        id: 'no-rules',
+        name: 'norules',
+        displayName: 'No Rules Community',
+        category: 'general',
+        members: 100,
+        engagementRate: 20,
+        verificationRequired: false,
+        promotionAllowed: 'unknown',
+        rules: null,
+        growthTrend: 'stable',
+        modActivity: 'low',
+        competitionLevel: 'low'
+      };
+
+      mockUseQuery.mockReturnValue({
+        data: [community],
+@@ -407,57 +426,66 @@ describe('AdminCommunitiesPanel Component', () => {
+      const promotionSelect = container.querySelector('[data-testid="select-promotion"]');
+      const verificationSelect = container.querySelector('[data-testid="select-verification"]');
+      
+      expect(categorySelect).toBeTruthy();
+      expect(promotionSelect).toBeTruthy();
+      expect(verificationSelect).toBeTruthy();
+
+      await act(async () => {
+        root.unmount();
+      });
+      container.remove();
+    });
+  });
+
+  describe('Growth Trend Enum Display and Handling', () => {
+    const createCommunityWithGrowthTrend = (growthTrend: GrowthTrend): AdminCommunity => ({
+      id: `trend-${growthTrend}`,
+      name: `trend${growthTrend}`,
+      displayName: `Trend ${growthTrend} Community`,
+      category: 'general',
+      members: 1000,
+      engagementRate: 50,
+      verificationRequired: false,
+      promotionAllowed: 'limited',
+      rules: {
+        sellingAllowed: 'allowed',
+        minKarma: 100,
+        minAccountAge: 30,
+        watermarksAllowed: true,
+        titleRules: [],
+        contentRules: [],
+        linkRestrictions: []
+        eligibility: {
+          minKarma: 100,
+          minAccountAge: 30
+        },
+        moderation: {
+          verificationRequired: false
+        },
+        content: {
+          sellingPolicy: 'allowed',
+          watermarksAllowed: true,
+          titleRules: [],
+          contentRules: []
+        },
+        posting: {
+          linkRestrictions: []
+        }
+      },
+      growthTrend,
+      modActivity: 'medium',
+      competitionLevel: 'medium'
+    });
+
+    it('should handle up growth trend', async () => {
+      const community = createCommunityWithGrowthTrend('up');
+      mockUseQuery.mockReturnValue({
+        data: [community],
+        isLoading: false,
+        error: null
+      });
+
+      const container = document.createElement('div');
+      document.body.appendChild(container);
+      const root = createRoot(container);
+
+      await act(async () => {
+        root.render(<AdminCommunitiesPanel canManage={true} />);
+      });
+
+      await act(async () => {
+        await flushPromises();
+      });
+client/src/components/admin/admin-communities-panel.tsx
++45-20
+@@ -100,76 +100,89 @@ const defaultFormState: CommunityFormState = {
+  growthTrend: 'stable',
+  modActivity: 'medium',
+  description: '',
+  tags: '',
+  competitionLevel: 'medium',
+};
+
+function parseNumber(value: string): number | undefined {
+  const trimmed = value.trim();
+  if (trimmed === '') return undefined;
+  const parsed = Number(trimmed);
+  return Number.isNaN(parsed) ? undefined : parsed;
+}
+
+function parseList(value: string): string[] | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  const items = trimmed
+    .split(/\n|,/)
+    .map(item => item.trim())
+    .filter(Boolean);
+  return items.length ? items : undefined;
+}
+
+function communityToForm(community: AdminCommunity): CommunityFormState {
+  const eligibility = community.rules?.eligibility ?? null;
+  const content = community.rules?.content ?? null;
+  const posting = community.rules?.posting ?? null;
+  const legacyRules = community.rules ?? null;
+  const minKarmaValue = eligibility?.minKarma ?? legacyRules?.minKarma;
+  const minAccountAgeValue = eligibility?.minAccountAge ?? legacyRules?.minAccountAge;
+  const watermarksAllowedValue =
+    content?.watermarksAllowed ?? legacyRules?.watermarksAllowed;
+  const sellingPolicyValue = content?.sellingPolicy ?? legacyRules?.sellingAllowed ?? 'unspecified';
+  const titleRulesValue = content?.titleRules ?? legacyRules?.titleRules ?? [];
+  const contentRulesValue = content?.contentRules ?? legacyRules?.contentRules ?? [];
+  const linkRestrictionsValue = posting?.linkRestrictions ?? legacyRules?.linkRestrictions ?? [];
+
+  return {
+    id: community.id,
+    name: community.name,
+    displayName: community.displayName,
+    category: community.category,
+    members: String(community.members ?? ''),
+    engagementRate: String(community.engagementRate ?? ''),
+    verificationRequired: community.verificationRequired,
+    promotionAllowed: community.promotionAllowed,
+    postingLimitsPerDay: community.postingLimits?.perDay ? String(community.postingLimits.perDay) : '',
+    postingLimitsPerWeek: community.postingLimits?.perWeek ? String(community.postingLimits.perWeek) : '',
+    postingLimitsCooldownHours: community.postingLimits?.cooldownHours
+      ? String(community.postingLimits.cooldownHours)
+      : '',
+    rulesMinKarma: community.rules?.minKarma !== undefined ? String(community.rules.minKarma) : '',
+    rulesMinAccountAge: community.rules?.minAccountAge !== undefined ? String(community.rules.minAccountAge) : '',
+    rulesMinKarma: minKarmaValue !== undefined ? String(minKarmaValue) : '',
+    rulesMinAccountAge: minAccountAgeValue !== undefined ? String(minAccountAgeValue) : '',
+    rulesWatermarksAllowed:
+      community.rules?.watermarksAllowed === true
+      watermarksAllowedValue === true
+        ? 'allowed'
+        : community.rules?.watermarksAllowed === false
+        : watermarksAllowedValue === false
+          ? 'disallowed'
+          : 'unspecified',
+    rulesSellingAllowed: community.rules?.sellingAllowed ?? 'unspecified',
+    rulesTitleRules: (community.rules?.titleRules ?? []).join('\n'),
+    rulesContentRules: (community.rules?.contentRules ?? []).join('\n'),
+    rulesLinkRestrictions: (community.rules?.linkRestrictions ?? []).join('\n'),
+    rulesSellingAllowed: sellingPolicyValue,
+    rulesTitleRules: titleRulesValue.join('\n'),
+    rulesContentRules: contentRulesValue.join('\n'),
+    rulesLinkRestrictions: linkRestrictionsValue.join('\n'),
+    bestPostingTimes: (community.bestPostingTimes ?? []).join(', '),
+    averageUpvotes: community.averageUpvotes !== null && community.averageUpvotes !== undefined
+      ? String(community.averageUpvotes)
+      : '',
+    successProbability: community.successProbability !== null && community.successProbability !== undefined
+      ? String(community.successProbability)
+      : '',
+    growthTrend: community.growthTrend ?? 'stable',
+    modActivity: community.modActivity ?? 'medium',
+    description: community.description ?? '',
+    tags: (community.tags ?? []).join(', '),
+    competitionLevel: community.competitionLevel ?? 'medium',
+  };
+}
+
+function formToPayload(form: CommunityFormState): CommunityPayload {
+  const members = parseNumber(form.members);
+  const engagementRate = parseNumber(form.engagementRate);
+  if (members === undefined) {
+    throw new Error('Member count is required and must be a number.');
+  }
+  if (engagementRate === undefined) {
+    throw new Error('Engagement rate is required and must be a number.');
+  }
+
+@@ -214,79 +227,91 @@ function formToPayload(form: CommunityFormState): CommunityPayload {
+
+  return {
+    id: form.id.trim() || undefined,
+    name: form.name.trim(),
+    displayName: form.displayName.trim(),
+    category: form.category.trim(),
+    members,
+    engagementRate,
+    verificationRequired: form.verificationRequired,
+    promotionAllowed: form.promotionAllowed,
+    postingLimits: normalizedPostingLimits,
+    rules: normalizedRules,
+    bestPostingTimes: bestPostingTimes ?? null,
+    averageUpvotes: averageUpvotes ?? null,
+    successProbability: successProbability ?? null,
+    growthTrend: form.growthTrend,
+    modActivity: form.modActivity,
+    description: form.description.trim() || null,
+    tags: tags ?? null,
+    competitionLevel: form.competitionLevel,
+  };
+}
+
+function RuleSummary({ community }: { community: AdminCommunity }) {
+  const ruleItems: string[] = [];
+  if (community.rules?.minKarma !== undefined) {
+    ruleItems.push(`Min Karma ${community.rules.minKarma}`);
+  const rules = community.rules ?? null;
+  const eligibility = rules?.eligibility ?? null;
+  const content = rules?.content ?? null;
+  const posting = rules?.posting ?? null;
+
+  const minKarma = eligibility?.minKarma ?? rules?.minKarma;
+  const minAccountAge = eligibility?.minAccountAge ?? rules?.minAccountAge;
+  const watermarksAllowed = content?.watermarksAllowed ?? rules?.watermarksAllowed;
+  const titleRules = content?.titleRules ?? rules?.titleRules ?? [];
+  const contentRules = content?.contentRules ?? rules?.contentRules ?? [];
+  const linkRestrictions = posting?.linkRestrictions ?? rules?.linkRestrictions ?? [];
+  const sellingPolicy = content?.sellingPolicy ?? rules?.sellingAllowed;
+
+  if (minKarma !== undefined) {
+    ruleItems.push(`Min Karma ${minKarma}`);
+  }
+  if (community.rules?.minAccountAge !== undefined) {
+    ruleItems.push(`Account ${community.rules.minAccountAge}d`);
+  if (minAccountAge !== undefined) {
+    ruleItems.push(`Account ${minAccountAge}d`);
+  }
+  if (community.rules?.watermarksAllowed === true) {
+  if (watermarksAllowed === true) {
+    ruleItems.push('Watermarks allowed');
+  }
+  if (community.rules?.watermarksAllowed === false) {
+  if (watermarksAllowed === false) {
+    ruleItems.push('No watermarks');
+  }
+  const sellingPolicy = community.rules?.sellingAllowed;
+  if (sellingPolicy === 'allowed') {
+    ruleItems.push('Selling allowed');
+  } else if (sellingPolicy === 'limited') {
+    ruleItems.push('Limited selling');
+  } else if (sellingPolicy === 'not_allowed') {
+    ruleItems.push('No selling');
+  } else if (sellingPolicy === 'unknown') {
+    ruleItems.push('Selling policy unknown');
+  }
+  if ((community.rules?.titleRules?.length ?? 0) > 0) {
+    ruleItems.push(`${community.rules?.titleRules?.length ?? 0} title rules`);
+  if (titleRules.length > 0) {
+    ruleItems.push(`${titleRules.length} title rules`);
+  }
+  if ((community.rules?.contentRules?.length ?? 0) > 0) {
+    ruleItems.push(`${community.rules?.contentRules?.length ?? 0} content rules`);
+  if (contentRules.length > 0) {
+    ruleItems.push(`${contentRules.length} content rules`);
+  }
+  if ((community.rules?.linkRestrictions?.length ?? 0) > 0) {
+  if (linkRestrictions.length > 0) {
+    ruleItems.push('Link restrictions');
+  }
+  return (
+    <div className="flex flex-wrap gap-1">
+      {ruleItems.length ? (
+        ruleItems.map(item => (
+          <Badge key={item} variant="secondary" className="bg-purple-50 text-purple-700">
+            {item}
+          </Badge>
+        ))
+      ) : (
+        <span className="text-sm text-muted-foreground">No structured rules</span>
+      )}
+    </div>
+  );
+}
+
+export function AdminCommunitiesPanel({ canManage }: AdminCommunitiesPanelProps) {
+  const { toast } = useToast();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [promotionFilter, setPromotionFilter] = useState<'all' | PromotionPolicy>('all');
+  const [verificationFilter, setVerificationFilter] = useState<'all' | 'required' | 'not-required'>('all');
+  const [formState, setFormState] = useState<CommunityFormState>(defaultFormState);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+client/src/hooks/use-admin-communities.ts
++31-0
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
+import type { RedditCommunitySellingPolicy } from '@shared/schema';
+import { 
+  type GrowthTrend,
+  GROWTH_TRENDS,
+  GROWTH_TREND_LABELS,
+  getGrowthTrendLabel
+} from '@shared/growth-trends';
+
+export type PromotionPolicy = 'yes' | 'no' | 'limited' | 'subtle' | 'strict' | 'unknown';
+// GrowthTrend type imported from @shared/growth-trends - uses canonical values: 'up' | 'stable' | 'down'
+export type ActivityLevel = 'low' | 'medium' | 'high' | 'unknown';
+export type CompetitionLevel = 'low' | 'medium' | 'high' | 'unknown';
+
+// Re-export growth trend constants and labels for use by components
+export { GROWTH_TRENDS, GROWTH_TREND_LABELS, getGrowthTrendLabel };
+
+export interface CommunityRuleEligibilityBucket {
+  minKarma?: number;
+  minAccountAge?: number;
+}
+
+export interface CommunityRuleModerationBucket {
+  verificationRequired?: boolean;
+  requiresApproval?: boolean;
+  nsfwRequired?: boolean;
+}
+
+export interface CommunityRuleContentBucket {
+  watermarksAllowed?: boolean;
+  sellingPolicy?: RedditCommunitySellingPolicy;
+  titleRules?: string[];
+  contentRules?: string[];
+  bannedContent?: string[];
+  formattingRequirements?: string[];
+}
+
+export interface CommunityRulePostingBucket {
+  linkRestrictions?: string[];
+  maxPostsPerDay?: number;
+  cooldownHours?: number;
+}
+
+export interface CommunityRules {
+  eligibility?: CommunityRuleEligibilityBucket | null;
+  moderation?: CommunityRuleModerationBucket | null;
+  content?: CommunityRuleContentBucket | null;
+  posting?: CommunityRulePostingBucket | null;
+  // Legacy flattened properties retained for backward compatibility with existing data pipelines
+  minKarma?: number;
+  minAccountAge?: number;
+  watermarksAllowed?: boolean;
+  sellingAllowed?: RedditCommunitySellingPolicy;
+  titleRules?: string[];
+  contentRules?: string[];
+  linkRestrictions?: string[];
+  verificationRequired?: boolean;
+  requiresApproval?: boolean;
+  nsfwRequired?: boolean;
+  maxPostsPerDay?: number;
+  cooldownHours?: number;
+}
+
+export interface PostingLimits {
+  perDay?: number;
+  perWeek?: number;
+  cooldownHours?: number;
+}
+
+export interface AdminCommunity {
+  id: string;
+  name: string;
+  displayName: string;
+  category: string;

@@ -66,7 +66,7 @@ const protectionPresets: Record<string, ProtectionSettings> = {
 
 // Apply ImageShield protection server-side for receipts
 async function applyReceiptImageShieldProtection(
-  inputBuffer: Buffer,
+  inputBuffer: Buffer, 
   protectionLevel: 'light' | 'standard' | 'heavy' = 'light',
   addWatermark: boolean = false
 ): Promise<Buffer> {
@@ -113,7 +113,7 @@ async function applyReceiptImageShieldProtection(
           </text>
         </svg>
       `);
-
+      
       pipeline = pipeline.composite([{
         input: watermarkText,
         top: 0,
@@ -312,25 +312,10 @@ export function registerExpenseRoutes(app: Express) {
         (rawBusinessPurpose === undefined ||
           (typeof rawBusinessPurpose === 'string' && (trimmedBusinessPurpose?.length ?? 0) === 0)) &&
         rawBusinessPurpose !== null;
-
-      let existingExpenseForBusinessPurpose: Expense | undefined;
-
-      if (shouldApplyDefaultBusinessPurpose && requestBody.categoryId === undefined) {
-        let existingExpenseForBusinessPurpose: Expense | undefined;
-
-        if (!existingExpenseForBusinessPurpose) {
-          existingExpenseForBusinessPurpose = await storage.getExpense(expenseId, req.user.id);
-        }
-
-        const existingCategoryId = existingExpenseForBusinessPurpose?.categoryId;
-
-        if (existingCategoryId !== undefined) {
-          const existingCategory = await storage.getExpenseCategory(existingCategoryId);
-          if (existingCategory?.defaultBusinessPurpose) {
-            updates.businessPurpose = existingCategory.defaultBusinessPurpose;
-          }
-        }
-      }
+      const shouldApplyDefaultFromExistingCategory =
+        shouldApplyDefaultBusinessPurpose &&
+        requestBody.categoryId === undefined &&
+        rawBusinessPurpose !== undefined;
 
       if (rawBusinessPurpose === null) {
         updates.businessPurpose = null;
@@ -355,6 +340,17 @@ export function registerExpenseRoutes(app: Express) {
 
         if (shouldApplyDefaultBusinessPurpose && categoryDefaults.defaultBusinessPurpose) {
           updates.businessPurpose = categoryDefaults.defaultBusinessPurpose;
+        }
+      }
+
+      if (shouldApplyDefaultFromExistingCategory) {
+        const existingExpense = await storage.getExpense(expenseId, req.user.id);
+        const existingCategoryId = existingExpense?.categoryId;
+        if (existingCategoryId !== undefined) {
+          const existingCategory = await storage.getExpenseCategory(existingCategoryId);
+          if (existingCategory?.defaultBusinessPurpose) {
+            updates.businessPurpose = existingCategory.defaultBusinessPurpose;
+          }
         }
       }
 
@@ -419,14 +415,14 @@ export function registerExpenseRoutes(app: Express) {
   app.get('/api/expenses/tax-guidance', async (req, res) => {
     try {
       const category = req.query.category as string;
-
+      
       let guidance;
       if (category && category !== 'all') {
         guidance = await storage.getTaxDeductionInfoByCategory(category);
       } else {
         guidance = await storage.getTaxDeductionInfo();
       }
-
+      
       res.json(guidance);
     } catch (error) {
       console.error('Error fetching tax deduction guidance:', error);
@@ -486,8 +482,8 @@ export function registerExpenseRoutes(app: Express) {
       } else {
         const uploadDir = path.join(process.cwd(), 'uploads', 'receipts');
         await fs.mkdir(uploadDir, { recursive: true });
-        const uniqueSuffix = crypto.randomUUID();
-        const fileName = `protected_${uniqueSuffix}-${safeOriginalName}`;
+        const timestampedFileName = `protected_${Date.now()}-${safeOriginalName}`;
+        const fileName = timestampedFileName;
         await fs.writeFile(path.join(uploadDir, fileName), receiptBuffer);
         receiptUrl = `/uploads/receipts/${fileName}`;
         receiptFileName = fileName;

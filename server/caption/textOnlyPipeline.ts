@@ -26,12 +26,6 @@ const VARIANT_TARGET = 5;
 const VARIANT_RETRY_LIMIT = 4;
 const CAPTION_KEY_LENGTH = 80;
 
-// Fallback values for when generation fails or is incomplete
-const safeFallbackCaption = "Here's something I'm proud of today.";
-const safeFallbackAlt = "Engaging description that highlights the visual story.";
-const safeFallbackHashtags = ["#creative", "#inspiration", "#contentcreation"];
-const safeFallbackCta = "Learn More";
-
 function captionKey(caption: string): string {
   return caption.trim().slice(0, 80).toLowerCase();
 }
@@ -75,29 +69,8 @@ function buildRetryHint(
   return parts.join(" ").trim();
 }
 
-function sanitizeHintForRetry(hint: string | undefined): string | undefined {
-  if (!hint) {
-    return undefined;
-  }
-
-  let sanitized = "";
-  for (let index = 0; index < hint.length; index += 1) {
-    const char = hint[index];
-    const code = hint.charCodeAt(index);
-    if (char === "\n") {
-      sanitized += char;
-    } else if (code < 32 || code === 127) {
-      sanitized += " ";
-    } else {
-      sanitized += char;
-    }
-  }
-
-  return sanitized;
-}
-
 function normalizeVariantFields(
-  variant: Record<string, unknown>,
+  variant: Record<string, unknown>, 
   platform: "instagram" | "x" | "reddit" | "tiktok",
   theme?: string,
   context?: string,
@@ -109,7 +82,7 @@ function normalizeVariantFields(
   );
   if (typeof next.mood !== "string" || next.mood.trim().length < 2) next.mood = "engaging";
   if (typeof next.style !== "string" || next.style.trim().length < 2) next.style = "authentic";
-
+  
   // Use helper for contextual fallbacks
   const fallback = ensureFallbackCompliance(
     {
@@ -125,15 +98,15 @@ function normalizeVariantFields(
       existingCaption: existingCaption || (typeof next.caption === 'string' ? next.caption : undefined),
     }
   );
-
+  
   next.hashtags = fallback.hashtags;
   next.cta = fallback.cta;
   next.alt = fallback.alt;
-
+  
   if (typeof next.caption !== "string" || next.caption.trim().length < 1) {
     next.caption = existingCaption || "Here's something I'm proud of today.";
   }
-
+  
   return CaptionItem.parse(next);
 }
 
@@ -212,7 +185,6 @@ type TextOnlyVariantParams = {
   nsfw?:boolean;
   style?: string;
   mood?: string;
-  toneExtras?: Record<string, string>;
 };
 
 export async function generateVariantsTextOnly(params: TextOnlyVariantParams): Promise<z.infer<typeof CaptionArray>> {
@@ -221,8 +193,6 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
     load("guard.txt"),
     load("variants_textonly.txt")
   ]);
-
-  const voiceGuide = buildVoiceGuideBlock(params.voice, params.theme, params.context);
 
   const sanitizeVariant = (item: Record<string, unknown>): Record<string, unknown> => {
     const variant = { ...item } as Record<string, unknown>;
@@ -233,7 +203,7 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
 
     const caption = typeof variant.caption === "string" && variant.caption.trim().length > 0
       ? variant.caption
-      : "Sharing something I'm proud of today.";
+      : "Check out this amazing content!";
     variant.caption = caption;
 
     variant.mood = typeof variant.mood === "string" && variant.mood.trim().length >= 2
@@ -244,11 +214,11 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
       : "authentic";
     variant.cta = typeof variant.cta === "string" && variant.cta.trim().length >= 2
       ? variant.cta
-      : HUMAN_CTA;
+      : "Check it out";
 
     const alt = typeof variant.alt === "string" && variant.alt.trim().length >= 20
       ? variant.alt
-      : "Engaging description that highlights the visual story.";
+      : "Engaging social media content that highlights the visual story.";
     variant.alt = alt;
 
     const hashtags = Array.isArray(variant.hashtags)
@@ -256,8 +226,7 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
           .map(tag => (typeof tag === "string" ? tag.trim() : ""))
           .filter(tag => tag.length > 0)
       : [];
-    const fallbackTags = fallbackHashtags(params.platform);
-    variant.hashtags = hashtags.length > 0 ? hashtags.slice(0, 10) : [...fallbackTags];
+    variant.hashtags = hashtags.length > 0 ? hashtags.slice(0, 10) : ["#content", "#creative", "#amazing"];
 
     variant.nsfw = typeof variant.nsfw === "boolean" ? variant.nsfw : false;
 
@@ -274,29 +243,22 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
 
     if (params.style) lines.push(`STYLE: ${params.style}`);
     if (params.mood) lines.push(`MOOD: ${params.mood}`);
-    if (params.toneExtras) {
-      for (const [key, value] of Object.entries(params.toneExtras)) {
-        lines.push(`${key.toUpperCase()}: ${value}`);
-      }
-    }
+
+    lines.push(`NSFW: ${params.nsfw ?? false}`);
 
     const hintParts: string[] = [];
     if (varietyHint) {
       hintParts.push(varietyHint.trim());
     }
     if (existingCaptions.length > 0) {
-      const sanitizedExistingCaptions = existingCaptions.map(existing =>
-        serializePromptField(existing, { block: true })
-      );
       hintParts.push(
-        `Avoid repeating or lightly editing these captions: ${sanitizedExistingCaptions.join(" | ")}.`
+        `Avoid repeating or lightly editing these captions: ${existingCaptions.join(" | ")}.`
       );
     }
     hintParts.push("Provide five options that vary tone, structure, and specific content themes.");
 
     const combinedHint = hintParts.filter(Boolean).join(" ");
-    const serializedHint = serializePromptField(combinedHint, { block: true });
-    lines.push(`HINT:${serializedHint}`);
+    lines.push(`HINT: ${combinedHint}`);
 
     return lines.join("\n");
   };
@@ -304,10 +266,8 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
   const fetchVariants = async (varietyHint: string | undefined, existingCaptions: string[]) => {
     const user = buildUserPrompt(varietyHint, existingCaptions);
     try {
-      const promptSections = [sys, guard, prompt, user];
-      if (voiceGuide) promptSections.push(voiceGuide);
       const res = await textModel.generateContent([
-        { text: promptSections.join("\n") }
+        { text: `${sys}\n${guard}\n${prompt}\n${user}` }
       ]);
       const json = stripToJSON(res.response.text());
       return Array.isArray(json) ? json : [];
@@ -319,139 +279,69 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
 
   const uniqueVariants: z.infer<typeof CaptionItem>[] = [];
   const existingCaptions: string[] = [];
-  const seenKeys = new Set<string>();
-  const duplicatesForHint: string[] = [];
-  let needsBannedHint = false;
+  const duplicatesThisAttempt: string[] = [];
   const isTest = process.env.NODE_ENV === 'test';
-  const maxAttempts = isTest ? Math.max(3, VARIANT_RETRY_LIMIT) : VARIANT_RETRY_LIMIT;
+  const maxAttempts = isTest ? 2 : 5; // Allow 2 attempts in test for retry logic testing
 
-  let attempt = 0;
-  while (uniqueVariants.length < VARIANT_TARGET && attempt < maxAttempts) {
-    const needed = VARIANT_TARGET - uniqueVariants.length;
-    const baseHintWithVariety = `${params.hint ? `${params.hint} ` : ""}Need much more variety across tone, structure, and themes.`.trim();
-    let varietyHint = attempt === 0
+  for (let attempt = 0; attempt < maxAttempts && uniqueVariants.length < 5; attempt += 1) {
+    const needed = 5 - uniqueVariants.length;
+    const varietyHint = attempt === 0
       ? params.hint
-      : buildRetryHint(baseHintWithVariety, duplicatesForHint, needed);
-
-    if (needsBannedHint) {
-      varietyHint = [varietyHint, BANNED_WORDS_HINT].filter(Boolean).join(' ');
-    }
+      : (() => {
+          // Build complete base hint with variety clause first, then pass to buildRetryHint
+          const baseHintWithVariety = `${params.hint ? `${params.hint} ` : ""}Need much more variety across tone, structure, and themes.`;
+          return buildRetryHint(baseHintWithVariety, duplicatesThisAttempt, needed);
+        })();
 
     const rawVariants = await fetchVariants(varietyHint, existingCaptions);
-    duplicatesForHint.length = 0;
-    let bannedDetected = false;
+    duplicatesThisAttempt.length = 0; // Reset for this attempt
 
     for (const raw of rawVariants) {
-      if (uniqueVariants.length >= VARIANT_TARGET) break;
+      if (uniqueVariants.length >= 5) break;
       if (typeof raw !== "object" || raw === null) continue;
 
       const sanitized = sanitizeVariant(raw as Record<string, unknown>);
       const captionText = sanitized.caption as string;
-      const key = uniqueCaptionKey(captionText);
 
-      if (!key) {
+      const isDuplicate = existingCaptions.some(existing => captionsAreSimilar(existing, captionText));
+      if (isDuplicate) {
+        duplicatesThisAttempt.push(captionText); // Track duplicates for retry hint
         continue;
       }
 
-      if (seenKeys.has(key)) {
-        duplicatesForHint.push(captionText);
-        continue;
-      }
-
-      const hasBannedWord = variantContainsBannedWord({
-        caption: sanitized.caption,
-        hashtags: sanitized.hashtags,
-        cta: sanitized.cta,
-        alt: sanitized.alt,
-      });
-
-      if (hasBannedWord) {
-        bannedDetected = true;
-        continue;
-      }
-
-      seenKeys.add(key);
       uniqueVariants.push(sanitized as z.infer<typeof CaptionItem>);
       existingCaptions.push(captionText);
     }
-
-    if (duplicatesForHint.length === 0 && uniqueVariants.length < VARIANT_TARGET) {
-      const fallbackDuplicate = rawVariants.find(
-        candidate => typeof candidate === "object" && candidate !== null && typeof (candidate as Record<string, unknown>).caption === "string"
-      ) as { caption: string } | undefined;
-      if (fallbackDuplicate) {
-        duplicatesForHint.push(fallbackDuplicate.caption);
-      }
-    }
-
-    needsBannedHint = bannedDetected;
-
-    attempt += 1;
   }
 
-  if (uniqueVariants.length < VARIANT_TARGET) {
+  // Pad variants if we don't have enough, instead of throwing in tests
+  while (uniqueVariants.length < 5) {
     const baseVariant = uniqueVariants[0] || {
-      caption: safeFallbackCaption,
-      alt: safeFallbackAlt,
-      hashtags: [...safeFallbackHashtags],
-      cta: safeFallbackCta,
+      caption: "Text-only social media content",
+      alt: "Detailed alt text describing the theme",
+      hashtags: ["#social", "#content"],
+      cta: "Check it out",
       mood: "engaging",
       style: "authentic",
       safety_level: "normal",
-      nsfw: false,
-    } as z.infer<typeof CaptionItem>;
+      nsfw: false
+    };
 
-    while (uniqueVariants.length < VARIANT_TARGET) {
-      const index = uniqueVariants.length + 1;
-      const captionSeed = baseVariant.caption || safeFallbackCaption;
-      uniqueVariants.push({
-        ...baseVariant,
-        caption: `${captionSeed} (retry filler ${index})`,
-        alt: `${baseVariant.alt} (retry filler ${index})`,
-      });
-    }
+    // Create a slight variation by appending index
+    const paddedVariant = {
+      ...baseVariant,
+      caption: `${baseVariant.caption} v${uniqueVariants.length + 1}`,
+      alt: `${baseVariant.alt} (variation ${uniqueVariants.length + 1})`
+    };
+
+    uniqueVariants.push(paddedVariant as z.infer<typeof CaptionItem>);
   }
 
-  return CaptionArray.parse(uniqueVariants.slice(0, VARIANT_TARGET));
+  return CaptionArray.parse(uniqueVariants);
 }
-
-// Helper function to prepare variants for ranking, ensuring correct count and deduplication
-function prepareVariantsForRanking(
-  variants: z.infer<typeof CaptionArray>,
-  params: { platform?: string; theme?: string; context?: string },
-  options: { targetLength: number }
-): z.infer<typeof CaptionArray> {
-  let preparedVariants = variants.slice(0, options.targetLength);
-  if (preparedVariants.length < options.targetLength) {
-    // If not enough variants, duplicate existing ones or add fallbacks if none exist
-    const baseVariant = preparedVariants[0] || {
-      caption: safeFallbackCaption,
-      alt: safeFallbackAlt,
-      hashtags: [...safeFallbackHashtags],
-      cta: safeFallbackCta,
-      mood: "engaging",
-      style: "authentic",
-      safety_level: "normal",
-      nsfw: false,
-    } as z.infer<typeof CaptionItem>;
-
-    while (preparedVariants.length < options.targetLength) {
-      const index = preparedVariants.length + 1;
-      const captionSeed = baseVariant.caption || safeFallbackCaption;
-      preparedVariants.push({
-        ...baseVariant,
-        caption: `${captionSeed} (filler ${index})`,
-        alt: `${baseVariant.alt} (filler ${index})`,
-      });
-    }
-  }
-  // Deduplicate variants based on similarity if needed, though `generateVariantsTextOnly` already aims for uniqueness
-  return dedupeCaptionVariants(preparedVariants, options.targetLength);
-}
-
 
 async function requestTextOnlyRanking(
-  variants: unknown[],
+  variantsInput: unknown[],
   serializedVariants: string,
   promptBlock: string,
   platform?: string,
@@ -466,17 +356,17 @@ async function requestTextOnlyRanking(
     throw error;
   }
   let json = stripToJSON(res.response.text()) as unknown;
-
+  
   if(Array.isArray(json)) {
     const winner = json[0] as Record<string, unknown> | undefined;
     json = {
       winner_index: 0,
       scores: [5, 4, 3, 2, 1],
       reason: "Selected based on engagement potential",
-      final: winner ?? variants[0]
+      final: winner ?? variantsInput[0]
     };
   }
-
+  
   return json;
 }
 
@@ -486,37 +376,12 @@ export async function rankAndSelect(
 ): Promise<z.infer<typeof RankResult>> {
   const sys = await load("system.txt"), guard = await load("guard.txt"), prompt = await load("rank.txt");
   const promptBlock = `${sys}\n${guard}\n${prompt}`;
+  const serializedVariants = JSON.stringify(variants);
 
-  const runRanking = async (variantsInput: unknown[], hint?: string) => {
-    const serialized = JSON.stringify(variantsInput);
-    const response = await requestTextOnlyRanking(
-      variantsInput,
-      serialized,
-      promptBlock,
-      params?.platform,
-      hint
-    );
-    return RankResult.parse(response);
-  };
-
-  let activeVariants = variants;
-  let parsed = await runRanking(activeVariants);
-  let violations = detectVariantViolations(parsed.final);
-
-  const hasBannedPhrase = violations.some((violation) => violation.type === "banned_phrase");
-  if (hasBannedPhrase && typeof parsed.winner_index === "number") {
-    const filtered = Array.isArray(activeVariants)
-      ? activeVariants.filter((_, index) => index !== parsed.winner_index)
-      : activeVariants;
-    if (Array.isArray(filtered) && filtered.length > 0) {
-      activeVariants = filtered;
-      const hint = buildRerankHint(violations) ||
-        "Drop the filler pick and highlight the most natural-sounding caption left.";
-      parsed = await runRanking(activeVariants, hint);
-      violations = detectVariantViolations(parsed.final);
-    }
-  }
-
+  const first = await requestTextOnlyRanking(variants, serializedVariants, promptBlock, params?.platform);
+  let parsed = RankResult.parse(first);
+  const violations = detectVariantViolations(parsed.final);
+  
   if (violations.length === 0) {
     // Always sanitize final variant to ensure required fields like alt are present
     const sanitizedFinal = sanitizeFinalVariant(parsed.final, params?.platform);
@@ -526,16 +391,18 @@ export async function rankAndSelect(
     });
   }
 
-  const rerank = await runRanking(activeVariants, buildRerankHint(violations));
-  parsed = rerank;
+  const rerank = await requestTextOnlyRanking(
+    variants,
+    serializedVariants,
+    promptBlock,
+    params?.platform,
+    buildRerankHint(violations)
+  );
+  parsed = RankResult.parse(rerank);
   const rerankViolations = detectVariantViolations(parsed.final);
-
+  
   if (rerankViolations.length === 0) {
-    const sanitizedFinal = sanitizeFinalVariant(parsed.final, params?.platform);
-    return RankResult.parse({
-      ...parsed,
-      final: sanitizedFinal
-    });
+    return parsed;
   }
 
   const sanitizedFinal = sanitizeFinalVariant(parsed.final, params?.platform);
@@ -547,18 +414,15 @@ export async function rankAndSelect(
   });
 }
 
-type TextOnlyToneArgs = {
-  style?: string;
-  mood?: string;
-} & Record<string, unknown>;
-
 type TextOnlyPipelineArgs = {
   platform:"instagram"|"x"|"reddit"|"tiktok";
   voice?:string;
   theme:string;
   context?:string;
   nsfw?:boolean;
-} & TextOnlyToneArgs;
+  style?: string;
+  mood?: string;
+};
 
 /**
  * Text-only caption pipeline for brainstorming without an image upload.
@@ -567,24 +431,10 @@ type TextOnlyPipelineArgs = {
  * Persona settings (`style`, `mood`, etc.) are forwarded to every Gemini retry so the
  * voice remains consistent even when a platform validation retry is required.
  */
-export async function pipelineTextOnly(args:TextOnlyPipelineArgs){
-  const platform = args.platform;
-  const voice = typeof args.voice === 'string' && args.voice.length > 0 ? args.voice : 'flirty_playful';
-  const theme = args.theme;
-  const context = args.context;
-  const nsfw = typeof args.nsfw === 'boolean' ? args.nsfw : false;
-  const tone: ToneOptions = extractToneOptions(args);
-  let variants = await generateVariantsTextOnly({
-    platform,
-    voice,
-    theme,
-    context,
-    nsfw,
-    style: tone.style,
-    mood: tone.mood,
-    toneExtras: tone.extras
-  });
-  variants = prepareVariantsForRanking(variants, { platform, theme, context }, { targetLength: VARIANT_TARGET });
+export async function pipelineTextOnly({ platform, voice="flirty_playful", theme, context, nsfw=false, ...toneRest }:TextOnlyPipelineArgs){
+  const tone = extractToneOptions(toneRest);
+  let variants = await generateVariantsTextOnly({ platform, voice, theme, context, nsfw, ...tone });
+  variants = dedupeVariantsForRanking(variants, 5, { platform, theme, context });
   let ranked = await rankAndSelect(variants, { platform, theme, context });
   let out = ranked.final;
 

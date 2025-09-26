@@ -142,36 +142,19 @@ export function formatViolations(violations: readonly string[]): string {
  * Normalize unknown objects to ranking variants
  */
 export function normalizeVariantForRanking(final: Record<string, unknown>): CaptionVariant {
-  const rawSafetyLevel = typeof final.safety_level === 'string' ? final.safety_level : 'normal';
-  const safetyLevel = normalizeSafetyLevel(rawSafetyLevel);
-
-  const caption = typeof final.caption === 'string' ? final.caption : safeFallbackCaption;
-  const alt =
-    typeof final.alt === 'string' && final.alt.trim().length >= 20
-      ? final.alt
-      : 'Engaging social media content';
-  const cta = typeof final.cta === 'string' && final.cta.trim().length >= 2 ? final.cta : safeFallbackCta;
-  const mood =
-    typeof final.mood === 'string' && final.mood.trim().length >= 2 ? final.mood : 'engaging';
-  const style =
-    typeof final.style === 'string' && final.style.trim().length >= 2 ? final.style : 'authentic';
-  const normalizedHashtags = Array.isArray(final.hashtags)
-    ? final.hashtags
-        .filter((tag): tag is string => typeof tag === 'string')
-        .map(tag => tag.trim())
-        .filter(tag => tag.length > 0)
-    : [];
-  const hashtags = normalizedHashtags.length > 0 ? normalizedHashtags.slice(0, 10) : [...safeFallbackHashtags];
-
+  const safetyLevel = normalizeSafetyLevel(String(final.safetyLevel ?? 'normal'));
+  
   return {
-    caption,
-    alt,
-    cta,
-    hashtags,
-    mood,
-    style,
+    caption: typeof final.caption === 'string' ? final.caption : safeFallbackCaption,
+    alt: typeof final.alt === 'string' ? final.alt : 'Generated image content',
+    cta: typeof final.cta === 'string' ? final.cta : safeFallbackCta,
+    hashtags: Array.isArray(final.hashtags) 
+      ? final.hashtags.filter((tag): tag is string => typeof tag === 'string')
+      : [...safeFallbackHashtags],
+    mood: typeof final.mood === 'string' ? final.mood : 'neutral',
+    style: typeof final.style === 'string' ? final.style : 'casual',
     safety_level: safetyLevel,
-    nsfw: typeof final.nsfw === 'boolean' ? final.nsfw : false
+    nsfw: Boolean(final.nsfw)
   };
 }
 

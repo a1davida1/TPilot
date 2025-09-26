@@ -1,0 +1,176 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/client/src/pages/phase4.tsx b/client/src/pages/phase4.tsx
+index 4a2fcb7bf2eb264cc48054b1e9037e70c92a6340..21dbc3be824ce1e86e72758ec8e98e6fef691db0 100644
+--- a/client/src/pages/phase4.tsx
++++ b/client/src/pages/phase4.tsx
+@@ -4,51 +4,54 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+ import { Button } from '@/components/ui/button';
+ import { Badge } from '@/components/ui/badge';
+ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+ import { SocialAutomation } from '@/components/automation/SocialAutomation';
+ import { TrendIntelligence } from '@/components/intelligence/TrendIntelligence';
+ import { CommunityManager } from '@/components/community/CommunityManager';
+ import { ContentOptimizer } from '@/components/optimization/ContentOptimizer';
+ import { 
+   Zap, 
+   TrendingUp, 
+   Users, 
+   Target, 
+   BarChart3, 
+   Clock, 
+   MessageCircle,
+   Brain,
+   Sparkles,
+   ArrowRight,
+   CheckCircle,
+   Star,
+   Activity
+ } from 'lucide-react';
+ 
+ import type { LucideIcon } from 'lucide-react';
+ 
+-type IconType = LucideIcon;
++const getIconComponent = (
++  IconComponent: LucideIcon
++): React.ComponentType<React.SVGProps<SVGSVGElement>> =>
++  IconComponent as unknown as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+ 
+ export default function Phase4Dashboard() {
+   const [activeTab, setActiveTab] = useState('overview');
+ 
+   const phase4Features = [
+     {
+       id: 'automation',
+       title: 'Social Automation',
+       description: 'AI-powered posting at optimal times across platforms',
+       icon: Zap,
+       status: 'operational',
+       stats: { posts: '847', success: '94%', saved: '89h' },
+       color: 'from-blue-500 to-purple-500'
+     },
+     {
+       id: 'intelligence',
+       title: 'Trend Intelligence',
+       description: 'Real-time trend detection and content suggestions',
+       icon: Brain,
+       status: 'operational',
+       stats: { trends: '23', accuracy: '89%', suggestions: '156' },
+       color: 'from-purple-500 to-pink-500'
+     },
+     {
+       id: 'community',
+diff --git a/client/src/pages/phase4.tsx b/client/src/pages/phase4.tsx
+index 4a2fcb7bf2eb264cc48054b1e9037e70c92a6340..21dbc3be824ce1e86e72758ec8e98e6fef691db0 100644
+--- a/client/src/pages/phase4.tsx
++++ b/client/src/pages/phase4.tsx
+@@ -142,105 +145,103 @@ export default function Phase4Dashboard() {
+ 
+   const aiInsights = [
+     {
+       priority: 'high',
+       title: 'Mirror Selfie Opportunity',
+       description: 'Mirror selfies are trending +127%. Consider posting between 8-10 PM for maximum visibility.',
+       action: 'Create Mirror Selfie Content',
+       confidence: 94
+     },
+     {
+       priority: 'medium',
+       title: 'Posting Schedule Optimization',
+       description: 'Your audience is 3x more active between 8-10 PM. Adjust auto-posting schedule.',
+       action: 'Update Schedule',
+       confidence: 87
+     },
+     {
+       priority: 'low',
+       title: 'Cross-Platform Expansion',
+       description: 'Instagram Stories could increase your reach by 67%. Consider expanding platform strategy.',
+       action: 'Connect Instagram',
+       confidence: 78
+     }
+   ];
+ 
+-  const getIconComponent = (IconComponent: React.ComponentType): React.ComponentType => IconComponent;
+-
+   return (
+     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900 p-6">
+       <div className="max-w-7xl mx-auto space-y-6">
+         {/* Header */}
+         <div className="flex items-center justify-between">
+           <div>
+             <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
+               Phase 4: Advanced Automation & Intelligence
+             </h1>
+             <p className="text-gray-400 mt-2">
+               Sophisticated AI-powered automation, trend analysis, and community management
+             </p>
+           </div>
+           <Badge variant="secondary" className="bg-green-500/10 text-green-400 border-green-500/20">
+             ✓ Operational
+           </Badge>
+         </div>
+ 
+         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+           <TabsList className="grid w-full grid-cols-5 bg-gray-800/50 border border-gray-700">
+             <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
+             <TabsTrigger value="automation" data-testid="tab-automation">Automation</TabsTrigger>
+             <TabsTrigger value="intelligence" data-testid="tab-intelligence">Intelligence</TabsTrigger>
+             <TabsTrigger value="community" data-testid="tab-community">Community</TabsTrigger>
+             <TabsTrigger value="optimizer" data-testid="tab-optimizer">Optimizer</TabsTrigger>
+           </TabsList>
+ 
+           <TabsContent value="overview" className="space-y-6">
+             {/* Quick Stats */}
+             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+               {quickStats.map((stat, index) => {
+-                const IconComponent = getIconComponent(stat.icon) as React.ComponentType<React.SVGProps<SVGSVGElement>>;
++                const IconComponent = getIconComponent(stat.icon);
+                 return (
+                   <Card key={index} className="bg-gradient-to-r from-gray-900/80 to-gray-800/80 border-gray-700/50 backdrop-blur-sm">
+                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                       <CardTitle className="text-sm font-medium text-gray-400">{stat.title}</CardTitle>
+                       {IconComponent && React.createElement(IconComponent, {
+                         className: `h-5 w-5 ${stat.color}`
+                       })}
+                     </CardHeader>
+                     <CardContent>
+                       <div className="text-2xl font-bold text-white">{stat.value}</div>
+                       <p className="text-xs text-green-400">{stat.change} this month</p>
+                     </CardContent>
+                   </Card>
+                 );
+               })}
+             </div>
+ 
+             {/* Feature Overview */}
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               {phase4Features.map((feature) => {
+-                const IconComponent = getIconComponent(feature.icon) as React.ComponentType<React.SVGProps<SVGSVGElement>>;
++                const IconComponent = getIconComponent(feature.icon);
+                 return (
+                   <Card key={feature.id} className="bg-gradient-to-r from-gray-900/80 to-gray-800/80 border-gray-700/50 backdrop-blur-sm overflow-hidden">
+                     <div className={`h-1 bg-gradient-to-r ${feature.color}`} />
+                     <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                       <div className="flex items-center space-x-3">
+                         <div className={`p-3 rounded-lg bg-gradient-to-r ${feature.color} bg-opacity-20`}>
+                           {IconComponent && React.createElement(IconComponent, {
+                             className: "h-6 w-6 text-white"
+                           })}
+                         </div>
+                         <div>
+                           <CardTitle className="text-xl text-white">{feature.title}</CardTitle>
+                           <p className="text-sm text-gray-400">{feature.description}</p>
+                         </div>
+                       </div>
+                       <Badge variant="outline" className="bg-green-500/20 text-green-400 border-green-500/30">
+                         <CheckCircle className="h-3 w-3 mr-1" />
+                         {feature.status}
+                       </Badge>
+                     </CardHeader>
+                     <CardContent className="space-y-4">
+                       <div className="grid grid-cols-3 gap-4 text-sm">
+                         {Object.entries(feature.stats).map(([key, value]) => (
+                           <div key={key} className="text-center">
+                             <div className="font-semibold text-white">{value}</div>
+ 
+EOF
+)

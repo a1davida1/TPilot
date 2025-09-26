@@ -251,8 +251,7 @@ export function AppleInspiredApp() {
       };
 
       img.src = originalImage;
-    } catch (error) {
-      console.error("Failed to protect image:", error);
+    } catch (_error) {
       toast({
         title: "Protection Failed",
         description: "Unable to process image",

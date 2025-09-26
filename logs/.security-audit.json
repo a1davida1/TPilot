@@ -99,11 +99,6 @@
             "date": 1758681441617,
             "name": "/home/runner/workspace/logs/security-2025-09-24.log",
             "hash": "1fbf7f800220e301f5b93a72c304c3c161cdd9f01455b4eb6d0c570dee1693a6"
-        },
-        {
-            "date": 1758848952536,
-            "name": "/home/runner/workspace/logs/security-2025-09-26.log",
-            "hash": "81f2707bd178bec858c225b6ebc020b409c53cbe223edd092eddff00e2603e7d"
         }
     ],
     "hashType": "sha256"

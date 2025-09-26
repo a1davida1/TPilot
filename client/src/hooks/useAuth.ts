@@ -7,7 +7,7 @@ interface User {
   email: string;
   username?: string;
   displayName?: string;
-  tier?: 'free' | 'starter' | 'pro' | 'premium';
+  tier?: 'free' | 'starter' | 'pro';
   subscription?: string;
   isAdmin?: boolean;
   subscription_status?: string;

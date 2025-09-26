@@ -65,19 +65,8 @@ const rewriteSchema = z.object({
 router.post('/generate', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const { imageUrl, platform, voice, style, mood, nsfw } = generateSchema.parse(req.body ?? {});
-    const tone = extractToneOptions(req.body ?? {});
-    const normalizedStyle = tone.style ?? style;
-    const normalizedMood = tone.mood ?? mood;
-
-    const result = await pipeline({
-      imageUrl,
-      platform,
-      voice,
-      nsfw: nsfw || false,
-      style: normalizedStyle,
-      mood: normalizedMood,
-      ...tone.extras
-    });
+    
+    const result = await pipeline({ imageUrl, platform, voice, style, mood, nsfw: nsfw || false });
     
     // Validate response payload matches expected schema
     const validatedResult = generationResponseSchema.parse(result);
@@ -125,20 +114,8 @@ router.post('/generate', authenticateToken, async (req: AuthRequest, res: Respon
 router.post('/generate-text', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const { platform, voice, style, mood, theme, context, nsfw } = generateTextSchema.parse(req.body ?? {});
-    const tone = extractToneOptions(req.body ?? {});
-    const normalizedStyle = tone.style ?? style;
-    const normalizedMood = tone.mood ?? mood;
-
-    const result = await pipelineTextOnly({
-      platform,
-      voice,
-      theme,
-      context,
-      nsfw: nsfw || false,
-      style: normalizedStyle,
-      mood: normalizedMood,
-      ...tone.extras
-    });
+    
+    const result = await pipelineTextOnly({ platform, voice, style, mood, theme, context, nsfw: nsfw || false });
     
     // Validate response payload matches expected schema
     const validatedResult = generationResponseSchema.parse(result);
@@ -186,20 +163,8 @@ router.post('/generate-text', authenticateToken, async (req: AuthRequest, res: R
 router.post('/rewrite', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const { platform, voice, style, mood, existingCaption, imageUrl, nsfw } = rewriteSchema.parse(req.body ?? {});
-    const tone = extractToneOptions(req.body ?? {});
-    const normalizedStyle = tone.style ?? style;
-    const normalizedMood = tone.mood ?? mood;
-
-    const result = await pipelineRewrite({
-      platform,
-      voice,
-      existingCaption,
-      imageUrl,
-      nsfw: nsfw || false,
-      style: normalizedStyle,
-      mood: normalizedMood,
-      ...tone.extras
-    });
+    
+    const result = await pipelineRewrite({ platform, voice, style, mood, existingCaption, imageUrl, nsfw: nsfw || false });
     
     // Validate response payload matches expected schema
     const validatedResult = generationResponseSchema.parse(result);

@@ -1,0 +1,211 @@
+server/admin-routes.js
+New
++1-0
+export * from './admin-routes.ts';
+server/app.js
+New
++1-0
+export * from './app.ts';
+server/auth.js
+New
++1-0
+export * from './auth.ts';
+server/bootstrap/logger.js
+New
++1-0
+export * from './logger.ts';
+server/bootstrap/queue.js
+New
++1-0
+export * from './queue.ts';
+server/caption/ensureFactCoverage.js
+New
++1-0
+export * from './ensureFactCoverage.ts';
+server/caption/geminiPipeline.js
+New
++1-0
+export * from './geminiPipeline.ts';
+server/caption/inferFallbackFromFacts.js
+New
++1-0
+export * from './inferFallbackFromFacts.ts';
+server/caption/nsfwFallback.js
+New
++1-0
+export * from './nsfwFallback.ts';
+server/caption/openaiFallback.js
+New
++1-0
+export * from './openaiFallback.ts';
+server/caption/promptUtils.js
+New
++1-0
+export * from './promptUtils.ts';
+server/caption/rewritePipeline.js
+New
++1-0
+export * from './rewritePipeline.ts';
+server/caption/schema.js
+New
++1-0
+export * from './schema.ts';
+server/caption/stylePack.js
+New
++1-0
+export * from './stylePack.ts';
+server/caption/textOnlyPipeline.js
+New
++1-0
+export * from './textOnlyPipeline.ts';
+server/database.js
++1-3
+import { db, pool, closeDatabaseConnections } from './db.js';
+
+export { db, pool, closeDatabaseConnections };
+export * from './database.ts';
+server/db.js
++1-29
+import { Pool as NeonPool, neonConfig } from '@neondatabase/serverless';
+import { drizzle as drizzleNeon } from 'drizzle-orm/neon-serverless';
+import ws from 'ws';
+import * as schema from '../shared/schema.js';
+
+neonConfig.webSocketConstructor = ws;
+
+const preferTestConnection = process.env.NODE_ENV === 'test';
+const preferredConnectionString = preferTestConnection
+  ? process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL
+  : process.env.DATABASE_URL ?? process.env.TEST_DATABASE_URL;
+
+if (!preferredConnectionString) {
+  throw new Error(
+    'DATABASE_URL must be set. Did you forget to provision a database?',
+  );
+}
+
+const connectionString = preferredConnectionString;
+const neonPool = new NeonPool({ connectionString });
+const poolInstance = neonPool;
+const dbInstance = drizzleNeon({ client: neonPool, schema });
+
+export const pool = poolInstance;
+export const db = dbInstance;
+
+export async function closeDatabaseConnections() {
+  await poolInstance.end();
+}
+export * from './db.ts';
+server/index.js
+New
++1-0
+export * from './index.ts';
+server/lib/billing/stripe.js
+New
++1-0
+export * from './stripe.ts';
+server/lib/config.js
+New
++1-0
+export * from './config.ts';
+server/lib/gemini.js
+New
++1-0
+export * from './gemini.ts';
+server/lib/logger-utils.js
+New
++1-0
+export * from './logger-utils.ts';
+server/lib/logger.js
+New
++1-0
+export * from './logger.ts';
+server/lib/media.js
+New
++1-0
+export * from './media.ts';
+server/lib/queue-factory.js
+New
++1-0
+export * from './queue-factory.ts';
+server/lib/queue/index.js
+New
++1-0
+export * from './index.ts';
+server/lib/reddit.js
+New
++1-0
+export * from './reddit.ts';
+server/lib/safety-systems.js
+New
++1-0
+export * from './safety-systems.ts';
+server/lib/scheduling.js
+New
++1-0
+export * from './scheduling.ts';
+server/lib/workers/index.js
+New
++1-0
+export * from './index.ts';
+server/middleware/auth.js
+New
++1-0
+export * from './auth.ts';
+server/middleware/security.js
+New
++1-0
+export * from './security.ts';
+server/middleware/streaming-upload.js
+New
++1-0
+export * from './streaming-upload.ts';
+server/middleware/tiered-rate-limit.js
+New
++1-0
+export * from './tiered-rate-limit.ts';
+server/pro-perks.js
+New
++2-0
+export * from './pro-perks.ts';
+export { default } from './pro-perks.ts';
+server/reddit-communities.js
+New
++1-0
+export * from './reddit-communities.ts';
+server/routes.js
+New
++1-0
+export * from './routes.ts';
+server/routes/admin-communities.js
+New
++1-0
+export * from './admin-communities.ts';
+server/routes/billing.js
+New
++1-0
+export * from './billing.ts';
+server/routes/health.js
+New
++1-0
+export * from './health.ts';
+server/routes/upload.js
+New
++1-0
+export * from './upload.ts';
+server/routes/webhooks.stripe.js
+New
++1-0
+export * from './webhooks.stripe.ts';
+server/services/dashboard-service.js
+New
++1-0
+export * from './dashboard-service.ts';
+server/social-auth.js
+New
++1-0
+export * from './social-auth.ts';
+server/storage.js
+New
++1-0
+export * from './storage.ts';

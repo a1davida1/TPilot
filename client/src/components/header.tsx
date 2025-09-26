@@ -12,8 +12,7 @@ import {
   Sparkles,
   Menu,
   X,
-  Crown,
-  RefreshCcw
+  Crown
 } from 'lucide-react';
 import { GenerationCounter } from '@/components/generation-counter';
 import { ThottoPilotLogo } from '@/components/thottopilot-logo';
@@ -33,26 +32,13 @@ export function Header() {
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Assume this function exists and handles the walkthrough replay
-  const handleReplayWalkthrough = () => {
-    console.log("Replaying walkthrough...");
-    // In a real app, you would trigger the walkthrough replay logic here.
-    // For example, using a state management or a dedicated hook.
-  };
-
   const handleLogout = () => {
     // Redirect to logout page which handles the logout process
     window.location.href = '/logout';
   };
 
   const isAdmin = user && (user.id === 999 || user.username === 'admin');
-
-  // Determine if the walkthrough replay feature should be visible
-  // This logic might depend on the current route or user settings.
-  // For this example, let's assume it's visible on the dashboard and settings pages.
-  const canReplayWalkthrough = isAuthenticated && (location === '/dashboard' || location === '/settings');
-
-
+  
   const navigationItems = [
     { href: '/dashboard', label: 'Dashboard', authenticated: true },
     { href: '/reddit', label: 'Reddit', authenticated: null },
@@ -86,7 +72,7 @@ export function Header() {
       <header className="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-pink-200/50 dark:border-pink-800/30 shadow-lg shadow-pink-500/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-
+            
             {/* Logo - Smart routing based on auth status */}
             <Link href={isAuthenticated ? "/dashboard" : "/login"}>
               <div className="flex items-center gap-3 cursor-pointer h-16">
@@ -144,7 +130,7 @@ export function Header() {
                       </Button>
                     </Link>
                   )}
-
+                  
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button 
@@ -266,7 +252,7 @@ export function Header() {
                     </div>
                   </Link>
                 ))}
-
+                
                 {/* Mobile Auth Controls */}
                 <div className="pt-4 border-t border-pink-100">
                   {isAuthenticated ? (
@@ -289,7 +275,7 @@ export function Header() {
                           </Badge>
                         )}
                       </div>
-
+                      
                       {/* Mobile Upgrade Button for Free/Starter Users */}
                       {user?.tier && user.tier !== 'pro' && (
                         <Link href="/settings" onClick={() => setMobileMenuOpen(false)}>
@@ -303,21 +289,7 @@ export function Header() {
                           </Button>
                         </Link>
                       )}
-
-                      {canReplayWalkthrough && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            handleReplayWalkthrough();
-                            setMobileMenuOpen(false);
-                          }}
-                          className="w-full text-left px-3 py-2 text-base font-medium text-gray-700 hover:text-pink-600 hover:bg-pink-50 rounded-lg flex items-center gap-2"
-                        >
-                          <RefreshCcw className="h-4 w-4" />
-                          Replay Walkthrough
-                        </button>
-                      )}
-
+                      
                       <button
                         onClick={handleLogout}
                         className="w-full text-left px-3 py-2 text-base font-medium text-red-600 hover:bg-red-50 rounded-lg"

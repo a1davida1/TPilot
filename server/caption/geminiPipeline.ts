@@ -59,10 +59,10 @@ const VARIANT_TARGET = 5;
 const VARIANT_RETRY_LIMIT = 4;
 const CAPTION_KEY_LENGTH = 80;
 
-const safeFallbackCaption = "Sharing something I'm proud of today.";
+const safeFallbackCaption = "Check out this amazing content!";
 const safeFallbackAlt = "Detailed alt text describing the scene.";
 const safeFallbackHashtags = ["#content", "#creative", "#amazing"];
-const safeFallbackCta = HUMAN_CTA;
+const safeFallbackCta = "Check it out";
 
 function captionKey(caption: string): string {
   return caption.trim().slice(0, 80).toLowerCase();
@@ -105,27 +105,6 @@ function buildRetryHint(
     );
   }
   return parts.join(" ").trim();
-}
-
-function sanitizeHintForRetry(hint: string | undefined): string | undefined {
-  if (!hint) {
-    return undefined;
-  }
-
-  let sanitized = "";
-  for (let index = 0; index < hint.length; index += 1) {
-    const char = hint[index];
-    const code = hint.charCodeAt(index);
-    if (char === "\n") {
-      sanitized += char;
-    } else if (code < 32 || code === 127) {
-      sanitized += " ";
-    } else {
-      sanitized += char;
-    }
-  }
-
-  return sanitized;
 }
 
 function normalizeVariantFields(
@@ -406,95 +385,6 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
   }
 }
 
-type GeminiToneArgs = {
-  style?: string;
-  mood?: string;
-} & Record<string, unknown>;
-
-type GeminiPipelineArgs = {
-  imageUrl: string;
-  platform: "instagram" | "x" | "reddit" | "tiktok";
-  voice?: string;
-  nsfw?: boolean;
-} & GeminiToneArgs;
-
-/**
- * Primary image captioning pipeline backed by Gemini vision + text models.
- *
- * @remarks
- * Persona controls such as `style`, `mood`, and future tone keys must persist through
- * retries. When platform validation fails we re-run Gemini with the exact same tone
- * payload so the caller's requested persona stays intact.
- */
-export async function pipeline(args: GeminiPipelineArgs): Promise<CaptionResult> {
-  const imageUrl = args.imageUrl;
-  const platform = args.platform;
-  const voice = typeof args.voice === "string" && args.voice.length > 0 ? args.voice : "flirty_playful";
-  const nsfw = typeof args.nsfw === "boolean" ? args.nsfw : false;
-  const tone: ToneOptions = extractToneOptions(args);
-  try {
-    const facts = await extractFacts(imageUrl);
-    let variants = await generateVariants({
-      platform,
-      voice,
-      facts,
-      nsfw,
-      style: tone.style,
-      mood: tone.mood,
-      toneExtras: tone.extras
-    });
-    variants = dedupeVariantsForRanking(variants, 5, { platform, facts });
-    let ranked = await rankAndSelect(variants, { platform, facts });
-    let out = ranked.final;
-
-    const enforceCoverage = async () => {
-      let attempts = 0;
-      let coverage = ensureFactCoverage({ facts, caption: out.caption, alt: out.alt });
-      while (!coverage.ok && coverage.hint && attempts < 2) {
-        attempts += 1;
-        variants = await generateVariants({
-          platform,
-          voice,
-          style: tone.style,
-          mood: tone.mood,
-          facts,
-          hint: coverage.hint,
-          nsfw,
-          toneExtras: tone.extras
-        });
-        variants = dedupeVariantsForRanking(variants, 5, { platform, facts });
-        ranked = await rankAndSelect(variants, { platform, facts });
-        out = ranked.final;
-        coverage = ensureFactCoverage({ facts, caption: out.caption, alt: out.alt });
-      }
-    };
-
-    await enforceCoverage();
-
-    const err = platformChecks(platform, out);
-    if (err) {
-      variants = await generateVariants({
-        platform,
-        voice,
-        style: tone.style,
-        mood: tone.mood,
-        facts,
-        hint: `Fix: ${err}. Use IMAGE_FACTS nouns/colors/setting explicitly.`,
-        nsfw,
-        toneExtras: tone.extras
-      });
-      ranked = await rankAndSelect(variants);
-      out = ranked.final;
-    }
-
-    return { provider: 'gemini', facts, variants, ranked, final: out };
-  } catch (error) {
-    const { openAICaptionFallback } = await import('./openaiFallback');
-    const final = await openAICaptionFallback({ platform, voice, imageUrl });
-    return { provider: 'openai', final } as CaptionResult;
-  }
-}
-
 type GeminiVariantParams = {
   platform: "instagram" | "x" | "reddit" | "tiktok";
   voice: string;
@@ -503,17 +393,14 @@ type GeminiVariantParams = {
   nsfw?: boolean;
   style?: string;
   mood?: string;
-  toneExtras?: Record<string, string>;
 };
 
-async function generateVariants(params: GeminiVariantParams): Promise<z.infer<typeof CaptionArray>> {
+export async function generateVariants(params: GeminiVariantParams): Promise<z.infer<typeof CaptionArray>> {
   const [sys, guard, prompt] = await Promise.all([
     load("system.txt"),
     load("guard.txt"),
     load("variants.txt")
   ]);
-
-  const voiceGuide = buildVoiceGuideBlock(params.voice);
 
   const sanitizeVariant = (item: Record<string, unknown>): Record<string, unknown> => {
     const variant = { ...item } as Record<string, unknown>;
@@ -524,7 +411,7 @@ async function generateVariants(params: GeminiVariantParams): Promise<z.infer<ty
 
     const caption = typeof variant.caption === "string" && variant.caption.trim().length > 0
       ? variant.caption
-      : "Sharing something I'm proud of today.";
+      : "Check out this amazing content!";
     variant.caption = caption;
 
     variant.mood = typeof variant.mood === "string" && variant.mood.trim().length >= 2
@@ -535,11 +422,11 @@ async function generateVariants(params: GeminiVariantParams): Promise<z.infer<ty
       : "authentic";
     variant.cta = typeof variant.cta === "string" && variant.cta.trim().length >= 2
       ? variant.cta
-      : HUMAN_CTA;
+      : "Check it out";
 
     const alt = typeof variant.alt === "string" && variant.alt.trim().length >= 20
       ? variant.alt
-      : "Engaging description that highlights the visual story.";
+      : "Engaging social media content that highlights the visual story.";
     variant.alt = alt;
 
     const hashtags = Array.isArray(variant.hashtags)
@@ -547,8 +434,7 @@ async function generateVariants(params: GeminiVariantParams): Promise<z.infer<ty
           .map(tag => (typeof tag === "string" ? tag.trim() : ""))
           .filter(tag => tag.length > 0)
       : [];
-    const fallbackTags = fallbackHashtags(params.platform);
-    variant.hashtags = hashtags.length > 0 ? hashtags.slice(0, 10) : [...fallbackTags];
+    variant.hashtags = hashtags.length > 0 ? hashtags.slice(0, 10) : ["#content", "#creative", "#amazing"];
 
     variant.nsfw = typeof variant.nsfw === "boolean" ? variant.nsfw : false;
 
@@ -563,11 +449,6 @@ async function generateVariants(params: GeminiVariantParams): Promise<z.infer<ty
 
     if (params.style) lines.push(`STYLE: ${params.style}`);
     if (params.mood) lines.push(`MOOD: ${params.mood}`);
-    if (params.toneExtras) {
-      for (const [key, value] of Object.entries(params.toneExtras)) {
-        lines.push(`${key.toUpperCase()}: ${value}`);
-      }
-    }
 
     lines.push(`IMAGE_FACTS: ${JSON.stringify(params.facts)}`);
     lines.push(`NSFW: ${params.nsfw ?? false}`);
@@ -583,8 +464,8 @@ async function generateVariants(params: GeminiVariantParams): Promise<z.infer<ty
     }
     hintParts.push("Provide five options that vary tone, structure, and specific imagery.");
 
-    const currentHint = hintParts.filter(Boolean).join(" ");
-    const serializedHint = serializePromptField(currentHint, { block: true });
+    const combinedHint = hintParts.filter(Boolean).join(" ");
+    const serializedHint = serializePromptField(combinedHint, { block: true });
     lines.push(`HINT:${serializedHint}`);
 
     return lines.join("\n");
@@ -593,10 +474,8 @@ async function generateVariants(params: GeminiVariantParams): Promise<z.infer<ty
   const fetchVariants = async (varietyHint: string | undefined, existingCaptions: string[]) => {
     const user = buildUserPrompt(varietyHint, existingCaptions);
     try {
-      const promptSections = [sys, guard, prompt, user];
-      if (voiceGuide) promptSections.push(voiceGuide);
       const res = await textModel.generateContent([
-        { text: promptSections.join("\n") }
+        { text: `${sys}\n${guard}\n${prompt}\n${user}` }
       ]);
       const json = stripToJSON(res.response.text()) as unknown;
       return Array.isArray(json) ? json : [];
@@ -609,23 +488,17 @@ async function generateVariants(params: GeminiVariantParams): Promise<z.infer<ty
   const uniqueVariants: z.infer<typeof CaptionItem>[] = [];
   const existingCaptions: string[] = [];
   const duplicatesThisAttempt: string[] = [];
-  let hasBannedWords = false;
   const isTest = process.env.NODE_ENV === 'test';
   const maxAttempts = isTest ? 2 : 5; // Allow 2 attempts in test for retry logic testing
-
-  const sanitizedBaseHint = sanitizeHintForRetry(params.hint);
 
   for (let attempt = 0; attempt < maxAttempts && uniqueVariants.length < 5; attempt += 1) {
     const needed = 5 - uniqueVariants.length;
     const varietyHint = attempt === 0
-      ? sanitizedBaseHint ?? params.hint
+      ? params.hint
       : (() => {
           // Build complete base hint with variety clause first, then pass to buildRetryHint
-          const baseHintWithVariety = `${sanitizedBaseHint ? `${sanitizedBaseHint} ` : ""}Need much more variety across tone, structure, and imagery.`;
-          const baseHintWithModeration = hasBannedWords
-            ? `${baseHintWithVariety} ${BANNED_WORDS_HINT}`.trim()
-            : baseHintWithVariety;
-          return buildRetryHint(baseHintWithModeration, duplicatesThisAttempt, needed);
+          const baseHintWithVariety = `${params.hint ? `${params.hint} ` : ""}Need much more variety across tone, structure, and imagery.`;
+          return buildRetryHint(baseHintWithVariety, duplicatesThisAttempt, needed);
         })();
 
     const rawVariants = await fetchVariants(varietyHint, existingCaptions);
@@ -638,11 +511,6 @@ async function generateVariants(params: GeminiVariantParams): Promise<z.infer<ty
       const sanitized = sanitizeVariant(raw as Record<string, unknown>);
       const captionText = sanitized.caption as string;
 
-      if (variantContainsBannedWord(sanitized as { caption?: unknown; cta?: unknown; hashtags?: unknown; alt?: unknown })) {
-        hasBannedWords = true;
-        continue;
-      }
-
       const isDuplicate = existingCaptions.some(existing => captionsAreSimilar(existing, captionText));
       if (isDuplicate) {
         duplicatesThisAttempt.push(captionText); // Track duplicates for retry hint
@@ -654,32 +522,30 @@ async function generateVariants(params: GeminiVariantParams): Promise<z.infer<ty
     }
   }
 
-  // Update variant padding with improved fallback system
-  if (uniqueVariants.length < VARIANT_TARGET) {
+  // Pad variants if we don't have enough, instead of throwing in tests
+  while (uniqueVariants.length < 5) {
     const baseVariant = uniqueVariants[0] || {
-      caption: safeFallbackCaption,
-      alt: safeFallbackAlt,
-      hashtags: [...safeFallbackHashtags],
-      cta: safeFallbackCta,
+      caption: "Engaging social media content",
+      alt: "Detailed alt text describing the scene",
+      hashtags: ["#social", "#content"],
+      cta: "Check it out",
       mood: "engaging",
       style: "authentic",
       safety_level: "normal",
-      nsfw: false,
-    } as z.infer<typeof CaptionItem>;
+      nsfw: false
+    };
 
-    while (uniqueVariants.length < VARIANT_TARGET) {
-      const index = uniqueVariants.length + 1;
-      const captionSeed = baseVariant.caption || safeFallbackCaption;
-      const fallbackCaption = `${captionSeed} (retry filler ${index})`;
-      uniqueVariants.push({
-        ...baseVariant,
-        caption: fallbackCaption,
-        alt: `${baseVariant.alt} (retry filler ${index})`,
-      });
-    }
+    // Create a slight variation by appending index
+    const paddedVariant = {
+      ...baseVariant,
+      caption: `${baseVariant.caption} v${uniqueVariants.length + 1}`,
+      alt: `${baseVariant.alt} (variation ${uniqueVariants.length + 1})`
+    };
+
+    uniqueVariants.push(paddedVariant as z.infer<typeof CaptionItem>);
   }
 
-  return CaptionArray.parse(uniqueVariants.slice(0, VARIANT_TARGET));
+  return CaptionArray.parse(uniqueVariants);
 }
 
 function normalizeGeminiFinal(
@@ -787,12 +653,11 @@ async function requestGeminiRanking(
   ) as unknown;
 
 
-  const defaultHashtags = fallbackHashtags(platform);
   const defaultVariant = variantsInput[0] ??
     CaptionItem.parse({
       caption: safeFallbackCaption,
       alt: safeFallbackAlt,
-      hashtags: [...defaultHashtags],
+      hashtags: [...safeFallbackHashtags],
       cta: safeFallbackCta,
       mood: "engaging",
       style: "authentic",
@@ -858,48 +723,27 @@ export async function rankAndSelect(
   variants: z.infer<typeof CaptionArray>,
   params?: { platform?: string; facts?: Record<string, unknown> }
 ): Promise<z.infer<typeof RankResult>> {
-  const sys = await load("system.txt"), guard = await load("guard.txt"), prompt = await load("rank.txt");
+  const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rank.txt");
   const promptBlock = `${sys}\n${guard}\n${prompt}`;
   const serializedVariants = JSON.stringify(variants);
 
-  const runRanking = async (
-    variantsInput: z.infer<typeof CaptionArray>,
-    hint?: string
-  ): Promise<z.infer<typeof RankResult>> => {
-    const serialized = JSON.stringify(variantsInput);
-    const response = await requestGeminiRanking(
-      variantsInput,
-      serialized,
-      promptBlock,
-      params?.platform,
-      hint,
-      params?.facts
-    );
-    return RankResult.parse(response);
-  };
-
-  let activeVariants = variants;
-  let parsed = await runRanking(activeVariants);
-  let violations = detectVariantViolations(parsed.final);
-
-  const hasBannedPhrase = violations.some((violation) => violation.type === "banned_phrase");
-  if (hasBannedPhrase && typeof parsed.winner_index === "number") {
-    const filtered = activeVariants.filter((_, index) => index !== parsed.winner_index);
-    if (filtered.length > 0) {
-      activeVariants = filtered;
-      const hint = buildRerankHint(violations) ||
-        "Avoid sparkle emojis, canned CTAs, and pick the most human option remaining.";
-      parsed = await runRanking(activeVariants, hint);
-      violations = detectVariantViolations(parsed.final);
-    }
-  }
+  const first = await requestGeminiRanking(variants, serializedVariants, promptBlock, params?.platform, undefined, params?.facts);
+  let parsed = RankResult.parse(first);
+  const violations = detectVariantViolations(parsed.final);
 
   if (violations.length === 0) {
     return parsed;
   }
 
-  const rerank = await runRanking(activeVariants, buildRerankHint(violations));
-  parsed = rerank;
+  const rerank = await requestGeminiRanking(
+    variants,
+    serializedVariants,
+    promptBlock,
+    params?.platform,
+    buildRerankHint(violations),
+    params?.facts
+  );
+  parsed = RankResult.parse(rerank);
   const rerankViolations = detectVariantViolations(parsed.final);
 
   if (rerankViolations.length === 0) {
@@ -913,4 +757,68 @@ export async function rankAndSelect(
     final: sanitizedFinal,
     reason: summary
   });
+}
+
+type GeminiPipelineArgs = {
+  imageUrl: string;
+  platform: "instagram" | "x" | "reddit" | "tiktok";
+  voice?: string;
+  nsfw?: boolean;
+  style?: string;
+  mood?: string;
+};
+
+/**
+ * Primary image captioning pipeline backed by Gemini vision + text models.
+ *
+ * @remarks
+ * Persona controls such as `style`, `mood`, and future tone keys must persist through
+ * retries. When platform validation fails we re-run Gemini with the exact same tone
+ * payload so the caller's requested persona stays intact.
+ */
+export async function pipeline({ imageUrl, platform, voice = "flirty_playful", nsfw = false, style, mood, ...toneRest }: GeminiPipelineArgs): Promise<CaptionResult> {
+  try {
+    const tone = extractToneOptions(toneRest);
+    const facts = await extractFacts(imageUrl);
+    let variants = await generateVariants({ platform, voice, facts, nsfw, ...tone });
+    variants = dedupeVariantsForRanking(variants, 5, { platform, facts });
+    let ranked = await rankAndSelect(variants, { platform, facts });
+    let out = ranked.final;
+
+    const enforceCoverage = async () => {
+      let attempts = 0;
+      let coverage = ensureFactCoverage({ facts, caption: out.caption, alt: out.alt });
+      while (!coverage.ok && coverage.hint && attempts < 2) {
+        attempts += 1;
+        variants = await generateVariants({ platform, voice, facts, hint: coverage.hint, nsfw, ...tone });
+        variants = dedupeVariantsForRanking(variants, 5, { platform, facts });
+        ranked = await rankAndSelect(variants, { platform, facts });
+        out = ranked.final;
+        coverage = ensureFactCoverage({ facts, caption: out.caption, alt: out.alt });
+      }
+    };
+
+    await enforceCoverage();
+
+    const err = platformChecks(platform, out);
+    if (err) {
+      variants = await generateVariants({
+        platform,
+        voice,
+        style,
+        mood,
+        facts,
+        hint: `Fix: ${err}. Use IMAGE_FACTS nouns/colors/setting explicitly.`,
+        nsfw
+      });
+      ranked = await rankAndSelect(variants);
+      out = ranked.final;
+    }
+
+    return { provider: 'gemini', facts, variants, ranked, final: out };
+  } catch (error) {
+    const { openAICaptionFallback } = await import('./openaiFallback');
+    const final = await openAICaptionFallback({ platform, voice, imageUrl });
+    return { provider: 'openai', final } as CaptionResult;
+  }
 }

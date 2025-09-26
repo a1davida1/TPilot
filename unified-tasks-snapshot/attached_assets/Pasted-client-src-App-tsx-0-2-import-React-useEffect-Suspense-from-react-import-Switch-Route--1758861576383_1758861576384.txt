@@ -1,0 +1,2037 @@
+client/src/App.tsx
++0-2
+import React, { useEffect, Suspense } from "react";
+import { Switch, Route, Redirect, useLocation } from "wouter";
+import { queryClient } from "./lib/queryClient";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { ErrorBoundary } from "@/components/error-boundary";
+import { Header } from "@/components/header";
+import { useAuth } from "@/hooks/useAuth";
+import { SEOOptimization, seoConfigs } from "@/components/seo-optimization";
+import { UnifiedLanding } from "@/components/unified-landing";
+const Dashboard = React.lazy(() => import("@/pages/dashboard"));
+import { OnboardingWalkthrough } from "@/components/onboarding-walkthrough";
+import { useOnboarding } from "@/hooks/useOnboarding";
+import NotFound from "@/pages/not-found";
+import ResetPasswordPage from "@/pages/reset-password";
+import ForgotPasswordPage from "@/pages/forgot-password";
+import EmailVerificationPage from "@/pages/email-verification";
+import ChangePasswordPage from "@/pages/change-password";
+import LogoutPage from "@/pages/logout";
+import History from "@/pages/history";
+import Settings from "@/pages/settings";
+import Checkout from "@/pages/checkout";
+import Enterprise from "@/pages/enterprise";
+import _Phase4Dashboard from "@/pages/phase4";
+const AdminDashboard = React.lazy(() => import("@/pages/admin").then(module => ({ default: module.AdminDashboard })));
+const AdminLeadsPage = React.lazy(() => import("@/pages/admin-leads").then(module => ({ default: module.AdminLeadsPage })));
+const CaptionGeneratorPage = React.lazy(() => import("@/pages/caption-generator"));
+const RedditPostingPage = React.lazy(() => import("@/pages/reddit-posting"));
+const ImageShieldPage = React.lazy(() => import("@/pages/imageshield"));
+const TaxTracker = React.lazy(() => import("@/pages/tax-tracker"));
+const ReferralPage = React.lazy(() => import("@/pages/referral"));
+const TermsOfService = React.lazy(() => import("@/pages/terms-of-service"));
+const PrivacyPolicy = React.lazy(() => import("@/pages/privacy-policy"));
+import { RedditCommunities } from "@/components/reddit-communities";
+import { ImageGallery } from "@/components/image-gallery";
+// Phase 1: Real Analytics Tracking
+import { trackPageView, setUserId, trackFeatureUsage } from "@/lib/analytics-tracker";
+
+// Communities Page Component
+function CommunitiesPage() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-purple-100 dark:from-gray-900 dark:via-purple-950/20 dark:to-pink-950/20">
+      {/* Animated Background */}
+      <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-yellow-400/5 opacity-60"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,192,203,0.1),transparent_50%)]"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(255,235,59,0.05),transparent_50%)]"></div>
+      </div>
+
+@@ -71,51 +70,50 @@ function GalleryPage() {
+      {/* Animated Background */}
+      <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-yellow-400/5 opacity-60"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,192,203,0.1),transparent_50%)]"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(255,235,59,0.05),transparent_50%)]"></div>
+      </div>
+
+      <div className="relative container mx-auto px-4 py-8 z-10">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 via-rose-500 to-purple-600 dark:from-pink-400 dark:via-rose-400 dark:to-purple-400 bg-clip-text text-transparent drop-shadow-sm mb-2">
+            Media Gallery
+          </h1>
+          <p className="text-lg text-gray-700 dark:text-gray-300 max-w-2xl">
+            Upload, organize, and protect your images. Apply advanced protection to prevent reverse searches.
+          </p>
+        </div>
+        <ImageGallery />
+      </div>
+    </div>
+  );
+}
+
+function AuthenticatedRoutes() {
+  const { user } = useAuth();
+  const isAdmin = Boolean(user?.isAdmin);
+  const userTier = user?.tier || 'free';
+  const rawUserTier = user?.tier ?? 'free';
+  const normalizedUserTier: 'guest' | 'free' | 'pro' | 'premium' =
+    rawUserTier === 'pro' || rawUserTier === 'premium'
+      ? rawUserTier
+      : 'free';
+
+  return (
+    <Switch>
+      <Route path="/landing">
+        <SEOOptimization {...seoConfigs.landing} />
+        <UnifiedLanding />
+      </Route>
+      <Route path="/dashboard" component={Dashboard} />
+      <Route path="/">
+        <Redirect to="/dashboard" />
+      </Route>
+      <Route path="/caption-generator" component={CaptionGeneratorPage} />
+      <Route path="/imageshield" component={ImageShieldPage} />
+      <Route path="/enterprise" component={Enterprise} />
+      {/* ULTRA PREMIUM ROUTE - Hidden for now */}
+      {/* <Route path="/phase4" component={Phase4Dashboard} /> */}
+      <Route path="/reddit" component={RedditPostingPage} />
+      <Route path="/communities" component={() => <CommunitiesPage />} />
+      <Route path="/gallery" component={() => <GalleryPage />} />
+      <Route path="/tax-tracker" component={() => <TaxTracker userTier={normalizedUserTier} />} />
+client/src/components/CaptionPreview.tsx
++2-3
+import React from "react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Copy, Check, AlertCircle } from "lucide-react";
+import { useState } from "react";
+import type { CaptionObject, RankedResult, CaptionPreviewData } from '@shared/types/caption';
+import type { CaptionPreviewData } from '@shared/types/caption';
+
+// Re-export types from shared module for backward compatibility
+export type { CaptionObject, RankedResult, CaptionPreviewData } from '@shared/types/caption';
+
+export function CaptionPreview({ data }: { data: CaptionPreviewData | null | undefined }) {
+  const [copiedCaption, setCopiedCaption] = useState(false);
+  const [copiedJSON, setCopiedJSON] = useState(false);
+
+
+  if (!data) return null;
+
+  const { final = '', ranked = [] } = data || {};
+  if (!final) return null;
+
+  // Handle different data formats - final could be a string or object with caption property
+  const captionText = typeof final === 'string' ? final : final.caption ?? '';
+  if (!captionText) return null;
+
+  const normalizedCaption = String(captionText);
+  const charCount = normalizedCaption.length;
+
+  const handleCopyCaption = async () => {
+    await navigator.clipboard.writeText(normalizedCaption);
+    setCopiedCaption(true);
+    setTimeout(() => setCopiedCaption(false), 2000);
+client/src/components/__tests__/modern-dashboard.test.tsx
++5-2
+@@ -50,51 +50,55 @@ vi.mock("@/lib/queryClient", async () => {
+    apiRequest: apiRequestMock,
+  };
+});
+
+const originalWindowOpen = window.open;
+
+interface RenderResult {
+  container: HTMLElement;
+}
+
+const mountedRoots: Array<{ root: Root; container: HTMLElement }> = [];
+
+function render(ui: React.ReactElement): RenderResult {
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+  const root = createRoot(container);
+  act(() => {
+    root.render(ui);
+  });
+  mountedRoots.push({ root, container });
+  return { container };
+}
+
+function cleanup() {
+  while (mountedRoots.length > 0) {
+    const { root, container } = mountedRoots.pop()!;
+    const entry = mountedRoots.pop();
+    if (!entry) {
+      break;
+    }
+    const { root, container } = entry;
+    act(() => {
+      root.unmount();
+    });
+    container.remove();
+  }
+}
+
+function textMatches(text: string, matcher: string | RegExp): boolean {
+  if (typeof matcher === "string") {
+    return text.includes(matcher);
+  }
+  return matcher.test(text);
+}
+
+function queryByText(matcher: string | RegExp): HTMLElement | null {
+  const elements = Array.from(document.body.querySelectorAll("*") as NodeListOf<HTMLElement>);
+  for (const element of elements) {
+    const content = element.textContent?.trim() ?? "";
+    if (content && textMatches(content, matcher)) {
+      return element;
+    }
+  }
+  return null;
+}
+
+@@ -217,51 +221,50 @@ describe("ModernDashboard quick start", () => {
+              id: 21,
+              username: "creator",
+              isActive: true,
+              connectedAt: new Date().toISOString(),
+              karma: 0,
+              verified: false,
+            },
+          ],
+        } as Response);
+      }
+      if (method === "POST" && url === "/api/reddit/submit") {
+        return Promise.resolve({
+          json: async () => ({ success: true }),
+        } as Response);
+      }
+      throw new Error(`Unexpected apiRequest call: ${method} ${url}`);
+    });
+
+    const onOpenChange = vi.fn();
+    render(
+      <QuickStartModal
+        open
+        onOpenChange={onOpenChange}
+        initialStep="connect"
+        isRedditConnected={false}
+        onNavigate={setLocationMock}
+      />,
+    );
+
+    const continueButton = getButtonByText(/^Continue$/i);
+    expect(continueButton.disabled).toBe(true);
+
+    click(getButtonByText(/Connect Reddit/i));
+
+    await waitFor(() => {
+      expect(apiRequestMock).toHaveBeenCalledWith("GET", "/api/reddit/connect");
+      expect(apiRequestMock).toHaveBeenCalledWith("GET", "/api/reddit/accounts");
+      const nextButton = getButtonByText(/^Continue$/i);
+      if (nextButton.disabled) {
+        throw new Error("Continue button is still disabled");
+      }
+      return true;
+    });
+
+    apiRequestMock.mockResolvedValueOnce({
+      json: async () => ({ success: true }),
+    } as Response);
+
+    click(getButtonByText(/^Continue$/i));
+    expect(await findByText(/Choose a subreddit/i)).toBeTruthy();
+
+client/src/components/admin/admin-communities-panel.tsx
++2-0
+@@ -353,63 +353,65 @@ export function AdminCommunitiesPanel({ canManage }: AdminCommunitiesPanelProps)
+    setIsCreateOpen(true);
+  };
+
+  const handleEdit = (community: AdminCommunity) => {
+    setFormState(communityToForm(community));
+    setEditingCommunity(community);
+    setIsCreateOpen(true);
+  };
+
+  const handleSubmit = async () => {
+    try {
+      const payload = formToPayload(formState);
+
+      if (editingCommunity) {
+        await updateMutation.mutateAsync({ id: editingCommunity.id, payload });
+        toast({ title: 'Community updated successfully' });
+      } else {
+        await createMutation.mutateAsync(payload);
+        toast({ title: 'Community created successfully' });
+      }
+
+      setIsCreateOpen(false);
+      setEditingCommunity(null);
+      setFormState(defaultFormState);
+    } catch (error) {
+      console.error('Failed to save community:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to save community',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id);
+      toast({ title: 'Community deleted successfully' });
+    } catch (error) {
+      console.error('Failed to delete community:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete community',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ShieldAlert className="h-5 w-5 text-red-500" />
+            Error Loading Communities
+          </CardTitle>
+          <CardDescription>
+            Failed to load community data. Please check your connection and try again.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+
+  return (
+client/src/components/ai-generator.tsx
++7-2
+@@ -41,92 +41,97 @@ export function AIGenerator({ onContentGenerated }: AIGeneratorProps) {
+  const [generationType, setGenerationType] = useState<'ai-prompt' | 'ai-image' | 'template'>('ai-prompt');
+  const [platform, setPlatform] = useState('reddit');
+  const [customPrompt, setCustomPrompt] = useState('');
+  const [subreddit, setSubreddit] = useState('');
+  const [allowsPromotion, setAllowsPromotion] = useState('no');
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [userProfile, setUserProfile] = useState({
+    toneOfVoice: 'confident',
+    contentStyle: 'authentic',
+    personalBrand: 'girl-next-door',
+    contentLength: 'medium' as 'short' | 'medium' | 'long',
+    includeEmojis: true,
+    promotionLevel: 'moderate' as 'subtle' | 'moderate' | 'direct'
+  });
+
+  useEffect(() => {
+    async function loadProfile() {
+      const token = localStorage.getItem('authToken');
+      if (!token) return;
+      try {
+        const res = await fetch('/api/user/profile', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) setUserProfile(await res.json());
+      } catch {}
+      } catch (error) {
+        console.error('Failed to load user profile:', error);
+      }
+    }
+    loadProfile();
+  }, []);
+
+  const saveProfile = async (profile: typeof userProfile) => {
+    setUserProfile(profile);
+    const token = localStorage.getItem('authToken');
+    try {
+      await fetch('/api/user/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token || ''}`
+        },
+        body: JSON.stringify(profile)
+      });
+    } catch {}
+    } catch (error) {
+      console.error('Failed to save user profile:', error);
+    }
+  };
+
+  const updateProfile = (patch: Partial<typeof userProfile>) =>
+    saveProfile({ ...userProfile, ...patch });
+  
+  // Output display states
+  const [generatedContent, setGeneratedContent] = useState<GeneratedContentDisplay | null>(null);
+  const [copiedItem, setCopiedItem] = useState<string | null>(null);
+
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const copyToClipboard = async (text: string, itemName: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedItem(itemName);
+      toast({
+        title: "Copied!",
+        description: `${itemName} copied to clipboard`
+      });
+      
+      // Reset copied state after 2 seconds
+      setTimeout(() => setCopiedItem(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy content to clipboard:', err);
+      toast({
+        title: "Copy Failed",
+        description: "Unable to copy to clipboard",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const generateMutation = useMutation({
+    mutationFn: async (data: unknown) => {
+      try {
+        const formData = new FormData();
+        Object.keys(data as Record<string, string | File | unknown>).forEach(key => {
+          const typedData = data as Record<string, string | File | unknown>;
+          if (key === 'userProfile') {
+            formData.append(key, JSON.stringify(typedData[key]));
+          } else if (key === 'image' && typedData[key]) {
+            formData.append(key, typedData[key] as File);
+          } else if (typedData[key] !== undefined && typedData[key] !== null) {
+            formData.append(key, String(typedData[key]));
+          }
+        });
+        
+        const res = await fetch('/api/generate-ai', {
+          method: 'POST',
+client/src/components/apple-inspired-app.tsx
++2-1
+@@ -229,51 +229,52 @@ export function AppleInspiredApp() {
+          data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + shift));
+        }
+
+        ctx.putImageData(imageData, 0, 0);
+
+        // Apply blur
+        if (blur > 0) {
+          ctx.filter = `blur(${blur}px)`;
+          ctx.drawImage(canvas, 0, 0);
+          ctx.filter = 'none';
+        }
+
+        const protectedDataUrl = canvas.toDataURL('image/jpeg', 0.94);
+        setProtectedImage(protectedDataUrl);
+
+        toast({
+          title: "🛡️ Protected",
+          description: "Your image is now protected",
+          className: "bg-white/95 backdrop-blur-xl border-gray-200"
+        });
+
+        setIsProcessing(false);
+      };
+
+      img.src = originalImage;
+    } catch (_error) {
+    } catch (error) {
+      console.error("Failed to protect image:", error);
+      toast({
+        title: "Protection Failed",
+        description: "Unable to process image",
+        variant: "destructive"
+      });
+      setIsProcessing(false);
+    }
+  };
+
+  const downloadProtected = () => {
+    if (!protectedImage) return;
+
+    const link = document.createElement('a');
+    link.download = 'protected-image.jpg';
+    link.href = protectedImage;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({
+      title: "Downloaded",
+      description: "Protected image saved",
+      className: "bg-white/95 backdrop-blur-xl border-gray-200"
+    });
+  };
+client/src/components/audience-insights.tsx
++1-0
+@@ -19,50 +19,51 @@ interface AudienceData {
+interface SubredditInsight {
+  name: string;
+  members: string;
+  growth: string;
+}
+
+export function AudienceInsights() {
+  // Fetch real audience insights from analytics
+  const { data: insightsData, isLoading } = useQuery({
+    queryKey: ['audience-insights'],
+    queryFn: async () => {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        return { audienceData: [], topSubreddits: [] };
+      }
+      
+      try {
+        const response = await fetch('/api/audience-insights', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) {
+          throw new Error('Failed to fetch insights');
+        }
+        return response.json();
+      } catch (error) {
+        console.error('Failed to fetch audience insights:', error);
+        // Return empty data instead of mock data
+        return { audienceData: [], topSubreddits: [] };
+      }
+    }
+  });
+
+  const audienceData: AudienceData[] = insightsData?.audienceData || [];
+  const topSubreddits = insightsData?.topSubreddits || [];
+  const postingSchedule: Record<string, string[]> = insightsData?.postingSchedule || {};
+
+  // Show message when no data is available
+  if (!isLoading && audienceData.length === 0) {
+    return (
+      <div className="space-y-6">
+        <Card className="bg-gray-900/50 backdrop-blur-xl border-white/10">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-purple-400" />
+              Audience Insights
+            </CardTitle>
+            <CardDescription>
+              Generate content to see audience analytics and insights
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+client/src/components/auth-modal.tsx
++2-4
+import { useState, useEffect } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { FaGoogle, FaFacebook, FaReddit } from "react-icons/fa";
+import { 
+  X, 
+  Mail, 
+  Lock, 
+  User,
+  ArrowRight,
+  Sparkles,
+  CheckCircle,
+  AlertCircle
+} from "lucide-react";
+
+// TypeScript interfaces for authentication responses
+interface AuthResponse {
+  mustChangePassword?: boolean;
+  userId?: string;
+  message?: string;
+}
+
+interface AuthError {
+  code?: string;
+  email?: string;
+  message?: string;
+}
+
+@@ -236,50 +233,51 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
+        title: 'Error',
+        description: error.message || 'Failed to send reset email. Please try again.',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Enhanced resend verification function
+  const resendVerification = async (email: string) => {
+    setIsResending(true);
+    try {
+      const res = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      
+      const data = await res.json();
+      toast({
+        title: "Verification email sent",
+        description: "Please check your inbox and spam folder",
+        variant: "default",
+      });
+      setShowResendVerification(false);
+    } catch (error) {
+      console.error('Failed to resend verification email:', error);
+      toast({
+        title: "Error",
+        description: "Failed to resend verification email",
+        variant: "destructive"
+      });
+    } finally {
+      setIsResending(false);
+    }
+  };
+
+  const resendVerificationMutation = useMutation({
+    mutationFn: async (email: string) => {
+      const response = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to resend verification email');
+      }
+
+client/src/components/dashboard-quick-start.tsx
++0-2
+@@ -26,51 +26,50 @@ import {
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle2,
+  ExternalLink,
+  Globe,
+  Loader2,
+  Sparkles,
+} from "lucide-react";
+
+type QuickStartStep = "connect" | "subreddit" | "copy" | "confirm";
+
+interface QuickStartTemplate {
+  id: string;
+  subreddit: string;
+  title: string;
+  body: string;
+  isNsfw: boolean;
+  description: string;
+}
+
+interface QuickStartModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  initialStep: QuickStartStep;
+  isRedditConnected?: boolean;
+  onNavigate?: () => void;
+  onConnected?: () => void;
+  onSelectedCommunity?: () => void;
+  onPosted?: () => void;
+}
+
+interface RedditConnectResponse {
+  authUrl?: string;
+  message?: string;
+}
+
+interface RedditSubmitResponse {
+  success?: boolean;
+  error?: string;
+}
+
+interface RedditAccount {
+  id: number;
+  username: string;
+  isActive: boolean;
+  connectedAt: string;
+  karma: number;
+  verified: boolean;
+}
+
+const POLL_INTERVAL_MS = 2000;
+@@ -129,51 +128,50 @@ const STEP_DETAILS: Record<QuickStartStep, { title: string; description: string
+    description: "Authorize posting access",
+  },
+  subreddit: {
+    title: "Choose subreddit",
+    description: "Match the right community",
+  },
+  copy: {
+    title: "Generate copy",
+    description: "Craft an engaging story",
+  },
+  confirm: {
+    title: "Confirm & schedule",
+    description: "Review before publishing",
+  },
+};
+
+function getTemplateById(id: string | undefined): QuickStartTemplate | undefined {
+  return QUICK_START_TEMPLATES.find((template) => template.id === id);
+}
+
+export function QuickStartModal({
+  open,
+  onOpenChange,
+  initialStep,
+  isRedditConnected = false,
+  onNavigate,
+  onConnected,
+  onSelectedCommunity,
+  onPosted,
+}: QuickStartModalProps) {
+  const { toast } = useToast();
+  const [currentStep, setCurrentStep] = useState<QuickStartStep>(initialStep);
+  const [connected, setConnected] = useState<boolean>(isRedditConnected);
+  const [connectionInitiated, setConnectionInitiated] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  const [postTitle, setPostTitle] = useState("");
+  const [postBody, setPostBody] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const connectionCompletedRef = useRef(false);
+
+  const clearConnectionMonitors = useCallback(() => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+    if (pollTimeoutRef.current) {
+      clearTimeout(pollTimeoutRef.current);
+client/src/components/dual-workflow-generator.tsx
++0-3
+import { useState, useRef } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+  Upload, 
+  Camera, 
+  FileText, 
+  Sparkles,
+  ArrowRight,
+  Copy,
+  Download,
+  Image,
+  Wand2,
+  RefreshCw,
+  CheckCircle
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+interface GeneratedContent {
+  titles: string[];
+  content: string;
+  photoInstructions?: {
+    lighting: string;
+    angles: string[];
+    composition: string;
+    styling: string;
+    technical: string;
+  };
+}
+
+export function DualWorkflowGenerator() {
+  const [workflowMode, setWorkflowMode] = useState<'text-first' | 'image-first'>('text-first');
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [platform, setPlatform] = useState("reddit");
+  const [style, setStyle] = useState("playful");
+client/src/components/enhanced-ai-generator.tsx
++11-5
+import React, { useState } from "react";
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { apiRequest, type ApiError } from "@/lib/queryClient";
+import type { ContentGeneration } from "@shared/schema";
+import { Sparkles, Brain, RefreshCw, Settings, Copy, Hash } from "lucide-react";
+
+// Define types for mutation variables and response
+interface GenerateContentVariables {
+  platform?: string;
+  style?: string;
+  theme?: string;
+  subreddit?: string;
+  customPrompt?: string;
+  prompt?: string;
+  includePromotion?: boolean;
+  allowsPromotion?: "none" | "subtle" | "direct";
+}
+
+// Assuming GeneratedContent is defined elsewhere and matches the structure of UnifiedAIResponse or similar
+@@ -75,50 +75,55 @@ const toneOptions = [
+  { value: "friendly", label: "Friendly" },
+];
+
+interface EnhancedAIGeneratorProps {
+  onContentGenerated: (content: ContentGeneration) => void;
+  userTier?: string;
+  canGenerate?: boolean;
+}
+
+export function EnhancedAIGenerator({
+  onContentGenerated,
+  userTier = "guest",
+  canGenerate = true
+}: EnhancedAIGeneratorProps) {
+  const { isAuthenticated } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Form state
+  const [photoType, setPhotoType] = useState<string>("selfie");
+  const [tone, setTone] = useState<string>("confident");
+  const [customPrompt, setCustomPrompt] = useState<string>("");
+  const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
+  const [copiedItem, setCopiedItem] = useState<string | null>(null);
+
+  const hashtagList = (() => {
+    const hashtags = generatedContent?.hashtags;
+    return Array.isArray(hashtags) ? hashtags : [];
+  })();
+
+  const isGuestMode = !isAuthenticated || userTier === 'guest';
+
+  const tierConfig = {
+    guest: {
+      dailyLimit: 3,
+      color: 'bg-gradient-to-br from-orange-50 to-amber-100 hover:from-orange-100 hover:to-amber-200 text-orange-900 border-2 border-orange-200 hover:border-orange-300 shadow-sm hover:shadow-md'
+    },
+    free: {
+      dailyLimit: 10,
+      color: 'bg-gradient-to-br from-orange-50 to-amber-100 hover:from-orange-100 hover:to-amber-200 text-orange-900 border-2 border-orange-200 hover:border-orange-300 shadow-sm hover:shadow-md'
+    },
+    pro: {
+      dailyLimit: 100,
+      color: 'bg-gradient-to-br from-orange-50 to-amber-100 hover:from-orange-100 hover:to-amber-200 text-orange-900 border-2 border-orange-200 hover:border-orange-300 shadow-sm hover:shadow-md'
+    }
+  };
+
+  const currentTierConfig = tierConfig[userTier as keyof typeof tierConfig] || tierConfig.guest;
+
+  const basePhotoInstructions: ContentGeneration["photoInstructions"] = {
+    lighting: "Soft natural lighting",
+    cameraAngle: "Eye-level framing",
+    composition: "Balanced composition highlighting the subject",
+    styling: "Signature outfit and accessories",
+    mood: "Confident and inviting",
+@@ -286,51 +291,52 @@ export function EnhancedAIGenerator({
+        title: "Generation Failed",
+        description: error.message || "Failed to generate content. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleGenerate = () => {
+    generateContentMutation.mutate({
+      platform: "reddit",
+      style: tone,
+      theme: photoType,
+      customPrompt: customPrompt.trim() || undefined,
+    });
+  };
+
+  const copyToClipboard = async (text: string, type: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedItem(type);
+      toast({
+        title: `${type} copied!`,
+        description: "Content copied to clipboard",
+      });
+      setTimeout(() => setCopiedItem(null), 2000);
+    } catch (_error) {
+    } catch (error) {
+      console.error("Failed to copy content:", error);
+      toast({
+        title: "Copy failed",
+        description: "Unable to copy to clipboard",
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center">
+              <Brain className="mr-2 h-5 w-5 text-orange-500" />
+              <span className="bg-gradient-to-r from-orange-500 via-amber-500 to-red-500 bg-clip-text text-transparent">
+                Enhanced AI Generator
+              </span>
+            </div>
+          </div>
+          {isGuestMode && (
+            <Badge variant="secondary" className="bg-orange-100 text-orange-800">
+              Guest Mode
+            </Badge>
+          )}
+@@ -449,71 +455,71 @@ export function EnhancedAIGenerator({
+                    size="sm"
+                    onClick={() => copyToClipboard(generatedContent.caption ?? "", "Caption")}
+                    className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-orange-600"
+                  >
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-red-700">Content:</Label>
+              <div className="relative p-3 bg-white rounded-lg border group">
+                <p className="text-sm whitespace-pre-wrap pr-8">{generatedContent.content}</p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => copyToClipboard(generatedContent.content ?? "", "Content")}
+                  className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-orange-600"
+                >
+                  <Copy className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+
+            {generatedContent.hashtags && (
+            {hashtagList.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-orange-700 flex items-center gap-1">
+                  <Hash className="h-3 w-3" />
+                  Hashtags:
+                </Label>
+                <div className="flex flex-wrap gap-2">
+                  {generatedContent.hashtags.map((tag) => (
+                  {hashtagList.map((tag) => (
+                    <span
+                      key={tag}
+                      className="px-2 py-1 rounded-full bg-orange-100 text-orange-800 text-xs font-semibold"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+                <div className="flex justify-end">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard(generatedContent.hashtags!.join(" "), "Hashtags")}
+                    onClick={() => copyToClipboard(hashtagList.join(" "), "Hashtags")}
+                    className="h-7 px-2 text-xs text-orange-600 hover:text-orange-700"
+                  >
+                    <Copy className="h-3 w-3 mr-1" />
+                    Copy all
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-amber-700">Photo Instructions:</Label>
+              <div className="relative p-3 bg-white rounded-lg border">
+                <dl className="grid gap-2 text-sm text-slate-700 dark:text-slate-200">
+                  {photoInstructionFields.map(({ key, label }) => (
+                    <div key={key} className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1">
+                      <dt className="font-semibold text-orange-700">{label}</dt>
+                      <dd className="sm:text-right">{generatedContent.photoInstructions[key]}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    copyToClipboard(JSON.stringify(generatedContent.photoInstructions, null, 2), "Photo Instructions")
+client/src/components/enterprise/BillingDashboard.tsx
++1-2
+import React from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
+import { Crown, CreditCard, CheckCircle2, XCircle, ExternalLink } from 'lucide-react';
+import { apiRequest } from '@/lib/queryClient';
+
+interface Subscription {
+  id: number;
+  status: 'active' | 'cancelled' | 'expired';
+  plan: 'pro' | 'premium';
+  amount: number;
+  nextBillDate: string;
+  createdAt: string;
+}
+
+export default function BillingDashboard() {
+  const { toast } = useToast();
+
+  // Fetch subscription status
+  const { data: subscriptionData, isLoading } = useQuery({
+    queryKey: ['/api/subscription'],
+  });
+
+  // Generate payment link mutation
+client/src/components/fine-tuning-settings.tsx
++1-1
+import { useState, useEffect } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
+import {
+  Settings,
+  Sparkles,
+  Save,
+  RotateCcw,
+  Info,
+  Ban,
+  Palette,
+  Type,
+  Camera
+} from "lucide-react";
+
+interface UserPreferences {
+  userId: number;
+  fineTuningEnabled: boolean;
+  writingStyle: {
+    tone: number;
+    formality: number;
+    explicitness: number;
+  };
+  contentPreferences: {
+    themes: string;
+    avoid: string;
+  };
+  prohibitedWords: string[];
+client/src/components/generation-history.tsx
++2-2
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Clock, Copy, Check, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import type { ContentGeneration } from "@shared/schema.js";
+
+export type GenerationHistoryEntry = Omit<ContentGeneration, "createdAt" | "photoInstructions"> & {
+  createdAt: string;
+  allowsPromotion: boolean;
+  photoInstructions: ContentGeneration["photoInstructions"] | string | null;
+};
+
+interface GenerationHistoryProps {
+  onSelectGeneration?: (generation: GenerationHistoryEntry) => void;
+}
+
+export function GenerationHistory({ onSelectGeneration }: GenerationHistoryProps) {
+  const [copiedItem, setCopiedItem] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const { data: history = [], isLoading } = useQuery<GenerationHistoryEntry[]>({
+    queryKey: ["/api/content-generation-history"],
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  const copyToClipboard = async (text: string, itemName: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedItem(itemName);
+      toast({
+        description: `${itemName} copied to clipboard`,
+      });
+      setTimeout(() => setCopiedItem(null), 2000);
+    } catch (_err) {
+    } catch (err) {
+      console.error('Failed to copy generation history item:', err);
+      toast({
+        title: "Failed to copy",
+        description: "Please try selecting and copying manually",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+        </div>
+      </div>
+client/src/components/generation-panel.tsx
++1-0
+@@ -68,50 +68,51 @@ export function GenerationPanel({ onContentGenerated }: GenerationPanelProps) {
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Generation Failed",
+        description: error instanceof Error ? error.message : "Failed to generate content",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleGenerate = () => {
+    generateMutation.mutate({ platform, style, theme });
+  };
+
+  const copyToClipboard = async (text: string, type: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedItem(type);
+      setTimeout(() => setCopiedItem(null), 1000);
+      toast({
+        title: "Copied!",
+        description: `${type} copied to clipboard`,
+      });
+    } catch (error) {
+      console.error('Failed to copy generated content:', error);
+      toast({
+        title: "Copy Failed",
+        description: "Failed to copy to clipboard",
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <Card className="bg-white rounded-xl shadow-sm border border-gray-200">
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+            <Sparkles className="text-accent mr-2 h-6 w-6" />
+            Content Generator
+          </h2>
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-muted-foreground">Platform:</span>
+            <Select value={platform} onValueChange={setPlatform}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="reddit">Reddit</SelectItem>
+                <SelectItem value="twitter">Twitter</SelectItem>
+client/src/components/getting-started.tsx
++0-1
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { 
+  CheckCircle, 
+  Circle, 
+  PlayCircle, 
+  BookOpen, 
+  Zap, 
+  Shield, 
+  TrendingUp,
+  Calculator,
+  Sparkles,
+  ArrowRight,
+  Users,
+  Crown,
+  FileText,
+  Camera,
+  ChevronDown,
+  ChevronUp,
+  EyeOff
+} from 'lucide-react';
+import { ThottoPilotLogo } from '@/components/thottopilot-logo';
+// import { motion, AnimatePresence } from 'framer-motion';
+
+interface GettingStartedProps {
+  userTier?: 'guest' | 'free' | 'pro' | 'premium';
+  onSectionSelect?: (section: string) => void;
+  isAtBottom?: boolean;
+  onSetupLater?: () => void;
+}
+
+export function GettingStarted({ userTier = 'free', onSectionSelect, isAtBottom = false, onSetupLater }: GettingStartedProps) {
+  const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
+  const [activeStep, setActiveStep] = useState<string | null>(null);
+  const [isMinimized, setIsMinimized] = useState(false);
+
+  const steps = [
+    {
+      id: 'profile',
+      title: 'Set Up Your Profile',
+      description: 'Complete your creator profile, set preferences, and personalize your workspace for optimal content creation',
+      icon: Users,
+client/src/components/header.tsx
++0-1
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
+import { AuthModal } from '@/components/auth-modal';
+import { Link, useLocation } from 'wouter';
+import { 
+  User, 
+  LogOut, 
+  Settings, 
+  History,
+  BarChart3,
+  Sparkles,
+  Menu,
+  X,
+  Crown,
+  RefreshCcw
+} from 'lucide-react';
+import { GenerationCounter } from '@/components/generation-counter';
+import { ThottoPilotLogo } from '@/components/thottopilot-logo';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
+
+export function Header() {
+  const { isAuthenticated, isLoading, user, logout } = useAuth();
+  const [location] = useLocation();
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Assume this function exists and handles the walkthrough replay
+  const handleReplayWalkthrough = () => {
+    console.log("Replaying walkthrough...");
+    // In a real app, you would trigger the walkthrough replay logic here.
+    // For example, using a state management or a dedicated hook.
+  };
+
+  const handleLogout = () => {
+client/src/components/image-gallery.tsx
++4-2
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
+import { useAuth } from '@/hooks/useAuth';
+import { protectImage, downloadProtectedImage } from '@/lib/image-protection';
+import { Upload, Shield, Download, Trash2, Eye, Tag, Plus } from 'lucide-react';
+import { Upload, Shield, Download, Trash2, Eye, Tag } from 'lucide-react';
+
+// Import MediaAsset type from schema
+import type { MediaAsset } from '@shared/schema.js';
+
+// Extended interface for gallery display with additional properties
+interface UserImage extends MediaAsset {
+  signedUrl?: string;
+  downloadUrl?: string;
+}
+
+export function ImageGallery() {
+  const [selectedTags, setSelectedTags] = useState<string>('');
+  const [selectedImage, setSelectedImage] = useState<UserImage | null>(null);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { isAuthenticated } = useAuth();
+  
+  // Authenticated API request - use session-based auth like the rest of the app
+  const authenticatedRequest = async (url: string, method: string = 'GET', data?: unknown) => {
+    let body: FormData | string | undefined;
+    const headers: { [key: string]: string } = {};
+    
+    if (data instanceof FormData) {
+      body = data;
+      // Don't set Content-Type for FormData, browser sets it with boundary
+    } else if (data) {
+      headers['Content-Type'] = 'application/json';
+      body = JSON.stringify(data);
+    }
+    
+    const response = await fetch(url, {
+      method,
+      headers,
+      body,
+      credentials: 'include' // Include session cookies for authentication
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorText;
+      } catch {
+      } catch (parseError) {
+        console.error('Failed to parse error response:', parseError);
+        errorMessage = errorText || response.statusText;
+      }
+      throw new Error(errorMessage);
+    }
+    
+    return response.json();
+  };
+
+  const { data: images = [] } = useQuery<UserImage[]>({
+    queryKey: ['/api/media'],
+    queryFn: () => authenticatedRequest('/api/media'),
+    enabled: true // Always enable to avoid blocking
+  });
+
+  const uploadMutation = useMutation({
+    mutationFn: async (formData: FormData) => {
+      return authenticatedRequest('/api/media/upload', 'POST', formData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/media'] });
+      toast({
+        title: "Image uploaded",
+        description: "Your image has been saved to your gallery."
+      });
+    },
+@@ -143,50 +144,51 @@ export function ImageGallery() {
+        const formData = new FormData();
+        formData.append('file', file);
+        if (selectedTags) {
+          formData.append('tags', selectedTags);
+        }
+        uploadMutation.mutate(formData);
+        URL.revokeObjectURL(previewUrl); // Clean up preview URL
+      }
+    }
+    
+    // Reset input
+    event.target.value = '';
+    setSelectedTags('');
+  };
+
+  const handleProtectImage = async (image: UserImage, level: string) => {
+    protectMutation.mutate({ imageId: image.id.toString(), protectionLevel: level });
+  };
+
+  const handleDownloadProtected = async (image: UserImage) => {
+    try {
+      const response = await fetch(image.signedUrl || image.downloadUrl || '');
+      const blob = await response.blob();
+      downloadProtectedImage(blob, image.filename);
+    } catch (error) {
+      console.error('Failed to download protected image:', error);
+      toast({
+        title: "Download failed",
+        description: "Could not download image.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const filteredImages = images.filter(image => 
+    !selectedTags || image.filename.toLowerCase().includes(selectedTags.toLowerCase())
+  );
+
+  return (
+    <div className="space-y-6">
+      {/* Upload Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Upload className="h-5 w-5" />
+            Upload Images
+          </CardTitle>
+          <CardDescription>
+            Upload and organize your photos. Images are automatically saved and can be protected.
+          </CardDescription>
+        </CardHeader>
+client/src/components/image-protector.tsx
++2-1
+@@ -127,51 +127,52 @@ export function ImageProtector({ userTier = 'guest' }: ImageProtectorProps) {
+      toast({
+        title: "Processing failed",
+        description: "Failed to process the image. Please try again.",
+        variant: "destructive"
+      });
+      console.error('Image processing error:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const downloadImage = async () => {
+    if (!selectedFile || !protectedImageUrl) return;
+    
+    try {
+      const response = await fetch(protectedImageUrl);
+      const blob = await response.blob();
+      const timestamp = new Date().toISOString().slice(0, 10);
+      const filename = `protected_${timestamp}_${selectedFile.name}`;
+      downloadProtectedImage(blob, filename);
+      
+      toast({
+        title: "Download started",
+        description: "Your protected image is downloading..."
+      });
+    } catch (_error) {
+    } catch (error) {
+      console.error('Failed to download protected image:', error);
+      toast({
+        title: "Download failed",
+        description: "Failed to download the image. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const resetAll = () => {
+    setSelectedFile(null);
+    setOriginalImageUrl(null);
+    setProtectedImageUrl(null);
+    setShowComparison(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  return (
+    <div className="w-full max-w-6xl mx-auto space-y-6">
+      {/* Header Card */}
+      <Card className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/20">
+        <CardHeader>
+          <div className="flex items-start justify-between">
+            <div className="space-y-1 flex-1">
+client/src/components/image-shield-unified.tsx
++5-3
+@@ -4,52 +4,51 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { 
+  Upload, 
+  Download, 
+  Shield, 
+  Image as ImageIcon, 
+  AlertCircle,
+  CheckCircle,
+  X,
+  Eye,
+  EyeOff,
+  RefreshCw,
+  Sparkles,
+  Lock,
+  Trash2,
+  Tag,
+  Crown,
+  Zap,
+  Plus
+  Zap
+} from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/hooks/useAuth';
+import { protectImage, downloadProtectedImage, protectionPresets, type ImageProcessingOptions } from '@/lib/image-protection';
+import { getErrorMessage } from '@/utils/errorHelpers';
+
+interface ImageShieldUnifiedProps {
+  userTier?: 'guest' | 'free' | 'pro' | 'premium';
+}
+
+interface MediaAsset {
+  id: number;
+  userId: number;
+  key: string;
+  filename: string;
+  bytes: number;
+  mime: string;
+  visibility: string;
+  signedUrl: string;
+  createdAt: string;
+}
+
+export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedProps) {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+@@ -76,51 +75,52 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
+  const authenticatedRequest = async (url: string, method: string = 'GET', data?: unknown) => {
+    let body: FormData | string | undefined;
+    const headers: { [key: string]: string } = {
+      'Authorization': `Bearer ${token}`
+    };
+    
+    if (data instanceof FormData) {
+      body = data;
+    } else if (data) {
+      headers['Content-Type'] = 'application/json';
+      body = JSON.stringify(data);
+    }
+    
+    const response = await fetch(url, {
+      method,
+      headers,
+      body
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.error || errorText;
+      } catch {
+      } catch (parseError) {
+        console.error('Failed to parse image shield error response:', parseError);
+        errorMessage = errorText || response.statusText;
+      }
+      throw new Error(errorMessage);
+    }
+    
+    return response.json();
+  };
+
+  // Gallery functionality - only for Pro/Premium users
+  const { data: galleryImages = [] } = useQuery<MediaAsset[]>({
+    queryKey: ['/api/media'],
+    queryFn: () => authenticatedRequest('/api/media'),
+    enabled: !!token && showGallery
+  });
+
+  const uploadToGalleryMutation = useMutation({
+    mutationFn: async (formData: FormData) => {
+      return authenticatedRequest('/api/media/upload', 'POST', formData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/media'] });
+      toast({
+        title: "Image uploaded to gallery",
+        description: "Your image has been saved and is ready for protection."
+      });
+@@ -225,76 +225,78 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
+      
+      // Create preview URL
+      const url = URL.createObjectURL(protectedBlob);
+      setProtectedImageUrl(url);
+      setShowComparison(true);
+      
+      const successMessage = shouldAddWatermark 
+        ? "Your image is now protected! Upgrade to Pro to remove watermarks."
+        : "Your image is now protected against reverse search with no watermarks!";
+      
+      toast({
+        title: "Image protected successfully!",
+        description: successMessage,
+        action: (
+          <Button 
+            size="sm" 
+            variant="outline"
+            onClick={() => downloadImage()}
+          >
+            <Download className="h-3 w-3 mr-1" />
+            Download
+          </Button>
+        )
+      });
+    } catch (error) {
+      console.error('Failed to process image for protection:', error);
+      toast({
+        title: "Processing failed",
+        description: "Failed to process the image. Please try again.",
+        variant: "destructive"
+      });
+      console.error('Image processing error:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const downloadImage = async () => {
+    if (!selectedFile || !protectedImageUrl) return;
+    
+    try {
+      const response = await fetch(protectedImageUrl);
+      const blob = await response.blob();
+      const timestamp = new Date().toISOString().slice(0, 10);
+      const filename = `protected_${timestamp}_${selectedFile.name}`;
+      downloadProtectedImage(blob, filename);
+      
+      toast({
+        title: "Download started",
+        description: "Your protected image is downloading..."
+      });
+    } catch (error) {
+      console.error('Failed to download protected image from gallery:', error);
+      toast({
+        title: "Download failed",
+        description: "Failed to download the image. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const resetAll = () => {
+    setSelectedFile(null);
+    setOriginalImageUrl(null);
+    setProtectedImageUrl(null);
+    setShowComparison(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  return (
+    <div className="w-full max-w-6xl mx-auto space-y-6">
+      {/* Header Card */}
+      <Card className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/20">
+        <CardHeader>
+          <div className="flex items-start justify-between">
+            <div className="space-y-1 flex-1">
+client/src/components/modern-dashboard.tsx
++8-23
+import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
+import { 
+import {
+  Upload,
+  Sparkles,
+  Shield,
+  Target,
+  Scale,
+  BarChart3,
+  Calculator,
+  Gift,
+  Menu,
+  X,
+  Clock,
+  Bell,
+  Settings,
+  ChevronRight,
+  Home,
+  Brain,
+  Users,
+  Hash,
+  History,
+  ImageIcon,
+  Wand2,
+  Zap,
+  ListChecks,
+  Command,
+  CheckCircle2
+} from "lucide-react";
+import { FaReddit } from "react-icons/fa";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { QuickStartModal } from "@/components/dashboard-quick-start";
+
+interface ModernDashboardProps {
+  isRedditConnected?: boolean;
+  user?: { id: number; username: string; email?: string; tier?: string; isVerified?: boolean };
+  userTier?: 'guest' | 'free' | 'basic' | 'starter' | 'pro' | 'premium' | 'admin';
+  isAdmin?: boolean;
+}
+
+type UserTier = NonNullable<ModernDashboardProps['userTier']>;
+
+interface OnboardingProgress {
+  connectedReddit: boolean;
+  selectedCommunities: boolean;
+@@ -135,71 +132,70 @@ function formatCurrency(value: number): string {
+
+function readStoredProgress(): OnboardingProgress {
+  if (typeof window === 'undefined') {
+    return onboardingDefaults;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(MODERN_DASHBOARD_ONBOARDING_STORAGE_KEY);
+    if (!raw) {
+      return onboardingDefaults;
+    }
+
+    const parsed = JSON.parse(raw) as Partial<OnboardingProgress> | null;
+    if (!parsed || typeof parsed !== 'object') {
+      return onboardingDefaults;
+    }
+
+    return {
+      connectedReddit: typeof parsed.connectedReddit === 'boolean' ? parsed.connectedReddit : onboardingDefaults.connectedReddit,
+      selectedCommunities:
+        typeof parsed.selectedCommunities === 'boolean' ? parsed.selectedCommunities : onboardingDefaults.selectedCommunities,
+      createdFirstPost:
+        typeof parsed.createdFirstPost === 'boolean' ? parsed.createdFirstPost : onboardingDefaults.createdFirstPost,
+    };
+  } catch (error) {
+    console.error('Failed to read onboarding progress from storage:', error);
+    return onboardingDefaults;
+  }
+}
+
+function hasTierAccess(currentTier: UserTier, requiredTier: UserTier | undefined, isAdminUser: boolean): boolean {
+  if (!requiredTier) {
+    return true;
+  }
+
+  if (isAdminUser) {
+    return true;
+  }
+
+  return tierHierarchy[currentTier] >= tierHierarchy[requiredTier];
+}
+
+export function ModernDashboard({ isRedditConnected = false, user, userTier = 'free', isAdmin = false }: ModernDashboardProps) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [selectedCard, setSelectedCard] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showMoreTools, setShowMoreTools] = useState(false);
+  const [onboardingProgress, setOnboardingProgress] = useState<OnboardingProgress>(() => readStoredProgress());
+  const [quickStartOpen, setQuickStartOpen] = useState(false);
+  const [quickStartStep, setQuickStartStep] = useState<'connect' | 'subreddit' | 'copy' | 'confirm'>('connect');
+  const { toast } = useToast();
+  const [, setLocation] = useLocation();
+  const { user: authUser } = useAuth();
+  
+  const resolvedTier = (authUser?.tier as ModernDashboardProps['userTier'] | undefined) ?? userTier;
+  const resolvedUser = authUser ?? user;
+  const isAdminUser = Boolean(authUser?.isAdmin || authUser?.role === 'admin' || resolvedTier === 'admin' || isAdmin);
+  const isPremium = isAdminUser || resolvedTier === 'premium' || resolvedTier === 'pro';
+  const displayName = resolvedUser?.username ?? resolvedUser?.email ?? 'Creator';
+  const dashboardPrompt = isAdminUser
+    ? 'Review platform performance and respond to creator needs.'
+    : 'What would you like to do today?';
+
+  const {
+    data: statsData,
+    isLoading: statsLoading,
+    error: statsError,
+  } = useQuery<DashboardStatsResponse>({
+    queryKey: ['/api/dashboard/stats'],
+    enabled: Boolean(resolvedUser?.id),
+  });
+@@ -215,91 +211,81 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
+
+  // Sync onboarding progress with props and API data
+  useEffect(() => {
+    const currentProgress = { ...onboardingProgress };
+    let hasChanges = false;
+
+    // Sync Reddit connection status
+    if (currentProgress.connectedReddit !== isRedditConnected) {
+      currentProgress.connectedReddit = isRedditConnected;
+      hasChanges = true;
+    }
+
+    // Sync post creation status (example: check if user has posted)
+    // This would typically come from API data about user's posting history
+    // For now, we'll just check if they have recent posts from the stats
+    if (statsData?.postsToday && statsData.postsToday > 0 && !currentProgress.createdFirstPost) {
+      currentProgress.createdFirstPost = true;
+      hasChanges = true;
+    }
+
+    if (hasChanges) {
+      setOnboardingProgress(currentProgress);
+      try {
+        window.localStorage.setItem(MODERN_DASHBOARD_ONBOARDING_STORAGE_KEY, JSON.stringify(currentProgress));
+      } catch (error) {
+        // Ignore localStorage errors
+        console.error('Failed to persist onboarding progress:', error);
+      }
+    }
+  }, [isRedditConnected, statsData?.postsToday, onboardingProgress]);
+
+  useEffect(() => {
+    if (statsError instanceof Error) {
+      toast({
+        title: "Unable to load dashboard stats",
+        description: statsError.message,
+      });
+    }
+  }, [statsError, toast]);
+
+  useEffect(() => {
+    if (activityError instanceof Error) {
+      toast({
+        title: "Unable to load media activity",
+        description: activityError.message,
+      });
+    }
+  }, [activityError, toast]);
+  
+  // Get current time greeting
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  };
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  const statsLoadingWithoutData = statsLoading && !statsData;
+  const statsUnavailable = (!statsLoading && !statsData && statsError instanceof Error) || statsLoadingWithoutData;
+  const statsSummary = {
+    postsToday: statsData?.postsToday ?? 0,
+    engagementRate: statsData?.engagementRate ?? 0,
+    takedownsFound: statsData?.takedownsFound ?? 0,
+    estimatedTaxSavings: statsData?.estimatedTaxSavings ?? 0,
+  } satisfies DashboardStatsResponse;
+
+  const statsCards = [
+    {
+      label: "Posts Today",
+      value: statsUnavailable ? "--" : formatNumber(statsSummary.postsToday),
+      icon: <Upload className="h-5 w-5" />,
+      color: "text-purple-400"
+    },
+    {
+      label: "Engagement Rate",
+      value: statsUnavailable ? "--" : formatPercentage(statsSummary.engagementRate),
+      icon: <Target className="h-5 w-5" />,
+      color: "text-green-400"
+    },
+    {
+      label: "Takedowns Found",
+      value: statsUnavailable ? "--" : formatNumber(statsSummary.takedownsFound),
+@@ -430,127 +416,127 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
+      // Check milestone requirements
+      if (card.requiredMilestones) {
+        return card.requiredMilestones.every(milestone => onboardingProgress[milestone]);
+      }
+
+      return true;
+    });
+  };
+
+  const visibleCards = getVisibleCards();
+  const coreCards = visibleCards.filter(card => card.group === 'core');
+  const growthCards = visibleCards.filter(card => card.group === 'growth');
+  const secondaryCards = visibleCards.filter(card => card.group === 'secondary');
+
+  const handleCardClick = (card: ActionCardConfig) => {
+    // Complete milestone if applicable
+    if (card.completeMilestone && !onboardingProgress[card.completeMilestone]) {
+      const updatedProgress = {
+        ...onboardingProgress,
+        [card.completeMilestone]: true
+      };
+      setOnboardingProgress(updatedProgress);
+      try {
+        window.localStorage.setItem(MODERN_DASHBOARD_ONBOARDING_STORAGE_KEY, JSON.stringify(updatedProgress));
+      } catch (error) {
+        // Ignore localStorage errors
+        console.error('Failed to persist milestone completion:', error);
+      }
+    }
+
+    if (card.route) {
+      setLocation(card.route);
+    } else if (card.comingSoon) {
+      toast({
+        title: "Coming Soon",
+        description: `${card.title} feature is being developed.`,
+      });
+    } else if (card.premium && !isPremium) {
+      toast({
+        title: "Premium Feature",
+        description: "Upgrade to Pro to access this feature.",
+      });
+    }
+  };
+
+  const handleQuickAction = () => {
+    // Determine the appropriate starting step based on onboarding progress
+    if (!onboardingProgress.connectedReddit) {
+      setQuickStartStep('connect');
+    } else if (!onboardingProgress.selectedCommunities) {
+      setQuickStartStep('subreddit');
+    } else {
+      setQuickStartStep('copy');
+    }
+    setQuickStartOpen(true);
+  };
+
+  const handleCommandCenter = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
+  const handleTaskFlow = () => {
+    // Task flow always starts from the beginning for guided experience
+    setQuickStartStep('connect');
+    setQuickStartOpen(true);
+  };
+
+  const handleQuickStartConnected = () => {
+    const updatedProgress = {
+      ...onboardingProgress,
+      connectedReddit: true
+    };
+    setOnboardingProgress(updatedProgress);
+    try {
+      window.localStorage.setItem(MODERN_DASHBOARD_ONBOARDING_STORAGE_KEY, JSON.stringify(updatedProgress));
+    } catch (error) {
+      // Ignore localStorage errors
+      console.error('Failed to persist Reddit connection milestone:', error);
+    }
+  };
+
+  const handleQuickStartSelectedCommunity = () => {
+    const updatedProgress = {
+      ...onboardingProgress,
+      selectedCommunities: true
+    };
+    setOnboardingProgress(updatedProgress);
+    try {
+      window.localStorage.setItem(MODERN_DASHBOARD_ONBOARDING_STORAGE_KEY, JSON.stringify(updatedProgress));
+    } catch (error) {
+      // Ignore localStorage errors
+      console.error('Failed to persist community selection milestone:', error);
+    }
+  };
+
+  const handleQuickStartPosted = () => {
+    const updatedProgress = {
+      ...onboardingProgress,
+      createdFirstPost: true
+    };
+    setOnboardingProgress(updatedProgress);
+    try {
+      window.localStorage.setItem(MODERN_DASHBOARD_ONBOARDING_STORAGE_KEY, JSON.stringify(updatedProgress));
+    } catch (error) {
+      // Ignore localStorage errors
+      console.error('Failed to persist first post milestone:', error);
+    }
+  };
+
+  // Get current onboarding stage for hero card
+  const getCurrentStage = () => {
+    if (!onboardingProgress.connectedReddit) {
+      return 'connect-reddit';
+    }
+    if (!onboardingProgress.selectedCommunities) {
+      return 'find-communities';
+    }
+    if (!onboardingProgress.createdFirstPost) {
+      return 'first-post';
+    }
+    return 'advanced';
+  };
+
+  const currentStage = getCurrentStage();
+
+  const renderHeroCard = () => {
+    switch (currentStage) {
+      case 'connect-reddit':
+        return (
+          <Card className="bg-gradient-to-r from-orange-500 to-red-500 border-0 mb-6">
+            <CardContent className="p-6">
+@@ -1132,33 +1118,32 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
+                </div>
+              </div>
+              <Button 
+                className="w-full mt-4 bg-purple-600 hover:bg-purple-700"
+                onClick={() => {
+                  toast({
+                    title: "Scheduler",
+                    description: "Post scheduler coming soon!",
+                  });
+                }}
+              >
+                Manage Schedule
+                <ChevronRight className="h-4 w-4 ml-2" />
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Quick Start Modal */}
+      <QuickStartModal
+        open={quickStartOpen}
+        onOpenChange={setQuickStartOpen}
+        initialStep={quickStartStep}
+        isRedditConnected={isRedditConnected}
+        onNavigate={() => setLocation("/reddit")}
+        onConnected={handleQuickStartConnected}
+        onSelectedCommunity={handleQuickStartSelectedCommunity}
+        onPosted={handleQuickStartPosted}
+      />
+    </div>
+  );
+}

@@ -1,0 +1,241 @@
+server/social-auth-config.ts
++31-14
+import passport from 'passport';
+import type { AuthenticateOptions } from 'passport';
+import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+import { Strategy as FacebookStrategy } from 'passport-facebook';
+// Explicitly import compiled entry to avoid Node's extensionless main deprecation
+import * as redditStrategyPkg from 'passport-reddit/lib/passport-reddit/index.js';
+const RedditStrategy = (
+  redditStrategyPkg as unknown as { Strategy: typeof import('passport-reddit').Strategy }
+).Strategy;
+import type { Profile as RedditStrategyProfile, StrategyOptions as RedditStrategyOptions } from 'passport-reddit';
+import { storage } from './storage';
+import type { User } from '@shared/schema';
+
+type RedditAuthenticateOptions = AuthenticateOptions & { duration?: 'temporary' | 'permanent' };
+
+// Helper function to handle social auth user creation/update
+async function handleSocialAuth(
+  provider: string,
+  profile: { id: string; emails?: { value: string }[]; username?: string; displayName?: string; photos?: { value: string }[]; },
+  done: (error: Error | null, user?: User) => void
+) {
+  try {
+    const email = profile.emails?.[0]?.value || `${profile.id}@${provider}.social`;
+    const username = profile.username || profile.displayName || `${provider}_${profile.id}`;
+    
+    // Check if user exists by email or social provider ID
+    let user = await storage.getUserByEmail(email);
+    
+    if (!user) {
+      // Create new user with social provider info
+      user = await storage.createUser({
+        email,
+        username,
+        password: '', // No password for social login
+        tier: 'free',
+        provider: provider,
+        providerId: profile.id,
+        avatar: profile.photos?.[0]?.value,
+        emailVerified: true // Auto-verify social accounts
+      });
+@@ -56,91 +60,104 @@ export function configureSocialAuth() {
+  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    passport.use(new GoogleStrategy({
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: '/api/auth/google/callback',
+      scope: ['profile', 'email']
+    }, async (accessToken, refreshToken, profile, done) => {
+      await handleSocialAuth('google', profile, done);
+    }));
+  }
+
+  // Facebook OAuth Strategy
+  if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
+    passport.use(new FacebookStrategy({
+      clientID: process.env.FACEBOOK_APP_ID,
+      clientSecret: process.env.FACEBOOK_APP_SECRET,
+      callbackURL: '/api/auth/facebook/callback',
+      profileFields: ['id', 'emails', 'displayName', 'photos']
+    }, async (accessToken, refreshToken, profile, done) => {
+      await handleSocialAuth('facebook', profile, done);
+    }));
+  }
+
+  // Reddit OAuth Strategy
+  if (process.env.REDDIT_CLIENT_ID && process.env.REDDIT_CLIENT_SECRET) {
+    type RedditProfile = RedditStrategyProfile & {
+      icon_img?: string;
+      _json: RedditStrategyProfile['_json'] & { icon_img?: string };
+    };
+
+    const redditStrategyOptions: RedditStrategyOptions = {
+      clientID: process.env.REDDIT_CLIENT_ID,
+      clientSecret: process.env.REDDIT_CLIENT_SECRET,
+      callbackURL: '/api/reddit/callback',
+      scope: ['identity'],
+      state: true,
+    };
+
+    passport.use(
+      new RedditStrategy(
+        {
+          clientID: process.env.REDDIT_CLIENT_ID,
+          clientSecret: process.env.REDDIT_CLIENT_SECRET,
+          callbackURL: '/api/reddit/callback',
+          scope: ['identity'],
+          state: true,
+        } as RedditStrategy.StrategyOptions,
+        redditStrategyOptions,
+        async (accessToken, refreshToken, profile, done) => {
+          const redditProfile = profile as RedditProfile;
+          const iconImage = redditProfile.icon_img ?? redditProfile._json.icon_img;
+
+          await handleSocialAuth(
+            'reddit',
+            {
+              id: profile.id,
+              username: profile.name,
+              id: redditProfile.id,
+              username: redditProfile.name,
+              emails: [],
+              photos: [{ value: (profile as Record<string, unknown>).icon_img as string }],
+              photos: iconImage ? [{ value: iconImage }] : [],
+            },
+            done,
+          );
+        },
+      ),
+    );
+  }
+
+  // Serialize and deserialize user
+  passport.serializeUser((user: unknown, done) => {
+    done(null, (user as User).id);
+  });
+
+  passport.deserializeUser(async (id: number, done) => {
+    try {
+      const user = await storage.getUser(id);
+      done(null, user);
+    } catch (error) {
+      done(error);
+    }
+  });
+}
+
+// Social auth route handlers
+export const socialAuthRoutes = {
+  // Google routes
+  googleAuth: passport.authenticate('google', { scope: ['profile', 'email'] }),
+  googleCallback: passport.authenticate('google', { 
+    failureRedirect: '/login?error=google_auth_failed',
+    successRedirect: '/dashboard' 
+  }),
+
+  // Facebook routes
+  facebookAuth: passport.authenticate('facebook', { scope: ['email'] }),
+  facebookCallback: passport.authenticate('facebook', { 
+    failureRedirect: '/login?error=facebook_auth_failed',
+    successRedirect: '/dashboard' 
+  }),
+
+  // Reddit routes
+  redditAuth: passport.authenticate('reddit', { 
+    state: 'reddit-auth-state',
+    duration: 'permanent' 
+  }),
+  redditAuth: passport.authenticate(
+    'reddit',
+    {
+      state: 'reddit-auth-state',
+      duration: 'permanent'
+    } satisfies RedditAuthenticateOptions,
+  ),
+  redditCallback: passport.authenticate('reddit', { 
+    failureRedirect: '/login?error=reddit_auth_failed',
+    successRedirect: '/dashboard?reddit=connected' 
+  })
+};
+server/types/passport-reddit-module.d.ts
++3-2
+declare module 'passport-reddit/lib/passport-reddit/index.js' {
+  import { Strategy as PassportStrategy } from 'passport';
+  
+  interface RedditProfile {
+    provider: string;
+    id: string;
+    username?: string;
+    displayName?: string;
+    emails?: Array<{ value: string; verified?: boolean }>;
+    photos?: Array<{ value: string }>;
+    icon_img?: string;
+    _raw: string;
+    _json: Record<string, unknown>;
+    _json: Record<string, unknown> & { icon_img?: string };
+  }
+  
+
+  interface RedditStrategyOptions {
+    clientID: string;
+    clientSecret: string;
+    callbackURL: string;
+    scope?: string[];
+    state?: boolean;
+  }
+  
+  type VerifyCallback = (error: unknown, user?: unknown, info?: unknown) => void;
+  
+  type VerifyFunction = (
+    accessToken: string,
+    refreshToken: string,
+    profile: RedditProfile,
+    done: VerifyCallback
+  ) => void;
+  
+  export class Strategy extends PassportStrategy {
+    constructor(options: RedditStrategyOptions, verify: VerifyFunction);
+    name: string;
+  }
+  
+  export default Strategy;
+}
+server/types/passport-reddit.d.ts
++11-3
+declare module 'passport-reddit' {
+  import { Strategy as OAuth2Strategy } from 'passport-oauth2';
+  
+  export interface Profile {
+    id: string;
+    name?: string;
+    _json: Record<string, unknown>;
+    icon_img?: string;
+    _json: {
+      icon_img?: string;
+      name?: string;
+      [key: string]: unknown;
+    };
+    provider: string;
+  }
+  
+
+  export interface StrategyOptions {
+    clientID: string;
+    clientSecret: string;
+    callbackURL: string;
+    scope?: string[];
+    scope?: string[] | string;
+    state?: boolean;
+    store?: unknown;
+    userProfileURL?: string;
+  }
+  
+  export type VerifyCallback = (error: Error | null, user?: unknown, info?: unknown) => void;
+  export type VerifyFunction = (accessToken: string, refreshToken: string, profile: Profile, done: VerifyCallback) => void;
+  
+  export class Strategy extends OAuth2Strategy {
+    constructor(options: StrategyOptions, verify: VerifyFunction);
+  }
+}

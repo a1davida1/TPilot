@@ -1,0 +1,110 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 30
+    },
+    "auditLog": "/home/runner/workspace/logs/.3547c1b8d4188e433180470737557644a26545b7-audit.json",
+    "files": [
+        {
+            "date": 1757061847418,
+            "name": "/home/runner/workspace/logs/rejections-2025-09-05.log",
+            "hash": "dfad2eb8760a9038d4e5bfd3ef4dccb2172f26e072db4737e6f5b11d53bf5989"
+        },
+        {
+            "date": 1757116931268,
+            "name": "/home/runner/workspace/logs/rejections-2025-09-06.log",
+            "hash": "4da31d530b3902cb94a3d80f1be8e278bbae157aecfe3a3737982240cedcda8b"
+        },
+        {
+            "date": 1757203569904,
+            "name": "/home/runner/workspace/logs/rejections-2025-09-07.log",
+            "hash": "1269992290552df3b3f7eb101747345650be050c76227967a3c23b40efe1c1bb"
+        },
+        {
+            "date": 1757350340664,
+            "name": "/home/runner/workspace/logs/rejections-2025-09-08.log",
+            "hash": "4ba2781504c2c23659b3fbdfd42bfa12b0a5404b4953405cb755791d4c663fa7"
+        },
+        {
+            "date": 1757388415083,
+            "name": "/home/runner/workspace/logs/rejections-2025-09-09.log",
+            "hash": "7602395da9abec3f639866c53fb8e3985cd99e25b27e2c644399304565dd3764"
+        },
+        {
+            "date": 1757464298410,
+            "name": "/home/runner/workspace/logs/rejections-2025-09-10.log",
+            "hash": "df6c0cc9aea5a13689c036db4a78b7d77eb9671c7095812228670ca2c9bc48bf"
+        },
+        {
+            "date": 1757550242397,
+            "name": "/home/runner/workspace/logs/rejections-2025-09-11.log",
+            "hash": "1756e349acaf8e0b4cd9a14b68c4396bfe5a57ae0eefdad71b580edc4bc72655"
+        },
+        {
+            "date": 1757649469660,
+            "name": "/home/runner/workspace/logs/rejections-2025-09-12.log",
+            "hash": "bb2d04e77db85b6e3719e263ba92f9b8dd00c882d518fd3ad6dc9256c4e57aad"
+        },
+        {
+            "date": 1757731249122,
+            "name": "/home/runner/workspace/logs/rejections-2025-09-13.log",
+            "hash": "ba24814fda1eb7789e8538e1650e2b651a942d2dddcec007a68a42ca38eba225"
+        },
+        {
+            "date": 1757810340070,
+            "name": "/home/runner/workspace/logs/rejections-2025-09-14.log",
+            "hash": "9b73f981095cccc05b0dc9e33bec5a69167e3b187e1d8eb962372e59bf4dab54"
+        },
+        {
+            "date": 1757942720044,
+            "name": "/home/runner/workspace/logs/rejections-2025-09-15.log",
+            "hash": "50decb2ede01f35c079b412345e9cd76e7edcf818f8837662bcb53fd934232d4"
+        },
+        {
+            "date": 1758027503843,
+            "name": "/home/runner/workspace/logs/rejections-2025-09-16.log",
+            "hash": "1ba2b31bf66f7ad143c39cc1c96893ce150d68604beeef6871c99e194c16e175"
+        },
+        {
+            "date": 1758067294237,
+            "name": "/home/runner/workspace/logs/rejections-2025-09-17.log",
+            "hash": "8c70f710179d91b19091960915a089e713c8dfdeb0ce45fa1a8d231005d08111"
+        },
+        {
+            "date": 1758284634916,
+            "name": "/home/runner/workspace/logs/rejections-2025-09-19.log",
+            "hash": "3a32d5bf6c08275fc616574f2fdd028473b0b4a79562aaf7ca9186d6851fd9e6"
+        },
+        {
+            "date": 1758329370162,
+            "name": "/home/runner/workspace/logs/rejections-2025-09-20.log",
+            "hash": "93fa3d73fca26c7c9afe71ba9feb051af5bac23299048099a16ab6396982fdc3"
+        },
+        {
+            "date": 1758415257647,
+            "name": "/home/runner/workspace/logs/rejections-2025-09-21.log",
+            "hash": "8c18483b8dc58cfe0bca8688a07a3bf566f87a059030605759c7c197ffcdede8"
+        },
+        {
+            "date": 1758503510430,
+            "name": "/home/runner/workspace/logs/rejections-2025-09-22.log",
+            "hash": "4064777f7e553ee433f78c0501b8ff46867c1a4ad6f36718e86961c80babbaa1"
+        },
+        {
+            "date": 1758589096097,
+            "name": "/home/runner/workspace/logs/rejections-2025-09-23.log",
+            "hash": "4c2af91744f446f5c0360705462e5982222982eec9f727740a7bc0939aeea023"
+        },
+        {
+            "date": 1758681441628,
+            "name": "/home/runner/workspace/logs/rejections-2025-09-24.log",
+            "hash": "0286e95576f9b250f847a605b539c41c2ccff63151f1e2ed496e75594253da25"
+        },
+        {
+            "date": 1758848952551,
+            "name": "/home/runner/workspace/logs/rejections-2025-09-26.log",
+            "hash": "a4eb6270258934f7ae535a4b3cd552b596fd2a6c3a8b708092d529b56179d9c0"
+        }
+    ],
+    "hashType": "sha256"
+}

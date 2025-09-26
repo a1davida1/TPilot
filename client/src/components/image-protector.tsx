@@ -149,8 +149,7 @@ export function ImageProtector({ userTier = 'guest' }: ImageProtectorProps) {
         title: "Download started",
         description: "Your protected image is downloading..."
       });
-    } catch (error) {
-      console.error('Failed to download protected image:', error);
+    } catch (_error) {
       toast({
         title: "Download failed",
         description: "Failed to download the image. Please try again.",

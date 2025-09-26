@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
@@ -185,7 +185,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { user: authUser } = useAuth();
-
+  
   const resolvedTier = (authUser?.tier as ModernDashboardProps['userTier'] | undefined) ?? userTier;
   const resolvedUser = authUser ?? user;
   const isAdminUser = Boolean(authUser?.isAdmin || authUser?.role === 'admin' || resolvedTier === 'admin' || isAdmin);
@@ -259,7 +259,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
       });
     }
   }, [activityError, toast]);
-
+  
   // Get current time greeting
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -272,7 +272,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
-
+    
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);

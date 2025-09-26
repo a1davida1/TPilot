@@ -12,8 +12,8 @@ import { logger } from './bootstrap/logger.js';
 import { startQueue } from './bootstrap/queue.js';
 import { prepareResponseLogPayload, truncateLogLine } from './lib/request-logger.js';
 import passport from 'passport'; // Assuming passport is imported elsewhere or needs to be imported here
-import { createSessionMiddleware } from './bootstrap/session.js';
-import { initializeSentry } from './bootstrap/sentry.js';
+import { createSessionMiddleware } from './middleware/session.js'; // Assuming this middleware is defined
+import { initializeSentry } from './bootstrap/sentry.js'; // Assuming Sentry initialization function
 
 export interface CreateAppOptions {
   startQueue?: boolean;
@@ -268,8 +268,8 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
 
     const sentry = await initializeSentry();
 
-    setupAuth(app);
-    setupSocialAuth(app);  // Register social auth routes including logout
+    setupAuth(app, API_PREFIX);
+    setupSocialAuth(app, API_PREFIX);  // Register social auth routes including logout
     mountStripeWebhook(app);
     mountBillingRoutes(app);
 

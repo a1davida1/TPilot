@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   describe,
@@ -184,7 +185,7 @@ function click(element: HTMLElement) {
 }
 
 const clipboardDescriptor = Object.getOwnPropertyDescriptor(navigator, "clipboard");
-const clipboardWriteMock = vi.fn<() => Promise<void>>();
+const clipboardWriteMock = vi.fn<[], Promise<void>>();
 
 describe("SampleUpload", () => {
   beforeEach(() => {

@@ -6,23 +6,29 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { ContentGeneration } from "@shared/schema.js";
 
-export type GenerationHistoryEntry = Omit<ContentGeneration, "createdAt" | "photoInstructions"> & {
+interface ContentGeneration {
+  id: number;
+  platform: string;
+  style: string;
+  theme: string;
+  titles: string[];
+  content: string;
+  photoInstructions: unknown;
+  prompt: string;
   createdAt: string;
   allowsPromotion: boolean;
-  photoInstructions: ContentGeneration["photoInstructions"] | string | null;
-};
+}
 
 interface GenerationHistoryProps {
-  onSelectGeneration?: (generation: GenerationHistoryEntry) => void;
+  onSelectGeneration?: (generation: ContentGeneration) => void;
 }
 
 export function GenerationHistory({ onSelectGeneration }: GenerationHistoryProps) {
   const [copiedItem, setCopiedItem] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const { data: history = [], isLoading } = useQuery<GenerationHistoryEntry[]>({
+  const { data: history = [], isLoading } = useQuery<ContentGeneration[]>({
     queryKey: ["/api/content-generation-history"],
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
@@ -35,8 +41,7 @@ export function GenerationHistory({ onSelectGeneration }: GenerationHistoryProps
         description: `${itemName} copied to clipboard`,
       });
       setTimeout(() => setCopiedItem(null), 2000);
-    } catch (err) {
-      console.error('Failed to copy generation history item:', err);
+    } catch (_err) {
       toast({
         title: "Failed to copy",
         description: "Please try selecting and copying manually",

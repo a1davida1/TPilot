@@ -62,19 +62,13 @@ const createStructuredRules = (
     }
   };
 
-  const isRecord = (value: unknown): value is Record<string, unknown> =>
-    value !== null && typeof value === 'object';
-
   // Deep merge overrides
-  const mergeDeep = (target: Record<string, unknown>, source: Record<string, unknown>): Record<string, unknown> => {
+  const mergeDeep = (target: Record<string, unknown>, source: Record<string, unknown>) => {
     for (const key in source) {
-      const sourceValue = source[key];
-      const targetValue = target[key];
-
-      if (isRecord(sourceValue) && isRecord(targetValue)) {
-        mergeDeep(targetValue, sourceValue);
+      if (source[key] instanceof Object && key in target && target[key] instanceof Object) {
+        mergeDeep(target[key], source[key]);
       } else {
-        target[key] = sourceValue;
+        target[key] = source[key];
       }
     }
     return target;

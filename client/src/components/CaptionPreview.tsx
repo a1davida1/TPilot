@@ -1,10 +1,10 @@
 import React from "react";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Copy, Check, AlertCircle } from "lucide-react";
-import type { CaptionPreviewData } from '@shared/types/caption';
+import { useState } from "react";
+import type { CaptionObject, RankedResult, CaptionPreviewData } from '@shared/types/caption';
 
 // Re-export types from shared module for backward compatibility
 export type { CaptionObject, RankedResult, CaptionPreviewData } from '@shared/types/caption';
@@ -15,19 +15,18 @@ export function CaptionPreview({ data }: { data: CaptionPreviewData | null | und
 
 
   if (!data) return null;
-
+  
   const { final = '', ranked = [] } = data || {};
   if (!final) return null;
-
+  
   // Handle different data formats - final could be a string or object with caption property
-  const captionText = typeof final === 'string' ? final : final.caption ?? '';
+  const captionText = typeof final === 'string' ? final : final.caption;
+  const charCount = captionText ? captionText.length : 0;
+  
   if (!captionText) return null;
 
-  const normalizedCaption = String(captionText);
-  const charCount = normalizedCaption.length;
-
   const handleCopyCaption = async () => {
-    await navigator.clipboard.writeText(normalizedCaption);
+    await navigator.clipboard.writeText(captionText);
     setCopiedCaption(true);
     setTimeout(() => setCopiedCaption(false), 2000);
   };
@@ -52,7 +51,7 @@ export function CaptionPreview({ data }: { data: CaptionPreviewData | null | und
         {/* Main Caption */}
         <div className="p-4 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/20 dark:to-purple-950/20 rounded-lg">
           <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
-            {normalizedCaption}
+            {captionText}
           </p>
         </div>
 
@@ -70,9 +69,9 @@ export function CaptionPreview({ data }: { data: CaptionPreviewData | null | und
         {typeof final === 'object' && final.hashtags && final.hashtags.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {final.hashtags.map((h: string, index: number) => (
-              <Badge
-                key={`${h}-${index}`}
-                variant="secondary"
+              <Badge 
+                key={`${h}-${index}`} 
+                variant="secondary" 
                 className="text-xs bg-gradient-to-r from-pink-100 to-purple-100 dark:from-pink-900/30 dark:to-purple-900/30"
               >
                 {h}
@@ -97,7 +96,7 @@ export function CaptionPreview({ data }: { data: CaptionPreviewData | null | und
           </div>
           <div className="space-y-1">
             <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Safety Level</p>
-            <Badge
+            <Badge 
               variant={typeof final === 'object' && final.safety_level === 'normal' ? 'default' : typeof final === 'object' && final.safety_level === 'spicy_safe' ? 'secondary' : 'destructive'}
               className="text-xs"
             >
@@ -112,7 +111,7 @@ export function CaptionPreview({ data }: { data: CaptionPreviewData | null | und
             <AlertCircle className="h-4 w-4 text-blue-500 mt-0.5" />
             <div className="space-y-1">
               <p className="text-xs font-medium text-blue-700 dark:text-blue-400">Why this caption won</p>
-              <p className="text-xs text-blue-600 dark:text-blue-300">{typeof ranked === 'object' && ranked && !Array.isArray(ranked) ? ranked.reason : 'Based on engagement optimization'}</p>
+              <p className="text-xs text-blue-600 dark:text-blue-300">{typeof ranked === 'object' && ranked && !Array.isArray(ranked) && 'reason' in ranked ? ranked.reason : 'Based on engagement optimization'}</p>
             </div>
           </div>
         </div>

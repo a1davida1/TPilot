@@ -1,0 +1,959 @@
+
+Audit and configure production environment
+Sep 23
+·
+a1davida1/TPilot
+·
+premigration
+
+Archive
+
+Share
+
+2
+1. Audit `.env`/secret stores to confirm all required variables from README (core, database, AI, payments, security, media, queue, email, analytics) are populated with production values.
+2. Configure `REDIS_URL` (or `USE_PG_QUEUE`) for both caching and session storage, and update the session middleware in `server/index.ts` if it still defaults to MemoryStore.
+3. Enable monitoring (SENTRY\_DSN, ANALYTICS\_WRITE\_KEY) and verify events reach their providers by triggering sample errors and page views.
+4. Document the finalized configuration in `docs/ops/production-config.md`, including rotation policies for sensitive keys.
+Copy
+Summary
+
+Added a dedicated session bootstrap that prioritizes Redis, falls back to PostgreSQL when needed, and plugs the middleware plus Sentry initialization into the Express startup path so production sessions no longer depend on MemoryStore.
+
+Tightened environment validation to require either REDIS_URL or USE_PG_QUEUE in production, expanded .env.production.example, and introduced an ops:check-env script for auditing required secret categories.
+
+Documented the production configuration, monitoring self-tests, and rotation policies in docs/ops/production-config.md to guide operations toward production readiness.
+
+Testing
+
+✅ npm run ops:check-env (reports missing production secrets because no secrets are loaded in this workspace)
+
+⚠️ npm run lint (fails: repository already contains numerous lint warnings/errors unrelated to this change)
+
+⚠️ npm test (fails: existing Vitest suites contain multiple failing scenarios and skips)
+
+
+Files (8)
+is this still needed?
+Copy
+The in-memory fallback is still necessary. The new bootstrap deliberately walks through Redis first, then PostgreSQL whenever USE_PG_QUEUE is on or we’re in production, but it finally falls back to memorystore so local developers, ephemeral preview apps, and unit tests can boot without external infrastructure. Removing that last branch would make a default npm start fail unless Redis or Postgres was pre-provisioned, which runs counter to our “works out of the box” goal and slows down emergency debugging in lower environments. The warning we log reminds ops to wire up a persistent store before going to production, so we retain safety without sacrificing developer ergonomics.
+
+
+
+
+Ask
+
+Code
+Diff
+Logs
+
+.env.production.example
++64
+-9
+
+## Core Runtime
+NODE_ENV=production
+PORT=5000
+APP_BASE_URL=https://app.example.com
+CRON_TZ=America/Chicago
+
+## Security
+JWT_SECRET=your-production-jwt-secret-minimum-256-bits
+SESSION_SECRET=your-production-session-secret-minimum-256-bits
+DATABASE_URL=
+REDIS_URL=
+SENTRY_DSN=
+SENDGRID_API_KEY=
+FROM_EMAIL=
+SESSION_COOKIE_NAME=tpilot.sid
+SESSION_COOKIE_DOMAIN=.example.com
+SESSION_MAX_AGE_MS=604800000
+TURNSTILE_SITE_KEY=
+TURNSTILE_SECRET_KEY=
+
+## Database
+DATABASE_URL=postgresql://user:password@host:5432/thottopilot
+DATABASE_SSL=true
+
+## Queue & Caching
+REDIS_URL=redis://user:password@redis-host:6379/0
+USE_PG_QUEUE=false
+SESSION_TTL_SECONDS=604800
+SESSION_PRUNE_INTERVAL=86400
+
+## AI Providers
+GOOGLE_GENAI_API_KEY=
+GEMINI_API_KEY=
+OPENAI_API_KEY=
+
+## Media Storage
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_REGION=us-east-1
+S3_BUCKET_MEDIA=
+S3_PUBLIC_CDN_DOMAIN=https://cdn.example.com
+WATERMARK_ENABLED=true
+WATERMARK_TEXT=ThottoPilot
+WATERMARK_OPACITY=0.18
+
+## Payments
+STRIPE_SECRET_KEY=
+STRIPE_PUBLISHABLE_KEY=
+STRIPE_WEBHOOK_SECRET=
+SEGPAY_MERCHANT_ID=
+SEGPAY_API_KEY=
+EPOCH_MERCHANT_ID=
+EPOCH_API_KEY=
+PAXUM_API_KEY=
+COINBASE_COMMERCE_KEY=
+
+## Email Delivery
+FROM_EMAIL=no-reply@example.com
+SENDGRID_API_KEY=
+RESEND_API_KEY=
+
+## Analytics & Monitoring
+SENTRY_DSN=
+SENTRY_SAMPLE_RATE=0.2
+ANALYTICS_WRITE_KEY=
+
+## Social Authentication
+REDDIT_CLIENT_ID=
+REDDIT_CLIENT_SECRET=
+GOOGLE_GENAI_API_KEY=
+OPENAI_API_KEY=
+NODE_ENV=production
+PORT=5000
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+FACEBOOK_APP_ID=
+FACEBOOK_APP_SECRET=
+
+## Optional Runtime Flags
+REPLIT_DOMAINS=app.example.com,www.app.example.com
+docs/ops/production-config.md
+New
++113
+-0
+
+# Production Configuration & Secret Rotation
+
+This guide documents the required production environment for ThottoPilot, how to validate the deployment secrets, and the rotation policies for each sensitive integration. Use it alongside the updated `.env.production.example` template and the `npm run ops:check-env` audit command.
+
+## 1. Environment Audit Checklist
+
+Run the automated audit in the production shell (where secrets are injected) before each deploy:
+
+```bash
+npm run ops:check-env
+```
+
+The script verifies all mandatory variables for the categories below and aborts with exit code `1` if anything is missing or contains placeholder values when `NODE_ENV=production`:
+
+| Category  | Required Variables | Current Status* |
+|-----------|--------------------|-----------------|
+| Core      | `NODE_ENV`, `APP_BASE_URL`, `PORT`, `CRON_TZ` | ❌ Not validated – no production secrets present in repo |
+| Security  | `JWT_SECRET`, `SESSION_SECRET`, optional Turnstile keys | ❌ Not validated |
+| Database  | `DATABASE_URL`, `DATABASE_SSL` | ❌ Not validated |
+| Queue     | `REDIS_URL` **or** `USE_PG_QUEUE`, `SESSION_TTL_SECONDS` | ❌ Not validated |
+| AI        | One of `GOOGLE_GENAI_API_KEY`, `GEMINI_API_KEY`, `OPENAI_API_KEY` | ❌ Not validated |
+| Payments  | `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET` (plus optional alt processors) | ❌ Not validated |
+| Media     | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_BUCKET_MEDIA`, `S3_PUBLIC_CDN_DOMAIN` | ❌ Not validated |
+| Email     | `FROM_EMAIL`, optional provider keys | ❌ Not validated |
+| Analytics | `SENTRY_DSN`, `ANALYTICS_WRITE_KEY` | ❌ Not validated |
+
+\*The working tree does not include production secrets. Populate them in your secret manager and re-run the audit in the target environment to confirm every row shows `OK`.
+
+### Additional automated guards
+
+* `server/middleware/security.ts` now blocks production boot when neither `REDIS_URL` nor `USE_PG_QUEUE=true` is set.
+* `server/bootstrap/session.ts` configures sessions to use Redis when available or PostgreSQL as the fallback; it logs and refuses to start with a MemoryStore in production.
+
+## 2. Session, Cache, and Queue Configuration
+
+The Express app now uses `server/bootstrap/session.ts` to create a hardened session middleware:
+
+* **Primary backend:** Redis via `REDIS_URL`. Sessions share the same instance as caching/queue operations and use the `tpilot:sess:` prefix.
+* **Fallback backend:** PostgreSQL when `USE_PG_QUEUE=true` or when Redis is absent in production. Sessions persist in the `user_sessions` table.
+* **Development fallback:** `memorystore` remains available but emits a warning and should never be relied on in production.
+
+Relevant environment knobs:
+
+| Variable | Purpose |
+|----------|---------|
+| `REDIS_URL` | Enables Redis-backed BullMQ and session storage. |
+| `USE_PG_QUEUE` | Forces PostgreSQL queues/sessions when Redis is unavailable. |
+| `SESSION_COOKIE_NAME`, `SESSION_COOKIE_DOMAIN`, `SESSION_MAX_AGE_MS` | Customize cookie behaviour to match your domain. |
+| `SESSION_TTL_SECONDS`, `SESSION_PRUNE_INTERVAL` | Tune Redis/PG TTL and pruning cadence. |
+
+Ensure the queue workers point at the same Redis instance to avoid cross-environment leaks.
+
+## 3. Monitoring & Analytics Verification
+
+### Sentry self-test
+
+1. Export the production `SENTRY_DSN` in your shell.
+2. Run the snippet below once (it uses the bootstrapped Sentry initializer and flushes the event):
+
+   ```bash
+   node -e "(async () => { const { initializeSentry } = await import('./server/bootstrap/logger.js'); const S = await initializeSentry(); if (!S) { throw new Error('Sentry not configured'); } S.captureException(new Error('Sentry production self-test')); await S.flush(5000); console.log('Sent self-test to Sentry'); process.exit(0); })();"
+   ```
+3. Confirm the event titled **“Sentry production self-test”** appears in the project dashboard.
+
+After deploying, provoke a handled server error (e.g. temporarily hitting `/api/nonexistent-route?forceError=true` with a crafted test endpoint) to verify HTTP context is captured.
+
+### Analytics self-test
+
+1. Ensure `ANALYTICS_WRITE_KEY` matches the provider’s production key.
+2. Open the app in a production browser session and navigate to a few screens; the client-side tracker posts batches to `/api/analytics/events`.
+3. Validate that the events appear in your analytics provider. For Segment-like APIs you can also manually send a test payload:
+
+   ```bash
+   curl -X POST "https://api.segment.io/v1/track" \
+     -u "$ANALYTICS_WRITE_KEY:" \
+     -H "Content-Type: application/json" \
+     -d '{"event":"production_self_test","userId":"ops-check","properties":{"source":"self-test"}}'
+   ```
+
+4. Check `logs/metrics-current.log` for the proxy confirmation and confirm the provider dashboard records the page views.
+
+## 4. Secret Rotation Policies
+
+| Secret | Rotation Frequency | Rotation Method |
+|--------|--------------------|-----------------|
+| `JWT_SECRET`, `SESSION_SECRET` | 90 days (or immediately after a suspected compromise) | Generate 256-bit values, deploy via secret manager, recycle user sessions during maintenance window. |
+| `DATABASE_URL` credentials | 180 days | Rotate PostgreSQL user passwords; update connection strings in secret manager. Verify queue workers reconnect. |
+| `REDIS_URL` credentials | 90 days | Issue new Redis auth token and redeploy app/workers concurrently. |
+| `STRIPE_*` keys | As per Stripe policy (recommended 90 days) | Create new restricted keys, update webhook secret, re-sign endpoints. |
+| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | 90 days | Use IAM access key rotation; verify S3 upload health immediately after rotation. |
+| Email provider keys (`SENDGRID_API_KEY`, `RESEND_API_KEY`) | 90 days | Regenerate API tokens; send transactional email smoke tests. |
+| `SENTRY_DSN` / `ANALYTICS_WRITE_KEY` | 180 days or on team changes | Issue new credentials from respective dashboards and update secret manager. |
+| Optional payment providers (Segpay, Epoch, Paxum, Coinbase) | Per vendor contract | Follow vendor rotation workflow; confirm callback URLs remain authorized. |
+
+Document each rotation in the internal runbook and ensure all stale secrets are revoked from the providers once replaced.
+
+## 5. Secret Management Process
+
+1. Store all secrets in your production secret manager (AWS Secrets Manager, Doppler, Replit Secrets, etc.).
+2. Grant access only to the deployment service account and CI runners.
+3. Run `npm run ops:check-env` after loading the secrets to verify compliance.
+4. Commit no plaintext secrets to the repository—use `.env.production.example` as the canonical template.
+
+## 6. Incident Response
+
+If the audit script or monitoring self-tests fail:
+
+1. **Stop the deployment** and remediate missing secrets immediately.
+2. Review Sentry for the self-test event. If absent, validate DNS firewalls and DSN correctness.
+3. For analytics, ensure outbound requests to the provider are allowed and no CSP restrictions block the tracker.
+4. Once fixed, rerun the checks above and capture evidence in the deployment log.
+
+Keeping this checklist updated ensures the platform remains production-ready with traceable monitoring and hardened session handling.
+package.json
++2
+-1
+
+{
+  "name": "rest-express",
+  "version": "1.0.0",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "dev": "NODE_ENV=development tsx server/index.ts",
+    "build": "bash build-production.sh",
+    "build:client": "vite build",
+    "build:server": "tsc -p tsconfig.server.json",
+    "start": "NODE_ENV=production tsx server/index.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "fix-imports": "bash fix-all-imports.sh",
+    "lint": "eslint .",
+    "test": "vitest run"
+    "test": "vitest run",
+    "ops:check-env": "tsx scripts/check-env.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.37.0",
+    "@aws-sdk/client-s3": "^3.864.0",
+    "@aws-sdk/s3-request-presigner": "^3.864.0",
+    "@eslint/js": "^9.35.0",
+    "@google-cloud/storage": "^7.17.0",
+    "@google/genai": "^1.12.0",
+    "@google/generative-ai": "^0.24.1",
+    "@hookform/resolvers": "^3.10.0",
+    "@jridgewell/trace-mapping": "^0.3.25",
+    "@maxmind/geoip2-node": "^6.1.0",
+    "@neondatabase/serverless": "^0.10.4",
+    "@radix-ui/react-accordion": "^1.2.4",
+    "@radix-ui/react-alert-dialog": "^1.1.7",
+    "@radix-ui/react-aspect-ratio": "^1.1.3",
+    "@radix-ui/react-avatar": "^1.1.4",
+    "@radix-ui/react-checkbox": "^1.1.5",
+    "@radix-ui/react-collapsible": "^1.1.4",
+    "@radix-ui/react-context-menu": "^2.2.7",
+    "@radix-ui/react-dialog": "^1.1.7",
+    "@radix-ui/react-dropdown-menu": "^2.1.7",
+    "@radix-ui/react-hover-card": "^1.1.7",
+    "@radix-ui/react-label": "^2.1.3",
+    "@radix-ui/react-menubar": "^1.1.7",
+scripts/check-env.ts
+New
++190
+-0
+
+#!/usr/bin/env tsx
+
+interface VariableSpec {
+  key: string;
+  description: string;
+  required: boolean;
+}
+
+type CategoryKey =
+  | 'core'
+  | 'security'
+  | 'database'
+  | 'queue'
+  | 'ai'
+  | 'payments'
+  | 'media'
+  | 'email'
+  | 'analytics';
+
+interface CategorySpec {
+  label: string;
+  variables: VariableSpec[];
+}
+
+const categories: Record<CategoryKey, CategorySpec> = {
+  core: {
+    label: 'Core runtime',
+    variables: [
+      { key: 'NODE_ENV', description: 'Deployment mode', required: true },
+      { key: 'APP_BASE_URL', description: 'Public application URL', required: true },
+      { key: 'PORT', description: 'Listening port', required: true },
+      { key: 'CRON_TZ', description: 'Timezone for schedulers', required: true },
+    ],
+  },
+  security: {
+    label: 'Security secrets',
+    variables: [
+      { key: 'JWT_SECRET', description: 'JWT signing secret', required: true },
+      { key: 'SESSION_SECRET', description: 'Session encryption secret', required: true },
+      { key: 'TURNSTILE_SITE_KEY', description: 'Cloudflare Turnstile site key', required: false },
+      { key: 'TURNSTILE_SECRET_KEY', description: 'Cloudflare Turnstile secret', required: false },
+    ],
+  },
+  database: {
+    label: 'Database',
+    variables: [
+      { key: 'DATABASE_URL', description: 'PostgreSQL connection string', required: true },
+      { key: 'DATABASE_SSL', description: 'Enable TLS for database', required: true },
+    ],
+  },
+  queue: {
+    label: 'Queue & cache',
+    variables: [
+      { key: 'REDIS_URL', description: 'Redis connection string', required: false },
+      { key: 'USE_PG_QUEUE', description: 'Fallback to PostgreSQL-backed queue', required: false },
+      { key: 'SESSION_TTL_SECONDS', description: 'Session lifetime in seconds', required: true },
+    ],
+  },
+  ai: {
+    label: 'AI providers',
+    variables: [
+      { key: 'GOOGLE_GENAI_API_KEY', description: 'Google Vertex AI key', required: false },
+      { key: 'GEMINI_API_KEY', description: 'Gemini API key', required: false },
+      { key: 'OPENAI_API_KEY', description: 'OpenAI API key', required: false },
+    ],
+  },
+  payments: {
+    label: 'Payments',
+    variables: [
+      { key: 'STRIPE_SECRET_KEY', description: 'Stripe secret key', required: true },
+      { key: 'STRIPE_PUBLISHABLE_KEY', description: 'Stripe publishable key', required: true },
+      { key: 'STRIPE_WEBHOOK_SECRET', description: 'Stripe webhook secret', required: true },
+      { key: 'SEGPAY_API_KEY', description: 'Segpay API key', required: false },
+      { key: 'EPOCH_API_KEY', description: 'Epoch API key', required: false },
+      { key: 'PAXUM_API_KEY', description: 'Paxum API key', required: false },
+      { key: 'COINBASE_COMMERCE_KEY', description: 'Coinbase Commerce key', required: false },
+    ],
+  },
+  media: {
+    label: 'Media storage',
+    variables: [
+      { key: 'AWS_ACCESS_KEY_ID', description: 'AWS access key', required: true },
+      { key: 'AWS_SECRET_ACCESS_KEY', description: 'AWS secret key', required: true },
+      { key: 'S3_BUCKET_MEDIA', description: 'Media bucket', required: true },
+      { key: 'S3_PUBLIC_CDN_DOMAIN', description: 'Public CDN domain', required: true },
+    ],
+  },
+  email: {
+    label: 'Email delivery',
+    variables: [
+      { key: 'FROM_EMAIL', description: 'Default from email', required: true },
+      { key: 'SENDGRID_API_KEY', description: 'SendGrid API key', required: false },
+      { key: 'RESEND_API_KEY', description: 'Resend API key', required: false },
+    ],
+  },
+  analytics: {
+    label: 'Monitoring & analytics',
+    variables: [
+      { key: 'SENTRY_DSN', description: 'Sentry DSN', required: true },
+      { key: 'ANALYTICS_WRITE_KEY', description: 'Analytics provider key', required: true },
+    ],
+  },
+};
+
+type Status = 'ok' | 'missing' | 'placeholder';
+
+interface VariableResult extends VariableSpec {
+  status: Status;
+  category: CategoryKey;
+  value?: string;
+}
+
+const placeholderPattern = /(changeme|placeholder|example|sample|your_|demo)/i;
+
+const parseBoolean = (value: string | undefined): boolean => {
+  if (!value) {
+    return false;
+  }
+  const normalized = value.trim().toLowerCase();
+  return ['true', '1', 'yes', 'y', 'on'].includes(normalized);
+};
+
+const evaluateValue = (value: string | undefined): Status => {
+  if (!value || value.trim() === '') {
+    return 'missing';
+  }
+  if (placeholderPattern.test(value)) {
+    return 'placeholder';
+  }
+  return 'ok';
+};
+
+const results: VariableResult[] = [];
+
+for (const [category, spec] of Object.entries(categories) as [CategoryKey, CategorySpec][]) {
+  for (const variable of spec.variables) {
+    const raw = process.env[variable.key];
+    const status = evaluateValue(raw);
+    results.push({ ...variable, status, category, value: raw });
+  }
+}
+
+const aiProviderKeys: string[] = ['GOOGLE_GENAI_API_KEY', 'GEMINI_API_KEY', 'OPENAI_API_KEY'];
+const hasAiProvider = aiProviderKeys.some((key) => {
+  const match = results.find((entry) => entry.key === key);
+  return match?.status === 'ok';
+});
+
+const redisStatus = results.find((entry) => entry.key === 'REDIS_URL');
+const usePgQueue = parseBoolean(process.env.USE_PG_QUEUE);
+
+const missingRequired = results.filter((entry) => entry.required && entry.status !== 'ok');
+const placeholderRequired = results.filter((entry) => entry.required && entry.status === 'placeholder');
+
+const lines: string[] = [];
+lines.push('Category | Variable | Status | Required | Notes');
+lines.push('---------|----------|--------|----------|------');
+
+for (const result of results) {
+  const statusLabel = result.status === 'ok' ? 'OK' : result.status.toUpperCase();
+  const requiredLabel = result.required ? 'yes' : 'no';
+  let notes = result.description;
+
+  if (!result.required && result.status === 'missing') {
+    notes += ' (optional)';
+  }
+
+  lines.push(`${categories[result.category].label} | ${result.key} | ${statusLabel} | ${requiredLabel} | ${notes}`);
+}
+
+console.log(lines.join('\n'));
+
+if (!hasAiProvider) {
+  console.warn('\n⚠️  No AI provider keys configured. Set at least one of GOOGLE_GENAI_API_KEY, GEMINI_API_KEY, or OPENAI_API_KEY.');
+}
+
+if (redisStatus?.status !== 'ok' && !usePgQueue) {
+  console.error('\n❌ Neither REDIS_URL nor USE_PG_QUEUE is configured for queues and session storage.');
+}
+
+const production = process.env.NODE_ENV === 'production';
+
+if (production && (missingRequired.length > 0 || placeholderRequired.length > 0 || (!hasAiProvider) || (redisStatus?.status !== 'ok' && !usePgQueue))) {
+  console.error('\nEnvironment validation failed. Populate the missing variables before starting the server.');
+  process.exit(1);
+}
+
+if (!production && missingRequired.length > 0) {
+  console.warn('\nDevelopment warning: required production variables are missing. Configure them in your secret manager.');
+}
+server/app.ts
++9
+-2
+
+import express from 'express';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
+import passport from 'passport';
+import { v4 as uuidv4 } from 'uuid';
+import { registerRoutes } from './routes.js';
+import { authLimiter, generalLimiter, sanitize, notFoundHandler } from './middleware/security.js';
+import { setupAuth } from './auth.js';
+import { setupSocialAuth } from './social-auth.js';
+import { mountStripeWebhook } from './routes/webhooks.stripe.js';
+import { mountBillingRoutes } from './routes/billing.js';
+import { logger } from './bootstrap/logger.js';
+import { createSessionMiddleware } from './bootstrap/session.js';
+import { initializeSentry, logger } from './bootstrap/logger.js';
+import { startQueue } from './bootstrap/queue.js';
+
+export interface CreateAppOptions {
+  startQueue?: boolean;
+  configureStaticAssets?: boolean;
+  enableVite?: boolean;
+}
+
+export interface CreateAppResult {
+  app: express.Express;
+  server: import('http').Server;
+}
+
+export const API_PREFIX = '/api/v1';
+
+declare global {
+  namespace Express {
+    interface Request {
+      id: string;
+    }
+  }
+}
+
+function configureCors(app: express.Express): void {
+  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map((origin) => origin.trim()) ?? [];
+@@ -169,58 +171,63 @@ async function configureStaticAssets(
+      res.sendFile(indexFile);
+    } else {
+      res.status(404).send('Client build not found');
+    }
+  });
+}
+
+export async function createApp(options: CreateAppOptions = {}): Promise<CreateAppResult> {
+  const app = express();
+  app.set('trust proxy', 1);
+  app.use(generalLimiter);
+  app.use(sanitize);
+
+  configureCors(app);
+
+  app.use((req, res, next) => {
+    req.id = uuidv4();
+    res.setHeader('X-Request-ID', req.id);
+    next();
+  });
+
+  app.post(`${API_PREFIX}/webhooks/stripe`, express.raw({ type: 'application/json' }), (_req, _res, next) => next());
+  app.use(cookieParser());
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ extended: false, limit: '50mb' }));
+  app.use(createSessionMiddleware());
+  app.use(passport.initialize());
+  app.use(passport.session());
+
+  applyRequestLogging(app);
+
+  const startQueueOption = options.startQueue ?? true;
+  const configureStaticOption = options.configureStaticAssets ?? true;
+  const enableVite = options.enableVite ?? (app.get('env') === 'development');
+
+  try {
+    app.use(`${API_PREFIX}/auth`, authLimiter);
+
+    if (startQueueOption) {
+      await startQueue();
+    } else {
+      logger.info('Queue startup disabled for current execution context.');
+    }
+
+    const sentry = await initializeSentry();
+
+    setupAuth(app, API_PREFIX);
+    setupSocialAuth(app, API_PREFIX);  // Register social auth routes including logout
+    mountStripeWebhook(app);
+    mountBillingRoutes(app);
+
+    const server = await registerRoutes(app, API_PREFIX);
+    const server = await registerRoutes(app, API_PREFIX, { sentry });
+
+    if (configureStaticOption) {
+      await configureStaticAssets(app, server, enableVite);
+    }
+
+    return { app, server };
+  } catch (error) {
+    logger.error('Failed to initialise application:', error);
+    throw error;
+  }
+}
+server/bootstrap/session.ts
+New
++116
+-0
+
+import session from 'express-session';
+import connectPgSimple from 'connect-pg-simple';
+import connectRedis from 'connect-redis';
+import Redis from 'ioredis';
+import createMemoryStore from 'memorystore';
+import type { Store } from 'express-session';
+import type { Redis as RedisClient } from 'ioredis';
+import { logger } from './logger.js';
+
+const ONE_DAY_MS = 86_400_000;
+
+const parseBoolean = (value: string | undefined): boolean => {
+  if (!value) {
+    return false;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  return ['true', '1', 'yes', 'y', 'on'].includes(normalized);
+};
+
+const parseInteger = (value: string | undefined, fallback: number): number => {
+  if (!value) {
+    return fallback;
+  }
+
+  const parsed = Number.parseInt(value, 10);
+  return Number.isNaN(parsed) ? fallback : parsed;
+};
+
+interface RedisStoreConstructor {
+  new (options: { client: RedisClient; prefix?: string; disableTouch?: boolean; ttl?: number }): Store;
+}
+
+export function createSessionMiddleware(): ReturnType<typeof session> {
+  const secret = process.env.SESSION_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error('SESSION_SECRET must be set to a strong value for session encryption');
+  }
+
+  const isProduction = process.env.NODE_ENV === 'production';
+  const redisUrl = process.env.REDIS_URL;
+  const usePgQueue = parseBoolean(process.env.USE_PG_QUEUE);
+  const cookieDomain = process.env.SESSION_COOKIE_DOMAIN?.trim();
+
+  const baseCookie: session.CookieOptions = {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: isProduction,
+    maxAge: parseInteger(process.env.SESSION_MAX_AGE_MS, ONE_DAY_MS * 7),
+  };
+
+  if (cookieDomain) {
+    baseCookie.domain = cookieDomain;
+  }
+
+  const sessionOptions: session.SessionOptions = {
+    name: process.env.SESSION_COOKIE_NAME ?? 'tpilot.sid',
+    secret,
+    resave: false,
+    saveUninitialized: false,
+    rolling: true,
+    cookie: baseCookie,
+  };
+
+  if (redisUrl) {
+    const RedisStore = connectRedis(session) as unknown as RedisStoreConstructor;
+    const redisClient = new Redis(redisUrl, {
+      lazyConnect: false,
+      maxRetriesPerRequest: null,
+      enableAutoPipelining: true,
+    });
+
+    redisClient.on('error', (error) => {
+      logger.error('Redis session store error', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    });
+
+    sessionOptions.store = new RedisStore({
+      client: redisClient,
+      prefix: process.env.REDIS_SESSION_PREFIX ?? 'tpilot:sess:',
+      disableTouch: false,
+      ttl: parseInteger(process.env.SESSION_TTL_SECONDS, (ONE_DAY_MS / 1000) * 7),
+    });
+
+    logger.info('Session store configured with Redis backend');
+  } else if (usePgQueue || isProduction) {
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      logger.error('DATABASE_URL is required when REDIS_URL is not set');
+      throw new Error('DATABASE_URL must be set when using PostgreSQL-backed sessions');
+    }
+
+    const PgStore = connectPgSimple(session);
+    const pgStoreOptions: ConstructorParameters<typeof PgStore>[0] = {
+      conString: databaseUrl,
+      tableName: process.env.SESSION_TABLE_NAME ?? 'user_sessions',
+      schemaName: process.env.SESSION_SCHEMA ?? 'public',
+      createTableIfMissing: true,
+      pruneSessionInterval: parseInteger(process.env.SESSION_PRUNE_INTERVAL, ONE_DAY_MS / 1000),
+    };
+
+    sessionOptions.store = new PgStore(pgStoreOptions);
+    logger.info('Session store configured with PostgreSQL backend');
+  } else {
+    const MemoryStore = createMemoryStore(session);
+    sessionOptions.store = new MemoryStore({
+      checkPeriod: parseInteger(process.env.SESSION_CHECK_PERIOD_MS, ONE_DAY_MS),
+      max: parseInteger(process.env.SESSION_MEMORY_MAX, 5_000),
+    });
+
+    logger.warn('Using in-memory session store. Configure REDIS_URL or set USE_PG_QUEUE=true for production.');
+  }
+
+  return session(sessionOptions);
+}
+server/middleware/security.ts
++16
+-0
+
+@@ -26,55 +26,71 @@ declare global {
+interface HttpError extends Error {
+  status?: number;
+}
+
+// Only load dotenv if NOT in production
+// In production deployments, secrets are already available as env vars
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config();
+}
+
+// ==========================================
+// VALIDATE ENVIRONMENT VARIABLES
+// ==========================================
+
+export const envSchema = z.object({
+  JWT_SECRET: z.string().min(32),
+  SESSION_SECRET: z.string().min(32),
+  DATABASE_URL: z.string().url(),
+  REDIS_URL: z.string().url().optional(),
+  SENDGRID_API_KEY: z.string().optional(),
+  SENTRY_DSN: z.string().url().optional(),
+  NODE_ENV: z.enum(["production", "development", "test"]),
+  PORT: z.string().regex(/^\d+$/).default("5000"),
+});
+
+const parseBoolean = (value: string | undefined): boolean => {
+  if (!value) {
+    return false;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  return ['true', '1', 'yes', 'y', 'on'].includes(normalized);
+};
+
+export function validateEnvironment() {
+  const result = envSchema.safeParse(process.env);
+  if (!result.success) {
+    throw new Error(result.error.issues.map(i => i.message).join("\n"));
+  }
+
+  const env = result.data;
+  const usePgQueue = parseBoolean(process.env.USE_PG_QUEUE);
+
+  if (env.NODE_ENV === 'production' && !env.REDIS_URL && !usePgQueue) {
+    throw new Error('Production deployments must configure REDIS_URL or set USE_PG_QUEUE=true to enable persistent queues and sessions');
+  }
+}
+
+// ==========================================
+// LOGGER SETUP
+// ==========================================
+export const logger = winston.createLogger({
+  level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.errors({ stack: true }),
+    winston.format.json()
+  ),
+  transports: [
+    new winston.transports.File({ filename: 'error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'combined.log' }),
+    new winston.transports.Console({
+      format: winston.format.simple(),
+    })
+  ],
+});
+
+// ==========================================
+// RATE LIMITERS
+// ==========================================
+export const authLimiter = rateLimit({
+server/routes.ts
++16
+-1
+
+@@ -48,50 +48,56 @@ import { generateAdvancedContent, type ContentParameters } from "./advanced-cont
+// Reddit communities now handled in reddit-routes.ts
+import { getAvailablePerks, getPerksByCategory, generateReferralCode, getSignupInstructions } from "./pro-perks.js";
+
+// API route modules
+import { registerApiRoutes } from "./api-routes.js";
+import { registerPolicyRoutes } from "./policy-routes.js";
+import { registerRedditRoutes } from "./reddit-routes.js";
+import { registerAnalyticsRoutes } from "./analytics-routes.js";
+import { createLead, confirmLead } from "./api/leads.js";
+import { getLeads } from "./api/admin-leads.js";
+import { captionRouter } from "./routes/caption.js";
+import { contentGenerationLimiter } from "./middleware/tiered-rate-limit.js";
+import { registerSocialMediaRoutes } from "./social-media-routes.js";
+
+// Schema imports
+import { insertContentGenerationSchema, insertUserImageSchema } from "@shared/schema";
+
+// Core dependencies
+import multer from 'multer';
+import fs from 'fs/promises';
+import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
+import csrf from 'csurf';
+
+type SentryInstance = typeof import('@sentry/node');
+
+interface RegisterRoutesOptions {
+  sentry?: SentryInstance | null;
+}
+
+// Get secure environment variables (no fallbacks)
+const rawSessionSecret = process.env.SESSION_SECRET;
+if (!rawSessionSecret) {
+  throw new Error('SESSION_SECRET missing');
+}
+const SESSION_SECRET: string = rawSessionSecret;
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+const DATABASE_URL = process.env.DATABASE_URL;
+const REDIS_URL = process.env.REDIS_URL;
+const stripeConfig = deriveStripeConfig({
+  env: process.env,
+  logger,
+});
+
+// Initialize Stripe if configured
+const stripe = stripeConfig ? new Stripe(stripeConfig.secretKey, {
+  apiVersion: stripeConfig.apiVersion as any,
+}) : null;
+
+// Configure multer for optional image uploads
+const upload = multer({
+  dest: 'uploads/',
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+@@ -106,51 +112,55 @@ const upload = multer({
+interface AuthRequest extends express.Request {
+  user?: typeof users.$inferSelect;
+}
+
+interface GenerationRequestBody {
+  mode?: string;
+  prompt?: string;
+  platform?: string;
+  style?: string;
+  theme?: string;
+  includePromotion?: boolean | string;
+  customInstructions?: string;
+}
+
+interface PhotoInstructionsResult {
+  lighting?: string | string[];
+  angles?: string | string[];
+  cameraAngle?: string;
+  composition?: string | string[];
+  styling?: string | string[];
+  mood?: string;
+  technical?: string | string[];
+  technicalSettings?: string;
+}
+
+export async function registerRoutes(app: Express, apiPrefix: string = '/api'): Promise<Server> {
+export async function registerRoutes(
+  app: Express,
+  apiPrefix: string = '/api',
+  options: RegisterRoutesOptions = {},
+): Promise<Server> {
+  // ==========================================
+  // VALIDATE ENVIRONMENT & APPLY SECURITY
+  // ==========================================
+  
+  // Set trust proxy securely for rate limiters
+  app.set('trust proxy', (ip: string) => {
+    // Trust localhost and private network ranges
+    return ['127.0.0.1', '::1'].includes(ip) || ip.startsWith('10.') || ip.startsWith('192.168.');
+  });
+  
+  // Validate required environment variables first
+  validateEnvironment();
+  
+  // Log IPs first so downstream middleware can use req.userIP
+  app.use(ipLoggingMiddleware);
+  app.use(securityMiddleware);
+
+  // Pure JWT-based authentication - no sessions needed
+
+  // CSRF protection for session-based routes
+  const csrfProtection: express.RequestHandler = csrf({ 
+    cookie: {
+      httpOnly: true,
+      secure: IS_PRODUCTION,
+      sameSite: 'strict'
+@@ -1066,35 +1076,40 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api'):
+      res.status(500).json({ message: 'Failed to protect image' });
+    }
+  });
+
+  // Debug endpoint for environment variables
+  app.get('/api/debug/env', (req, res) => {
+    res.json({
+      hasAdminEmail: !!process.env.ADMIN_EMAIL,
+      hasAdminPassword: !!process.env.ADMIN_PASSWORD,
+      hasAdminPasswordHash: !!process.env.ADMIN_PASSWORD_HASH,
+      adminEmailLength: process.env.ADMIN_EMAIL?.length || 0,
+      nodeEnv: process.env.NODE_ENV,
+      // Don't send actual values for security!
+    });
+  });
+
+  // ==========================================
+  // ERROR HANDLER (MUST BE LAST)
+  // ==========================================
+  
+  // Handle 404s for API routes specifically
+  app.use('/api/*', (req, res) => {
+    res.status(404).json({ message: `API endpoint not found: ${req.path}` });
+  });
+
+  if (options.sentry) {
+    options.sentry.setupExpressErrorHandler(app);
+    logger.info('Sentry Express middleware attached for error monitoring');
+  }
+
+  // Apply error handling middleware last
+  app.use(errorHandler);
+
+  // NOTE: Removed duplicate catch-all route
+  // The SPA fallback is handled in configureStaticAssets() in app.ts
+  // which properly serves static assets first, then falls back to index.html
+
+  const httpServer = createServer(app);
+  return httpServer;
+}
