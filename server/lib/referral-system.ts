@@ -4,7 +4,7 @@
  */
 
 import { db } from '../db';
-import { users, referralRewards, referralCodes } from '@shared/schema';
+import { users, referralRewards, referralCodes, eventLogs } from '@shared/schema';
 import { eq, sql } from 'drizzle-orm';
 import { customAlphabet } from 'nanoid';
 // TODO: implement real notification service
@@ -27,6 +27,19 @@ export interface ReferralReward {
   type: 'commission' | 'bonus_storage' | 'free_month';
   amount: number;
   description: string;
+}
+
+export interface ReferralApplicant {
+  userId?: number;
+  email?: string;
+  temporaryUserId?: string;
+}
+
+interface ReferralApplicationResult {
+  success: boolean;
+  referrerId?: number;
+  pending?: boolean;
+  error?: string;
 }
 
 export class ReferralManager {
@@ -112,12 +125,19 @@ export class ReferralManager {
   /**
    * Apply referral code when user signs up
    */
-  static async applyReferralCode(newUserId: number, referralCode: string): Promise<{
-    success: boolean;
-    referrerId?: number;
-    error?: string;
-  }> {
+  static async applyReferralCode(applicant: number | ReferralApplicant, referralCode: string): Promise<ReferralApplicationResult> {
     try {
+      const normalizedApplicant: ReferralApplicant = typeof applicant === 'number' ? { userId: applicant } : applicant;
+
+      if (!normalizedApplicant || Object.keys(normalizedApplicant).length === 0) {
+        return {
+          success: false,
+          error: 'Applicant information is required',
+        };
+      }
+
+      const sanitizedCode = referralCode.trim().toUpperCase();
+
       // Find the referrer
       const [codeRecord] = await db
         .select({
@@ -125,7 +145,7 @@ export class ReferralManager {
           ownerId: referralCodes.ownerId,
         })
         .from(referralCodes)
-        .where(eq(referralCodes.code, referralCode))
+        .where(eq(referralCodes.code, sanitizedCode))
         .limit(1);
 
       if (!codeRecord?.ownerId) {
@@ -135,33 +155,95 @@ export class ReferralManager {
         };
       }
 
+      const referrerId = codeRecord.ownerId;
+
       const [referrer] = await db
         .select({ id: users.id, subscriptionStatus: users.subscriptionStatus })
         .from(users)
-        .where(eq(users.id, codeRecord.ownerId))
+        .where(eq(users.id, referrerId))
         .limit(1);
 
-
-      // Check if new user is trying to refer themselves
-      if (referrer.id === newUserId) {
+      if (!referrer) {
         return {
           success: false,
-          error: 'Cannot use your own referral code',
+          error: 'Referrer not found',
         };
       }
 
-      // Update new user with referrer information
-      await db
-        .update(users)
-        .set({ 
-          referredBy: referrer.id,
-          createdAt: new Date(),
-        })
-        .where(eq(users.id, newUserId));
+      if (normalizedApplicant.userId !== undefined) {
+        const { userId } = normalizedApplicant;
+
+        if (!Number.isInteger(userId) || userId <= 0) {
+          return {
+            success: false,
+            error: 'Invalid user identifier',
+          };
+        }
+
+        // Check if new user is trying to refer themselves
+        if (referrer.id === userId) {
+          return {
+            success: false,
+            error: 'Cannot use your own referral code',
+          };
+        }
+
+        // Update new user with referrer information
+        await db
+          .update(users)
+          .set({
+            referredBy: referrer.id,
+            createdAt: new Date(),
+          })
+          .where(eq(users.id, userId));
+
+        return {
+          success: true,
+          referrerId: referrer.id,
+          pending: false,
+        };
+      }
+
+      const email = normalizedApplicant.email?.trim().toLowerCase();
+      const temporaryUserId = normalizedApplicant.temporaryUserId?.trim();
+
+      if (!email && !temporaryUserId) {
+        return {
+          success: false,
+          error: 'Applicant identifier is required',
+        };
+      }
+
+      if (email) {
+        const [existingUser] = await db
+          .select({ id: users.id })
+          .from(users)
+          .where(eq(users.email, email))
+          .limit(1);
+
+        if (existingUser) {
+          return await this.applyReferralCode(existingUser.id, sanitizedCode);
+        }
+      }
+
+      await db.insert(eventLogs).values({
+        userId: null,
+        type: 'referral.pending',
+        meta: {
+          referralCode: sanitizedCode,
+          referrerId: referrer.id,
+          applicant: {
+            email: email ?? null,
+            temporaryUserId: temporaryUserId ?? null,
+          },
+          recordedAt: new Date().toISOString(),
+        },
+      });
 
       return {
         success: true,
         referrerId: referrer.id,
+        pending: true,
       };
 
     } catch (error) {

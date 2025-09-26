@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 import { FaGoogle, FaFacebook, FaReddit } from "react-icons/fa";
 import { 
   X, 
@@ -56,6 +56,86 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
   const [showResendVerification, setShowResendVerification] = useState(false);
   const [resendEmail, setResendEmail] = useState('');
   const [isResending, setIsResending] = useState(false);
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+  const latestSignupEmailRef = useRef<string | null>(null);
+
+  const applyReferralForSignup = useCallback(async (code: string | null, email: string | null) => {
+    if (!code || !email || typeof window === 'undefined') {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/referral/apply', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          referralCode: code,
+          applicant: {
+            email: email.trim().toLowerCase()
+          }
+        })
+      });
+
+      const payload = await response.json().catch(() => null) as null | {
+        message?: string;
+        error?: string;
+        status?: string;
+      };
+
+      if (response.ok) {
+        window.localStorage.removeItem('pendingReferralCode');
+        setReferralCode(null);
+        latestSignupEmailRef.current = null;
+
+        toast({
+          title: 'Referral recorded',
+          description: payload?.message ?? 'We saved your referral details for review.',
+          variant: 'default'
+        });
+        return;
+      }
+
+      const errorMessage = typeof payload?.error === 'string'
+        ? payload.error
+        : 'Unable to record your referral code automatically.';
+
+      toast({
+        title: 'Referral not recorded',
+        description: errorMessage,
+        variant: 'destructive'
+      });
+    } catch (error) {
+      console.warn('Failed to apply referral code before login', error);
+      toast({
+        title: 'Referral not recorded',
+        description: 'We could not record your referral code. You can retry after logging in.',
+        variant: 'destructive'
+      });
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const paramCode = params.get('ref');
+
+    if (paramCode && paramCode.trim()) {
+      const normalizedCode = paramCode.trim().toUpperCase();
+      setReferralCode(normalizedCode);
+      window.localStorage.setItem('pendingReferralCode', normalizedCode);
+      return;
+    }
+
+    const storedCode = window.localStorage.getItem('pendingReferralCode');
+    if (storedCode) {
+      setReferralCode(storedCode);
+    }
+  }, []);
 
   // Add URL parameter handling for email verification
   useEffect(() => {
@@ -140,6 +220,10 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
       return responseData;
     },
     onSuccess: async (data: AuthResponse) => {
+      if (mode === 'signup' && referralCode) {
+        void applyReferralForSignup(referralCode, latestSignupEmailRef.current);
+      }
+
       // Check for temporary password status (202 response) - handled in mutationFn
       if (data.mustChangePassword) {
         toast({
@@ -388,7 +472,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const validationErrors = validateForm();
     if (validationErrors.length > 0) {
       toast({
@@ -398,7 +482,11 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
       });
       return;
     }
-    
+
+    if (mode === 'signup') {
+      latestSignupEmailRef.current = formData.email.trim();
+    }
+
     authMutation.mutate(formData);
   };
 

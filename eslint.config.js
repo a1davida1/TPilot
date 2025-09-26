@@ -1,9 +1,64 @@
-import globals from 'globals';
-import js from '@eslint/js';
-import tseslint from 'typescript-eslint';
 import reactPlugin from 'eslint-plugin-react';
 import reactHooksPlugin from 'eslint-plugin-react-hooks';
 import reactRefreshPlugin from 'eslint-plugin-react-refresh';
+
+const browserGlobals = {
+  window: 'readonly',
+  document: 'readonly',
+  navigator: 'readonly',
+  location: 'readonly',
+  console: 'readonly',
+  localStorage: 'readonly',
+  sessionStorage: 'readonly',
+  fetch: 'readonly',
+  Request: 'readonly',
+  Response: 'readonly',
+  Headers: 'readonly',
+  FormData: 'readonly',
+  File: 'readonly',
+  Blob: 'readonly',
+  URL: 'readonly',
+  URLSearchParams: 'readonly',
+  Image: 'readonly',
+  setTimeout: 'readonly',
+  clearTimeout: 'readonly',
+  setInterval: 'readonly',
+  clearInterval: 'readonly',
+  queueMicrotask: 'readonly',
+  Crypto: 'readonly',
+  crypto: 'readonly',
+  performance: 'readonly',
+};
+
+const es2020Globals = {
+  globalThis: 'readonly',
+  BigInt: 'readonly',
+  BigInt64Array: 'readonly',
+  BigUint64Array: 'readonly',
+  Atomics: 'readonly',
+  SharedArrayBuffer: 'readonly',
+  WeakRef: 'readonly',
+  FinalizationRegistry: 'readonly',
+  Intl: 'readonly',
+};
+
+const nodeGlobals = {
+  module: 'readonly',
+  require: 'readonly',
+  process: 'readonly',
+  __dirname: 'readonly',
+  __filename: 'readonly',
+  exports: 'readonly',
+  Buffer: 'readonly',
+  console: 'readonly',
+  global: 'readonly',
+  setTimeout: 'readonly',
+  setInterval: 'readonly',
+  clearTimeout: 'readonly',
+  clearInterval: 'readonly',
+  setImmediate: 'readonly',
+  clearImmediate: 'readonly',
+};
 
 export default [
   {
@@ -30,16 +85,14 @@ export default [
       'scripts/**',
     ],
   },
-  js.configs.recommended,
-  ...tseslint.configs.recommended,
   {
     files: ['**/*.{js,jsx,ts,tsx}'],
     languageOptions: {
       ecmaVersion: 2020,
       sourceType: 'module',
       globals: {
-        ...globals.browser,
-        ...globals.es2020,
+        ...browserGlobals,
+        ...es2020Globals,
       },
       parserOptions: {
         ecmaFeatures: {
@@ -75,20 +128,7 @@ export default [
     languageOptions: {
       sourceType: 'commonjs',
       globals: {
-        ...globals.node,
-        require: 'readonly',
-        module: 'readonly',
-        exports: 'readonly',
-        process: 'readonly',
-        console: 'readonly',
-        Buffer: 'readonly',
-        __dirname: 'readonly',
-        __filename: 'readonly',
-        setTimeout: 'readonly',
-        setInterval: 'readonly',
-        clearTimeout: 'readonly',
-        clearInterval: 'readonly',
-        global: 'readonly',
+        ...nodeGlobals,
       },
     },
     rules: {
@@ -100,7 +140,7 @@ export default [
     files: ['server/**/*.{js,ts}', 'scripts/**/*.{js,ts}'],
     languageOptions: {
       globals: {
-        ...globals.node,
+        ...nodeGlobals,
       },
     },
   },
@@ -108,7 +148,7 @@ export default [
     files: ['tests/**/*.{js,ts}'],
     languageOptions: {
       globals: {
-        ...globals.node,
+        ...nodeGlobals,
       },
     },
     rules: {

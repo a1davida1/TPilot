@@ -219,46 +219,31 @@ describe('Referral Routes Integration Tests', () => {
       const referralCode = 'THOTTO789012';
       const mockResult = {
         success: true,
-        referrerId: 42
+        referrerId: 42,
+        pending: false
       };
-      
+
       mockReferralManager.applyReferralCode = vi.fn().mockResolvedValue(mockResult);
-      
-      const token = createAuthToken();
-      
+
       const response = await request(app)
         .post('/api/referral/apply')
-        .set('Authorization', `Bearer ${token}`)
-        .send({ referralCode })
+        .send({ referralCode, applicant: { email: 'new-user@example.com' } })
         .expect(200);
 
       expect(response.body).toEqual({
         success: true,
         message: 'Referral code applied successfully',
-        referrerId: 42
+        referrerId: 42,
+        status: 'linked'
       });
-      
-      expect(mockReferralManager.applyReferralCode).toHaveBeenCalledWith(validUserId, referralCode);
-    });
 
-    it('should return 401 for unauthenticated requests', async () => {
-      const response = await request(app)
-        .post('/api/referral/apply')
-        .send({ referralCode: 'THOTTO123456' })
-        .expect(401);
-
-      expect(response.body).toEqual({
-        error: 'Authentication required'
-      });
+      expect(mockReferralManager.applyReferralCode).toHaveBeenCalledWith({ email: 'new-user@example.com' }, referralCode);
     });
 
     it('should return 400 for missing referral code', async () => {
-      const token = createAuthToken();
-      
       const response = await request(app)
         .post('/api/referral/apply')
-        .set('Authorization', `Bearer ${token}`)
-        .send({})
+        .send({ applicant: { email: 'missing-code@example.com' } })
         .expect(400);
 
       expect(response.body).toEqual({
@@ -267,17 +252,50 @@ describe('Referral Routes Integration Tests', () => {
     });
 
     it('should return 400 for invalid referral code type', async () => {
-      const token = createAuthToken();
-      
       const response = await request(app)
         .post('/api/referral/apply')
-        .set('Authorization', `Bearer ${token}`)
-        .send({ referralCode: 123 })
+        .send({ referralCode: 123, applicant: { email: 'bad-type@example.com' } })
         .expect(400);
 
       expect(response.body).toEqual({
         error: 'Referral code is required'
       });
+    });
+
+    it('should return 400 when applicant information is missing', async () => {
+      const response = await request(app)
+        .post('/api/referral/apply')
+        .send({ referralCode: 'THOTTO123456' })
+        .expect(400);
+
+      expect(response.body).toEqual({
+        error: 'Applicant identifier is required'
+      });
+    });
+
+    it('should normalize referral code casing before forwarding to the manager', async () => {
+      const referralCode = 'thotto654321';
+      const mockResult = {
+        success: true,
+        referrerId: 52,
+        pending: true
+      };
+
+      mockReferralManager.applyReferralCode = vi.fn().mockResolvedValue(mockResult);
+
+      const response = await request(app)
+        .post('/api/referral/apply')
+        .send({ referralCode, applicant: { email: 'case-test@example.com' } })
+        .expect(200);
+
+      expect(response.body).toEqual({
+        success: true,
+        message: 'Referral recorded for pending signup',
+        referrerId: 52,
+        status: 'recorded'
+      });
+
+      expect(mockReferralManager.applyReferralCode).toHaveBeenCalledWith({ email: 'case-test@example.com' }, 'THOTTO654321');
     });
 
     it('should handle failed referral application', async () => {
@@ -286,15 +304,12 @@ describe('Referral Routes Integration Tests', () => {
         success: false,
         error: 'Invalid referral code'
       };
-      
+
       mockReferralManager.applyReferralCode = vi.fn().mockResolvedValue(mockResult);
-      
-      const token = createAuthToken();
-      
+
       const response = await request(app)
         .post('/api/referral/apply')
-        .set('Authorization', `Bearer ${token}`)
-        .send({ referralCode })
+        .send({ referralCode, applicant: { email: 'new-user@example.com' } })
         .expect(400);
 
       expect(response.body).toEqual({
@@ -305,13 +320,10 @@ describe('Referral Routes Integration Tests', () => {
 
     it('should handle ReferralManager errors gracefully', async () => {
       mockReferralManager.applyReferralCode = vi.fn().mockRejectedValue(new Error('Database error'));
-      
-      const token = createAuthToken();
-      
+
       const response = await request(app)
         .post('/api/referral/apply')
-        .set('Authorization', `Bearer ${token}`)
-        .send({ referralCode: 'THOTTO123456' })
+        .send({ referralCode: 'THOTTO123456', applicant: { email: 'new-user@example.com' } })
         .expect(500);
 
       expect(response.body).toEqual({
