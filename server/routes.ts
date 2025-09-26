@@ -867,12 +867,12 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api', o
 
       const normalizedInstructions = normalizePhotoInstructions(result.photoInstructions ?? {});
       const photoInstructions = {
-        lighting: normalizedInstructions.lighting ?? 'Natural lighting',
-        cameraAngle: normalizedInstructions.cameraAngle ?? 'Eye level',
-        composition: normalizedInstructions.composition ?? 'Center composition',
-        styling: normalizedInstructions.styling ?? 'Casual styling',
-        mood: normalizedInstructions.mood ?? 'Confident and natural',
-        technicalSettings: normalizedInstructions.technicalSettings ?? 'Auto settings'
+        lighting: toNormalizedString(normalizedInstructions.lighting, 'Natural lighting'),
+        cameraAngle: toNormalizedString(normalizedInstructions.cameraAngle, 'Eye level'),
+        composition: toNormalizedString(normalizedInstructions.composition, 'Center composition'),
+        styling: toNormalizedString(normalizedInstructions.styling, 'Casual styling'),
+        mood: toNormalizedString(normalizedInstructions.mood, 'Confident and natural'),
+        technicalSettings: toNormalizedString(normalizedInstructions.technicalSettings, 'Auto settings')
       };
       await storage.createContentGeneration({
         userId: req.user.id,

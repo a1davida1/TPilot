@@ -282,7 +282,7 @@ export async function variantsRewrite(
       : typeof res === "string"
         ? res
         : JSON.stringify(res);
-    const json = stripToJSON(rawText) as unknown;
+    const json = stripToJSON(rawText ?? '') as unknown;
 
     duplicatesThisAttempt.length = 0;
 
@@ -825,7 +825,7 @@ async function requestGeminiRanking(
   }
   let json = stripToJSON(
     (res as GeminiResponse)?.response?.text
-      ? (res as GeminiResponse).response.text()
+      ? (res as GeminiResponse).response?.text() ?? ''
       : typeof res === 'string'
         ? res
         : JSON.stringify(res)
