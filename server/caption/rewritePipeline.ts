@@ -1,8 +1,8 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { z } from "zod";
-import { visionModel } from "../lib/gemini";
-import { variantsRewrite, rankAndSelect } from "./geminiPipeline";
+import { visionModel, textModel } from "../lib/gemini";
+import { rankAndSelect } from "./geminiPipeline";
 import { CaptionArray, RankResult, platformChecks, CaptionItem } from "./schema";
 import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
 import { BANNED_WORDS_HINT, variantContainsBannedWord } from "./bannedWords";
@@ -12,7 +12,7 @@ import { serializePromptField } from "./promptUtils";
 import { formatVoiceContext } from "./voiceTraits";
 import { ensureFactCoverage } from "./ensureFactCoverage";
 import { inferFallbackFromFacts, ensureFallbackCompliance } from "./inferFallbackFromFacts";
-import { rankAndSelect } from "./geminiPipeline";
+import { detectRankingViolations, formatViolations } from "./rankingGuards";
 
 // CaptionResult interface for type safety
 interface CaptionResult {
@@ -362,145 +362,6 @@ type RewriteToneArgs = {
   mood?: string
 };
 
-const VARIANT_TARGET = 5;
-const VARIANT_RETRY_LIMIT = 3;
-
-export async function variantsRewrite(params: RewriteVariantsParams) {
-  const [sys, guard, prompt] = await Promise.all([
-    load("system.txt"),
-    load("guard.txt"),
-    load("rewrite.txt")
-  ]);
-
-  let attempts = 0;
-  let currentHint = params.hint;
-  const mandatoryTokens = params.doNotDrop && params.doNotDrop.length > 0
-    ? `MANDATORY TOKENS: ${params.doNotDrop.join(" | ")}`
-    : "";
-  const variants: { caption: string; hashtags: string[]; cta?: string; alt?: string }[] = [];
-
-  while (attempts < VARIANT_RETRY_LIMIT && variants.length < VARIANT_TARGET) {
-    attempts += 1;
-
-    const voiceContext = formatVoiceContext(params.voice);
-    const user = [
-      `PLATFORM: ${params.platform}`,
-      `VOICE: ${params.voice}`,
-      voiceContext,
-      params.style ? `STYLE: ${params.style}` : "",
-      params.mood ? `MOOD: ${params.mood}` : "",
-      `EXISTING_CAPTION: ${serializePromptField(params.existingCaption)}`,
-      params.facts ? `IMAGE_FACTS: ${JSON.stringify(params.facts)}` : "",
-      `NSFW: ${params.nsfw || false}`,
-      mandatoryTokens,
-      currentHint ? `HINT:${serializePromptField(currentHint, { block: true })}` : "",
-    ].filter((line): line is string => Boolean(line)).join("\n");
-
-    const voiceGuide = buildVoiceGuideBlock(params.voice);
-    const promptSections = [sys, guard, prompt, user];
-    if (voiceGuide) promptSections.push(voiceGuide);
-
-    let res;
-    try {
-      res = await textModel.generateContent([{ text: promptSections.join("\n") }]);
-    } catch (error) {
-      console.error('Gemini textModel.generateContent failed:', error);
-      throw error;
-    }
-
-    const json = stripToJSON(res.response.text()) as unknown;
-    let hasBannedWords = false;
-
-    if (Array.isArray(json)) {
-      json.forEach((item) => {
-        const variant = item as Record<string, unknown>;
-
-        // Normalize variant fields first
-        variant.safety_level = normalizeSafetyLevel(
-          typeof variant.safety_level === 'string' ? variant.safety_level : 'normal'
-        );
-        if (typeof variant.mood !== 'string' || variant.mood.length < 2) variant.mood = "engaging";
-        if (typeof variant.style !== 'string' || variant.style.length < 2) variant.style = "authentic";
-
-        // Use helper for contextual fallbacks
-        const fallback = ensureFallbackCompliance(
-          {
-            caption: typeof variant.caption === 'string' ? variant.caption : undefined,
-            hashtags: Array.isArray(variant.hashtags) ? variant.hashtags.filter((tag): tag is string => typeof tag === 'string') : undefined,
-            cta: typeof variant.cta === 'string' ? variant.cta : undefined,
-            alt: typeof variant.alt === 'string' ? variant.alt : undefined,
-          },
-          {
-            platform: params.platform,
-            facts: params.facts,
-            existingCaption: params.existingCaption,
-          }
-        );
-
-        variant.hashtags = fallback.hashtags;
-        variant.cta = fallback.cta;
-        variant.alt = fallback.alt;
-
-        if (typeof variant.caption !== 'string' || variant.caption.length < 1) {
-          variant.caption = params.existingCaption || "Here's something I'm proud of today.";
-        }
-
-        // Check for banned words after normalization
-        if (variantContainsBannedWord(variant)) {
-          hasBannedWords = true;
-          return; // Skip this variant
-        }
-
-        variants.push(variant);
-      });
-    }
-
-    // If we don't have enough variants, build retry hint
-    if (variants.length < VARIANT_TARGET) {
-      const needed = VARIANT_TARGET - variants.length;
-      let retryHint = `Generate ${needed} more unique, distinct variants.`;
-
-      // Add banned words hint if detected
-      if (hasBannedWords) {
-        retryHint = retryHint ? `${retryHint} ${BANNED_WORDS_HINT}` : BANNED_WORDS_HINT;
-      }
-
-      currentHint = retryHint;
-    }
-  }
-
-  // Ensure exactly 5 variants by padding with variations if needed
-  while (variants.length < VARIANT_TARGET) {
-    const fallbackContent = inferFallbackFromFacts({
-      platform: params.platform,
-      facts: params.facts,
-      existingCaption: params.existingCaption,
-    });
-
-    const template = variants[0] || {
-      caption: params.existingCaption || "Here's something I'm proud of today.",
-      alt: fallbackContent.alt,
-      hashtags: fallbackContent.hashtags,
-      cta: fallbackContent.cta,
-      mood: "engaging",
-      style: "authentic",
-      safety_level: normalizeSafetyLevel('normal'),
-      nsfw: false
-    };
-    variants.push({
-      ...template,
-      caption: `${template.caption} Enhanced version ${variants.length + 1}`
-    });
-  }
-
-  // Trim to exactly 5 if more than 5
-  if (variants.length > VARIANT_TARGET) {
-    variants.splice(VARIANT_TARGET);
-  }
-
-  return CaptionArray.parse(variants);
-}
-
 async function requestRewriteRanking(
   variantsInput: unknown[],
   serializedVariants: string,
@@ -531,7 +392,7 @@ async function requestRewriteRanking(
   return json;
 }
 
-export async function rankAndSelect(
+async function rerankVariants(
   variants: unknown[],
   params?: { platform?: string }
 ): Promise<z.infer<typeof RankResult>> {

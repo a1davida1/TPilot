@@ -1912,7 +1912,7 @@ function generateTitles(
       emoji,
       punctuation,
       hedge,
-      photoType: readablePhotoType
+      photoType: params.photoType
     };
 
     const candidate = renderTitleFromPattern(pattern, titleContext);
@@ -1935,7 +1935,7 @@ function generateTitles(
         emoji: selectEmoji(emojis, DEFAULT_EMOJI_PROBABILITY),
         punctuation: choosePunctuation(fallbackPattern.type),
         hedge: fallbackPattern.template.includes('{hedge}') ? randomFromArray(hedgeOptions) : '',
-        photoType: readablePhotoType
+        photoType: params.photoType
       };
 
       generatedTitles.add(renderTitleFromPattern(fallbackPattern, fallbackContext));

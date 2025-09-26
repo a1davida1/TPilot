@@ -13,7 +13,7 @@ import { startQueue } from './bootstrap/queue.js';
 import { prepareResponseLogPayload, truncateLogLine } from './lib/request-logger.js';
 import passport from 'passport'; // Assuming passport is imported elsewhere or needs to be imported here
 import { createSessionMiddleware } from './bootstrap/session.js';
-import { initializeSentry } from './bootstrap/sentry.js'; // Assuming Sentry initialization function
+import { initializeSentry } from './bootstrap/sentry';
 
 export interface CreateAppOptions {
   startQueue?: boolean;
@@ -267,11 +267,11 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
       logger.info('Queue startup disabled for current execution context.');
     }
 
-    const sentry = await initializeSentry();
+    const sentry = initializeSentry();
 
-    setupAuth(app, API_PREFIX);
-    setupSocialAuth(app, API_PREFIX);  // Register social auth routes including logout
-    mountStripeWebhook(app);
+    setupAuth(app);
+    setupSocialAuth(app);  // Register social auth routes including logout
+    mountStripeWebhook(app, API_PREFIX);
     mountBillingRoutes(app);
 
     const server = await registerRoutes(app, API_PREFIX, { sentry });

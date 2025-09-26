@@ -1,7 +1,7 @@
 
 import session from 'express-session';
 import connectPgSimple from 'connect-pg-simple';
-import connectRedis from 'connect-redis';
+import { RedisStore } from 'connect-redis';
 import Redis from 'ioredis';
 import createMemoryStore from 'memorystore';
 import type { Store } from 'express-session';
@@ -64,7 +64,6 @@ export function createSessionMiddleware(): ReturnType<typeof session> {
   };
 
   if (redisUrl) {
-    const RedisStore = connectRedis(session) as unknown as RedisStoreConstructor;
     const redisClient = new Redis(redisUrl, {
       lazyConnect: false,
       maxRetriesPerRequest: null,
