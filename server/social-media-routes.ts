@@ -1,6 +1,12 @@
 import type { Express, Request } from "express";
 import { socialMediaManager, type Platform, type PostContent } from "./social-media/social-media-manager.js";
-// Removed account-metadata imports - module not found
+import { 
+  sanitizeAccountMetadata, 
+  extractStringMetadata, 
+  getCredentialSet, 
+  credentialSetToStringRecord,
+  type AccountCredentialRole 
+} from "./social-media/account-metadata.js";
 import { storage } from "./storage.js";
 import { authenticateToken } from "./middleware/auth.js";
 import type { SocialMediaAccount, User } from "@shared/schema";
@@ -339,11 +345,23 @@ export function registerSocialMediaRoutes(app: Express) {
         return res.status(404).json({ message: "Account not found" });
       }
 
-      // Initialize connection
-      const connectionCredentials: Record<string, string> = {
+      // Initialize connection using sync credentials when available
+      const sanitizedAccountMetadata = sanitizeAccountMetadata(account.metadata);
+      const metadataStrings = extractStringMetadata(sanitizedAccountMetadata);
+      const syncSet = getCredentialSet(sanitizedAccountMetadata, 'sync');
+      let connectionRole: AccountCredentialRole = 'sync';
+      let credentialSetForRole = syncSet;
+
+      if (!syncSet || Object.keys(credentialSetToStringRecord(syncSet)).length === 0) {
+        connectionRole = 'posting';
+        credentialSetForRole = getCredentialSet(sanitizedAccountMetadata, 'posting');
+      }
+
+      let connectionCredentials: Record<string, string> = {
         ...(account.accessToken && { accessToken: account.accessToken }),
         ...(account.refreshToken && { refreshToken: account.refreshToken }),
-        ...(typeof account.metadata === 'object' && account.metadata ? account.metadata as Record<string, string> : {}),
+        ...metadataStrings,
+        ...credentialSetToStringRecord(credentialSetForRole),
       };
       
       if (connectionCredentials.accessToken) {
