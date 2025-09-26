@@ -1,0 +1,234 @@
+server/bootstrap/session.ts
++4-2
+
+import session from 'express-session';
+import connectPgSimple from 'connect-pg-simple';
+import connectRedis from 'connect-redis';
+import connectRedisPkg from 'connect-redis';
+import Redis from 'ioredis';
+import createMemoryStore from 'memorystore';
+import type { Store } from 'express-session';
+import type { Redis as RedisClient } from 'ioredis';
+import { logger } from './logger.js';
+
+const connectRedis = connectRedisPkg(session);
+
+const ONE_DAY_MS = 86_400_000;
+
+const parseBoolean = (value: string | undefined): boolean => {
+  if (!value) {
+    return false;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  return ['true', '1', 'yes', 'y', 'on'].includes(normalized);
+};
+
+const parseInteger = (value: string | undefined, fallback: number): number => {
+  if (!value) {
+    return fallback;
+  }
+
+  const parsed = Number.parseInt(value, 10);
+  return Number.isNaN(parsed) ? fallback : parsed;
+};
+
+interface RedisStoreConstructor {
+  new (options: { client: RedisClient; prefix?: string; disableTouch?: boolean; ttl?: number }): Store;
+}
+
+export function createSessionMiddleware(): ReturnType<typeof session> {
+@@ -42,51 +44,51 @@ export function createSessionMiddleware(): ReturnType<typeof session> {
+  const redisUrl = process.env.REDIS_URL;
+  const usePgQueue = parseBoolean(process.env.USE_PG_QUEUE);
+  const cookieDomain = process.env.SESSION_COOKIE_DOMAIN?.trim();
+
+  const baseCookie: session.CookieOptions = {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: isProduction,
+    maxAge: parseInteger(process.env.SESSION_MAX_AGE_MS, ONE_DAY_MS * 7),
+  };
+
+  if (cookieDomain) {
+    baseCookie.domain = cookieDomain;
+  }
+
+  const sessionOptions: session.SessionOptions = {
+    name: process.env.SESSION_COOKIE_NAME ?? 'tpilot.sid',
+    secret,
+    resave: false,
+    saveUninitialized: false,
+    rolling: true,
+    cookie: baseCookie,
+  };
+
+  if (redisUrl) {
+    const RedisStore = connectRedis(session) as unknown as RedisStoreConstructor;
+    const RedisStore = connectRedis as unknown as RedisStoreConstructor;
+    const redisClient = new Redis(redisUrl, {
+      lazyConnect: false,
+      maxRetriesPerRequest: null,
+      enableAutoPipelining: true,
+    });
+
+    redisClient.on('error', (error) => {
+      logger.error('Redis session store error', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    });
+
+    sessionOptions.store = new RedisStore({
+      client: redisClient,
+      prefix: process.env.REDIS_SESSION_PREFIX ?? 'tpilot:sess:',
+      disableTouch: false,
+      ttl: parseInteger(process.env.SESSION_TTL_SECONDS, (ONE_DAY_MS / 1000) * 7),
+    });
+
+    logger.info('Session store configured with Redis backend');
+  } else if (usePgQueue || isProduction) {
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      logger.error('DATABASE_URL is required when REDIS_URL is not set');
+      throw new Error('DATABASE_URL must be set when using PostgreSQL-backed sessions');
+server/routes.ts
++4-2
+import type { Express } from "express";
+import express from "express";
+import { createServer, type Server } from "http";
+import session from 'express-session';
+import path from 'path';
+import connectPgSimple from 'connect-pg-simple';
+import * as connectRedis from 'connect-redis';
+import connectRedisPkg from 'connect-redis';
+import { Pool } from 'pg';
+import Redis from 'ioredis';
+import Stripe from 'stripe';
+import passport from 'passport';
+
+// Security and middleware
+import { validateEnvironment, securityMiddleware, ipLoggingMiddleware, errorHandler, logger, generationLimiter } from "./middleware/security.js";
+import { AppError, CircuitBreaker } from "./lib/errors.js";
+import { authenticateToken } from "./middleware/auth.js";
+
+// Route modules
+// import { authRoutes } from "./routes/auth.js"; // Removed - using server/auth.ts instead
+import { uploadRoutes, applyImageShieldProtection, protectionPresets } from "./routes/upload.js";
+import { mediaRoutes } from "./routes/media.js";
+import { analyticsRouter } from "./routes/analytics.js";
+import { referralRouter } from "./routes/referrals.js";
+import { registerExpenseRoutes } from "./expense-routes.js";
+import { adminCommunitiesRouter } from "./routes/admin-communities.js";
+
+// Core imports
+import { storage } from "./storage.js";
+import { setupAuth } from "./auth.js";
+import { setupAdminRoutes } from "./admin-routes.js";
+import { configureSocialAuth, socialAuthRoutes } from "./social-auth-config.js";
+import { visitorAnalytics } from "./visitor-analytics.js";
+@@ -51,50 +51,52 @@ interface AuthUser {
+type SessionUser = typeof users.$inferSelect & { subscriptionTier?: string | null };
+
+interface AuthenticatedRequest extends express.Request {
+  user?: SessionUser;
+}
+
+// User tier type
+type UserTier = 'free' | 'starter' | 'pro' | 'premium';
+
+// Additional interfaces for type safety
+interface PhotoInstructionsData {
+  cameraAngle?: string;
+  mood?: string;
+  technicalSettings?: string;
+  lighting?: string;
+  angles?: string[];
+  composition?: string;
+  styling?: string;
+  technical?: string[];
+}
+
+interface SessionWithReddit extends express.Session {
+  redditOAuthState?: string;
+}
+
+const connectRedis = connectRedisPkg(session);
+
+// ==========================================
+// PRO RESOURCES ROUTES
+// ==========================================
+
+function registerProResourcesRoutes(app: Express) {
+  const resolveTier = (tierValue: string | null | undefined): UserTier | undefined => {
+    if (tierValue === 'pro' || tierValue === 'premium' || tierValue === 'starter') {
+      return tierValue;
+    }
+    if (tierValue === 'free') {
+      return 'free';
+    }
+    return undefined;
+  };
+
+  // Helper to get user tier with storage fallback when session lacks tier information
+  const getUserTier = async (user: SessionUser | undefined): Promise<UserTier> => {
+    if (!user?.id) {
+      return 'free';
+    }
+
+    if (user.subscriptionTier !== undefined && user.subscriptionTier !== null) {
+      return resolveTier(user.subscriptionTier) ?? 'free';
+    }
+
+@@ -352,51 +354,51 @@ const deriveSharePercentage = (perk: ProPerk): number => {
+
+
+export async function registerRoutes(app: Express, _apiPrefix: string = '/api', options?: RegisterRoutesOptions): Promise<Server> {
+  // ==========================================
+  // VALIDATE ENVIRONMENT & APPLY SECURITY
+  // ==========================================
+
+  // Set trust proxy securely for rate limiters
+  app.set('trust proxy', (ip: string) => {
+    // Trust localhost and private network ranges
+    return ['127.0.0.1', '::1'].includes(ip) || ip.startsWith('10.') || ip.startsWith('192.168.');
+  });
+
+  // Validate required environment variables first
+  validateEnvironment();
+
+  // Log IPs first so downstream middleware can use req.userIP
+  app.use(ipLoggingMiddleware);
+  app.use(securityMiddleware);
+
+  // Session configuration (MUST BE BEFORE AUTH ROUTES)
+  let store: session.Store | undefined;
+
+  if (IS_PRODUCTION) {
+    if (REDIS_URL) {
+      const { RedisStore } = connectRedis as { RedisStore: new (options: { client: unknown; prefix: string }) => session.Store };
+      const RedisStore = connectRedis as unknown as (new (options: { client: unknown; prefix: string }) => session.Store);
+      const redisClient = new Redis(REDIS_URL);
+      store = new RedisStore({ client: redisClient, prefix: 'sess:' });
+    } else if (DATABASE_URL) {
+      const PgStore = connectPgSimple(session);
+      store = new PgStore({
+        pool: new Pool({ connectionString: DATABASE_URL })
+      });
+    } else {
+      throw new Error('No REDIS_URL or DATABASE_URL set in production; persistent session store required.');
+    }
+  }
+
+  app.use(session({
+    store,
+    secret: SESSION_SECRET,
+    resave: false, // Prevent session fixation
+    saveUninitialized: false, // Only create sessions when needed
+    cookie: {
+      secure: IS_PRODUCTION, // HTTPS-only in production
+      httpOnly: true,
+      sameSite: 'lax', // Allows OAuth redirects
+      maxAge: 1000 * 60 * 60 * 24 * 7 // 1 week
+    },
+    name: 'thottopilot.sid', // Custom session name
+    rolling: true // Refresh session on activity
