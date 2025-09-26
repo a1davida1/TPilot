@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import { z } from 'zod';
 import { ensureFallbackCompliance, type FallbackInferenceInput } from './inferFallbackFromFacts';
 import { CaptionItem } from './schema';
@@ -58,7 +59,7 @@ export async function openAICaptionFallback({
       alt: compliance.alt,
     });
   }
-  let messages: { role: "system" | "user" | "assistant"; content: string | { type: string; image_url?: { url: string }; text?: string }[] }[] = [];
+  let messages: ChatCompletionMessageParam[] = [];
   const sanitizedExistingCaption = existingCaption ? serializePromptField(existingCaption) : undefined;
   const voiceContext = formatVoiceContext(voice);
   const systemVoiceSuffix = voiceContext ? `\n${voiceContext}` : '';

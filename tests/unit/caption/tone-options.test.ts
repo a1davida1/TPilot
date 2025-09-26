@@ -38,12 +38,12 @@ describe('ToneOptions Helper', () => {
 
       const result = extractToneOptions(params);
 
-      expect(result).toEqual({});
+      expect(result).toEqual({ style: undefined, mood: undefined, extras: {} });
     });
 
     it('should handle empty parameters', () => {
       const result = extractToneOptions({});
-      expect(result).toEqual({});
+      expect(result).toEqual({ style: undefined, mood: undefined, extras: {} });
     });
 
     it('should ignore non-string tone values', () => {
@@ -139,7 +139,7 @@ describe('Tone Parameter Integration', () => {
     const style = 'minimalist';
     const mood = 'confident';
     const facts = { objects: ['test'], colors: ['blue'] };
-    
+
     // Simulate the prompt building logic that would happen in the pipelines
     const promptParts = [
       `PLATFORM: ${platform}`,
@@ -149,9 +149,9 @@ describe('Tone Parameter Integration', () => {
       `IMAGE_FACTS: ${JSON.stringify(facts)}`,
       'NSFW: false'
     ].filter(Boolean);
-    
+
     const prompt = promptParts.join('\n');
-    
+
     // Verify all tone parameters are included
     expect(prompt).toContain('PLATFORM: instagram');
     expect(prompt).toContain('VOICE: professional');
@@ -165,16 +165,16 @@ describe('Tone Parameter Integration', () => {
     const platform = 'x';
     const voice = 'casual';
     const facts = { objects: ['photo'] };
-    
+
     const promptParts = [
       `PLATFORM: ${platform}`,
       `VOICE: ${voice}`,
       `IMAGE_FACTS: ${JSON.stringify(facts)}`,
       'NSFW: false'
     ];
-    
+
     const prompt = promptParts.join('\n');
-    
+
     expect(prompt).toContain('PLATFORM: x');
     expect(prompt).toContain('VOICE: casual');
     expect(prompt).not.toContain('STYLE:');
@@ -189,9 +189,9 @@ describe('Tone Parameter Integration', () => {
       mood: 'playful',
       facts: { objects: ['meme'] }
     };
-    
+
     const hint = 'Fix: Platform validation failed. Be more specific.';
-    
+
     // Simulate what happens during retry with hint
     const toneOptions = extractToneOptions(originalParams);
     const retryParams = {
@@ -199,7 +199,7 @@ describe('Tone Parameter Integration', () => {
       ...toneOptions,
       hint
     };
-    
+
     // Verify tone parameters are preserved
     expect(retryParams.style).toBe('sarcastic');
     expect(retryParams.mood).toBe('playful');

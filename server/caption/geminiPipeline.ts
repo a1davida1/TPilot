@@ -406,15 +406,107 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
   }
 }
 
+type GeminiToneArgs = {
+  style?: string;
+  mood?: string;
+} & Record<string, unknown>;
+
+type GeminiPipelineArgs = {
+  imageUrl: string;
+  platform: "instagram" | "x" | "reddit" | "tiktok";
+  voice?: string;
+  nsfw?: boolean;
+} & GeminiToneArgs;
+
+/**
+ * Primary image captioning pipeline backed by Gemini vision + text models.
+ *
+ * @remarks
+ * Persona controls such as `style`, `mood`, and future tone keys must persist through
+ * retries. When platform validation fails we re-run Gemini with the exact same tone
+ * payload so the caller's requested persona stays intact.
+ */
+export async function pipeline(args: GeminiPipelineArgs): Promise<CaptionResult> {
+  const imageUrl = args.imageUrl;
+  const platform = args.platform;
+  const voice = typeof args.voice === "string" && args.voice.length > 0 ? args.voice : "flirty_playful";
+  const nsfw = typeof args.nsfw === "boolean" ? args.nsfw : false;
+  const tone: ToneOptions = extractToneOptions(args);
+  try {
+    const facts = await extractFacts(imageUrl);
+    let variants = await generateVariants({
+      platform,
+      voice,
+      facts,
+      nsfw,
+      style: tone.style,
+      mood: tone.mood,
+      toneExtras: tone.extras
+    });
+    variants = dedupeVariantsForRanking(variants, 5, { platform, facts });
+    let ranked = await rankAndSelect(variants, { platform, facts });
+    let out = ranked.final;
+
+    const enforceCoverage = async () => {
+      let attempts = 0;
+      let coverage = ensureFactCoverage({ facts, caption: out.caption, alt: out.alt });
+      while (!coverage.ok && coverage.hint && attempts < 2) {
+        attempts += 1;
+        variants = await generateVariants({
+          platform,
+          voice,
+          style: tone.style,
+          mood: tone.mood,
+          facts,
+          hint: coverage.hint,
+          nsfw,
+          toneExtras: tone.extras
+        });
+        variants = dedupeVariantsForRanking(variants, 5, { platform, facts });
+        ranked = await rankAndSelect(variants, { platform, facts });
+        out = ranked.final;
+        coverage = ensureFactCoverage({ facts, caption: out.caption, alt: out.alt });
+      }
+    };
+
+    await enforceCoverage();
+
+    const err = platformChecks(platform, out);
+    if (err) {
+      variants = await generateVariants({
+        platform,
+        voice,
+        style: tone.style,
+        mood: tone.mood,
+        facts,
+        hint: `Fix: ${err}. Use IMAGE_FACTS nouns/colors/setting explicitly.`,
+        nsfw,
+        toneExtras: tone.extras
+      });
+      ranked = await rankAndSelect(variants);
+      out = ranked.final;
+    }
+
+    return { provider: 'gemini', facts, variants, ranked, final: out };
+  } catch (error) {
+    const { openAICaptionFallback } = await import('./openaiFallback');
+    const final = await openAICaptionFallback({ platform, voice, imageUrl });
+    return { provider: 'openai', final } as CaptionResult;
+  }
+}
+
 type GeminiVariantParams = {
   platform: "instagram" | "x" | "reddit" | "tiktok";
   voice: string;
   facts: Record<string, unknown>;
   hint?: string;
   nsfw?: boolean;
-} & ToneOptions;
+  style?: string;
+  mood?: string;
+  toneExtras?: Record<string, string>;
+};
 
-export async function generateVariants(params: GeminiVariantParams): Promise<z.infer<typeof CaptionArray>> {
+async function generateVariants(params: GeminiVariantParams): Promise<z.infer<typeof CaptionArray>> {
   const [sys, guard, prompt] = await Promise.all([
     load("system.txt"),
     load("guard.txt"),
@@ -471,6 +563,11 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
 
     if (params.style) lines.push(`STYLE: ${params.style}`);
     if (params.mood) lines.push(`MOOD: ${params.mood}`);
+    if (params.toneExtras) {
+      for (const [key, value] of Object.entries(params.toneExtras)) {
+        lines.push(`${key.toUpperCase()}: ${value}`);
+      }
+    }
 
     lines.push(`IMAGE_FACTS: ${JSON.stringify(params.facts)}`);
     lines.push(`NSFW: ${params.nsfw ?? false}`);
@@ -816,65 +913,4 @@ export async function rankAndSelect(
     final: sanitizedFinal,
     reason: summary
   });
-}
-
-type GeminiPipelineArgs = {
-  imageUrl: string;
-  platform: "instagram" | "x" | "reddit" | "tiktok";
-  voice?: string;
-  nsfw?: boolean;
-} & ToneOptions;
-
-/**
- * Primary image captioning pipeline backed by Gemini vision + text models.
- *
- * @remarks
- * Persona controls such as `style`, `mood`, and future tone keys must persist through
- * retries. When platform validation fails we re-run Gemini with the exact same tone
- * payload so the caller's requested persona stays intact.
- */
-export async function pipeline({ imageUrl, platform, voice = "flirty_playful", nsfw = false, ...toneInput }: GeminiPipelineArgs): Promise<CaptionResult> {
-  try {
-    const tone = extractToneOptions(toneInput);
-    const facts = await extractFacts(imageUrl);
-    let variants = await generateVariants({ platform, voice, facts, nsfw, ...tone });
-    variants = dedupeVariantsForRanking(variants, 5, { platform, facts });
-    let ranked = await rankAndSelect(variants, { platform, facts });
-    let out = ranked.final;
-
-    const enforceCoverage = async () => {
-      let attempts = 0;
-      let coverage = ensureFactCoverage({ facts, caption: out.caption, alt: out.alt });
-      while (!coverage.ok && coverage.hint && attempts < 2) {
-        attempts += 1;
-        variants = await generateVariants({ platform, voice, facts, hint: coverage.hint, nsfw, ...tone });
-        variants = dedupeVariantsForRanking(variants, 5, { platform, facts });
-        ranked = await rankAndSelect(variants, { platform, facts });
-        out = ranked.final;
-        coverage = ensureFactCoverage({ facts, caption: out.caption, alt: out.alt });
-      }
-    };
-
-    await enforceCoverage();
-
-    const err = platformChecks(platform, out);
-    if (err) {
-      variants = await generateVariants({
-        platform,
-        voice,
-        facts,
-        hint: `Fix: ${err}. Use IMAGE_FACTS nouns/colors/setting explicitly.`,
-        nsfw,
-        ...tone
-      });
-      ranked = await rankAndSelect(variants);
-      out = ranked.final;
-    }
-
-    return { provider: 'gemini', facts, variants, ranked, final: out };
-  } catch (error) {
-    const { openAICaptionFallback } = await import('./openaiFallback');
-    const final = await openAICaptionFallback({ platform, voice, imageUrl });
-    return { provider: 'openai', final } as CaptionResult;
-  }
 }

@@ -4,7 +4,7 @@ import { createServer, type Server } from "http";
 import session from 'express-session';
 import path from 'path';
 import connectPgSimple from 'connect-pg-simple';
-import * as connectRedis from 'connect-redis';
+import connectRedisPkg from 'connect-redis';
 import { Pool } from 'pg';
 import Redis from 'ioredis';
 import Stripe from 'stripe';
@@ -53,6 +53,8 @@ type SessionUser = typeof users.$inferSelect & { subscriptionTier?: string | nul
 interface AuthenticatedRequest extends express.Request {
   user?: SessionUser;
 }
+
+const connectRedis = connectRedisPkg(session);
 
 // User tier type
 type UserTier = 'free' | 'starter' | 'pro' | 'premium';
@@ -397,7 +399,7 @@ export async function registerRoutes(app: Express, _apiPrefix: string = '/api', 
 
   if (IS_PRODUCTION) {
     if (REDIS_URL) {
-      const { RedisStore } = connectRedis as { RedisStore: new (options: { client: unknown; prefix: string }) => session.Store };
+      const RedisStore = connectRedis as unknown as (new (options: { client: unknown; prefix: string }) => session.Store);
       const redisClient = new Redis(REDIS_URL);
       store = new RedisStore({ client: redisClient, prefix: 'sess:' });
     } else if (DATABASE_URL) {

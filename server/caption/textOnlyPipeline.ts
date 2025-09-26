@@ -97,7 +97,7 @@ function sanitizeHintForRetry(hint: string | undefined): string | undefined {
 }
 
 function normalizeVariantFields(
-  variant: Record<string, unknown>, 
+  variant: Record<string, unknown>,
   platform: "instagram" | "x" | "reddit" | "tiktok",
   theme?: string,
   context?: string,
@@ -212,6 +212,7 @@ type TextOnlyVariantParams = {
   nsfw?:boolean;
   style?: string;
   mood?: string;
+  toneExtras?: Record<string, string>;
 };
 
 export async function generateVariantsTextOnly(params: TextOnlyVariantParams): Promise<z.infer<typeof CaptionArray>> {
@@ -273,8 +274,11 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
 
     if (params.style) lines.push(`STYLE: ${params.style}`);
     if (params.mood) lines.push(`MOOD: ${params.mood}`);
-
-    lines.push(`NSFW: ${params.nsfw ?? false}`);
+    if (params.toneExtras) {
+      for (const [key, value] of Object.entries(params.toneExtras)) {
+        lines.push(`${key.toUpperCase()}: ${value}`);
+      }
+    }
 
     const hintParts: string[] = [];
     if (varietyHint) {
@@ -543,13 +547,18 @@ export async function rankAndSelect(
   });
 }
 
+type TextOnlyToneArgs = {
+  style?: string;
+  mood?: string;
+} & Record<string, unknown>;
+
 type TextOnlyPipelineArgs = {
   platform:"instagram"|"x"|"reddit"|"tiktok";
   voice?:string;
   theme:string;
   context?:string;
   nsfw?:boolean;
-} & ToneOptions;
+} & TextOnlyToneArgs;
 
 /**
  * Text-only caption pipeline for brainstorming without an image upload.
@@ -558,9 +567,23 @@ type TextOnlyPipelineArgs = {
  * Persona settings (`style`, `mood`, etc.) are forwarded to every Gemini retry so the
  * voice remains consistent even when a platform validation retry is required.
  */
-export async function pipelineTextOnly({ platform, voice="flirty_playful", theme, context, nsfw=false, ...toneRest }:TextOnlyPipelineArgs){
-  const tone = extractToneOptions(toneRest);
-  let variants = await generateVariantsTextOnly({ platform, voice, theme, context, nsfw, ...tone });
+export async function pipelineTextOnly(args:TextOnlyPipelineArgs){
+  const platform = args.platform;
+  const voice = typeof args.voice === 'string' && args.voice.length > 0 ? args.voice : 'flirty_playful';
+  const theme = args.theme;
+  const context = args.context;
+  const nsfw = typeof args.nsfw === 'boolean' ? args.nsfw : false;
+  const tone: ToneOptions = extractToneOptions(args);
+  let variants = await generateVariantsTextOnly({
+    platform,
+    voice,
+    theme,
+    context,
+    nsfw,
+    style: tone.style,
+    mood: tone.mood,
+    toneExtras: tone.extras
+  });
   variants = prepareVariantsForRanking(variants, { platform, theme, context }, { targetLength: VARIANT_TARGET });
   let ranked = await rankAndSelect(variants, { platform, theme, context });
   let out = ranked.final;

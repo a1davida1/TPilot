@@ -1,12 +1,14 @@
 
 import session from 'express-session';
 import connectPgSimple from 'connect-pg-simple';
-import connectRedis from 'connect-redis';
+import connectRedisPkg from 'connect-redis';
 import Redis from 'ioredis';
 import createMemoryStore from 'memorystore';
 import type { Store } from 'express-session';
 import type { Redis as RedisClient } from 'ioredis';
 import { logger } from './logger.js';
+
+const connectRedis = connectRedisPkg(session);
 
 const ONE_DAY_MS = 86_400_000;
 
@@ -64,7 +66,7 @@ export function createSessionMiddleware(): ReturnType<typeof session> {
   };
 
   if (redisUrl) {
-    const RedisStore = connectRedis(session) as unknown as RedisStoreConstructor;
+    const RedisStore = connectRedis as unknown as RedisStoreConstructor;
     const redisClient = new Redis(redisUrl, {
       lazyConnect: false,
       maxRetriesPerRequest: null,

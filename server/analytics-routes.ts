@@ -16,9 +16,9 @@ import {
   users
 } from '@shared/schema';
 import { eq, desc, gte, lte, and, count, sum, avg, sql } from 'drizzle-orm';
-import { Reader } from '@maxmind/geoip2-node';
+import { Reader, ReaderModel } from '@maxmind/geoip2-node';
 
-let geoReader: Reader | null = null;
+let geoReader: ReaderModel | null = null;
 export async function initGeoReader() {
   if (process.env.MAXMIND_DB_PATH) {
     geoReader = await Reader.open(process.env.MAXMIND_DB_PATH);

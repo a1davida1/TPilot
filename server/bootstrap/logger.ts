@@ -2,6 +2,7 @@ import winston from 'winston';
 import DailyRotateFile from 'winston-daily-rotate-file';
 import path from 'path';
 import fs from 'fs';
+import type { Event, EventHint } from '@sentry/node';
 
 // Ensure logs directory exists
 const logsDir = path.join(process.cwd(), 'logs');
@@ -306,25 +307,30 @@ export async function initializeSentry(): Promise<typeof import('@sentry/node') 
         integrations: [Sentry.expressIntegration()],
         
         // Enhanced error filtering
-        beforeSend(event: unknown, hint: unknown) {
+        beforeSend(event: Event, hint: EventHint): Event | null {
           // Filter out non-critical errors in development
           if (process.env.NODE_ENV === 'development') {
             // Don't send client-side errors in development
-            if ((event as Record<string, unknown>).request && 
-                typeof (event as Record<string, unknown>).request === 'object' &&
-                ((event as Record<string, unknown>).request as Record<string, unknown>)?.url?.toString().includes('/_vite/')) {
+            const requestUrl = event.request?.url;
+            if (typeof requestUrl === 'string' && requestUrl.includes('/_vite/')) {
               return null;
             }
           }
-          
+
           // Filter out known non-critical errors
-          const error = (hint as Record<string, unknown>)?.originalException;
-          if (error?.message?.includes('ECONNRESET') || 
-              error?.message?.includes('EPIPE')) {
-            return null; // Don't send network errors
+          const error = hint?.originalException;
+          if (error instanceof Error) {
+            if (error.message.includes('ECONNRESET') || error.message.includes('EPIPE')) {
+              return null; // Don't send network errors
+            }
+          } else if (typeof error === 'object' && error !== null && 'message' in error) {
+            const message = (error as { message?: unknown }).message;
+            if (typeof message === 'string' && (message.includes('ECONNRESET') || message.includes('EPIPE'))) {
+              return null; // Don't send network errors
+            }
           }
-          
-          return event as Record<string, unknown>;
+
+          return event;
         },
         
         // Enhanced release tracking
