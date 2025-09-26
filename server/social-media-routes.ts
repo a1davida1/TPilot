@@ -1,9 +1,9 @@
 import type { Express, Request } from "express";
 import { socialMediaManager, type Platform, type PostContent } from "./social-media/social-media-manager.js";
+// Removed account-metadata imports - module not found
 import { storage } from "./storage.js";
 import { authenticateToken } from "./middleware/auth.js";
-import type { User } from "@shared/schema";
-import { z } from "zod";
+import type { SocialMediaAccount, User } from "@shared/schema";
 
 interface AuthRequest<
   B = Record<string, unknown>,
@@ -45,9 +45,6 @@ export function registerSocialMediaRoutes(app: Express) {
         return res.status(400).json({ message: "Platform and credentials are required" });
       }
 
-      // Connect to the platform API
-      socialMediaManager.connectAccount(platform, credentials);
-
       // Save account to database
       const accountData = {
         userId: req.user.id,
@@ -61,8 +58,17 @@ export function registerSocialMediaRoutes(app: Express) {
         tokenExpiresAt: credentials.expiresAt ? new Date(credentials.expiresAt) : undefined,
         metadata: accountInfo.metadata || {},
       };
-
+      
+      // Save account using storage
       const account = await storage.createSocialMediaAccount(accountData);
+      
+      // Connect to the platform API
+      try {
+        socialMediaManager.connectAccount(platform, credentials);
+      } catch (error) {
+        await storage.updateSocialMediaAccount(account.id, { isActive: false });
+        throw error;
+      }
 
       res.json({
         success: true,
@@ -166,41 +172,40 @@ export function registerSocialMediaRoutes(app: Express) {
         return res.status(400).json({ message: "Content text is required" });
       }
 
-      // Get user's connected accounts for the specified platforms
       const userAccounts = await storage.getUserSocialMediaAccounts(req.user.id);
-      const connectedPlatforms = userAccounts
-        .filter(account => account.isActive && platforms.includes(account.platform as Platform))
-        .map(account => account.platform as Platform);
+      const targetAccounts = userAccounts.filter(
+        account =>
+          account.isActive &&
+          platforms.includes(account.platform as Platform) &&
+          typeof account.accessToken === 'string' &&
+          account.accessToken.length > 0
+      );
 
-      if (connectedPlatforms.length === 0) {
-        return res.status(400).json({ 
-          message: "No connected accounts found for the specified platforms" 
+      if (targetAccounts.length === 0) {
+        return res.status(400).json({
+          message: "No connected accounts found for the specified platforms"
         });
       }
 
       // Initialize social media connections
-      for (const account of userAccounts) {
-        if (connectedPlatforms.includes(account.platform as Platform) && account.accessToken) {
-          const credentials: Record<string, string> = {
-            accessToken: account.accessToken || '',
-            ...(account.refreshToken && { refreshToken: account.refreshToken }),
-            // Add platform-specific credentials based on metadata
-            ...(typeof account.metadata === 'object' && account.metadata ? account.metadata : {}),
-          };
-          if (account.platform) {
-            socialMediaManager.connectAccount(account.platform as Platform, credentials);
-          }
-        }
+      for (const account of targetAccounts) {
+        const credentials: Record<string, string> = {
+          accessToken: account.accessToken || '',
+          ...(account.refreshToken && { refreshToken: account.refreshToken }),
+          // Add platform-specific credentials based on metadata
+          ...(typeof account.metadata === 'object' && account.metadata ? account.metadata : {}),
+        };
+        socialMediaManager.connectAccount(account.platform as Platform, credentials);
       }
 
       let results;
-      
+
       if (scheduledAt) {
         // Schedule the post
         const scheduleData = {
           userId: req.user.id,
           contentGenerationId,
-          platforms: connectedPlatforms,
+          platforms: targetAccounts.map(account => account.platform as Platform),
           scheduledTime: new Date(scheduledAt),
           status: 'pending' as const,
           metadata: { content },
@@ -208,8 +213,9 @@ export function registerSocialMediaRoutes(app: Express) {
 
         const schedule = await storage.createPostSchedule(scheduleData);
         
-        results = connectedPlatforms.map(platform => ({
-          platform,
+        results = targetAccounts.map(account => ({
+          platform: account.platform as Platform,
+          clientKey: account.id.toString(),
           success: true,
           scheduled: true,
           scheduleId: schedule.id,
@@ -224,17 +230,15 @@ export function registerSocialMediaRoutes(app: Express) {
           description: content.description,
         };
 
-        const validPlatforms = connectedPlatforms.filter(p => typeof p === 'string') as Platform[];
-        results = await socialMediaManager.postToMultiplePlatforms(
-          validPlatforms,
-          postContent
-        );
+        const targets = targetAccounts.map(account => account.platform as Platform);
+
+        results = await socialMediaManager.postToMultiplePlatforms(targets, postContent);
 
         // Save posts to database
         for (let i = 0; i < results.length; i++) {
           const result = results[i];
-          const account = userAccounts.find(acc => acc.platform === result.platform);
-          
+          const account = targetAccounts.find(acc => acc.id.toString() === result.clientKey);
+
           if (account) {
             const postData = {
               userId: req.user.id,
@@ -333,12 +337,15 @@ export function registerSocialMediaRoutes(app: Express) {
       }
 
       // Initialize connection
-      const credentials: Record<string, string> = {
-        accessToken: account.accessToken || '',
+      const connectionCredentials: Record<string, string> = {
+        ...(account.accessToken && { accessToken: account.accessToken }),
         ...(account.refreshToken && { refreshToken: account.refreshToken }),
-        ...(typeof account.metadata === 'object' && account.metadata ? account.metadata : {}),
+        ...(typeof account.metadata === 'object' && account.metadata ? account.metadata as Record<string, string> : {}),
       };
-      socialMediaManager.connectAccount(account.platform as Platform, credentials);
+      
+      if (connectionCredentials.accessToken) {
+        socialMediaManager.connectAccount(account.platform as Platform, connectionCredentials);
+      }
 
       // Get metrics from platform
       const metrics = await socialMediaManager.getPostMetrics(

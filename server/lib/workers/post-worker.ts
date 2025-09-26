@@ -2,11 +2,13 @@ import { registerProcessor } from "../queue-factory.js";
 import { QUEUE_NAMES, type PostJobData } from "../queue/index.js";
 import { db } from "../../db.js";
 import { postJobs, eventLogs } from "@shared/schema";
+import type { SocialMediaAccount } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { RedditManager } from "../reddit.js";
 import { MediaManager } from "../media.js";
 import { storage } from "../../storage.js";
 import { socialMediaManager, type Platform, type PostContent } from "../../social-media/social-media-manager.js";
+// Removed account-metadata imports - module not found
 import { logger } from "../logger.js";
 import { recordPostOutcome } from "../../compliance/ruleViolationTracker.js";
 
@@ -151,30 +153,59 @@ export class PostWorker {
     try {
       logger.info(`Processing social media job ${jobId} for user ${userId}`);
       const accounts = await storage.getUserSocialMediaAccounts(userId);
-      const connected = accounts
-        .filter(acc => acc.isActive && platforms.includes(acc.platform as Platform))
-        .map(acc => acc.platform as Platform);
+      const targetAccounts = accounts.filter(acc =>
+        acc.isActive && platforms.includes(acc.platform as Platform)
+      );
 
-      for (const acc of accounts) {
-        if (connected.includes(acc.platform as Platform) && acc.accessToken) {
-          const credentials: Record<string, unknown> = {
-            accessToken: acc.accessToken || '',
-            ...(acc.refreshToken ? { refreshToken: acc.refreshToken } : {}),
-            ...(typeof acc.metadata === 'object' && acc.metadata !== null
-              ? (acc.metadata as Record<string, unknown>)
-              : {}),
-          };
-          socialMediaManager.connectAccount(acc.platform as Platform, credentials as Record<string, string>);
+      // Connect each target account
+      for (const acc of targetAccounts) {
+        const credentials: Record<string, string> = {};
+        
+        // Extract credentials from account
+        if (acc.accessToken) {
+          credentials.accessToken = acc.accessToken;
         }
+        
+        if (acc.refreshToken) {
+          credentials.refreshToken = acc.refreshToken;
+        }
+        
+        // Add metadata fields if they exist
+        if (acc.metadata && typeof acc.metadata === 'object') {
+          const metadata = acc.metadata as Record<string, unknown>;
+          for (const [key, value] of Object.entries(metadata)) {
+            if (typeof value === 'string') {
+              credentials[key] = value;
+            }
+          }
+        }
+        
+        // Skip if no access token
+        if (!credentials.accessToken) {
+          continue;
+        }
+
+        // Connect account with simplified API
+        socialMediaManager.connectAccount(acc.platform as Platform, credentials);
+      }
+
+      // Get connected platforms list
+      const connectedPlatforms = targetAccounts
+        .filter(acc => acc.accessToken)
+        .map(acc => acc.platform as Platform);
+      
+      if (connectedPlatforms.length === 0) {
+        throw new Error('No connected posting accounts available for job');
       }
 
       const results = await socialMediaManager.postToMultiplePlatforms(
-        connected,
+        connectedPlatforms,
         content as PostContent
       );
 
-      for (const result of results) {
-        const account = accounts.find(a => a.platform === result.platform);
+      for (let i = 0; i < results.length; i++) {
+        const result = results[i];
+        const account = targetAccounts.find(a => a.platform === result.platform);
         if (account) {
           const postData = {
             userId,

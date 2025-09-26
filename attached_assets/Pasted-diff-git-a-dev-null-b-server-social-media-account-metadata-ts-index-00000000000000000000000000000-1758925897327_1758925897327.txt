@@ -1,0 +1,205 @@
+diff --git a//dev/null b/server/social-media/account-metadata.ts
+index 0000000000000000000000000000000000000000..fd63752585e46357ea892bbb1b0e2c9c423a2f4a 100644
+--- a//dev/null
++++ b/server/social-media/account-metadata.ts
+@@ -0,0 +1,200 @@
++import type { SocialMediaAccount } from "@shared/schema";
++
++export type AccountCredentialRole = "posting" | "sync";
++
++export type AccountCredentialValue = string | number | boolean | null;
++
++export interface AccountCredentialSet {
++  appRole?: AccountCredentialRole;
++  accountKey?: string;
++  accessToken?: string;
++  refreshToken?: string;
++  expiresAt?: string;
++  tokenType?: string;
++  [key: string]: AccountCredentialValue | undefined;
++}
++
++export interface AccountMetadata extends Record<string, unknown> {
++  credentialSets?: Record<string, AccountCredentialSet>;
++}
++
++export function isRecord(value: unknown): value is Record<string, unknown> {
++  return typeof value === "object" && value !== null && !Array.isArray(value);
++}
++
++export function sanitizeCredentialSet(set: Record<string, unknown>): AccountCredentialSet {
++  const sanitized: AccountCredentialSet = {};
++
++  for (const [key, value] of Object.entries(set)) {
++    if (
++      value === null ||
++      typeof value === "string" ||
++      typeof value === "number" ||
++      typeof value === "boolean"
++    ) {
++      sanitized[key] = value;
++    }
++  }
++
++  if (typeof sanitized.appRole === "string") {
++    sanitized.appRole = sanitized.appRole === "sync" ? "sync" : "posting";
++  } else {
++    delete sanitized.appRole;
++  }
++
++  if (typeof sanitized.accountKey !== "string" || sanitized.accountKey.length === 0) {
++    delete sanitized.accountKey;
++  }
++
++  if (typeof sanitized.accessToken !== "string" || sanitized.accessToken.length === 0) {
++    delete sanitized.accessToken;
++  }
++
++  if (typeof sanitized.refreshToken !== "string" || sanitized.refreshToken.length === 0) {
++    delete sanitized.refreshToken;
++  }
++
++  if (typeof sanitized.expiresAt !== "string" || sanitized.expiresAt.length === 0) {
++    delete sanitized.expiresAt;
++  }
++
++  if (typeof sanitized.tokenType !== "string" || sanitized.tokenType.length === 0) {
++    delete sanitized.tokenType;
++  }
++
++  return sanitized;
++}
++
++export function sanitizeAccountMetadata(metadata: unknown): AccountMetadata {
++  if (!isRecord(metadata)) {
++    return {};
++  }
++
++  const sanitized: AccountMetadata = { ...metadata };
++
++  if ("credentialSets" in sanitized) {
++    const rawSets = sanitized.credentialSets;
++    if (isRecord(rawSets)) {
++      const cleaned: Record<string, AccountCredentialSet> = {};
++      for (const [role, value] of Object.entries(rawSets)) {
++        if (isRecord(value)) {
++          cleaned[role] = sanitizeCredentialSet(value);
++        }
++      }
++      sanitized.credentialSets = cleaned;
++    } else {
++      delete sanitized.credentialSets;
++    }
++  }
++
++  return sanitized;
++}
++
++export function mergeCredentialSet(
++  metadata: AccountMetadata,
++  role: AccountCredentialRole,
++  updates: AccountCredentialSet
++): AccountMetadata {
++  const sanitizedMetadata = sanitizeAccountMetadata(metadata);
++  const existingSets: Record<string, AccountCredentialSet> = {
++    ...(sanitizedMetadata.credentialSets ?? {}),
++  };
++
++  const current = existingSets[role] ?? {};
++  const sanitizedUpdates = sanitizeCredentialSet({ ...current, ...updates });
++
++  existingSets[role] = sanitizedUpdates;
++
++  const nextMetadata: AccountMetadata = {
++    ...sanitizedMetadata,
++    credentialSets: existingSets,
++  };
++
++  return pruneEmptyCredentialSets(nextMetadata);
++}
++
++export function getCredentialSet(
++  metadata: unknown,
++  role: AccountCredentialRole
++): AccountCredentialSet | undefined {
++  const sanitized = sanitizeAccountMetadata(metadata);
++  const credentialSets = sanitized.credentialSets;
++
++  if (!credentialSets) {
++    return undefined;
++  }
++
++  const match = credentialSets[role];
++  if (!match) {
++    return undefined;
++  }
++
++  return sanitizeCredentialSet(match);
++}
++
++export function credentialSetToStringRecord(set: AccountCredentialSet | undefined): Record<string, string> {
++  if (!set) {
++    return {};
++  }
++
++  const record: Record<string, string> = {};
++  for (const [key, value] of Object.entries(set)) {
++    if (typeof value === "string") {
++      record[key] = value;
++    }
++  }
++  return record;
++}
++
++export function getAccountKeyForRole(
++  account: Pick<SocialMediaAccount, "accountId">,
++  metadata: unknown,
++  role: AccountCredentialRole
++): string {
++  const set = getCredentialSet(metadata, role);
++  if (set?.accountKey) {
++    return set.accountKey;
++  }
++
++  const fallback = role === "sync" ? `${account.accountId}:sync` : account.accountId;
++  return fallback;
++}
++
++export function pruneEmptyCredentialSets(metadata: AccountMetadata): AccountMetadata {
++  if (!metadata.credentialSets) {
++    return metadata;
++  }
++
++  const entries = Object.entries(metadata.credentialSets).filter(([, value]) => {
++    return Object.keys(value).length > 0;
++  });
++
++  if (entries.length === 0) {
++    const { credentialSets, ...rest } = metadata;
++    return rest;
++  }
++
++  return {
++    ...metadata,
++    credentialSets: Object.fromEntries(entries) as Record<string, AccountCredentialSet>,
++  };
++}
++
++export function extractStringMetadata(
++  metadata: AccountMetadata,
++  keysToIgnore: string[] = ['credentialSets', 'syncCredentials']
++): Record<string, string> {
++  const strings: Record<string, string> = {};
++
++  for (const [key, value] of Object.entries(metadata)) {
++    if (keysToIgnore.includes(key)) {
++      continue;
++    }
++
++    if (typeof value === 'string') {
++      strings[key] = value;
++    }
++  }
++
++  return strings;
++}

@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { safeLog } from '../lib/logger-utils.js';
 
 // Multi-provider AI system for cost optimization
@@ -22,7 +22,7 @@ const providers: AIProvider[] = [
 // Initialize clients only if API keys are available
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
 const anthropic = process.env.ANTHROPIC_API_KEY ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }) : null;
-const gemini = (process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY) ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY }) : null;
+const gemini = (process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY) ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY || '') : null;
 
 interface MultiAIRequest {
   user: { id: number; email?: string; tier?: string };
