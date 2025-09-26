@@ -1,0 +1,77 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/server/storage.ts b/server/storage.ts
+index 2ff21300d9c606aa7db77bd9f95f59ca1aeb91d5..18987de8c58b03485be26757f9d383d4de1d47b8 100644
+--- a/server/storage.ts
++++ b/server/storage.ts
+@@ -170,58 +170,60 @@ export interface IStorage {
+   getPlatformEngagement(accountId: number, date?: Date): Promise<PlatformEngagement[]>;
+ 
+   createPostSchedule(schedule: InsertPostSchedule): Promise<PostSchedule>;
+   getUserScheduledPosts(userId: number): Promise<PostSchedule[]>;
+   getPostSchedule(scheduleId: number): Promise<PostSchedule | undefined>;
+   updatePostSchedule(scheduleId: number, updates: Partial<PostSchedule>): Promise<PostSchedule>;
+   deletePostSchedule(scheduleId: number): Promise<void>;
+ }
+ 
+ export class DatabaseStorage implements IStorage {
+   // User operations
+   async getUser(id: number): Promise<User | undefined> {
+     try {
+       const result = await db.select().from(users).where(eq(users.id, id)).limit(1).execute();
+       const [user] = result;
+       return user ?? undefined;
+     } catch (error) {
+       safeLog('error', 'Storage operation failed - getting user:', { error: (error as Error).message });
+       return undefined;
+     }
+   }
+ 
+   async getAllUsers(): Promise<User[]> {
+     try {
+       // Guard optional schema fields - using db query pattern
+-      let query = db.select().from(users);
+-      if ('isDeleted' in users) {
+-        query = query.where(eq(users.isDeleted, false));
+-      }
+-      if ('createdAt' in users) {
+-        query = query.orderBy(desc(users.createdAt));
+-      }
+-      const allUsers = await query.execute();
++      const baseQuery = db.select().from(users);
++      const queryWithDeletedFilter =
++        'isDeleted' in users
++          ? baseQuery.where(eq(users.isDeleted, false))
++          : baseQuery;
++      const orderedQuery =
++        'createdAt' in users
++          ? queryWithDeletedFilter.orderBy(desc(users.createdAt))
++          : queryWithDeletedFilter;
++      const allUsers = await orderedQuery.execute();
+       return allUsers;
+     } catch (error) {
+       safeLog('error', 'Storage operation failed - getting all users:', { error: (error as Error).message });
+       return [];
+     }
+   }
+ 
+   async getUserByUsername(username: string, verified?: boolean): Promise<User | undefined> {
+     try {
+       // Build conditions array to avoid boolean leaks
+       const conditions = [
+         eq(users.username, username)
+       ];
+ 
+       // Only add emailVerified condition if explicitly provided
+       if (verified !== undefined) {
+         conditions.push(eq(users.emailVerified, verified));
+       }
+ 
+       const result = await db.select().from(users).where(and(...conditions)).limit(1).execute();
+       return result[0];
+     } catch (error) {
+       safeLog('error', 'Storage operation failed - getting user by username:', { error: (error as Error).message });
+       return undefined;
+     }
+ 
+EOF
+)
