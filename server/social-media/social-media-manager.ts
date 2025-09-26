@@ -22,6 +22,7 @@ export interface PostContent {
 export interface PostResult {
   success: boolean;
   platform: Platform;
+  clientKey: string;
   postId?: string;
   error?: string;
 }
@@ -37,64 +38,65 @@ export interface EngagementMetrics {
 }
 
 // Unified Social Media Manager
+type SocialMediaApiClient =
+  | InstagramAPI
+  | TwitterAPI
+  | TikTokAPI
+  | YouTubeAPI
+  | LinkedInAPI;
+
+export interface PlatformTarget {
+  platform: Platform;
+  key: string;
+}
+
 export class SocialMediaManager {
-  private apis: Map<Platform,
-    InstagramAPI | TwitterAPI | TikTokAPI | YouTubeAPI | LinkedInAPI
-  > = new Map();
+  private apis: Map<Platform, Map<string, SocialMediaApiClient>> = new Map();
 
   constructor() {}
 
   // Connect a social media account
-  connectAccount(platform: Platform, credentials: Record<string, string>) {
-    switch (platform) {
-      case 'instagram':
-        this.apis.set(platform, new InstagramAPI(
-          credentials.accessToken,
-          credentials.businessAccountId
-        ));
-        break;
-      case 'twitter':
-        this.apis.set(platform, new TwitterAPI({
-          accessToken: credentials.accessToken,
-          accessTokenSecret: credentials.accessTokenSecret,
-          consumerKey: credentials.consumerKey,
-          consumerSecret: credentials.consumerSecret,
-        }));
-        break;
-      case 'tiktok':
-        this.apis.set(platform, new TikTokAPI(credentials.accessToken));
-        break;
-      case 'youtube':
-        this.apis.set(platform, new YouTubeAPI(credentials.accessToken));
-        break;
-      case 'linkedin':
-        this.apis.set(platform, new LinkedInAPI(credentials.accessToken));
-        break;
-      default:
-        throw new Error(`Unsupported platform: ${platform}`);
+  connectAccount(platform: Platform, key: string, credentials: Record<string, string>) {
+    const platformClients = this.ensurePlatformMap(platform);
+    const client = this.createClient(platform, credentials);
+    platformClients.set(key, client);
+  }
+
+  registerClients(targets: Array<PlatformTarget & { credentials: Record<string, string> }>) {
+    for (const target of targets) {
+      this.connectAccount(target.platform, target.key, target.credentials);
     }
   }
 
-  // Post content to a specific platform
-  async postToPlatform(platform: Platform, content: PostContent): Promise<PostResult> {
-    const api = this.apis.get(platform);
-    if (!api) {
-      return {
-        success: false,
-        platform,
-        error: `${platform} not connected`,
-      };
+  getClient(platform: Platform, key: string): SocialMediaApiClient {
+    const platformClients = this.apis.get(platform);
+    if (!platformClients) {
+      throw new Error(`No clients registered for ${platform}`);
     }
 
+    const client = platformClients.get(key);
+    if (!client) {
+      throw new Error(`No client registered for ${platform} using key "${key}"`);
+    }
+
+    return client;
+  }
+
+  // Post content to a specific platform
+  async postToPlatform(platform: Platform, key: string, content: PostContent): Promise<PostResult> {
     try {
+      const api = this.getClient(platform, key);
+
       switch (platform) {
-        case 'instagram':
-          return await (api as InstagramAPI).createPost({
+        case 'instagram': {
+          const result = await (api as InstagramAPI).createPost({
             imageUrl: content.mediaUrls?.[0],
             videoUrl: content.mediaUrls?.find(url => url.includes('.mp4')),
             caption: content.text,
             hashtags: content.hashtags,
           });
+          return { ...result, clientKey: key };
+        }
 
         case 'twitter': {
           const twitterApi = api as TwitterAPI;
@@ -108,12 +110,13 @@ export class SocialMediaManager {
               }
             }
           }
-          return await twitterApi.createTweet({
+          const result = await twitterApi.createTweet({
             text: content.hashtags
               ? `${content.text}\n\n${content.hashtags.map(tag => `#${tag}`).join(' ')}`
               : content.text,
             mediaIds: mediaIds.length > 0 ? mediaIds : undefined,
           });
+          return { ...result, clientKey: key };
         }
 
         case 'tiktok':
@@ -121,39 +124,46 @@ export class SocialMediaManager {
             return {
               success: false,
               platform,
+              clientKey: key,
               error: 'TikTok requires video content',
             };
           }
-          return await (api as TikTokAPI).createPost({
+          const tiktokResult = await (api as TikTokAPI).createPost({
             videoUrl: content.mediaUrls[0],
             caption: content.text,
             hashtags: content.hashtags,
           });
+          return { ...tiktokResult, clientKey: key };
 
         case 'youtube':
           if (!content.mediaUrls?.[0]?.includes('.mp4')) {
             return {
               success: false,
               platform,
+              clientKey: key,
               error: 'YouTube requires video content',
             };
           }
-          return await (api as YouTubeAPI).createPost({
+          const youtubeResult = await (api as YouTubeAPI).createPost({
             videoUrl: content.mediaUrls[0],
             title: content.title || content.text.substring(0, 100),
             description: content.description || content.text,
             tags: content.hashtags,
           });
-        case 'linkedin':
-          return await (api as LinkedInAPI).createPost({
+          return { ...youtubeResult, clientKey: key };
+        case 'linkedin': {
+          const result = await (api as LinkedInAPI).createPost({
             text: content.text,
             mediaUrls: content.mediaUrls,
             hashtags: content.hashtags,
           });
+          return { ...result, clientKey: key };
+        }
         default:
           return {
             success: false,
             platform,
+            clientKey: key,
             error: `Posting not implemented for ${platform}`,
           };
       }
@@ -161,6 +171,7 @@ export class SocialMediaManager {
       return {
         success: false,
         platform,
+        clientKey: key,
         error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
@@ -168,36 +179,38 @@ export class SocialMediaManager {
 
   // Post to multiple platforms simultaneously
   async postToMultiplePlatforms(
-    platforms: Platform[],
+    targets: PlatformTarget[],
     content: PostContent
   ): Promise<PostResult[]> {
-    const promises = platforms.map(platform => 
-      this.postToPlatform(platform, content)
+    const promises = targets.map(target =>
+      this.postToPlatform(target.platform, target.key, content)
     );
-    
+
     return await Promise.allSettled(promises).then(results =>
-      results.map((result, index) => {
-        if (result.status === 'fulfilled') {
+      targets.map((target, index) => {
+        const result = results[index];
+        if (result?.status === 'fulfilled') {
           return result.value;
-        } else {
-          return {
-            success: false,
-            platform: platforms[index],
-            error: result.reason?.message || 'Failed to post',
-          };
         }
+
+        const message =
+          result && result.status === 'rejected' && result.reason?.message
+            ? result.reason.message
+            : 'Failed to post';
+
+        return {
+          success: false,
+          platform: target.platform,
+          clientKey: target.key,
+          error: message,
+        };
       })
     );
   }
 
   // Get engagement metrics for a post
-  async getPostMetrics(platform: Platform, postId: string): Promise<EngagementMetrics | null> {
-    const api = this.apis.get(platform);
-    if (!api) {
-      console.error(`${platform} not connected`);
-      return null;
-    }
-
+  async getPostMetrics(platform: Platform, key: string, postId: string): Promise<EngagementMetrics | null> {
+    const api = this.getClient(platform, key);
     try {
       let result;
       switch (platform) {
@@ -269,12 +282,8 @@ export class SocialMediaManager {
   }
 
   // Get account metrics
-  async getAccountMetrics(platform: Platform): Promise<unknown> {
-    const api = this.apis.get(platform);
-    if (!api) {
-      throw new Error(`${platform} not connected`);
-    }
-
+  async getAccountMetrics(platform: Platform, key: string): Promise<unknown> {
+    const api = this.getClient(platform, key);
     switch (platform) {
       case 'instagram':
         return await (api as InstagramAPI).getAccountInsights?.();
@@ -292,18 +301,72 @@ export class SocialMediaManager {
   }
 
   // Check if platform is connected
-  isConnected(platform: Platform): boolean {
-    return this.apis.has(platform);
+  isConnected(platform: Platform, key?: string): boolean {
+    if (!this.apis.has(platform)) {
+      return false;
+    }
+
+    if (typeof key === 'undefined') {
+      return (this.apis.get(platform)?.size ?? 0) > 0;
+    }
+
+    return this.apis.get(platform)?.has(key) ?? false;
   }
 
   // Disconnect a platform
-  disconnect(platform: Platform): void {
-    this.apis.delete(platform);
+  disconnect(platform: Platform, key: string): void {
+    const platformClients = this.apis.get(platform);
+    if (!platformClients) {
+      return;
+    }
+
+    platformClients.delete(key);
+    if (platformClients.size === 0) {
+      this.apis.delete(platform);
+    }
   }
 
   // Get all connected platforms
   getConnectedPlatforms(): Platform[] {
-    return Array.from(this.apis.keys());
+    return Array.from(this.apis.entries())
+      .filter(([, clients]) => clients.size > 0)
+      .map(([platform]) => platform);
+  }
+
+  private ensurePlatformMap(platform: Platform): Map<string, SocialMediaApiClient> {
+    const existing = this.apis.get(platform);
+    if (existing) {
+      return existing;
+    }
+
+    const created = new Map<string, SocialMediaApiClient>();
+    this.apis.set(platform, created);
+    return created;
+  }
+
+  private createClient(platform: Platform, credentials: Record<string, string>): SocialMediaApiClient {
+    switch (platform) {
+      case 'instagram':
+        return new InstagramAPI(
+          credentials.accessToken,
+          credentials.businessAccountId
+        );
+      case 'twitter':
+        return new TwitterAPI({
+          accessToken: credentials.accessToken,
+          accessTokenSecret: credentials.accessTokenSecret,
+          consumerKey: credentials.consumerKey,
+          consumerSecret: credentials.consumerSecret,
+        });
+      case 'tiktok':
+        return new TikTokAPI(credentials.accessToken);
+      case 'youtube':
+        return new YouTubeAPI(credentials.accessToken);
+      case 'linkedin':
+        return new LinkedInAPI(credentials.accessToken);
+      default:
+        throw new Error(`Unsupported platform: ${platform}`);
+    }
   }
 }
 

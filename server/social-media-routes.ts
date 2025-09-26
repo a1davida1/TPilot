@@ -64,7 +64,7 @@ export function registerSocialMediaRoutes(app: Express) {
       
       // Connect to the platform API
       try {
-        socialMediaManager.connectAccount(platform, credentials);
+        socialMediaManager.connectAccount(platform, account.id.toString(), credentials);
       } catch (error) {
         await storage.updateSocialMediaAccount(account.id, { isActive: false });
         throw error;
@@ -132,7 +132,7 @@ export function registerSocialMediaRoutes(app: Express) {
       }
 
       // Disconnect from API manager
-      socialMediaManager.disconnect(account.platform as Platform);
+      socialMediaManager.disconnect(account.platform as Platform, account.id.toString());
 
       // Deactivate in database
       await storage.updateSocialMediaAccount(parseInt(accountId), { isActive: false });
@@ -195,7 +195,7 @@ export function registerSocialMediaRoutes(app: Express) {
           // Add platform-specific credentials based on metadata
           ...(typeof account.metadata === 'object' && account.metadata ? account.metadata : {}),
         };
-        socialMediaManager.connectAccount(account.platform as Platform, credentials);
+        socialMediaManager.connectAccount(account.platform as Platform, account.id.toString(), credentials);
       }
 
       let results;
@@ -230,7 +230,10 @@ export function registerSocialMediaRoutes(app: Express) {
           description: content.description,
         };
 
-        const targets = targetAccounts.map(account => account.platform as Platform);
+        const targets = targetAccounts.map(account => ({
+          platform: account.platform as Platform,
+          key: account.id.toString()
+        }));
 
         results = await socialMediaManager.postToMultiplePlatforms(targets, postContent);
 
@@ -344,12 +347,13 @@ export function registerSocialMediaRoutes(app: Express) {
       };
       
       if (connectionCredentials.accessToken) {
-        socialMediaManager.connectAccount(account.platform as Platform, connectionCredentials);
+        socialMediaManager.connectAccount(account.platform as Platform, account.id.toString(), connectionCredentials);
       }
 
       // Get metrics from platform
       const metrics = await socialMediaManager.getPostMetrics(
         account.platform as Platform,
+        account.id.toString(),
         post.platformPostId
       );
 

@@ -186,20 +186,23 @@ export class PostWorker {
         }
 
         // Connect account with simplified API
-        socialMediaManager.connectAccount(acc.platform as Platform, credentials);
+        socialMediaManager.connectAccount(acc.platform as Platform, acc.id.toString(), credentials);
       }
 
       // Get connected platforms list
-      const connectedPlatforms = targetAccounts
+      const connectedTargets = targetAccounts
         .filter(acc => acc.accessToken)
-        .map(acc => acc.platform as Platform);
+        .map(acc => ({
+          platform: acc.platform as Platform,
+          key: acc.id.toString()
+        }));
       
-      if (connectedPlatforms.length === 0) {
+      if (connectedTargets.length === 0) {
         throw new Error('No connected posting accounts available for job');
       }
 
       const results = await socialMediaManager.postToMultiplePlatforms(
-        connectedPlatforms,
+        connectedTargets,
         content as PostContent
       );
 
