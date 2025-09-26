@@ -395,7 +395,7 @@ export async function pipelineRewrite({ platform, voice="flirty_playful", existi
 
     const doNotDrop = extractKeyEntities(existingCaption);
 
-    const attemptHints: (string | undefined)[] = [
+    const lengthHints: (string | undefined)[] = [
       undefined,
       "Make it 20% longer with a natural hook and CTA; keep it human, no sparkle clichés.",
       facts
@@ -468,21 +468,21 @@ export async function pipelineRewrite({ platform, voice="flirty_playful", existi
       return current;
     };
 
-    let lastAttempt: { variants: CaptionArrayResult; ranked: RankResultType; final: CaptionItemType } | undefined;
-    let successfulAttempt: { variants: CaptionArrayResult; ranked: RankResultType; final: CaptionItemType } | undefined;
+    const attemptHistory: AttemptResult[] = [];
+    let successfulAttempt: AttemptResult | undefined;
 
-    for (const hint of attemptHints) {
+    for (const hint of lengthHints) {
       let attempt = await performAttempt(hint);
       attempt = await enforceMandatoryTokens(attempt, hint);
       attempt = await enforceFactCoverageLoop(attempt, hint);
-      lastAttempt = attempt;
+      attemptHistory.push(attempt);
       if (attempt.final.caption.length > existingCaption.length) {
         successfulAttempt = attempt;
         break;
       }
     }
 
-    const chosenAttempt = successfulAttempt ?? lastAttempt;
+    const chosenAttempt = successfulAttempt ?? attemptHistory.at(-1);
 
     if (!chosenAttempt || chosenAttempt.final.caption.length <= existingCaption.length) {
       throw new Error('Rewrite did not produce a longer caption');

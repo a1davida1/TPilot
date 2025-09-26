@@ -275,14 +275,17 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
       hintParts.push(varietyHint.trim());
     }
     if (existingCaptions.length > 0) {
+      const sanitizedExistingCaptions = existingCaptions.map(existing =>
+        serializePromptField(existing, { block: true })
+      );
       hintParts.push(
-        `Avoid repeating or lightly editing these captions: ${existingCaptions.join(" | ")}.`
+        `Avoid repeating or lightly editing these captions: ${sanitizedExistingCaptions.join(" | ")}.`
       );
     }
     hintParts.push("Provide five options that vary tone, structure, and specific content themes.");
 
-    const currentHint = hintParts.filter(Boolean).join(" ");
-    const serializedHint = serializePromptField(currentHint, { block: true });
+    const combinedHint = hintParts.filter(Boolean).join(" ");
+    const serializedHint = serializePromptField(combinedHint, { block: true });
     lines.push(`HINT:${serializedHint}`);
 
     return lines.join("\n");
@@ -306,76 +309,100 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
 
   const uniqueVariants: z.infer<typeof CaptionItem>[] = [];
   const existingCaptions: string[] = [];
-  const duplicatesThisAttempt: string[] = [];
-  let hasBannedWords = false;
+  const seenKeys = new Set<string>();
+  const duplicatesForHint: string[] = [];
+  let needsBannedHint = false;
   const isTest = process.env.NODE_ENV === 'test';
-  const maxAttempts = isTest ? 2 : 5; // Allow 2 attempts in test for retry logic testing
+  const maxAttempts = isTest ? Math.max(3, VARIANT_RETRY_LIMIT) : VARIANT_RETRY_LIMIT;
 
-  const sanitizedBaseHint = sanitizeHintForRetry(params.hint);
+  let attempt = 0;
+  while (uniqueVariants.length < VARIANT_TARGET && attempt < maxAttempts) {
+    const needed = VARIANT_TARGET - uniqueVariants.length;
+    const baseHintWithVariety = `${params.hint ? `${params.hint} ` : ""}Need much more variety across tone, structure, and themes.`.trim();
+    let varietyHint = attempt === 0
+      ? params.hint
+      : buildRetryHint(baseHintWithVariety, duplicatesForHint, needed);
 
-  for (let attempt = 0; attempt < maxAttempts && uniqueVariants.length < 5; attempt += 1) {
-    const needed = 5 - uniqueVariants.length;
-    const varietyHint = attempt === 0
-      ? sanitizedBaseHint ?? params.hint
-      : (() => {
-          // Build complete base hint with variety clause first, then pass to buildRetryHint
-          const baseHintWithVariety = `${sanitizedBaseHint ? `${sanitizedBaseHint} ` : ""}Need much more variety across tone, structure, and themes.`;
-          const baseHintWithModeration = hasBannedWords
-            ? `${baseHintWithVariety} ${BANNED_WORDS_HINT}`.trim()
-            : baseHintWithVariety;
-          return buildRetryHint(baseHintWithModeration, duplicatesThisAttempt, needed);
-        })();
+    if (needsBannedHint) {
+      varietyHint = [varietyHint, BANNED_WORDS_HINT].filter(Boolean).join(' ');
+    }
 
     const rawVariants = await fetchVariants(varietyHint, existingCaptions);
-    duplicatesThisAttempt.length = 0; // Reset for this attempt
+    duplicatesForHint.length = 0;
+    let bannedDetected = false;
 
     for (const raw of rawVariants) {
-      if (uniqueVariants.length >= 5) break;
+      if (uniqueVariants.length >= VARIANT_TARGET) break;
       if (typeof raw !== "object" || raw === null) continue;
 
       const sanitized = sanitizeVariant(raw as Record<string, unknown>);
       const captionText = sanitized.caption as string;
+      const key = uniqueCaptionKey(captionText);
 
-      if (variantContainsBannedWord(sanitized as { caption?: unknown; cta?: unknown; hashtags?: unknown; alt?: unknown })) {
-        hasBannedWords = true;
+      if (!key) {
         continue;
       }
 
-      const isDuplicate = existingCaptions.some(existing => captionsAreSimilar(existing, captionText));
-      if (isDuplicate) {
-        duplicatesThisAttempt.push(captionText); // Track duplicates for retry hint
+      if (seenKeys.has(key)) {
+        duplicatesForHint.push(captionText);
         continue;
       }
 
+      const hasBannedWord = variantContainsBannedWord({
+        caption: sanitized.caption,
+        hashtags: sanitized.hashtags,
+        cta: sanitized.cta,
+        alt: sanitized.alt,
+      });
+
+      if (hasBannedWord) {
+        bannedDetected = true;
+        continue;
+      }
+
+      seenKeys.add(key);
       uniqueVariants.push(sanitized as z.infer<typeof CaptionItem>);
       existingCaptions.push(captionText);
     }
+
+    if (duplicatesForHint.length === 0 && uniqueVariants.length < VARIANT_TARGET) {
+      const fallbackDuplicate = rawVariants.find(
+        candidate => typeof candidate === "object" && candidate !== null && typeof (candidate as Record<string, unknown>).caption === "string"
+      ) as { caption: string } | undefined;
+      if (fallbackDuplicate) {
+        duplicatesForHint.push(fallbackDuplicate.caption);
+      }
+    }
+
+    needsBannedHint = bannedDetected;
+
+    attempt += 1;
   }
 
-  // Pad variants if we don't have enough, instead of throwing in tests
-  while (uniqueVariants.length < 5) {
+  if (uniqueVariants.length < VARIANT_TARGET) {
     const baseVariant = uniqueVariants[0] || {
-      caption: "Sharing a highlight from today",
-      alt: "Detailed alt text describing the theme",
-      hashtags: fallbackHashtags(params.platform),
-      cta: HUMAN_CTA,
+      caption: safeFallbackCaption,
+      alt: safeFallbackAlt,
+      hashtags: [...safeFallbackHashtags],
+      cta: safeFallbackCta,
       mood: "engaging",
       style: "authentic",
       safety_level: "normal",
-      nsfw: false
-    };
+      nsfw: false,
+    } as z.infer<typeof CaptionItem>;
 
-    // Create a slight variation by appending index
-    const paddedVariant = {
-      ...baseVariant,
-      caption: `${baseVariant.caption} v${uniqueVariants.length + 1}`,
-      alt: `${baseVariant.alt} (variation ${uniqueVariants.length + 1})`
-    };
-
-    uniqueVariants.push(paddedVariant as z.infer<typeof CaptionItem>);
+    while (uniqueVariants.length < VARIANT_TARGET) {
+      const index = uniqueVariants.length + 1;
+      const captionSeed = baseVariant.caption || safeFallbackCaption;
+      uniqueVariants.push({
+        ...baseVariant,
+        caption: `${captionSeed} (retry filler ${index})`,
+        alt: `${baseVariant.alt} (retry filler ${index})`,
+      });
+    }
   }
 
-  return CaptionArray.parse(uniqueVariants);
+  return CaptionArray.parse(uniqueVariants.slice(0, VARIANT_TARGET));
 }
 
 async function requestTextOnlyRanking(
@@ -470,7 +497,7 @@ type TextOnlyPipelineArgs = {
 export async function pipelineTextOnly({ platform, voice="flirty_playful", theme, context, nsfw=false, ...toneRest }:TextOnlyPipelineArgs){
   const tone = extractToneOptions(toneRest);
   let variants = await generateVariantsTextOnly({ platform, voice, theme, context, nsfw, ...tone });
-  variants = dedupeVariantsForRanking(variants, 5, { platform, theme, context });
+  variants = prepareVariantsForRanking(variants, { platform, theme, context }, { targetLength: VARIANT_TARGET });
   let ranked = await rankAndSelect(variants, { platform, theme, context });
   let out = ranked.final;
 

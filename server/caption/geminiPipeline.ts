@@ -557,30 +557,32 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
     }
   }
 
-  // Pad variants if we don't have enough, instead of throwing in tests
-  while (uniqueVariants.length < 5) {
+  // Update variant padding with improved fallback system
+  if (uniqueVariants.length < VARIANT_TARGET) {
     const baseVariant = uniqueVariants[0] || {
-      caption: "Sharing a highlight from today",
-      alt: "Detailed alt text describing the scene",
-      hashtags: fallbackHashtags(params.platform),
-      cta: HUMAN_CTA,
+      caption: safeFallbackCaption,
+      alt: safeFallbackAlt,
+      hashtags: [...safeFallbackHashtags],
+      cta: safeFallbackCta,
       mood: "engaging",
       style: "authentic",
       safety_level: "normal",
-      nsfw: false
-    };
+      nsfw: false,
+    } as z.infer<typeof CaptionItem>;
 
-    // Create a slight variation by appending index
-    const paddedVariant = {
-      ...baseVariant,
-      caption: `${baseVariant.caption} v${uniqueVariants.length + 1}`,
-      alt: `${baseVariant.alt} (variation ${uniqueVariants.length + 1})`
-    };
-
-    uniqueVariants.push(paddedVariant as z.infer<typeof CaptionItem>);
+    while (uniqueVariants.length < VARIANT_TARGET) {
+      const index = uniqueVariants.length + 1;
+      const captionSeed = baseVariant.caption || safeFallbackCaption;
+      const fallbackCaption = `${captionSeed} (retry filler ${index})`;
+      uniqueVariants.push({
+        ...baseVariant,
+        caption: fallbackCaption,
+        alt: `${baseVariant.alt} (retry filler ${index})`,
+      });
+    }
   }
 
-  return CaptionArray.parse(uniqueVariants);
+  return CaptionArray.parse(uniqueVariants.slice(0, VARIANT_TARGET));
 }
 
 function normalizeGeminiFinal(
