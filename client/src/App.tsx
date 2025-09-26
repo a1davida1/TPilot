@@ -94,6 +94,11 @@ function AuthenticatedRoutes() {
   const { user } = useAuth();
   const isAdmin = Boolean(user?.isAdmin);
   const userTier = user?.tier || 'free';
+  const rawUserTier = user?.tier ?? 'free';
+  const normalizedUserTier: 'guest' | 'free' | 'pro' | 'premium' =
+    rawUserTier === 'pro' || rawUserTier === 'premium'
+      ? rawUserTier
+      : 'free';
 
   return (
     <Switch>
@@ -113,9 +118,9 @@ function AuthenticatedRoutes() {
       <Route path="/reddit" component={RedditPostingPage} />
       <Route path="/communities" component={() => <CommunitiesPage />} />
       <Route path="/gallery" component={() => <GalleryPage />} />
-      <Route path="/tax-tracker" component={() => <TaxTracker />} />
+      <Route path="/tax-tracker" component={() => <TaxTracker userTier={normalizedUserTier} />} />
       {/* Pro user only route */}
-      {userTier === 'pro' && (
+      {normalizedUserTier === 'pro' && (
         <Route path="/referral" component={ReferralPage} />
       )}
       <Route path="/history" component={History} />

@@ -157,7 +157,7 @@ export function AdminPortal() {
   const [_reason, _setReason] = useState<string>('');
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
-  
+
   // Authenticated API request with cookie-based auth
   const authenticatedRequest = async (url: string, method: string = 'GET', data?: unknown) => {
     const response = await fetch(url, {
@@ -168,7 +168,7 @@ export function AdminPortal() {
       credentials: 'include', // Include cookies for session-based auth
       body: data ? JSON.stringify(data) : undefined
     });
-    
+
     if (!response.ok) {
       const errorText = await response.text();
       let errorMessage;
@@ -180,7 +180,7 @@ export function AdminPortal() {
       }
       throw new Error(errorMessage);
     }
-    
+
     return response.json();
   };
 
@@ -196,7 +196,7 @@ export function AdminPortal() {
     queryKey: ['/api/admin/users'],
     enabled: !!currentUser
   });
-  
+
   const typedUsers: UserData[] = users || [];
 
   // Create trial user mutation
@@ -281,7 +281,7 @@ export function AdminPortal() {
 
   const _handleAction = () => {
     if (!selectedUser || !actionType) return;
-    
+
     const userWithId = selectedUser as { id: number };
     if (actionType === 'reset-password') {
       actionMutation.mutate({ 
@@ -321,70 +321,77 @@ export function AdminPortal() {
       </Card>
 
       {/* Statistics Dashboard */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border-blue-500/20">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Users</p>
-                <p className="text-3xl font-bold">{stats?.totalUsers ?? 0}</p>
-                <p className="text-xs text-green-600 mt-1">
-                  +{stats?.newUsersToday ?? 0} today
-                </p>
+      {_statsLoading ? (
+        <div className="text-center py-8">
+          <RefreshCw className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
+          <p className="text-muted-foreground mt-2">Loading statistics...</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border-blue-500/20">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Users</p>
+                  <p className="text-3xl font-bold">{stats?.totalUsers ?? 0}</p>
+                  <p className="text-xs text-green-600 mt-1">
+                    +{stats?.newUsersToday ?? 0} today
+                  </p>
+                </div>
+                <Users className="h-8 w-8 text-blue-500" />
               </div>
-              <Users className="h-8 w-8 text-blue-500" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/20">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Pro/Premium</p>
-                <p className="text-3xl font-bold">
-                  {(stats?.proUsers ?? 0) + (stats?.premiumUsers ?? 0)}
-                </p>
-                <p className="text-xs text-purple-600 mt-1">
-                  {stats?.trialUsers ?? 0} trials active
-                </p>
+          <Card className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/20">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Pro/Premium</p>
+                  <p className="text-3xl font-bold">
+                    {(stats?.proUsers ?? 0) + (stats?.premiumUsers ?? 0)}
+                  </p>
+                  <p className="text-xs text-purple-600 mt-1">
+                    {stats?.trialUsers ?? 0} trials active
+                  </p>
+                </div>
+                <Crown className="h-8 w-8 text-purple-500" />
               </div>
-              <Crown className="h-8 w-8 text-purple-500" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/20">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Monthly Revenue</p>
-                <p className="text-3xl font-bold">${stats?.revenue ?? 0}</p>
-                <p className="text-xs text-green-600 mt-1">
-                  <TrendingUp className="h-3 w-3 inline mr-1" />
-                  12% increase
-                </p>
+          <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/20">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Monthly Revenue</p>
+                  <p className="text-3xl font-bold">${stats?.revenue ?? 0}</p>
+                  <p className="text-xs text-green-600 mt-1">
+                    <TrendingUp className="h-3 w-3 inline mr-1" />
+                    12% increase
+                  </p>
+                </div>
+                <DollarSign className="h-8 w-8 text-green-500" />
               </div>
-              <DollarSign className="h-8 w-8 text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card className="bg-gradient-to-br from-orange-500/10 to-red-500/10 border-orange-500/20">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Active Today</p>
-                <p className="text-3xl font-bold">{stats?.activeToday ?? 0}</p>
-                <p className="text-xs text-orange-600 mt-1">
-                  Real-time activity
-                </p>
+          <Card className="bg-gradient-to-br from-orange-500/10 to-red-500/10 border-orange-500/20">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Active Today</p>
+                  <p className="text-3xl font-bold">{stats?.activeToday ?? 0}</p>
+                  <p className="text-xs text-orange-600 mt-1">
+                    Real-time activity
+                  </p>
+                </div>
+                <Activity className="h-8 w-8 text-orange-500" />
               </div>
-              <Activity className="h-8 w-8 text-orange-500" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Management Tabs */}
       <Tabs defaultValue="live-dashboard" className="w-full">
@@ -822,7 +829,7 @@ export function AdminPortal() {
                   <strong>Email System:</strong> {stats?.emailConfigured ? 'Configured ✓' : 'Not configured - Add SendGrid API key'}
                 </AlertDescription>
               </Alert>
-              
+
               <Alert className="border-blue-500/30 bg-blue-500/5">
                 <Shield className="h-4 w-4 text-blue-600" />
                 <AlertDescription>
@@ -1322,7 +1329,7 @@ function UserManagementTab({ authenticatedRequest, users }: { authenticatedReque
   const handleAction = () => {
     if (!selectedUser || !actionType) return;
     if (actionType !== 'reset-password' && !reason) return;
-    
+
     const actionData: AdminActionRequest = {
       userId: (selectedUser as UserData).id,
       action: actionType,

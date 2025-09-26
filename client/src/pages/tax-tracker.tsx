@@ -153,6 +153,11 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier: _userTier = 'free' })
   const earliestTaxYear = 2000;
   const latestTaxYear = currentYear + 1;
 
+  // Determine user access levels based on tier
+  const hasProAccess = _userTier === 'pro' || _userTier === 'premium';
+  const hasPremiumInsights = _userTier === 'premium';
+  const isFreeOrGuest = _userTier === 'guest' || _userTier === 'free';
+
   const createDefaultExpenseForm = (): ExpenseFormState => ({
     description: '',
     amount: '',
@@ -172,7 +177,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier: _userTier = 'free' })
   const [receiptExpenseId, setReceiptExpenseId] = useState('');
   const [expenseError, setExpenseError] = useState<string | null>(null);
   const [guidanceCategoryFilter, setGuidanceCategoryFilter] = useState<string>('all');
-  
+
   const queryClient = useQueryClient();
 
   const { data: expenseCategories = [], isLoading: categoriesLoading, error: categoriesError } = useQuery<ExpenseCategory[]>({
@@ -344,7 +349,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier: _userTier = 'free' })
       start: startOfMonth(calendarDate),
       end: endOfMonth(calendarDate)
     });
-    
+
     return daysInMonth.map(day => {
       const dayExpenses = calendarExpenses.filter(expense =>
         isSameDay(parseISO(expense.expenseDate), day)
@@ -371,7 +376,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier: _userTier = 'free' })
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-purple-50">
       <div className="max-w-7xl mx-auto p-6 space-y-8">
-        
+
         {/* Header */}
         <div className="text-center space-y-4">
           <div className="flex items-center justify-center space-x-3">
@@ -431,6 +436,53 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier: _userTier = 'free' })
               </div>
             </CardContent>
           </Card>
+
+          {hasProAccess ? (
+            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300">
+              <CardContent className="p-6">
+                <div className="flex items-start space-x-4">
+                  <div className="p-3 bg-amber-100 rounded-xl">
+                    <Sparkles className="h-6 w-6 text-amber-600" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-gray-500">
+                      {hasPremiumInsights ? 'Premium AI Monitoring' : 'Pro Automations'}
+                    </p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {hasPremiumInsights ? 'Real-time' : 'Active'}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {hasPremiumInsights
+                        ? 'Premium subscribers receive proactive audit alerts as deductions sync.'
+                        : 'Your account is auto-categorizing receipts and deductions in the background.'}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="bg-white/60 border border-dashed border-purple-200 shadow-inner">
+              <CardContent className="p-6">
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Pro Automations</p>
+                      <p className="text-2xl font-bold text-gray-900">Locked</p>
+                    </div>
+                    <Sparkles className="h-6 w-6 text-purple-300" />
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Unlock automated receipt syncing and AI audit monitoring with a Pro subscription.
+                  </p>
+                  {isFreeOrGuest && (
+                    <Button asChild className="mt-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg">
+                      <a href="/checkout">Upgrade to Pro</a>
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Main Content */}
@@ -566,7 +618,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier: _userTier = 'free' })
                                 {formatCategoryDeduction(category)}
                               </Badge>
                             </div>
-                          
+
                           <div>
                             <h3 className="font-bold text-lg text-gray-900 group-hover:text-purple-600 transition-colors">
                               {category.name}
@@ -793,14 +845,14 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier: _userTier = 'free' })
                       </CardHeader>
                       <CardContent className="space-y-4">
                         <p className="text-sm text-gray-700">{guidance.description}</p>
-                        
+
                         <div>
                           <h5 className="text-sm font-medium text-gray-900 mb-2">Legal Basis</h5>
                           <p className="text-xs text-gray-600 bg-gray-50 p-2 rounded border">
                             {guidance.legalBasis}
                           </p>
                         </div>
-                        
+
                         <div>
                           <h5 className="text-sm font-medium text-gray-900 mb-2">Requirements</h5>
                           <ul className="space-y-1">
@@ -851,7 +903,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier: _userTier = 'free' })
                   data-testid="input-expense-description"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="amount">Amount</Label>
                 <Input
@@ -863,7 +915,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier: _userTier = 'free' })
                   data-testid="input-expense-amount"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="category">Category</Label>
                 <Select 
@@ -882,7 +934,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier: _userTier = 'free' })
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div>
                 <Label htmlFor="date">Date</Label>
                 <Input
@@ -893,7 +945,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier: _userTier = 'free' })
                   data-testid="input-expense-date"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="taxYear">Tax Year</Label>
                 <Input
@@ -920,7 +972,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier: _userTier = 'free' })
                   data-testid="textarea-expense-notes"
                 />
               </div>
-              
+
               <div className="flex space-x-2 pt-4">
                 <Button 
                   variant="outline" 
@@ -1003,7 +1055,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier: _userTier = 'free' })
                   </div>
                 )}
               </div>
-              
+
               <div className="flex space-x-2 pt-4">
                 <Button 
                   variant="outline" 
