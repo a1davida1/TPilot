@@ -26,8 +26,7 @@ import {
   Trash2,
   Tag,
   Crown,
-  Zap,
-  Plus
+  Zap
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -78,20 +77,20 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
     const headers: { [key: string]: string } = {
       'Authorization': `Bearer ${token}`
     };
-    
+
     if (data instanceof FormData) {
       body = data;
     } else if (data) {
       headers['Content-Type'] = 'application/json';
       body = JSON.stringify(data);
     }
-    
+
     const response = await fetch(url, {
       method,
       headers,
       body
     });
-    
+
     if (!response.ok) {
       const errorText = await response.text();
       let errorMessage;
@@ -103,7 +102,7 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
       }
       throw new Error(errorMessage);
     }
-    
+
     return response.json();
   };
 
@@ -144,6 +143,13 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
         title: "Image deleted",
         description: "Image has been removed from your gallery."
       });
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: "Delete failed",
+        description: getErrorMessage(error) || "Failed to delete image.",
+        variant: "destructive"
+      });
     }
   });
 
@@ -164,10 +170,10 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
       formData.append('file', file);
       // Apply watermark for free users
       formData.append('watermark', (!isProUser).toString());
-      
+
       uploadToGalleryMutation.mutate(formData);
     }
-    
+
     // Reset input
     event.target.value = '';
   };
@@ -179,7 +185,7 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
       setOriginalImageUrl(url);
       setProtectedImageUrl(null);
       setShowComparison(false);
-      
+
       toast({
         title: "Image uploaded successfully",
         description: `${file.name} is ready for protection`
@@ -207,7 +213,7 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       processFile(e.dataTransfer.files[0]);
     }
@@ -215,23 +221,23 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
 
   const processImage = async () => {
     if (!selectedFile) return;
-    
+
     setIsProcessing(true);
     try {
       const settings = useCustom ? customSettings : protectionPresets[preset];
       // Apply watermark for free users (Pro/Premium users get watermark-free)
       const shouldAddWatermark = !isProUser;
       const protectedBlob = await protectImage(selectedFile, settings, shouldAddWatermark);
-      
+
       // Create preview URL
       const url = URL.createObjectURL(protectedBlob);
       setProtectedImageUrl(url);
       setShowComparison(true);
-      
+
       const successMessage = shouldAddWatermark 
         ? "Your image is now protected! Upgrade to Pro to remove watermarks."
         : "Your image is now protected against reverse search with no watermarks!";
-      
+
       toast({
         title: "Image protected successfully!",
         description: successMessage,
@@ -260,14 +266,14 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
 
   const downloadImage = async () => {
     if (!selectedFile || !protectedImageUrl) return;
-    
+
     try {
       const response = await fetch(protectedImageUrl);
       const blob = await response.blob();
       const timestamp = new Date().toISOString().slice(0, 10);
       const filename = `protected_${timestamp}_${selectedFile.name}`;
       downloadProtectedImage(blob, filename);
-      
+
       toast({
         title: "Download started",
         description: "Your protected image is downloading..."
@@ -338,7 +344,7 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
             {showGallery ? 'Image Gallery' : 'Gallery (Pro Only)'}
           </TabsTrigger>
         </TabsList>
-        
+
         {/* Image Protection Tab */}
         <TabsContent value="protect" className="mt-6">
           <div className="grid md:grid-cols-2 gap-6">
@@ -381,7 +387,7 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
                       className="hidden"
                       data-testid="file-input-protect"
                     />
-                    
+
                     {selectedFile ? (
                       <div className="space-y-4">
                         <CheckCircle className="mx-auto h-12 w-12 text-green-500" />
@@ -499,7 +505,7 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
                           data-testid="slider-blur-intensity"
                         />
                       </div>
-                      
+
                       <div className="flex items-center justify-between">
                         <Label className="text-sm">Add Noise</Label>
                         <Switch
@@ -510,7 +516,7 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
                           data-testid="switch-add-noise"
                         />
                       </div>
-                      
+
                       <div className="space-y-2">
                         <Label className="text-sm">Resize: {customSettings.resizePercent || 90}%</Label>
                         <Slider
@@ -524,7 +530,7 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
                           data-testid="slider-resize-percent"
                         />
                       </div>
-                      
+
                       <div className="space-y-2">
                         <Label className="text-sm">Crop Edges: {customSettings.cropPercent || 0}%</Label>
                         <Slider
@@ -677,7 +683,7 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
                       <span className="text-purple-600 font-bold">4.</span>
                       <p>Download your protected image - safe from reverse searches!</p>
                     </div>
-                    
+
                     <Alert className="mt-4">
                       <Shield className="h-4 w-4" />
                       <AlertDescription>
@@ -770,7 +776,7 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
                                 </div>
                               </div>
                             </DialogTrigger>
-                            
+
                             <DialogContent className="max-w-2xl">
                               <DialogHeader>
                                 <DialogTitle>Image Details</DialogTitle>
@@ -778,14 +784,14 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
                                   {image.filename}
                                 </DialogDescription>
                               </DialogHeader>
-                              
+
                               <div className="space-y-4">
                                 <img
                                   src={image.signedUrl}
                                   alt={image.filename}
                                   className="w-full max-h-96 object-contain rounded-lg"
                                 />
-                                
+
                                 <div className="flex gap-2 flex-wrap">
                                   <Button
                                     size="sm"

@@ -1,10 +1,10 @@
 import React from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Copy, Check, AlertCircle } from "lucide-react";
-import { useState } from "react";
-import type { CaptionObject, RankedResult, CaptionPreviewData } from '@shared/types/caption';
+import type { CaptionPreviewData } from '@shared/types/caption';
 
 // Re-export types from shared module for backward compatibility
 export type { CaptionObject, RankedResult, CaptionPreviewData } from '@shared/types/caption';

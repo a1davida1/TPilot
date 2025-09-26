@@ -72,7 +72,11 @@ function render(ui: React.ReactElement): RenderResult {
 
 function cleanup() {
   while (mountedRoots.length > 0) {
-    const { root, container } = mountedRoots.pop()!;
+    const entry = mountedRoots.pop();
+    if (!entry) {
+      break;
+    }
+    const { root, container } = entry;
     act(() => {
       root.unmount();
     });

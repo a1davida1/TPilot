@@ -63,7 +63,9 @@ export function AIGenerator({ onContentGenerated }: AIGeneratorProps) {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (res.ok) setUserProfile(await res.json());
-      } catch {}
+      } catch (error) {
+        console.error('Failed to load user profile:', error);
+      }
     }
     loadProfile();
   }, []);
@@ -80,7 +82,9 @@ export function AIGenerator({ onContentGenerated }: AIGeneratorProps) {
         },
         body: JSON.stringify(profile)
       });
-    } catch {}
+    } catch (error) {
+      console.error('Failed to save user profile:', error);
+    }
   };
 
   const updateProfile = (patch: Partial<typeof userProfile>) =>

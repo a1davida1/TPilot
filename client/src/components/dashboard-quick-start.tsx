@@ -26,7 +26,6 @@ import {
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
-  ExternalLink,
   Globe,
   Loader2,
   Sparkles,

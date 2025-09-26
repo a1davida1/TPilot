@@ -31,7 +31,7 @@ export function AudienceInsights() {
       if (!token) {
         return { audienceData: [], topSubreddits: [] };
       }
-      
+
       try {
         const response = await fetch('/api/audience-insights', {
           headers: { 'Authorization': `Bearer ${token}` }
@@ -41,6 +41,7 @@ export function AudienceInsights() {
         }
         return response.json();
       } catch (error) {
+        console.error('Failed to fetch audience insights:', error);
         // Return empty data instead of mock data
         return { audienceData: [], topSubreddits: [] };
       }
@@ -99,7 +100,7 @@ export function AudienceInsights() {
                     {platform.activeUsers} active
                   </Badge>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-3 mb-3">
                   <div className="flex items-center gap-2 text-sm">
                     <Clock className="h-4 w-4 text-gray-400" />
@@ -107,9 +108,10 @@ export function AudienceInsights() {
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <Globe className="h-4 w-4 text-gray-400" />
+                    <span className="text-gray-300">{platform.demographics?.location}</span>
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-400">Engagement Rate</span>
@@ -117,7 +119,7 @@ export function AudienceInsights() {
                   </div>
                   <Progress value={platform.engagement} className="h-2" />
                 </div>
-                
+
                 <div className="mt-3 flex flex-wrap gap-1">
                   {platform.demographics?.interests.map((interest: string) => (
                     <Badge key={interest} variant="secondary" className="text-xs">

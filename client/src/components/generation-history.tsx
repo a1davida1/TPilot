@@ -35,7 +35,8 @@ export function GenerationHistory({ onSelectGeneration }: GenerationHistoryProps
         description: `${itemName} copied to clipboard`,
       });
       setTimeout(() => setCopiedItem(null), 2000);
-    } catch (_err) {
+    } catch (err) {
+      console.error('Failed to copy generation history item:', err);
       toast({
         title: "Failed to copy",
         description: "Please try selecting and copying manually",

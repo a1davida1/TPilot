@@ -90,6 +90,7 @@ export function GenerationPanel({ onContentGenerated }: GenerationPanelProps) {
         description: `${type} copied to clipboard`,
       });
     } catch (error) {
+      console.error('Failed to copy generated content:', error);
       toast({
         title: "Copy Failed",
         description: "Failed to copy to clipboard",
