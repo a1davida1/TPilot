@@ -27,20 +27,27 @@ import {
 } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 
-type UserSettings = {
+type UserSettingsResponse = {
+  theme?: string;
+  notifications?: boolean;
+  emailUpdates?: boolean;
+  autoSave?: boolean;
+  defaultPlatform?: string;
+  defaultStyle?: string;
+  watermarkPosition?: string;
+};
+
+type UpdateSettingsResponse = {
+  success: boolean;
+  settings: UserSettingsResponse;
+};
+
+type UserSettingsPayload = {
   theme: string;
   notifications: boolean;
   emailUpdates: boolean;
   autoSave: boolean;
   defaultPlatform: string;
-};
-
-type UserSettingsResponse = UserSettings; // Assuming the API response directly matches UserSettings
-type UserSettingsPayload = UserSettings; // Assuming the payload for updating is the same as UserSettings
-
-type UpdateSettingsResponse = {
-  success: boolean;
-  settings: UserSettings;
 };
 
 export default function SettingsPage() {

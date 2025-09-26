@@ -1488,9 +1488,9 @@ const BUILT_IN_PRESET_VARIATIONS: Record<string, PresetVariation[]> = {
     },
     {
       titles: [
-        "Golden hour glow on bare skin",
+        'Golden hour glow on bare skin',
         "The light hits different when it's just me",
-        "Unedited, unfiltered, unbelievably soft"
+        'Unedited, unfiltered, unbelievably soft'
       ],
       content:
         "Golden light pouring through the window, the kind that hugs every line of your body. Slow, deliberate movements, breathing in sync with the camera, letting softness and strength meet in the same frame.",
@@ -1632,9 +1632,9 @@ const BUILT_IN_PRESET_VARIATIONS: Record<string, PresetVariation[]> = {
     },
     {
       titles: [
-        "Sunday scroll with a side of temptation",
+        'Sunday scroll with a side of temptation',
         "If you were here I'd hand you the controller",
-        "Netflix queued, shirt optional"
+        'Netflix queued, shirt optional'
       ],
       content:
         "Movie night energy with just enough skin showing to keep things interesting. Laughing at the screen, messing with the camera, acting like you just dropped in unannounced.",
@@ -1793,7 +1793,7 @@ const BUILT_IN_PRESET_VARIATIONS: Record<string, PresetVariation[]> = {
         sceneSetup: 'Gym or workout space, fitness equipment visible'
       }
     }
-  ]
+  ],
 };
 
 async function loadPresetVariations(): Promise<Record<string, PresetVariation[]>> {
@@ -1913,7 +1913,7 @@ function generateTitles(
       emoji,
       punctuation,
       hedge,
-      photoType: readablePhotoType
+      photoType: params.photoType
     };
 
     const candidate = renderTitleFromPattern(pattern, titleContext);
@@ -1936,7 +1936,7 @@ function generateTitles(
         emoji: selectEmoji(emojis, DEFAULT_EMOJI_PROBABILITY),
         punctuation: choosePunctuation(fallbackPattern.type),
         hedge: fallbackPattern.template.includes('{hedge}') ? randomFromArray(hedgeOptions) : '',
-        photoType: readablePhotoType
+        photoType: params.photoType
       };
 
       generatedTitles.add(renderTitleFromPattern(fallbackPattern, fallbackContext));
