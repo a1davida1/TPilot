@@ -134,31 +134,39 @@ async function generateWithGemini(prompt: string) {
       const candidates = (modelResponse as { candidates?: Array<unknown> }).candidates;
       if (Array.isArray(candidates)) {
         for (const candidate of candidates) {
-          if (!candidate || typeof candidate !== 'object') continue;
+          if (!candidate || typeof candidate !== 'object') {
+            continue;
+          }
           const content = (candidate as { content?: unknown }).content;
-          if (!content || typeof content !== 'object') continue;
+          if (!content || typeof content !== 'object') {
+            continue;
+          }
           const parts = (content as { parts?: Array<unknown> }).parts;
-          if (!Array.isArray(parts)) continue;
+          if (!Array.isArray(parts)) {
+            continue;
+          }
           for (const part of parts) {
-            if (!part || typeof part !== 'object') continue;
+            if (!part || typeof part !== 'object') {
+              continue;
+            }
             const partText = (part as { text?: unknown }).text;
             if (typeof partText === 'string' && partText.trim()) {
               text = partText.trim();
               break;
             }
           }
-          if (text) break;
-        }
-      }
-    }
-
-    if (!text) {
-      safeLog('warn', 'Gemini provider returned empty response', {});
-      return null;
-    }
-
-    const trimmedText = text.trim();
-    if (trimmedText.length === 0) {
+          if (text) {
+            break;
+          }
+                  }
+                }
+              }
+              if (!text) {
+                safeLog('warn', 'Gemini provider returned empty response', {});
+                return null;
+              }
+              const trimmedText = text.trim();
+              if (trimmedText.length === 0) {
       safeLog('warn', 'Gemini provider returned no text', {});
       return null;
     }
