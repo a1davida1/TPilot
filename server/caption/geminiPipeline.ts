@@ -998,6 +998,12 @@ export async function pipeline({ imageUrl, platform, voice = "flirty_playful", n
   } catch (error) {
     const { openAICaptionFallback } = await import('./openaiFallback');
     const final = await openAICaptionFallback({ platform, voice, imageUrl });
-    return { provider: 'openai', final } as CaptionResult;
+    const ranked = RankResult.parse({
+      winner_index: 0,
+      scores: [1, 0, 0, 0, 0],
+      reason: 'OpenAI fallback selected after Gemini pipeline error',
+      final,
+    });
+    return { provider: 'openai', final, ranked } as CaptionResult;
   }
 }

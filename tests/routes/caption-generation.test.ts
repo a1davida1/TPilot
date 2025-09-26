@@ -14,6 +14,7 @@ vi.mock('../../server/lib/gemini.js', () => ({
 }));
 
 import { CaptionItem } from '../../server/caption/schema.js';
+import { generationResponseSchema } from '../../shared/types/caption.js';
 
 vi.mock('../../server/caption/openaiFallback.js', () => ({
   openAICaptionFallback: vi.fn().mockResolvedValue({
@@ -373,7 +374,7 @@ describe('Caption Generation', () => {
         platform: mockPlatform,
         voice: mockVoice,
       });
-      
+
       // Verify the result has the expected structure from OpenAI fallback
       expect(result.final).toMatchObject({
         caption: 'Fallback caption',
@@ -385,7 +386,15 @@ describe('Caption Generation', () => {
         cta: 'Check this out',
         nsfw: false,
       });
-      
+
+      expect(result.provider).toBe('openai');
+      expect(result.ranked).toBeDefined();
+      const rankedResult = result.ranked as { final?: unknown; reason?: string };
+      expect(rankedResult.reason).toContain('OpenAI fallback');
+      expect(rankedResult.final).toEqual(result.final);
+
+      expect(() => generationResponseSchema.parse(result)).not.toThrow();
+
       // Verify the fallback hashtags don't contain banned words
       const fallbackHashtags = ['#fallback1', '#fallback2', '#fallback3'];
       fallbackHashtags.forEach((tag) => {
@@ -1253,6 +1262,36 @@ describe('Caption Generation', () => {
       expect((result.final as CaptionResult).caption).not.toContain('✨ Enhanced with engaging content and call-to-action that drives better engagement!');
 
       genSpy.mockRestore();
+    });
+
+    it('returns schema compliant fallback when Gemini rewrite fails', async () => {
+      const existingCaption = 'Baseline caption';
+      const { textModel } = await import('../../server/lib/gemini.js');
+      const generateSpy = vi.spyOn(textModel, 'generateContent').mockRejectedValue(new Error('Gemini unavailable'));
+
+      const result = await pipelineRewrite({
+        platform: 'instagram',
+        voice: 'engaging',
+        existingCaption,
+      });
+
+      const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.js');
+      expect(openAICaptionFallback).toHaveBeenCalledWith({
+        platform: 'instagram',
+        voice: 'engaging',
+        existingCaption,
+        imageUrl: undefined,
+      });
+
+      expect(result.provider).toBe('openai');
+      expect(result.ranked).toBeDefined();
+      const rankedResult = result.ranked as { final?: unknown; reason?: string };
+      expect(rankedResult.reason).toContain('OpenAI fallback');
+      expect(rankedResult.final).toEqual(result.final);
+
+      expect(() => generationResponseSchema.parse(result)).not.toThrow();
+
+      generateSpy.mockRestore();
     });
 
     it('retries with hints when the rewrite is not longer', async () => {

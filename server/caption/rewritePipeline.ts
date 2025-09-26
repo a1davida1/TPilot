@@ -566,6 +566,12 @@ export async function pipelineRewrite({ platform, voice="flirty_playful", style,
   } catch (error) {
     const { openAICaptionFallback } = await import('./openaiFallback');
     const final = await openAICaptionFallback({ platform, voice, existingCaption, imageUrl });
-    return { provider: 'openai', final } as CaptionResult;
+    const ranked = RankResult.parse({
+      winner_index: 0,
+      scores: [1, 0, 0, 0, 0],
+      reason: 'OpenAI fallback selected after Gemini rewrite error',
+      final,
+    });
+    return { provider: 'openai', final, ranked } as CaptionResult;
   }
 }

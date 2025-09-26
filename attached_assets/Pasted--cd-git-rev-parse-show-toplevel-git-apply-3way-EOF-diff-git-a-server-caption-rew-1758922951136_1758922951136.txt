@@ -1,0 +1,45 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/server/caption/rewritePipeline.ts b/server/caption/rewritePipeline.ts
+index 0cae2368cd5b320e067d28d01c14bbaa6c194b4f..861203a6e9e31717b62e1bfb06a788faf77d53e7 100644
+--- a/server/caption/rewritePipeline.ts
++++ b/server/caption/rewritePipeline.ts
+@@ -544,28 +544,34 @@ export async function pipelineRewrite({ platform, voice="flirty_playful", style,
+       throw new Error('Rewrite did not produce a longer caption');
+     }
+ 
+     const err = platformChecks(platform, out);
+     if (err) {
+       let platformAttempt = await performAttempt(`Fix: ${err}. Be specific, human, and avoid clichés while staying platform safe.`);
+       platformAttempt = await enforceMandatoryTokens(platformAttempt, `Fix: ${err}. Be specific, human, and avoid clichés while staying platform safe.`);
+       if (platformAttempt.final.caption.length <= existingCaption.length) {
+         throw new Error('Platform-specific rewrite failed to improve length');
+       }
+       const platformErr = platformChecks(platform, platformAttempt.final);
+       if (platformErr) {
+         throw new Error(platformErr);
+       }
+       ({ variants, ranked, final: out } = platformAttempt);
+       await enforceCoverage();
+       if (out.caption.length <= existingCaption.length) {
+         throw new Error('Platform-specific rewrite failed to improve length');
+       }
+     }
+ 
+     return { provider: 'gemini', facts, variants, ranked, final: out };
+   } catch (error) {
+     const { openAICaptionFallback } = await import('./openaiFallback');
+     const final = await openAICaptionFallback({ platform, voice, existingCaption, imageUrl });
+-    return { provider: 'openai', final } as CaptionResult;
++    const ranked = RankResult.parse({
++      winner_index: 0,
++      scores: [1, 0, 0, 0, 0],
++      reason: 'OpenAI fallback selected after Gemini rewrite error',
++      final,
++    });
++    return { provider: 'openai', final, ranked } as CaptionResult;
+   }
+-}
++}
+ 
+EOF
+)
