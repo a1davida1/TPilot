@@ -194,10 +194,10 @@ export class DatabaseStorage implements IStorage {
       // Guard optional schema fields - using db query pattern
       let query = db.select().from(users);
       if ('isDeleted' in users) {
-        query = query.where(eq(users.isDeleted, false));
+        query = query.where(eq((users as any).isDeleted, false)) as any;
       }
       if ('createdAt' in users) {
-        query = query.orderBy(desc(users.createdAt));
+        query = query.orderBy(desc((users as any).createdAt)) as any;
       }
       const allUsers = await query.execute();
       return allUsers;

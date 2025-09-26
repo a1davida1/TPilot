@@ -86,7 +86,7 @@ export function configureSocialAuth() {
           callbackURL: '/api/reddit/callback',
           scope: ['identity'],
           state: true,
-        } as RedditStrategy.StrategyOptions,
+        } as any,
         async (accessToken, refreshToken, profile, done) => {
           await handleSocialAuth(
             'reddit',
@@ -94,7 +94,7 @@ export function configureSocialAuth() {
               id: profile.id,
               username: profile.name,
               emails: [],
-              photos: [{ value: (profile as Record<string, unknown>).icon_img as string }],
+              photos: [{ value: (profile as any).icon_img as string }],
             },
             done,
           );
@@ -136,9 +136,8 @@ export const socialAuthRoutes = {
 
   // Reddit routes
   redditAuth: passport.authenticate('reddit', { 
-    state: 'reddit-auth-state',
-    duration: 'permanent' 
-  }),
+    scope: ['identity']
+  } as any),
   redditCallback: passport.authenticate('reddit', { 
     failureRedirect: '/login?error=reddit_auth_failed',
     successRedirect: '/dashboard?reddit=connected' 

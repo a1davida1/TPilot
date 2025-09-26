@@ -340,7 +340,7 @@ Return ONLY the JSON object above with actual content. No other text.`;
       console.warn('Failed to cache AI result (non-fatal):', (error as Error).message);
       // Check for foreign key constraint violation
       const err = error as Record<string, unknown>;
-      if (err?.code === '23503' && err?.constraint?.includes('user_id')) {
+      if (err?.code === '23503' && typeof err?.constraint === 'string' && err.constraint.includes('user_id')) {
         console.warn(`User ID ${userId} not found in database, skipping cache`);
       }
       // Non-fatal error, continue without caching

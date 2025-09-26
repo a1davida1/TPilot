@@ -319,9 +319,12 @@ export async function initializeSentry(): Promise<typeof import('@sentry/node') 
           
           // Filter out known non-critical errors
           const error = (hint as Record<string, unknown>)?.originalException;
-          if (error?.message?.includes('ECONNRESET') || 
-              error?.message?.includes('EPIPE')) {
-            return null; // Don't send network errors
+          if (error && typeof error === 'object' && 'message' in error) {
+            const errorMessage = (error as Record<string, unknown>).message;
+            if (typeof errorMessage === 'string' && 
+                (errorMessage.includes('ECONNRESET') || errorMessage.includes('EPIPE'))) {
+              return null; // Don't send network errors
+            }
           }
           
           return event as Record<string, unknown>;
@@ -339,7 +342,7 @@ export async function initializeSentry(): Promise<typeof import('@sentry/node') 
         }
       };
       
-      Sentry.init(sentryConfig);
+      Sentry.init(sentryConfig as any);
       
       logger.info('Sentry initialized successfully', {
         environment: sentryConfig.environment,

@@ -85,6 +85,24 @@ function truncateForHint(caption: string): string {
   return `${trimmed.slice(0, 57)}...`;
 }
 
+// Sanitize hint strings for retry logic
+function sanitizeHintForRetry(hint: string | undefined): string | undefined {
+  if (!hint) return undefined;
+  let sanitized = "";
+  for (let index = 0; index < hint.length; index += 1) {
+    const char = hint[index];
+    const code = hint.charCodeAt(index);
+    if (char === "\n") {
+      sanitized += char;
+    } else if (code < 32 || code === 127) {
+      sanitized += " ";
+    } else {
+      sanitized += char;
+    }
+  }
+  return sanitized;
+}
+
 function buildRetryHint(
   baseHint: string | undefined,
   duplicates: string[],

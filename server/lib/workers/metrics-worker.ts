@@ -6,11 +6,16 @@ import { eq } from "drizzle-orm";
 import { RedditManager } from "../reddit.js";
 import { logger } from "../logger.js";
 
-type RedditSubmission = Awaited<
-  ReturnType<RedditManager["prototype"]["getSubmission"]>
->;
+type RedditSubmission = {
+  score: number;
+  upvote_ratio: number;
+  num_comments: number;
+  view_count: number;
+};
 
-type RedditAPI = Pick<RedditManager, "getSubmission">;
+interface RedditAPI {
+  getSubmission(id: string): Promise<RedditSubmission>;
+}
 
 interface PostMetrics {
   score: number;
@@ -109,10 +114,10 @@ export class MetricsWorker {
     }
   }
 
-  private async fetchPostMetrics(reddit: RedditAPI, redditPostId: string) {
+  private async fetchPostMetrics(reddit: any, redditPostId: string) {
     try {
       // Use Reddit API to get post details
-      const post = await reddit.getSubmission(redditPostId);
+      const post = await (reddit as any).getSubmission(redditPostId);
       
       return {
         score: post.score ?? 0,

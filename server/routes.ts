@@ -331,14 +331,14 @@ function normalizePhotoInstructions(
 
   if (!instructions) return result;
 
-  result.lighting = normalizeInstructionValue(instructions.lighting);
-  result.cameraAngle = normalizeInstructionValue(instructions.cameraAngle ?? instructions.angles);
-  result.angles = normalizeInstructionValue(instructions.angles);
-  result.composition = normalizeInstructionValue(instructions.composition);
-  result.styling = normalizeInstructionValue(instructions.styling);
-  result.mood = normalizeInstructionValue(instructions.mood) ?? instructions.mood;
-  result.technical = normalizeInstructionValue(instructions.technical);
-  result.technicalSettings = normalizeInstructionValue(instructions.technicalSettings ?? instructions.technical);
+  result.lighting = normalizeInstructionValue((instructions as any).lighting);
+  result.cameraAngle = normalizeInstructionValue((instructions as any).cameraAngle ?? (instructions as any).angles);
+  result.angles = normalizeInstructionValue((instructions as any).angles);
+  result.composition = normalizeInstructionValue((instructions as any).composition);
+  result.styling = normalizeInstructionValue((instructions as any).styling);
+  result.mood = normalizeInstructionValue((instructions as any).mood) ?? (instructions as any).mood;
+  result.technical = normalizeInstructionValue((instructions as any).technical);
+  result.technicalSettings = normalizeInstructionValue((instructions as any).technicalSettings ?? (instructions as any).technical);
 
   return result;
 }
@@ -437,12 +437,12 @@ const resolveBillingPeriodEnd = (
       }
     }
 
-    const subscriptionPeriodEnd = coerceStripeTimestamp(subscription.current_period_end);
+    const subscriptionPeriodEnd = coerceStripeTimestamp((subscription as any).current_period_end);
     if (subscriptionPeriodEnd !== undefined) {
       return subscriptionPeriodEnd;
     }
 
-    return coerceIsoString(subscription.current_period_end);
+    return coerceIsoString((subscription as any).current_period_end);
   }
 
   if (isStripeSubscriptionSchedule(subscription)) {
@@ -704,22 +704,8 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api', o
         await storage.updateUser(req.user.id, { stripeCustomerId: customerId });
       }
 
-      const priceData: Stripe.SubscriptionCreateParams.Item.PriceData = {
-        currency: 'usd',
-        product_data: {
-          name: plan === 'pro_plus' ? 'ThottoPilot Pro Plus' : 'ThottoPilot Pro',
-          description: plan === 'pro_plus'
-            ? 'Premium content creation with advanced features'
-            : 'Professional content creation and protection'
-        },
-        unit_amount: amount,
-        recurring: {
-          interval: 'month',
-        },
-      };
-
       // Create subscription with trial period
-      const priceData: Stripe.SubscriptionCreateParams.Item.PriceData = {
+      const priceData = {
         currency: 'usd',
         product_data: {
           name: plan === 'pro_plus' ? 'ThottoPilot Pro Plus' : 'ThottoPilot Pro',
@@ -731,7 +717,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api', o
         recurring: {
           interval: 'month'
         }
-      };
+      } as any;
 
       const subscription = await stripe.subscriptions.create({
         customer: customerId,
