@@ -273,10 +273,10 @@ export default function ReferralPage() {
             <CardContent>
               <div className="text-2xl font-bold text-pink-600 dark:text-pink-400 flex items-center">
                 <Users className="h-5 w-5 mr-2" />
-                {referralStats.totalReferrals}
+                {stats.totalReferrals}
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {referralStats.activeReferrals} active this month
+                {stats.activeReferrals} active this month
               </p>
             </CardContent>
           </Card>
@@ -288,10 +288,10 @@ export default function ReferralPage() {
             <CardContent>
               <div className="text-2xl font-bold text-green-600 dark:text-green-400 flex items-center">
                 <DollarSign className="h-5 w-5 mr-2" />
-                ${referralStats.totalEarnings.toFixed(2)}
+                ${stats.totalCommission.toFixed(2)}
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                ${referralStats.pendingEarnings.toFixed(2)} pending
+                ${stats.pendingEarnings.toFixed(2)} pending
               </p>
             </CardContent>
           </Card>
@@ -302,10 +302,10 @@ export default function ReferralPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                {referralStats.thisMonthReferrals}
+                {stats.totalReferrals}
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                ${referralStats.thisMonthEarnings.toFixed(2)} earned
+                ${stats.totalCommission.toFixed(2)} earned
               </p>
             </CardContent>
           </Card>
@@ -316,7 +316,7 @@ export default function ReferralPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                {Math.max(5 - referralStats.totalReferrals, 0)}
+                {Math.max(5 - stats.totalReferrals, 0)}
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 referrals away from $50 bonus
@@ -406,7 +406,7 @@ export default function ReferralPage() {
                 <div
                   key={index}
                   className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
-                    referralStats.totalReferrals >= tier.referrals
+                    stats.totalReferrals >= tier.referrals
                       ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800'
                       : 'bg-gray-50 dark:bg-gray-950/20 border-gray-200 dark:border-gray-700'
                   }`}
@@ -414,7 +414,7 @@ export default function ReferralPage() {
                 >
                   <div className="flex items-center gap-3">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                      referralStats.totalReferrals >= tier.referrals
+                      stats.totalReferrals >= tier.referrals
                         ? 'bg-green-500 text-white'
                         : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
                     }`}>
@@ -429,7 +429,7 @@ export default function ReferralPage() {
                       </div>
                     </div>
                   </div>
-                  {referralStats.totalReferrals >= tier.referrals && (
+                  {stats.totalReferrals >= tier.referrals && (
                     <Check className="h-5 w-5 text-green-500" />
                   )}
                 </div>

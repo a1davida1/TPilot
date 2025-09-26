@@ -268,7 +268,6 @@ export default function RedditPostingPage() {
   const { data: accounts = [], isLoading: accountsLoading } = useQuery<RedditAccount[]>({
     queryKey: ['/api/reddit/accounts'],
     enabled: isAuthenticated,
-    suspense: false,
     retry: false,
   });
 
@@ -282,7 +281,6 @@ export default function RedditPostingPage() {
   const { data: mediaAssets = [], isLoading: mediaLoading } = useQuery<MediaAsset[]>({
     queryKey: ['/api/media'],
     enabled: isAuthenticated,
-    suspense: false,
     retry: false,
   });
 

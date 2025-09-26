@@ -274,52 +274,8 @@ describe.each(scenarios)('Ranking Integration Tests ($label)', ({ applyGeminiMoc
     });
   });
 });
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { CaptionItem } from '../schema';
-import { z } from 'zod';
 
-type CaptionItemType = z.infer<typeof CaptionItem>;
-type TextModelMock = ReturnType<typeof vi.fn>;
-
-const createMockResponse = (payload: unknown) => ({
-  response: {
-    text: () => (typeof payload === 'string' ? payload : JSON.stringify(payload))
-  }
-});
-
-type ScenarioConfig = {
-  label: string;
-  applyGeminiMock: () => { textModelMock: TextModelMock };
-};
-
-const scenarios: ScenarioConfig[] = [
-  {
-    label: 'function-based textModel mock',
-    applyGeminiMock: () => {
-      const textModelMock = vi.fn();
-
-      vi.doMock('../../lib/gemini', () => ({
-        textModel: textModelMock
-      }));
-
-      return { textModelMock };
-    }
-  },
-  {
-    label: 'object-based textModel mock',
-    applyGeminiMock: () => {
-      const generateContent = vi.fn();
-
-      vi.doMock('../../lib/gemini', () => ({
-        textModel: { generateContent }
-      }));
-
-      return { textModelMock: generateContent };
-    }
-  }
-];
-
-describe.each(scenarios)('Ranking Integration Tests ($label)', ({ applyGeminiMock }) => {
+describe.each(scenarios)('Ranking Integration Tests Part 2 ($label)', ({ applyGeminiMock }) => {
   let rankAndSelect: (typeof import('../geminiPipeline'))['rankAndSelect'];
   let textModelMock: TextModelMock;
 

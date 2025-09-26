@@ -321,7 +321,7 @@ export default function Phase4Dashboard() {
                   return (
                     <div key={activity.id} className="flex items-center space-x-4 p-3 rounded-lg bg-gray-800/20 border border-gray-700/30">
                       <div className="p-2 rounded-lg bg-gray-700/50">
-                        {IconComponent && React.createElement(IconComponent, {
+                        {IconComponent && React.createElement(IconComponent as React.ComponentType<React.SVGProps<SVGSVGElement>>, {
                           className: `h-4 w-4 ${activity.color}`
                         })}
                       </div>

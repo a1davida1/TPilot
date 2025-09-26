@@ -35,7 +35,7 @@ export function SocialAutomation() {
   const [jobId, setJobId] = useState<string | null>(null);
   const [posts, setPosts] = useState<{ id: string; content: string; platform: string; status: string; timestamp: string }[]>([]);
   const [accounts, setAccounts] = useState<
-    { id: string; platform: string; displayName?: string | null; username?: string | null; isActive: boolean }
+    { id: string; platform: string; displayName?: string | null; username?: string | null; isActive: boolean }[]
   >([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string | undefined>(undefined);
   const [accountsError, setAccountsError] = useState<string | null>(null);
@@ -102,7 +102,7 @@ export function SocialAutomation() {
               isActive: accountRecord.isActive === true,
             };
           })
-          .filter((account): account is { id: string; platform: string; displayName?: string | null; username?: string | null; isActive: boolean } =>
+          .filter((account): account is { id: string; platform: string; displayName: string | null; username: string | null; isActive: boolean } =>
             account !== null
           );
 

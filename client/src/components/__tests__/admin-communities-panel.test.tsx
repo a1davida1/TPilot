@@ -66,7 +66,7 @@ const createStructuredRules = (
   const mergeDeep = (target: Record<string, unknown>, source: Record<string, unknown>) => {
     for (const key in source) {
       if (source[key] instanceof Object && key in target && target[key] instanceof Object) {
-        mergeDeep(target[key], source[key]);
+        mergeDeep(target[key] as Record<string, unknown>, source[key] as Record<string, unknown>);
       } else {
         target[key] = source[key];
       }

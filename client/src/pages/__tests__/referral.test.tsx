@@ -16,7 +16,7 @@ type MockQueryResult<TData = unknown, TError = unknown> = {
   refetch: () => Promise<unknown>;
 };
 
-const mockUseQuery = vi.fn<MockQueryResult, [MockQueryOptions]>();
+const mockUseQuery = vi.fn<(options: MockQueryOptions) => MockQueryResult>();
 const mockUseAuth = vi.fn();
 const mockToast = vi.fn();
 const mockNavigate = vi.fn();
@@ -55,7 +55,7 @@ const flushPromises = () => new Promise<void>((resolve) => {
   setTimeout(resolve, 0);
 });
 
-const clipboardWriteText = vi.fn<Promise<void>, [string]>();
+const clipboardWriteText = vi.fn((text: string) => Promise.resolve());
 
 Object.defineProperty(navigator, 'clipboard', {
   value: {
