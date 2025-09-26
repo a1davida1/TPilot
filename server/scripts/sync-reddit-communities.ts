@@ -5,19 +5,28 @@ import { redditCommunities, insertRedditCommunitySchema, InsertRedditCommunity }
 import { logger } from '../lib/logger.js';
 
 // Environment validation schema
-const envSchema = z.object({
-  REDDIT_CLIENT_ID: z.string().min(1, 'REDDIT_CLIENT_ID is required'),
-  REDDIT_CLIENT_SECRET: z.string().min(1, 'REDDIT_CLIENT_SECRET is required'),
-  REDDIT_USER_AGENT: z.string().min(1, 'REDDIT_USER_AGENT is required'),
-  REDDIT_USERNAME: z.string().optional(),
-  REDDIT_PASSWORD: z.string().optional(),
-  REDDIT_REFRESH_TOKEN: z.string().optional(),
-}).refine(
-  (data) => data.REDDIT_REFRESH_TOKEN || (data.REDDIT_USERNAME && data.REDDIT_PASSWORD),
-  {
-    message: 'Either REDDIT_REFRESH_TOKEN or both REDDIT_USERNAME and REDDIT_PASSWORD are required',
-  }
-);
+const DEFAULT_USER_AGENT = 'ThottoPilot/1.0 (Community sync bot)';
+
+const envSchema = z
+  .object({
+    REDDIT_CLIENT_ID: z.string().min(1, 'REDDIT_CLIENT_ID is required'),
+    REDDIT_CLIENT_SECRET: z.string().min(1, 'REDDIT_CLIENT_SECRET is required'),
+    REDDIT_USER_AGENT: z
+      .string()
+      .min(1, 'REDDIT_USER_AGENT is required')
+      .optional()
+      .default(DEFAULT_USER_AGENT),
+    REDDIT_USERNAME: z.string().optional(),
+    REDDIT_PASSWORD: z.string().optional(),
+    REDDIT_REFRESH_TOKEN: z.string().optional(),
+  })
+  .refine(
+    (data) => data.REDDIT_REFRESH_TOKEN || (data.REDDIT_USERNAME && data.REDDIT_PASSWORD),
+    {
+      message:
+        'Either provide REDDIT_REFRESH_TOKEN or both REDDIT_USERNAME and REDDIT_PASSWORD for the sync worker.',
+    }
+  );
 
 // Sync configuration schema
 const syncConfigSchema = z.object({
@@ -243,7 +252,7 @@ export async function syncRedditCommunities(config?: { subreddits?: string[]; ru
   const env = envSchema.parse({
     REDDIT_CLIENT_ID: process.env.REDDIT_CLIENT_ID,
     REDDIT_CLIENT_SECRET: process.env.REDDIT_CLIENT_SECRET,
-    REDDIT_USER_AGENT: process.env.REDDIT_USER_AGENT || 'ThottoPilot/1.0 (Community sync bot)',
+    REDDIT_USER_AGENT: process.env.REDDIT_USER_AGENT || DEFAULT_USER_AGENT,
     REDDIT_USERNAME: process.env.REDDIT_USERNAME,
     REDDIT_PASSWORD: process.env.REDDIT_PASSWORD,
     REDDIT_REFRESH_TOKEN: process.env.REDDIT_REFRESH_TOKEN,

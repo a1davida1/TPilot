@@ -18,6 +18,25 @@ REDDIT_REDIRECT_URI=https://yourdomain.com/api/reddit/callback
 REPLIT_DOMAINS=yourdomain.com,www.yourdomain.com
 ```
 
+### Background Worker Credentials
+
+The community sync worker that runs `server/scripts/sync-reddit-communities.ts` requires the following additional environment variables:
+
+```bash
+# Required for API access used by the sync worker
+REDDIT_USER_AGENT=ThottoPilotBot/1.0 by your_reddit_username
+
+# Provide one of the two authentication options below
+# Option A: Long-lived refresh token (preferred for service workers)
+REDDIT_REFRESH_TOKEN=your_generated_refresh_token
+
+# Option B: Script username/password (Reddit recommends app passwords)
+REDDIT_USERNAME=service-account-username
+REDDIT_PASSWORD=service-account-password
+```
+
+> **Note**: Reddit requires descriptive user agents for all scripted traffic. Use the pattern `AppName/Version by reddit_username` and keep the user agent consistent across redeploys to avoid rate limiting.
+
 ### Getting Reddit OAuth Credentials
 
 1. Visit [Reddit App Preferences](https://www.reddit.com/prefs/apps)
@@ -194,6 +213,14 @@ const communities = await response.json();
 ```
 
 ### Frontend Error Handling
+
+## Operations Checklist: Sync Worker Deployment
+
+1. Export the credentials above to your hosting provider or secret manager.
+2. Restart the background worker (e.g., `pm2 restart reddit-sync`, GitHub Actions re-run, or redeploy the container) so the new variables are loaded into the runtime.
+3. Run `npm run ops:check-env` to confirm the configuration is mounted locally before triggering a production sync.
+4. Manually execute `tsx server/scripts/sync-reddit-communities.ts` in a maintenance window to verify the Zod environment validation succeeds and that the worker can authenticate with Reddit.
+5. Monitor the job output for `Sync complete` to ensure the communities backfill progressed beyond the previous validation failure.
 
 ```typescript
 // Handle OAuth errors in dashboard

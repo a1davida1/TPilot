@@ -1,3 +1,6 @@
+import globals from 'globals';
+import tseslintPlugin from '@typescript-eslint/eslint-plugin';
+import tseslintParser from '@typescript-eslint/parser';
 import reactPlugin from 'eslint-plugin-react';
 import reactHooksPlugin from 'eslint-plugin-react-hooks';
 import reactRefreshPlugin from 'eslint-plugin-react-refresh';
@@ -90,6 +93,7 @@ export default [
     languageOptions: {
       ecmaVersion: 2020,
       sourceType: 'module',
+      parser: tseslintParser,
       globals: {
         ...browserGlobals,
         ...es2020Globals,
@@ -101,6 +105,7 @@ export default [
       },
     },
     plugins: {
+      '@typescript-eslint': tseslintPlugin,
       react: reactPlugin,
       'react-hooks': reactHooksPlugin,
       'react-refresh': reactRefreshPlugin,
