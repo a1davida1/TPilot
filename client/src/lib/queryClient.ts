@@ -25,18 +25,6 @@ function getErrorMessage(status: number, errorData: Record<string, unknown>): st
   }
 }
 
-// Helper function to get the auth token from cookies
-function getAuthToken(): string | null {
-  const nameEQ = "authToken=";
-  const ca = document.cookie.split(';');
-  for (let i = 0; i < ca.length; i++) {
-    let c = ca[i];
-    while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-    if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
-  }
-  return null;
-}
-
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
@@ -124,17 +112,9 @@ export const getQueryFn: <T = unknown>(options: {
     }
 
     try {
-      // Get auth token from cookies
-      const authToken = getAuthToken();
-
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };
-
-      // Include Authorization header if we have a token
-      if (authToken) {
-        headers['Authorization'] = `Bearer ${authToken}`;
-      }
 
       const response = await fetch(url, {
         signal,
@@ -151,9 +131,19 @@ export const getQueryFn: <T = unknown>(options: {
         error.isAuthError = response.status === 401 || response.status === 403;
         error.userMessage = getErrorMessage(response.status, errorData);
 
-        // If it's an auth error, clear any stale tokens and redirect to login
+        // If it's an auth error, call logout endpoint and redirect to login
         if (error.isAuthError) {
-          document.cookie = 'authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+          try {
+            await fetch('/api/auth/logout', {
+              method: 'POST',
+              credentials: 'include',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            });
+          } catch (logoutError) {
+            console.error('Failed to log out after auth error:', logoutError);
+          }
           if (window.location.pathname !== '/' && window.location.pathname !== '/login') {
             window.location.href = '/';
           }

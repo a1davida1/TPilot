@@ -37,21 +37,42 @@ export class ReferralManager {
     let attempts = 0;
     const maxAttempts = 10;
 
+    const [existingUserCode] = await db
+      .select({
+        id: referralCodes.id,
+        code: referralCodes.code,
+      })
+      .from(referralCodes)
+      .where(eq(referralCodes.ownerId, userId))
+      .limit(1);
+
+    if (existingUserCode) {
+      await db
+        .update(users)
+        .set({ referralCodeId: existingUserCode.id })
+        .where(eq(users.id, userId));
+
+      return existingUserCode.code;
+    }
+
     while (attempts < maxAttempts) {
       const code = generateReferralCode();
 
-      // Check if code already exists
-      const existing = await db
-        .select({ id: users.id })
-        .from(users)
-        .where(eq(users.referralCodeId, parseInt(code)))
+      const [existingCode] = await db
+        .select({ id: referralCodes.id })
+        .from(referralCodes)
+        .where(eq(referralCodes.code, code))
         .limit(1);
 
-      if (existing.length === 0) {
-        // Update user with the new referral code
+      if (!existingCode) {
+        const [newCode] = await db
+          .insert(referralCodes)
+          .values({ code, ownerId: userId })
+          .returning({ id: referralCodes.id });
+
         await db
           .update(users)
-          .set({ referralCodeId: parseInt(code) })
+          .set({ referralCodeId: newCode.id })
           .where(eq(users.id, userId));
 
         return code;
@@ -68,16 +89,20 @@ export class ReferralManager {
    */
   static async getUserReferralCode(userId: number): Promise<string> {
     const [user] = await db
-      .select({ referralCodeId: users.referralCodeId })
+      .select({
+        referralCodeId: users.referralCodeId,
+        code: referralCodes.code,
+      })
       .from(users)
+      .leftJoin(referralCodes, eq(users.referralCodeId, referralCodes.id))
       .where(eq(users.id, userId));
 
     if (!user) {
       throw new Error('User not found');
     }
 
-    if (user.referralCodeId) {
-      return user.referralCodeId.toString();
+    if (user.code) {
+      return user.code;
     }
 
     // Generate new code if user doesn't have one

@@ -1,14 +1,8 @@
 import type { Express, Response, NextFunction } from "express";
 import express from "express";
-import type { Session } from 'express-session';
 import type { Session } from "express-session";
 import { createServer, type Server } from "http";
-import session from 'express-session';
 import path from 'path';
-import connectPgSimple from 'connect-pg-simple';
-import * as connectRedis from 'connect-redis';
-import { Pool } from 'pg';
-import Redis from 'ioredis';
 import Stripe from 'stripe';
 import passport from 'passport';
 
@@ -16,7 +10,7 @@ import passport from 'passport';
 import { validateEnvironment, securityMiddleware, ipLoggingMiddleware, errorHandler, logger, generationLimiter } from "./middleware/security.js";
 import { AppError, CircuitBreaker } from "./lib/errors.js";
 import { authenticateToken } from "./middleware/auth.js";
-import { createSessionMiddleware } from './bootstrap/session.js';
+import { createSessionMiddleware } from "./bootstrap/session.js";
 
 // Route modules
 // import { authRoutes } from "./routes/auth.js"; // Removed - using server/auth.ts instead
@@ -35,7 +29,6 @@ import { configureSocialAuth, socialAuthRoutes } from "./social-auth-config.js";
 import { visitorAnalytics } from "./visitor-analytics.js";
 import { makePaxum, makeCoinbase, makeStripe } from "./payments/payment-providers.js";
 import { deriveStripeConfig } from "./payments/stripe-config.js";
-import { createSessionMiddleware } from "./bootstrap/session.js";
 // Analytics request type
 interface AnalyticsRequest extends express.Request {
   sessionID: string;
@@ -265,14 +258,7 @@ import bcrypt from 'bcrypt';
 import csrf from 'csurf';
 
 // Get secure environment variables (no fallbacks)
-const rawSessionSecret = process.env.SESSION_SECRET;
-if (!rawSessionSecret) {
-  throw new Error('SESSION_SECRET missing');
-}
-const SESSION_SECRET: string = rawSessionSecret;
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
-const DATABASE_URL = process.env.DATABASE_URL;
-const REDIS_URL = process.env.REDIS_URL;
 const stripeConfig = deriveStripeConfig({
   env: process.env,
   logger,
@@ -384,24 +370,100 @@ const addIntervalToStart = (
   return Math.floor(startDate.getTime() / 1000);
 };
 
-const resolveBillingPeriodEnd = (subscription: Stripe.Subscription): number => {
-  const primaryItem = subscription.items?.data?.[0];
+const coerceStripeTimestamp = (value: unknown): number | undefined => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
 
-  if (primaryItem) {
-    if (typeof primaryItem.current_period_end === 'number' && Number.isFinite(primaryItem.current_period_end)) {
-      return primaryItem.current_period_end;
-    }
-
-    const start = primaryItem.current_period_start;
-    const interval = primaryItem.plan?.interval;
-    const intervalCount = primaryItem.plan?.interval_count ?? 1;
-
-    if (typeof start === 'number' && interval) {
-      return addIntervalToStart(start, interval, intervalCount);
+  if (typeof value === 'string') {
+    const numericValue = Number(value);
+    if (Number.isFinite(numericValue)) {
+      return numericValue;
     }
   }
 
-  return subscription.current_period_end;
+  return undefined;
+};
+
+const coerceIsoString = (value: unknown): string | undefined => {
+  if (typeof value === 'string') {
+    const date = new Date(value);
+    if (!Number.isNaN(date.getTime())) {
+      return date.toISOString();
+    }
+    return undefined;
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    const date = new Date(value * 1000);
+    if (!Number.isNaN(date.getTime())) {
+      return date.toISOString();
+    }
+  }
+
+  return undefined;
+};
+
+const isStripeSubscription = (
+  subscription: Stripe.Subscription | Stripe.SubscriptionSchedule
+): subscription is Stripe.Subscription => subscription.object === 'subscription';
+
+const isStripeSubscriptionSchedule = (
+  subscription: Stripe.Subscription | Stripe.SubscriptionSchedule
+): subscription is Stripe.SubscriptionSchedule => subscription.object === 'subscription_schedule';
+
+const resolveBillingPeriodEnd = (
+  subscription: Stripe.Subscription | Stripe.SubscriptionSchedule | null | undefined
+): number | string | undefined => {
+  if (!subscription) {
+    return undefined;
+  }
+
+  if (isStripeSubscription(subscription)) {
+    const primaryItem = subscription.items?.data?.[0];
+
+    if (primaryItem) {
+      const itemPeriodEnd = coerceStripeTimestamp(primaryItem.current_period_end);
+      if (itemPeriodEnd !== undefined) {
+        return itemPeriodEnd;
+      }
+
+      const start = coerceStripeTimestamp(primaryItem.current_period_start);
+      const interval = primaryItem.plan?.interval;
+      const intervalCount = primaryItem.plan?.interval_count ?? 1;
+
+      if (start !== undefined && interval) {
+        return addIntervalToStart(start, interval, intervalCount);
+      }
+    }
+
+    const subscriptionPeriodEnd = coerceStripeTimestamp(subscription.current_period_end);
+    if (subscriptionPeriodEnd !== undefined) {
+      return subscriptionPeriodEnd;
+    }
+
+    return coerceIsoString(subscription.current_period_end);
+  }
+
+  if (isStripeSubscriptionSchedule(subscription)) {
+    const scheduleEnd =
+      coerceStripeTimestamp(subscription.current_phase?.end_date) ??
+      coerceStripeTimestamp(subscription.phases?.[0]?.end_date);
+
+    if (scheduleEnd !== undefined) {
+      return scheduleEnd;
+    }
+
+    const isoEnd =
+      coerceIsoString(subscription.current_phase?.end_date) ??
+      coerceIsoString(subscription.phases?.[0]?.end_date);
+
+    if (isoEnd) {
+      return isoEnd;
+    }
+  }
+
+  return undefined;
 };
 
 // ==========================================
@@ -455,38 +517,13 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api', o
   app.use(ipLoggingMiddleware);
   app.use(securityMiddleware);
 
-  // Session configuration (MUST BE BEFORE AUTH ROUTES)
-  let store: session.Store | undefined;
+  const sessionConfigured = app.get('sessionConfigured') === true;
 
-  if (IS_PRODUCTION) {
-    if (REDIS_URL) {
-      const { RedisStore } = connectRedis as { RedisStore: new (options: { client: unknown; prefix: string }) => session.Store };
-      const redisClient = new Redis(REDIS_URL);
-      store = new RedisStore({ client: redisClient, prefix: 'sess:' });
-    } else if (DATABASE_URL) {
-      const PgStore = connectPgSimple(session);
-      store = new PgStore({
-        pool: new Pool({ connectionString: DATABASE_URL })
-      });
-    } else {
-      throw new Error('No REDIS_URL or DATABASE_URL set in production; persistent session store required.');
-    }
+  if (!sessionConfigured) {
+    logger.warn('Session middleware not configured before registerRoutes; applying default session middleware');
+    app.use(createSessionMiddleware());
+    app.set('sessionConfigured', true);
   }
-
-  app.use(session({
-    store,
-    secret: SESSION_SECRET,
-    resave: false, // Prevent session fixation
-    saveUninitialized: false, // Only create sessions when needed
-    cookie: {
-      secure: IS_PRODUCTION, // HTTPS-only in production
-      httpOnly: true,
-      sameSite: 'lax', // Allows OAuth redirects
-      maxAge: 1000 * 60 * 60 * 24 * 7 // 1 week
-    },
-    name: 'thottopilot.sid', // Custom session name
-    rolling: true // Refresh session on activity
-  }));
 
   // Initialize Passport after session middleware
   app.use(passport.initialize());
@@ -759,7 +796,6 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api', o
         if ('deleted' in subscription && subscription.deleted) {
           return res.json({ hasSubscription: false, plan: 'free' });
         }
-        const activeSubscription = subscription as Stripe.Subscription;
         const plan = subscription.metadata?.plan || 'pro';
         const currentPeriodEnd = resolveBillingPeriodEnd(subscription);
 
@@ -767,7 +803,6 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api', o
           hasSubscription: true,
           plan,
           subscriptionId: subscription.id,
-          currentPeriodEnd: activeSubscription.current_period_end,
           currentPeriodEnd
         });
       }
@@ -1451,23 +1486,19 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api', o
             tier: user.tier || 'free'
           });
         }
-        const activeSubscription = sub as Stripe.Subscription;
-        return res.json({
-          subscription: {
-            id: activeSubscription.id,
-            status: activeSubscription.status,
-            plan: activeSubscription.metadata?.plan || user.tier,
-            amount: activeSubscription.items.data[0]?.price.unit_amount,
-            nextBillDate: new Date(activeSubscription.current_period_end * 1000).toISOString(),
-            createdAt: new Date(activeSubscription.created * 1000).toISOString()
         const currentPeriodEnd = resolveBillingPeriodEnd(sub);
+        const nextBillDate =
+          typeof currentPeriodEnd === 'number'
+            ? new Date(currentPeriodEnd * 1000).toISOString()
+            : currentPeriodEnd ?? null;
+
         return res.json({
           subscription: {
             id: sub.id,
             status: sub.status,
             plan: sub.metadata?.plan || user.tier,
             amount: sub.items.data[0].price.unit_amount,
-            nextBillDate: new Date(currentPeriodEnd * 1000).toISOString(),
+            nextBillDate,
             createdAt: new Date(sub.created * 1000).toISOString()
           },
           isPro: ['pro', 'starter'].includes(user.tier || ''),
@@ -1495,13 +1526,57 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api', o
       if (!req.user?.id) {
         return res.status(401).json({ message: "Authentication required" });
       }
-      const { platform, content, title, subreddit } = req.body;
+      const { platform, content, accountId } = req.body as {
+        platform?: string;
+        content?: string;
+        accountId?: number | string;
+      };
+
+      if (typeof content !== 'string' || content.trim().length === 0) {
+        return res.status(400).json({ message: 'Content is required to create a social media post.' });
+      }
+
+      const normalizedContent = content.trim();
+
+      const userAccounts = await storage.getUserSocialMediaAccounts(req.user.id);
+      const activeAccounts = userAccounts.filter(account => account.isActive);
+
+      if (activeAccounts.length === 0) {
+        return res.status(400).json({
+          message: 'No connected social media accounts found. Please connect an account to continue.'
+        });
+      }
+
+      const hasAccountId = accountId !== undefined && accountId !== null && `${accountId}`.length > 0;
+      const parsedAccountId = typeof accountId === 'string' ? Number.parseInt(accountId, 10) : accountId;
+      const normalizedAccountId =
+        typeof parsedAccountId === 'number' && Number.isFinite(parsedAccountId) ? parsedAccountId : undefined;
+
+      let selectedAccount = activeAccounts.find(account => (platform ? account.platform === platform : true));
+
+      if (hasAccountId) {
+        if (normalizedAccountId === undefined) {
+          return res.status(400).json({ message: 'Invalid account ID provided.' });
+        }
+
+        selectedAccount = activeAccounts.find(account => account.id === normalizedAccountId);
+      }
+
+      if (!selectedAccount) {
+        return res.status(400).json({ message: 'Unable to determine the social media account for this post.' });
+      }
+
+      if (platform && selectedAccount.platform !== platform) {
+        return res.status(400).json({ message: 'Selected account does not match the requested platform.' });
+      }
+
+      const resolvedPlatform = selectedAccount.platform;
 
       const post = await storage.createSocialMediaPost({
         userId: req.user.id,
-        platform: platform,
-        content: content,
-        accountId: req.user.id,
+        platform: resolvedPlatform,
+        content: normalizedContent,
+        accountId: selectedAccount.id,
         status: 'draft'
       });
 
