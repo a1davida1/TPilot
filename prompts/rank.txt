@@ -1,7 +1,14 @@
+
 Rank the 5 for Relevance(40), Voice(25), Originality(20), CTA(10), Safety(5). Any option containing banned words (ai, ai-generated, content) must be disqualified and the reason should cite the offending term.
+
 Disqualify any option containing sparkle-filler phrases ("Check out this amazing content", "✨ Enhanced"), stacks of generic hashtags ("#content", "#creative", "#amazing", "#lifestyle"), or canned CTA templates like "Check it out"; call out the specific violations in the reason.
+
+Disqualify any option containing sparkle-filler phrases ("Check out this amazing content", "✨ Enhanced"), stacks of generic hashtags ("#content", "#creative", "#amazing", "#lifestyle"), or canned / repeated CTA templates like "Check it out" or "Link in bio"; explain each concrete violation in the reason.
+
 You receive JSON: {"variants":[...],"retry_hint":string|null,"banned_examples":string[]}.
 If retry_hint is provided, obey it strictly, drop the flagged options, and choose the most human alternative.
+
 Return JSON:
 {"winner_index":0,"scores":[0,0,0,0,0],"reason":"<240 chars","final":{"caption":"","alt":"","hashtags":[],"cta":"","mood":"","style":"","safety_level":""}}
+
 Trim hashtags to platform limits.

@@ -761,27 +761,48 @@ export async function rankAndSelect(
   variants: z.infer<typeof CaptionArray>,
   params?: { platform?: string; facts?: Record<string, unknown> }
 ): Promise<z.infer<typeof RankResult>> {
-  const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rank.txt");
+  const sys = await load("system.txt"), guard = await load("guard.txt"), prompt = await load("rank.txt");
   const promptBlock = `${sys}\n${guard}\n${prompt}`;
   const serializedVariants = JSON.stringify(variants);
 
-  const first = await requestGeminiRanking(variants, serializedVariants, promptBlock, params?.platform, undefined, params?.facts);
-  let parsed = RankResult.parse(first);
-  const violations = detectVariantViolations(parsed.final);
+  const runRanking = async (
+    variantsInput: z.infer<typeof CaptionArray>,
+    hint?: string
+  ): Promise<z.infer<typeof RankResult>> => {
+    const serialized = JSON.stringify(variantsInput);
+    const response = await requestGeminiRanking(
+      variantsInput,
+      serialized,
+      promptBlock,
+      params?.platform,
+      hint,
+      params?.facts
+    );
+    return RankResult.parse(response);
+  };
+
+  let activeVariants = variants;
+  let parsed = await runRanking(activeVariants);
+  let violations = detectVariantViolations(parsed.final);
+
+  const hasBannedPhrase = violations.some((violation) => violation.type === "banned_phrase");
+  if (hasBannedPhrase && typeof parsed.winner_index === "number") {
+    const filtered = activeVariants.filter((_, index) => index !== parsed.winner_index);
+    if (filtered.length > 0) {
+      activeVariants = filtered;
+      const hint = buildRerankHint(violations) ||
+        "Avoid sparkle emojis, canned CTAs, and pick the most human option remaining.";
+      parsed = await runRanking(activeVariants, hint);
+      violations = detectVariantViolations(parsed.final);
+    }
+  }
 
   if (violations.length === 0) {
     return parsed;
   }
 
-  const rerank = await requestGeminiRanking(
-    variants,
-    serializedVariants,
-    promptBlock,
-    params?.platform,
-    buildRerankHint(violations),
-    params?.facts
-  );
-  parsed = RankResult.parse(rerank);
+  const rerank = await runRanking(activeVariants, buildRerankHint(violations));
+  parsed = rerank;
   const rerankViolations = detectVariantViolations(parsed.final);
 
   if (rerankViolations.length === 0) {

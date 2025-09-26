@@ -26,6 +26,12 @@ const VARIANT_TARGET = 5;
 const VARIANT_RETRY_LIMIT = 4;
 const CAPTION_KEY_LENGTH = 80;
 
+// Fallback values for when generation fails or is incomplete
+const safeFallbackCaption = "Here's something I'm proud of today.";
+const safeFallbackAlt = "Engaging description that highlights the visual story.";
+const safeFallbackHashtags = ["#creative", "#inspiration", "#contentcreation"];
+const safeFallbackCta = "Learn More";
+
 function captionKey(caption: string): string {
   return caption.trim().slice(0, 80).toLowerCase();
 }
@@ -405,8 +411,43 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
   return CaptionArray.parse(uniqueVariants.slice(0, VARIANT_TARGET));
 }
 
+// Helper function to prepare variants for ranking, ensuring correct count and deduplication
+function prepareVariantsForRanking(
+  variants: z.infer<typeof CaptionArray>,
+  params: { platform?: string; theme?: string; context?: string },
+  options: { targetLength: number }
+): z.infer<typeof CaptionArray> {
+  let preparedVariants = variants.slice(0, options.targetLength);
+  if (preparedVariants.length < options.targetLength) {
+    // If not enough variants, duplicate existing ones or add fallbacks if none exist
+    const baseVariant = preparedVariants[0] || {
+      caption: safeFallbackCaption,
+      alt: safeFallbackAlt,
+      hashtags: [...safeFallbackHashtags],
+      cta: safeFallbackCta,
+      mood: "engaging",
+      style: "authentic",
+      safety_level: "normal",
+      nsfw: false,
+    } as z.infer<typeof CaptionItem>;
+
+    while (preparedVariants.length < options.targetLength) {
+      const index = preparedVariants.length + 1;
+      const captionSeed = baseVariant.caption || safeFallbackCaption;
+      preparedVariants.push({
+        ...baseVariant,
+        caption: `${captionSeed} (filler ${index})`,
+        alt: `${baseVariant.alt} (filler ${index})`,
+      });
+    }
+  }
+  // Deduplicate variants based on similarity if needed, though `generateVariantsTextOnly` already aims for uniqueness
+  return dedupeCaptionVariants(preparedVariants, options.targetLength);
+}
+
+
 async function requestTextOnlyRanking(
-  variantsInput: unknown[],
+  variants: unknown[],
   serializedVariants: string,
   promptBlock: string,
   platform?: string,
@@ -428,7 +469,7 @@ async function requestTextOnlyRanking(
       winner_index: 0,
       scores: [5, 4, 3, 2, 1],
       reason: "Selected based on engagement potential",
-      final: winner ?? variantsInput[0]
+      final: winner ?? variants[0]
     };
   }
 
@@ -441,11 +482,36 @@ export async function rankAndSelect(
 ): Promise<z.infer<typeof RankResult>> {
   const sys = await load("system.txt"), guard = await load("guard.txt"), prompt = await load("rank.txt");
   const promptBlock = `${sys}\n${guard}\n${prompt}`;
-  const serializedVariants = JSON.stringify(variants);
 
-  const first = await requestTextOnlyRanking(variants, serializedVariants, promptBlock, params?.platform);
-  let parsed = RankResult.parse(first);
-  const violations = detectVariantViolations(parsed.final);
+  const runRanking = async (variantsInput: unknown[], hint?: string) => {
+    const serialized = JSON.stringify(variantsInput);
+    const response = await requestTextOnlyRanking(
+      variantsInput,
+      serialized,
+      promptBlock,
+      params?.platform,
+      hint
+    );
+    return RankResult.parse(response);
+  };
+
+  let activeVariants = variants;
+  let parsed = await runRanking(activeVariants);
+  let violations = detectVariantViolations(parsed.final);
+
+  const hasBannedPhrase = violations.some((violation) => violation.type === "banned_phrase");
+  if (hasBannedPhrase && typeof parsed.winner_index === "number") {
+    const filtered = Array.isArray(activeVariants)
+      ? activeVariants.filter((_, index) => index !== parsed.winner_index)
+      : activeVariants;
+    if (Array.isArray(filtered) && filtered.length > 0) {
+      activeVariants = filtered;
+      const hint = buildRerankHint(violations) ||
+        "Drop the filler pick and highlight the most natural-sounding caption left.";
+      parsed = await runRanking(activeVariants, hint);
+      violations = detectVariantViolations(parsed.final);
+    }
+  }
 
   if (violations.length === 0) {
     // Always sanitize final variant to ensure required fields like alt are present
@@ -456,18 +522,16 @@ export async function rankAndSelect(
     });
   }
 
-  const rerank = await requestTextOnlyRanking(
-    variants,
-    serializedVariants,
-    promptBlock,
-    params?.platform,
-    buildRerankHint(violations)
-  );
-  parsed = RankResult.parse(rerank);
+  const rerank = await runRanking(activeVariants, buildRerankHint(violations));
+  parsed = rerank;
   const rerankViolations = detectVariantViolations(parsed.final);
 
   if (rerankViolations.length === 0) {
-    return parsed;
+    const sanitizedFinal = sanitizeFinalVariant(parsed.final, params?.platform);
+    return RankResult.parse({
+      ...parsed,
+      final: sanitizedFinal
+    });
   }
 
   const sanitizedFinal = sanitizeFinalVariant(parsed.final, params?.platform);

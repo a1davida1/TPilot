@@ -3,11 +3,13 @@
 
 import { v4 as uuidv4 } from 'uuid';
 
+type AnalyticsMetadata = Record<string, string | number | boolean | undefined>;
+
 interface AnalyticsEvent {
   type: string;
   element?: string;
   page: string;
-  metadata?: Record<string, unknown>;
+  metadata?: AnalyticsMetadata;
   value?: number;
 }
 
@@ -154,7 +156,7 @@ class AnalyticsTracker {
     if (!target) return;
 
     let element = '';
-    const metadata: Record<string, string | number | boolean | undefined> = {};
+    const metadata: AnalyticsMetadata = {};
 
     // Get element identifier
     if (target.id) {
@@ -179,7 +181,7 @@ class AnalyticsTracker {
     this.trackEvent('click', { element, ...metadata });
   }
 
-  public trackEvent(type: string, metadata?: Record<string, string | number | boolean | undefined>, value?: number) {
+  public trackEvent(type: string, metadata?: AnalyticsMetadata, value?: number) {
     const event: AnalyticsEvent = {
       type,
       page: this.currentPage,
@@ -201,7 +203,7 @@ class AnalyticsTracker {
     });
   }
 
-  public trackContentGeneration(success: boolean, platform: string, metadata?: Record<string, unknown>) {
+  public trackContentGeneration(success: boolean, platform: string, metadata?: AnalyticsMetadata) {
     this.trackEvent('content_generation', {
       success,
       platform,
@@ -209,7 +211,7 @@ class AnalyticsTracker {
     });
   }
 
-  public trackFeatureUsage(feature: string, action: string, metadata?: Record<string, unknown>) {
+  public trackFeatureUsage(feature: string, action: string, metadata?: AnalyticsMetadata) {
     this.trackEvent('feature_usage', {
       feature,
       action,
@@ -329,8 +331,8 @@ export const analytics = new AnalyticsTracker();
 
 // Convenience methods for common tracking
 export const trackPageView = (path: string, title?: string) => analytics.trackPageView(path, title);
-export const trackEvent = (type: string, metadata?: Record<string, unknown>, value?: number) => analytics.trackEvent(type, metadata, value);
+export const trackEvent = (type: string, metadata?: AnalyticsMetadata, value?: number) => analytics.trackEvent(type, metadata, value);
 export const trackContentView = (contentId: number, platform: string, subreddit?: string) => analytics.trackContentView(contentId, platform, subreddit);
-export const trackContentGeneration = (success: boolean, platform: string, metadata?: Record<string, unknown>) => analytics.trackContentGeneration(success, platform, metadata);
-export const trackFeatureUsage = (feature: string, action: string, metadata?: Record<string, unknown>) => analytics.trackFeatureUsage(feature, action, metadata);
+export const trackContentGeneration = (success: boolean, platform: string, metadata?: AnalyticsMetadata) => analytics.trackContentGeneration(success, platform, metadata);
+export const trackFeatureUsage = (feature: string, action: string, metadata?: AnalyticsMetadata) => analytics.trackFeatureUsage(feature, action, metadata);
 export const setUserId = (userId: string) => analytics.setUserId(userId);
