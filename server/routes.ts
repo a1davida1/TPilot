@@ -1,12 +1,7 @@
 import type { Express } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
-import session from 'express-session';
 import path from 'path';
-import connectPgSimple from 'connect-pg-simple';
-import connectRedisPkg from 'connect-redis';
-import { Pool } from 'pg';
-import Redis from 'ioredis';
 import Stripe from 'stripe';
 import passport from 'passport';
 
@@ -53,8 +48,6 @@ type SessionUser = typeof users.$inferSelect & { subscriptionTier?: string | nul
 interface AuthenticatedRequest extends express.Request {
   user?: SessionUser;
 }
-
-const connectRedis = connectRedisPkg(session);
 
 // User tier type
 type UserTier = 'free' | 'starter' | 'pro' | 'premium';
@@ -394,38 +387,8 @@ export async function registerRoutes(app: Express, _apiPrefix: string = '/api', 
   app.use(ipLoggingMiddleware);
   app.use(securityMiddleware);
 
-  // Session configuration (MUST BE BEFORE AUTH ROUTES)
-  let store: session.Store | undefined;
-
-  if (IS_PRODUCTION) {
-    if (REDIS_URL) {
-      const RedisStore = connectRedis as unknown as (new (options: { client: unknown; prefix: string }) => session.Store);
-      const redisClient = new Redis(REDIS_URL);
-      store = new RedisStore({ client: redisClient, prefix: 'sess:' });
-    } else if (DATABASE_URL) {
-      const PgStore = connectPgSimple(session);
-      store = new PgStore({
-        pool: new Pool({ connectionString: DATABASE_URL })
-      });
-    } else {
-      throw new Error('No REDIS_URL or DATABASE_URL set in production; persistent session store required.');
-    }
-  }
-
-  app.use(session({
-    store,
-    secret: SESSION_SECRET,
-    resave: false, // Prevent session fixation
-    saveUninitialized: false, // Only create sessions when needed
-    cookie: {
-      secure: IS_PRODUCTION, // HTTPS-only in production
-      httpOnly: true,
-      sameSite: 'lax', // Allows OAuth redirects
-      maxAge: 1000 * 60 * 60 * 24 * 7 // 1 week
-    },
-    name: 'thottopilot.sid', // Custom session name
-    rolling: true // Refresh session on activity
-  }));
+  // Session configuration using middleware
+  app.use(createSessionMiddleware());
 
   // Initialize Passport after session middleware
   app.use(passport.initialize());

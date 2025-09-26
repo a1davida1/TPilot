@@ -6,29 +6,23 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import type { ContentGeneration } from "@shared/schema.js";
 
-interface ContentGeneration {
-  id: number;
-  platform: string;
-  style: string;
-  theme: string;
-  titles: string[];
-  content: string;
-  photoInstructions: unknown;
-  prompt: string;
+export type GenerationHistoryEntry = Omit<ContentGeneration, "createdAt" | "photoInstructions"> & {
   createdAt: string;
   allowsPromotion: boolean;
-}
+  photoInstructions: ContentGeneration["photoInstructions"] | string | null;
+};
 
 interface GenerationHistoryProps {
-  onSelectGeneration?: (generation: ContentGeneration) => void;
+  onSelectGeneration?: (generation: GenerationHistoryEntry) => void;
 }
 
 export function GenerationHistory({ onSelectGeneration }: GenerationHistoryProps) {
   const [copiedItem, setCopiedItem] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const { data: history = [], isLoading } = useQuery<ContentGeneration[]>({
+  const { data: history = [], isLoading } = useQuery<GenerationHistoryEntry[]>({
     queryKey: ["/api/content-generation-history"],
     staleTime: 1000 * 60 * 5, // 5 minutes
   });

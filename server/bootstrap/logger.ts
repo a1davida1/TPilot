@@ -60,15 +60,15 @@ if (process.env.NODE_ENV !== 'test') {
   transports.push(
     // Combined logs (info and above)
     createRotatingTransport('info', 'combined'),
-    
+
     // Error logs only
     createRotatingTransport('error', 'error'),
-    
+
     // Debug logs (in development)
     ...(process.env.NODE_ENV === 'development' ? [
       createRotatingTransport('debug', 'debug')
     ] : []),
-    
+
     // Security-specific logs
     new DailyRotateFile({
       level: 'warn',
@@ -91,7 +91,7 @@ if (process.env.NODE_ENV !== 'test') {
       createSymlink: true,
       symlinkName: 'security-current.log'
     }),
-    
+
     // Performance/metrics logs
     new DailyRotateFile({
       level: 'info',
@@ -122,7 +122,7 @@ export const logger = winston.createLogger({
   level: process.env.NODE_ENV === 'development' ? 'debug' : 'info',
   format: fileFormat,
   transports,
-  
+
   // Handle uncaught exceptions and rejections with file logging
   exceptionHandlers: [
     new winston.transports.Console(),
@@ -137,7 +137,7 @@ export const logger = winston.createLogger({
       })
     ] : [])
   ],
-  
+
   rejectionHandlers: [
     new winston.transports.Console(),
     ...(process.env.NODE_ENV !== 'test' ? [
@@ -151,54 +151,54 @@ export const logger = winston.createLogger({
       })
     ] : [])
   ],
-  
+
   exitOnError: false // Don't exit on handled exceptions
 });
 
 // Enhanced SENTRY_DSN format validation
 export function validateSentryDSN(dsn: string): { isValid: boolean; errors: string[] } {
   const errors: string[] = [];
-  
+
   if (!dsn || typeof dsn !== 'string') {
     errors.push('DSN must be a non-empty string');
     return { isValid: false, errors };
   }
-  
+
   // Basic URL format check
   if (!dsn.startsWith('https://')) {
     errors.push('DSN must start with https://');
   }
-  
+
   try {
     const url = new URL(dsn);
-    
+
     // Check for required components
     if (!url.username) {
       errors.push('DSN missing public key (username part)');
     }
-    
+
     if (!url.password) {
       errors.push('DSN missing secret key (password part)');
     }
-    
+
     if (!url.hostname) {
       errors.push('DSN missing hostname');
     }
-    
+
     if (!url.pathname || url.pathname === '/') {
       errors.push('DSN missing project ID in pathname');
     }
-    
+
     // Validate hostname format (should be sentry.io or custom domain)
     if (url.hostname && !url.hostname.includes('.')) {
       errors.push('DSN hostname appears invalid (should contain domain)');
     }
-    
+
     // Check for common mistake: including protocol in wrong place
     if (dsn.includes('http://')) {
       errors.push('DSN contains insecure http:// protocol');
     }
-    
+
     // Validate project ID is numeric (Sentry project IDs are numbers)
     const pathParts = url.pathname.split('/').filter(Boolean);
     if (pathParts.length > 0) {
@@ -207,11 +207,11 @@ export function validateSentryDSN(dsn: string): { isValid: boolean; errors: stri
         errors.push('DSN project ID should be numeric');
       }
     }
-    
+
   } catch (urlError) {
     errors.push(`DSN is not a valid URL: ${(urlError as Error).message}`);
   }
-  
+
   return {
     isValid: errors.length === 0,
     errors
@@ -222,30 +222,30 @@ export function validateSentryDSN(dsn: string): { isValid: boolean; errors: stri
 export function validateSentryConfig(): { isValid: boolean; warnings: string[]; errors: string[] } {
   const warnings: string[] = [];
   const errors: string[] = [];
-  
+
   const dsn = process.env.SENTRY_DSN;
   const environment = process.env.NODE_ENV;
-  
+
   if (!dsn) {
     warnings.push('SENTRY_DSN not configured - error tracking disabled');
     return { isValid: true, warnings, errors }; // Not an error, just not configured
   }
-  
+
   // Validate DSN format
   const dsnValidation = validateSentryDSN(dsn);
   if (!dsnValidation.isValid) {
     errors.push(...dsnValidation.errors);
   }
-  
+
   // Environment-specific warnings
   if (environment === 'development' && dsn) {
     warnings.push('Sentry enabled in development - consider disabling for local development');
   }
-  
+
   if (environment === 'production' && !dsn) {
     errors.push('SENTRY_DSN should be configured in production for error tracking');
   }
-  
+
   // Check for sample rate configuration
   const sampleRate = process.env.SENTRY_SAMPLE_RATE;
   if (sampleRate) {
@@ -254,115 +254,12 @@ export function validateSentryConfig(): { isValid: boolean; warnings: string[]; 
       errors.push('SENTRY_SAMPLE_RATE must be a number between 0 and 1');
     }
   }
-  
+
   return {
     isValid: errors.length === 0,
     warnings,
     errors
   };
-}
-
-// Initialize Sentry with comprehensive validation
-export async function initializeSentry(): Promise<typeof import('@sentry/node') | null> {
-  let Sentry: typeof import('@sentry/node') | null = null;
-  
-  // Validate Sentry configuration
-  const configValidation = validateSentryConfig();
-  
-  // Log warnings
-  configValidation.warnings.forEach(warning => {
-    logger.warn(`Sentry configuration warning: ${warning}`);
-  });
-  
-  // Log errors and exit early if invalid
-  if (!configValidation.isValid) {
-    configValidation.errors.forEach(error => {
-      logger.error(`Sentry configuration error: ${error}`);
-    });
-    return null;
-  }
-  
-  const dsn = process.env.SENTRY_DSN;
-  if (!dsn) {
-    return null; // Not configured, but that's okay
-  }
-  
-  try {
-    // Dynamic import with proper error handling for optional dependency
-    let SentryModule: (typeof import("@sentry/node")) | null = null;
-    try {
-      SentryModule = await import("@sentry/node");
-    } catch {
-      SentryModule = null;
-    }
-    if (SentryModule) {
-      Sentry = SentryModule;
-      
-      // Enhanced Sentry configuration
-      const sentryConfig = {
-        dsn,
-        environment: process.env.NODE_ENV,
-        tracesSampleRate: parseFloat(process.env.SENTRY_SAMPLE_RATE || '0.1'),
-        profilesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
-        integrations: [Sentry.expressIntegration()],
-        
-        // Enhanced error filtering
-        beforeSend(event: Event, hint: EventHint): Event | null {
-          // Filter out non-critical errors in development
-          if (process.env.NODE_ENV === 'development') {
-            // Don't send client-side errors in development
-            const requestUrl = event.request?.url;
-            if (typeof requestUrl === 'string' && requestUrl.includes('/_vite/')) {
-              return null;
-            }
-          }
-
-          // Filter out known non-critical errors
-          const error = hint?.originalException;
-          if (error instanceof Error) {
-            if (error.message.includes('ECONNRESET') || error.message.includes('EPIPE')) {
-              return null; // Don't send network errors
-            }
-          } else if (typeof error === 'object' && error !== null && 'message' in error) {
-            const message = (error as { message?: unknown }).message;
-            if (typeof message === 'string' && (message.includes('ECONNRESET') || message.includes('EPIPE'))) {
-              return null; // Don't send network errors
-            }
-          }
-
-          return event;
-        },
-        
-        // Enhanced release tracking
-        release: process.env.GIT_COMMIT_SHA,
-        
-        // Set user context
-        initialScope: {
-          tags: {
-            component: 'backend',
-            node_env: process.env.NODE_ENV
-          }
-        }
-      };
-      
-      Sentry.init(sentryConfig);
-      
-      logger.info('Sentry initialized successfully', {
-        environment: sentryConfig.environment,
-        tracesSampleRate: sentryConfig.tracesSampleRate,
-        release: sentryConfig.release
-      });
-      
-    } else {
-      logger.warn("Sentry module not available, continuing without error tracking");
-    }
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    const stack = err instanceof Error ? err.stack : undefined;
-    logger.error('Sentry initialization failed', { error: message, stack });
-  }
-  
-  return Sentry;
 }
 
 // Export a function to add request ID to logger context
@@ -386,12 +283,12 @@ export function logSecurityEvent(event: string, details?: unknown) {
 
 // Performance logging utility
 export function logPerformanceMetric(metric: string, value: number, details?: unknown) {
-  logger.info(`Performance: ${metric}`, { 
-    metrics: true, 
-    performance: true, 
-    metric, 
-    value, 
-    ...(details as Record<string, unknown>) 
+  logger.info(`Performance: ${metric}`, {
+    metrics: true,
+    performance: true,
+    metric,
+    value,
+    ...(details as Record<string, unknown>)
   });
 }
 
@@ -399,16 +296,16 @@ export function logPerformanceMetric(metric: string, value: number, details?: un
 export async function cleanupOldLogs(daysToKeep: number = 30) {
   const fs = await import('fs/promises');
   const glob = await import('glob').then(m => m.glob);
-  
+
   try {
     const oldLogPattern = path.join(logsDir, `*-${new Date(Date.now() - daysToKeep * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}*.log*`);
     const oldFiles = await glob(oldLogPattern);
-    
+
     for (const file of oldFiles) {
       await fs.unlink(file);
       logger.info('Cleaned up old log file', { file });
     }
-    
+
     return { cleaned: oldFiles.length };
   } catch (error) {
     logger.error('Failed to cleanup old logs', { error: (error as Error).message });
@@ -419,13 +316,13 @@ export async function cleanupOldLogs(daysToKeep: number = 30) {
 // Get log file information (for monitoring)
 export async function getLogFileStats() {
   const fs = await import('fs/promises');
-  
+
   try {
     const stats = {
       directory: logsDir,
       files: [] as Array<{ name: string; size: number; modified: Date }>
     };
-    
+
     const files = await fs.readdir(logsDir);
     for (const file of files) {
       if (file.endsWith('.log') || file.endsWith('.log.gz')) {
@@ -438,7 +335,7 @@ export async function getLogFileStats() {
         });
       }
     }
-    
+
     return stats;
   } catch (error) {
     logger.error('Failed to get log file stats', { error: (error as Error).message });
