@@ -152,9 +152,9 @@ export function AdminPortal() {
   });
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [actionType, setActionType] = useState<string | null>(null);
-  const [_duration, _setDuration] = useState<string>('24');
-  const [_tempPassword, _setTempPassword] = useState<string>('');
-  const [_reason, _setReason] = useState<string>('');
+  const [duration, setDuration] = useState<string>('24');
+  const [tempPassword, setTempPassword] = useState<string>('');
+  const [reason, setReason] = useState<string>('');
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
 
@@ -292,7 +292,7 @@ export function AdminPortal() {
       actionMutation.mutate({ 
         userId: userWithId.id, 
         action: actionType, 
-        duration: actionType === 'suspend' ? _duration : undefined 
+        duration: actionType === 'suspend' ? duration : undefined 
       });
     }
   };

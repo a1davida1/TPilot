@@ -50,7 +50,8 @@ import {
   UserCheck,
   ChevronsUpDown,
   RefreshCcw,
-  Loader2
+  Loader2,
+  Lock
 } from 'lucide-react';
 import { MediaLibrarySelector } from '@/components/MediaLibrarySelector';
 import type { 
@@ -265,10 +266,21 @@ export default function RedditPostingPage() {
   };
 
   // Fetch Reddit accounts
-  const { data: accounts = [], isLoading: accountsLoading } = useQuery<RedditAccount[]>({
+  const {
+    data: accounts = [],
+    isLoading: accountsLoading,
+    error: accountsError,
+  } = useQuery<RedditAccount[], ApiError>({
     queryKey: ['/api/reddit/accounts'],
     retry: false,
   });
+
+  const requiresUpgrade = isApiError(accountsError) && accountsError.status === 403;
+  const accountsErrorMessage = isApiError(accountsError)
+    ? accountsError.userMessage ?? accountsError.message
+    : accountsError instanceof Error
+      ? accountsError.message
+      : undefined;
 
   // Fetch subreddit communities data
   const { data: communities = [] } = useQuery<SubredditCommunity[]>({
@@ -680,6 +692,30 @@ export default function RedditPostingPage() {
                       <div className="animate-spin rounded-full h-4 w-4 border-2 border-orange-500 border-t-transparent" />
                       <span className="text-sm text-gray-600">Loading accounts...</span>
                     </div>
+                  ) : requiresUpgrade ? (
+                    <div className="text-center p-6 bg-gradient-to-br from-orange-50 to-rose-50 rounded-lg border border-orange-200 shadow-sm">
+                      <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-orange-100 text-orange-600">
+                        <Lock className="h-8 w-8" />
+                      </div>
+                      <h3 className="font-semibold text-orange-900 mb-2">Upgrade Required</h3>
+                      <p className="text-sm text-orange-700 mb-4">
+                        {accountsErrorMessage ?? 'Reddit automations are part of a premium plan. Upgrade your account to unlock posting tools.'}
+                      </p>
+                      <div className="flex justify-center">
+                        <Button asChild className="bg-orange-500 hover:bg-orange-600 text-white">
+                          <a href="/pricing">View Plans</a>
+                        </Button>
+                      </div>
+                      <p className="mt-4 text-xs text-orange-600">
+                        Need help upgrading? <button type="button" className="underline" onClick={() => setShowAuthModal(true)}>Talk to support</button>.
+                      </p>
+                    </div>
+                  ) : accountsError ? (
+                    <Alert variant="destructive">
+                      <AlertDescription>
+                        {accountsErrorMessage ?? 'Unable to load Reddit accounts. Please try again later.'}
+                      </AlertDescription>
+                    </Alert>
                   ) : accounts?.length > 0 ? (
                     <div className="space-y-3">
                       {accounts.map((account) => {

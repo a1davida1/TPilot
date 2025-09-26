@@ -148,7 +148,8 @@ export const getQueryFn: <T = unknown>(options: {
         const error: ApiError = new Error(errorMessage) as ApiError;
         error.status = response.status;
         error.statusText = response.statusText;
-        error.isAuthError = response.status === 401 || response.status === 403;
+        error.isAuthError = response.status === 401;
+        error.isForbidden = response.status === 403;
         error.userMessage = getErrorMessage(response.status, errorData);
 
         // If it's an auth error, clear any stale tokens and redirect to login

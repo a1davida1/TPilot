@@ -1793,24 +1793,7 @@ const BUILT_IN_PRESET_VARIATIONS: Record<string, PresetVariation[]> = {
         sceneSetup: 'Gym or workout space, fitness equipment visible'
       }
     }
-  }],
-  'workout-motivation': [{
-    titles: [
-      'Post-workout glow hits different 💪',
-      'Feeling strong and unstoppable',
-      'Sweat, determination, and pride'
-    ],
-    content:
-      "Just finished an intense workout and I'm feeling incredible. There's something about pushing your limits that makes you feel alive. Endorphins flowing, muscles burning in the best way, and that sense of accomplishment.",
-    photoInstructions: {
-      lighting: 'Bright energetic lighting, motivational atmosphere',
-      angles: 'Strong empowering angles, action documentation',
-      composition: 'Athletic framing showing strength and determination',
-      styling: 'Workout gear, athletic wear, fitness focused',
-      technical: 'Clear bright lighting, action-ready settings',
-      sceneSetup: 'Gym or workout space, fitness equipment visible'
-    }
-  }]
+  ]
 };
 
 async function loadPresetVariations(): Promise<Record<string, PresetVariation[]>> {

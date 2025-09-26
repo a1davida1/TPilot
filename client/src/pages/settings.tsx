@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,7 +35,8 @@ type UserSettings = {
   defaultPlatform: string;
 };
 
-type UpdateSettingsPayload = UserSettings;
+type UserSettingsResponse = UserSettings; // Assuming the API response directly matches UserSettings
+type UserSettingsPayload = UserSettings; // Assuming the payload for updating is the same as UserSettings
 
 type UpdateSettingsResponse = {
   success: boolean;
@@ -53,33 +53,9 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const syncStateFromSettings = (settings: Partial<UserSettings>) => {
-    if (typeof settings.theme === 'string') {
-      setTheme(settings.theme);
-    }
-    if (typeof settings.notifications === 'boolean') {
-      setNotifications(settings.notifications);
-    }
-    if (typeof settings.emailUpdates === 'boolean') {
-      setEmailUpdates(settings.emailUpdates);
-    }
-    if (typeof settings.autoSave === 'boolean') {
-      setAutoSave(settings.autoSave);
-    }
-    if (typeof settings.defaultPlatform === 'string') {
-      setDefaultPlatform(settings.defaultPlatform);
-    }
-  };
-
-  const { data: userSettings } = useQuery<UserSettings>({
+  const { data: userSettings } = useQuery<UserSettingsResponse>({
     queryKey: ['/api/user/settings'],
   });
-
-  useEffect(() => {
-    if (userSettings) {
-      syncStateFromSettings(userSettings);
-    }
-  }, [userSettings]);
 
   const { data: subscriptionData } = useQuery<{
     subscription: { id: string; status: string; plan: string; nextBillDate?: string; amount?: number } | null;
@@ -89,17 +65,30 @@ export default function SettingsPage() {
     queryKey: ['/api/subscription'],
   });
 
-  const updateSettingsMutation = useMutation<UpdateSettingsResponse, Error, UpdateSettingsPayload>({
+  useEffect(() => {
+    if (!userSettings) {
+      return;
+    }
+
+    setTheme(userSettings.theme ?? 'light');
+    setNotifications(userSettings.notifications ?? true);
+    setEmailUpdates(userSettings.emailUpdates ?? true);
+    setAutoSave(userSettings.autoSave ?? true);
+    setDefaultPlatform(userSettings.defaultPlatform ?? 'reddit');
+  }, [userSettings]);
+
+  const updateSettingsMutation = useMutation<UpdateSettingsResponse, Error, UserSettingsPayload>({
     mutationFn: async (settings) => {
       const response = await apiRequest('PATCH', '/api/user/settings', settings);
       return response.json() as Promise<UpdateSettingsResponse>;
     },
     onSuccess: (data) => {
-      if (data.settings) {
-        syncStateFromSettings(data.settings);
-        queryClient.setQueryData(['/api/user/settings'], data.settings);
-      }
-      queryClient.invalidateQueries({ queryKey: ['/api/user/settings'] });
+      queryClient.setQueryData(['/api/user/settings'], data.settings);
+      setTheme(data.settings.theme ?? 'light');
+      setNotifications(data.settings.notifications ?? true);
+      setEmailUpdates(data.settings.emailUpdates ?? true);
+      setAutoSave(data.settings.autoSave ?? true);
+      setDefaultPlatform(data.settings.defaultPlatform ?? 'reddit');
       toast({
         title: "Settings updated",
         description: "Your preferences have been saved.",
@@ -143,18 +132,19 @@ export default function SettingsPage() {
   });
 
   const handleSaveSettings = () => {
-    const payload: UpdateSettingsPayload = {
+    const payload: UserSettingsPayload = {
       theme,
       notifications,
       emailUpdates,
       autoSave,
       defaultPlatform
     };
+
     updateSettingsMutation.mutate(payload);
   };
 
   const [, setLocation] = useLocation();
-  
+
   const handleUpgrade = () => {
     // Navigate to Stripe checkout page
     const selectedPlan = subscriptionData?.subscription?.plan === 'free' ? 'pro' : 'pro_plus';
@@ -384,7 +374,7 @@ export default function SettingsPage() {
                     {subscriptionData.tier.toUpperCase()}
                   </Badge>
                 </div>
-                
+
                 {subscriptionData.subscription?.nextBillDate && (
                   <div className="flex items-center justify-between">
                     <span>Next Billing Date</span>
