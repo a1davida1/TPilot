@@ -21,171 +21,165 @@
 
 @layer base {
   :root {
-    /* Light Mode - Sunset Orange Theme */
-    --background: 24 100 99;
-    --foreground: 24 60 12;
+    /* Light Mode - Cotton Candy Aurora */
+    --background: 315 100 98;
+    --foreground: 327 45 18;
 
-    /* Card colors with high contrast */
-    --card: 0 0 100;
-    --card-foreground: 0 0 8;
-    --card-border: 271 30 85;
+    /* Card colors with elevated contrast */
+    --card: 318 70 99;
+    --card-foreground: 327 45 18;
+    --card-border: 315 65 88;
 
-    /* Popover colors - Fixed for dropdown visibility */
-    --popover: 0 0 98;
-    --popover-foreground: 0 0 8;
+    /* Popover colors for floating panels */
+    --popover: 318 60 99;
+    --popover-foreground: 327 45 18;
 
-    /* Primary brand colors - Orange gradient */
-    --primary: 24 94 55;
+    /* Primary brand colors - Bubblegum gradient */
+    --primary: 320 90 72;
     --primary-foreground: 0 0 100;
-    --focus-ring: 0 0 0 2px rgba(249,115,22,0.45);
-    --primary-50: 33 100 97;
-    --primary-100: 32 98 93;
-    --primary-200: 30 96 85;
-    --primary-300: 28 94 74;
-    --primary-400: 26 94 64;
-    --primary-500: 24 94 55;
-    --primary-600: 22 90 48;
-    --primary-700: 20 85 40;
-    --primary-800: 18 80 34;
-    --primary-900: 16 75 26;
-    --primary-950: 14 68 20;
+    --focus-ring: 0 0 0 2px rgba(232, 121, 249, 0.45);
+    --primary-50: 318 100 97;
+    --primary-100: 319 96 94;
+    --primary-200: 321 92 88;
+    --primary-300: 322 88 80;
+    --primary-400: 321 86 74;
+    --primary-500: 320 90 72;
+    --primary-600: 318 82 62;
+    --primary-700: 316 70 50;
+    --primary-800: 314 60 42;
+    --primary-900: 312 52 34;
+    --primary-950: 308 48 24;
 
-    /* Accent colors - Warm palette */
-    --accent: 16 90 55;
-    --accent-foreground: 0 0 100;
-    --accent-purple: 12 88 58;
-    --accent-violet: 8 82 54;
-    --accent-indigo: 2 78 50;
+    /* Accent colors - Sky sugar blend */
+    --accent: 205 88 76;
+    --accent-foreground: 220 70 18;
+    --accent-purple: 286 82 78;
+    --accent-violet: 260 86 74;
+    --accent-indigo: 226 82 68;
 
-    /* State colors with high contrast */
-    --destructive: 0 84 60;
+    /* State colors with WCAG contrast */
+    --destructive: 352 80 58;
     --destructive-foreground: 0 0 100;
-    --success: 120 50 30;
+    --success: 160 60 38;
     --success-foreground: 0 0 100;
-    --warning: 35 70 35;
-    --warning-foreground: 0 0 100;
+    --warning: 40 90 56;
+    --warning-foreground: 30 90 16;
 
     /* Form and interaction colors */
-    --border: 26 70 85;
+    --border: 315 45 84;
     --input: 0 0 100;
-    --ring: 24 94 55;
+    --ring: 320 90 72;
 
     /* Interactive states */
-    --hover: 271 20 97;
-    --active: 271 30 95;
-    --focus: 271 70 50;
+    --hover: 320 100 94;
+    --active: 320 92 88;
+    --focus: 205 92 76;
 
     /* Chart colors */
-    --chart-1: 271 85 60;
-    --chart-2: 262 70 55;
-    --chart-3: 239 90 65;
-    --chart-4: 200 85 55;
-    --chart-5: 160 70 50;
+    --chart-1: 320 82 68;
+    --chart-2: 205 84 66;
+    --chart-3: 260 78 64;
+    --chart-4: 190 82 58;
+    --chart-5: 150 70 52;
 
     /* Sidebar colors */
-    --sidebar-background: 24 100 99;
-    --sidebar-foreground: 24 60 12;
-    --sidebar-primary: 24 94 55;
+    --sidebar-background: 315 100 97;
+    --sidebar-foreground: 327 45 18;
+    --sidebar-primary: 320 90 72;
     --sidebar-primary-foreground: 0 0 100;
-    --sidebar-accent: 16 92 58;
-    --sidebar-accent-foreground: 0 0 100;
-    --sidebar-border: 26 70 85;
-    --sidebar-ring: 24 94 55;
+    --sidebar-accent: 205 88 76;
+    --sidebar-accent-foreground: 220 70 18;
+    --sidebar-border: 315 45 84;
+    --sidebar-ring: 320 90 72;
 
     /* Overlay colors */
-    --overlay: 0 0 0;
-    --overlay-opacity: 0.8;
+    --overlay: 280 60 14;
+    --overlay-opacity: 0.78;
     --backdrop-blur: 20px;
 
     --radius: 1rem;
   }
 
   .dark {
-    /* Dark Mode - Ember Night Theme with WCAG AA Compliance */
-    --background: 24 40 10;
-    --foreground: 24 70 96;
-
-    /* Destructive colors for dark mode */
-    --destructive: 0 62 50;
-    --destructive-foreground: 0 0 100;
+    /* Dark Mode - Twilight Candy Dream */
+    --background: 278 52 10;
+    --foreground: 305 55 94;
 
     /* Card colors with guaranteed contrast */
-    --card: 0 0 7;
-    --card-foreground: 0 0 95;
-    --card-border: 271 30 20;
+    --card: 280 46 14;
+    --card-foreground: 305 55 94;
+    --card-border: 296 45 32;
 
-    /* Popover colors - Fixed for dropdown visibility */
-    --popover: 0 0 11;
-    --popover-foreground: 0 0 95;
+    /* Popover colors for floating panels */
+    --popover: 280 46 18;
+    --popover-foreground: 305 55 94;
 
-    /* Primary brand colors - Orange scale for dark mode */
-    --primary: 24 96 64;
-    --primary-foreground: 0 0 100;
-    --primary-50: 24 90 20;
-    --primary-100: 24 92 26;
-    --primary-200: 24 92 32;
-    --primary-300: 24 94 40;
-    --primary-400: 24 96 48;
-    --primary-500: 24 96 56;
-    --primary-600: 24 96 62;
-    --primary-700: 24 96 70;
-    --primary-800: 24 94 78;
-    --primary-900: 24 92 86;
-    --primary-950: 24 90 92;
+    /* Primary brand colors - Midnight sherbet scale */
+    --primary: 300 70 70;
+    --primary-foreground: 0 0 10;
+    --primary-50: 300 46 18;
+    --primary-100: 300 52 24;
+    --primary-200: 300 58 32;
+    --primary-300: 300 62 40;
+    --primary-400: 300 66 52;
+    --primary-500: 300 68 60;
+    --primary-600: 300 70 66;
+    --primary-700: 300 70 70;
+    --primary-800: 300 68 78;
+    --primary-900: 300 64 86;
+    --primary-950: 300 60 92;
 
-    /* Secondary colors */
-    --secondary: 271 15 16;
-    --secondary-foreground: 0 0 90;
+    /* Secondary and muted surfaces */
+    --secondary: 208 42 20;
+    --secondary-foreground: 208 72 88;
+    --muted: 276 32 22;
+    --muted-foreground: 276 40 78;
 
-    /* Muted colors with guaranteed 4.5:1 contrast */
-    --muted: 271 15 16;
-    --muted-foreground: 0 0 75;
-
-    /* Accent colors - Warm palette for dark mode */
-    --accent: 16 90 66;
-    --accent-foreground: 0 0 100;
-    --accent-purple: 12 85 64;
-    --accent-violet: 8 80 60;
-    --accent-indigo: 2 75 56;
+    /* Accent colors - Cotton sky twilight */
+    --accent: 205 80 68;
+    --accent-foreground: 210 100 12;
+    --accent-purple: 286 74 72;
+    --accent-violet: 255 78 70;
+    --accent-indigo: 220 76 64;
 
     /* State colors with proper contrast */
-    --destructive: 0 80 70;
-    --destructive-foreground: 0 0 100;
-    --success: 120 65 55;
-    --success-foreground: 120 10 5;
-    --warning: 35 85 65;
-    --warning-foreground: 35 20 5;
+    --destructive: 352 70 60;
+    --destructive-foreground: 0 0 96;
+    --success: 160 52 46;
+    --success-foreground: 160 32 90;
+    --warning: 42 82 56;
+    --warning-foreground: 42 40 12;
 
     /* Form and interaction colors */
-    --border: 24 35 32;
-    --input: 24 40 16;
-    --ring: 24 96 62;
+    --border: 278 34 28;
+    --input: 278 38 18;
+    --ring: 300 70 66;
 
     /* Interactive states */
-    --hover: 271 15 20;
-    --active: 271 20 15;
-    --focus: 271 80 70;
+    --hover: 300 42 22;
+    --active: 300 44 18;
+    --focus: 205 78 70;
 
     /* Chart colors for dark mode */
-    --chart-1: 271 80 70;
-    --chart-2: 262 75 65;
-    --chart-3: 239 90 75;
-    --chart-4: 200 80 65;
-    --chart-5: 160 75 60;
+    --chart-1: 300 66 68;
+    --chart-2: 205 74 64;
+    --chart-3: 260 70 62;
+    --chart-4: 190 70 56;
+    --chart-5: 150 64 48;
 
     /* Sidebar colors for dark mode */
-    --sidebar-background: 24 35 12;
-    --sidebar-foreground: 24 70 90;
-    --sidebar-primary: 24 96 62;
-    --sidebar-primary-foreground: 0 0 100;
-    --sidebar-accent: 16 92 60;
-    --sidebar-accent-foreground: 0 0 100;
-    --sidebar-border: 24 35 32;
-    --sidebar-ring: 24 96 62;
+    --sidebar-background: 278 48 12;
+    --sidebar-foreground: 305 55 90;
+    --sidebar-primary: 300 70 66;
+    --sidebar-primary-foreground: 0 0 10;
+    --sidebar-accent: 205 80 68;
+    --sidebar-accent-foreground: 210 100 12;
+    --sidebar-border: 278 34 28;
+    --sidebar-ring: 300 70 66;
 
     /* Overlay colors for dark mode */
-    --overlay: 0 0 0;
-    --overlay-opacity: 0.9;
+    --overlay: 278 60 6;
+    --overlay-opacity: 0.88;
     --backdrop-blur: 24px;
   }
 }
