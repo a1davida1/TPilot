@@ -7,9 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { AuthModal } from "@/components/auth-modal";
 import { apiRequest, type ApiError } from "@/lib/queryClient";
 import type { ContentGeneration } from "@shared/schema";
-import { Sparkles, Brain, RefreshCw, Settings, Copy, Hash } from "lucide-react";
+import { Sparkles, Brain, RefreshCw, Copy, Hash, Lock } from "lucide-react";
 
 // Define types for mutation variables and response
 interface GenerateContentVariables {
@@ -50,6 +51,10 @@ interface GeneratedContent {
   generationType?: string;
   createdAt?: Date | string;
 }
+
+const isApiError = (error: unknown): error is ApiError => {
+  return typeof error === "object" && error !== null && "status" in error && "statusText" in error;
+};
 
 const photoInstructionFields: Array<{ key: keyof ContentGeneration["photoInstructions"]; label: string }> = [
   { key: "lighting", label: "Lighting" },
@@ -96,8 +101,13 @@ export function EnhancedAIGenerator({
   const [customPrompt, setCustomPrompt] = useState<string>("");
   const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
   const [copiedItem, setCopiedItem] = useState<string | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
-  const isGuestMode = !isAuthenticated || userTier === 'guest';
+  const isGuestMode = !isAuthenticated || userTier === "guest";
+
+  const openAuthModal = () => {
+    setShowAuthModal(true);
+  };
 
   const tierConfig = {
     guest: {
@@ -185,7 +195,7 @@ export function EnhancedAIGenerator({
     return ["Generated content ready to share"];
   };
 
-  const generateContentMutation = useMutation<GeneratedContent, Error, GenerateContentVariables>({
+  const generateContentMutation = useMutation<GeneratedContent, ApiError | Error, GenerateContentVariables>({
     mutationFn: async (data) => {
       const effectivePrompt = data.customPrompt || data.prompt || "";
       const response = await apiRequest("POST", "/api/generate-unified", {
@@ -281,16 +291,39 @@ export function EnhancedAIGenerator({
 
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
     },
-    onError: (error: Error) => {
+    onError: (error) => {
+      let toastTitle = "Generation Failed";
+      let description = "Failed to generate content. Please try again.";
+
+      if (isApiError(error)) {
+        if (error.isAuthError) {
+          toastTitle = "Sign in to generate content";
+          description =
+            error.userMessage ?? "Please log in or create an account to continue generating AI content.";
+          openAuthModal();
+        } else {
+          description = error.userMessage ?? error.message;
+        }
+      } else if (error instanceof Error) {
+        description = error.message;
+      }
+
       toast({
-        title: "Generation Failed",
-        description: error.message || "Failed to generate content. Please try again.",
+        title: toastTitle,
+        description,
         variant: "destructive",
       });
     },
   });
 
+  const isGenerateDisabled = isGuestMode || generateContentMutation.isPending;
+
   const handleGenerate = () => {
+    if (isGuestMode) {
+      openAuthModal();
+      return;
+    }
+
     generateContentMutation.mutate({
       platform: "reddit",
       style: tone,
@@ -394,24 +427,35 @@ export function EnhancedAIGenerator({
           </div>
         </div>
 
-        <Button
-          onClick={handleGenerate}
-          disabled={generateContentMutation.isPending}
-          className="w-full bg-gradient-to-r from-orange-500 via-amber-500 to-red-500 hover:from-orange-600 hover:via-amber-500 hover:to-red-500 text-white font-medium"
-          size="lg"
-        >
-          {generateContentMutation.isPending ? (
-            <>
-              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-              Generating...
-            </>
-          ) : (
-            <>
-              <Sparkles className="mr-2 h-4 w-4" />
-              Generate Content
-            </>
-          )}
-        </Button>
+        {isGuestMode ? (
+          <Button
+            onClick={openAuthModal}
+            className="w-full bg-gradient-to-r from-gray-400 via-gray-500 to-gray-600 hover:from-gray-500 hover:via-gray-600 hover:to-gray-700 text-white font-medium"
+            size="lg"
+          >
+            <Lock className="mr-2 h-4 w-4" />
+            Sign In to Generate Content
+          </Button>
+        ) : (
+          <Button
+            onClick={handleGenerate}
+            disabled={isGenerateDisabled}
+            className="w-full bg-gradient-to-r from-orange-500 via-amber-500 to-red-500 hover:from-orange-600 hover:via-amber-500 hover:to-red-500 text-white font-medium"
+            size="lg"
+          >
+            {generateContentMutation.isPending ? (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Sparkles className="mr-2 h-4 w-4" />
+                Generate AI Content
+              </>
+            )}
+          </Button>
+        )}
 
         {generatedContent && (
           <div className="space-y-4 p-4 bg-gradient-to-br from-orange-50 via-amber-50 to-rose-100 rounded-lg border border-orange-200">
@@ -538,6 +582,10 @@ export function EnhancedAIGenerator({
           </div>
         )}
       </div>
+
+      {showAuthModal && (
+        <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} defaultView="signin" />
+      )}
     </div>
   );
 }

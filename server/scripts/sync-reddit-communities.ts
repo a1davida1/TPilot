@@ -241,22 +241,62 @@ async function syncSubreddit(reddit: snoowrap, subredditName: string, retryCount
  */
 export async function syncRedditCommunities(config?: { subreddits?: string[]; runId?: string; }): Promise<SyncResult> {
   const { subreddits = DEFAULT_SUBREDDITS, runId } = syncConfigSchema.parse(config || {});
-  
-  logger.info(`🔄 Starting Reddit communities sync`, { 
-    runId, 
+
+  logger.info(`🔄 Starting Reddit communities sync`, {
+    runId,
     subredditCount: subreddits.length,
     subreddits: subreddits.slice(0, 5).join(', ') + (subreddits.length > 5 ? '...' : '')
   });
-  
+
   // Validate environment variables
-  const env = envSchema.parse({
+  const rawEnv = {
     REDDIT_CLIENT_ID: process.env.REDDIT_CLIENT_ID,
     REDDIT_CLIENT_SECRET: process.env.REDDIT_CLIENT_SECRET,
     REDDIT_USER_AGENT: process.env.REDDIT_USER_AGENT || DEFAULT_USER_AGENT,
     REDDIT_USERNAME: process.env.REDDIT_USERNAME,
     REDDIT_PASSWORD: process.env.REDDIT_PASSWORD,
     REDDIT_REFRESH_TOKEN: process.env.REDDIT_REFRESH_TOKEN,
-  });
+  };
+
+  const envResult = envSchema.safeParse(rawEnv);
+
+  if (!envResult.success) {
+    const credentialKeys = new Set([
+      'REDDIT_CLIENT_ID',
+      'REDDIT_CLIENT_SECRET',
+      'REDDIT_USERNAME',
+      'REDDIT_PASSWORD',
+      'REDDIT_REFRESH_TOKEN',
+    ]);
+
+    const hasMissingCredentials = !rawEnv.REDDIT_CLIENT_ID ||
+      !rawEnv.REDDIT_CLIENT_SECRET ||
+      (!rawEnv.REDDIT_REFRESH_TOKEN && !(rawEnv.REDDIT_USERNAME && rawEnv.REDDIT_PASSWORD));
+
+    const credentialIssuesOnly = envResult.error.issues.every((issue) => {
+      if (issue.message.includes('Either REDDIT_REFRESH_TOKEN')) {
+        return true;
+      }
+
+      const [pathSegment] = issue.path;
+      return typeof pathSegment === 'string' && credentialKeys.has(pathSegment);
+    });
+
+    if (hasMissingCredentials && credentialIssuesOnly) {
+      logger.warn('Skipping Reddit community sync because credentials are not configured', { runId });
+
+      return {
+        processed: 0,
+        succeeded: 0,
+        failed: 0,
+        errors: [],
+      };
+    }
+
+    throw envResult.error;
+  }
+
+  const env = envResult.data;
   
   // Initialize Reddit client with proper authentication
   const redditConfig: {
