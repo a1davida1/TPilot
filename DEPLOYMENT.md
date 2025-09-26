@@ -95,6 +95,31 @@ OPENAI_API_KEY=your_openai_key
 
 3. **Database**: Ensure your PostgreSQL database is accessible from the deployment environment.
 
+## 🔐 Provisioning the Admin Account
+
+Follow these steps so production only relies on hashed credentials:
+
+1. **Generate a bcrypt hash locally**
+   ```bash
+   node -e "console.log(require('bcrypt').hashSync(process.argv[1], 10))" 'StrongPassword!'
+   ```
+   Replace `StrongPassword!` with the real admin password and copy the printed hash.
+
+2. **Store deployment secrets**
+   - `ADMIN_EMAIL` – required.
+   - `ADMIN_PASSWORD_HASH` – the hash generated above.
+   - *(Optional)* `ADMIN_USERNAME` – shown in the UI and used by the seed script.
+
+3. **Seed the database (if needed)**
+   Run the compiled script during deployment bootstrap so the admin row exists:
+   ```bash
+   node dist/server/scripts/create-admin.js
+   ```
+   Ensure the environment already contains the variables from step 2 before running the script.
+
+4. **Limit plaintext usage to local tooling**
+   Only mirror the plaintext password into local or QA tooling (e.g. `VITE_ADMIN_PASSWORD`, `E2E_ADMIN_PASSWORD`) and avoid storing it in shared production secrets.
+
 ## ✨ Deployment Ready!
 
 Your application is now ready for deployment. The build process has been tested and verified to work correctly without any module resolution errors.
