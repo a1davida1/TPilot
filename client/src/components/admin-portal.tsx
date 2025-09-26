@@ -997,16 +997,82 @@ function LiveDashboardTab({ authenticatedRequest }: { authenticatedRequest: Auth
 
 // FEATURE 1: IP Tracking Component
 function IPTrackingTab({ authenticatedRequest }: { authenticatedRequest: AuthenticatedRequest }) {
+  interface IPTrackingUserSummary {
+    id: number;
+    name?: string;
+    email?: string;
+  }
+
+  interface IPTrackingRecord {
+    ip: string;
+    location: string;
+    lastSeen: string;
+    flagged: boolean;
+    userId?: number;
+    primaryUserId?: number;
+    userCount?: number;
+    users?: IPTrackingUserSummary[] | IPTrackingUserSummary | number;
+  }
+
+  const resolveUserCount = (record: IPTrackingRecord): number => {
+    if (typeof record.userCount === 'number') {
+      return record.userCount;
+    }
+
+    if (Array.isArray(record.users)) {
+      return record.users.filter((user) => typeof user?.id === 'number').length || record.users.length;
+    }
+
+    if (typeof record.users === 'number') {
+      return record.users;
+    }
+
+    if (record.users && typeof record.users === 'object') {
+      const singleUser = record.users as IPTrackingUserSummary;
+      return typeof singleUser.id === 'number' ? 1 : 0;
+    }
+
+    return 0;
+  };
+
+  const resolvePrimaryUserId = (record: IPTrackingRecord): number | null => {
+    if (typeof record.userId === 'number') {
+      return record.userId;
+    }
+
+    if (typeof record.primaryUserId === 'number') {
+      return record.primaryUserId;
+    }
+
+    if (Array.isArray(record.users)) {
+      const firstUserWithId = record.users.find((user) => typeof user?.id === 'number');
+      return firstUserWithId?.id ?? null;
+    }
+
+    if (record.users && typeof record.users === 'object') {
+      const singleUser = record.users as IPTrackingUserSummary;
+      return typeof singleUser.id === 'number' ? singleUser.id : null;
+    }
+
+    return null;
+  };
+
   const { data: ipData } = useQuery({
     queryKey: ['/api/admin/ip-tracking'],
     queryFn: () => authenticatedRequest('/api/admin/ip-tracking'),
   });
 
-  const [selectedUserId, _setSelectedUserId] = useState<number | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const { data: userActivity } = useQuery({
     queryKey: ['/api/admin/user-activity', selectedUserId],
-    queryFn: () => authenticatedRequest(`/api/admin/user-activity/${selectedUserId}`),
-    enabled: !!selectedUserId
+    queryFn: () => {
+      if (selectedUserId === null) {
+        throw new Error('User ID is required to fetch activity');
+      }
+
+      return authenticatedRequest(`/api/admin/user-activity/${selectedUserId}`);
+    },
+    enabled: selectedUserId !== null
   });
 
   return (
@@ -1033,30 +1099,40 @@ function IPTrackingTab({ authenticatedRequest }: { authenticatedRequest: Authent
                 </tr>
               </thead>
               <tbody>
-                {(ipData as Array<{ip: string; users: number; location: string; lastSeen: string; flagged: boolean}>)?.map((ip) => (
-                  <tr key={ip.ip} className="border-b hover:bg-gray-50 dark:hover:bg-gray-800">
-                    <td className="p-2 font-mono text-sm">{ip.ip}</td>
-                    <td className="p-2">{ip.users}</td>
-                    <td className="p-2">
-                      <div className="flex items-center gap-1">
-                        <MapPin className="h-3 w-3 text-gray-500" />
-                        {ip.location}
-                      </div>
-                    </td>
-                    <td className="p-2">{new Date(ip.lastSeen).toLocaleDateString()}</td>
-                    <td className="p-2">
-                      <Badge className={ip.flagged ? 'bg-red-500' : 'bg-green-500'}>
-                        {ip.flagged ? 'Flagged' : 'Clean'}
-                      </Badge>
-                    </td>
-                    <td className="p-2">
-                      <Button size="sm" variant="outline"
-                        data-testid={`button-view-activity-${ip.ip.replace(/\./g, '-')}`}>
-                        View Activity
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
+                {(ipData as IPTrackingRecord[] | undefined)?.map((ip) => {
+                  const primaryUserId = resolvePrimaryUserId(ip);
+                  const userCount = resolveUserCount(ip);
+
+                  return (
+                    <tr key={ip.ip} className="border-b hover:bg-gray-50 dark:hover:bg-gray-800">
+                      <td className="p-2 font-mono text-sm">{ip.ip}</td>
+                      <td className="p-2">{userCount}</td>
+                      <td className="p-2">
+                        <div className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3 text-gray-500" />
+                          {ip.location}
+                        </div>
+                      </td>
+                      <td className="p-2">{new Date(ip.lastSeen).toLocaleDateString()}</td>
+                      <td className="p-2">
+                        <Badge className={ip.flagged ? 'bg-red-500' : 'bg-green-500'}>
+                          {ip.flagged ? 'Flagged' : 'Clean'}
+                        </Badge>
+                      </td>
+                      <td className="p-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          data-testid={`button-view-activity-${ip.ip.replace(/\./g, '-')}`}
+                          onClick={() => setSelectedUserId(primaryUserId)}
+                          disabled={primaryUserId === null}
+                        >
+                          View Activity
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -1064,10 +1140,13 @@ function IPTrackingTab({ authenticatedRequest }: { authenticatedRequest: Authent
       </Card>
 
       {/* User Session Details */}
-      {selectedUserId && (
+      {selectedUserId !== null && (
         <Card>
-          <CardHeader>
+          <CardHeader className="flex items-center justify-between">
             <CardTitle>User Session Details</CardTitle>
+            <Button variant="ghost" size="sm" onClick={() => setSelectedUserId(null)}>
+              Clear
+            </Button>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
