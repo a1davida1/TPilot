@@ -1,22 +1,129 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Copy, Check, Share2, Users, DollarSign, Gift, Sparkles } from 'lucide-react';
+import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import type { ApiError } from '@/lib/queryClient';
+
+interface ReferralCodeResponse {
+  referralCode: string;
+  referralUrl: string;
+}
+
+interface ReferralSummaryResponse {
+  code: string;
+  totalReferrals: number;
+  activeReferrals: number;
+  totalCommission: number;
+  conversionRate: number;
+}
 
 export default function ReferralPage() {
-  const { user } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
+  const [, navigate] = useLocation();
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
 
-  // Generate referral code from user ID (simple example)
-  const referralCode = user?.id ? `THOTTO${user.id.toString().padStart(6, '0')}` : 'THOTTO000000';
-  const referralUrl = `${window.location.origin}/signup?ref=${referralCode}`;
+  useEffect(() => {
+    if (!isAuthLoading && !user) {
+      navigate('/login?redirect=/referral');
+    }
+  }, [isAuthLoading, navigate, user]);
+
+  useEffect(() => {
+    setCopied(false);
+  }, [user]);
+
+  const {
+    data: referralCodeData,
+    isLoading: isCodeLoading,
+    isError: isCodeError,
+    error: codeError,
+    refetch: refetchCode,
+  } = useQuery<ReferralCodeResponse, ApiError>({
+    queryKey: ['/api/referral/code'],
+    enabled: !!user,
+  });
+
+  const {
+    data: referralSummary,
+    isLoading: isSummaryLoading,
+    isError: isSummaryError,
+    error: summaryError,
+    refetch: refetchSummary,
+  } = useQuery<ReferralSummaryResponse, ApiError>({
+    queryKey: ['/api/referral/summary'],
+    enabled: !!user,
+  });
+
+  const referralCode = useMemo(() => {
+    if (referralCodeData?.referralCode) {
+      return referralCodeData.referralCode;
+    }
+
+    if (referralSummary?.code) {
+      return referralSummary.code;
+    }
+
+    return '';
+  }, [referralCodeData, referralSummary]);
+
+  const referralUrl = useMemo(() => {
+    if (referralCodeData?.referralUrl) {
+      return referralCodeData.referralUrl;
+    }
+
+    if (typeof window === 'undefined') {
+      return '';
+    }
+
+    if (!referralCode) {
+      return '';
+    }
+
+    return `${window.location.origin}/signup?ref=${referralCode}`;
+  }, [referralCode, referralCodeData]);
+
+  const stats = useMemo(() => {
+    const totalReferrals = referralSummary?.totalReferrals ?? 0;
+    const activeReferrals = referralSummary?.activeReferrals ?? 0;
+    const totalCommission = referralSummary?.totalCommission ?? 0;
+    const conversionRate = referralSummary?.conversionRate ?? 0;
+    const pendingEarnings = Math.max(totalReferrals - activeReferrals, 0) * 5;
+
+    return {
+      totalReferrals,
+      activeReferrals,
+      totalCommission,
+      pendingEarnings,
+      conversionRate,
+    };
+  }, [referralSummary]);
+
+  const isLoadingData = isCodeLoading || isSummaryLoading;
+  const hasError = isCodeError || isSummaryError;
+  const aggregatedError: ApiError | null = (codeError as ApiError | undefined) ?? (summaryError as ApiError | undefined) ?? null;
+
+  const handleRetry = () => {
+    void Promise.all([refetchCode(), refetchSummary()]);
+  };
 
   const handleCopyReferralCode = async () => {
+    if (!referralCode) {
+      toast({
+        title: 'Referral code unavailable',
+        description: 'Please refresh to load your referral code.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
       await navigator.clipboard.writeText(referralCode);
       setCopied(true);
@@ -35,6 +142,15 @@ export default function ReferralPage() {
   };
 
   const handleCopyReferralUrl = async () => {
+    if (!referralUrl) {
+      toast({
+        title: 'Referral link unavailable',
+        description: 'Please refresh to load your referral link.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
       await navigator.clipboard.writeText(referralUrl);
       toast({
@@ -51,6 +167,15 @@ export default function ReferralPage() {
   };
 
   const handleShare = async () => {
+    if (!referralUrl) {
+      toast({
+        title: 'Referral link unavailable',
+        description: 'Please refresh to load your referral link.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     if (navigator.share) {
       try {
         await navigator.share({
@@ -59,23 +184,11 @@ export default function ReferralPage() {
           url: referralUrl,
         });
       } catch (err) {
-        // User cancelled share or sharing failed
         handleCopyReferralUrl();
       }
     } else {
-      // Fallback to copying URL
       handleCopyReferralUrl();
     }
-  };
-
-  // Mock data for referral stats (would come from API in real implementation)
-  const referralStats = {
-    totalReferrals: 12,
-    activeReferrals: 8,
-    totalEarnings: 240.00,
-    pendingEarnings: 60.00,
-    thisMonthReferrals: 3,
-    thisMonthEarnings: 75.00
   };
 
   const rewardTiers = [
@@ -85,6 +198,46 @@ export default function ReferralPage() {
     { referrals: 25, reward: '$300 credit', bonus: 'VIP support tier' },
     { referrals: 50, reward: '$650 credit', bonus: 'Lifetime Pro features' },
   ];
+
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-purple-100 dark:from-gray-900 dark:via-purple-950/20 dark:to-pink-950/20">
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-yellow-400/5 opacity-60"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,192,203,0.1),transparent_50%)]"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(255,235,59,0.05),transparent_50%)]"></div>
+        </div>
+        <div className="relative container mx-auto px-4 py-8 z-10 max-w-6xl">
+          <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-pink-200/50 dark:border-pink-800/30">
+            <CardHeader>
+              <CardTitle>Loading referral dashboard…</CardTitle>
+              <CardDescription>We&apos;re preparing your referral rewards data.</CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-purple-100 dark:from-gray-900 dark:via-purple-950/20 dark:to-pink-950/20">
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-yellow-400/5 opacity-60"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,192,203,0.1),transparent_50%)]"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(255,235,59,0.05),transparent_50%)]"></div>
+        </div>
+        <div className="relative container mx-auto px-4 py-8 z-10 max-w-6xl">
+          <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-pink-200/50 dark:border-pink-800/30">
+            <CardHeader>
+              <CardTitle>Redirecting to login…</CardTitle>
+              <CardDescription>Sign in to access your referral dashboard and track rewards.</CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-purple-100 dark:from-gray-900 dark:via-purple-950/20 dark:to-pink-950/20">
