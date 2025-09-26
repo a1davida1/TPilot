@@ -125,7 +125,7 @@ interface TitlePatternContext {
   emoji: string;
   punctuation: string;
   hedge: string;
-  photoType: string;
+  photoType: ContentParameters['photoType'];
 }
 
 interface FragmentDefinition {
@@ -1616,7 +1616,7 @@ const BUILT_IN_PRESET_VARIATIONS: Record<string, PresetVariation[]> = {
     {
       titles: [
         "Oversized tee, zero effort, maximum tease 😉",
-        "Just lounging… unless you want to come closer",
+        "If you were here I'd hand you the controller",
         "Caught mid stretch with the softest smirk"
       ],
       content:
