@@ -1,0 +1,302 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/server/advanced-content-generator.ts b/server/advanced-content-generator.ts
+index e0e66345cf005417f7910a585c6deb9ba0fb4b22..a3c54b5393f44cd83ed909e7707ecd8b830a40fd 100644
+--- a/server/advanced-content-generator.ts
++++ b/server/advanced-content-generator.ts
+@@ -1449,253 +1449,253 @@ export function generateAdvancedContent(params: ContentParameters): GeneratedCon
+   const authenticity = scoreAuthenticity({
+     content: mainContent.content,
+     titles,
+     voiceMarkersUsed: mainContent.voiceMarkersUsed,
+     callbacksUsed: mainContent.callbacksUsed,
+     communityPack: mainContent.communityPack
+   });
+ 
+   return {
+     titles,
+     content: mainContent.content,
+     photoInstructions,
+     tags,
+     diagnostics: {
+       authenticity,
+       experiment: experimentAssignment,
+       voiceMarkersUsed: mainContent.voiceMarkersUsed
+     }
+   };
+ }
+ 
+ const BUILT_IN_PRESET_VARIATIONS: Record<string, PresetVariation[]> = {
+   'nude-photos': [
+     {
+       titles: [
+-        'Soft natural light and unfiltered confidence ✨',
+-        'Body worship in its raw form',
+-        'Every curve, every detail, completely mine'
++        "Soft natural light and unfiltered confidence ✨",
++        "Body worship in its raw form",
++        "Every curve, every detail, completely mine"
+       ],
+       content:
+-        'Natural light, warm skin, no distractions. Just me feeling powerful in my own space and letting every detail breathe. Minimal posing, maximum confidence, and a quiet energy that feels intimate and honest.',
++        "Natural light, warm skin, no distractions. Just me feeling powerful in my own space and letting every detail breathe. Minimal posing, maximum confidence, and a quiet energy that feels intimate and honest.",
+       photoInstructions: {
+         lighting: 'Window light or bounced warm light with soft falloff',
+         angles: 'Body-contour angles that follow natural lines',
+         composition: 'Minimal props, focus on silhouettes and curves',
+         styling: 'Bare skin with optional delicate jewelry accents',
+         technical: 'Shoot around f/2.0 with warm white balance and gentle grain',
+         sceneSetup: 'Neutral backdrop, textured bedding or simple chair to add depth'
+       }
+     },
+     {
+       titles: [
+-        'Golden hour glow on bare skin',
+-        'The light hits different when it's just me',
+-        'Unedited, unfiltered, unbelievably soft'
++        "Golden hour glow on bare skin",
++        "The light hits different when it's just me",
++        "Unedited, unfiltered, unbelievably soft"
+       ],
+       content:
+-        'Golden light pouring through the window, the kind that hugs every line of your body. Slow, deliberate movements, breathing in sync with the camera, letting softness and strength meet in the same frame.',
++        "Golden light pouring through the window, the kind that hugs every line of your body. Slow, deliberate movements, breathing in sync with the camera, letting softness and strength meet in the same frame.",
+       photoInstructions: {
+         lighting: 'Golden hour sunlight with sheer curtain diffusion',
+         angles: 'Low vantage for elongation and soft over-the-shoulder shots',
+         composition: 'Use negative space to emphasize shape and mood',
+         styling: 'Natural hair and skin sheen, optional sheer wrap for texture',
+         technical: 'Manual exposure to preserve highlights, subtle vignette in post',
+         sceneSetup: 'Cozy bedroom corner with textured linens and warm accents'
+       }
+     }
+   ],
+   'shower-content': [
+     {
+       titles: [
+-        'Steam, water droplets, and nothing else',
+-        'Slide into the shower with me 🚿',
+-        'Wet skin and fogged-up glass feels dangerous'
++        "Steam, water droplets, and nothing else",
++        "Slide into the shower with me 🚿",
++        "Wet skin and fogged-up glass feels dangerous"
+       ],
+       content:
+-        'Hot water, fogged glass, and the kind of closeness you only get when everything else fades away. The droplets trace every line while the steam softens the edges. Just press play and stay awhile.',
++        "Hot water, fogged glass, and the kind of closeness you only get when everything else fades away. The droplets trace every line while the steam softens the edges. Just press play and stay awhile.",
+       photoInstructions: {
+         lighting: 'Diffuse bathroom lighting with a cool rim light for highlights',
+         angles: 'Tight crops through glass plus over-shoulder steamy frames',
+         composition: 'Use glass reflections and negative space to build tension',
+         styling: 'Wet hair, dewy skin finish, optional white towel prop',
+         technical: 'Manual focus to cut through condensation, bump ISO for mood',
+         sceneSetup: 'Glass shower or tiled wall with a steamy, high-contrast feel'
+       }
+     },
+     {
+       titles: [
+-        'Shower heat level: 🔥',
+-        'Water drops tracing every curve',
+-        'Caught mid-rinse with the best view'
++        "Shower heat level: 🔥",
++        "Water drops tracing every curve",
++        "Caught mid-rinse with the best view"
+       ],
+       content:
+-        'Captured mid-rinse, soap sliding down every curve and the glass catching the heat. It's playful and reckless at the same time—like you walked in at exactly the right moment.',
++        "Captured mid-rinse, soap sliding down every curve and the glass catching the heat. It's playful and reckless at the same time—like you walked in at exactly the right moment.",
+       photoInstructions: {
+         lighting: 'Warm key light with blue-tinted fill for steamy contrast',
+         angles: 'Profile shots with motion blur and close-ups of hands on glass',
+         composition: 'Mix motion blur with crisp detail for sensual movement',
+         styling: 'Foamy soap, slick ponytail or pinned-back hair',
+         technical: 'Shutter around 1/60 to capture motion streaks, polarizer to manage reflections',
+         sceneSetup: 'Steam-filled shower with translucent curtain or glass door'
+       }
+     }
+   ],
+   'workout-clothes': [
+     {
+       titles: [
+         'Post-lift glow and flexed confidence 💪',
+         'Sweat-kissed and feeling legendary',
+         'Training hard so the view hits harder'
+       ],
+       content:
+         'Fresh off a strength session, leggings hugging every contour and sweat catching the gym lights. Strong, determined, a little breathless, and fully in love with the grind.',
+       photoInstructions: {
+         lighting: 'High-contrast gym lighting with a focused key light',
+         angles: 'Three-quarter flex angles and close-ups on toned muscles',
+         composition: 'Include gym equipment framing to ground the scene',
+         styling: 'Matching set or bold sportswear with minimal accessories',
+         technical: 'Fast shutter to freeze motion, slight clarity boost in edit',
+         sceneSetup: 'Functional gym corner with weights, bands, or mirror backdrop'
+       }
+     },
+     {
+       titles: [
+         'Stretching it out before round two',
+         'Strong legs, stronger focus',
+         'Athleisure never looked this intense'
+       ],
+       content:
+         'Cooldown stretch with toned legs center stage, deep breaths and long lines. Smooth transitions from pose to pose while the camera drinks in the control and power.',
+       photoInstructions: {
+         lighting: 'Soft directional lighting to sculpt definition without harshness',
+         angles: 'Floor-level stretch captures and over-the-shoulder mirror looks',
+         composition: 'Use leading lines from mats or benches to the subject',
+         styling: 'Supportive sneakers, sweat glisten, minimalist jewelry',
+         technical: 'Shoot at mid-range focal length for flattering proportions',
+         sceneSetup: 'Studio or gym mat area with resistance bands or foam roller'
+       }
+     }
+   ],
+   lingerie: [
+     {
+       titles: [
+-        'Lace, low light, and a slow reveal',
+-        'You can stay for the midnight fitting',
+-        'Every strap tells a secret'
++        "Lace, low light, and a slow reveal",
++        "You can stay for the midnight fitting",
++        "Every strap tells a secret"
+       ],
+       content:
+-        'Dim lights, lace tracing every curve, and the camera taking its time. It's deliberate and indulgent—every strap adjusted, every glance intentional.',
++        "Dim lights, lace tracing every curve, and the camera taking its time. It's deliberate and indulgent—every strap adjusted, every glance intentional.",
+       photoInstructions: {
+         lighting: 'Low key lighting with practical lamps for warm highlights',
+         angles: 'Close crops on textures plus mirrored self-portrait angles',
+         composition: 'Layer fabrics and furniture to add depth and sophistication',
+         styling: 'Matching lingerie set with silk robe or garter details',
+         technical: 'Shoot wide open for creamy bokeh, manual white balance for warmth',
+         sceneSetup: 'Bedroom or boutique dressing area with velvet or satin textures'
+       }
+     },
+     {
+       titles: [
+-        'Velvet chaise, lace set, endless legs',
+-        'Pouring a glass and slipping into something unforgettable',
+-        'This lingerie was made to be unwrapped slowly'
++        "Velvet chaise, lace set, endless legs",
++        "Pouring a glass and slipping into something unforgettable",
++        "This lingerie was made to be unwrapped slowly"
+       ],
+       content:
+-        'Lounging on a velvet chaise, sipping something smooth, letting the lace and shadows do all the work. Playful eye contact and plenty of slow, deliberate posing.',
++        "Lounging on a velvet chaise, sipping something smooth, letting the lace and shadows do all the work. Playful eye contact and plenty of slow, deliberate posing.",
+       photoInstructions: {
+         lighting: 'Spotlight with soft fill to create dimensional shadows',
+         angles: 'Elongating reclined angles and overhead shots for drama',
+         composition: 'Use leading lines from furniture to draw toward the subject',
+         styling: 'Lux lingerie with statement heels or jewelry',
+         technical: 'Lower ISO with tripod support for crisp texture detail',
+         sceneSetup: 'Styled sitting room with plush fabrics and reflective accents'
+       }
+     }
+   ],
+   'casual-tease': [
+     {
+       titles: [
+-        'Oversized tee, zero effort, maximum tease 😉',
+-        'Just lounging… unless you want to come closer',
+-        'Caught mid stretch with the softest smirk'
++        "Oversized tee, zero effort, maximum tease 😉",
++        "Just lounging… unless you want to come closer",
++        "Caught mid stretch with the softest smirk"
+       ],
+       content:
+-        'Bare legs, oversized tee, hair tossed up without even thinking about it. Everything is easy and unplanned, which somehow makes it impossible to look away.',
++        "Bare legs, oversized tee, hair tossed up without even thinking about it. Everything is easy and unplanned, which somehow makes it impossible to look away.",
+       photoInstructions: {
+         lighting: 'Ambient window light with gentle bounce for even skin tones',
+         angles: 'Candid over-the-shoulder glances and half-body reclines',
+         composition: 'Embrace negative space and playful props like snacks or books',
+         styling: 'Loose shirt, cozy socks, natural glam makeup',
+         technical: 'Handheld shooting with slight grain for authenticity',
+         sceneSetup: 'Living room or bed with cozy props like blankets or pillows'
+       }
+     },
+     {
+       titles: [
+-        'Sunday scroll with a side of temptation',
+-        'If you were here I'd hand you the controller',
+-        'Netflix queued, shirt optional'
++        "Sunday scroll with a side of temptation",
++        "If you were here I'd hand you the controller",
++        "Netflix queued, shirt optional"
+       ],
+       content:
+-        'Movie night energy with just enough skin showing to keep things interesting. Laughing at the screen, messing with the camera, acting like you just dropped in unannounced.',
++        "Movie night energy with just enough skin showing to keep things interesting. Laughing at the screen, messing with the camera, acting like you just dropped in unannounced.",
+       photoInstructions: {
+         lighting: 'Warm lamp light mixed with TV glow for contrast',
+         angles: 'Eye-level couch shots and close-up smirks',
+         composition: 'Foreground blur with snacks or remotes for story cues',
+         styling: 'Off-the-shoulder knit or cropped hoodie with shorts',
+         technical: 'Slightly slower shutter to catch ambient light, subtle grain in post',
+         sceneSetup: 'Living room couch with blankets, string lights, or console controller'
+       }
+     }
+   ],
+   'bedroom-scene': [
+     {
+       titles: [
+-        'Sheets tangled, hair messy, and yours truly',
+-        'First thing in the morning, last thing on your mind',
+-        'Bedroom light and a body built for it'
++        "Sheets tangled, hair messy, and yours truly",
++        "First thing in the morning, last thing on your mind",
++        "Bedroom light and a body built for it"
+       ],
+       content:
+-        'Sun peeking in, sheets half pulled, and that look that says come closer. It's relaxed and intentionally undone like you caught the exact moment before things get wild.',
++        "Sun peeking in, sheets half pulled, and that look that says come closer. It's relaxed and intentionally undone like you caught the exact moment before things get wild.",
+       photoInstructions: {
+         lighting: 'Soft directional morning light with fill from reflector',
+         angles: 'Top-down shots across the bed and close ups on hands in sheets',
+         composition: 'Use leading lines from bedding folds to frame the subject',
+         styling: 'Minimal wardrobe—lingerie bottoms or soft sleepwear',
+         technical: 'Slow shutter with tripod for dreamy softness',
+         sceneSetup: 'Unmade bed, layered textiles, optional bedside props'
+       }
+     },
+     {
+       titles: [
+-        'Late night confessions in low light',
+-        'Dim lamps, quiet whispers, and undone buttons',
+-        'Under the covers and in full control'
++        "Late night confessions in low light",
++        "Dim lamps, quiet whispers, and undone buttons",
++        "Under the covers and in full control"
+       ],
+       content:
+-        'Bedroom lamps low, playlist humming, buttons undone and lips parted. It's a slow burn meant for late nights and private audiences only.',
++        "Bedroom lamps low, playlist humming, buttons undone and lips parted. It's a slow burn meant for late nights and private audiences only.",
+       photoInstructions: {
+         lighting: 'Practical lamp lighting with warm gels for depth',
+         angles: 'Intimate close-ups and side-lit partial silhouettes',
+         composition: 'Frame with headboard lines or window drapery for balance',
+         styling: 'Slip dress or button-down worn loose, tousled hair',
+         technical: 'Shoot around ISO 800 with noise reduction tuned for warmth',
+         sceneSetup: 'Bedroom corner with lamps, candles, and layered bedding'
+       }
+     }
+   ],
+   'outdoor-adventure': [
+     {
+       titles: [
+         'Sun on my shoulders and mischief in my smile',
+         'Nature hike but make it dangerously flirty',
+         'Trailblazing with a view worth chasing'
+       ],
+       content:
+         'Sun-drenched hike with skin kissed by the breeze. Laughing, moving, teasing the camera with every step. Wild energy that feels alive and untamed.',
+       photoInstructions: {
+         lighting: 'Natural sunlight with reflector bounce for fill',
+         angles: 'Action strides, over-the-shoulder glances, and wide scenic shots',
+         composition: 'Include horizon lines or foliage to anchor the setting',
+         styling: 'Sporty crop top, shorts, hiking boots, wind-swept hair',
+         technical: 'Use burst mode to capture motion, polarizer to control glare',
+ 
+EOF
+)
