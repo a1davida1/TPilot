@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -27,6 +27,29 @@ import {
 } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 
+type UserSettingsResponse = {
+  theme?: string;
+  notifications?: boolean;
+  emailUpdates?: boolean;
+  autoSave?: boolean;
+  defaultPlatform?: string;
+  defaultStyle?: string;
+  watermarkPosition?: string;
+};
+
+type UpdateSettingsResponse = {
+  success: boolean;
+  settings: UserSettingsResponse;
+};
+
+type UserSettingsPayload = {
+  theme: string;
+  notifications: boolean;
+  emailUpdates: boolean;
+  autoSave: boolean;
+  defaultPlatform: string;
+};
+
 export default function SettingsPage() {
   const [theme, setTheme] = useState('light');
   const [notifications, setNotifications] = useState(true);
@@ -37,7 +60,7 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: _userSettings } = useQuery({
+  const { data: userSettings } = useQuery<UserSettingsResponse>({
     queryKey: ['/api/user/settings'],
   });
 
@@ -49,12 +72,30 @@ export default function SettingsPage() {
     queryKey: ['/api/subscription'],
   });
 
-  const updateSettingsMutation = useMutation({
-    mutationFn: async (settings: Record<string, unknown>) => {
-      return apiRequest('PATCH', '/api/user/settings', settings);
+  useEffect(() => {
+    if (!userSettings) {
+      return;
+    }
+
+    setTheme(userSettings.theme ?? 'light');
+    setNotifications(userSettings.notifications ?? true);
+    setEmailUpdates(userSettings.emailUpdates ?? true);
+    setAutoSave(userSettings.autoSave ?? true);
+    setDefaultPlatform(userSettings.defaultPlatform ?? 'reddit');
+  }, [userSettings]);
+
+  const updateSettingsMutation = useMutation<UpdateSettingsResponse, Error, UserSettingsPayload>({
+    mutationFn: async (settings) => {
+      const response = await apiRequest('PATCH', '/api/user/settings', settings);
+      return response.json() as Promise<UpdateSettingsResponse>;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/user/settings'] });
+    onSuccess: (data) => {
+      queryClient.setQueryData(['/api/user/settings'], data.settings);
+      setTheme(data.settings.theme ?? 'light');
+      setNotifications(data.settings.notifications ?? true);
+      setEmailUpdates(data.settings.emailUpdates ?? true);
+      setAutoSave(data.settings.autoSave ?? true);
+      setDefaultPlatform(data.settings.defaultPlatform ?? 'reddit');
       toast({
         title: "Settings updated",
         description: "Your preferences have been saved.",
@@ -98,13 +139,15 @@ export default function SettingsPage() {
   });
 
   const handleSaveSettings = () => {
-    updateSettingsMutation.mutate({
+    const payload: UserSettingsPayload = {
       theme,
       notifications,
       emailUpdates,
       autoSave,
       defaultPlatform
-    });
+    };
+
+    updateSettingsMutation.mutate(payload);
   };
 
   const [, setLocation] = useLocation();

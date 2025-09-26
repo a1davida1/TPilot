@@ -20,6 +20,7 @@ export async function openAICaptionFallback({
   platform,
   voice = "flirty_playful",
   imageUrl,
+<<<<<<< ours
   existingCaption,
   context,
   theme,
@@ -70,6 +71,17 @@ export async function openAICaptionFallback({
     existingCaption,
     theme,
   };
+=======
+  existingCaption
+}: {
+  platform: "instagram" | "x" | "reddit" | "tiktok";
+  voice?: string;
+  imageUrl?: string;
+  existingCaption?: string;
+}): Promise<z.infer<typeof CaptionItem>> {
+  // Analyze image if provided
+  let messages: any[] = [];
+>>>>>>> theirs
 
   if (imageUrl && openai) {
     try {
