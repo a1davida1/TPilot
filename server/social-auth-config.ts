@@ -1,4 +1,5 @@
 import passport from 'passport';
+import type { AuthenticateOptions } from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as FacebookStrategy } from 'passport-facebook';
 // Explicitly import compiled entry to avoid Node's extensionless main deprecation
@@ -6,8 +7,11 @@ import * as redditStrategyPkg from 'passport-reddit/lib/passport-reddit/index.js
 const RedditStrategy = (
   redditStrategyPkg as unknown as { Strategy: typeof import('passport-reddit').Strategy }
 ).Strategy;
+import type { Profile as RedditStrategyProfile, StrategyOptions as RedditStrategyOptions } from 'passport-reddit';
 import { storage } from './storage';
 import type { User } from '@shared/schema';
+
+type RedditAuthenticateOptions = AuthenticateOptions & { duration?: 'temporary' | 'permanent' };
 
 // Helper function to handle social auth user creation/update
 async function handleSocialAuth(
@@ -18,10 +22,10 @@ async function handleSocialAuth(
   try {
     const email = profile.emails?.[0]?.value || `${profile.id}@${provider}.social`;
     const username = profile.username || profile.displayName || `${provider}_${profile.id}`;
-    
+
     // Check if user exists by email or social provider ID
     let user = await storage.getUserByEmail(email);
-    
+
     if (!user) {
       // Create new user with social provider info
       user = await storage.createUser({
@@ -44,7 +48,7 @@ async function handleSocialAuth(
         });
       }
     }
-    
+
     done(null, user);
   } catch (error) {
     done(error as Error);
@@ -78,23 +82,33 @@ export function configureSocialAuth() {
 
   // Reddit OAuth Strategy
   if (process.env.REDDIT_CLIENT_ID && process.env.REDDIT_CLIENT_SECRET) {
+    type RedditProfile = RedditStrategyProfile & {
+      icon_img?: string;
+      _json: RedditStrategyProfile['_json'] & { icon_img?: string };
+    };
+
+    const redditStrategyOptions: RedditStrategyOptions = {
+      clientID: process.env.REDDIT_CLIENT_ID,
+      clientSecret: process.env.REDDIT_CLIENT_SECRET,
+      callbackURL: '/api/reddit/callback',
+      scope: ['identity'],
+      state: true,
+    };
+
     passport.use(
       new RedditStrategy(
-        {
-          clientID: process.env.REDDIT_CLIENT_ID,
-          clientSecret: process.env.REDDIT_CLIENT_SECRET,
-          callbackURL: '/api/reddit/callback',
-          scope: ['identity'],
-          state: true,
-        } as RedditStrategy.StrategyOptions,
+        redditStrategyOptions,
         async (accessToken, refreshToken, profile, done) => {
+          const redditProfile = profile as RedditProfile;
+          const iconImage = redditProfile.icon_img ?? redditProfile._json.icon_img;
+
           await handleSocialAuth(
             'reddit',
             {
-              id: profile.id,
-              username: profile.name,
+              id: redditProfile.id,
+              username: redditProfile.name,
               emails: [],
-              photos: [{ value: (profile as Record<string, unknown>).icon_img as string }],
+              photos: iconImage ? [{ value: iconImage }] : [],
             },
             done,
           );
@@ -122,25 +136,25 @@ export function configureSocialAuth() {
 export const socialAuthRoutes = {
   // Google routes
   googleAuth: passport.authenticate('google', { scope: ['profile', 'email'] }),
-  googleCallback: passport.authenticate('google', { 
+  googleCallback: passport.authenticate('google', {
     failureRedirect: '/login?error=google_auth_failed',
-    successRedirect: '/dashboard' 
+    successRedirect: '/dashboard'
   }),
 
   // Facebook routes
   facebookAuth: passport.authenticate('facebook', { scope: ['email'] }),
-  facebookCallback: passport.authenticate('facebook', { 
+  facebookCallback: passport.authenticate('facebook', {
     failureRedirect: '/login?error=facebook_auth_failed',
-    successRedirect: '/dashboard' 
+    successRedirect: '/dashboard'
   }),
 
   // Reddit routes
-  redditAuth: passport.authenticate('reddit', { 
+  redditAuth: passport.authenticate('reddit', {
     state: 'reddit-auth-state',
-    duration: 'permanent' 
+    duration: 'permanent'
   }),
-  redditCallback: passport.authenticate('reddit', { 
+  redditCallback: passport.authenticate('reddit', {
     failureRedirect: '/login?error=reddit_auth_failed',
-    successRedirect: '/dashboard?reddit=connected' 
+    successRedirect: '/dashboard?reddit=connected'
   })
 };

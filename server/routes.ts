@@ -318,6 +318,29 @@ interface PhotoInstructionsResult {
   technicalSettings?: string;
 }
 
+// Helper function to normalize photo instructions
+function normalizePhotoInstructions(instructions: PhotoInstructionsResult | any): PhotoInstructionsData {
+  const result: PhotoInstructionsData = {};
+
+  if (!instructions) return result;
+
+  const extractFirst = (value: string | string[] | undefined): string | undefined => {
+    if (Array.isArray(value)) {
+      return value.length > 0 ? value[0] : undefined;
+    }
+    return value;
+  };
+
+  result.lighting = extractFirst(instructions.lighting) || instructions.lighting;
+  result.cameraAngle = extractFirst(instructions.angles) || instructions.cameraAngle;
+  result.composition = extractFirst(instructions.composition) || instructions.composition;
+  result.styling = extractFirst(instructions.styling) || instructions.styling;
+  result.mood = instructions.mood;
+  result.technicalSettings = extractFirst(instructions.technical) || instructions.technicalSettings;
+
+  return result;
+}
+
 // ==========================================
 // PRO PERKS HELPER FUNCTIONS
 // ==========================================
@@ -840,7 +863,7 @@ export async function registerRoutes(app: Express, _apiPrefix: string = '/api', 
           theme: theme || 'general',
           titles: result.titles,
           content: result.content,
-          photoInstructions: result.photoInstructions,
+          photoInstructions: normalizePhotoInstructions(result.photoInstructions),
           prompt: prompt || customInstructions,
           allowsPromotion: Boolean(includePromotion)
         });
@@ -1201,7 +1224,7 @@ export async function registerRoutes(app: Express, _apiPrefix: string = '/api', 
             platform,
             titles: generated.titles,
             body: generated.content,
-            photoInstructions: generated.photoInstructions,
+            photoInstructions: normalizePhotoInstructions(generated.photoInstructions),
             hashtags: generated.hashtags || [],
             style: styleHints?.[0] || 'authentic',
             confidence: 0.95
@@ -1218,7 +1241,7 @@ export async function registerRoutes(app: Express, _apiPrefix: string = '/api', 
             theme: 'general',
             titles: result.titles,
             content: result.body,
-            photoInstructions: result.photoInstructions,
+            photoInstructions: normalizePhotoInstructions(result.photoInstructions),
             prompt: prompt
           });
         }

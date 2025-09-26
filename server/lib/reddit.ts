@@ -499,6 +499,91 @@ function deriveDailyLimit(rules?: NormalizedSubredditRules): number | null {
 interface RedditSubmission {
   id: string;
   permalink: string;
+  name?: string;
+  score?: number;
+  upvote_ratio?: number;
+  num_comments?: number;
+  view_count?: number;
+}
+
+interface SnoowrapSubmissionDetails {
+  id?: string;
+  name?: string;
+  permalink?: string;
+  score?: number;
+  upvote_ratio?: number;
+  num_comments?: number;
+  view_count?: number;
+}
+
+function normalizeSubmissionId(submission: SnoowrapSubmissionDetails, fallbackId: string): string {
+  if (submission.id && submission.id.trim().length > 0) {
+    return submission.id;
+  }
+
+  if (submission.name && submission.name.startsWith('t3_')) {
+    const derivedId = submission.name.slice(3);
+    if (derivedId.trim().length > 0) {
+      return derivedId;
+    }
+  }
+
+  return fallbackId;
+}
+
+function normalizeSubmissionPermalink(submission: SnoowrapSubmissionDetails, normalizedId: string): string {
+  const permalink = submission.permalink;
+
+  if (typeof permalink === 'string' && permalink.trim().length > 0) {
+    const trimmed = permalink.trim();
+    if (/^https?:\/\//i.test(trimmed)) {
+      return trimmed;
+    }
+
+    if (trimmed.startsWith('/')) {
+      return `https://www.reddit.com${trimmed}`;
+    }
+
+    return `https://www.reddit.com/${trimmed}`;
+  }
+
+  return `https://www.reddit.com/comments/${normalizedId}`;
+}
+
+function coerceNumber(value: number | undefined, fallback: number): number {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  return fallback;
+}
+
+function coerceOptionalNumber(value: number | undefined): number | undefined {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  return undefined;
+}
+
+function normalizeSubmissionDetails(submission: SnoowrapSubmissionDetails, fallbackId: string): RedditSubmission {
+  const normalizedId = normalizeSubmissionId(submission, fallbackId);
+
+  const normalized: RedditSubmission = {
+    id: normalizedId,
+    name: submission.name,
+    permalink: normalizeSubmissionPermalink(submission, normalizedId),
+    score: coerceNumber(submission.score, 0),
+    upvote_ratio: coerceNumber(submission.upvote_ratio, 0),
+    num_comments: coerceNumber(submission.num_comments, 0),
+  };
+
+  const viewCount = coerceOptionalNumber(submission.view_count);
+  if (typeof viewCount === 'number') {
+    normalized.view_count = viewCount;
+  }
+
+  return normalized;
 }
 
 function normalizeSubredditNameForComparison(value: string | null | undefined): string | null {
@@ -591,7 +676,8 @@ export class RedditManager {
         return null;
       }
 
-      return new RedditManager(accessToken, refreshToken, userId);
+      const manager: RedditManager = new RedditManager(accessToken, refreshToken, userId);
+      return manager;
     } catch (error) {
       console.error('Failed to create Reddit manager for user:', error);
       return null;
@@ -708,6 +794,27 @@ export class RedditManager {
         error: errorMessage,
         decision: permission,
       };
+    }
+  }
+
+  async getSubmission(postId: string): Promise<RedditSubmission> {
+    const trimmedId = postId.trim();
+    if (!trimmedId) {
+      throw new Error('Post ID is required to fetch submission metrics');
+    }
+
+    try {
+      const reddit = await this.initReddit();
+      const submission = await (reddit as unknown as {
+        getSubmission(id: string): {
+          fetch(): Promise<SnoowrapSubmissionDetails>;
+        };
+      }).getSubmission(trimmedId).fetch();
+
+      return normalizeSubmissionDetails(submission, trimmedId);
+    } catch (error) {
+      console.error('Failed to fetch Reddit submission metrics:', error);
+      throw error;
     }
   }
 

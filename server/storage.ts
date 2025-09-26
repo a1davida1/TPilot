@@ -192,14 +192,16 @@ export class DatabaseStorage implements IStorage {
   async getAllUsers(): Promise<User[]> {
     try {
       // Guard optional schema fields - using db query pattern
-      let query = db.select().from(users);
-      if ('isDeleted' in users) {
-        query = query.where(eq(users.isDeleted, false));
-      }
-      if ('createdAt' in users) {
-        query = query.orderBy(desc(users.createdAt));
-      }
-      const allUsers = await query.execute();
+      const baseQuery = db.select().from(users);
+      const queryWithDeletedFilter =
+        'isDeleted' in users
+          ? baseQuery.where(eq(users.isDeleted, false))
+          : baseQuery;
+      const orderedQuery =
+        'createdAt' in users
+          ? queryWithDeletedFilter.orderBy(desc(users.createdAt))
+          : queryWithDeletedFilter;
+      const allUsers = await orderedQuery.execute();
       return allUsers;
     } catch (error) {
       safeLog('error', 'Storage operation failed - getting all users:', { error: (error as Error).message });
