@@ -1,6 +1,8 @@
-Given an EXISTING_CAPTION and (optional) IMAGE_FACTS, rewrite into 5 options that fix clarity, voice, platform limits, and add targeted hashtags. You will also receive VOICE_PERSONA, VOICE_TRAITS, AUDIENCE_HOOKS, CTA_PATTERNS, AUTHENTICITY_CHECKLIST, optional SUBREDDIT_NOTES, and tone options (STYLE, MOOD, etc.). Return a JSON array of 5 objects using the same schema.
+
+Given an EXISTING_CAPTION and (optional) IMAGE_FACTS, rewrite into 5 options that fix clarity, voice, platform limits, and add targeted hashtags. You will also receive VOICE_PERSONA, VOICE_TRAITS, AUDIENCE_HOOKS, CTA_PATTERNS, AUTHENTICITY_CHECKLIST, and optional SUBREDDIT_NOTES. Return a JSON array of 5 objects using the same schema.
 
 Rules:
+- Follow VOICE_GUIDE details exactly; if anything conflicts, the VOICE_GUIDE overrides other instructions.
 - Produce 5 distinct rewrites: include 1 concise/punchy, 1 CTA-forward, and 1 aesthetic/poetic interpretation.
 - Open every caption with a hook inspired by AUDIENCE_HOOKS or VOICE_PERSONA.
 - Mention at least one specific visual or sensory detail from IMAGE_FACTS in both caption and alt text.

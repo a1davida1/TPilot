@@ -1,3 +1,4 @@
+
 Given:
 PLATFORM: <instagram|x|reddit|tiktok>
 VOICE: <flirty_playful|gamer_nerdy|luxury_minimal|arts_muse|gym_energy|cozy_girl>
@@ -18,6 +19,7 @@ Write 5 options. Return JSON array of 5 objects ONLY:
 {"caption":"","alt":"","hashtags":[],"cta":"","mood":"","style":"","safety_level":""}
 
 Rules:
+- Follow VOICE_GUIDE details exactly; if anything conflicts, the VOICE_GUIDE overrides other instructions.
 - 5 different angles; include 1 short/punchy, 1 CTA-forward, 1 aesthetic/poetic.
 - Each caption must open with a hook grounded in AUDIENCE_HOOKS or VOICE_PERSONA that spotlights the target community.
 - Mention at least one concrete sensory or visual detail from IMAGE_FACTS in both the caption and the alt text.

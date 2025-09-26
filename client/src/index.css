@@ -56,6 +56,9 @@
     --accent-purple: 12 88 58;
     --accent-violet: 8 82 54;
     --accent-indigo: 2 78 50;
+    --accent-pink: 330 81 60;
+    --accent-rose: 350 89 60;
+    --accent-yellow: 43 96 56;
 
     /* State colors with high contrast */
     --destructive: 0 84 60;
@@ -96,6 +99,9 @@
     --overlay: 0 0 0;
     --overlay-opacity: 0.8;
     --backdrop-blur: 20px;
+
+    /* Shadow color for elevated surfaces */
+    --shadow: 274 52 34;
 
     --radius: 1rem;
   }
@@ -147,6 +153,9 @@
     --accent-purple: 12 85 64;
     --accent-violet: 8 80 60;
     --accent-indigo: 2 75 56;
+    --accent-pink: 330 81 60;
+    --accent-rose: 350 89 60;
+    --accent-yellow: 43 96 56;
 
     /* State colors with proper contrast */
     --destructive: 0 80 70;
@@ -187,6 +196,9 @@
     --overlay: 0 0 0;
     --overlay-opacity: 0.9;
     --backdrop-blur: 24px;
+
+    /* Shadow color for elevated surfaces */
+    --shadow: 276 46 18;
   }
 }
 

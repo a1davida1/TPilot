@@ -103,7 +103,7 @@ function normalizeVariantFields(
   );
   if (typeof next.mood !== "string" || next.mood.trim().length < 2) next.mood = "engaging";
   if (typeof next.style !== "string" || next.style.trim().length < 2) next.style = "authentic";
-  
+
   // Use helper for contextual fallbacks
   const fallback = ensureFallbackCompliance(
     {
@@ -119,15 +119,15 @@ function normalizeVariantFields(
       existingCaption: existingCaption || (typeof next.caption === 'string' ? next.caption : undefined),
     }
   );
-  
+
   next.hashtags = fallback.hashtags;
   next.cta = fallback.cta;
   next.alt = fallback.alt;
-  
+
   if (typeof next.caption !== "string" || next.caption.trim().length < 1) {
     next.caption = existingCaption || "Here's something I'm proud of today.";
   }
-  
+
   return CaptionItem.parse(next);
 }
 
@@ -215,6 +215,8 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
     load("variants_textonly.txt")
   ]);
 
+  const voiceGuide = buildVoiceGuideBlock(params.voice, params.theme, params.context);
+
   const sanitizeVariant = (item: Record<string, unknown>): Record<string, unknown> => {
     const variant = { ...item } as Record<string, unknown>;
 
@@ -289,8 +291,10 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
   const fetchVariants = async (varietyHint: string | undefined, existingCaptions: string[]) => {
     const user = buildUserPrompt(varietyHint, existingCaptions);
     try {
+      const promptSections = [sys, guard, prompt, user];
+      if (voiceGuide) promptSections.push(voiceGuide);
       const res = await textModel.generateContent([
-        { text: `${sys}\n${guard}\n${prompt}\n${user}` }
+        { text: promptSections.join("\n") }
       ]);
       const json = stripToJSON(res.response.text());
       return Array.isArray(json) ? json : [];
@@ -390,7 +394,7 @@ async function requestTextOnlyRanking(
     throw error;
   }
   let json = stripToJSON(res.response.text()) as unknown;
-  
+
   if(Array.isArray(json)) {
     const winner = json[0] as Record<string, unknown> | undefined;
     json = {
@@ -400,7 +404,7 @@ async function requestTextOnlyRanking(
       final: winner ?? variantsInput[0]
     };
   }
-  
+
   return json;
 }
 
@@ -415,7 +419,7 @@ export async function rankAndSelect(
   const first = await requestTextOnlyRanking(variants, serializedVariants, promptBlock, params?.platform);
   let parsed = RankResult.parse(first);
   const violations = detectVariantViolations(parsed.final);
-  
+
   if (violations.length === 0) {
     // Always sanitize final variant to ensure required fields like alt are present
     const sanitizedFinal = sanitizeFinalVariant(parsed.final, params?.platform);
@@ -434,7 +438,7 @@ export async function rankAndSelect(
   );
   parsed = RankResult.parse(rerank);
   const rerankViolations = detectVariantViolations(parsed.final);
-  
+
   if (rerankViolations.length === 0) {
     return parsed;
   }

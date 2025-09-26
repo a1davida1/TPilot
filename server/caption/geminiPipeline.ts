@@ -421,6 +421,8 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
     load("variants.txt")
   ]);
 
+  const voiceGuide = buildVoiceGuideBlock(params.voice);
+
   const sanitizeVariant = (item: Record<string, unknown>): Record<string, unknown> => {
     const variant = { ...item } as Record<string, unknown>;
 
@@ -494,8 +496,10 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
   const fetchVariants = async (varietyHint: string | undefined, existingCaptions: string[]) => {
     const user = buildUserPrompt(varietyHint, existingCaptions);
     try {
+      const promptSections = [sys, guard, prompt, user];
+      if (voiceGuide) promptSections.push(voiceGuide);
       const res = await textModel.generateContent([
-        { text: `${sys}\n${guard}\n${prompt}\n${user}` }
+        { text: promptSections.join("\n") }
       ]);
       const json = stripToJSON(res.response.text()) as unknown;
       return Array.isArray(json) ? json : [];
