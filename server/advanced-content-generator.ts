@@ -1471,12 +1471,12 @@ const BUILT_IN_PRESET_VARIATIONS: Record<string, PresetVariation[]> = {
   'nude-photos': [
     {
       titles: [
-        'Soft natural light and unfiltered confidence ✨',
-        'Body worship in its raw form',
-        'Every curve, every detail, completely mine'
+        "Soft natural light and unfiltered confidence ✨",
+        "Body worship in its raw form",
+        "Every curve, every detail, completely mine"
       ],
       content:
-        'Natural light, warm skin, no distractions. Just me feeling powerful in my own space and letting every detail breathe. Minimal posing, maximum confidence, and a quiet energy that feels intimate and honest.',
+        "Natural light, warm skin, no distractions. Just me feeling powerful in my own space and letting every detail breathe. Minimal posing, maximum confidence, and a quiet energy that feels intimate and honest.",
       photoInstructions: {
         lighting: 'Window light or bounced warm light with soft falloff',
         angles: 'Body-contour angles that follow natural lines',
@@ -1488,12 +1488,12 @@ const BUILT_IN_PRESET_VARIATIONS: Record<string, PresetVariation[]> = {
     },
     {
       titles: [
-        'Golden hour glow on bare skin',
-        'The light hits different when it's just me',
-        'Unedited, unfiltered, unbelievably soft'
+        "Golden hour glow on bare skin",
+        "The light hits different when it's just me",
+        "Unedited, unfiltered, unbelievably soft"
       ],
       content:
-        'Golden light pouring through the window, the kind that hugs every line of your body. Slow, deliberate movements, breathing in sync with the camera, letting softness and strength meet in the same frame.',
+        "Golden light pouring through the window, the kind that hugs every line of your body. Slow, deliberate movements, breathing in sync with the camera, letting softness and strength meet in the same frame.",
       photoInstructions: {
         lighting: 'Golden hour sunlight with sheer curtain diffusion',
         angles: 'Low vantage for elongation and soft over-the-shoulder shots',
@@ -1507,12 +1507,12 @@ const BUILT_IN_PRESET_VARIATIONS: Record<string, PresetVariation[]> = {
   'shower-content': [
     {
       titles: [
-        'Steam, water droplets, and nothing else',
-        'Slide into the shower with me 🚿',
-        'Wet skin and fogged-up glass feels dangerous'
+        "Steam, water droplets, and nothing else",
+        "Slide into the shower with me 🚿",
+        "Wet skin and fogged-up glass feels dangerous"
       ],
       content:
-        'Hot water, fogged glass, and the kind of closeness you only get when everything else fades away. The droplets trace every line while the steam softens the edges. Just press play and stay awhile.',
+        "Hot water, fogged glass, and the kind of closeness you only get when everything else fades away. The droplets trace every line while the steam softens the edges. Just press play and stay awhile.",
       photoInstructions: {
         lighting: 'Diffuse bathroom lighting with a cool rim light for highlights',
         angles: 'Tight crops through glass plus over-shoulder steamy frames',
@@ -1524,12 +1524,12 @@ const BUILT_IN_PRESET_VARIATIONS: Record<string, PresetVariation[]> = {
     },
     {
       titles: [
-        'Shower heat level: 🔥',
-        'Water drops tracing every curve',
-        'Caught mid-rinse with the best view'
+        "Shower heat level: 🔥",
+        "Water drops tracing every curve",
+        "Caught mid-rinse with the best view"
       ],
       content:
-        'Captured mid-rinse, soap sliding down every curve and the glass catching the heat. It's playful and reckless at the same time—like you walked in at exactly the right moment.',
+        "Captured mid-rinse, soap sliding down every curve and the glass catching the heat. It's playful and reckless at the same time—like you walked in at exactly the right moment.",
       photoInstructions: {
         lighting: 'Warm key light with blue-tinted fill for steamy contrast',
         angles: 'Profile shots with motion blur and close-ups of hands on glass',
@@ -1579,12 +1579,12 @@ const BUILT_IN_PRESET_VARIATIONS: Record<string, PresetVariation[]> = {
   lingerie: [
     {
       titles: [
-        'Lace, low light, and a slow reveal',
-        'You can stay for the midnight fitting',
-        'Every strap tells a secret'
+        "Lace, low light, and a slow reveal",
+        "You can stay for the midnight fitting",
+        "Every strap tells a secret"
       ],
       content:
-        'Dim lights, lace tracing every curve, and the camera taking its time. It's deliberate and indulgent—every strap adjusted, every glance intentional.',
+        "Dim lights, lace tracing every curve, and the camera taking its time. It's deliberate and indulgent—every strap adjusted, every glance intentional.",
       photoInstructions: {
         lighting: 'Low key lighting with practical lamps for warm highlights',
         angles: 'Close crops on textures plus mirrored self-portrait angles',
@@ -1596,12 +1596,12 @@ const BUILT_IN_PRESET_VARIATIONS: Record<string, PresetVariation[]> = {
     },
     {
       titles: [
-        'Velvet chaise, lace set, endless legs',
-        'Pouring a glass and slipping into something unforgettable',
-        'This lingerie was made to be unwrapped slowly'
+        "Velvet chaise, lace set, endless legs",
+        "Pouring a glass and slipping into something unforgettable",
+        "This lingerie was made to be unwrapped slowly"
       ],
       content:
-        'Lounging on a velvet chaise, sipping something smooth, letting the lace and shadows do all the work. Playful eye contact and plenty of slow, deliberate posing.',
+        "Lounging on a velvet chaise, sipping something smooth, letting the lace and shadows do all the work. Playful eye contact and plenty of slow, deliberate posing.",
       photoInstructions: {
         lighting: 'Spotlight with soft fill to create dimensional shadows',
         angles: 'Elongating reclined angles and overhead shots for drama',
@@ -1615,12 +1615,12 @@ const BUILT_IN_PRESET_VARIATIONS: Record<string, PresetVariation[]> = {
   'casual-tease': [
     {
       titles: [
-        'Oversized tee, zero effort, maximum tease 😉',
-        'Just lounging… unless you want to come closer',
-        'Caught mid stretch with the softest smirk'
+        "Oversized tee, zero effort, maximum tease 😉",
+        "Just lounging… unless you want to come closer",
+        "Caught mid stretch with the softest smirk"
       ],
       content:
-        'Bare legs, oversized tee, hair tossed up without even thinking about it. Everything is easy and unplanned, which somehow makes it impossible to look away.',
+        "Bare legs, oversized tee, hair tossed up without even thinking about it. Everything is easy and unplanned, which somehow makes it impossible to look away.",
       photoInstructions: {
         lighting: 'Ambient window light with gentle bounce for even skin tones',
         angles: 'Candid over-the-shoulder glances and half-body reclines',
@@ -1632,12 +1632,12 @@ const BUILT_IN_PRESET_VARIATIONS: Record<string, PresetVariation[]> = {
     },
     {
       titles: [
-        'Sunday scroll with a side of temptation',
-        'If you were here I'd hand you the controller',
-        'Netflix queued, shirt optional'
+        "Sunday scroll with a side of temptation",
+        "If you were here I'd hand you the controller",
+        "Netflix queued, shirt optional"
       ],
       content:
-        'Movie night energy with just enough skin showing to keep things interesting. Laughing at the screen, messing with the camera, acting like you just dropped in unannounced.',
+        "Movie night energy with just enough skin showing to keep things interesting. Laughing at the screen, messing with the camera, acting like you just dropped in unannounced.",
       photoInstructions: {
         lighting: 'Warm lamp light mixed with TV glow for contrast',
         angles: 'Eye-level couch shots and close-up smirks',
@@ -1651,12 +1651,12 @@ const BUILT_IN_PRESET_VARIATIONS: Record<string, PresetVariation[]> = {
   'bedroom-scene': [
     {
       titles: [
-        'Sheets tangled, hair messy, and yours truly',
-        'First thing in the morning, last thing on your mind',
-        'Bedroom light and a body built for it'
+        "Sheets tangled, hair messy, and yours truly",
+        "First thing in the morning, last thing on your mind",
+        "Bedroom light and a body built for it"
       ],
       content:
-        'Sun peeking in, sheets half pulled, and that look that says come closer. It's relaxed and intentionally undone like you caught the exact moment before things get wild.',
+        "Sun peeking in, sheets half pulled, and that look that says come closer. It's relaxed and intentionally undone like you caught the exact moment before things get wild.",
       photoInstructions: {
         lighting: 'Soft directional morning light with fill from reflector',
         angles: 'Top-down shots across the bed and close ups on hands in sheets',
@@ -1668,12 +1668,12 @@ const BUILT_IN_PRESET_VARIATIONS: Record<string, PresetVariation[]> = {
     },
     {
       titles: [
-        'Late night confessions in low light',
-        'Dim lamps, quiet whispers, and undone buttons',
-        'Under the covers and in full control'
+        "Late night confessions in low light",
+        "Dim lamps, quiet whispers, and undone buttons",
+        "Under the covers and in full control"
       ],
       content:
-        'Bedroom lamps low, playlist humming, buttons undone and lips parted. It's a slow burn meant for late nights and private audiences only.',
+        "Bedroom lamps low, playlist humming, buttons undone and lips parted. It's a slow burn meant for late nights and private audiences only.",
       photoInstructions: {
         lighting: 'Practical lamp lighting with warm gels for depth',
         angles: 'Intimate close-ups and side-lit partial silhouettes',
