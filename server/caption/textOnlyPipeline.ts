@@ -197,10 +197,6 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
   const isRecord = (value: unknown): value is Record<string, unknown> =>
     typeof value === "object" && value !== null;
 
-  const sanitizeVariant = (item: Record<string, unknown>): Record<string, unknown> => {
-    const variant = { ...item } as Record<string, unknown>;
-    // ... rest of the function
-
   const sanitizeVariant = (item: Record<string, unknown>): z.infer<typeof CaptionItem> => {
     const safetyLevel = normalizeSafetyLevel(
       typeof item.safety_level === "string" ? item.safety_level : "normal"
@@ -217,13 +213,14 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
     const style = typeof item.style === "string" && item.style.trim().length >= 2
       ? item.style
       : "authentic";
-  variant.cta = typeof item.cta === "string" && item.cta.trim().length >= 2
-    ? item.cta
-    : HUMAN_CTA;  // Use the constant from "theirs"
+    
+    const cta = typeof item.cta === "string" && item.cta.trim().length >= 2
+      ? item.cta
+      : "Comment your thoughts below! 💭";
 
-  variant.alt = typeof item.alt === "string" && item.alt.trim().length >= 20
-    ? item.alt
-    : "Engaging description that highlights the visual story.";  // Use the text from "theirs"
+    const alt = typeof item.alt === "string" && item.alt.trim().length >= 20
+      ? item.alt
+      : "Engaging description that highlights the visual story.";
 
     const hashtags = Array.isArray(item.hashtags)
       ? item.hashtags
@@ -297,6 +294,18 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
   const duplicatesThisAttempt: string[] = [];
   const isTest = process.env.NODE_ENV === 'test';
   const maxAttempts = isTest ? 2 : 5; // Allow 2 attempts in test for retry logic testing
+  
+  // Track seen keys and duplicates for retry logic
+  const seenKeys = new Set<string>();
+  const duplicatesForHint: string[] = [];
+  let bannedDetected = false;
+  let needsBannedHint = false;
+  
+  // Define safe fallback values
+  const safeFallbackCaption = "Here's something I'm proud of today.";
+  const safeFallbackAlt = "Engaging description that highlights the visual story.";
+  const safeFallbackHashtags = fallbackHashtags(params.platform);
+  const safeFallbackCta = "Comment your thoughts below! 💭";
 
   for (let attempt = 0; attempt < maxAttempts && uniqueVariants.length < 5; attempt += 1) {
     const needed = 5 - uniqueVariants.length;
@@ -388,14 +397,8 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
     }
   }
 
-
-    // Create a slight variation by appending index
-    const paddedVariant = {
-      ...baseVariant,
-      caption: `${baseVariant.caption} v${uniqueVariants.length + 1}`,
-      alt: `${baseVariant.alt} (variation ${uniqueVariants.length + 1})`
-    };
-
+  return CaptionArray.parse(uniqueVariants);
+}
 
 // Helper function to prepare variants for ranking, ensuring correct count and deduplication
 function prepareVariantsForRanking(
@@ -406,6 +409,11 @@ function prepareVariantsForRanking(
   let preparedVariants = variants.slice(0, options.targetLength);
   if (preparedVariants.length < options.targetLength) {
     // If not enough variants, duplicate existing ones or add fallbacks if none exist
+    const safeFallbackCaption = "Here's something I'm proud of today.";
+    const safeFallbackAlt = "Engaging description that highlights the visual story.";
+    const safeFallbackHashtags = fallbackHashtags(params.platform || 'instagram');
+    const safeFallbackCta = "Comment your thoughts below! 💭";
+    
     const baseVariant = preparedVariants[0] ?? CaptionItem.parse({
       caption: safeFallbackCaption,
       alt: safeFallbackAlt,
@@ -419,7 +427,7 @@ function prepareVariantsForRanking(
 
     while (preparedVariants.length < options.targetLength) {
       const index = preparedVariants.length + 1;
-      const captionSeed = baseVariant.caption || safeFallbackCaption;
+      const captionSeed = baseVariant.caption || "Here's something I'm proud of today.";
       preparedVariants.push({
         ...baseVariant,
         caption: `${captionSeed} (filler ${index})`,
@@ -429,10 +437,6 @@ function prepareVariantsForRanking(
   }
   // Deduplicate variants based on similarity if needed, though `generateVariantsTextOnly` already aims for uniqueness
   return dedupeCaptionVariants(preparedVariants).slice(0, options.targetLength);
-}
-
-
-  return CaptionArray.parse(uniqueVariants);
 }
 
 async function requestTextOnlyRanking(

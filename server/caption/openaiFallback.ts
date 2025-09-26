@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import { z } from 'zod';
 import { ensureFallbackCompliance, type FallbackInferenceInput } from './inferFallbackFromFacts';
 import { CaptionItem } from './schema';
@@ -20,7 +21,6 @@ export async function openAICaptionFallback({
   platform,
   voice = "flirty_playful",
   imageUrl,
-<<<<<<< ours
   existingCaption,
   context,
   theme,
@@ -35,7 +35,7 @@ export async function openAICaptionFallback({
       style: "authentic",
       cta: "Test CTA",
       alt: "Test fallback alt text for deterministic testing",
-      nsfw: false
+      nsfw: false,
     };
     const compliance = ensureFallbackCompliance(
       {
@@ -59,7 +59,7 @@ export async function openAICaptionFallback({
       alt: compliance.alt,
     });
   }
-  let messages: { role: "system" | "user" | "assistant"; content: string | { type: string; image_url?: { url: string }; text?: string }[] }[] = [];
+  let messages: ChatCompletionMessageParam[] = [];
   const sanitizedExistingCaption = existingCaption ? serializePromptField(existingCaption) : undefined;
   const voiceContext = formatVoiceContext(voice);
   const systemVoiceSuffix = voiceContext ? `\n${voiceContext}` : '';
@@ -71,17 +71,6 @@ export async function openAICaptionFallback({
     existingCaption,
     theme,
   };
-=======
-  existingCaption
-}: {
-  platform: "instagram" | "x" | "reddit" | "tiktok";
-  voice?: string;
-  imageUrl?: string;
-  existingCaption?: string;
-}): Promise<z.infer<typeof CaptionItem>> {
-  // Analyze image if provided
-  let messages: any[] = [];
->>>>>>> theirs
 
   if (imageUrl && openai) {
     try {
