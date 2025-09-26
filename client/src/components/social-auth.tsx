@@ -66,10 +66,13 @@ export function SocialAuth({ onSuccess, isLoading = false }: SocialAuthProps) {
       handler: async () => {
         try {
           const response = await fetch('/api/reddit/connect', {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
+            credentials: 'include'
           });
+
+          if (!response.ok) {
+            throw new Error(`Reddit connect failed with status ${response.status}`);
+          }
+
           const data = await response.json();
           if (data.authUrl) {
             window.location.href = data.authUrl;

@@ -25,18 +25,27 @@ interface RedditProfile {
   verified?: boolean;
 }
 
+type SessionWithUser = {
+  user?: AuthRequest['user'];
+};
+
 export function registerRedditRoutes(app: Express) {
 
   // Start Reddit OAuth flow - SECURE VERSION
   app.get('/api/reddit/connect', rateLimit, authenticateToken, async (req: AuthRequest, res) => {
     try {
       if (!process.env.REDDIT_CLIENT_ID) {
-        return res.status(503).json({ 
-          error: 'Reddit integration not configured. Please set REDDIT_CLIENT_ID and other Reddit environment variables.' 
+        return res.status(503).json({
+          error: 'Reddit integration not configured. Please set REDDIT_CLIENT_ID and other Reddit environment variables.'
         });
       }
 
-      const userId = req.user?.id;
+      const sessionUser = (req.session as SessionWithUser | undefined)?.user;
+      if (!req.user && sessionUser) {
+        req.user = sessionUser;
+      }
+
+      const userId = req.user?.id ?? sessionUser?.id;
       if (!userId) {
         return res.status(401).json({ error: 'Authentication required' });
       }

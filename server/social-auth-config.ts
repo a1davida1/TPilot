@@ -135,9 +135,13 @@ export const socialAuthRoutes = {
   }),
 
   // Reddit routes
-  redditAuth: passport.authenticate('reddit', { 
-    scope: ['identity']
-  } as any),
+  redditAuth: passport.authenticate(
+    'reddit',
+    {
+      scope: ['identity'],
+      duration: 'permanent',
+    } as any,
+  ),
   redditCallback: passport.authenticate('reddit', { 
     failureRedirect: '/login?error=reddit_auth_failed',
     successRedirect: '/dashboard?reddit=connected' 
