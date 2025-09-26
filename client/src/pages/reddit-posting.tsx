@@ -267,6 +267,8 @@ export default function RedditPostingPage() {
   // Fetch Reddit accounts
   const { data: accounts = [], isLoading: accountsLoading } = useQuery<RedditAccount[]>({
     queryKey: ['/api/reddit/accounts'],
+    enabled: isAuthenticated,
+    suspense: false,
     retry: false,
   });
 
@@ -279,6 +281,8 @@ export default function RedditPostingPage() {
   // Fetch media assets
   const { data: mediaAssets = [], isLoading: mediaLoading } = useQuery<MediaAsset[]>({
     queryKey: ['/api/media'],
+    enabled: isAuthenticated,
+    suspense: false,
     retry: false,
   });
 
@@ -421,6 +425,16 @@ export default function RedditPostingPage() {
       }
     },
     onError: (error: Error) => {
+      if (isApiError(error) && error.isAuthError) {
+        setShowAuthModal(true);
+        toast({
+          title: "Authentication required",
+          description: error.userMessage ?? "Please log in to connect Reddit.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       toast({
         title: "❌ Connection Failed",
         description: error.message,
@@ -675,7 +689,22 @@ export default function RedditPostingPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {accountsLoading ? (
+                  {!isAuthenticated ? (
+                    <div className="text-center p-6 bg-purple-50 rounded-lg border border-purple-200">
+                      <UserCheck className="h-12 w-12 text-purple-500 mx-auto mb-3" />
+                      <h3 className="font-medium text-purple-800 mb-2">Sign in to manage Reddit accounts</h3>
+                      <p className="text-sm text-purple-600 mb-4">
+                        Create an account or log in to connect Reddit profiles and manage posting permissions.
+                      </p>
+                      <Button
+                        onClick={() => setShowAuthModal(true)}
+                        className="bg-purple-600 hover:bg-purple-700 text-white"
+                      >
+                        <LogIn className="h-4 w-4 mr-2" />
+                        Sign in to continue
+                      </Button>
+                    </div>
+                  ) : accountsLoading ? (
                     <div className="flex items-center gap-2">
                       <div className="animate-spin rounded-full h-4 w-4 border-2 border-orange-500 border-t-transparent" />
                       <span className="text-sm text-gray-600">Loading accounts...</span>
@@ -1162,16 +1191,33 @@ export default function RedditPostingPage() {
                 )}
 
                 {postType === 'gallery' && (
-                  <MediaLibrarySelector
-                    assets={mediaAssets}
-                    selectedIds={selectedMediaIds}
-                    onToggle={toggleMediaSelection}
-                    captions={mediaCaptions}
-                    onCaptionChange={handleCaptionChange}
-                    maxSelection={20}
-                    isLoading={mediaLoading}
-                    showCaptions={true}
-                  />
+                  !isAuthenticated ? (
+                    <div className="text-center py-8 bg-purple-50 border border-purple-200 rounded-lg">
+                      <Images className="h-12 w-12 text-purple-500 mx-auto mb-3" />
+                      <p className="font-medium text-purple-800 mb-2">Sign in to access your media library</p>
+                      <p className="text-sm text-purple-600 mb-4">
+                        Log in to browse saved media assets and build rich gallery posts faster.
+                      </p>
+                      <Button
+                        onClick={() => setShowAuthModal(true)}
+                        className="bg-purple-600 hover:bg-purple-700 text-white"
+                      >
+                        <LogIn className="h-4 w-4 mr-2" />
+                        Sign in to continue
+                      </Button>
+                    </div>
+                  ) : (
+                    <MediaLibrarySelector
+                      assets={mediaAssets}
+                      selectedIds={selectedMediaIds}
+                      onToggle={toggleMediaSelection}
+                      captions={mediaCaptions}
+                      onCaptionChange={handleCaptionChange}
+                      maxSelection={20}
+                      isLoading={mediaLoading}
+                      showCaptions={true}
+                    />
+                  )
                 )}
 
 

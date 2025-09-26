@@ -29,7 +29,7 @@ export function AestheticLanding() {
 
   useEffect(() => {
     setIsVisible(true);
-    fetch('/api/metrics')
+    fetch('/api/metrics', { credentials: 'include' })
       .then(res => (res.ok ? res.json() : null))
       .then(setMetrics)
       .catch(() => {});

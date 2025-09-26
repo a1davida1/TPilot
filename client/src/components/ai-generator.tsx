@@ -56,11 +56,9 @@ export function AIGenerator({ onContentGenerated }: AIGeneratorProps) {
 
   useEffect(() => {
     async function loadProfile() {
-      const token = localStorage.getItem('authToken');
-      if (!token) return;
       try {
         const res = await fetch('/api/user/profile', {
-          headers: { Authorization: `Bearer ${token}` }
+          credentials: 'include'
         });
         if (res.ok) setUserProfile(await res.json());
       } catch {}
@@ -70,15 +68,14 @@ export function AIGenerator({ onContentGenerated }: AIGeneratorProps) {
 
   const saveProfile = async (profile: typeof userProfile) => {
     setUserProfile(profile);
-    const token = localStorage.getItem('authToken');
     try {
       await fetch('/api/user/profile', {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token || ''}`
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify(profile)
+        body: JSON.stringify(profile),
+        credentials: 'include'
       });
     } catch {}
   };
@@ -131,10 +128,7 @@ export function AIGenerator({ onContentGenerated }: AIGeneratorProps) {
         const res = await fetch('/api/generate-ai', {
           method: 'POST',
           body: formData,
-          credentials: 'include',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
-          }
+          credentials: 'include'
         });
         
         if (!res.ok) {

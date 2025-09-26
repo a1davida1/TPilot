@@ -149,15 +149,6 @@ export async function extractFacts(imageUrl:string){
 }
 
 type RewriteVariantsParams = {
-<<<<<<< ours
-  platform:"instagram"|"x"|"reddit"|"tiktok";
-  voice:string;
-  existingCaption:string;
-  facts?:Record<string, unknown>;
-  hint?:string;
-  nsfw?:boolean;
-  doNotDrop?: string[];
-=======
   platform: "instagram" | "x" | "reddit" | "tiktok";
   voice: string;
   existingCaption: string;
@@ -367,7 +358,6 @@ export async function variantsRewrite(params: RewriteVariantsParams) {
 }
 
 type RewriteToneArgs = {
->>>>>>> theirs
   style?: string;
   mood?: string
 };

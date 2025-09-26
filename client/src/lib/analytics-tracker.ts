@@ -251,8 +251,7 @@ class AnalyticsTracker {
       await fetch('/api/analytics/events', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ events }),
         credentials: 'include', // Include session cookies
@@ -329,8 +328,8 @@ export const analytics = new AnalyticsTracker();
 
 // Convenience methods for common tracking
 export const trackPageView = (path: string, title?: string) => analytics.trackPageView(path, title);
-export const trackEvent = (type: string, metadata?: Record<string, unknown>, value?: number) => analytics.trackEvent(type, metadata, value);
+export const trackEvent = (type: string, metadata?: Record<string, string | number | boolean | undefined>, value?: number) => analytics.trackEvent(type, metadata, value);
 export const trackContentView = (contentId: number, platform: string, subreddit?: string) => analytics.trackContentView(contentId, platform, subreddit);
-export const trackContentGeneration = (success: boolean, platform: string, metadata?: Record<string, unknown>) => analytics.trackContentGeneration(success, platform, metadata);
-export const trackFeatureUsage = (feature: string, action: string, metadata?: Record<string, unknown>) => analytics.trackFeatureUsage(feature, action, metadata);
+export const trackContentGeneration = (success: boolean, platform: string, metadata?: Record<string, string | number | boolean | undefined>) => analytics.trackContentGeneration(success, platform, metadata);
+export const trackFeatureUsage = (feature: string, action: string, metadata?: Record<string, string | number | boolean | undefined>) => analytics.trackFeatureUsage(feature, action, metadata);
 export const setUserId = (userId: string) => analytics.setUserId(userId);

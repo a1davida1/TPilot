@@ -1,3 +1,4 @@
+import fs from 'node:fs/promises';
 import { db } from './db.js';
 import {
   redditCommunities,
@@ -18,6 +19,21 @@ import {
 import { type GrowthTrend, isValidGrowthTrend, getGrowthTrendLabel } from '@shared/growth-trends';
 import { eq, ilike, desc, or } from 'drizzle-orm';
 import { lintCaption } from './lib/policy-linter.js';
+
+async function loadSeedCommunities(): Promise<InsertRedditCommunity[]> {
+  // Prefer the larger dataset when available so production environments stay populated.
+  try {
+    const raw = await fs.readFile(new URL('./seeds/reddit-communities-full.json', import.meta.url), 'utf8');
+    return insertRedditCommunitySchema.array().parse(JSON.parse(raw)) as InsertRedditCommunity[];
+  } catch (fullDatasetError) {
+    if ((fullDatasetError as NodeJS.ErrnoException).code !== 'ENOENT') {
+      console.warn('Failed to load full reddit communities dataset:', fullDatasetError);
+    }
+
+    const raw = await fs.readFile(new URL('./seeds/reddit-communities.json', import.meta.url), 'utf8');
+    return insertRedditCommunitySchema.array().parse(JSON.parse(raw)) as InsertRedditCommunity[];
+  }
+}
 
 // ==========================================
 // ELIGIBILITY TYPES AND INTERFACES
@@ -191,7 +207,35 @@ export function normalizeCommunityRecord(community: RedditCommunity): Normalized
 
 export async function listCommunities(): Promise<NormalizedRedditCommunity[]> {
   const communities = await db.select().from(redditCommunities).orderBy(desc(redditCommunities.members));
-  return communities.map(normalizeCommunityRecord);
+  if (communities.length > 0) {
+    return communities.map(normalizeCommunityRecord);
+  }
+
+  // Ensure first-run environments have data without hiding real database issues.
+  try {
+    const seedCommunities = await loadSeedCommunities();
+
+    if (seedCommunities.length === 0) {
+      return [];
+    }
+
+    try {
+      await db.insert(redditCommunities).values(seedCommunities).onConflictDoNothing();
+      const hydrated = await db.select().from(redditCommunities).orderBy(desc(redditCommunities.members));
+      if (hydrated.length > 0) {
+        return hydrated.map(normalizeCommunityRecord);
+      }
+    } catch (insertError) {
+      console.warn('Unable to persist seed reddit communities, returning in-memory fallback instead:', insertError);
+    }
+
+    return seedCommunities.map(community =>
+      normalizeCommunityRecord(community as unknown as RedditCommunity)
+    );
+  } catch (seedError) {
+    console.error('Failed to load seed reddit communities dataset:', seedError);
+    return [];
+  }
 }
 
 export async function searchCommunities(query: string): Promise<NormalizedRedditCommunity[]> {

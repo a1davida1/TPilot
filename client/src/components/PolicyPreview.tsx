@@ -49,7 +49,8 @@ export function PolicyPreview({ subreddit, title, body, hasLink = false, onPrevi
       const response = await fetch('/api/preview', {
         method: 'POST',
         body: JSON.stringify(previewData),
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
       });
       if (!response.ok) throw new Error('Preview failed');
       return response.json();

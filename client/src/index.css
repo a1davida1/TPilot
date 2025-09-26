@@ -1597,8 +1597,10 @@ button[role="combobox"] {
 }
 
 .text-purple-gradient {
+   color: #C084FC;
   background: linear-gradient(135deg, #A78BFA 0%, #C084FC 100%);
   -webkit-background-clip: text;
+  -moz-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }

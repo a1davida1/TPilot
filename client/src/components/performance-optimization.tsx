@@ -58,12 +58,9 @@ export const PerformanceOptimization = memo(() => {
       // Test API response time
       const apiStartTime = performance.now();
       try {
-        const token = localStorage.getItem('authToken');
-        if (token) {
-          await fetch('/api/auth/user', {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-        }
+        await fetch('/api/auth/user', {
+          credentials: 'include'
+        });
       } catch (error) {
         // API call failed, don't update response time
       }

@@ -27,14 +27,9 @@ export function AudienceInsights() {
   const { data: insightsData, isLoading } = useQuery({
     queryKey: ['audience-insights'],
     queryFn: async () => {
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        return { audienceData: [], topSubreddits: [] };
-      }
-      
       try {
         const response = await fetch('/api/audience-insights', {
-          headers: { 'Authorization': `Bearer ${token}` }
+          credentials: 'include'
         });
         if (!response.ok) {
           throw new Error('Failed to fetch insights');

@@ -96,19 +96,13 @@ export default function SmartAnalytics() {
         // Get analytics data and stats in parallel
         const [analyticsRes, statsRes, revenueRes] = await Promise.all([
           fetch(`/api/analytics/${timeRange}`, {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
-            }
+            credentials: 'include'
           }),
           fetch('/api/stats', {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
-            }
+            credentials: 'include'
           }),
           fetch('/api/revenue', {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
-            }
+            credentials: 'include'
           })
         ]);
 

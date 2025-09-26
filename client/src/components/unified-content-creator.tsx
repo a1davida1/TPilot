@@ -232,14 +232,10 @@ export function UnifiedContentCreator({
 
 
       // Send to unified endpoint  
-      const token = localStorage.getItem('authToken');
-      
       const response = await fetch('/api/generate-unified', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token || ''}`,
-        },
-        body: formData
+        body: formData,
+        credentials: 'include'
       });
 
       if (!response.ok) {
@@ -781,9 +777,9 @@ export function UnifiedContentCreator({
                 // Load selected generation as current content
                 const displayData: GeneratedContentDisplay = {
                   ...generation,
-                  userId: (generation as Record<string, unknown>).userId as number || 0,
-                  subreddit: (generation as Record<string, unknown>).subreddit as string || null,
-                  generationType: (generation as Record<string, unknown>).generationType as string || 'ai',
+                  userId: (generation as unknown as Record<string, unknown>).userId as number || 0,
+                  subreddit: (generation as unknown as Record<string, unknown>).subreddit as string || null,
+                  generationType: (generation as unknown as Record<string, unknown>).generationType as string || 'ai',
                   createdAt: typeof generation.createdAt === 'string' 
                     ? new Date(generation.createdAt) 
                     : generation.createdAt || new Date(),
