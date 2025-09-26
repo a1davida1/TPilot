@@ -1,0 +1,527 @@
+server/caption/geminiPipeline.ts
++4-1
+@@ -436,52 +436,55 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
+      : [];
+    variant.hashtags = hashtags.length > 0 ? hashtags.slice(0, 10) : ["#content", "#creative", "#amazing"];
+
+    variant.nsfw = typeof variant.nsfw === "boolean" ? variant.nsfw : false;
+
+    return variant;
+  };
+
+  const buildUserPrompt = (varietyHint: string | undefined, existingCaptions: string[]): string => {
+    const lines = [
+      `PLATFORM: ${params.platform}`,
+      `VOICE: ${params.voice}`
+    ];
+
+    if (params.style) lines.push(`STYLE: ${params.style}`);
+    if (params.mood) lines.push(`MOOD: ${params.mood}`);
+
+    lines.push(`IMAGE_FACTS: ${JSON.stringify(params.facts)}`);
+    lines.push(`NSFW: ${params.nsfw ?? false}`);
+
+    const hintParts: string[] = [];
+    if (varietyHint) {
+      hintParts.push(varietyHint.trim());
+    }
+    if (existingCaptions.length > 0) {
+      const sanitizedExistingCaptions = existingCaptions.map(existing =>
+        serializePromptField(existing, { block: true })
+      );
+      hintParts.push(
+        `Avoid repeating or lightly editing these captions: ${existingCaptions.join(" | ")}.`
+        `Avoid repeating or lightly editing these captions: ${sanitizedExistingCaptions.join(" | ")}.`
+      );
+    }
+    hintParts.push("Provide five options that vary tone, structure, and specific imagery.");
+
+    const combinedHint = hintParts.filter(Boolean).join(" ");
+    const serializedHint = serializePromptField(combinedHint, { block: true });
+    lines.push(`HINT:${serializedHint}`);
+
+    return lines.join("\n");
+  };
+
+  const fetchVariants = async (varietyHint: string | undefined, existingCaptions: string[]) => {
+    const user = buildUserPrompt(varietyHint, existingCaptions);
+    try {
+      const res = await textModel.generateContent([
+        { text: `${sys}\n${guard}\n${prompt}\n${user}` }
+      ]);
+      const json = stripToJSON(res.response.text()) as unknown;
+      return Array.isArray(json) ? json : [];
+    } catch (error) {
+      console.error("Gemini textModel.generateContent failed:", error);
+      throw error;
+    }
+  };
+
+server/caption/textOnlyPipeline.ts
++6-2
+@@ -229,58 +229,62 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
+    variant.hashtags = hashtags.length > 0 ? hashtags.slice(0, 10) : ["#content", "#creative", "#amazing"];
+
+    variant.nsfw = typeof variant.nsfw === "boolean" ? variant.nsfw : false;
+
+    return variant;
+  };
+
+  const buildUserPrompt = (varietyHint: string | undefined, existingCaptions: string[]): string => {
+    const lines = [
+      `PLATFORM: ${params.platform}`,
+      `VOICE: ${params.voice}`,
+      `THEME: ${serializePromptField(params.theme)}`,
+      `CONTEXT: ${serializePromptField(params.context || "")}`
+    ];
+
+    if (params.style) lines.push(`STYLE: ${params.style}`);
+    if (params.mood) lines.push(`MOOD: ${params.mood}`);
+
+    lines.push(`NSFW: ${params.nsfw ?? false}`);
+
+    const hintParts: string[] = [];
+    if (varietyHint) {
+      hintParts.push(varietyHint.trim());
+    }
+    if (existingCaptions.length > 0) {
+      const sanitizedExistingCaptions = existingCaptions.map(existing =>
+        serializePromptField(existing, { block: true })
+      );
+      hintParts.push(
+        `Avoid repeating or lightly editing these captions: ${existingCaptions.join(" | ")}.`
+        `Avoid repeating or lightly editing these captions: ${sanitizedExistingCaptions.join(" | ")}.`
+      );
+    }
+    hintParts.push("Provide five options that vary tone, structure, and specific content themes.");
+
+    const combinedHint = hintParts.filter(Boolean).join(" ");
+    lines.push(`HINT: ${combinedHint}`);
+    const serializedHint = serializePromptField(combinedHint, { block: true });
+    lines.push(`HINT:${serializedHint}`);
+
+    return lines.join("\n");
+  };
+
+  const fetchVariants = async (varietyHint: string | undefined, existingCaptions: string[]) => {
+    const user = buildUserPrompt(varietyHint, existingCaptions);
+    try {
+      const res = await textModel.generateContent([
+        { text: `${sys}\n${guard}\n${prompt}\n${user}` }
+      ]);
+      const json = stripToJSON(res.response.text());
+      return Array.isArray(json) ? json : [];
+    } catch (error) {
+      console.error("Gemini textModel.generateContent failed:", error);
+      throw error;
+    }
+  };
+
+  const uniqueVariants: z.infer<typeof CaptionItem>[] = [];
+  const existingCaptions: string[] = [];
+  const duplicatesThisAttempt: string[] = [];
+  const isTest = process.env.NODE_ENV === 'test';
+  const maxAttempts = isTest ? 2 : 5; // Allow 2 attempts in test for retry logic testing
+
+  for (let attempt = 0; attempt < maxAttempts && uniqueVariants.length < 5; attempt += 1) {
+tests/routes/caption-generation.test.ts
++223-8
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
+import { pipeline } from '../../server/caption/geminiPipeline.js';
+import { pipelineRewrite, extractKeyEntities } from '../../server/caption/rewritePipeline.js';
+import { pipelineTextOnly } from '../../server/caption/textOnlyPipeline.js';
+import { pipeline, generateVariants as generateGeminiVariants } from '../../server/caption/geminiPipeline.js';
+import { pipelineRewrite, variantsRewrite, extractKeyEntities } from '../../server/caption/rewritePipeline.js';
+import { pipelineTextOnly, generateVariantsTextOnly } from '../../server/caption/textOnlyPipeline.js';
+import { serializePromptField } from '../../server/caption/promptUtils.js';
+
+const openaiCreateMock = vi.fn();
+const openaiConstructorMock = vi.fn(() => ({
+  chat: {
+    completions: {
+      create: openaiCreateMock,
+    },
+  },
+}));
+
+vi.mock('openai', () => ({
+  default: openaiConstructorMock,
+}));
+
+// Mock dependencies
+vi.mock('../../server/lib/gemini.js', () => ({
+  textModel: {
+    generateContent: vi.fn(),
+  },
+  visionModel: {
+    generateContent: vi.fn(),
+  },
+}));
+
+import { CaptionItem } from '../../server/caption/schema.js';
+
+vi.mock('../../server/caption/openaiFallback.js', () => ({
+  openAICaptionFallback: vi.fn().mockResolvedValue({
+    caption: 'Fallback caption',
+    hashtags: ['#fallback1', '#fallback2', '#fallback3'],
+    safety_level: 'normal',
+    alt: 'Fallback alt text that is sufficiently long',
+    mood: 'neutral',
+    style: 'informative',
+    cta: 'Check this out',
+    nsfw: false,
+  }),
+}));
+@@ -39,50 +53,59 @@ interface MockResponse {
+
+interface CaptionResult {
+  caption: string;
+  hashtags: string[];
+  safety_level: string;
+  mood: string;
+  style: string;
+  cta: string;
+  alt: string;
+  nsfw: boolean;
+}
+
+const asMock = <T>(fn: T) => fn as unknown as Mock;
+
+vi.mock('../../server/storage.ts', () => ({
+  storage: {
+    getUserById: vi.fn(),
+    createContentGeneration: vi.fn(),
+    updateContentGeneration: vi.fn(),
+  },
+}));
+
+describe('Caption Generation', () => {
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    openaiCreateMock.mockReset();
+    openaiConstructorMock.mockReset();
+    openaiConstructorMock.mockImplementation(() => ({
+      chat: {
+        completions: {
+          create: openaiCreateMock,
+        },
+      },
+    }));
+    const { textModel, visionModel } = await import('../../server/lib/gemini.js');
+    (textModel.generateContent as Mock | undefined)?.mockReset?.();
+    (visionModel.generateContent as Mock | undefined)?.mockReset?.();
+    const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.js');
+    const mockOpenAI = vi.mocked(openAICaptionFallback);
+    mockOpenAI.mockReset();
+    mockOpenAI.mockResolvedValue({
+      caption: 'Fallback caption',
+      hashtags: ['#fallback1', '#fallback2', '#fallback3'],
+      safety_level: 'normal',
+      alt: 'Fallback alt text that is sufficiently long',
+      mood: 'neutral',
+      style: 'informative',
+      cta: 'Check this out',
+      nsfw: false,
+    });
+  });
+
+  describe('Gemini Pipeline', () => {
+    it('should handle image-based caption generation', async () => {
+      const mockImageUrl =
+        'data:image/jpeg;base64,' +
+        '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP///////////////wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACP/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8Af//Z';
+      const mockPlatform = 'instagram';
+      const mockVoice = 'flirty_playful';
+@@ -1514,95 +1537,287 @@ describe('Caption Generation', () => {
+      };
+
+      const enforcedCaption = 'Launch day! RSVP at https://example.com/launch with @LaunchHQ on 12/25 for the "Mega Launch" by MegaCorp™ #LaunchDay — limited seats!';
+      const enforcedVariants = {
+        response: {
+          text: () => JSON.stringify(
+            Array.from({ length: 5 }, (_, index) =>
+              variantFactory(`${enforcedCaption} Option ${index + 1}`)
+            )
+          ),
+        },
+      };
+
+      const enforcedRank = {
+        response: {
+          text: () => JSON.stringify({
+            winner_index: 0,
+            scores: [5, 4, 3, 2, 1],
+            reason: 'Retry keeps mandatory tokens',
+            final: variantFactory(enforcedCaption),
+          }),
+        },
+      };
+
+      const { textModel } = await import('../../server/lib/gemini.js');
+      const textGenerateMock = asMock(textModel.generateContent);
+      const textGenerateMock = vi.spyOn(textModel, 'generateContent');
+      textGenerateMock
+        .mockResolvedValueOnce(missingVariants)
+        .mockResolvedValueOnce(missingRank)
+        .mockResolvedValueOnce(enforcedVariants)
+        .mockResolvedValueOnce(enforcedRank);
+
+      const result = await pipelineRewrite({
+        platform: 'instagram',
+        voice: 'engaging',
+        existingCaption,
+      });
+
+      const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.js');
+      expect(openAICaptionFallback).not.toHaveBeenCalled();
+      expect(textGenerateMock).toHaveBeenCalledTimes(4);
+      const promptCalls = [...textGenerateMock.mock.calls];
+      expect(promptCalls[2]?.[0]?.[0]?.text).toContain('ABSOLUTE RULE: Keep these tokens verbatim in the caption');
+      expect(promptCalls[2]?.[0]?.[0]?.text).not.toContain('Fix platform issue');
+      expect(result.provider).toBe('gemini');
+      expect((result.final as CaptionResult).caption).toBe(enforcedCaption);
+      expect((result.final as CaptionResult).caption).toContain('https://example.com/launch');
+      expect((result.final as CaptionResult).caption).toContain('@LaunchHQ');
+      expect((result.final as CaptionResult).caption).toContain('#LaunchDay');
+      expect((result.final as CaptionResult).caption).toContain('12/25');
+      expect((result.final as CaptionResult).caption).toContain('"Mega Launch"');
+      expect((result.final as CaptionResult).caption).toContain('MegaCorp™');
+
+      textGenerateMock.mockReset();
+      textGenerateMock.mockRestore();
+    });
+
+    it('enforces fact coverage when image context is available', async () => {
+      // Simple test to verify the fact coverage feature exists and functions
+      const { ensureFactCoverage } = await import('../../server/caption/ensureFactCoverage.js');
+      const facts = { camera: 'Canon 5D', setting: 'rooftop at sunset' };
+      const caption = 'Having fun today';
+      const alt = 'Photo description';
+      
+
+      const result = ensureFactCoverage({ facts, caption, alt });
+      
+
+      // Test that ensureFactCoverage returns expected structure
+      expect(result).toHaveProperty('ok');
+      expect(typeof result.ok).toBe('boolean');
+      
+
+      if (!result.ok) {
+        expect(result).toHaveProperty('hint');
+        expect(typeof result.hint).toBe('string');
+      }
+    });
+
+  });
+
+  describe('Prompt sanitization', () => {
+    it('sanitizes Gemini variant prompts that include newline and quote hints', async () => {
+      const hint = 'Deliver "fresh"\nenergy please';
+      const facts = { summary: 'Sample facts' };
+      const { textModel } = await import('../../server/lib/gemini.js');
+      const textGenerateMock = vi
+        .spyOn(textModel, 'generateContent')
+        .mockImplementation(async messages => {
+          const promptText = messages?.[0]?.text ?? '';
+          const variants = Array.from({ length: 5 }, (_, index) => ({
+            caption: index === 0 ? promptText : `Variant option ${index}`,
+            hashtags: ['#test', `#variant${index}`],
+            safety_level: 'normal',
+            mood: 'confident',
+            style: 'authentic',
+            cta: 'Share your thoughts',
+            alt: `Detailed alt text ensuring schema compliance for option ${index}.`,
+            nsfw: false,
+          }));
+
+        return {
+          response: {
+            text: () => JSON.stringify(variants),
+          },
+        } satisfies { response: { text: () => string } };
+      });
+
+      const variants = await generateGeminiVariants({
+        platform: 'instagram',
+        voice: 'flirty_playful',
+        facts,
+        hint,
+      });
+
+      const promptCall = textGenerateMock.mock.calls[0]?.[0]?.text as string | undefined;
+      const expectedHint = serializePromptField(
+        `${hint.trim()} Provide five options that vary tone, structure, and specific imagery.`,
+        { block: true }
+      );
+
+      expect(promptCall).toBeDefined();
+      expect(promptCall).toContain(`HINT:${expectedHint}`);
+      expect(promptCall).not.toContain('\nenergy');
+      expect(variants[0]?.caption).toBe(promptCall);
+
+      textGenerateMock.mockRestore();
+    });
+
+    it('sanitizes text-only prompts for theme, context, and hints', async () => {
+      const theme = 'Sparkle "Line"\nGlow';
+      const context = 'Mood board:\n"neon" meets night market';
+      const hint = 'Keep it high-energy\nand "immersive"';
+      const { textModel } = await import('../../server/lib/gemini.js');
+      const textGenerateMock = vi
+        .spyOn(textModel, 'generateContent')
+        .mockImplementation(async messages => {
+          const promptText = messages?.[0]?.text ?? '';
+          const variants = Array.from({ length: 5 }, (_, index) => ({
+            caption: index === 0 ? promptText : `Text-only option ${index}`,
+            hashtags: ['#text', `#variant${index}`],
+            safety_level: 'normal',
+            mood: 'playful',
+            style: 'authentic',
+            cta: 'Join the vibe',
+            alt: `Extended descriptive alt text to meet schema requirements for option ${index}.`,
+            nsfw: false,
+          }));
+
+        return {
+          response: {
+            text: () => JSON.stringify(variants),
+          },
+        } satisfies { response: { text: () => string } };
+      });
+
+      const variants = await generateVariantsTextOnly({
+        platform: 'instagram',
+        voice: 'storyteller',
+        theme,
+        context,
+        hint,
+      });
+
+      const promptCall = textGenerateMock.mock.calls[0]?.[0]?.text as string | undefined;
+      const expectedHint = serializePromptField(
+        `${hint.trim()} Provide five options that vary tone, structure, and specific content themes.`,
+        { block: true }
+      );
+
+      expect(promptCall).toBeDefined();
+      expect(promptCall).toContain(`THEME: ${serializePromptField(theme)}`);
+      expect(promptCall).toContain(`CONTEXT: ${serializePromptField(context)}`);
+      expect(promptCall).toContain(`HINT:${expectedHint}`);
+      expect(promptCall).not.toContain('\nGlow');
+      expect(promptCall).not.toContain('\nmood');
+      expect(variants[0]?.caption).toBe(promptCall);
+
+      textGenerateMock.mockRestore();
+    });
+
+    it('sanitizes rewrite prompts that embed existing captions and hints', async () => {
+      const existingCaption = '"Launch" tonight!\nVIP vibes only.';
+      const hint = 'Make it punchier\nand keep "VIP"';
+      const { textModel } = await import('../../server/lib/gemini.js');
+      const textGenerateMock = vi
+        .spyOn(textModel, 'generateContent')
+        .mockImplementation(async messages => {
+          const promptText = messages?.[0]?.text ?? '';
+          const variants = Array.from({ length: 5 }, (_, index) => ({
+            caption: index === 0 ? promptText : `Rewrite option ${index}`,
+            hashtags: ['#rewrite', `#variant${index}`],
+            safety_level: 'normal',
+            mood: 'confident',
+            style: 'authentic',
+            cta: 'See you there',
+            alt: `Comprehensive alt text describing rewrite option ${index}.`,
+            nsfw: false,
+          }));
+
+        return {
+          response: {
+            text: () => JSON.stringify(variants),
+          },
+        } satisfies { response: { text: () => string } };
+      });
+
+      const variants = await variantsRewrite({
+        platform: 'instagram',
+        voice: 'energetic',
+        existingCaption,
+        hint,
+      });
+
+      const promptCall = textGenerateMock.mock.calls[0]?.[0]?.text as string | undefined;
+      const expectedHint = serializePromptField(hint, { block: true });
+
+      expect(promptCall).toBeDefined();
+      expect(promptCall).toContain(`EXISTING_CAPTION: ${serializePromptField(existingCaption)}`);
+      expect(promptCall).toContain(`HINT:${expectedHint}`);
+      expect(promptCall).not.toContain('\nVIP');
+      expect(variants[0]?.caption).toBe(promptCall);
+
+      textGenerateMock.mockRestore();
+    });
+
+    it('sanitizes OpenAI fallback payloads before sending to the API', async () => {
+      const existingCaption = 'Street "fashion"\nwith bold neon.';
+      const previousEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'development';
+
+      openaiCreateMock.mockImplementationOnce(async request => ({
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                caption: 'Sanitized fallback',
+                hashtags: ['#fallback', '#sanitized'],
+                safety_level: 'normal',
+                mood: 'confident',
+                style: 'authentic',
+                cta: 'Dive in',
+                alt: 'Detailed fallback alt text describing the sanitized response for accessibility needs.',
+                nsfw: false,
+              }),
+            },
+          },
+        ],
+      }));
+
+      const actualFallback = await vi.importActual<
+        typeof import('../../server/caption/openaiFallback.js')
+      >('../../server/caption/openaiFallback.js');
+
+      const result = await actualFallback.openAICaptionFallback({
+        platform: 'instagram',
+        existingCaption,
+      });
+
+      const request = openaiCreateMock.mock.calls[0]?.[0] as { messages: Array<{ role: string; content: string }> } | undefined;
+      const expectedExisting = serializePromptField(existingCaption);
+
+      expect(request).toBeDefined();
+      expect(request?.messages?.[1]?.content).toContain(`Rewrite this caption: ${expectedExisting}`);
+      expect(request?.messages?.[1]?.content).not.toContain('\nfashion');
+      expect(result.caption).toBe('Sanitized fallback');
+
+      process.env.NODE_ENV = previousEnv;
+      openaiCreateMock.mockReset();
+    });
+  });
+});
+
+describe('extractKeyEntities', () => {
+  it('captures urls, handles, hashtags, numbers, quotes, and branded terms', () => {
+    const caption = 'Launch day 2024! RSVP at https://example.com/launch with @LaunchHQ on 12/25 for the "Mega Launch" by MegaCorp™ and NASA #LaunchDay';
+    const entities = extractKeyEntities(caption);
+
+    expect(entities).toEqual([
+      '2024',
+      'RSVP',
+      'https://example.com/launch',
+      '@LaunchHQ',
+      '12/25',
+      '"Mega Launch"',
+      'MegaCorp',
+      'NASA',
+      '#LaunchDay',
+    ]);
+  });
+});
