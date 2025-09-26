@@ -100,20 +100,65 @@ async function generateWithGemini(prompt: string) {
   if (!gemini) return null;
 
   try {
-    // Use the generate method for @google/genai
-    const response = await (gemini as unknown as { generate: (params: { prompt: string; temperature: number; maxOutputTokens: number }) => Promise<{ text?: string }> }).generate({
-      prompt: prompt,
-      temperature: 0.8,
-      maxOutputTokens: 1500
+    const model = gemini.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const response = await model.generateContent({
+      contents: [
+        {
+          role: 'user',
+          parts: [{ text: prompt }]
+        }
+      ],
+      generationConfig: {
+        temperature: 0.8,
+        maxOutputTokens: 1500
+      }
     });
 
-    if (!response || !response.text) {
+    const modelResponse = response.response;
+
+    if (!modelResponse) {
       safeLog('warn', 'Gemini provider returned empty response', {});
       return null;
     }
 
-    const text = response.text.trim();
-    if (text.length === 0) {
+    let text = '';
+
+    if (typeof modelResponse.text === 'function') {
+      const responseText = modelResponse.text();
+      if (typeof responseText === 'string') {
+        text = responseText.trim();
+      }
+    }
+
+    if (!text) {
+      const candidates = (modelResponse as { candidates?: Array<unknown> }).candidates;
+      if (Array.isArray(candidates)) {
+        for (const candidate of candidates) {
+          if (!candidate || typeof candidate !== 'object') continue;
+          const content = (candidate as { content?: unknown }).content;
+          if (!content || typeof content !== 'object') continue;
+          const parts = (content as { parts?: Array<unknown> }).parts;
+          if (!Array.isArray(parts)) continue;
+          for (const part of parts) {
+            if (!part || typeof part !== 'object') continue;
+            const partText = (part as { text?: unknown }).text;
+            if (typeof partText === 'string' && partText.trim()) {
+              text = partText.trim();
+              break;
+            }
+          }
+          if (text) break;
+        }
+      }
+    }
+
+    if (!text) {
+      safeLog('warn', 'Gemini provider returned empty response', {});
+      return null;
+    }
+
+    const trimmedText = text.trim();
+    if (trimmedText.length === 0) {
       safeLog('warn', 'Gemini provider returned no text', {});
       return null;
     }
@@ -121,13 +166,13 @@ async function generateWithGemini(prompt: string) {
     // Try to parse as JSON, if it fails, create structured response
     let result;
     try {
-      result = JSON.parse(text);
+      result = JSON.parse(trimmedText);
     } catch (parseError) {
       // If not JSON, create a structured response from the text
-      const lines = text.split('\n').filter(line => line.trim());
+      const lines = trimmedText.split('\n').filter(line => line.trim());
       result = {
         titles: [`${lines[0] || 'Generated content'} ✨`, 'Creative content generation 🚀', 'Authentic social media posts 💫'],
-        content: text,
+        content: trimmedText,
         photoInstructions: {
           lighting: 'Natural lighting preferred',
           cameraAngle: 'Eye level angle',
