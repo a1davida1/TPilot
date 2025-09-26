@@ -1,0 +1,142 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/client/src/components/admin-portal.tsx b/client/src/components/admin-portal.tsx
+index d3088c029ab469f0329156fd3191d24733ab3df8..add8ced405f83601216bfd1aebe4af02c349e443 100644
+--- a/client/src/components/admin-portal.tsx
++++ b/client/src/components/admin-portal.tsx
+@@ -1083,56 +1083,59 @@ function IPTrackingTab({ authenticatedRequest }: { authenticatedRequest: Authent
+                       </div>
+                       <p className="text-sm text-gray-600 dark:text-gray-400">
+                         {session.deviceType} • {session.browser} • {session.os}
+                       </p>
+                       <p className="text-xs text-gray-500">
+                         {session.location?.city}, {session.location?.country}
+                       </p>
+                     </div>
+                     <div className="text-right text-xs text-gray-500">
+                       <p>Login: {new Date(session.loginAt).toLocaleString()}</p>
+                       <p>Last: {new Date(session.lastActivity).toLocaleString()}</p>
+                     </div>
+                   </div>
+                 </div>
+               ))}
+             </div>
+           </CardContent>
+         </Card>
+       )}
+     </div>
+   );
+ }
+ 
+ // FEATURE 2: System Monitoring Component
+ function SystemMonitorTab({ authenticatedRequest }: { authenticatedRequest: AuthenticatedRequest }) {
+-  const { data: metrics, refetch: _refetchMetrics } = useQuery({
++  const { data: metrics, refetch: refetchMetrics } = useQuery({
+     queryKey: ['/api/admin/system-metrics'],
+     queryFn: () => authenticatedRequest('/api/admin/system-metrics'),
+     refetchInterval: 10000,
+   });
+ 
++  const isMetricsFetching =
++    queryClient.isFetching({ queryKey: ['/api/admin/system-metrics'] }) > 0;
++
+   const { data: logs } = useQuery({
+     queryKey: ['/api/admin/system-logs'],
+     queryFn: () => authenticatedRequest('/api/admin/system-logs?limit=20'),
+     refetchInterval: 15000,
+   });
+ 
+   const formatUptime = (seconds: number) => {
+     const hours = Math.floor(seconds / 3600);
+     const minutes = Math.floor((seconds % 3600) / 60);
+     return `${hours}h ${minutes}m`;
+   };
+ 
+   const formatMemory = (bytes: number) => {
+     return `${Math.round(bytes / 1024 / 1024)}MB`;
+   };
+ 
+   return (
+     <div className="space-y-6">
+       {/* System Overview */}
+       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+         <Card>
+           <CardHeader>
+             <CardTitle className="text-sm flex items-center gap-2">
+               <Server className="h-4 w-4 text-blue-500" />
+               Server Status
+diff --git a/client/src/components/admin-portal.tsx b/client/src/components/admin-portal.tsx
+index d3088c029ab469f0329156fd3191d24733ab3df8..add8ced405f83601216bfd1aebe4af02c349e443 100644
+--- a/client/src/components/admin-portal.tsx
++++ b/client/src/components/admin-portal.tsx
+@@ -1181,55 +1184,67 @@ function SystemMonitorTab({ authenticatedRequest }: { authenticatedRequest: Auth
+           <CardHeader>
+             <CardTitle className="text-sm flex items-center gap-2">
+               <Activity className="h-4 w-4 text-orange-500" />
+               API Performance
+             </CardTitle>
+           </CardHeader>
+           <CardContent className="space-y-2">
+             <div className="flex justify-between">
+               <span className="text-sm text-gray-600">Requests</span>
+               <span className="text-sm font-medium">{(metrics as MetricsType)?.api?.totalRequests}</span>
+             </div>
+             <div className="flex justify-between">
+               <span className="text-sm text-gray-600">Avg Response</span>
+               <span className="text-sm font-medium">{(metrics as MetricsType)?.api?.avgResponseTime}</span>
+             </div>
+             <div className="flex justify-between">
+               <span className="text-sm text-gray-600">Error Rate</span>
+               <span className="text-sm font-medium text-green-600">{(metrics as MetricsType)?.api?.errorRate}</span>
+             </div>
+           </CardContent>
+         </Card>
+       </div>
+ 
+       {/* System Logs */}
+       <Card>
+-        <CardHeader>
++        <CardHeader className="flex items-center justify-between gap-2">
+           <CardTitle className="flex items-center gap-2">
+             <Monitor className="h-5 w-5 text-green-500" />
+             System Logs
+           </CardTitle>
++          <Button
++            size="sm"
++            variant="outline"
++            disabled={isMetricsFetching}
++            onClick={() => {
++              void refetchMetrics();
++            }}
++            className="shrink-0"
++          >
++            <RefreshCw className={`mr-2 h-4 w-4${isMetricsFetching ? ' animate-spin' : ''}`} />
++            {isMetricsFetching ? 'Refreshing…' : 'Refresh now'}
++          </Button>
+         </CardHeader>
+         <CardContent>
+           <div className="space-y-2 max-h-64 overflow-y-auto">
+             {(logs as Array<{id: string; level: string; message: string; service: string; ipAddress?: string; createdAt: string}>)?.map((log) => (
+               <div key={log.id} className={`p-2 rounded text-sm border-l-4 ${
+                 log.level === 'error' ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : 
+                 log.level === 'warn' ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20' : 
+                 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+               }`}>
+                 <div className="flex items-start justify-between">
+                   <div>
+                     <p className="font-medium">{log.message}</p>
+                     <p className="text-xs text-muted-foreground">
+                       {log.service} • {log.level.toUpperCase()} 
+                       {log.ipAddress && ` • ${log.ipAddress}`}
+                     </p>
+                   </div>
+                   <span className="text-xs text-muted-foreground">
+                     {new Date(log.createdAt).toLocaleTimeString()}
+                   </span>
+                 </div>
+               </div>
+             ))}
+           </div>
+         </CardContent>
+ 
+EOF
+)
