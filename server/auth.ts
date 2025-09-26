@@ -59,6 +59,13 @@ export function setupAuth(app: Express) {
       // For production, require email verification
       const isDevelopment = process.env.NODE_ENV === 'development';
 
+      const cookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict' as const,
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      };
+
       if (isDevelopment) {
         // Automatically verify email in development
         await storage.updateUserEmailVerified(user.id, true);
@@ -77,16 +84,11 @@ export function setupAuth(app: Express) {
         );
 
         // Set JWT in HttpOnly cookie
-        res.cookie('authToken', token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
-          maxAge: 24 * 60 * 60 * 1000 // 24 hours
-        });
+        res.cookie('authToken', token, cookieOptions);
 
-          res.status(201).json({
-            message: 'User created successfully',
-            user: {
+        res.status(201).json({
+          message: 'User created successfully',
+          user: {
             id: user.id,
             username: user.username,
             email: user.email,
@@ -122,9 +124,12 @@ export function setupAuth(app: Express) {
           { expiresIn: '24h' }
         );
 
-          res.status(201).json({
-            message: 'User created successfully. Verification email sent.',
-            user: {
+        // Align production signup response with development by setting auth cookie immediately
+        res.cookie('authToken', token, cookieOptions);
+
+        res.status(201).json({
+          message: 'User created successfully. Verification email sent.',
+          user: {
             id: user.id,
             username: user.username,
             email: user.email,

@@ -83,4 +83,31 @@ describe('Signup and email verification', () => {
     expect(loginAfter.status).toBe(200);
     expect(loginAfter.body.token).toBeDefined();
   });
+
+  it('sets a secure auth cookie on production signup', async () => {
+    const originalNodeEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+
+    try {
+      const app = express();
+      app.use(express.json());
+      setupAuth(app);
+
+      const signupRes = await request(app)
+        .post('/api/auth/signup')
+        .send({ username: 'bob', password: 'Password123!', email: 'bob@example.com' });
+
+      expect(signupRes.status).toBe(201);
+      const cookies = signupRes.headers['set-cookie'];
+      expect(cookies).toBeDefined();
+
+      const authCookie = cookies?.find(cookie => cookie.startsWith('authToken='));
+      expect(authCookie).toBeDefined();
+      expect(authCookie).toMatch(/HttpOnly/i);
+      expect(authCookie).toMatch(/Secure/i);
+      expect(authCookie).toMatch(/SameSite=Strict/i);
+    } finally {
+      process.env.NODE_ENV = originalNodeEnv;
+    }
+  });
 });
