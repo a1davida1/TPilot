@@ -21,6 +21,7 @@ import { referralRouter } from "./routes/referrals.js";
 import { registerExpenseRoutes } from "./expense-routes.js";
 import { adminCommunitiesRouter } from "./routes/admin-communities.js";
 import { createCancelSubscriptionHandler } from "./routes/subscription-management.js";
+import { createLocalDownloadRouter } from "./routes/downloads.js";
 
 // Core imports
 import { storage } from "./storage.js";
@@ -656,7 +657,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api', o
   app.get('/api/auth/reddit/callback', socialAuthRoutes.redditCallback);
 
   // Serve uploaded files through token-protected controller
-  // app.use('/uploads', createLocalDownloadRouter()); // TODO: Re-implement download router if needed
+  app.use('/uploads', createLocalDownloadRouter());
 
   // ==========================================
   // STRIPE PAYMENT ENDPOINTS
