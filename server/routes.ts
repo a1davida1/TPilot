@@ -58,7 +58,8 @@ interface AnalyticsRequest extends express.Request {
 }
 
 // Import users table for type inference
-import { users, type ContentGeneration } from "@shared/schema";
+import { users, type ContentGeneration, type InsertSavedContent } from "@shared/schema";
+import type { IStorage } from "./storage.js";
 
 // AuthUser interface for passport serialization
 interface AuthUser {
@@ -89,6 +90,20 @@ interface PhotoInstructionsData {
   technical?: string | string[];
 }
 
+export interface SaveContentRequestBody {
+  title?: string;
+  content?: string;
+  platform?: string | null;
+  generationId?: number | string | null;
+  contentGenerationId?: number | string | null;
+  socialMediaPostId?: number | string | null;
+  metadata?: InsertSavedContent['metadata'];
+}
+
+interface SaveContentHandlerDependencies {
+  storage: Pick<IStorage, 'createSavedContent' | 'getUserContentGenerations' | 'getSocialMediaPost'>;
+}
+
 interface SessionWithReddit extends Session {
   redditOAuthState?: string;
 }
@@ -96,6 +111,99 @@ interface SessionWithReddit extends Session {
 // ==========================================
 // PRO RESOURCES ROUTES
 // ==========================================
+
+const normalizeOptionalId = (value: number | string | null | undefined): number | undefined | 'invalid' => {
+  if (value === null || value === undefined) {
+    return undefined;
+  }
+
+  const stringified = String(value).trim();
+  if (stringified.length === 0) {
+    return undefined;
+  }
+
+  const parsed = Number.parseInt(stringified, 10);
+  if (Number.isNaN(parsed)) {
+    return 'invalid';
+  }
+
+  return parsed;
+};
+
+export function createSaveContentHandler(
+  deps: SaveContentHandlerDependencies = { storage }
+): express.RequestHandler {
+  return async (req: AuthenticatedRequest, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+
+      const body = (req.body ?? {}) as SaveContentRequestBody;
+
+      const title = typeof body.title === 'string' ? body.title.trim() : '';
+      if (!title) {
+        return res.status(400).json({ message: 'Title is required' });
+      }
+
+      const content = typeof body.content === 'string' ? body.content.trim() : '';
+      if (!content) {
+        return res.status(400).json({ message: 'Content is required' });
+      }
+
+      const normalizedGenerationId = normalizeOptionalId(body.contentGenerationId ?? body.generationId);
+      if (normalizedGenerationId === 'invalid') {
+        return res.status(400).json({ message: 'generationId must be a valid number' });
+      }
+
+      const normalizedSocialPostId = normalizeOptionalId(body.socialMediaPostId);
+      if (normalizedSocialPostId === 'invalid') {
+        return res.status(400).json({ message: 'socialMediaPostId must be a valid number' });
+      }
+
+      let generation: ContentGeneration | undefined;
+      if (typeof normalizedGenerationId === 'number') {
+        const generations = await deps.storage.getUserContentGenerations(req.user.id);
+        generation = generations.find(item => item.id === normalizedGenerationId);
+
+        if (!generation) {
+          return res.status(404).json({ message: 'Content generation not found' });
+        }
+      }
+
+      let socialPost: Awaited<ReturnType<IStorage['getSocialMediaPost']>> | undefined;
+      if (typeof normalizedSocialPostId === 'number') {
+        socialPost = await deps.storage.getSocialMediaPost(normalizedSocialPostId);
+
+        if (!socialPost || socialPost.userId !== req.user.id) {
+          return res.status(404).json({ message: 'Social media post not found' });
+        }
+      }
+
+      const providedPlatform = typeof body.platform === 'string' ? body.platform.trim() : '';
+      const platform = providedPlatform
+        || generation?.platform
+        || socialPost?.platform
+        || undefined;
+
+      const payload: InsertSavedContent = {
+        userId: req.user.id,
+        title,
+        content,
+        platform,
+        contentGenerationId: typeof normalizedGenerationId === 'number' ? normalizedGenerationId : undefined,
+        socialMediaPostId: typeof normalizedSocialPostId === 'number' ? normalizedSocialPostId : undefined,
+        metadata: body.metadata ?? undefined,
+      };
+
+      const record = await deps.storage.createSavedContent(payload);
+      return res.status(201).json(record);
+    } catch (error) {
+      logger.error('Failed to save content:', error);
+      return res.status(500).json({ message: 'Failed to save content' });
+    }
+  };
+}
 
 function registerProResourcesRoutes(app: Express, apiPrefix: string = API_PREFIX) {
   const route = (path: string) => prefixApiPath(path, apiPrefix);
@@ -1110,6 +1218,8 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   // ==========================================
   // CONTENT GENERATIONS HISTORY API
   // ==========================================
+
+  app.post('/api/saved-content', authenticateToken, createSaveContentHandler());
 
   // Get user's content generation history
   app.get('/api/content-generations', authenticateToken, async (req: AuthRequest, res) => {

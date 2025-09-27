@@ -2,11 +2,40 @@ import OpenAI from 'openai';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import { z } from 'zod';
 import { ensureFallbackCompliance, type FallbackInferenceInput } from './inferFallbackFromFacts';
+import { safeFallbackCaption, safeFallbackCta, safeFallbackHashtags } from './rankingGuards';
 import { CaptionItem } from './schema';
 import { serializePromptField } from './promptUtils';
 import { formatVoiceContext } from './voiceTraits';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || '' });
+
+const SAFE_FALLBACK_ALT_TEXT = 'Engaging social media content';
+
+function buildSafeFallbackResponse(
+  fallbackParams: FallbackInferenceInput,
+  voice?: string
+): z.infer<typeof CaptionItem> {
+  const compliance = ensureFallbackCompliance(
+    {
+      caption: safeFallbackCaption,
+      hashtags: [...safeFallbackHashtags],
+      cta: safeFallbackCta,
+      alt: SAFE_FALLBACK_ALT_TEXT,
+    },
+    fallbackParams
+  );
+
+  return CaptionItem.parse({
+    caption: safeFallbackCaption,
+    hashtags: compliance.hashtags,
+    safety_level: 'normal',
+    mood: voice && voice.includes('flirty') ? 'flirty' : 'engaging',
+    style: 'authentic',
+    cta: compliance.cta,
+    alt: compliance.alt,
+    nsfw: false,
+  });
+}
 
 export interface FallbackParams {
   platform: 'instagram' | 'x' | 'reddit' | 'tiktok';
@@ -59,7 +88,6 @@ export async function openAICaptionFallback({
       alt: compliance.alt,
     });
   }
-  let messages: ChatCompletionMessageParam[] = [];
   const sanitizedExistingCaption = existingCaption ? serializePromptField(existingCaption) : undefined;
   const voiceContext = formatVoiceContext(voice);
   const systemVoiceSuffix = voiceContext ? `\n${voiceContext}` : '';
@@ -71,6 +99,12 @@ export async function openAICaptionFallback({
     existingCaption,
     theme,
   };
+
+  if (!process.env.OPENAI_API_KEY) {
+    return buildSafeFallbackResponse(fallbackParamsForCompliance, voice);
+  }
+
+  let messages: ChatCompletionMessageParam[] = [];
 
   if (imageUrl && openai) {
     try {
@@ -211,27 +245,6 @@ Return ONLY a JSON object with this structure:
     });
   } catch (error) {
     console.error("Error calling OpenAI API:", error);
-    const fallback = ensureFallbackCompliance(
-      {
-        caption: sanitizedExistingCaption,
-        hashtags: [],
-        cta: undefined,
-        alt: undefined,
-      },
-      fallbackParamsForCompliance
-    );
-
-    return CaptionItem.parse({
-      caption: sanitizedExistingCaption
-        ? `Could not generate new caption. Original: ${sanitizedExistingCaption}`
-        : 'Error generating caption.',
-      hashtags: fallback.hashtags,
-      safety_level: 'normal',
-      mood: 'neutral',
-      style: 'error',
-      cta: fallback.cta,
-      alt: fallback.alt,
-      nsfw: false,
-    });
+    return buildSafeFallbackResponse(fallbackParamsForCompliance, voice);
   }
 }

@@ -21,6 +21,8 @@ import {
   type InsertPlatformEngagement,
   type PostSchedule,
   type InsertPostSchedule,
+  type SavedContent,
+  type InsertSavedContent,
   type VerificationToken,
   type InsertVerificationToken,
   users,
@@ -34,6 +36,7 @@ import {
   socialMediaPosts,
   platformEngagement,
   postSchedule,
+  savedContent,
   verificationTokens,
   invoices,
   userSessions
@@ -152,6 +155,12 @@ export interface IStorage {
   getTaxDeductionInfo(): Promise<TaxDeductionInfo[]>;
   getTaxDeductionInfoByCategory(category: string): Promise<TaxDeductionInfo[]>;
   createTaxDeductionInfo(info: InsertTaxDeductionInfo): Promise<TaxDeductionInfo>;
+
+  // Saved content operations
+  createSavedContent(content: InsertSavedContent): Promise<SavedContent>;
+  getSavedContentById(id: number, userId: number): Promise<SavedContent | undefined>;
+  getUserSavedContent(userId: number): Promise<SavedContent[]>;
+  deleteSavedContent(id: number, userId: number): Promise<void>;
 
   // Social Media operations
   createSocialMediaAccount(account: InsertSocialMediaAccount): Promise<SocialMediaAccount>;
@@ -1016,6 +1025,72 @@ export class DatabaseStorage implements IStorage {
       return result;
     } catch (error) {
       console.error('Error creating tax deduction info:', { error: (error as Error).message });
+      throw error;
+    }
+  }
+
+  // Saved content operations
+  async createSavedContent(content: InsertSavedContent): Promise<SavedContent> {
+    try {
+      const [result] = await db
+        .insert(savedContent)
+        .values(content as typeof savedContent.$inferInsert)
+        .returning();
+      return result;
+    } catch (error) {
+      safeLog('error', 'Failed to create saved content record', {
+        error: (error as Error).message,
+        userId: content.userId,
+      });
+      throw error;
+    }
+  }
+
+  async getSavedContentById(id: number, userId: number): Promise<SavedContent | undefined> {
+    try {
+      const [result] = await db
+        .select()
+        .from(savedContent)
+        .where(and(eq(savedContent.id, id), eq(savedContent.userId, userId)))
+        .limit(1);
+      return result;
+    } catch (error) {
+      safeLog('error', 'Failed to load saved content record', {
+        error: (error as Error).message,
+        id,
+        userId,
+      });
+      return undefined;
+    }
+  }
+
+  async getUserSavedContent(userId: number): Promise<SavedContent[]> {
+    try {
+      return await db
+        .select()
+        .from(savedContent)
+        .where(eq(savedContent.userId, userId))
+        .orderBy(desc(savedContent.createdAt));
+    } catch (error) {
+      safeLog('error', 'Failed to list saved content records for user', {
+        error: (error as Error).message,
+        userId,
+      });
+      return [];
+    }
+  }
+
+  async deleteSavedContent(id: number, userId: number): Promise<void> {
+    try {
+      await db
+        .delete(savedContent)
+        .where(and(eq(savedContent.id, id), eq(savedContent.userId, userId)));
+    } catch (error) {
+      safeLog('error', 'Failed to delete saved content record', {
+        error: (error as Error).message,
+        id,
+        userId,
+      });
       throw error;
     }
   }
