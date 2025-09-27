@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, text, integer, timestamp, jsonb, boolean, unique } from "drizzle-orm/pg-core";
+import { pgTable, serial, varchar, text, integer, timestamp, jsonb, boolean, unique, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -334,6 +334,23 @@ export const mediaUsages = pgTable("media_usages", {
     usedInId: varchar("used_in_id", { length: 255 }).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+export const savedContent = pgTable("saved_content", {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").references(() => users.id).notNull(),
+    title: varchar("title", { length: 255 }).notNull(),
+    content: text("content").notNull(),
+    platform: varchar("platform", { length: 50 }),
+    tags: jsonb("tags"),
+    metadata: jsonb("metadata"),
+    contentGenerationId: integer("content_generation_id").references(() => contentGenerations.id),
+    socialMediaPostId: integer("social_media_post_id"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+    userIdIdx: index("saved_content_user_id_idx").on(table.userId),
+    contentGenerationIdx: index("saved_content_content_generation_id_idx").on(table.contentGenerationId),
+    socialMediaPostIdx: index("saved_content_social_media_post_id_idx").on(table.socialMediaPostId),
+}));
 export const aiGenerations = pgTable("ai_generations", {
     id: serial("id").primaryKey(),
     userId: integer("user_id").references(() => users.id).notNull(),
@@ -396,6 +413,7 @@ export const insertEventLogSchema = createInsertSchema(eventLogs);
 export const insertFeatureFlagSchema = createInsertSchema(featureFlags);
 export const insertMediaAssetSchema = createInsertSchema(mediaAssets);
 export const insertMediaUsageSchema = createInsertSchema(mediaUsages);
+export const insertSavedContentSchema = createInsertSchema(savedContent);
 export const insertAiGenerationSchema = createInsertSchema(aiGenerations);
 export const insertQueueJobSchema = createInsertSchema(queueJobs);
 export const insertPostRateLimitSchema = createInsertSchema(postRateLimits);

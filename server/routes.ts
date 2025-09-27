@@ -58,8 +58,12 @@ interface AnalyticsRequest extends express.Request {
 }
 
 // Import users table for type inference
+<<<<<<< ours
 import { users, type ContentGeneration, type InsertSavedContent } from "@shared/schema";
 import type { IStorage } from "./storage.js";
+=======
+import { users, type ContentGeneration, insertSavedContentSchema, type InsertSavedContent } from "@shared/schema";
+>>>>>>> theirs
 
 // AuthUser interface for passport serialization
 interface AuthUser {
@@ -90,6 +94,7 @@ interface PhotoInstructionsData {
   technical?: string | string[];
 }
 
+<<<<<<< ours
 export interface SaveContentRequestBody {
   title?: string;
   content?: string;
@@ -102,6 +107,16 @@ export interface SaveContentRequestBody {
 
 interface SaveContentHandlerDependencies {
   storage: Pick<IStorage, 'createSavedContent' | 'getUserContentGenerations' | 'getSocialMediaPost'>;
+=======
+interface SaveContentRequestBody {
+  title?: string;
+  content?: string;
+  platform?: string | null;
+  tags?: unknown;
+  metadata?: unknown;
+  socialMediaPostId?: number | string | null;
+  contentGenerationId?: number | string | null;
+>>>>>>> theirs
 }
 
 interface SessionWithReddit extends Session {
@@ -333,6 +348,149 @@ function registerProResourcesRoutes(app: Express, apiPrefix: string = API_PREFIX
     }
   });
 
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> => (
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+);
+
+const normalizeOptionalId = (value: number | string | null | undefined, field: string): number | undefined => {
+  if (value === undefined || value === null || value === '') {
+    return undefined;
+  }
+
+  if (typeof value === 'number') {
+    if (Number.isInteger(value) && value > 0) {
+      return value;
+    }
+    throw new Error(`Invalid ${field}`);
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (trimmed.length === 0) {
+      return undefined;
+    }
+    const parsed = Number.parseInt(trimmed, 10);
+    if (Number.isInteger(parsed) && parsed > 0) {
+      return parsed;
+    }
+  }
+
+  throw new Error(`Invalid ${field}`);
+};
+
+export function registerSavedContentRoutes(app: Express, options?: RegisterRoutesOptions): void {
+  app.post('/api/saved-content', authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+
+      const body = req.body as SaveContentRequestBody | undefined;
+      const title = typeof body?.title === 'string' ? body.title.trim() : '';
+      const content = typeof body?.content === 'string' ? body.content.trim() : '';
+
+      if (title.length === 0) {
+        return res.status(400).json({ message: 'Title is required' });
+      }
+
+      if (content.length === 0) {
+        return res.status(400).json({ message: 'Content is required' });
+      }
+
+      let contentGenerationId: number | undefined;
+      let socialMediaPostId: number | undefined;
+
+      try {
+        contentGenerationId = normalizeOptionalId(body?.contentGenerationId ?? undefined, 'contentGenerationId');
+      } catch (idError) {
+        return res.status(400).json({ message: (idError as Error).message });
+      }
+
+      try {
+        socialMediaPostId = normalizeOptionalId(body?.socialMediaPostId ?? undefined, 'socialMediaPostId');
+      } catch (idError) {
+        return res.status(400).json({ message: (idError as Error).message });
+      }
+
+      if (Array.isArray(body?.tags)) {
+        const hasInvalidTag = body.tags.some(tag => typeof tag !== 'string' || tag.trim().length === 0);
+        if (hasInvalidTag) {
+          return res.status(400).json({ message: 'Tags must be non-empty strings' });
+        }
+      } else if (body?.tags !== undefined && body.tags !== null) {
+        return res.status(400).json({ message: 'Tags must be provided as an array of strings' });
+      }
+
+      if (body?.metadata !== undefined && body.metadata !== null && !isRecord(body.metadata)) {
+        return res.status(400).json({ message: 'Metadata must be an object' });
+      }
+
+      if (contentGenerationId !== undefined) {
+        const generations = await storage.getUserContentGenerations(req.user.id);
+        const ownsGeneration = generations.some(generation => generation.id === contentGenerationId);
+        if (!ownsGeneration) {
+          return res.status(404).json({ message: 'Content generation not found' });
+        }
+      }
+
+      let linkedPostPlatform: string | undefined;
+      if (socialMediaPostId !== undefined) {
+        const post = await storage.getSocialMediaPost(socialMediaPostId);
+        if (!post || post.userId !== req.user.id) {
+          return res.status(404).json({ message: 'Social media post not found' });
+        }
+        linkedPostPlatform = post.platform;
+      }
+
+      const requestedPlatform = typeof body?.platform === 'string' ? body.platform.trim() : undefined;
+      const normalizedPlatform = requestedPlatform && requestedPlatform.length > 0
+        ? requestedPlatform
+        : linkedPostPlatform;
+
+      const normalizedTags = Array.isArray(body?.tags)
+        ? body.tags.map(tag => tag.trim())
+        : undefined;
+
+      const payloadInput: Partial<InsertSavedContent> = {
+        userId: req.user.id,
+        title,
+        content,
+      };
+
+      if (normalizedPlatform) {
+        payloadInput.platform = normalizedPlatform;
+      }
+
+      if (normalizedTags !== undefined) {
+        payloadInput.tags = normalizedTags;
+      }
+
+      if (body?.metadata !== undefined && body.metadata !== null) {
+        payloadInput.metadata = body.metadata as Record<string, unknown>;
+      }
+
+      if (contentGenerationId !== undefined) {
+        payloadInput.contentGenerationId = contentGenerationId;
+      }
+
+      if (socialMediaPostId !== undefined) {
+        payloadInput.socialMediaPostId = socialMediaPostId;
+      }
+
+      const payload = insertSavedContentSchema.parse(payloadInput);
+      const record = await storage.createSavedContent(payload);
+
+      return res.status(201).json(record);
+    } catch (error) {
+      logger.error('Failed to save content:', error);
+      if (options?.sentry) {
+        options.sentry.captureException(error);
+      }
+      return res.status(500).json({ message: 'Failed to save content' });
+    }
+  });
 }
 
 // Session interface with Reddit OAuth properties
@@ -1195,6 +1353,9 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
 
   // Register Social Media Routes
   registerSocialMediaRoutes(app);
+
+  // Register Saved Content Routes
+  registerSavedContentRoutes(app, options);
 
   // Register Expense Routes (Tax Tracker API)
   registerExpenseRoutes(app);

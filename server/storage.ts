@@ -34,6 +34,7 @@ import {
   taxDeductionInfo,
   socialMediaAccounts,
   socialMediaPosts,
+  savedContent,
   platformEngagement,
   postSchedule,
   savedContent,
@@ -174,6 +175,12 @@ export interface IStorage {
   getSocialMediaPost(postId: number): Promise<SocialMediaPost | undefined>;
   updateSocialMediaPost(postId: number, updates: Partial<SocialMediaPost>): Promise<SocialMediaPost>;
   deleteSocialMediaPost(postId: number): Promise<void>;
+
+  // Saved content operations
+  createSavedContent(entry: InsertSavedContent): Promise<SavedContent>;
+  getSavedContentById(id: number, userId: number): Promise<SavedContent | undefined>;
+  getUserSavedContent(userId: number): Promise<SavedContent[]>;
+  deleteSavedContent(id: number, userId: number): Promise<void>;
 
   createPlatformEngagement(engagement: InsertPlatformEngagement): Promise<PlatformEngagement>;
   getPlatformEngagement(accountId: number, date?: Date): Promise<PlatformEngagement[]>;
@@ -1226,6 +1233,71 @@ export class DatabaseStorage implements IStorage {
       await db.delete(socialMediaPosts).where(eq(socialMediaPosts.id, postId));
     } catch (error) {
       console.error('Error deleting social media post:', { error: (error as Error).message });
+      throw error;
+    }
+  }
+
+  async createSavedContent(entry: InsertSavedContent): Promise<SavedContent> {
+    try {
+      const [result] = await db
+        .insert(savedContent)
+        .values(entry as typeof savedContent.$inferInsert)
+        .returning();
+      return result;
+    } catch (error) {
+      safeLog('error', 'Storage operation failed - creating saved content:', {
+        error: (error as Error).message,
+        userId: entry.userId,
+      });
+      throw error;
+    }
+  }
+
+  async getSavedContentById(id: number, userId: number): Promise<SavedContent | undefined> {
+    try {
+      const [result] = await db
+        .select()
+        .from(savedContent)
+        .where(and(eq(savedContent.id, id), eq(savedContent.userId, userId)))
+        .limit(1);
+      return result ?? undefined;
+    } catch (error) {
+      safeLog('error', 'Storage operation failed - getting saved content by id:', {
+        error: (error as Error).message,
+        id,
+        userId,
+      });
+      return undefined;
+    }
+  }
+
+  async getUserSavedContent(userId: number): Promise<SavedContent[]> {
+    try {
+      return await db
+        .select()
+        .from(savedContent)
+        .where(eq(savedContent.userId, userId))
+        .orderBy(desc(savedContent.createdAt));
+    } catch (error) {
+      safeLog('error', 'Storage operation failed - getting user saved content:', {
+        error: (error as Error).message,
+        userId,
+      });
+      return [];
+    }
+  }
+
+  async deleteSavedContent(id: number, userId: number): Promise<void> {
+    try {
+      await db
+        .delete(savedContent)
+        .where(and(eq(savedContent.id, id), eq(savedContent.userId, userId)));
+    } catch (error) {
+      safeLog('error', 'Storage operation failed - deleting saved content:', {
+        error: (error as Error).message,
+        id,
+        userId,
+      });
       throw error;
     }
   }
