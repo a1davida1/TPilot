@@ -62,6 +62,7 @@ export const PerformanceOptimization = memo(() => {
           credentials: 'include'
         });
       } catch (error) {
+        console.error('API call failed during performance measurement:', error);
         // API call failed, don't update response time
       }
       const apiResponseTime = performance.now() - apiStartTime;
@@ -123,7 +124,7 @@ export const PerformanceOptimization = memo(() => {
         try {
           await navigator.serviceWorker.register('/sw.js');
         } catch (error) {
-          console.error('Service worker registration failed');
+          console.error('Service worker registration failed:', error);
         }
       }
       
