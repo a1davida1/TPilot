@@ -8,6 +8,7 @@ const RedditStrategy = (
 ).Strategy;
 import { storage } from './storage';
 import type { User } from '@shared/schema';
+import { API_PREFIX, prefixApiPath } from './lib/api-prefix.js';
 
 // Helper function to handle social auth user creation/update
 async function handleSocialAuth(
@@ -51,13 +52,13 @@ async function handleSocialAuth(
   }
 }
 
-export function configureSocialAuth() {
+export function configureSocialAuth(apiPrefix: string = API_PREFIX) {
   // Google OAuth Strategy
   if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     passport.use(new GoogleStrategy({
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: '/api/auth/google/callback',
+      callbackURL: prefixApiPath('/auth/google/callback', apiPrefix),
       scope: ['profile', 'email']
     }, async (accessToken, refreshToken, profile, done) => {
       await handleSocialAuth('google', profile, done);
@@ -69,7 +70,7 @@ export function configureSocialAuth() {
     passport.use(new FacebookStrategy({
       clientID: process.env.FACEBOOK_APP_ID,
       clientSecret: process.env.FACEBOOK_APP_SECRET,
-      callbackURL: '/api/auth/facebook/callback',
+      callbackURL: prefixApiPath('/auth/facebook/callback', apiPrefix),
       profileFields: ['id', 'emails', 'displayName', 'photos']
     }, async (accessToken, refreshToken, profile, done) => {
       await handleSocialAuth('facebook', profile, done);
@@ -83,7 +84,7 @@ export function configureSocialAuth() {
         {
           clientID: process.env.REDDIT_CLIENT_ID,
           clientSecret: process.env.REDDIT_CLIENT_SECRET,
-          callbackURL: '/api/reddit/callback',
+          callbackURL: prefixApiPath('/reddit/callback', apiPrefix),
           scope: ['identity'],
           state: true,
         } as any,

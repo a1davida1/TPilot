@@ -4,9 +4,10 @@ import type Stripe from "stripe";
 import { db } from "../db.js";
 import { subscriptions, invoices, users } from "../../shared/schema.js";
 import { eq } from "drizzle-orm";
+import { API_PREFIX, prefixApiPath } from "../lib/api-prefix.js";
 
-export function mountStripeWebhook(app: Express, apiPrefix: string) {
-  const webhookPath = `${apiPrefix}/webhooks/stripe`;
+export function mountStripeWebhook(app: Express, apiPrefix: string = API_PREFIX) {
+  const webhookPath = prefixApiPath('/webhooks/stripe', apiPrefix);
   // IMPORTANT: raw body for Stripe signature verification. Ensure your server uses express.raw on this path.
   app.post(webhookPath, async (req: Request, res: Response) => {
     const sig = req.headers["stripe-signature"] as string;

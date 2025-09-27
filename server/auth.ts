@@ -15,6 +15,7 @@ import { logger } from './bootstrap/logger.js';
 import { verifyAdminCredentials } from './lib/admin-auth.js';
 import { validate, ValidationSource, loginValidationSchema, signupValidationSchema, passwordChangeValidationSchema, passwordResetValidationSchema } from './middleware/validation.js';
 import { extractAuthToken } from './middleware/extract-token.js';
+import { API_PREFIX, prefixApiPath } from './lib/api-prefix.js';
 
 // Auth validation schemas removed - handled by middleware
 
@@ -25,9 +26,11 @@ if (!JWT_SECRET || /changeme|placeholder/i.test(JWT_SECRET)) {
 // Type assertion after validation
 const JWT_SECRET_VALIDATED: string = JWT_SECRET;
 
-export function setupAuth(app: Express) {
+export function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
+  const route = (path: string) => prefixApiPath(path, apiPrefix);
+
   // Regular signup
-  app.post('/api/auth/signup', signupLimiter, validate(signupValidationSchema), async (req, res) => {
+  app.post(route('/auth/signup'), signupLimiter, validate(signupValidationSchema), async (req, res) => {
     const startTime = Date.now();
     try {
       // Input already validated by middleware
@@ -155,7 +158,7 @@ export function setupAuth(app: Express) {
   });
 
   // Regular login
-  app.post('/api/auth/login', loginLimiter, validate(loginValidationSchema), async (req, res) => {
+  app.post(route('/auth/login'), loginLimiter, validate(loginValidationSchema), async (req, res) => {
     const startTime = Date.now();
     try {
       // Input already validated by middleware
@@ -254,7 +257,7 @@ export function setupAuth(app: Express) {
   // Note: Resend verification email route is defined at line 812 with proper rate limiting
 
   // Password reset request
-  app.post('/api/auth/forgot-password', passwordResetLimiter, async (req, res) => {
+  app.post(route('/auth/forgot-password'), passwordResetLimiter, async (req, res) => {
     try {
       const { email } = req.body;
 
@@ -327,7 +330,7 @@ export function setupAuth(app: Express) {
 
 
   // Email service health check endpoint
-  app.get('/api/auth/email-status', (req, res) => {
+  app.get(route('/auth/email-status'), (req, res) => {
     const status = {
       configured: emailService.isEmailServiceConfigured,
       sendgrid_key_exists: !!process.env.SENDGRID_API_KEY,
@@ -343,7 +346,7 @@ export function setupAuth(app: Express) {
   });
 
   // Get current user endpoint (CRITICAL - this was missing!)
-  app.get('/api/auth/user', async (req: Request, res: Response) => {
+  app.get(route('/auth/user'), async (req: Request, res: Response) => {
     try {
       let token: string | null = null;
 
@@ -387,7 +390,7 @@ export function setupAuth(app: Express) {
   });
 
   // Force password change endpoint (for temporary passwords)
-  app.post('/api/auth/change-password', passwordChangeLimiter, validate(passwordChangeValidationSchema), async (req, res) => {
+  app.post(route('/auth/change-password'), passwordChangeLimiter, validate(passwordChangeValidationSchema), async (req, res) => {
     try {
       const { userId, currentPassword, newPassword } = req.body;
 
@@ -459,7 +462,7 @@ export function setupAuth(app: Express) {
   });
 
   // Email verification route
-  app.get('/api/auth/verify-email', async (req, res) => {
+  app.get(route('/auth/verify-email'), async (req, res) => {
     try {
       const { token } = req.query;
 
@@ -586,7 +589,7 @@ export function setupAuth(app: Express) {
   });
 
   // Password reset token verification route
-  app.post('/api/auth/reset-password', passwordResetLimiter, validate(passwordResetValidationSchema), async (req, res) => {
+  app.post(route('/auth/reset-password'), passwordResetLimiter, validate(passwordResetValidationSchema), async (req, res) => {
     try {
       const { token, newPassword } = req.body;
 
@@ -638,7 +641,7 @@ export function setupAuth(app: Express) {
 
   // DEPRECATED ROUTE - REMOVED (use POST /api/auth/reset-password instead)
   /*
-  app.post('/api/auth/verify-reset-token', passwordResetLimiter, async (req, res) => {
+  app.post(route('/auth/verify-reset-token'), passwordResetLimiter, async (req, res) => {
     try {
       const { token } = req.body;
 
@@ -688,7 +691,7 @@ export function setupAuth(app: Express) {
   */
 
   // Delete account route
-  app.delete('/api/auth/delete-account', async (req: Request, res: Response) => {
+  app.delete(route('/auth/delete-account'), async (req: Request, res: Response) => {
     try {
       // Check authentication from JWT cookie or token
       const token = extractAuthToken(req);
@@ -741,7 +744,7 @@ export function setupAuth(app: Express) {
   });
 
   // Admin metrics endpoint
-  app.get('/api/admin/auth-metrics', async (req: Request, res: Response) => {
+  app.get(route('/admin/auth-metrics'), async (req: Request, res: Response) => {
     try {
       // Check if user is authenticated
       const token = extractAuthToken(req);
@@ -775,7 +778,7 @@ export function setupAuth(app: Express) {
   });
 
   // Resend verification email route
-  app.post('/api/auth/resend-verification', verificationLimiter, async (req, res) => {
+  app.post(route('/auth/resend-verification'), verificationLimiter, async (req, res) => {
     try {
       const { email } = req.body;
 

@@ -3,6 +3,7 @@ import { stripe } from "../lib/billing/stripe.js";
 import { bucketForUser, proPriceIdForBucket } from "../lib/pricing.js";
 import { trackEvent } from "../lib/analytics.js";
 import { logger } from "../middleware/security.js";
+import { API_PREFIX, prefixApiPath } from "../lib/api-prefix.js";
 
 function getBaseUrl(req: Request) {
   const h = req.headers["x-forwarded-host"] || req.headers.host;
@@ -10,9 +11,10 @@ function getBaseUrl(req: Request) {
   return `${proto}://${h}`;
 }
 
-export function mountBillingRoutes(app: Express) {
+export function mountBillingRoutes(app: Express, apiPrefix: string = API_PREFIX) {
+  const route = (path: string) => prefixApiPath(path, apiPrefix);
   // returns which Pro price this user sees (A/B bucket)
-  app.get("/api/billing/prices", async (req: Request & { user?: unknown }, res: Response) => {
+  app.get(route("/billing/prices"), async (req: Request & { user?: unknown }, res: Response) => {
     const userId = (req.user as { id?: string | number } | undefined)?.id;
     const uid = String(userId ?? req.ip);
     const bucket = bucketForUser(uid);
@@ -24,7 +26,7 @@ export function mountBillingRoutes(app: Express) {
   });
 
   // creates a Stripe Checkout Session and returns url
-  app.post("/api/billing/checkout", async (req: Request & { user?: unknown }, res: Response) => {
+  app.post(route("/billing/checkout"), async (req: Request & { user?: unknown }, res: Response) => {
     try {
       const user = req.user;
       if (!user) return res.status(401).json({ error: "unauthorized" });

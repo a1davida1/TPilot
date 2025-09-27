@@ -1,0 +1,228 @@
+diff --git a/server/app.ts b/server/app.ts
+index b341a0516eb817bb2a8c3ba596dd4e90555366c8..f5a0331d551d4a8dcaa9b578ee4e789ec989fffd 100644
+--- a/server/app.ts
++++ b/server/app.ts
+@@ -1,56 +1,55 @@
+ import express from 'express';
+ import cors from 'cors';
+ import cookieParser from 'cookie-parser';
+ import { v4 as uuidv4 } from 'uuid';
+ import { registerRoutes } from './routes.js';
+ import { authLimiter, generalLimiter, sanitize, notFoundHandler } from './middleware/security.js';
+ import { setupAuth } from './auth.js';
+ import { setupSocialAuth } from './social-auth.js';
+ import { mountStripeWebhook } from './routes/webhooks.stripe.js';
+ import { mountBillingRoutes } from './routes/billing.js';
+ import { logger } from './bootstrap/logger.js';
+ import { startQueue } from './bootstrap/queue.js';
+ import { prepareResponseLogPayload, truncateLogLine } from './lib/request-logger.js';
+ import passport from 'passport'; // Assuming passport is imported elsewhere or needs to be imported here
+ import { createSessionMiddleware } from './bootstrap/session.js';
+ import { initializeSentry } from './bootstrap/sentry';
+ import { registerDefaultRedditClients } from './lib/reddit.js';
++import { API_PREFIX } from './lib/api-prefix.js';
+ 
+ export interface CreateAppOptions {
+   startQueue?: boolean;
+   configureStaticAssets?: boolean;
+   enableVite?: boolean;
+ }
+ 
+ export interface CreateAppResult {
+   app: express.Express;
+   server: import('http').Server;
+ }
+ 
+-export const API_PREFIX = '/api/v1';
+-
+ declare global {
+   namespace Express {
+     interface Request {
+       id: string;
+     }
+   }
+ }
+ 
+ function configureCors(app: express.Express): void {
+   const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map((origin) => origin.trim()) ?? [];
+ 
+   app.use(cors({
+     origin(origin, callback) {
+       if (!origin) {
+         return callback(null, true);
+       }
+ 
+       if (allowedOrigins.length > 0 && allowedOrigins.includes(origin)) {
+         return callback(null, true);
+       }
+ 
+       if (process.env.NODE_ENV === 'development') {
+         const devOrigins = [
+           'http://localhost:5000',
+           'http://localhost:3000',
+diff --git a/server/app.ts b/server/app.ts
+index b341a0516eb817bb2a8c3ba596dd4e90555366c8..f5a0331d551d4a8dcaa9b578ee4e789ec989fffd 100644
+--- a/server/app.ts
++++ b/server/app.ts
+@@ -70,51 +69,52 @@ function configureCors(app: express.Express): void {
+       if (process.env.NODE_ENV === 'production' && allowedOrigins.length === 0) {
+         return callback(null, false);
+       }
+ 
+       return callback(null, false);
+     },
+     credentials: true,
+   }));
+ }
+ 
+ function applyRequestLogging(app: express.Express): void {
+   app.use((req, res, next) => {
+     const start = Date.now();
+     const path = req.path;
+     let capturedJsonResponse: unknown;
+ 
+     const originalResJson = res.json.bind(res) as typeof res.json;
+     res.json = function jsonOverride(...args: Parameters<typeof originalResJson>) {
+       const [body] = args;
+       capturedJsonResponse = body;
+       return originalResJson(...args);
+     };
+ 
+     res.on('finish', () => {
+       const duration = Date.now() - start;
+-      if (path.startsWith('/api')) {
++      const isApiRequest = path === API_PREFIX || path.startsWith(`${API_PREFIX}/`);
++      if (isApiRequest) {
+         let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+         const payload = prepareResponseLogPayload(capturedJsonResponse);
+         if (payload) {
+           logLine += ` :: ${payload}`;
+         }
+ 
+         logger.info(truncateLogLine(logLine), { requestId: req.id });
+       }
+     });
+ 
+     next();
+   });
+ }
+ 
+ async function configureStaticAssets(
+   app: express.Express,
+   server: import('http').Server,
+   enableVite: boolean,
+ ): Promise<void> {
+   const path = await import('path');
+   const { fileURLToPath } = await import('url');
+   const __dirname = path.dirname(fileURLToPath(import.meta.url));
+   const fs = await import('fs');
+ 
+   const candidateClientPaths: string[] = [
+diff --git a/server/app.ts b/server/app.ts
+index b341a0516eb817bb2a8c3ba596dd4e90555366c8..f5a0331d551d4a8dcaa9b578ee4e789ec989fffd 100644
+--- a/server/app.ts
++++ b/server/app.ts
+@@ -183,51 +183,52 @@ async function configureStaticAssets(
+       }
+     }
+   }));
+ 
+   // Enable Vite in development by default; allow opt-out via ENABLE_VITE_DEV
+   const isDevelopment = app.get('env') === 'development';
+   const viteDevFlag = process.env.ENABLE_VITE_DEV?.toLowerCase();
+   const isViteExplicitlyDisabled = viteDevFlag === 'false' || viteDevFlag === '0';
+   const shouldEnableVite = enableVite && isDevelopment && !isViteExplicitlyDisabled;
+ 
+   if (shouldEnableVite) {
+     try {
+       const { setupVite } = await import('./vite.js');
+       await setupVite(app, server);
+       logger.info('Vite development server configured');
+     } catch (error) {
+       logger.warn('Could not setup Vite in development mode:', error);
+     }
+   } else if (enableVite && isDevelopment) {
+     logger.info('Vite development server disabled via ENABLE_VITE_DEV flag. Remove or set to true to re-enable.');
+   }
+ 
+   // SPA fallback - serve index.html for all non-API routes
+   app.get('*', (req, res, next) => {
+     // Let API/auth/webhook/assets routes fall through to 404 handler or static middleware
+-    if (req.path.startsWith('/api/') ||
++    const isApiRoute = req.path === API_PREFIX || req.path.startsWith(`${API_PREFIX}/`);
++    if (isApiRoute ||
+         req.path.startsWith('/auth/') ||
+         req.path.startsWith('/webhook/') ||
+         req.path.startsWith('/assets/')) {
+       logger.debug(`Asset request bypassed SPA fallback: ${req.path}`);
+       return next();
+     }
+ 
+     // Serve index.html for SPA routing
+     const indexFile = path.join(clientPath, 'index.html');
+     if (fs.existsSync(indexFile)) {
+       res.type('html');
+       res.sendFile(indexFile);
+     } else {
+       res.status(404).send('Client build not found');
+     }
+   });
+ }
+ 
+ export async function createApp(options: CreateAppOptions = {}): Promise<CreateAppResult> {
+   const app = express();
+   app.set('trust proxy', 1);
+   app.use(generalLimiter);
+   app.use(sanitize);
+ 
+   configureCors(app);
+diff --git a/server/app.ts b/server/app.ts
+index b341a0516eb817bb2a8c3ba596dd4e90555366c8..f5a0331d551d4a8dcaa9b578ee4e789ec989fffd 100644
+--- a/server/app.ts
++++ b/server/app.ts
+@@ -250,42 +251,42 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
+   applyRequestLogging(app);
+ 
+   const startQueueOption = options.startQueue ?? true;
+   const configureStaticOption = options.configureStaticAssets ?? true;
+   const enableVite = options.enableVite ?? (app.get('env') === 'development');
+   const queuePrerequisitesPresent = Boolean(process.env.REDIS_URL || process.env.DATABASE_URL);
+   const shouldStartQueue = startQueueOption && queuePrerequisitesPresent;
+ 
+   try {
+     app.use(`${API_PREFIX}/auth`, authLimiter);
+ 
+     if (shouldStartQueue) {
+       await startQueue();
+     } else if (startQueueOption) {
+       logger.info(
+         'Queue startup skipped: provide REDIS_URL or DATABASE_URL environment variables to enable background workers.'
+       );
+     } else {
+       logger.info('Queue startup disabled for current execution context.');
+     }
+ 
+     const sentry = initializeSentry();
+ 
+     registerDefaultRedditClients();
+ 
+-    setupAuth(app);
+-    setupSocialAuth(app);  // Register social auth routes including logout
++    setupAuth(app, API_PREFIX);
++    setupSocialAuth(app, API_PREFIX);  // Register social auth routes including logout
+     mountStripeWebhook(app, API_PREFIX);
+-    mountBillingRoutes(app);
++    mountBillingRoutes(app, API_PREFIX);
+ 
+     const server = await registerRoutes(app, API_PREFIX, { sentry });
+ 
+     if (configureStaticOption) {
+       await configureStaticAssets(app, server, enableVite);
+     }
+ 
+     return { app, server };
+   } catch (error) {
+     logger.error('Failed to initialise application:', error);
+     throw error;
+   }
+ }

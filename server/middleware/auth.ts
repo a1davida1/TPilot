@@ -23,6 +23,58 @@ const EMAIL_NOT_VERIFIED_RESPONSE = (
   });
 };
 
+const clearAuthTokenCookie = (res: express.Response) => {
+  if (typeof res.clearCookie === 'function') {
+    res.clearCookie('authToken');
+  }
+};
+
+const respondWithStatus = <Body extends Record<string, unknown>>(
+  res: express.Response,
+  statusCode: number,
+  body: Body
+) : express.Response => {
+  clearAuthTokenCookie(res);
+  return res.status(statusCode).json(body);
+};
+
+const toDateOrNull = (value: Date | string | null | undefined): Date | null => {
+  if (!value) {
+    return null;
+  }
+
+  if (value instanceof Date) {
+    return value;
+  }
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const handleAccountRestrictions = (
+  user: UserType,
+  res: express.Response
+): express.Response | undefined => {
+  if (user.isDeleted) {
+    return respondWithStatus(res, 401, { error: 'Account deleted' });
+  }
+
+  const bannedAt = toDateOrNull(user.bannedAt);
+  if (bannedAt) {
+    return respondWithStatus(res, 403, { error: 'Account banned' });
+  }
+
+  const suspendedUntil = toDateOrNull(user.suspendedUntil);
+  if (suspendedUntil && suspendedUntil.getTime() > Date.now()) {
+    return respondWithStatus(res, 403, {
+      error: 'Account suspended',
+      suspendedUntil
+    });
+  }
+
+  return undefined;
+};
+
 // Create a proper User type alias from the schema
 type UserType = typeof users.$inferSelect;
 
@@ -83,7 +135,12 @@ export const authenticateToken = async (req: AuthRequest, res: express.Response,
       }
 
       if (!user.emailVerified) {
-        return EMAIL_NOT_VERIFIED_RESPONSE(res, user.email);
+        return EMAIL_NOT_VERIFIED_RESPONSE(res, user.email || '');
+      }
+
+      const restrictionResponse = handleAccountRestrictions(user, res);
+      if (restrictionResponse) {
+        return restrictionResponse;
       }
 
       req.user = user;
@@ -99,7 +156,12 @@ export const authenticateToken = async (req: AuthRequest, res: express.Response,
     const sessionUser = (req.session as { user?: UserType }).user as UserType;
 
     if (!sessionUser.emailVerified) {
-      return EMAIL_NOT_VERIFIED_RESPONSE(res, sessionUser.email);
+      return EMAIL_NOT_VERIFIED_RESPONSE(res, sessionUser.email || '');
+    }
+
+    const restrictionResponse = handleAccountRestrictions(sessionUser, res);
+    if (restrictionResponse) {
+      return restrictionResponse;
     }
 
     req.user = sessionUser;

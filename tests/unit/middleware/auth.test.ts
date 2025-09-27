@@ -44,20 +44,24 @@ const buildResponse = () => {
   };
 };
 
+let authenticateToken: typeof import('../../../server/middleware/auth.js')['authenticateToken'];
+
+const loadAuthenticateToken = async () => {
+  vi.clearAllMocks();
+  dbWhereMock.mockReset();
+
+  ({ authenticateToken } = await import('../../../server/middleware/auth.js'));
+};
+
+afterAll(() => {
+  process.env.JWT_SECRET = originalEnv.JWT_SECRET;
+  process.env.ADMIN_EMAIL = originalEnv.ADMIN_EMAIL;
+  process.env.ADMIN_PASSWORD_HASH = originalEnv.ADMIN_PASSWORD_HASH;
+});
+
 describe('authenticateToken email verification', () => {
-  let authenticateToken: typeof import('../../../server/middleware/auth.js')['authenticateToken'];
-
   beforeEach(async () => {
-    vi.clearAllMocks();
-    dbWhereMock.mockReset();
-
-    ({ authenticateToken } = await import('../../../server/middleware/auth.js'));
-  });
-
-  afterAll(() => {
-    process.env.JWT_SECRET = originalEnv.JWT_SECRET;
-    process.env.ADMIN_EMAIL = originalEnv.ADMIN_EMAIL;
-    process.env.ADMIN_PASSWORD_HASH = originalEnv.ADMIN_PASSWORD_HASH;
+    await loadAuthenticateToken();
   });
 
   it('rejects JWT-authenticated users with unverified email and clears auth cookie', async () => {
@@ -112,6 +116,184 @@ describe('authenticateToken email verification', () => {
       message: 'Email not verified. Please check your email or resend verification.',
       code: 'EMAIL_NOT_VERIFIED',
       email: 'pending@example.com',
+    });
+    expect(next).not.toHaveBeenCalled();
+    expect(dbWhereMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('authenticateToken account restrictions', () => {
+  beforeEach(async () => {
+    await loadAuthenticateToken();
+  });
+
+  it('rejects JWT-authenticated users whose account is deleted', async () => {
+    const token = jwt.sign({ userId: 7, email: 'deleted@example.com' }, process.env.JWT_SECRET as string);
+    dbWhereMock.mockResolvedValue([
+      {
+        id: 7,
+        email: 'deleted@example.com',
+        emailVerified: true,
+        isDeleted: true,
+      },
+    ]);
+
+    const req = {
+      headers: { authorization: `Bearer ${token}` },
+      cookies: { authToken: token },
+    } as unknown as import('../../../server/middleware/auth.js').AuthRequest;
+
+    const res = buildResponse();
+    const next = vi.fn();
+
+    await authenticateToken(req, res, next);
+
+    expect(res.clearCookie).toHaveBeenCalledWith('authToken');
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Account deleted' });
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('rejects JWT-authenticated users who are banned', async () => {
+    const token = jwt.sign({ userId: 8, email: 'banned@example.com' }, process.env.JWT_SECRET as string);
+    const bannedAt = new Date();
+    dbWhereMock.mockResolvedValue([
+      {
+        id: 8,
+        email: 'banned@example.com',
+        emailVerified: true,
+        isDeleted: false,
+        bannedAt,
+      },
+    ]);
+
+    const req = {
+      headers: { authorization: `Bearer ${token}` },
+      cookies: { authToken: token },
+    } as unknown as import('../../../server/middleware/auth.js').AuthRequest;
+
+    const res = buildResponse();
+    const next = vi.fn();
+
+    await authenticateToken(req, res, next);
+
+    expect(res.clearCookie).toHaveBeenCalledWith('authToken');
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Account banned' });
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('rejects JWT-authenticated users who are suspended', async () => {
+    const token = jwt.sign({ userId: 9, email: 'suspended@example.com' }, process.env.JWT_SECRET as string);
+    const suspendedUntil = new Date(Date.now() + 60 * 60 * 1000);
+    dbWhereMock.mockResolvedValue([
+      {
+        id: 9,
+        email: 'suspended@example.com',
+        emailVerified: true,
+        isDeleted: false,
+        bannedAt: null,
+        suspendedUntil,
+      },
+    ]);
+
+    const req = {
+      headers: { authorization: `Bearer ${token}` },
+      cookies: { authToken: token },
+    } as unknown as import('../../../server/middleware/auth.js').AuthRequest;
+
+    const res = buildResponse();
+    const next = vi.fn();
+
+    await authenticateToken(req, res, next);
+
+    expect(res.clearCookie).toHaveBeenCalledWith('authToken');
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({
+      error: 'Account suspended',
+      suspendedUntil,
+    });
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('rejects session-authenticated users whose account is deleted', async () => {
+    const req = {
+      headers: {},
+      session: {
+        user: {
+          id: 11,
+          email: 'deleted-session@example.com',
+          emailVerified: true,
+          isDeleted: true,
+        },
+      },
+    } as unknown as import('../../../server/middleware/auth.js').AuthRequest;
+
+    const res = buildResponse();
+    const next = vi.fn();
+
+    await authenticateToken(req, res, next);
+
+    expect(res.clearCookie).toHaveBeenCalledWith('authToken');
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Account deleted' });
+    expect(next).not.toHaveBeenCalled();
+    expect(dbWhereMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects session-authenticated users who are banned', async () => {
+    const bannedAt = new Date();
+    const req = {
+      headers: {},
+      session: {
+        user: {
+          id: 12,
+          email: 'banned-session@example.com',
+          emailVerified: true,
+          isDeleted: false,
+          bannedAt,
+        },
+      },
+    } as unknown as import('../../../server/middleware/auth.js').AuthRequest;
+
+    const res = buildResponse();
+    const next = vi.fn();
+
+    await authenticateToken(req, res, next);
+
+    expect(res.clearCookie).toHaveBeenCalledWith('authToken');
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Account banned' });
+    expect(next).not.toHaveBeenCalled();
+    expect(dbWhereMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects session-authenticated users who are suspended', async () => {
+    const suspendedUntil = new Date(Date.now() + 30 * 60 * 1000);
+    const req = {
+      headers: {},
+      session: {
+        user: {
+          id: 13,
+          email: 'suspended-session@example.com',
+          emailVerified: true,
+          isDeleted: false,
+          bannedAt: null,
+          suspendedUntil,
+        },
+      },
+    } as unknown as import('../../../server/middleware/auth.js').AuthRequest;
+
+    const res = buildResponse();
+    const next = vi.fn();
+
+    await authenticateToken(req, res, next);
+
+    expect(res.clearCookie).toHaveBeenCalledWith('authToken');
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({
+      error: 'Account suspended',
+      suspendedUntil,
     });
     expect(next).not.toHaveBeenCalled();
     expect(dbWhereMock).not.toHaveBeenCalled();

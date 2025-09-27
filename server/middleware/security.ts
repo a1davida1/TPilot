@@ -11,6 +11,7 @@ import * as Sentry from "@sentry/node";
 import { z } from "zod";
 import { logger as appLogger, validateSentryDSN } from "../bootstrap/logger.js";
 import { AppError } from "../lib/errors.js";
+import { API_PREFIX, prefixApiPath } from "../lib/api-prefix.js";
 
 // Global Express namespace declaration
 declare global {
@@ -109,6 +110,8 @@ const parseBoolean = (value: string | undefined): boolean => {
   const normalized = value.trim().toLowerCase();
   return ['true', '1', 'yes', 'y', 'on'].includes(normalized);
 };
+
+const isApiPath = (path: string): boolean => path === API_PREFIX || path.startsWith(`${API_PREFIX}/`);
 
 export function validateEnvironment() {
   const resolvedNodeEnv = process.env.NODE_ENV ?? "development";
@@ -300,19 +303,19 @@ export const validateApiKey = (req: express.Request, res: express.Response, next
   const apiKey = req.headers['x-api-key'];
 
   // Skip validation for non-API routes
-  if (!req.path.startsWith('/api/')) {
+  if (!isApiPath(req.path)) {
     return next();
   }
 
   // Skip validation for public endpoints
   const publicEndpoints = [
-    '/api/health',
-    '/api/auth/login',
-    '/api/auth/register',
-    '/api/webhooks'
+    prefixApiPath('/health'),
+    prefixApiPath('/auth/login'),
+    prefixApiPath('/auth/register'),
+    prefixApiPath('/webhooks'),
   ];
 
-  if (publicEndpoints.some(endpoint => req.path.startsWith(endpoint))) {
+  if (publicEndpoints.some((endpoint) => req.path === endpoint || req.path.startsWith(`${endpoint}/`))) {
     return next();
   }
 
@@ -348,9 +351,9 @@ export const validateContentType = (req: express.Request, res: express.Response,
   }
 
   // Require JSON content type for API routes
-  if (req.path.startsWith('/api/') && contentType !== 'application/json') {
-    return res.status(400).json({ 
-      error: 'Content-Type must be application/json for API requests' 
+  if (isApiPath(req.path) && contentType !== 'application/json') {
+    return res.status(400).json({
+      error: 'Content-Type must be application/json for API requests'
     });
   }
 
@@ -445,7 +448,7 @@ export const securityMiddleware = [
 
   // General rate limiting for API routes
   (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    if (req.path.startsWith('/api/')) {
+    if (isApiPath(req.path)) {
       return generalLimiter(req, res, next);
     }
     next();
@@ -472,8 +475,8 @@ export const ipLoggingMiddleware = (req: express.Request, res: express.Response,
   const userAgent = req.headers['user-agent'] || 'Unknown';
 
   // Don't log sensitive routes
-  const sensitiveRoutes = ['/api/auth/', '/api/admin/'];
-  const shouldLog = !sensitiveRoutes.some(route => req.path.startsWith(route));
+  const sensitiveRoutes = [prefixApiPath('/auth'), prefixApiPath('/admin')];
+  const shouldLog = !sensitiveRoutes.some((route) => req.path === route || req.path.startsWith(`${route}/`));
 
   if (shouldLog && process.env.NODE_ENV !== 'production') {
     logger.info(`[${new Date().toISOString()}] ${req.method} ${req.path} - IP: ${userIP}`);
@@ -550,7 +553,7 @@ export const notFoundHandler = (req: express.Request, res: express.Response) => 
   });
 
   // Send appropriate response based on request type
-  if (req.accepts('json') && req.path.startsWith('/api/')) {
+  if (req.accepts('json') && isApiPath(req.path)) {
     // API request - return JSON
     return res.status(404).json({
       error: 'Not Found',
