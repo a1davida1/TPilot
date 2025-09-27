@@ -43,4 +43,9 @@ echo "Resolving path mappings in compiled server files..."
 # Use tsc-alias to resolve @shared/* imports to proper relative paths
 npx tsc-alias -p server/tsconfig.json
 
+echo "Copying prompt templates..."
+mkdir -p dist/prompts
+cp -R prompts/. dist/prompts/
+echo "Prompt templates copied to dist/prompts/"
+
 echo "Build complete!"
