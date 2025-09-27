@@ -12,7 +12,7 @@ vi.mock('../../server/middleware/auth.js', () => ({
   authenticateToken: (req: AuthenticatedRequest, res: Response, next: NextFunction) => authImpl(req, res, next)
 }));
 
-import * as analyticsModule from '../../server/analytics-routes.ts';
+import * as analyticsModule from '../../server/analytics-routes.js';
 
 const { registerAnalyticsRoutes, analyticsService } = analyticsModule;
 
