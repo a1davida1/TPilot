@@ -300,11 +300,7 @@ function mapRuleSpecToCommunityRules(spec: RuleSpec): RedditCommunityRuleSet {
 }
 
 export async function syncSubredditRules(subreddit: string): Promise<RuleSpec> {
-<<<<<<< ours
-  console.warn(`Syncing rules for r/${subreddit}...`);
-=======
   logger.info(`Syncing rules for r/${subreddit}...`);
->>>>>>> theirs
 
   try {
     // Fetch rules from Reddit
