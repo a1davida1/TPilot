@@ -42,7 +42,6 @@ import type {
   RedditCommunityRuleSet,
   RedditCommunitySellingPolicy,
 } from '@shared/schema';
-import { cn } from '@/lib/utils';
 import { CheckCircle, Edit2, Loader2, PlusCircle, ShieldAlert, Trash2 } from 'lucide-react';
 
 interface AdminCommunitiesPanelProps {

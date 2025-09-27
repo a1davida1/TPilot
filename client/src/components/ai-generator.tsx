@@ -10,7 +10,6 @@ import { Badge } from '@/components/ui/badge';
 import { Brain, Upload, Sparkles, Image as ImageIcon, Settings, Copy, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
 import type { ContentGeneration } from '@shared/schema.js';
 import { getErrorMessage } from '@/utils/errorHelpers';
 
