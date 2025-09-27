@@ -1,11 +1,12 @@
 import express, { type Request, type Response, type NextFunction } from 'express';
+import type { Server } from 'http';
 import session from 'express-session';
 import cookieParser from 'cookie-parser';
 import csrf from 'csurf';
 import request from 'supertest';
-import { describe, it, beforeAll, beforeEach, expect } from 'vitest';
+import { describe, it, beforeAll, beforeEach, afterAll, expect } from 'vitest';
 
-import { csrfProtectedRoutes } from '../../server/routes.js';
+import { csrfProtectedRoutes, registerRoutes } from '../../server/routes.js';
 
 declare module 'express-session' {
   interface SessionData {
@@ -104,5 +105,46 @@ describe('CSRF smoke tests for sensitive routes', () => {
         expect(response.body).toHaveProperty('code', 'CSRF_TOKEN_INVALID');
       });
     });
+  });
+});
+
+describe('Real Reddit submission route CSRF protection', () => {
+  let app: express.Express;
+  let agent: request.SuperTest<request.Test>;
+  let httpServer: Server | undefined;
+
+  beforeAll(async () => {
+    app = express();
+    httpServer = await registerRoutes(app);
+    agent = request.agent(app);
+    await agent.get('/api/csrf-token').expect(200);
+  });
+
+  afterAll(async () => {
+    if (httpServer) {
+      await new Promise<void>((resolve, reject) => {
+        httpServer?.close(error => {
+          if (error) {
+            reject(error);
+            return;
+          }
+          resolve();
+        });
+      });
+    }
+  });
+
+  it('rejects forged POST /api/reddit/submit requests without a CSRF token', async () => {
+    const response = await agent
+      .post('/api/reddit/submit')
+      .send({
+        subreddit: 'unit_tests',
+        title: 'Forged CSRF attempt',
+        kind: 'text',
+        body: 'This should never reach the handler.'
+      });
+
+    expect(response.status).toBe(403);
+    expect(response.body).toMatchObject({ code: 'CSRF_TOKEN_INVALID' });
   });
 });
