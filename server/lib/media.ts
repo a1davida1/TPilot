@@ -5,7 +5,7 @@ import crypto from "crypto";
 import Redis from "ioredis";
 import { env, config } from "./config.js";
 import { db } from "../db.js";
-import { mediaAssets, mediaUsages } from "@shared/schema";
+import { mediaAssets, mediaUsages, users } from "@shared/schema";
 import { eq, sum, and } from "drizzle-orm";
 import fs from "fs/promises";
 import path from "path";
@@ -299,16 +299,30 @@ export class MediaManager {
   }
   
   static async getUserStorageUsage(userId: number): Promise<{ used: number; quota: number }> {
-    const result = await db
+    const usageResult = await db
       .select({ totalBytes: sum(mediaAssets.bytes) })
       .from(mediaAssets)
       .where(eq(mediaAssets.userId, userId));
-    
-    const used = parseInt(result[0]?.totalBytes || '0');
-    
-    // Get user tier to determine quota (would need user lookup)
-    const quota = config.mediaQuotas.free; // Default to free tier
-    
+
+    const used = Number(usageResult[0]?.totalBytes ?? 0);
+
+    const [userRow] = await db
+      .select({ tier: users.tier })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    const tier = userRow?.tier ?? 'free';
+    const quotaMap: Record<string, keyof typeof config.mediaQuotas> = {
+      free: 'free',
+      pro: 'pro',
+      starter: 'pro',
+      premium: 'premium',
+    };
+
+    const quotaKey = quotaMap[tier] ?? 'free';
+    const quota = config.mediaQuotas[quotaKey];
+
     return { used, quota };
   }
   

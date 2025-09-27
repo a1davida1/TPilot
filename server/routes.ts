@@ -3,9 +3,6 @@ import express from "express";
 import type { Session } from "express-session";
 import { createServer, type Server } from "http";
 import path from 'path';
-import { createReadStream } from 'fs';
-import { stat } from 'fs/promises';
-import { lookup as lookupMimeType } from 'mime-types';
 import Stripe from 'stripe';
 import passport from 'passport';
 
@@ -24,6 +21,7 @@ import { referralRouter } from "./routes/referrals.js";
 import { registerExpenseRoutes } from "./expense-routes.js";
 import { adminCommunitiesRouter } from "./routes/admin-communities.js";
 import { createCancelSubscriptionHandler } from "./routes/subscription-management.js";
+import { createLocalDownloadRouter } from "./routes/downloads.js";
 
 // Core imports
 import { storage } from "./storage.js";
@@ -658,60 +656,8 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api', o
   app.get('/api/auth/reddit', socialAuthRoutes.redditAuth);
   app.get('/api/auth/reddit/callback', socialAuthRoutes.redditCallback);
 
-  // Serve uploaded files securely
-  const uploadsRoot = path.resolve(path.join(process.cwd(), 'uploads'));
-
-  const streamUpload = async (
-    req: AuthenticatedRequest,
-    res: Response,
-    next: NextFunction
-  ) => {
-    const requestedFile = (req.params as { file?: string }).file;
-
-    if (!requestedFile) {
-      res.status(404).json({ message: 'File not found' });
-      return;
-    }
-
-    const absolutePath = path.resolve(uploadsRoot, requestedFile);
-
-    if (!absolutePath.startsWith(uploadsRoot)) {
-      res.status(400).json({ message: 'Invalid file path' });
-      return;
-    }
-
-    try {
-      await stat(absolutePath);
-    } catch (error) {
-      const code = (error as NodeJS.ErrnoException).code;
-      if (code === 'ENOENT') {
-        res.status(404).json({ message: 'File not found' });
-        return;
-      }
-      next(error);
-      return;
-    }
-
-    const mimeType = lookupMimeType(absolutePath) || 'application/octet-stream';
-    res.setHeader('Content-Type', mimeType);
-
-    const stream = createReadStream(absolutePath);
-
-    stream.on('error', (error: NodeJS.ErrnoException) => {
-      if (error.code === 'ENOENT') {
-        if (!res.headersSent) {
-          res.status(404).json({ message: 'File not found' });
-        }
-        return;
-      }
-
-      next(error);
-    });
-
-    stream.pipe(res);
-  };
-
-  app.get('/uploads/:file(*)', authenticateToken, streamUpload);
+  // Serve uploaded files through token-protected controller
+  app.use('/uploads', createLocalDownloadRouter());
 
   // ==========================================
   // STRIPE PAYMENT ENDPOINTS
