@@ -177,11 +177,11 @@ export function RedditCommunities() {
   const getPromotionBadge = (promotion: string) => {
     switch (promotion) {
       case 'yes':
-        return <Badge className="bg-green-500/20 text-green-400">Allowed</Badge>;
+        return <Badge className="bg-success/15 text-success">Allowed</Badge>;
       case 'limited':
-        return <Badge className="bg-yellow-500/20 text-yellow-400">Limited</Badge>;
+        return <Badge className="bg-warning/15 text-warning">Limited</Badge>;
       case 'no':
-        return <Badge className="bg-red-500/20 text-red-400">Not Allowed</Badge>;
+        return <Badge className="bg-destructive/15 text-destructive">Not Allowed</Badge>;
       default:
         return null;
     }
@@ -190,72 +190,71 @@ export function RedditCommunities() {
   const getSellingPolicyBadge = (policy: string | undefined) => {
     switch (policy) {
       case 'allowed':
-        return <Badge className="bg-green-500/20 text-green-400">Selling allowed</Badge>;
+        return <Badge className="bg-success/15 text-success">Selling allowed</Badge>;
       case 'limited':
-        return <Badge className="bg-yellow-500/20 text-yellow-400">Limited selling</Badge>;
+        return <Badge className="bg-warning/15 text-warning">Limited selling</Badge>;
       case 'not_allowed':
-        return <Badge className="bg-red-500/20 text-red-400">No selling</Badge>;
+        return <Badge className="bg-destructive/15 text-destructive">No selling</Badge>;
       case 'unknown':
-        return <Badge className="bg-gray-500/20 text-gray-400">Selling policy unknown</Badge>;
       default:
-        return <Badge className="bg-gray-500/20 text-gray-400">Selling policy unknown</Badge>;
+        return <Badge className="bg-muted/20 text-muted-foreground">Selling policy unknown</Badge>;
     }
   };
 
   const getCategoryBadge = (category: string) => {
     const colors: Record<string, string> = {
       // Primary categories
-      premium: 'bg-purple-500/20 text-purple-400',
-      gonewild: 'bg-pink-500/20 text-pink-400',
-      general: 'bg-blue-500/20 text-blue-400',
-      niche: 'bg-cyan-500/20 text-cyan-400',
-      fetish: 'bg-orange-500/20 text-orange-400',
-      selling: 'bg-green-500/20 text-green-400',
-      verification: 'bg-yellow-500/20 text-yellow-400',
+      premium: 'bg-primary-500/15 text-primary-300',
+      gonewild: 'bg-accent-pink/15 text-accent-foreground',
+      general: 'bg-secondary/15 text-secondary',
+      niche: 'bg-accent-rose/15 text-accent-foreground',
+      fetish: 'bg-accent-rose/15 text-accent-foreground',
+      selling: 'bg-success/15 text-success',
+      verification: 'bg-warning/15 text-warning',
 
       // Additional categories from seed data
-      amateur: 'bg-blue-400/20 text-blue-300',
-      age: 'bg-indigo-500/20 text-indigo-400',
-      appearance: 'bg-rose-500/20 text-rose-400',
-      body_type: 'bg-pink-400/20 text-pink-300',
-      cam: 'bg-purple-400/20 text-purple-300',
-      clothing: 'bg-teal-500/20 text-teal-400',
-      comparison: 'bg-slate-500/20 text-slate-400',
-      content_type: 'bg-amber-500/20 text-amber-400',
-      cosplay: 'bg-violet-500/20 text-violet-400',
-      couples: 'bg-red-500/20 text-red-400',
-      dancer: 'bg-fuchsia-500/20 text-fuchsia-400',
-      ethnicity: 'bg-emerald-500/20 text-emerald-400',
-      fitness: 'bg-lime-500/20 text-lime-400',
-      gaming: 'bg-sky-500/20 text-sky-400',
-      lifestyle: 'bg-zinc-500/20 text-zinc-400',
-      natural: 'bg-green-400/20 text-green-300',
-      reveal: 'bg-orange-400/20 text-orange-300',
-      social: 'bg-blue-300/20 text-blue-200',
-      specific: 'bg-gray-500/20 text-gray-400',
-      style: 'bg-cyan-400/20 text-cyan-300',
-      theme: 'bg-purple-300/20 text-purple-200'
+      amateur: 'bg-secondary/15 text-secondary',
+      age: 'bg-primary-500/10 text-primary-200',
+      appearance: 'bg-accent-rose/15 text-accent-foreground',
+      body_type: 'bg-primary-500/10 text-primary-200',
+      cam: 'bg-primary-500/10 text-primary-200',
+      clothing: 'bg-secondary/15 text-secondary',
+      comparison: 'bg-muted/20 text-muted-foreground',
+      content_type: 'bg-warning/15 text-warning',
+      cosplay: 'bg-primary-500/10 text-primary-200',
+      couples: 'bg-destructive/15 text-destructive',
+      dancer: 'bg-accent-rose/15 text-accent-foreground',
+      ethnicity: 'bg-success/15 text-success',
+      fitness: 'bg-success/15 text-success',
+      gaming: 'bg-secondary/15 text-secondary',
+      lifestyle: 'bg-muted/20 text-muted-foreground',
+      natural: 'bg-success/15 text-success',
+      reveal: 'bg-warning/15 text-warning',
+      social: 'bg-secondary/15 text-secondary',
+      specific: 'bg-muted/20 text-muted-foreground',
+      style: 'bg-secondary/15 text-secondary',
+      theme: 'bg-primary-500/10 text-primary-200'
     };
-    return <Badge className={colors[category] || 'bg-gray-500/20 text-gray-400'}>{category}</Badge>;
+    return <Badge className={colors[category] || 'bg-muted/20 text-muted-foreground'}>{category}</Badge>;
   };
 
   const getSuccessProbabilityColor = (probability: number | null | undefined) => {
-    if (!probability) return 'text-gray-400';
-    if (probability >= 85) return 'text-green-400';
-    if (probability >= 70) return 'text-yellow-400';
-    return 'text-red-400';
+    if (!probability) return 'text-muted-foreground/70';
+    if (probability >= 85) return 'text-success';
+    if (probability >= 70) return 'text-warning';
+    return 'text-destructive';
   };
 
   const getGrowthTrendIcon = (trend: string | undefined) => {
     switch (trend) {
       case 'up':
-        return <TrendingUp className="h-3 w-3 text-green-400" />;
+        return <TrendingUp className="h-3 w-3 text-success" />;
       case 'down':
-        return <ChevronDown className="h-3 w-3 text-red-400" />;
+        return <ChevronDown className="h-3 w-3 text-destructive" />;
       case 'stable':
-        return <div className="h-3 w-3 bg-yellow-400 rounded-full" />;
+        return <div className="h-3 w-3 bg-warning rounded-full" />;
       default:
-        return <div className="h-3 w-3 bg-gray-400 rounded-full" />;
+        return <div className="h-3 w-3 bg-muted-foreground rounded-full" />;
     }
   };
 
@@ -263,13 +262,13 @@ export function RedditCommunities() {
   const getModActivityDisplay = (modActivity: string | null | undefined) => {
     switch (modActivity) {
       case 'active':
-        return { label: 'Active', className: 'text-green-400' };
+        return { label: 'Active', className: 'text-success' };
       case 'moderate':
-        return { label: 'Moderate', className: 'text-yellow-400' };
+        return { label: 'Moderate', className: 'text-warning' };
       case 'inactive':
-        return { label: 'Inactive', className: 'text-red-400' };
+        return { label: 'Inactive', className: 'text-destructive' };
       default:
-        return { label: 'Unknown', className: 'text-gray-400' };
+        return { label: 'Unknown', className: 'text-muted-foreground/70' };
     }
   };
 

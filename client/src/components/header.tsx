@@ -84,10 +84,10 @@ export function Header({ onReplayWalkthrough }: HeaderProps) {
 
   return (
     <>
-      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:bg-white focus:text-black focus:px-4 focus:py-2 focus:rounded focus:shadow-lg">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:bg-background focus:text-foreground focus:px-4 focus:py-2 focus:rounded focus:shadow-lg">
         Skip to main content
       </a>
-      <header className="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-pink-200/50 dark:border-pink-800/30 shadow-lg shadow-pink-500/10">
+      <header className="sticky top-0 z-50 bg-background/80 dark:bg-background/80 backdrop-blur-xl border-b border-border/40 dark:border-border/30 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             
@@ -100,14 +100,14 @@ export function Header({ onReplayWalkthrough }: HeaderProps) {
                   loading="lazy"
                   className="h-10 w-10 object-contain hover:scale-105 transition-transform duration-200 filter drop-shadow-md"
                 />
-                <span className="text-xl font-bold bg-gradient-to-r from-pink-600 via-rose-500 to-purple-600 bg-clip-text text-transparent drop-shadow-sm">
+                <span className="text-xl font-bold bg-gradient-to-r from-primary-600 via-accent-rose to-primary-700 bg-clip-text text-transparent drop-shadow-sm">
                   ThottoPilot
                 </span>
               </div>
             </Link>
 
             {/* Desktop Navigation - Glass Morphism Style */}
-            <nav className="hidden md:flex items-center gap-2 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-full px-4 py-2 border border-pink-200/50 dark:border-pink-800/30 shadow-lg shadow-pink-500/10">
+            <nav className="hidden md:flex items-center gap-2 bg-card/60 dark:bg-card/60 backdrop-blur-sm rounded-full px-4 py-2 border border-border/40 dark:border-border/30 shadow-lg">
               {visibleItems.map((item) => (
                 <Link 
                   key={item.href}
@@ -116,8 +116,8 @@ export function Header({ onReplayWalkthrough }: HeaderProps) {
                   <span 
                     className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 cursor-pointer transform hover:scale-105 ${
                       location === item.href 
-                        ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg shadow-pink-500/30' 
-                        : 'text-foreground hover:text-pink-600 hover:bg-pink-100/80 dark:hover:bg-pink-900/30'
+                        ? 'bg-gradient-to-r from-primary-500 to-accent-rose text-primary-foreground shadow-[0_10px_30px_hsl(var(--primary)/0.3)]' 
+                        : 'text-muted-foreground hover:text-primary-600 hover:bg-primary-100/80 dark:hover:bg-primary-900/30'
                     }`}
                     data-testid={`nav-${item.label.toLowerCase().replace(' ', '-')}`}
                   >
@@ -132,7 +132,7 @@ export function Header({ onReplayWalkthrough }: HeaderProps) {
             {/* Desktop Auth Controls */}
             <div className="hidden md:flex items-center gap-3">
               {isLoading ? (
-                <div className="animate-spin rounded-full h-8 w-8 border-2 border-pink-500 border-t-transparent" />
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
               ) : isAuthenticated ? (
                 <>
                   {/* Upgrade Button for Free/Starter Users */}
@@ -140,7 +140,7 @@ export function Header({ onReplayWalkthrough }: HeaderProps) {
                     <Link href="/settings">
                       <Button 
                         size="sm"
-                        className="bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white font-semibold shadow-lg animate-pulse"
+                        className="bg-[linear-gradient(90deg,hsl(var(--accent-yellow)),hsl(var(--warning)))] hover:opacity-90 text-warning-foreground font-semibold shadow-lg animate-pulse"
                         data-testid="button-upgrade-to-pro"
                       >
                         <Sparkles className="h-4 w-4 mr-2" />
@@ -154,13 +154,13 @@ export function Header({ onReplayWalkthrough }: HeaderProps) {
                     <Button 
                       variant="ghost" 
                       size="sm"
-                      className="flex items-center gap-2 px-3 py-2 hover:bg-pink-50"
+                      className="flex items-center gap-2 px-3 py-2 hover:bg-primary-50 dark:hover:bg-primary-900/20"
                     >
-                      <div className="w-8 h-8 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center">
-                        <User className="h-4 w-4 text-white" />
+                      <div className="w-8 h-8 bg-gradient-to-r from-primary-500 to-primary-700 rounded-full flex items-center justify-center">
+                        <User className="h-4 w-4 text-primary-foreground" />
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-700">
+                        <span className="text-sm font-medium text-muted-foreground">
                           {user?.username || 'Account'}
                         </span>
                         {/* Tier Badge Indicator */}
@@ -168,7 +168,7 @@ export function Header({ onReplayWalkthrough }: HeaderProps) {
                           <Badge 
                             variant={user.tier === 'pro' ? 'default' : 'outline'}
                             className={user.tier === 'pro' 
-                              ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-xs px-2 py-0.5' 
+                              ? 'bg-primary text-primary-foreground text-xs px-2 py-0.5' 
                               : 'text-xs px-2 py-0.5'
                             }
                           >
@@ -201,7 +201,7 @@ export function Header({ onReplayWalkthrough }: HeaderProps) {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem 
                       onSelect={handleLogout}
-                      className="flex items-center gap-2 text-red-600 focus:text-red-600"
+                      className="flex items-center gap-2 text-destructive focus:text-destructive"
                     >
                       <LogOut className="h-4 w-4" />
                       Sign Out
@@ -218,7 +218,7 @@ export function Header({ onReplayWalkthrough }: HeaderProps) {
                       setAuthModalMode('login');
                       setShowAuthModal(true);
                     }}
-                    className="text-gray-700 hover:text-pink-600 hover:bg-pink-50"
+                    className="text-muted-foreground hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20"
                     data-testid="button-sign-in"
                   >
                     Sign In
@@ -229,7 +229,7 @@ export function Header({ onReplayWalkthrough }: HeaderProps) {
                       setAuthModalMode('signup');
                       setShowAuthModal(true);
                     }}
-                    className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white border-0 shadow-lg"
+                    className="bg-gradient-to-r from-primary-500 to-primary-700 hover:from-primary-600 hover:to-primary-800 text-primary-foreground border-0 shadow-lg"
                     data-testid="button-get-started"
                   >
                     Get Started
@@ -251,7 +251,7 @@ export function Header({ onReplayWalkthrough }: HeaderProps) {
 
           {/* Mobile Menu */}
           {mobileMenuOpen && (
-            <div className="md:hidden border-t border-pink-100 bg-white/95 backdrop-blur-md">
+            <div className="md:hidden border-t border-border/30 bg-background/95 backdrop-blur-md">
               <div className="px-2 pt-2 pb-3 space-y-1">
                 {visibleItems.map((item) => (
                   <Link 
@@ -262,8 +262,8 @@ export function Header({ onReplayWalkthrough }: HeaderProps) {
                     <div 
                       className={`block px-3 py-2 rounded-lg text-base font-medium transition-colors cursor-pointer ${
                         location === item.href 
-                          ? 'bg-pink-100 text-pink-700' 
-                          : 'text-gray-700 hover:text-pink-600 hover:bg-pink-50'
+                          ? 'bg-primary-100 text-primary-700' 
+                          : 'text-muted-foreground hover:text-primary-600 hover:bg-primary-50'
                       }`}
                     >
                       {item.label}
@@ -272,11 +272,11 @@ export function Header({ onReplayWalkthrough }: HeaderProps) {
                 ))}
                 
                 {/* Mobile Auth Controls */}
-                <div className="pt-4 border-t border-pink-100">
+                <div className="pt-4 border-t border-border/30">
                   {isAuthenticated ? (
                     <div className="space-y-1">
                       <div className="px-3 py-2 flex items-center justify-between">
-                        <span className="text-sm font-medium text-gray-900">
+                        <span className="text-sm font-medium text-foreground">
                           {user?.username || 'Account'}
                         </span>
                         {/* Mobile Tier Badge */}
@@ -284,7 +284,7 @@ export function Header({ onReplayWalkthrough }: HeaderProps) {
                           <Badge 
                             variant={user.tier === 'pro' ? 'default' : 'outline'}
                             className={user.tier === 'pro' 
-                              ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-xs px-2 py-0.5' 
+                              ? 'bg-primary text-primary-foreground text-xs px-2 py-0.5' 
                               : 'text-xs px-2 py-0.5'
                             }
                           >
@@ -299,7 +299,7 @@ export function Header({ onReplayWalkthrough }: HeaderProps) {
                         <Link href="/settings" onClick={() => setMobileMenuOpen(false)}>
                           <Button 
                             size="sm"
-                            className="w-full bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white font-semibold shadow-lg animate-pulse"
+                            className="w-full bg-[linear-gradient(90deg,hsl(var(--accent-yellow)),hsl(var(--warning)))] hover:opacity-90 text-warning-foreground font-semibold shadow-lg animate-pulse"
                             data-testid="button-mobile-upgrade-to-pro"
                           >
                             <Sparkles className="h-4 w-4 mr-2" />
@@ -310,7 +310,7 @@ export function Header({ onReplayWalkthrough }: HeaderProps) {
                       
                       <button
                         onClick={handleLogout}
-                        className="w-full text-left px-3 py-2 text-base font-medium text-red-600 hover:bg-red-50 rounded-lg"
+                        className="w-full text-left px-3 py-2 text-base font-medium text-destructive hover:bg-destructive/10 rounded-lg"
                       >
                         Sign Out
                       </button>
@@ -325,7 +325,7 @@ export function Header({ onReplayWalkthrough }: HeaderProps) {
                           setShowAuthModal(true);
                           setMobileMenuOpen(false);
                         }}
-                        className="w-full justify-start text-gray-700 hover:text-pink-600 hover:bg-pink-50"
+                        className="w-full justify-start text-muted-foreground hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20"
                       >
                         Sign In
                       </Button>
@@ -336,7 +336,7 @@ export function Header({ onReplayWalkthrough }: HeaderProps) {
                           setShowAuthModal(true);
                           setMobileMenuOpen(false);
                         }}
-                        className="w-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white border-0"
+                        className="w-full bg-gradient-to-r from-primary-500 to-primary-700 hover:from-primary-600 hover:to-primary-800 text-primary-foreground border-0"
                       >
                         Get Started
                       </Button>

@@ -276,15 +276,13 @@ export function registerApiRoutes(app: Express) {
   });
 
   // Get Scheduled Posts
-  app.get('/api/posts/scheduled', async (req, res) => {
+  app.get('/api/posts/scheduled', authenticateToken, async (req: AuthRequest, res) => {
     try {
-      const user = req.user;
+      const userId = req.user?.id;
 
-      if (!user?.id) {
+      if (!userId) {
         return res.status(401).json({ error: 'Authentication required' });
       }
-
-      const userId = user.id;
 
       const jobs = await db
         .select()

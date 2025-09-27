@@ -131,6 +131,30 @@ describe('POST /api/posts/schedule', () => {
     }) as unknown as ReturnType<typeof db.insert>);
   };
 
+  const mockUserAndScheduledPostsLookup = (scheduledPosts: PostJobRecord[]) => {
+    vi.spyOn(db, 'select').mockImplementation(() => ({
+      from: (table: unknown) => {
+        if (table === users) {
+          return {
+            where: async () => [testUser],
+          };
+        }
+
+        if (table === postJobs) {
+          return {
+            where: () => ({
+              orderBy: () => ({
+                limit: async () => scheduledPosts,
+              }),
+            }),
+          };
+        }
+
+        throw new Error('Unexpected table query in mock');
+      },
+    }) as unknown as ReturnType<typeof db.select>);
+  };
+
   it('enqueues a posting job for authenticated users', async () => {
     const fixedNow = 1_700_000_000_000;
     const futureDate = new Date(fixedNow + 60_000);
@@ -356,6 +380,64 @@ describe('POST /api/posts/schedule', () => {
 
     expect(callArgs[1]).toMatchObject({
       mediaKey: 'test-media-key',
+    });
+  });
+
+  it('returns scheduled posts for authenticated users', async () => {
+    const now = new Date();
+    const scheduledPosts: PostJobRecord[] = [
+      {
+        id: 101,
+        userId,
+        subreddit: 'integrationtest',
+        titleFinal: 'Scheduled Title 1',
+        bodyFinal: 'Scheduled Body 1',
+        mediaKey: null,
+        scheduledAt: new Date(now.getTime() + 60_000),
+        status: 'queued',
+        resultJson: null,
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        id: 102,
+        userId,
+        subreddit: 'integrationtest2',
+        titleFinal: 'Scheduled Title 2',
+        bodyFinal: 'Scheduled Body 2',
+        mediaKey: null,
+        scheduledAt: new Date(now.getTime() + 120_000),
+        status: 'queued',
+        resultJson: null,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ];
+
+    mockUserAndScheduledPostsLookup(scheduledPosts);
+
+    const response = await request(app)
+      .get('/api/posts/scheduled')
+      .set('Authorization', `Bearer ${authToken}`)
+      .expect(200);
+
+    const expectedResponse = scheduledPosts.map((post) => ({
+      ...post,
+      scheduledAt: post.scheduledAt.toISOString(),
+      createdAt: post.createdAt.toISOString(),
+      updatedAt: post.updatedAt.toISOString(),
+    }));
+
+    expect(response.body).toEqual(expectedResponse);
+  });
+
+  it('rejects unauthenticated requests for scheduled posts', async () => {
+    const response = await request(app)
+      .get('/api/posts/scheduled')
+      .expect(401);
+
+    expect(response.body).toMatchObject({
+      error: 'Access token required',
     });
   });
 });

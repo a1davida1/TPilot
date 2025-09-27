@@ -85,20 +85,23 @@ export const envSchema = z
   })
   .superRefine((configValues, ctx) => {
     if (process.env.NODE_ENV === 'production') {
-      if (!configValues.TURNSTILE_SITE_KEY) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['TURNSTILE_SITE_KEY'],
-          message: 'TURNSTILE_SITE_KEY is required in production',
-        });
-      }
+      // Turnstile keys are optional - if one is provided, both are required
+      if (configValues.TURNSTILE_SITE_KEY || configValues.TURNSTILE_SECRET_KEY) {
+        if (!configValues.TURNSTILE_SITE_KEY) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['TURNSTILE_SITE_KEY'],
+            message: 'TURNSTILE_SITE_KEY is required when Turnstile is enabled',
+          });
+        }
 
-      if (!configValues.TURNSTILE_SECRET_KEY) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['TURNSTILE_SECRET_KEY'],
-          message: 'TURNSTILE_SECRET_KEY is required in production',
-        });
+        if (!configValues.TURNSTILE_SECRET_KEY) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['TURNSTILE_SECRET_KEY'],
+            message: 'TURNSTILE_SECRET_KEY is required when Turnstile is enabled',
+          });
+        }
       }
     }
   });
