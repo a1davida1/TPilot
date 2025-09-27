@@ -1,0 +1,89 @@
+diff --git a//dev/null b/client/src/lib/automation/scheduling.ts
+index 0000000000000000000000000000000000000000..c47d57e3d564ea049c77eb7ee4071b65dda3b5da 100644
+--- a//dev/null
++++ b/client/src/lib/automation/scheduling.ts
+@@ -0,0 +1,84 @@
++/**
++ * Calculates schedule times for posts using persona preferences, weighted dayparts, and
++ * randomized offsets to mimic human operators while keeping a full audit trail.
++ */
++
++import { AuditTrail, AutomationStep } from "./audit-trail";
++import { Daypart, Persona, Post, SchedulingWindow } from "./types";
++
++const chooseDaypart = (weights: ReadonlyArray<{ daypart: Daypart; weight: number }>): Daypart => {
++  const totalWeight = weights.reduce((sum, item) => sum + item.weight, 0);
++  if (totalWeight <= 0) {
++    return "midday";
++  }
++
++  const roll = Math.random() * totalWeight;
++  let accumulator = 0;
++
++  for (const item of weights) {
++    accumulator += item.weight;
++    if (roll <= accumulator) {
++      return item.daypart;
++    }
++  }
++
++  return weights[weights.length - 1]?.daypart ?? "midday";
++};
++
++const findWindow = (persona: Persona, daypart: Daypart): SchedulingWindow => {
++  const windows: ReadonlyArray<SchedulingWindow> = [
++    persona.scheduling.defaultWindow,
++    ...(persona.scheduling.additionalWindows ?? []),
++  ];
++
++  return windows.find((window) => window.daypart === daypart) ?? persona.scheduling.defaultWindow;
++};
++
++const applyWindow = (window: SchedulingWindow): Date => {
++  const now = new Date();
++  const base = new Date(now.getTime());
++  base.setHours(window.startHour, 0, 0, 0);
++
++  if (base <= now) {
++    base.setDate(base.getDate() + 1);
++  }
++
++  const windowSpanHours = Math.max(window.endHour - window.startHour, 0);
++  const minuteOffset = Math.floor(Math.random() * windowSpanHours * 60);
++  base.setMinutes(base.getMinutes() + minuteOffset);
++
++  return base;
++};
++
++const applyRandomOffset = (date: Date, offsetRange: readonly [number, number]): Date => {
++  const [min, max] = offsetRange;
++  const applied = min + Math.random() * (max - min);
++  return new Date(date.getTime() + applied * 60 * 1000);
++};
++
++/**
++ * Generates a scheduled date for the provided post by sampling a persona's weighted dayparts
++ * and applying a subtle offset so that publishing cadences feel organic.
++ */
++export const schedulePost = (post: Post, persona: Persona, trail: AuditTrail): Date => {
++  const selectedDaypart = chooseDaypart(persona.scheduling.daypartWeights);
++  const window = findWindow(persona, selectedDaypart);
++  const scheduled = applyRandomOffset(applyWindow(window), persona.scheduling.randomOffsetMinutes);
++
++  trail.log(AutomationStep.SchedulingWindowSelected, {
++    personaId: persona.id,
++    postId: post.id,
++    daypart: selectedDaypart,
++    windowStartHour: window.startHour,
++    windowEndHour: window.endHour,
++  });
++
++  trail.log(AutomationStep.PostScheduled, {
++    personaId: persona.id,
++    postId: post.id,
++    scheduledAt: scheduled.toISOString(),
++    timezone: persona.scheduling.timezone,
++  });
++
++  return scheduled;
++};

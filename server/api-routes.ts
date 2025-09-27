@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Response } from "express";
 import { db } from "./db.js";
 import { storage } from "./storage.js";
 import { AiService } from "./lib/ai-service.js";
@@ -14,9 +14,45 @@ import { RedditManager } from "./lib/reddit.js";
 import { postJobs, subscriptions, mediaAssets, creatorAccounts, users, userSamples } from "@shared/schema";
 import { eq, desc, sql } from "drizzle-orm";
 import multer from "multer";
-import type { Request, Response, NextFunction } from 'express';
+import type { Request, NextFunction } from 'express';
 import { authenticateToken, type AuthRequest } from './middleware/auth.js';
 import { z, ZodError } from "zod";
+
+type AiHistoryDependencies = {
+  getUserHistory?: (userId: number, limit?: number) => Promise<unknown[]>;
+};
+
+export function createAiHistoryHandler(
+  dependencies: AiHistoryDependencies = {}
+) {
+  const { getUserHistory = AiService.getUserHistory } = dependencies;
+
+  return async (req: AuthRequest, res: Response) => {
+    try {
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(500).json({ error: 'Authenticated user context missing' });
+      }
+
+      const limitQuery = Array.isArray(req.query.limit)
+        ? req.query.limit[0]
+        : req.query.limit;
+      const parsedLimit = typeof limitQuery === 'string'
+        ? Number.parseInt(limitQuery, 10)
+        : undefined;
+      const limit = Number.isFinite(parsedLimit) && parsedLimit && parsedLimit > 0
+        ? parsedLimit
+        : 20;
+
+      const history = await getUserHistory(userId, limit);
+      res.json(history);
+    } catch (error: unknown) {
+      console.error('Failed to get AI history:', error);
+      res.status(500).json({ error: getErrorMessage(error) });
+    }
+  };
+}
 
 interface PostingJobPayload {
   userId: number;
@@ -430,24 +466,7 @@ export function registerApiRoutes(app: Express) {
   });
 
   // AI Generation History
-  app.get('/api/ai/history', async (req, res) => {
-    try {
-      const user = req.user;
-
-      if (!user?.id) {
-        return res.status(401).json({ error: 'Authentication required' });
-      }
-
-      const userId = user.id;
-      const limit = parseInt(req.query.limit as string) || 20;
-
-      const history = await AiService.getUserHistory(userId, limit);
-      res.json(history);
-    } catch (error: unknown) {
-      console.error('Failed to get AI history:', error);
-      res.status(500).json({ error: getErrorMessage(error) });
-    }
-  });
+  app.get('/api/ai/history', authenticateToken, createAiHistoryHandler());
 
   // Public metrics for landing pages
   app.get('/api/metrics', async (_req, res) => {
