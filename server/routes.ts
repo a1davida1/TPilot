@@ -94,29 +94,17 @@ interface PhotoInstructionsData {
   technical?: string | string[];
 }
 
-<<<<<<< ours
-export interface SaveContentRequestBody {
-  title?: string;
-  content?: string;
-  platform?: string | null;
-  generationId?: number | string | null;
-  contentGenerationId?: number | string | null;
-  socialMediaPostId?: number | string | null;
-  metadata?: InsertSavedContent['metadata'];
-}
+  export interface SaveContentRequestBody {
+    title?: string;
+    content?: string;
+    platform?: string | null;
+    generationId?: number | string | null;
+    contentGenerationId?: number | string | null;
+    socialMediaPostId?: number | string | null;
+    tags?: string[]; // or a more specific type if available
+    metadata?: InsertSavedContent['metadata'];
+  }
 
-interface SaveContentHandlerDependencies {
-  storage: Pick<IStorage, 'createSavedContent' | 'getUserContentGenerations' | 'getSocialMediaPost'>;
-=======
-interface SaveContentRequestBody {
-  title?: string;
-  content?: string;
-  platform?: string | null;
-  tags?: unknown;
-  metadata?: unknown;
-  socialMediaPostId?: number | string | null;
-  contentGenerationId?: number | string | null;
->>>>>>> theirs
 }
 
 interface SessionWithReddit extends Session {
