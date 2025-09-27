@@ -15,6 +15,7 @@ import passport from 'passport'; // Assuming passport is imported elsewhere or n
 import { createSessionMiddleware } from './bootstrap/session.js';
 import { initializeSentry } from './bootstrap/sentry';
 import { registerDefaultRedditClients } from './lib/reddit.js';
+import { API_PREFIX } from './lib/api-prefix.js';
 
 export interface CreateAppOptions {
   startQueue?: boolean;
@@ -26,8 +27,6 @@ export interface CreateAppResult {
   app: express.Express;
   server: import('http').Server;
 }
-
-export const API_PREFIX = '/api/v1';
 
 declare global {
   namespace Express {
@@ -92,7 +91,8 @@ function applyRequestLogging(app: express.Express): void {
 
     res.on('finish', () => {
       const duration = Date.now() - start;
-      if (path.startsWith('/api')) {
+      const isApiRequest = path === API_PREFIX || path.startsWith(`${API_PREFIX}/`);
+      if (isApiRequest) {
         let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
         const payload = prepareResponseLogPayload(capturedJsonResponse);
         if (payload) {
@@ -205,7 +205,8 @@ async function configureStaticAssets(
   // SPA fallback - serve index.html for all non-API routes
   app.get('*', (req, res, next) => {
     // Let API/auth/webhook/assets routes fall through to 404 handler or static middleware
-    if (req.path.startsWith('/api/') ||
+    const isApiRoute = req.path === API_PREFIX || req.path.startsWith(`${API_PREFIX}/`);
+    if (isApiRoute ||
         req.path.startsWith('/auth/') ||
         req.path.startsWith('/webhook/') ||
         req.path.startsWith('/assets/')) {
@@ -272,10 +273,10 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
 
     registerDefaultRedditClients();
 
-    setupAuth(app);
-    setupSocialAuth(app);  // Register social auth routes including logout
+    setupAuth(app, API_PREFIX);
+    setupSocialAuth(app, API_PREFIX);  // Register social auth routes including logout
     mountStripeWebhook(app, API_PREFIX);
-    mountBillingRoutes(app);
+    mountBillingRoutes(app, API_PREFIX);
 
     const server = await registerRoutes(app, API_PREFIX, { sentry });
 

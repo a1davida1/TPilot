@@ -32,21 +32,26 @@ import { visitorAnalytics } from "./visitor-analytics.js";
 import { makePaxum, makeCoinbase, makeStripe } from "./payments/payment-providers.js";
 import { deriveStripeConfig } from "./payments/stripe-config.js";
 import { buildUploadUrl } from "./lib/uploads.js";
+import { API_PREFIX, prefixApiPath } from "./lib/api-prefix.js";
 
-export const csrfProtectedRoutes = [
-  '/api/auth/verify-email',
-  '/api/auth/change-password',
-  '/api/auth/forgot-password',
-  '/api/auth/reset-password',
-  '/api/upload/image',
-  '/api/generate-content',
-  '/api/reddit/connect',
-  '/api/reddit/submit',
-  '/api/admin/*', // All admin routes
-  '/api/billing/*', // All billing operations
-  '/api/auth/delete-account',
-  '/api/user/settings'
-];
+export function buildCsrfProtectedRoutes(apiPrefix: string = API_PREFIX): string[] {
+  return [
+    prefixApiPath('/auth/verify-email', apiPrefix),
+    prefixApiPath('/auth/change-password', apiPrefix),
+    prefixApiPath('/auth/forgot-password', apiPrefix),
+    prefixApiPath('/auth/reset-password', apiPrefix),
+    prefixApiPath('/upload/image', apiPrefix),
+    prefixApiPath('/generate-content', apiPrefix),
+    prefixApiPath('/reddit/connect', apiPrefix),
+    prefixApiPath('/reddit/submit', apiPrefix),
+    prefixApiPath('/admin/*', apiPrefix),
+    prefixApiPath('/billing/*', apiPrefix),
+    prefixApiPath('/auth/delete-account', apiPrefix),
+    prefixApiPath('/user/settings', apiPrefix),
+  ];
+}
+
+export const csrfProtectedRoutes = buildCsrfProtectedRoutes();
 // Analytics request type
 interface AnalyticsRequest extends express.Request {
   sessionID: string;
@@ -92,7 +97,8 @@ interface SessionWithReddit extends Session {
 // PRO RESOURCES ROUTES
 // ==========================================
 
-function registerProResourcesRoutes(app: Express) {
+function registerProResourcesRoutes(app: Express, apiPrefix: string = API_PREFIX) {
+  const route = (path: string) => prefixApiPath(path, apiPrefix);
   const resolveTier = (tierValue: string | null | undefined): UserTier | undefined => {
     if (tierValue === 'pro' || tierValue === 'premium' || tierValue === 'starter') {
       return tierValue;
@@ -140,7 +146,7 @@ function registerProResourcesRoutes(app: Express) {
 
 
   // GET /api/pro-resources - List all perks for authenticated users
-  app.get('/api/pro-resources', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.get(route('/pro-resources'), authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       if (!req.user?.id) {
         return res.status(403).json({
@@ -181,7 +187,7 @@ function registerProResourcesRoutes(app: Express) {
   });
 
   // GET /api/pro-resources/:id/signup-instructions - Get detailed signup instructions
-  app.get('/api/pro-resources/:id/signup-instructions', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.get(route('/pro-resources/:id/signup-instructions'), authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ message: "Authentication required" });
@@ -517,7 +523,7 @@ const deriveSharePercentage = (perk: ProPerk): number => {
   };
 
 
-export async function registerRoutes(app: Express, apiPrefix: string = '/api', options?: RegisterRoutesOptions): Promise<Server> {
+export async function registerRoutes(app: Express, apiPrefix: string = API_PREFIX, options?: RegisterRoutesOptions): Promise<Server> {
   // ==========================================
   // VALIDATE ENVIRONMENT & APPLY SECURITY
   // ==========================================
@@ -599,19 +605,22 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api', o
   // Note: JWT-based routes rely on token authentication instead of CSRF
 
   // Apply CSRF protection to sensitive routes
-  csrfProtectedRoutes.forEach(route => {
-    if (route.includes('*')) {
+  const csrfRoutes = buildCsrfProtectedRoutes(apiPrefix);
+  const route = (path: string) => prefixApiPath(path, apiPrefix);
+
+  csrfRoutes.forEach((protectedRoute) => {
+    if (protectedRoute.includes('*')) {
       // Handle wildcard routes
-      const baseRoute = route.replace('/*', '');
+      const baseRoute = protectedRoute.replace('/*', '');
       app.use(baseRoute, csrfProtection);
-      app.use(baseRoute + '/*', csrfProtection);
+      app.use(`${baseRoute}/*`, csrfProtection);
     } else {
-      app.use(route, csrfProtection);
+      app.use(protectedRoute, csrfProtection);
     }
   });
 
   // CSRF token endpoint
-  app.get('/api/csrf-token', csrfProtection, (req, res) => {
+  app.get(route('/csrf-token'), csrfProtection, (req, res) => {
     res.json({ csrfToken: req.csrfToken() });
   });
 

@@ -2,10 +2,10 @@ import { pathToFileURL } from 'node:url';
 import type { Express } from 'express';
 import {
   createApp,
-  API_PREFIX,
   type CreateAppOptions,
   type CreateAppResult,
 } from './app.js';
+import { API_PREFIX } from './lib/api-prefix.js';
 import { logger } from './bootstrap/logger.js';
 
 process.on('unhandledRejection', (err: unknown) => {
