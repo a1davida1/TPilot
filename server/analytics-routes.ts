@@ -5,15 +5,13 @@ import { Request, Response, Express } from 'express';
 import Stripe from 'stripe';
 import { z } from 'zod';
 import { db } from './db.js';
-import { 
-  userSessions, 
-  pageViews, 
-  contentViews, 
-  engagementEvents, 
-  socialMetrics, 
-  analyticsMetrics,
-  contentGenerations,
-  users
+import { authenticateToken, type AuthRequest } from './middleware/auth.js';
+import {
+  userSessions,
+  pageViews,
+  contentViews,
+  engagementEvents,
+  contentGenerations
 } from '@shared/schema';
 import { eq, desc, gte, lte, and, count, sum, avg, sql } from 'drizzle-orm';
 import { Reader } from '@maxmind/geoip2-node';
@@ -87,7 +85,6 @@ const eventsPayloadSchema = z.object({
   events: z.array(analyticsEventSchema).min(1).max(50),
 });
 
-type BaseAnalyticsEvent = z.infer<typeof baseEventSchema>;
 type PageViewEvent = z.infer<typeof pageViewSchema>;
 type PageEndEvent = z.infer<typeof pageEndSchema>;
 type EngagementEvent = z.infer<typeof engagementEventSchema>;
@@ -100,6 +97,19 @@ const dateRangeSchema = z.object({
   endDate: z.string().optional(),
   period: z.enum(['7d', '30d', '90d']).optional().default('7d')
 });
+
+// Analytics service module
+export const analyticsService = {
+  getAnalyticsData,
+  getRealtimeAnalytics,
+  getContentAnalytics
+};
+
+// Error handling helper
+function handleAnalyticsError(error: unknown, res: Response, message: string) {
+  console.error('Analytics error:', error);
+  res.status(500).json({ error: message });
+}
 
 export function registerAnalyticsRoutes(app: Express) {
 
@@ -130,7 +140,7 @@ export function registerAnalyticsRoutes(app: Express) {
   });
 
   // GET /api/analytics/:period - Get analytics data for dashboard
-  app.get('/api/analytics/:period', async (req: Request, res: Response) => {
+  app.get('/api/analytics/:period', authenticateToken, async (req: AuthRequest, res: Response) => {
     try {
       const { period } = req.params;
       const validation = dateRangeSchema.safeParse({ period });
@@ -141,28 +151,26 @@ export function registerAnalyticsRoutes(app: Express) {
       const { startDate, endDate } = getDateRange(period);
       const userId = getUserIdFromRequest(req);
 
-      const analytics = await getAnalyticsData(userId, startDate, endDate);
+      const analytics = await analyticsService.getAnalyticsData(userId, startDate, endDate);
       res.json(analytics);
     } catch (error) {
-      console.error('Analytics fetch error:', error);
-      res.status(500).json({ error: 'Failed to fetch analytics data' });
+      handleAnalyticsError(error, res, 'Failed to fetch analytics data');
     }
   });
 
   // GET /api/analytics/realtime - Get real-time analytics
-  app.get('/api/analytics/realtime', async (req: Request, res: Response) => {
+  app.get('/api/analytics/realtime', authenticateToken, async (req: AuthRequest, res: Response) => {
     try {
       const userId = getUserIdFromRequest(req);
-      const realtime = await getRealtimeAnalytics(userId);
+      const realtime = await analyticsService.getRealtimeAnalytics(userId);
       res.json(realtime);
     } catch (error) {
-      console.error('Realtime analytics error:', error);
-      res.status(500).json({ error: 'Failed to fetch realtime analytics' });
+      handleAnalyticsError(error, res, 'Failed to fetch realtime analytics');
     }
   });
 
   // GET /api/analytics/content/:contentId - Get specific content analytics
-  app.get('/api/analytics/content/:contentId', async (req: Request, res: Response) => {
+  app.get('/api/analytics/content/:contentId', authenticateToken, async (req: AuthRequest, res: Response) => {
     try {
       const contentId = parseInt(req.params.contentId);
       if (isNaN(contentId)) {
@@ -170,7 +178,7 @@ export function registerAnalyticsRoutes(app: Express) {
       }
 
       const userId = getUserIdFromRequest(req);
-      const contentAnalytics = await getContentAnalytics(contentId, userId);
+      const contentAnalytics = await analyticsService.getContentAnalytics(contentId, userId);
       
       if (!contentAnalytics) {
         return res.status(404).json({ error: 'Content not found' });
@@ -179,7 +187,7 @@ export function registerAnalyticsRoutes(app: Express) {
       res.json(contentAnalytics);
     } catch (error) {
       console.error('Content analytics error:', error);
-      res.status(500).json({ error: 'Failed to fetch content analytics' });
+      handleAnalyticsError(error, res, 'Failed to fetch content analytics');
     }
   });
 
@@ -216,24 +224,28 @@ export function registerAnalyticsRoutes(app: Express) {
     try {
       const userId = getUserIdFromRequest(req);
       const limit = parseInt(req.query.limit as string) || 50;
-      
+
       const sessions = await db
         .select()
         .from(userSessions)
-        .where(userId ? eq(userSessions.userId, userId) : undefined)
+        .where(eq(userSessions.userId, userId))
         .orderBy(desc(userSessions.startedAt))
         .limit(limit);
 
       res.json(sessions);
     } catch (error) {
-      console.error('Sessions analytics error:', error);
-      res.status(500).json({ error: 'Failed to fetch session analytics' });
+      handleAnalyticsError(error, res, 'Failed to fetch session analytics');
     }
   });
 
   app.get('/api/revenue', async (_req: Request, res: Response) => {
     try {
-      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      const secretKey = process.env.STRIPE_SECRET_KEY;
+      if (!secretKey) {
+        return res.status(500).json({ error: 'Stripe configuration missing' });
+      }
+
+      const stripe = new Stripe(secretKey, {
         apiVersion: '2025-08-27.basil' as const,
       });
       const balance = await stripe.balance.retrieve();
@@ -373,10 +385,8 @@ async function handleSessionEnd(event: SessionEndEvent) {
     .where(eq(userSessions.sessionId, event.sessionId));
 }
 
-async function getAnalyticsData(userId: number | null, startDate: Date, endDate: Date) {
-  const where = userId 
-    ? and(eq(userSessions.userId, userId), gte(userSessions.startedAt, startDate), lte(userSessions.startedAt, endDate))
-    : and(gte(userSessions.startedAt, startDate), lte(userSessions.startedAt, endDate));
+export async function getAnalyticsData(userId: number, startDate: Date, endDate: Date) {
+  const where = and(eq(userSessions.userId, userId), gte(userSessions.startedAt, startDate), lte(userSessions.startedAt, endDate));
 
   // Get basic metrics
   const sessionStats = await db
@@ -396,7 +406,7 @@ async function getAnalyticsData(userId: number | null, startDate: Date, endDate:
       successfulGenerations: count(sql`CASE WHEN ${contentGenerations.generationType} = 'ai' THEN 1 END`)
     })
     .from(contentGenerations)
-    .where(userId ? eq(contentGenerations.userId, userId) : undefined);
+    .where(eq(contentGenerations.userId, userId));
 
   // Get top performing content
   const topContent = await db
@@ -408,7 +418,7 @@ async function getAnalyticsData(userId: number | null, startDate: Date, endDate:
     })
     .from(contentGenerations)
     .leftJoin(contentViews, eq(contentViews.contentId, contentGenerations.id))
-    .where(userId ? eq(contentGenerations.userId, userId) : undefined)
+    .where(eq(contentGenerations.userId, userId))
     .groupBy(contentGenerations.id, contentGenerations.platform, contentGenerations.createdAt)
     .orderBy(desc(count(contentViews.id)))
     .limit(10);
@@ -420,7 +430,7 @@ async function getAnalyticsData(userId: number | null, startDate: Date, endDate:
       count: count()
     })
     .from(contentGenerations)
-    .where(userId ? eq(contentGenerations.userId, userId) : undefined)
+    .where(eq(contentGenerations.userId, userId))
     .groupBy(contentGenerations.platform);
 
   return {
@@ -444,13 +454,11 @@ async function getAnalyticsData(userId: number | null, startDate: Date, endDate:
   };
 }
 
-async function getRealtimeAnalytics(userId: number | null) {
+export async function getRealtimeAnalytics(userId: number) {
   const now = new Date();
   const hourAgo = new Date(now.getTime() - 60 * 60 * 1000);
 
-  const where = userId 
-    ? and(eq(userSessions.userId, userId), gte(userSessions.startedAt, hourAgo))
-    : gte(userSessions.startedAt, hourAgo);
+  const where = and(eq(userSessions.userId, userId), gte(userSessions.startedAt, hourAgo));
 
   const realtimeStats = await db
     .select({
@@ -467,17 +475,15 @@ async function getRealtimeAnalytics(userId: number | null) {
   };
 }
 
-async function getContentAnalytics(contentId: number, userId: number | null) {
-  // Verify content belongs to user if userId provided
-  if (userId) {
-    const content = await db
-      .select()
-      .from(contentGenerations)
-      .where(and(eq(contentGenerations.id, contentId), eq(contentGenerations.userId, userId)))
-      .limit(1);
-    
-    if (content.length === 0) return null;
-  }
+export async function getContentAnalytics(contentId: number, userId: number) {
+  // Verify content belongs to user
+  const content = await db
+    .select()
+    .from(contentGenerations)
+    .where(and(eq(contentGenerations.id, contentId), eq(contentGenerations.userId, userId)))
+    .limit(1);
+  
+  if (content.length === 0) return null;
 
   const viewStats = await db
     .select({
