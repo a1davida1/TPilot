@@ -276,7 +276,7 @@ async function processAnalyticsEvent(event: AnalyticsEvent, ipAddress: string) {
       break;
     default:
       // Log unknown event types for debugging
-      console.log('Unknown analytics event type:', (event as Record<string, unknown>).eventType);
+      console.error('Unknown analytics event type:', (event as Record<string, unknown>).eventType);
   }
 }
 

@@ -189,7 +189,7 @@ export function registerRedditRoutes(app: Express) {
           }
         });
 
-      console.log('Reddit account connected successfully for user:', userId);
+      console.error('Reddit account connected successfully for user:', userId);
 
       // Success redirect to dashboard
       res.redirect('/dashboard?reddit=connected&username=' + encodeURIComponent(profile.username));
@@ -528,7 +528,7 @@ export function registerRedditRoutes(app: Express) {
 
       if (result.success) {
         recordPostOutcome(userId, subreddit, { status: 'posted' });
-        console.log('Reddit post successful:', {
+        console.error('Reddit post successful:', {
           userId,
           subreddit,
           postType,
@@ -544,7 +544,7 @@ export function registerRedditRoutes(app: Express) {
             title, 
             body || url || ''
           );
-          console.log(`Recorded safety signals for user ${userId} in r/${subreddit}`);
+          console.error(`Recorded safety signals for user ${userId} in r/${subreddit}`);
         } catch (safetyError) {
           console.error('Failed to record safety signals:', safetyError);
           // Don't fail the request if safety recording fails

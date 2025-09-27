@@ -71,8 +71,8 @@ describe('Login Identifier and Cookie Auth', () => {
       expect(auth.hasAuth).toBeTruthy();
       
       // Optional: log what type of auth was used for debugging
-      if (auth.cookie) console.log('Using cookie authentication');
-      if (auth.token) console.log('Using token authentication');
+      if (auth.cookie) console.error('Using cookie authentication');
+      if (auth.token) console.error('Using token authentication');
       
       // If cookies are present, check their properties
       if (auth.cookie && auth.cookie.includes('authToken')) {
@@ -95,8 +95,8 @@ describe('Login Identifier and Cookie Auth', () => {
       expect(auth.hasAuth).toBeTruthy();
       
       // Optional: log what type of auth was used for debugging
-      if (auth.cookie) console.log('Using cookie authentication');
-      if (auth.token) console.log('Using token authentication');
+      if (auth.cookie) console.error('Using cookie authentication');
+      if (auth.token) console.error('Using token authentication');
       
       // If cookies are present, check their properties
       if (auth.cookie && auth.cookie.includes('authToken')) {

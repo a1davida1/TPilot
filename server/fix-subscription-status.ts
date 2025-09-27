@@ -4,7 +4,7 @@ import { users } from '@shared/schema';
 import { sql } from 'drizzle-orm';
 
 async function fixSubscriptionStatus() {
-  console.log('🔧 Fixing subscription_status values in database...');
+  console.error('🔧 Fixing subscription_status values in database...');
   
   try {
     // First, check what values exist
@@ -15,8 +15,8 @@ async function fixSubscriptionStatus() {
       ORDER BY count DESC
     `);
     
-    console.log('Current subscription_status values:');
-    console.table(result.rows);
+    console.error('Current subscription_status values:');
+    console.error(result.rows);
     
     // Fix any invalid values
     const updateResult = await db.execute(sql`
@@ -29,7 +29,7 @@ async function fixSubscriptionStatus() {
          OR subscription_status NOT IN ('active', 'inactive', 'cancelled', 'past_due')
     `);
     
-    console.log(`✅ Updated ${updateResult.rowCount} users with invalid subscription_status`);
+    console.error(`✅ Updated ${updateResult.rowCount} users with invalid subscription_status`);
     
     // Verify the fix
     const verifyResult = await db.execute(sql`
@@ -39,11 +39,11 @@ async function fixSubscriptionStatus() {
       ORDER BY count DESC
     `);
     
-    console.log('\nUpdated subscription_status values:');
-    console.table(verifyResult.rows);
+    console.error('\nUpdated subscription_status values:');
+    console.error(verifyResult.rows);
     
-    console.log('✅ Database fixed successfully!');
-    console.log('You can now retry your deployment.');
+    console.error('✅ Database fixed successfully!');
+    console.error('You can now retry your deployment.');
     
   } catch (error) {
     console.error('❌ Error fixing database:', error);

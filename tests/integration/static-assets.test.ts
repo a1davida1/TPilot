@@ -70,7 +70,7 @@ async function seedClientBuild(includeIndex: boolean): Promise<void> {
   if (includeIndex) {
     await fs.writeFile(indexFilePath, '<!doctype html><html><head><title>Static Test</title></head><body>Static Asset Test</body></html>');
   }
-  await fs.writeFile(jsAssetPath, 'console.log("static assets test");');
+  await fs.writeFile(jsAssetPath, 'console.error("static assets test");');
   await fs.writeFile(cssAssetPath, 'body { background: #123456; }');
 }
 

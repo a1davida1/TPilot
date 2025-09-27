@@ -1,0 +1,215 @@
+diff --git a/server/scripts/sync-reddit-communities.ts b/server/scripts/sync-reddit-communities.ts
+index 2008c73c347d87b765a1e88894142c8d9b9047eb..d717dee869aadc02d3f44d96286b0f08fe8f29d6 100644
+--- a/server/scripts/sync-reddit-communities.ts
++++ b/server/scripts/sync-reddit-communities.ts
+@@ -1,29 +1,30 @@
+ import snoowrap from 'snoowrap';
+ import { z } from 'zod';
+ import { db } from '../db.js';
+ import { redditCommunities, insertRedditCommunitySchema, InsertRedditCommunity } from '@shared/schema';
++import { syncSubredditRules } from './sync-subreddit-rules.js';
+ import { logger } from '../lib/logger.js';
+ 
+ // Environment validation schema
+ const DEFAULT_USER_AGENT = 'ThottoPilot/1.0 (Community sync bot)';
+ 
+ const envSchema = z
+   .object({
+     REDDIT_CLIENT_ID: z.string().min(1, 'REDDIT_CLIENT_ID is required'),
+     REDDIT_CLIENT_SECRET: z.string().min(1, 'REDDIT_CLIENT_SECRET is required'),
+     REDDIT_USER_AGENT: z
+       .string()
+       .min(1, 'REDDIT_USER_AGENT is required')
+       .optional()
+       .default(DEFAULT_USER_AGENT),
+     REDDIT_USERNAME: z.string().optional(),
+     REDDIT_PASSWORD: z.string().optional(),
+     REDDIT_REFRESH_TOKEN: z.string().optional(),
+   })
+   .refine(
+     (data) => data.REDDIT_REFRESH_TOKEN || (data.REDDIT_USERNAME && data.REDDIT_PASSWORD),
+     {
+       message:
+         'Either provide REDDIT_REFRESH_TOKEN or both REDDIT_USERNAME and REDDIT_PASSWORD for the sync worker.',
+     }
+   );
+diff --git a/server/scripts/sync-reddit-communities.ts b/server/scripts/sync-reddit-communities.ts
+index 2008c73c347d87b765a1e88894142c8d9b9047eb..d717dee869aadc02d3f44d96286b0f08fe8f29d6 100644
+--- a/server/scripts/sync-reddit-communities.ts
++++ b/server/scripts/sync-reddit-communities.ts
+@@ -153,94 +154,111 @@ async function calculateEngagementMetrics(reddit: snoowrap, subredditName: strin
+         postFrequency: 0,
+       };
+     }
+ 
+     const totalUpvotes = hotPosts.reduce((sum, post) => sum + (post.ups || 0), 0);
+     const totalComments = hotPosts.reduce((sum, post) => sum + (post.num_comments || 0), 0);
+     
+     return {
+       avgUpvotes: Math.round(totalUpvotes / hotPosts.length),
+       avgComments: Math.round(totalComments / hotPosts.length),
+       postFrequency: hotPosts.length, // Simplified metric
+     };
+   } catch (error) {
+     logger.warn(`Failed to calculate engagement metrics for r/${subredditName}:`, error);
+     return {
+       avgUpvotes: 0,
+       avgComments: 0,
+       postFrequency: 0,
+     };
+   }
+ }
+ 
+ /**
+  * Sync a single subreddit's data with retry logic
+  */
+-async function syncSubreddit(reddit: snoowrap, subredditName: string, retryCount = 0): Promise<void> {
++interface SubredditSyncOutcome {
++  ruleSyncError?: string;
++}
++
++async function syncSubreddit(reddit: snoowrap, subredditName: string, retryCount = 0): Promise<SubredditSyncOutcome> {
+   const maxRetries = 3;
+   const baseDelay = 1000;
+-  
++
+   try {
+     logger.info(`Syncing r/${subredditName}...`);
+     
+     // Fetch subreddit info
+     const subreddit = await new Promise<SubredditData>((resolve, reject) => {
+       reddit.getSubreddit(subredditName).fetch()
+         .then(resolve)
+         .catch(reject);
+     });
+     
+     // Calculate engagement metrics
+     const engagementMetrics = await calculateEngagementMetrics(reddit, subredditName);
+     
+     // Normalize data for insertion
+     const normalizedData = normalizeSubredditData(subreddit, engagementMetrics);
+     
+     // Validate against schema
+     const validatedData = insertRedditCommunitySchema.parse(normalizedData) as InsertRedditCommunity;
+     
+     // Upsert to database
+     await db.insert(redditCommunities)
+       .values(validatedData)
+       .onConflictDoUpdate({
+         target: redditCommunities.name,
+         set: {
+           displayName: validatedData.displayName,
+           description: validatedData.description,
+           members: validatedData.members,
+           category: validatedData.category,
+           engagementRate: validatedData.engagementRate,
+           successProbability: validatedData.successProbability,
+           competitionLevel: validatedData.competitionLevel,
+           growthTrend: validatedData.growthTrend,
+           verificationRequired: validatedData.verificationRequired,
+           promotionAllowed: validatedData.promotionAllowed,
+           averageUpvotes: validatedData.averageUpvotes,
+         },
+       });
+-    
++
++    let ruleSyncError: string | undefined;
++
++    try {
++      // Give Reddit a brief breather before fetching rule metadata.
++      await new Promise(resolve => setTimeout(resolve, 500));
++      await syncSubredditRules(subredditName);
++    } catch (error) {
++      const errorMessage = error instanceof Error ? error.message : String(error);
++      logger.error(`⚠️ Failed to sync rules for r/${subredditName}:`, error);
++      ruleSyncError = `r/${subredditName} rules: ${errorMessage}`;
++    }
++
+     logger.info(`✅ Successfully synced r/${subredditName} (${subreddit.subscribers} members)`);
++    return { ruleSyncError };
+   } catch (error: unknown) {
+     // Handle rate limiting and authentication errors
+     const errorObj = error as { statusCode?: number };
+     if (errorObj.statusCode === 429 || errorObj.statusCode === 401 || errorObj.statusCode === 403) {
+       if (retryCount < maxRetries) {
+         const delay = baseDelay * Math.pow(2, retryCount) + Math.random() * 1000; // Exponential backoff with jitter
+         logger.warn(`Rate limited or auth error for r/${subredditName}, retrying in ${delay}ms (attempt ${retryCount + 1}/${maxRetries})`);
+         await new Promise(resolve => setTimeout(resolve, delay));
+         return syncSubreddit(reddit, subredditName, retryCount + 1);
+       }
+     }
+     
+     logger.error(`❌ Failed to sync r/${subredditName}:`, error);
+     throw error;
+   }
+ }
+ 
+ /**
+  * Main sync function
+  */
+ export async function syncRedditCommunities(config?: { subreddits?: string[]; runId?: string; }): Promise<SyncResult> {
+   const { subreddits = DEFAULT_SUBREDDITS, runId } = syncConfigSchema.parse(config || {});
+ 
+   logger.info(`🔄 Starting Reddit communities sync`, {
+     runId,
+diff --git a/server/scripts/sync-reddit-communities.ts b/server/scripts/sync-reddit-communities.ts
+index 2008c73c347d87b765a1e88894142c8d9b9047eb..d717dee869aadc02d3f44d96286b0f08fe8f29d6 100644
+--- a/server/scripts/sync-reddit-communities.ts
++++ b/server/scripts/sync-reddit-communities.ts
+@@ -311,52 +329,55 @@ export async function syncRedditCommunities(config?: { subreddits?: string[]; ru
+     clientId: env.REDDIT_CLIENT_ID,
+     clientSecret: env.REDDIT_CLIENT_SECRET,
+   };
+ 
+   if (env.REDDIT_REFRESH_TOKEN) {
+     redditConfig.refreshToken = env.REDDIT_REFRESH_TOKEN;
+   } else if (env.REDDIT_USERNAME && env.REDDIT_PASSWORD) {
+     redditConfig.username = env.REDDIT_USERNAME;
+     redditConfig.password = env.REDDIT_PASSWORD;
+   }
+ 
+   const reddit = new snoowrap(redditConfig);
+ 
+   const result: SyncResult = {
+     processed: 0,
+     succeeded: 0,
+     failed: 0,
+     errors: [],
+   };
+ 
+   // Process each subreddit
+   for (const subredditName of subreddits) {
+     result.processed++;
+     
+     try {
+-      await syncSubreddit(reddit, subredditName);
++      const outcome = await syncSubreddit(reddit, subredditName);
+       result.succeeded++;
++      if (outcome.ruleSyncError) {
++        result.errors.push(outcome.ruleSyncError);
++      }
+     } catch (error) {
+       result.failed++;
+       const errorMessage = error instanceof Error ? error.message : String(error);
+       result.errors.push(`r/${subredditName}: ${errorMessage}`);
+     }
+     
+     // Rate limiting - wait between requests with jitter
+     const delay = 1000 + Math.random() * 500; // 1-1.5s delay with jitter
+     await new Promise(resolve => setTimeout(resolve, delay));
+   }
+   
+   logger.info(`✅ Reddit communities sync completed`, {
+     runId,
+     processed: result.processed,
+     succeeded: result.succeeded,
+     failed: result.failed,
+     errorCount: result.errors.length,
+   });
+   
+   if (result.errors.length > 0) {
+     logger.warn('Sync completed with errors:', result.errors);
+   }
+   
+   return result;
+ }

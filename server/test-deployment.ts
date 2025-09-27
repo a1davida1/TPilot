@@ -16,7 +16,7 @@ interface DeploymentTestResult {
 }
 
 export async function runDeploymentTests() {
-  console.log('🚀 Starting Production Deployment Tests...\n');
+  console.error('🚀 Starting Production Deployment Tests...\n');
   
   const results: { passed: number; failed: number; warnings: number; tests: DeploymentTestResult[] } = {
     passed: 0,
@@ -27,12 +27,12 @@ export async function runDeploymentTests() {
 
   // Test 1: Database Connectivity
   try {
-    console.log('Testing database connectivity...');
+    console.error('Testing database connectivity...');
     const dbTest = await db.execute(sql`SELECT 1 as test`);
     if (dbTest) {
       results.passed++;
       results.tests.push({ name: 'Database Connectivity', status: 'PASSED' });
-      console.log('✅ Database connectivity: PASSED');
+      console.error('✅ Database connectivity: PASSED');
     }
   } catch (error) {
     results.failed++;
@@ -42,7 +42,7 @@ export async function runDeploymentTests() {
 
   // Test 2: Enhanced AI Content Generation
   try {
-    console.log('\nTesting enhanced AI content generation...');
+    console.error('\nTesting enhanced AI content generation...');
     const aiContent = await generateEnhancedContent({
       mode: 'text',
       prompt: 'Test content generation',
@@ -55,9 +55,9 @@ export async function runDeploymentTests() {
     if (aiContent && aiContent.titles && aiContent.content) {
       results.passed++;
       results.tests.push({ name: 'Enhanced AI Generation', status: 'PASSED' });
-      console.log('✅ Enhanced AI generation: PASSED');
-      console.log('   Generated', aiContent.titles.length, 'titles');
-      console.log('   Content length:', aiContent.content.length, 'chars');
+      console.error('✅ Enhanced AI generation: PASSED');
+      console.error('   Generated', aiContent.titles.length, 'titles');
+      console.error('   Content length:', aiContent.content.length, 'chars');
     }
   } catch (error) {
     results.failed++;
@@ -67,7 +67,7 @@ export async function runDeploymentTests() {
 
   // Test 3: Safety Systems
   try {
-    console.log('\nTesting safety systems...');
+    console.error('\nTesting safety systems...');
     const safetyCheck = await SafetySystems.performSafetyCheck(
       '1',
       'test_subreddit',
@@ -78,10 +78,10 @@ export async function runDeploymentTests() {
     if (safetyCheck) {
       results.passed++;
       results.tests.push({ name: 'Safety Systems', status: 'PASSED' });
-      console.log('✅ Safety systems: PASSED');
-      console.log('   Can post:', safetyCheck.canPost);
-      console.log('   Issues:', safetyCheck.issues.length);
-      console.log('   Warnings:', safetyCheck.warnings.length);
+      console.error('✅ Safety systems: PASSED');
+      console.error('   Can post:', safetyCheck.canPost);
+      console.error('   Issues:', safetyCheck.issues.length);
+      console.error('   Warnings:', safetyCheck.warnings.length);
     }
   } catch (error) {
     results.failed++;
@@ -91,15 +91,15 @@ export async function runDeploymentTests() {
 
   // Test 4: Rate Limiting
   try {
-    console.log('\nTesting rate limiting...');
+    console.error('\nTesting rate limiting...');
     const rateCheck = await SafetySystems.checkRateLimit('1', 'test_subreddit');
     
     if (rateCheck) {
       results.passed++;
       results.tests.push({ name: 'Rate Limiting', status: 'PASSED' });
-      console.log('✅ Rate limiting: PASSED');
-      console.log('   Can post:', rateCheck.canPost);
-      console.log('   Posts in window:', rateCheck.postsInWindow);
+      console.error('✅ Rate limiting: PASSED');
+      console.error('   Can post:', rateCheck.canPost);
+      console.error('   Posts in window:', rateCheck.postsInWindow);
     }
   } catch (error) {
     results.failed++;
@@ -109,7 +109,7 @@ export async function runDeploymentTests() {
 
   // Test 5: Duplicate Detection
   try {
-    console.log('\nTesting duplicate detection...');
+    console.error('\nTesting duplicate detection...');
     const duplicateCheck = await SafetySystems.checkDuplicate(
       '1',
       'test_subreddit',
@@ -120,8 +120,8 @@ export async function runDeploymentTests() {
     if (duplicateCheck) {
       results.passed++;
       results.tests.push({ name: 'Duplicate Detection', status: 'PASSED' });
-      console.log('✅ Duplicate detection: PASSED');
-      console.log('   Is duplicate:', duplicateCheck.isDuplicate);
+      console.error('✅ Duplicate detection: PASSED');
+      console.error('   Is duplicate:', duplicateCheck.isDuplicate);
     }
   } catch (error) {
     results.failed++;
@@ -131,7 +131,7 @@ export async function runDeploymentTests() {
 
   // Test 6: Performance Check
   try {
-    console.log('\nTesting performance metrics...');
+    console.error('\nTesting performance metrics...');
     const startTime = Date.now();
     
     // Parallel test operations
@@ -151,13 +151,13 @@ export async function runDeploymentTests() {
     if (duration < 5000) { // Should complete within 5 seconds
       results.passed++;
       results.tests.push({ name: 'Performance Check', status: 'PASSED', duration });
-      console.log('✅ Performance check: PASSED');
-      console.log('   Parallel operations completed in:', duration, 'ms');
+      console.error('✅ Performance check: PASSED');
+      console.error('   Parallel operations completed in:', duration, 'ms');
     } else {
       results.warnings++;
       results.tests.push({ name: 'Performance Check', status: 'WARNING', duration });
-      console.log('⚠️ Performance check: WARNING - Slow response');
-      console.log('   Duration:', duration, 'ms');
+      console.error('⚠️ Performance check: WARNING - Slow response');
+      console.error('   Duration:', duration, 'ms');
     }
   } catch (error) {
     results.failed++;
@@ -167,7 +167,7 @@ export async function runDeploymentTests() {
 
   // Test 7: Content Quality Check
   try {
-    console.log('\nTesting content quality...');
+    console.error('\nTesting content quality...');
     
     const platforms = ['reddit', 'twitter', 'instagram', 'tiktok', 'onlyfans'] as const;
     const styles = ['playful', 'mysterious', 'bold', 'elegant', 'confident'] as const;
@@ -188,15 +188,15 @@ export async function runDeploymentTests() {
         // Verify content structure
         if (!content.titles || content.titles.length < 1) {
           qualityPassed = false;
-          console.log(`   ❌ Missing titles for ${platform}/${style}`);
+          console.error(`   ❌ Missing titles for ${platform}/${style}`);
         }
         if (!content.content || content.content.length < 10) {
           qualityPassed = false;
-          console.log(`   ❌ Insufficient content for ${platform}/${style}`);
+          console.error(`   ❌ Insufficient content for ${platform}/${style}`);
         }
         if (!content.photoInstructions) {
           qualityPassed = false;
-          console.log(`   ❌ Missing photo instructions for ${platform}/${style}`);
+          console.error(`   ❌ Missing photo instructions for ${platform}/${style}`);
         }
       }
     }
@@ -204,12 +204,12 @@ export async function runDeploymentTests() {
     if (qualityPassed) {
       results.passed++;
       results.tests.push({ name: 'Content Quality', status: 'PASSED' });
-      console.log('✅ Content quality: PASSED');
-      console.log('   All platforms and styles generating correctly');
+      console.error('✅ Content quality: PASSED');
+      console.error('   All platforms and styles generating correctly');
     } else {
       results.failed++;
       results.tests.push({ name: 'Content Quality', status: 'FAILED' });
-      console.log('❌ Content quality: FAILED');
+      console.error('❌ Content quality: FAILED');
     }
   } catch (error) {
     results.failed++;
@@ -219,7 +219,7 @@ export async function runDeploymentTests() {
 
   // Test 8: Error Recovery
   try {
-    console.log('\nTesting error recovery...');
+    console.error('\nTesting error recovery...');
     
     // Test with invalid input
     const errorContent = await generateEnhancedContent({
@@ -231,49 +231,49 @@ export async function runDeploymentTests() {
     if (errorContent && errorContent.content) {
       results.passed++;
       results.tests.push({ name: 'Error Recovery', status: 'PASSED' });
-      console.log('✅ Error recovery: PASSED');
-      console.log('   System gracefully handled invalid input');
+      console.error('✅ Error recovery: PASSED');
+      console.error('   System gracefully handled invalid input');
     }
   } catch (error) {
     results.warnings++;
     results.tests.push({ name: 'Error Recovery', status: 'WARNING', error });
-    console.log('⚠️ Error recovery: WARNING - Should handle errors gracefully');
+    console.error('⚠️ Error recovery: WARNING - Should handle errors gracefully');
   }
 
   // Final Report
-  console.log('\n' + '='.repeat(60));
-  console.log('📊 DEPLOYMENT TEST RESULTS');
-  console.log('='.repeat(60));
-  console.log(`✅ Passed: ${results.passed}`);
-  console.log(`❌ Failed: ${results.failed}`);
-  console.log(`⚠️ Warnings: ${results.warnings}`);
-  console.log(`📝 Total Tests: ${results.tests.length}`);
-  console.log('='.repeat(60));
+  console.error('\n' + '='.repeat(60));
+  console.error('📊 DEPLOYMENT TEST RESULTS');
+  console.error('='.repeat(60));
+  console.error(`✅ Passed: ${results.passed}`);
+  console.error(`❌ Failed: ${results.failed}`);
+  console.error(`⚠️ Warnings: ${results.warnings}`);
+  console.error(`📝 Total Tests: ${results.tests.length}`);
+  console.error('='.repeat(60));
   
   // Detailed results
-  console.log('\nDetailed Results:');
+  console.error('\nDetailed Results:');
   results.tests.forEach(test => {
     const icon = test.status === 'PASSED' ? '✅' : 
                  test.status === 'FAILED' ? '❌' : '⚠️';
-    console.log(`${icon} ${test.name}: ${test.status}`);
+    console.error(`${icon} ${test.name}: ${test.status}`);
     if (test.duration) {
-      console.log(`   Duration: ${test.duration}ms`);
+      console.error(`   Duration: ${test.duration}ms`);
     }
     if (test.error && process.env.NODE_ENV === 'development') {
-      console.log(`   Error: ${test.error}`);
+      console.error(`   Error: ${test.error}`);
     }
   });
   
   // Deployment recommendation
-  console.log('\n' + '='.repeat(60));
+  console.error('\n' + '='.repeat(60));
   if (results.failed === 0) {
-    console.log('✅ DEPLOYMENT READY: All critical tests passed!');
+    console.error('✅ DEPLOYMENT READY: All critical tests passed!');
   } else if (results.failed <= 2) {
-    console.log('⚠️ DEPLOYMENT POSSIBLE: Minor issues detected, review before deploying');
+    console.error('⚠️ DEPLOYMENT POSSIBLE: Minor issues detected, review before deploying');
   } else {
-    console.log('❌ DEPLOYMENT NOT RECOMMENDED: Critical issues need to be resolved');
+    console.error('❌ DEPLOYMENT NOT RECOMMENDED: Critical issues need to be resolved');
   }
-  console.log('='.repeat(60));
+  console.error('='.repeat(60));
   
   return results;
 }

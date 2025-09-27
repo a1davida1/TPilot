@@ -1,0 +1,100 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/server/app.ts b/server/app.ts
+index 16ec8696897c2a934e16919bd3c59136c55f92b4..b341a0516eb817bb2a8c3ba596dd4e90555366c8 100644
+--- a/server/app.ts
++++ b/server/app.ts
+@@ -1,41 +1,42 @@
+ import express from 'express';
+ import cors from 'cors';
+ import cookieParser from 'cookie-parser';
+ import { v4 as uuidv4 } from 'uuid';
+ import { registerRoutes } from './routes.js';
+ import { authLimiter, generalLimiter, sanitize, notFoundHandler } from './middleware/security.js';
+ import { setupAuth } from './auth.js';
+ import { setupSocialAuth } from './social-auth.js';
+ import { mountStripeWebhook } from './routes/webhooks.stripe.js';
+ import { mountBillingRoutes } from './routes/billing.js';
+ import { logger } from './bootstrap/logger.js';
+ import { startQueue } from './bootstrap/queue.js';
+ import { prepareResponseLogPayload, truncateLogLine } from './lib/request-logger.js';
+ import passport from 'passport'; // Assuming passport is imported elsewhere or needs to be imported here
+ import { createSessionMiddleware } from './bootstrap/session.js';
+ import { initializeSentry } from './bootstrap/sentry';
++import { registerDefaultRedditClients } from './lib/reddit.js';
+ 
+ export interface CreateAppOptions {
+   startQueue?: boolean;
+   configureStaticAssets?: boolean;
+   enableVite?: boolean;
+ }
+ 
+ export interface CreateAppResult {
+   app: express.Express;
+   server: import('http').Server;
+ }
+ 
+ export const API_PREFIX = '/api/v1';
+ 
+ declare global {
+   namespace Express {
+     interface Request {
+       id: string;
+     }
+   }
+ }
+ 
+ function configureCors(app: express.Express): void {
+   const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map((origin) => origin.trim()) ?? [];
+ 
+diff --git a/server/app.ts b/server/app.ts
+index 16ec8696897c2a934e16919bd3c59136c55f92b4..b341a0516eb817bb2a8c3ba596dd4e90555366c8 100644
+--- a/server/app.ts
++++ b/server/app.ts
+@@ -247,42 +248,44 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
+   app.use(passport.session());
+ 
+   applyRequestLogging(app);
+ 
+   const startQueueOption = options.startQueue ?? true;
+   const configureStaticOption = options.configureStaticAssets ?? true;
+   const enableVite = options.enableVite ?? (app.get('env') === 'development');
+   const queuePrerequisitesPresent = Boolean(process.env.REDIS_URL || process.env.DATABASE_URL);
+   const shouldStartQueue = startQueueOption && queuePrerequisitesPresent;
+ 
+   try {
+     app.use(`${API_PREFIX}/auth`, authLimiter);
+ 
+     if (shouldStartQueue) {
+       await startQueue();
+     } else if (startQueueOption) {
+       logger.info(
+         'Queue startup skipped: provide REDIS_URL or DATABASE_URL environment variables to enable background workers.'
+       );
+     } else {
+       logger.info('Queue startup disabled for current execution context.');
+     }
+ 
+     const sentry = initializeSentry();
+ 
++    registerDefaultRedditClients();
++
+     setupAuth(app);
+     setupSocialAuth(app);  // Register social auth routes including logout
+     mountStripeWebhook(app, API_PREFIX);
+     mountBillingRoutes(app);
+ 
+     const server = await registerRoutes(app, API_PREFIX, { sentry });
+ 
+     if (configureStaticOption) {
+       await configureStaticAssets(app, server, enableVite);
+     }
+ 
+     return { app, server };
+   } catch (error) {
+     logger.error('Failed to initialise application:', error);
+     throw error;
+   }
+ }
+ 
+EOF
+)

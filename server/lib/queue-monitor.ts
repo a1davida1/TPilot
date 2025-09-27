@@ -294,7 +294,7 @@ export class QueueMonitor {
     try {
       const { resumeQueue } = await import("./queue/index.js");
       await resumeQueue(queueName);
-      console.log(`▶️ Queue ${queueName} resumed`);
+      console.error(`▶️ Queue ${queueName} resumed`);
       return true;
     } catch (error) {
       console.error(`Failed to resume queue ${queueName}:`, error);
@@ -307,7 +307,7 @@ export class QueueMonitor {
       const queue = getQueueBackend();
       if (queue.retryFailedJobs) {
         const retried = await queue.retryFailedJobs(queueName);
-        console.log(`🔄 Retried ${retried} failed jobs in queue ${queueName}`);
+        console.error(`🔄 Retried ${retried} failed jobs in queue ${queueName}`);
         return retried;
       }
       return 0;
@@ -322,7 +322,7 @@ export class QueueMonitor {
       const queue = getQueueBackend();
       if (queue.clearQueue) {
         await queue.clearQueue(queueName);
-        console.log(`🧹 Cleared queue ${queueName}`);
+        console.error(`🧹 Cleared queue ${queueName}`);
         return true;
       }
       return false;

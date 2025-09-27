@@ -259,7 +259,7 @@ async function applyExistingOverrides(subreddit: string, newSpec: RuleSpecBase):
  * Sync rules for a single subreddit
  */
 async function syncSubredditRules(subreddit: string): Promise<void> {
-  console.log(`Syncing rules for r/${subreddit}...`);
+  console.error(`Syncing rules for r/${subreddit}...`);
 
   try {
     // Fetch rules from Reddit
@@ -290,7 +290,7 @@ async function syncSubredditRules(subreddit: string): Promise<void> {
         },
       });
 
-    console.log(`✅ Successfully synced rules for r/${subreddit}`);
+    console.error(`✅ Successfully synced rules for r/${subreddit}`);
   } catch (error) {
     console.error(`❌ Failed to sync rules for r/${subreddit}:`, error);
   }
@@ -300,13 +300,13 @@ async function syncSubredditRules(subreddit: string): Promise<void> {
  * Sync rules for all known communities
  */
 async function syncAllCommunityRules(): Promise<void> {
-  console.log('🔄 Starting community rules sync...');
+  console.error('🔄 Starting community rules sync...');
 
   try {
     // Get all communities from the database
     const communities = await db.select().from(redditCommunities);
     
-    console.log(`Found ${communities.length} communities to sync`);
+    console.error(`Found ${communities.length} communities to sync`);
 
     // Process in batches to avoid rate limiting
     const batchSize = 5;
@@ -320,12 +320,12 @@ async function syncAllCommunityRules(): Promise<void> {
 
       // Delay between batches to respect Reddit's rate limits
       if (i + batchSize < communities.length) {
-        console.log(`Processed ${i + batchSize}/${communities.length}, waiting...`);
+        console.error(`Processed ${i + batchSize}/${communities.length}, waiting...`);
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
     }
 
-    console.log('✅ Community rules sync completed');
+    console.error('✅ Community rules sync completed');
   } catch (error) {
     console.error('❌ Community rules sync failed:', error);
     process.exit(1);
@@ -342,7 +342,7 @@ async function main() {
     // Sync all communities
     await syncAllCommunityRules();
   } else if (args[0] === '--help' || args[0] === '-h') {
-    console.log(`
+    console.error(`
 Usage: tsx sync-subreddit-rules.ts [subreddit_name]
 
 Options:

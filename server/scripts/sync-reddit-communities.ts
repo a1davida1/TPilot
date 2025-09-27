@@ -286,7 +286,7 @@ export async function syncRedditCommunities(config?: { subreddits?: string[]; ru
 if (import.meta.url === `file://${process.argv[1]}`) {
   syncRedditCommunities()
     .then((result) => {
-      console.log('✅ Sync completed:', result);
+      console.error('✅ Sync completed:', result);
       process.exit(0);
     })
     .catch((error) => {

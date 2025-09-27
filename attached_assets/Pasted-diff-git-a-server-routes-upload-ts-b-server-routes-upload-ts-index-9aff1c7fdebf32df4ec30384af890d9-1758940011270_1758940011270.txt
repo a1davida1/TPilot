@@ -1,0 +1,102 @@
+diff --git a/server/routes/upload.ts b/server/routes/upload.ts
+index 9aff1c7fdebf32df4ec30384af890d9cf421f094..236f993ec14adbad4b7a1d45e31b2020491f9145 100644
+--- a/server/routes/upload.ts
++++ b/server/routes/upload.ts
+@@ -1,39 +1,40 @@
+ import express, { type Request, type Response } from 'express';
+ import multer from 'multer';
+ import path from 'path';
+ import fs from 'fs/promises';
+ import crypto from 'crypto';
+ import sharp from 'sharp';
+ import { fileTypeFromBuffer } from 'file-type';
+ import { authenticateToken, type AuthRequest } from '../middleware/auth.js';
+ import { uploadLimiter, logger } from '../middleware/security.js';
+ import { imageProtectionLimiter as tierProtectionLimiter } from '../middleware/tiered-rate-limit.js';
+ import { uploadRequestSchema, type ProtectionLevel, type UploadRequest as UploadRequestBody } from '@shared/schema';
+ import { ZodError } from 'zod';
+ import { imageStreamingUpload, cleanupUploadedFiles } from '../middleware/streaming-upload.js';
+ import { embedSignature } from '../lib/steganography.js';
++import { buildUploadUrl } from '../lib/uploads.js';
+ 
+ interface UploadAuthRequest extends AuthRequest {
+   file?: Express.Multer.File;
+ }
+ 
+ const router = express.Router();
+ 
+ // Configure secure multer for file uploads
+ const secureStorage = multer.diskStorage({
+   destination: async (req, file, cb) => {
+     const uploadDir = path.join(process.cwd(), 'uploads');
+     try {
+       await fs.mkdir(uploadDir, { recursive: true });
+       cb(null, uploadDir);
+     } catch (error) {
+       cb(error as Error, uploadDir);
+     }
+   },
+   filename: (req, file, cb) => {
+     // More secure filename generation
+     const uniqueSuffix = crypto.randomBytes(16).toString('hex');
+     const ext = path.extname(file.originalname);
+     cb(null, `upload-${uniqueSuffix}${ext}`);
+   }
+ });
+diff --git a/server/routes/upload.ts b/server/routes/upload.ts
+index 9aff1c7fdebf32df4ec30384af890d9cf421f094..236f993ec14adbad4b7a1d45e31b2020491f9145 100644
+--- a/server/routes/upload.ts
++++ b/server/routes/upload.ts
+@@ -458,51 +459,51 @@ router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken, u
+     });
+     
+     // Apply ImageShield protection
+     const protectedFileName = `protected_${authReq.file.filename}`;
+     protectedFilePath = path.join(path.dirname(tempFilePath), protectedFileName);
+     
+     await applyImageShieldProtection(
+       tempFilePath,
+       protectedFilePath,
+       protectionLevel as 'light' | 'standard' | 'heavy',
+       addWatermark,
+       String(authReq.user?.id)
+     );
+     
+     const signature = crypto.randomUUID();
+     const protectedBuffer = embedSignature(
+       await fs.readFile(protectedFilePath),
+       signature
+     );
+     await fs.writeFile(protectedFilePath, protectedBuffer);
+     
+     // Clean up original file
+     await fs.unlink(tempFilePath);
+     tempFilePath = '';
+     
+-    const fileUrl = `/uploads/${protectedFileName}`;
++    const fileUrl = buildUploadUrl(protectedFileName);
+     const protectedStats = await fs.stat(protectedFilePath);
+     
+     logger.info(`Protected file uploaded: ${protectedFileName} by user ${authReq.user?.id}, tier: ${userTier}`);
+     
+     res.json({
+       message: 'File uploaded and protected successfully',
+       filename: protectedFileName,
+       url: fileUrl,
+       size: protectedStats.size,
+       originalSize: authReq.file.size,
+       protectionLevel,
+       watermarked: addWatermark,
+       signature,
+       settings: validatedRequest.useCustom ? validatedRequest.customSettings : undefined
+     });
+   } catch (error) {
+     logger.error('Upload error:', { error: error instanceof Error ? (error as Error).message : String(error) });
+     
+     // Clean up any temp files
+     if (tempFilePath) {
+       try { await fs.unlink(tempFilePath); } catch (e) { /* ignore cleanup errors */ }
+     }
+     if (protectedFilePath) {
+       try { await fs.unlink(protectedFilePath); } catch (e) { /* ignore cleanup errors */ }
+     }

@@ -146,7 +146,7 @@ async function main(): Promise<void> {
         await withTimeout(Promise.resolve(execution), config.timeout);
         await runHooks(afterEachHooks);
         passed = true;
-        console.log(`✓ ${testCase.title}`);
+        console.error(`✓ ${testCase.title}`);
       } catch (error) {
         await runHooks(afterEachHooks);
         if (attempt >= attempts) {

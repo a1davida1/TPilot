@@ -2,7 +2,7 @@ import { storage } from "../storage";
 
 export async function seedExpenseCategories() {
   try {
-    console.log('🌱 Seeding expense categories...');
+    console.error('🌱 Seeding expense categories...');
 
     const categories = [
       {
@@ -76,14 +76,14 @@ export async function seedExpenseCategories() {
     for (const category of categories) {
       try {
         await storage.createExpenseCategory(category);
-        console.log(`✅ Created category: ${category.name}`);
+        console.error(`✅ Created category: ${category.name}`);
       } catch (error) {
         // Category might already exist, that's okay
-        console.log(`ℹ️ Category ${category.name} might already exist`);
+        console.error(`ℹ️ Category ${category.name} might already exist`);
       }
     }
 
-    console.log('✅ Expense categories seeded successfully');
+    console.error('✅ Expense categories seeded successfully');
   } catch (error) {
     console.error('❌ Error seeding expense categories:', error);
   }
@@ -91,7 +91,7 @@ export async function seedExpenseCategories() {
 
 export async function seedTaxDeductionInfo() {
   try {
-    console.log('🌱 Seeding tax deduction information...');
+    console.error('🌱 Seeding tax deduction information...');
 
     const taxInfo = [
       {
@@ -161,13 +161,13 @@ export async function seedTaxDeductionInfo() {
           requirements: [info.documentation],
           applicableFor: ['content creators', 'influencers', 'social media creators']
         });
-        console.log(`✅ Created tax info: ${info.title}`);
+        console.error(`✅ Created tax info: ${info.title}`);
       } catch (error) {
-        console.log(`ℹ️ Tax info ${info.title} might already exist`);
+        console.error(`ℹ️ Tax info ${info.title} might already exist`);
       }
     }
 
-    console.log('✅ Tax deduction information seeded successfully');
+    console.error('✅ Tax deduction information seeded successfully');
   } catch (error) {
     console.error('❌ Error seeding tax deduction info:', error);
   }

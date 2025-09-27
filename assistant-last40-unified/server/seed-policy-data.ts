@@ -3,7 +3,7 @@ import { subredditRules, featureFlags } from "@shared/schema";
 import type { RuleSpec } from "./lib/policy-linter.js";
 
 export async function seedPolicyData() {
-  console.log("🌱 Seeding policy data...");
+  console.error("🌱 Seeding policy data...");
 
   try {
     const policyData: Array<{
@@ -73,7 +73,7 @@ export async function seedPolicyData() {
           }
         });
       
-      console.log(`✅ Added rules for r/${subreddit}`);
+      console.error(`✅ Added rules for r/${subreddit}`);
     }
 
     // Insert policy feature flags
@@ -99,7 +99,7 @@ export async function seedPolicyData() {
         }
       });
 
-    console.log("✅ Added policy feature flags");
+    console.error("✅ Added policy feature flags");
 
     // Add general content quality feature flags
     await db
@@ -124,7 +124,7 @@ export async function seedPolicyData() {
         }
       });
 
-    console.log("✅ Policy data seeding complete!");
+    console.error("✅ Policy data seeding complete!");
 
   } catch (error) {
     console.error("❌ Error seeding policy data:", error);

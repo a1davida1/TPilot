@@ -74,7 +74,7 @@ export async function openAICaptionFallback({
 
   if (imageUrl && openai) {
     try {
-      console.log('OpenAI fallback: Analyzing image for accurate captions');
+      console.error('OpenAI fallback: Analyzing image for accurate captions');
 
       if (imageUrl.startsWith('data:')) {
         // For data URLs, we can send directly to OpenAI vision

@@ -35,7 +35,7 @@ export function Header() {
 
   // Assume this function exists and handles the walkthrough replay
   const handleReplayWalkthrough = () => {
-    console.log("Replaying walkthrough...");
+    console.error("Replaying walkthrough...");
     // In a real app, you would trigger the walkthrough replay logic here.
     // For example, using a state management or a dedicated hook.
   };

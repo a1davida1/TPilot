@@ -17,7 +17,7 @@ async function createAdmin() {
 
   const existing = await db.select().from(users).where(eq(users.email, email)).limit(1);
   if (existing.length > 0) {
-    console.log('✅ Admin user already exists');
+    console.error('✅ Admin user already exists');
     return;
   }
 
@@ -41,7 +41,7 @@ async function createAdmin() {
     tier: 'admin'
   });
 
-  console.log(`✅ Admin user created with email ${email}`);
+  console.error(`✅ Admin user created with email ${email}`);
 }
 
 createAdmin()

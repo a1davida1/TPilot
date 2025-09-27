@@ -726,7 +726,7 @@ export class RedditManager {
   async submitPost(options: RedditPostOptions): Promise<RedditPostResult> {
     let permission: PostingPermission | undefined;
     try {
-      console.log(`Submitting post to r/${options.subreddit}: "${options.title}"`);
+      console.error(`Submitting post to r/${options.subreddit}: "${options.title}"`);
 
       // Check if we can post to this subreddit
       permission = await RedditManager.canPostToSubreddit(this.userId, options.subreddit, {
@@ -792,7 +792,7 @@ export class RedditManager {
       const duplicateBody = combineContentSegments(options.body, options.url);
       await this.recordSafetySignals(options.subreddit, options.title, duplicateBody);
 
-      console.log('Reddit submission succeeded:', {
+      console.error('Reddit submission succeeded:', {
         userId: this.userId,
         subreddit: options.subreddit,
         postId: submission.id,
@@ -881,7 +881,7 @@ export class RedditManager {
 
       // Direct image upload to Reddit
       if (options.imageBuffer || options.imagePath) {
-        console.log('Uploading image directly to Reddit (i.redd.it)...');
+        console.error('Uploading image directly to Reddit (i.redd.it)...');
 
         const subreddit = (reddit as unknown as {
           getSubreddit(name: string): {
@@ -1047,7 +1047,7 @@ export class RedditManager {
       // Not all subreddits support galleries
       const errorObj = error as { message?: string };
       if (errorObj.message?.includes('INVALID_OPTION') || errorObj.message?.includes('gallery')) {
-        console.log('Gallery not supported, falling back to single image');
+        console.error('Gallery not supported, falling back to single image');
         return this.submitImagePost({
           subreddit: options.subreddit,
           title: options.title,
@@ -1486,7 +1486,7 @@ export class RedditManager {
         body
       );
 
-      console.log(`Recorded safety signals for user ${this.userId} in r/${subreddit}`);
+      console.error(`Recorded safety signals for user ${this.userId} in r/${subreddit}`);
     } catch (error) {
       console.error('Failed to record safety signals:', error);
     }
@@ -1835,7 +1835,7 @@ export function getRedditAuthUrl(state: string): string {
     redirectUri = `${protocol}://${domain}/api/reddit/callback`;
   }
 
-  console.log('Reddit OAuth redirect URI (auth):', redirectUri);
+  console.error('Reddit OAuth redirect URI (auth):', redirectUri);
 
   const baseUrl = 'https://www.reddit.com/api/v1/authorize';
   const params = new URLSearchParams({
@@ -1868,7 +1868,7 @@ export async function exchangeRedditCode(code: string): Promise<{
     redirectUri = `${protocol}://${domain}/api/reddit/callback`;
   }
 
-  console.log('Reddit OAuth redirect URI (exchange):', redirectUri);
+  console.error('Reddit OAuth redirect URI (exchange):', redirectUri);
 
   try {
     const response = await fetch('https://www.reddit.com/api/v1/access_token', {

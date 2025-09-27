@@ -95,13 +95,13 @@ function validateProductionRequirements(): ValidationResult {
 }
 
 async function main() {
-  console.log('🔍 Validating production environment configuration...');
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log('');
+  console.error('🔍 Validating production environment configuration...');
+  console.error(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.error('');
 
   try {
     // First, run the core validation from the config module
-    console.log('✅ Core environment validation passed');
+    console.error('✅ Core environment validation passed');
     validateEnvironment();
   } catch (error) {
     console.error('❌ Core environment validation failed:');
@@ -113,25 +113,25 @@ async function main() {
   const prodResult = validateProductionRequirements();
   
   if (prodResult.warnings.length > 0) {
-    console.log('⚠️  Warnings:');
+    console.error('⚠️  Warnings:');
     for (const warning of prodResult.warnings) {
-      console.log(`   • ${warning}`);
+      console.error(`   • ${warning}`);
     }
-    console.log('');
+    console.error('');
   }
 
   if (prodResult.errors.length > 0) {
-    console.log('❌ Production validation errors:');
+    console.error('❌ Production validation errors:');
     for (const error of prodResult.errors) {
-      console.log(`   • ${error}`);
+      console.error(`   • ${error}`);
     }
-    console.log('');
-    console.log('Fix these issues before deploying to production.');
+    console.error('');
+    console.error('Fix these issues before deploying to production.');
     process.exit(1);
   }
 
-  console.log('✅ All production environment checks passed!');
-  console.log('Ready for deployment.');
+  console.error('✅ All production environment checks passed!');
+  console.error('Ready for deployment.');
 }
 
 // Run validation if called directly

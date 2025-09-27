@@ -1,0 +1,194 @@
+diff --git a//dev/null b/server/routes/subscription-management.ts
+index 0000000000000000000000000000000000000000..884e4fa7be6e0488c7abbb7e6014bd983b834bc9 100644
+--- a//dev/null
++++ b/server/routes/subscription-management.ts
+@@ -0,0 +1,189 @@
++import type { Request, Response } from "express";
++
++type CancelSubscriptionRequest = Request<Record<string, unknown>, unknown, { subscriptionId?: string }> & {
++  user?: { id: number };
++};
++
++interface StripeSubscriptionLike {
++  id: string;
++  metadata?: Record<string, string | null | undefined> | null;
++  customer?: string | { id?: string | null } | null;
++  cancel_at?: number | null;
++  object?: string;
++  deleted?: boolean;
++}
++
++interface StripeSubscriptionsApi {
++  retrieve: (subscriptionId: string) => Promise<StripeSubscriptionLike>;
++  update: (
++    subscriptionId: string,
++    updateParams: { cancel_at_period_end: boolean }
++  ) => Promise<StripeSubscriptionLike>;
++}
++
++interface StripeSubscriptionClient {
++  subscriptions: StripeSubscriptionsApi;
++}
++
++interface SubscriptionUserRecord {
++  id: number;
++  stripeCustomerId: string | null;
++}
++
++interface CancelSubscriptionLogger {
++  error: (message: string, meta?: unknown) => void;
++  warn: (message: string, meta?: unknown) => void;
++}
++
++type SentryInstance = typeof import("@sentry/node");
++
++export interface CancelSubscriptionDependencies {
++  stripe: StripeSubscriptionClient | null;
++  storage: { getUser: (id: number) => Promise<SubscriptionUserRecord | undefined> };
++  logger: CancelSubscriptionLogger;
++  sentry?: SentryInstance | null;
++}
++
++const normalizeIdentifier = (value: string | null | undefined): string | undefined => {
++  if (typeof value !== "string") {
++    return undefined;
++  }
++  const trimmed = value.trim();
++  return trimmed.length > 0 ? trimmed : undefined;
++};
++
++const getSubscriptionCustomerId = (subscription: StripeSubscriptionLike): string | undefined => {
++  const { customer } = subscription;
++  if (!customer) {
++    return undefined;
++  }
++  if (typeof customer === "string") {
++    return normalizeIdentifier(customer);
++  }
++  return normalizeIdentifier(customer.id ?? undefined);
++};
++
++const isDeletedSubscription = (subscription: StripeSubscriptionLike): boolean => {
++  return subscription.deleted === true || subscription.object === "subscription_deleted";
++};
++
++const isStripeErrorWithStatus = (
++  error: unknown,
++  statusCode: number
++): error is { statusCode: number } => {
++  if (typeof error !== "object" || error === null) {
++    return false;
++  }
++  const candidate = error as { statusCode?: number };
++  return typeof candidate.statusCode === "number" && candidate.statusCode === statusCode;
++};
++
++const toErrorMetadata = (error: unknown): { message: string } => {
++  if (error instanceof Error) {
++    return { message: error.message };
++  }
++  return { message: String(error) };
++};
++
++export function createCancelSubscriptionHandler({
++  stripe,
++  storage,
++  logger,
++  sentry,
++}: CancelSubscriptionDependencies) {
++  return async (req: CancelSubscriptionRequest, res: Response) => {
++    if (!stripe) {
++      return res.status(503).json({ message: "Payment system not configured" });
++    }
++
++    const userId = req.user?.id;
++    if (!userId) {
++      return res.status(401).json({ message: "Authentication required" });
++    }
++
++    const { subscriptionId } = req.body;
++    if (!subscriptionId) {
++      return res.status(400).json({ message: "Subscription ID required" });
++    }
++
++    try {
++      const userRecord = await storage.getUser(userId);
++      if (!userRecord) {
++        return res.status(404).json({ message: "User not found" });
++      }
++
++      let subscription: StripeSubscriptionLike;
++      try {
++        subscription = await stripe.subscriptions.retrieve(subscriptionId);
++      } catch (error) {
++        if (isStripeErrorWithStatus(error, 404)) {
++          return res.status(404).json({ message: "Subscription not found" });
++        }
++        logger.error("Failed to retrieve subscription for cancellation", {
++          userId,
++          subscriptionId,
++          ...toErrorMetadata(error),
++        });
++        if (sentry) {
++          sentry.captureException(error);
++        }
++        return res.status(500).json({ message: "Failed to cancel subscription" });
++      }
++
++      if (isDeletedSubscription(subscription)) {
++        return res.status(404).json({ message: "Subscription not found" });
++      }
++
++      const metadataUserId = normalizeIdentifier(
++        subscription.metadata?.userId ?? subscription.metadata?.user_id ?? undefined
++      );
++      const storedCustomerId = normalizeIdentifier(userRecord.stripeCustomerId ?? undefined);
++      const subscriptionCustomerId = getSubscriptionCustomerId(subscription);
++
++      const metadataMatches = metadataUserId === String(userId);
++      const customerMatches = storedCustomerId !== undefined && subscriptionCustomerId === storedCustomerId;
++
++      if (!metadataMatches && !customerMatches) {
++        logger.warn("Attempted to cancel subscription that does not belong to user", {
++          userId,
++          subscriptionId,
++          metadataUserId,
++          subscriptionCustomerId,
++          storedCustomerId,
++        });
++        return res.status(403).json({ message: "Subscription does not belong to this account" });
++      }
++
++      try {
++        const cancelledSubscription = await stripe.subscriptions.update(subscriptionId, {
++          cancel_at_period_end: true,
++        });
++
++        return res.json({
++          message: "Subscription will be cancelled at the end of the billing period",
++          cancelAt: cancelledSubscription.cancel_at ?? null,
++        });
++      } catch (error) {
++        logger.error("Subscription cancellation error", {
++          userId,
++          subscriptionId,
++          ...toErrorMetadata(error),
++        });
++        if (sentry) {
++          sentry.captureException(error);
++        }
++        return res.status(500).json({ message: "Failed to cancel subscription" });
++      }
++    } catch (outerError) {
++      logger.error("Unexpected cancellation error", {
++        userId: req.user?.id,
++        subscriptionId: req.body?.subscriptionId,
++        ...toErrorMetadata(outerError),
++      });
++      if (sentry) {
++        sentry.captureException(outerError);
++      }
++      return res.status(500).json({ message: "Failed to cancel subscription" });
++    }
++  };
++}

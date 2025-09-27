@@ -68,7 +68,7 @@ async function main() {
   await client.query(MIGRATION_SQL);
 
   // Execute only - don't write to migrations directory to avoid future conflicts
-  console.log("✅ Feature flags resolved successfully");
+  console.error("✅ Feature flags resolved successfully");
 
   // Print verification
   const tables = await client.query(`
@@ -79,15 +79,15 @@ async function main() {
 
   // Count feature_flags rows
   const ffCount = await client.query(`SELECT count(*)::int AS rows FROM public.feature_flags;`);
-  console.log('feature_flags rows:', ffCount.rows[0].rows);
+  console.error('feature_flags rows:', ffCount.rows[0].rows);
   
   // Check if saved_content exists and count if it does
   const scExists = await client.query(`SELECT to_regclass('public.saved_content') IS NOT NULL AS exists;`);
   if (scExists.rows[0].exists) {
     const scCount = await client.query(`SELECT count(*)::int AS rows FROM public.saved_content;`);
-    console.log('saved_content rows:', scCount.rows[0].rows);
+    console.error('saved_content rows:', scCount.rows[0].rows);
   } else {
-    console.log('saved_content: table does not exist');
+    console.error('saved_content: table does not exist');
   }
 
   await client.end();

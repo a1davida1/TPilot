@@ -169,7 +169,7 @@ for (const result of results) {
   lines.push(`${categories[result.category].label} | ${result.key} | ${statusLabel} | ${requiredLabel} | ${notes}`);
 }
 
-console.log(lines.join('\n'));
+console.error(lines.join('\n'));
 
 if (!hasAiProvider) {
   console.warn('\n⚠️  No AI provider keys configured. Set at least one of GOOGLE_GENAI_API_KEY, GEMINI_API_KEY, or OPENAI_API_KEY.');

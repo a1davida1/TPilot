@@ -78,7 +78,7 @@ describe('Session Storage Integration', () => {
 
   it('should create and retrieve session data', async () => {
     if (!process.env.DATABASE_URL) {
-      console.log('Skipping session test - no DATABASE_URL');
+      console.warn('Skipping session test - no DATABASE_URL');
       return;
     }
 
@@ -104,7 +104,7 @@ describe('Session Storage Integration', () => {
 
   it('should persist session across requests', async () => {
     if (!process.env.DATABASE_URL) {
-      console.log('Skipping session test - no DATABASE_URL');
+      console.warn('Skipping session test - no DATABASE_URL');
       return;
     }
 
@@ -123,7 +123,7 @@ describe('Session Storage Integration', () => {
 
   it('should destroy session correctly', async () => {
     if (!process.env.DATABASE_URL) {
-      console.log('Skipping session test - no DATABASE_URL');
+      console.warn('Skipping session test - no DATABASE_URL');
       return;
     }
 
@@ -147,7 +147,7 @@ describe('Session Storage Integration', () => {
 
   it('should handle concurrent sessions correctly', async () => {
     if (!process.env.DATABASE_URL) {
-      console.log('Skipping session test - no DATABASE_URL');
+      console.warn('Skipping session test - no DATABASE_URL');
       return;
     }
 

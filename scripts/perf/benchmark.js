@@ -69,8 +69,8 @@ class BenchmarkSuite {
   }
 
   async run() {
-    console.log(`\n🚀 Running benchmark suite: ${this.name}`);
-    console.log(`📝 ${this.description}\n`);
+    console.error(`\n🚀 Running benchmark suite: ${this.name}`);
+    console.error(`📝 ${this.description}\n`);
 
     const suiteResults = {
       suite: this.name,
@@ -79,15 +79,15 @@ class BenchmarkSuite {
     };
 
     for (const test of this.tests) {
-      console.log(`  Testing: ${test.name}...`);
+      console.error(`  Testing: ${test.name}...`);
       
       try {
         const testResult = await this.runTest(test);
         suiteResults.tests.push(testResult);
         
-        console.log(`  ✅ ${test.name}: ${testResult.avgMs.toFixed(2)}ms avg (${testResult.samples} samples)`);
+        console.error(`  ✅ ${test.name}: ${testResult.avgMs.toFixed(2)}ms avg (${testResult.samples} samples)`);
       } catch (error) {
-        console.log(`  ❌ ${test.name}: ${error.message}`);
+        console.error(`  ❌ ${test.name}: ${error.message}`);
         suiteResults.tests.push({
           name: test.name,
           error: error.message,
@@ -298,9 +298,9 @@ async function generateReport() {
   const summary = generateMarkdownSummary();
   await fs.writeFile(summaryPath, summary);
   
-  console.log(`\n📊 Reports generated:`);
-  console.log(`   Detailed: ${reportPath}`);
-  console.log(`   Summary:  ${summaryPath}`);
+  console.error(`\n📊 Reports generated:`);
+  console.error(`   Detailed: ${reportPath}`);
+  console.error(`   Summary:  ${summaryPath}`);
 }
 
 function generateMarkdownSummary() {
@@ -343,10 +343,10 @@ async function main() {
     }
   }
   
-  console.log('🎯 ThottoPilot Performance Benchmark Suite');
-  console.log('==========================================\n');
-  console.log(`📍 Target: ${CONFIG.baseUrl}`);
-  console.log(`📊 Default samples: ${CONFIG.samples.default}`);
+  console.error('🎯 ThottoPilot Performance Benchmark Suite');
+  console.error('==========================================\n');
+  console.error(`📍 Target: ${CONFIG.baseUrl}`);
+  console.error(`📊 Default samples: ${CONFIG.samples.default}`);
   
   try {
     const suites = {
@@ -369,7 +369,7 @@ async function main() {
     
     await generateReport();
     
-    console.log('\n✅ Benchmark completed successfully!');
+    console.error('\n✅ Benchmark completed successfully!');
     
   } catch (error) {
     console.error('\n❌ Benchmark failed:', error.message);
@@ -379,9 +379,9 @@ async function main() {
 
 // Handle graceful shutdown
 process.on('SIGINT', async () => {
-  console.log('\n\n⚠️  Benchmark interrupted by user');
+  console.error('\n\n⚠️  Benchmark interrupted by user');
   if (results.tests.length > 0) {
-    console.log('📊 Generating partial report...');
+    console.error('📊 Generating partial report...');
     await generateReport();
   }
   process.exit(0);

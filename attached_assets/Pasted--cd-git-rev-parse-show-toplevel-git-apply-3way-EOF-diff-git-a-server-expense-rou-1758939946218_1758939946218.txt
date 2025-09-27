@@ -1,0 +1,93 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/server/expense-routes.ts b/server/expense-routes.ts
+index 7668908ba862496c2e8bfe21dcf7ef5a46ee91f2..12418e2c0346e651ea3527d993c0adc2a07ddd43 100644
+--- a/server/expense-routes.ts
++++ b/server/expense-routes.ts
+@@ -1,34 +1,35 @@
+ import express, { type Express } from 'express';
+ import multer from 'multer';
+ import path from 'path';
+ import fs from 'fs/promises';
+ import sharp from 'sharp';
+ import crypto from 'crypto';
+ import { authenticateToken } from './middleware/auth.js';
+ import { storage } from './storage.js';
+ import { MediaManager } from './lib/media.js';
++import { buildUploadUrl } from './lib/uploads.js';
+ import { logger } from './bootstrap/logger.js';
+ import { type Expense, type ExpenseCategory, type InsertExpense, type User } from '@shared/schema';
+ 
+ interface AuthRequest extends express.Request {
+   user?: User;
+ }
+ 
+ type ExpenseCategoryWithDefaults = ExpenseCategory & {
+   defaultBusinessPurpose?: string | null;
+ };
+ 
+ function isStringArray(value: unknown): value is string[] {
+   return Array.isArray(value) && value.every((item) => typeof item === 'string');
+ }
+ 
+ const knownImageExtensions = new Set([
+   '.jpg',
+   '.jpeg',
+   '.png',
+   '.gif',
+   '.bmp',
+   '.webp',
+   '.tiff'
+ ]);
+ 
+diff --git a/server/expense-routes.ts b/server/expense-routes.ts
+index 7668908ba862496c2e8bfe21dcf7ef5a46ee91f2..12418e2c0346e651ea3527d993c0adc2a07ddd43 100644
+--- a/server/expense-routes.ts
++++ b/server/expense-routes.ts
+@@ -463,43 +464,43 @@ export function registerExpenseRoutes(app: Express) {
+         );
+         receiptBuffer = await applyReceiptImageShieldProtection(
+           req.file.buffer,
+           protectionLevel as 'light' | 'standard' | 'heavy',
+           addWatermark
+         );
+         desiredFileName = `protected_${safeOriginalName}`;
+       }
+ 
+       let receiptUrl: string;
+       let receiptFileName = desiredFileName;
+ 
+       if (process.env.S3_BUCKET_MEDIA) {
+         const asset = await MediaManager.uploadFile(receiptBuffer, {
+           userId: req.user.id,
+           filename: desiredFileName,
+         });
+         receiptUrl = asset.downloadUrl || asset.signedUrl || asset.key;
+         receiptFileName = asset.filename;
+       } else {
+         const uploadDir = path.join(process.cwd(), 'uploads', 'receipts');
+         await fs.mkdir(uploadDir, { recursive: true });
+         const timestampedFileName = `protected_${Date.now()}-${safeOriginalName}`;
+         const fileName = timestampedFileName;
+         await fs.writeFile(path.join(uploadDir, fileName), receiptBuffer);
+-        receiptUrl = `/uploads/receipts/${fileName}`;
++        receiptUrl = buildUploadUrl('receipts', fileName);
+         receiptFileName = fileName;
+       }
+ 
+       const expense = await storage.updateExpense(expenseId, req.user.id, {
+         receiptUrl,
+         receiptFileName,
+       });
+ 
+       const uploadDescriptor = isPdf ? 'PDF receipt stored' : 'Protected receipt uploaded';
+       logger.info(`${uploadDescriptor}: ${receiptFileName} for expense ${expenseId}`);
+       res.json(expense);
+     } catch (error) {
+       console.error('Error uploading receipt:', error);
+       res.status(500).json({ message: 'Failed to upload receipt' });
+     }
+   });
+ }
+ 
+EOF
+)

@@ -1,0 +1,482 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/tests/unit/server/reddit-communities.rules.test.ts b/tests/unit/server/reddit-communities.rules.test.ts
+index 6d79764ff0c1fbb18e76402224dcf0909e69548a..d5a1c32548fa9e674718bb0d9983eea49d5ea302 100644
+--- a/tests/unit/server/reddit-communities.rules.test.ts
++++ b/tests/unit/server/reddit-communities.rules.test.ts
+@@ -1,172 +1,162 @@
+ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+ import fs from 'fs';
+ import path from 'path';
+ import { fileURLToPath } from 'url';
+-import { normalizeRules, inferSellingPolicy } from '../../../server/reddit-communities.js';
++import { normalizeRules, inferSellingPolicy, getCommunityInsights } from '../../../server/reddit-communities.js';
++import { db } from '../../../server/db.js';
++import { redditCommunities, subredditRules } from '@shared/schema.js';
++import type { RedditCommunityRuleSet } from '@shared/schema.js';
++import { syncSubredditRules } from '../../../server/scripts/sync-subreddit-rules.js';
+ 
+ // Test interfaces
+-interface TestCommunityRules {
+-  sellingAllowed?: string;
+-  watermarksAllowed?: boolean;
+-  titleRules?: string[];
+-  contentRules?: string[];
+-  verificationRequired?: boolean;
+-  minKarma?: number;
+-  minAccountAge?: number;
+-  requiresApproval?: boolean;
+-  nsfwRequired?: boolean;
+-  maxPostsPerDay?: number;
+-  cooldownHours?: number;
+-}
+-
+ interface TestCommunity {
+   id: string;
+   name?: string;
+   displayName?: string;
+   category?: string;
+   promotionAllowed?: string;
+   successProbability?: number;
+   growthTrend?: string;
+   competitionLevel?: string;
+   bestPostingTimes?: string[];
+-  rules: TestCommunityRules;
++  rules: RedditCommunityRuleSet | undefined;
+ }
+ 
+ const __filename = fileURLToPath(import.meta.url);
+ const __dirname = path.dirname(__filename);
+ 
+ describe('Reddit Communities Rules Unit Tests', () => {
+   beforeEach(() => {
+     vi.clearAllMocks();
+   });
+ 
+   afterEach(() => {
+     vi.restoreAllMocks();
+   });
+ 
+   describe('Seed data verification', () => {
+     it('should load both seed datasets and verify structured rule content', async () => {
+       const projectRoot = path.resolve(__dirname, '../../../');
+       
+       // Load both seed files
+       const regularSeedPath = path.join(projectRoot, 'server/seeds/reddit-communities.json');
+       const fullSeedPath = path.join(projectRoot, 'server/seeds/reddit-communities-full.json');
+       
+       expect(fs.existsSync(regularSeedPath)).toBe(true);
+       expect(fs.existsSync(fullSeedPath)).toBe(true);
+       
+       // Parse seed data
+       const regularSeed = JSON.parse(fs.readFileSync(regularSeedPath, 'utf8'));
+       const fullSeed = JSON.parse(fs.readFileSync(fullSeedPath, 'utf8'));
+       
+       expect(Array.isArray(regularSeed)).toBe(true);
+       expect(Array.isArray(fullSeed)).toBe(true);
+       expect(regularSeed.length).toBeGreaterThan(0);
+       expect(fullSeed.length).toBeGreaterThan(0);
+       
+       // Verify structured rule format in regular seed
+       regularSeed.forEach((community: TestCommunity) => {
+         expect(community).toHaveProperty('rules');
+         expect(typeof community.rules).toBe('object');
+-        expect(community.rules).toHaveProperty('sellingAllowed');
+-        expect(community.rules).toHaveProperty('watermarksAllowed');
+-        expect(community.rules).toHaveProperty('titleRules');
+-        expect(community.rules).toHaveProperty('contentRules');
+-        expect(Array.isArray(community.rules.titleRules)).toBe(true);
+-        expect(Array.isArray(community.rules.contentRules)).toBe(true);
++        expect(community.rules?.content).toBeDefined();
++        expect(Array.isArray(community.rules?.content?.titleGuidelines ?? [])).toBe(true);
++        expect(Array.isArray(community.rules?.content?.contentGuidelines ?? [])).toBe(true);
+       });
+-      
++
+       // Verify structured rule format in full seed
+       fullSeed.forEach((community: TestCommunity) => {
+         expect(community).toHaveProperty('rules');
+         expect(typeof community.rules).toBe('object');
+-        expect(community.rules).toHaveProperty('sellingAllowed');
+-        expect(community.rules).toHaveProperty('watermarksAllowed');
+-        expect(community.rules).toHaveProperty('titleRules');
+-        expect(community.rules).toHaveProperty('contentRules');
+-        expect(Array.isArray(community.rules.titleRules)).toBe(true);
+-        expect(Array.isArray(community.rules.contentRules)).toBe(true);
++        expect(community.rules?.content).toBeDefined();
++        expect(Array.isArray(community.rules?.content?.titleGuidelines ?? [])).toBe(true);
++        expect(Array.isArray(community.rules?.content?.contentGuidelines ?? [])).toBe(true);
+       });
+-      
++
+       // Test specific communities from different seeds
+       const gonewild = fullSeed.find((c: TestCommunity) => c.id === 'gonewild');
+       expect(gonewild).toBeDefined();
+-      expect(gonewild.rules.sellingAllowed).toBe('not_allowed');
+-      expect(gonewild.rules.watermarksAllowed).toBe(false);
+-      expect(gonewild.rules.verificationRequired).toBe(true);
+-      
++      expect(gonewild?.rules?.content?.sellingPolicy).toBeDefined();
++      expect(['no', 'not_allowed']).toContain(gonewild?.rules?.content?.sellingPolicy);
++      expect(gonewild?.rules?.content?.watermarksAllowed).toBe(false);
++      const gonewildEligibility = gonewild?.rules?.eligibility as { verification?: boolean; verificationRequired?: boolean } | undefined;
++      const gonewildVerification = gonewildEligibility?.verificationRequired ?? gonewildEligibility?.verification ?? false;
++      expect(gonewildVerification).toBe(true);
++
+       const onlyfans = fullSeed.find((c: TestCommunity) => c.id === 'onlyfans');
+       expect(onlyfans).toBeDefined();
+-      expect(onlyfans.rules.sellingAllowed).toBe('allowed');
+-      expect(onlyfans.rules.watermarksAllowed).toBe(true);
+-      
++      expect(onlyfans?.rules?.content?.sellingPolicy).toBeDefined();
++      expect(['yes', 'allowed']).toContain(onlyfans?.rules?.content?.sellingPolicy);
++      expect(onlyfans?.rules?.content?.watermarksAllowed).toBe(true);
++
+       const fitness = regularSeed.find((c: TestCommunity) => c.id === 'fitness');
+       expect(fitness).toBeDefined();
+-      expect(fitness.rules.minKarma).toBe(100);
+-      expect(fitness.rules.minAccountAge).toBe(30);
+-      expect(fitness.rules.sellingAllowed).toBe('not_allowed');
+-      expect(fitness.rules.watermarksAllowed).toBe(false);
++      expect(fitness?.rules?.eligibility?.minKarma).toBe(100);
++      const fitnessEligibility = fitness?.rules?.eligibility as { minAccountAge?: number | null; minAccountAgeDays?: number | null } | undefined;
++      const minAge = fitnessEligibility?.minAccountAgeDays ?? fitnessEligibility?.minAccountAge ?? null;
++      expect(minAge).toBe(30);
++      expect(fitness?.rules?.content?.sellingPolicy).toBe('not_allowed');
++      expect(fitness?.rules?.content?.watermarksAllowed).toBe(false);
+     });
+ 
+   });
+ 
+   describe('Rule processing and normalization', () => {
+     it('should handle legacy array-based rules with backward compatibility', async () => {
+       // Test legacy array-based rules
+       const legacyRules = ['Verification required', 'No selling', 'OC only'];
+       const result = normalizeRules(legacyRules, 'no', 'gonewild');
+-      
+-      expect(result.contentRules).toEqual(legacyRules);
+-      expect(result.sellingAllowed).toBe('not_allowed'); // Inferred from promotion='no'
+-      expect(result.titleRules).toEqual([]);
+-      expect(result.verificationRequired).toBe(false); // Default value
+-      
++
++      expect(result.content?.contentGuidelines).toEqual(legacyRules);
++      expect(result.content?.sellingPolicy).toBe('not_allowed'); // Inferred from promotion='no'
++      expect(result.content?.titleGuidelines ?? []).toEqual([]);
++      expect(result.eligibility?.verificationRequired ?? false).toBe(false); // Default value
++
+       // Test empty legacy rules
+       const emptyResult = normalizeRules([], 'yes', 'selling');
+-      expect(emptyResult.contentRules).toEqual([]);
+-      expect(emptyResult.sellingAllowed).toBe('allowed'); // Inferred from promotion='yes'
+-      
++      expect(emptyResult.content?.contentGuidelines).toEqual([]);
++      expect(emptyResult.content?.sellingPolicy).toBe('allowed'); // Inferred from promotion='yes'
++
+       // Test null rules
+       const nullResult = normalizeRules(null, 'limited', 'general');
+-      expect(nullResult.sellingAllowed).toBe('unknown'); // Default value
+-      expect(nullResult.contentRules).toEqual([]);
++      expect(nullResult.content?.sellingPolicy).toBeUndefined(); // Defaults preserve unknown policy
++      expect(nullResult.content?.contentGuidelines ?? []).toEqual([]);
+     });
+ 
+     it('should properly infer selling policy from promotion flags and category', async () => {
+       // Test various promotion/category combinations using inferSellingPolicy directly
+       expect(inferSellingPolicy('yes', 'general')).toBe('allowed');
+       expect(inferSellingPolicy('no', 'general')).toBe('not_allowed');
+       expect(inferSellingPolicy('limited', 'general')).toBe('limited');
+       expect(inferSellingPolicy('subtle', 'general')).toBe('limited');
+       expect(inferSellingPolicy('unknown', 'selling')).toBe('allowed');
+-      expect(inferSellingPolicy('unknown', 'gonewild')).toBe(undefined);
+-      
++      expect(inferSellingPolicy('unknown', 'gonewild')).toBe('unknown');
++
+       // Test with normalizeRules to verify integration
+-      const rules = { sellingAllowed: 'unknown' };
+-      expect(normalizeRules(rules, 'yes', 'general').sellingAllowed).toBe('unknown'); // Rules already specify policy
+-      expect(normalizeRules({}, 'yes', 'general').sellingAllowed).toBe('allowed'); // Empty rules, infer from flags
++      const rules: RedditCommunityRuleSet = { content: { sellingPolicy: 'unknown' } };
++      expect(normalizeRules(rules, 'yes', 'general').content?.sellingPolicy).toBe('allowed');
++      expect(normalizeRules({}, 'yes', 'general').content?.sellingPolicy).toBe('allowed'); // Empty rules, infer from flags
+     });
+ 
+     it('should derive insights warnings from structured rules', async () => {
+       // Test deriving insights from rule combinations
+       const testCommunity = {
+         id: 'test_community',
+         name: 'test_community',
+         displayName: 'Test Community',
+         category: 'test',
+         promotionAllowed: 'limited',
+         successProbability: 60,
+         growthTrend: 'stable',
+         competitionLevel: 'medium',
+         bestPostingTimes: ['morning', 'evening'],
+         rules: {
+           minKarma: 500,
+           minAccountAge: 30,
+           watermarksAllowed: false,
+           sellingAllowed: 'limited',
+           titleRules: ['No clickbait', 'Include category'],
+           contentRules: ['High quality only', 'No spam'],
+           verificationRequired: true,
+           requiresApproval: true,
+           nsfwRequired: false,
+           maxPostsPerDay: 1,
+diff --git a/tests/unit/server/reddit-communities.rules.test.ts b/tests/unit/server/reddit-communities.rules.test.ts
+index 6d79764ff0c1fbb18e76402224dcf0909e69548a..d5a1c32548fa9e674718bb0d9983eea49d5ea302 100644
+--- a/tests/unit/server/reddit-communities.rules.test.ts
++++ b/tests/unit/server/reddit-communities.rules.test.ts
+@@ -184,87 +174,221 @@ describe('Reddit Communities Rules Unit Tests', () => {
+       if (rules.sellingAllowed === 'limited') warnings.push('Limited promotion allowed - check specific rules');
+       if (rules.watermarksAllowed === false) warnings.push('Watermarks not allowed - use clean images');
+       if (rules.minKarma && rules.minKarma > 50) warnings.push(`Requires ${rules.minKarma}+ karma`);
+       if (rules.minAccountAge && rules.minAccountAge > 7) warnings.push(`Account must be ${rules.minAccountAge}+ days old`);
+       if (rules.maxPostsPerDay && rules.maxPostsPerDay <= 1) warnings.push(`Limited to ${rules.maxPostsPerDay} post${rules.maxPostsPerDay === 1 ? '' : 's'} per day`);
+       if (rules.cooldownHours && rules.cooldownHours >= 24) warnings.push(`${rules.cooldownHours}h cooldown between posts`);
+       if (rules.requiresApproval) warnings.push('Posts require mod approval - expect delays');
+       
+       // Verify warnings are generated correctly
+       expect(warnings).toContain('Verification required - complete r/GetVerified');
+       expect(warnings).toContain('Limited promotion allowed - check specific rules');
+       expect(warnings).toContain('Watermarks not allowed - use clean images');
+       expect(warnings).toContain('Requires 500+ karma');
+       expect(warnings).toContain('Account must be 30+ days old');
+       expect(warnings).toContain('Limited to 1 post per day');
+       expect(warnings).toContain('48h cooldown between posts');
+       expect(warnings).toContain('Posts require mod approval - expect delays');
+       
+       // Verify structured rules are properly normalized
+       expect(rules.sellingAllowed).toBe('limited');
+       expect(rules.watermarksAllowed).toBe(false);
+       expect(rules.verificationRequired).toBe(true);
+     });
+   });
+ 
++  describe('Rules sync integration', () => {
++    const TEST_SUBREDDIT = 'rules_sync_test';
++
++    it('syncs remote rule metadata into storage and exposes it via insights', async () => {
++      const communityRow = {
++        id: TEST_SUBREDDIT,
++        name: TEST_SUBREDDIT,
++        displayName: 'Rules Sync Test',
++        members: 1200,
++        engagementRate: 12,
++        category: 'general',
++        verificationRequired: false,
++        promotionAllowed: 'yes',
++        postingLimits: null,
++        rules: undefined as RedditCommunityRuleSet | undefined,
++        bestPostingTimes: [] as string[],
++        averageUpvotes: 15,
++        successProbability: 88,
++        growthTrend: 'stable',
++        modActivity: 'medium',
++        description: 'Test community for rules sync',
++        tags: [] as string[] | null,
++        competitionLevel: 'low',
++      };
++
++      const insertedRuleRows: Array<{ subreddit: string; rulesJson: unknown }> = [];
++
++      const selectMock = vi.spyOn(db, 'select').mockImplementation(() => ({
++        from: (table: unknown) => {
++          if (table === subredditRules) {
++            return {
++              where: () => Promise.resolve([...insertedRuleRows]),
++            };
++          }
++
++          if (table === redditCommunities) {
++            return {
++              where: () => ({
++                limit: async () => [communityRow],
++              }),
++            };
++          }
++
++          return {
++            where: () => Promise.resolve([]),
++          };
++        },
++      })) as unknown as typeof db.select;
++
++      const insertMock = vi.spyOn(db, 'insert').mockImplementation((table) => ({
++        values: (value: Record<string, unknown>) => {
++          if (table === subredditRules) {
++            insertedRuleRows.length = 0;
++            insertedRuleRows.push(value);
++          }
++
++          return {
++            onConflictDoUpdate: async () => undefined,
++          };
++        },
++      })) as unknown as typeof db.insert;
++
++      const updateMock = vi.spyOn(db, 'update').mockImplementation((table) => ({
++        set: (value: Record<string, unknown>) => ({
++          where: async () => {
++            if (table === redditCommunities) {
++              communityRow.rules = value.rules as RedditCommunityRuleSet;
++            }
++          },
++        }),
++      })) as unknown as typeof db.update;
++
++      const aboutRulesPayload = {
++        rules: [
++          {
++            kind: 'all',
++            short_name: 'No Promotion',
++            description: 'No promotion allowed. Banned: spam links.',
++            priority: 0,
++          },
++        ],
++      };
++
++      const wikiPayload = {
++        kind: 'Listing',
++        data: {
++          content_md: 'Minimum 200 karma\nAccount must be 10 days old\nVerification required',
++        },
++      };
++
++      const fetchMock = vi.spyOn(globalThis, 'fetch');
++      fetchMock.mockResolvedValueOnce({
++        ok: true,
++        json: async () => aboutRulesPayload,
++      } as unknown as Response);
++      fetchMock.mockResolvedValueOnce({
++        ok: true,
++        json: async () => wikiPayload,
++      } as unknown as Response);
++
++      await syncSubredditRules(TEST_SUBREDDIT);
++
++      expect(insertMock).toHaveBeenCalled();
++      const storedSpec = insertedRuleRows[0]?.rulesJson;
++      expect(storedSpec).toBeDefined();
++
++      expect(updateMock).toHaveBeenCalled();
++      expect(communityRow.rules).toBeDefined();
++      expect(communityRow.rules?.content?.sellingPolicy).toBe('not_allowed');
++
++      const insights = await getCommunityInsights(TEST_SUBREDDIT);
++      expect(insights.warnings).toContain('This subreddit requires verification - complete r/GetVerified');
++      expect(insights.warnings).toContain('Community guideline: Minimum 200 karma');
++
++      selectMock.mockRestore();
++      insertMock.mockRestore();
++      updateMock.mockRestore();
++    });
++  });
++
+   describe('Schema validation', () => {
+     it('should validate RedditCommunityRuleSet schema correctly', async () => {
+       // Import schema components
+       const { redditCommunityRuleSetSchema, createDefaultRules } = await import('../../../shared/schema.ts');
+       
+       // Test valid rule set
+-      const validRules = {
+-        minKarma: 100,
+-        minAccountAge: 30,
+-        watermarksAllowed: false,
+-        sellingAllowed: 'not_allowed' as const,
+-        titleRules: ['No clickbait'],
+-        contentRules: ['High quality only'],
+-        verificationRequired: true,
+-        requiresApproval: false,
+-        nsfwRequired: true,
+-        maxPostsPerDay: 2,
+-        cooldownHours: 24
++      const validRules: RedditCommunityRuleSet = {
++        eligibility: {
++          minKarma: 100,
++          minAccountAgeDays: 30,
++          verificationRequired: true,
++          requiresApproval: false,
++        },
++        content: {
++          sellingPolicy: 'not_allowed',
++          watermarksAllowed: false,
++          titleGuidelines: ['No clickbait'],
++          contentGuidelines: ['High quality only'],
++          nsfwRequired: true,
++        },
++        posting: {
++          maxPostsPerDay: 2,
++          cooldownHours: 24,
++        },
++        notes: 'Strict moderation',
+       };
+-      
++
+       const result = redditCommunityRuleSetSchema.parse(validRules);
+       expect(result).toMatchObject(validRules);
+     });
+ 
+     it('should create proper default rules', async () => {
+       const { createDefaultRules } = await import('../../../shared/schema.ts');
+       
+       const defaults = createDefaultRules();
+       
+       expect(defaults).toMatchObject({
+-        minKarma: null,
+-        minAccountAge: null,
+-        watermarksAllowed: null,
+-        sellingAllowed: 'unknown',
+-        titleRules: [],
+-        contentRules: [],
+-        verificationRequired: false,
+-        requiresApproval: false,
+-        nsfwRequired: false,
+-        maxPostsPerDay: null,
+-        cooldownHours: null
++        eligibility: {
++          minKarma: null,
++          minAccountAgeDays: null,
++          verificationRequired: false,
++          requiresApproval: false,
++        },
++        content: {
++          sellingPolicy: undefined,
++          watermarksAllowed: null,
++          titleGuidelines: [],
++          contentGuidelines: [],
++          nsfwRequired: false,
++        },
++        posting: {
++          maxPostsPerDay: null,
++          cooldownHours: null,
++        },
++        notes: null,
+       });
+     });
+ 
+     it('should validate sellingAllowed enum values', async () => {
+       const { redditCommunityRuleSetSchema } = await import('../../../shared/schema.ts');
+       
+       const validValues = ['allowed', 'limited', 'not_allowed', 'unknown'];
+       
+       for (const value of validValues) {
+-        const rules = { sellingAllowed: value };
++        const rules: RedditCommunityRuleSet = { content: { sellingPolicy: value as typeof validValues[number] } };
+         const result = redditCommunityRuleSetSchema.parse(rules);
+-        expect(result?.sellingAllowed).toBe(value);
++        expect(result?.content?.sellingPolicy).toBe(value);
+       }
+-      
++
+       // Test invalid value
+       expect(() => {
+-        redditCommunityRuleSetSchema.parse({ sellingAllowed: 'invalid' });
++        redditCommunityRuleSetSchema.parse({ content: { sellingPolicy: 'invalid' } });
+       }).toThrow();
+     });
+   });
+ });
+ 
+EOF
+)

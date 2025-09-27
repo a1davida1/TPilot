@@ -83,7 +83,7 @@ class PerformanceMonitor {
     
     // Log to console in development
     if (process.env.NODE_ENV === 'development' && metric.duration > 500) {
-      console.log(`[PERF] ${metric.method} ${metric.path}: ${metric.duration.toFixed(2)}ms`);
+      console.error(`[PERF] ${metric.method} ${metric.path}: ${metric.duration.toFixed(2)}ms`);
     }
   }
 

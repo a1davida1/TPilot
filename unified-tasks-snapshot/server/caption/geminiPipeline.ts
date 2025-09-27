@@ -262,7 +262,7 @@ function captionsAreSimilar(a: string, b: string): boolean {
 
 export async function extractFacts(imageUrl: string): Promise<Record<string, unknown>> {
   try {
-    console.log('Starting fact extraction for image:', imageUrl.substring(0, 100) + '...');
+    console.error('Starting fact extraction for image:', imageUrl.substring(0, 100) + '...');
     const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("extract.txt");
 
     // Handle data URLs differently from regular URLs
@@ -325,7 +325,7 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
 
       // Additional validation for WebP format
       if (mimeType === 'image/webp') {
-        console.log('WebP format detected, validating header...');
+        console.error('WebP format detected, validating header...');
         const headerSignature = decodedBuffer.subarray(0, 4).toString();
         if (headerSignature !== 'RIFF') {
           console.warn('WebP validation warning: Missing RIFF header');
@@ -334,7 +334,7 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
 
       // GIF format validation
       if (mimeType === 'image/gif') {
-        console.log('GIF format detected, validating header...');
+        console.error('GIF format detected, validating header...');
         const gifSignature = decodedBuffer.subarray(0, 6).toString();
         if (!gifSignature.startsWith('GIF87a') && !gifSignature.startsWith('GIF89a')) {
           console.warn('GIF validation warning: Invalid GIF header');
@@ -344,7 +344,7 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
         // Note: Gemini sometimes has issues with animated GIFs
         // For GIFs, we'll use OpenAI fallback more aggressively
         if (decodedBuffer.length > 5000000) { // ~3.8MB base64 encoded
-          console.log('Large GIF detected, may need fallback processing');
+          console.error('Large GIF detected, may need fallback processing');
         }
       }
 
@@ -357,34 +357,34 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
         throw new InvalidImageError('Image data too large for processing');
       }
 
-      console.log(`Processing data URL with mime type: ${mimeType}, data length: ${imageData.length}`);
-      console.log(`Base64 starts with: ${imageData.substring(0, 50)}...`);
+      console.error(`Processing data URL with mime type: ${mimeType}, data length: ${imageData.length}`);
+      console.error(`Base64 starts with: ${imageData.substring(0, 50)}...`);
     } else {
-      console.log("Fetching image from URL:", imageUrl);
+      console.error("Fetching image from URL:", imageUrl);
       const fetched = await b64(imageUrl);
       imageData = fetched.base64;
       mimeType = fetched.mimeType;
     }
 
     const img = { inlineData: { data: imageData, mimeType } };
-    console.log('Sending to Gemini for fact extraction...');
+    console.error('Sending to Gemini for fact extraction...');
 
     // For GIFs, try Gemini but be prepared for fallback
     if (mimeType === 'image/gif') {
-      console.log('Processing GIF - Gemini support may be limited');
+      console.error('Processing GIF - Gemini support may be limited');
     }
 
     try {
       const res = await visionModel.generateContent([{text: sys + "\n" + guard + "\n" + prompt}, img]);
       const result = stripToJSON(res.response.text()) as Record<string, unknown>;
-      console.log('Fact extraction completed successfully');
+      console.error('Fact extraction completed successfully');
       return result;
     } catch (error) {
       console.error('Gemini visionModel.generateContent failed:', error);
 
       // For GIFs that fail Gemini processing, provide better fallback facts
       if (mimeType === 'image/gif') {
-        console.log('GIF processing failed in Gemini, using enhanced fallback facts');
+        console.error('GIF processing failed in Gemini, using enhanced fallback facts');
         return {
           objects: ['animated', 'gif', 'motion'],
           colors: ['colorful', 'dynamic'],

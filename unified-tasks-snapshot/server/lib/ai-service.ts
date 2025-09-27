@@ -74,7 +74,7 @@ export class AiService {
       // Check if Gemini has quota issues too
       const errorObj = error as Record<string, unknown>;
       if (errorObj?.status === 429 || (errorObj?.message as string)?.includes('quota')) {
-        console.log('Gemini quota exceeded, trying OpenAI fallback...');
+        console.error('Gemini quota exceeded, trying OpenAI fallback...');
       }
       
       // Fallback to OpenAI
@@ -88,7 +88,7 @@ export class AiService {
         // Check if it's a quota error
         const fe = fallbackError as Record<string, unknown>;
         if (fe?.code === 'insufficient_quota' || fe?.status === 429) {
-          console.log('API quota exceeded, using template fallback...');
+          console.error('API quota exceeded, using template fallback...');
           const platforms = inputData.platforms || ['reddit'];
           const fallbackContent = this.createFallbackContent(platforms);
           return { content: fallbackContent, tokensUsed: 0, model: 'fallback', cached: false };
@@ -253,7 +253,7 @@ Return ONLY the JSON object above with actual content. No other text.`;
       
     } catch (error) {
       console.error('Failed to parse Gemini response:', error);
-      console.log('Raw response text:', text.slice(0, 200) + '...');
+      console.error('Raw response text:', text.slice(0, 200) + '...');
       return this.createFallbackContent(platforms);
     }
   }
@@ -439,7 +439,7 @@ Return ONLY the JSON object above with actual content. No other text.`;
         .delete(aiGenerations)
         .where(eq(aiGenerations.createdAt, cutoff));
         
-      console.log(`Cleaned ${result} old AI cache entries`);
+      console.error(`Cleaned ${result} old AI cache entries`);
     } catch (error) {
       console.error('Cache cleanup failed:', error);
     }

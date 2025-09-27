@@ -85,7 +85,7 @@ export class RedisBullQueue implements IQueue {
 
     // Handle worker events
     worker.on('completed', (job) => {
-      console.log(`✅ Job ${job.id} completed in queue ${queueName}`);
+      console.error(`✅ Job ${job.id} completed in queue ${queueName}`);
     });
 
     worker.on('failed', (job, err) => {

@@ -1419,7 +1419,7 @@ export function generateAdvancedContent(params: ContentParameters): GeneratedCon
   // Check if this is a preset request and use preset variations
   const presetVariation = getRandomPresetVariation(params.style);
   if (presetVariation) {
-    console.log(`🎯 Using preset variation for: ${params.style}`);
+    console.error(`🎯 Using preset variation for: ${params.style}`);
     return {
       titles: presetVariation.titles,
       content: presetVariation.content,

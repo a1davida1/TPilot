@@ -21,7 +21,7 @@ export class PgQueue implements IQueue {
   private pollTimer?: NodeJS.Timeout;
 
   async initialize(): Promise<void> {
-    console.log('🔧 Initializing PostgreSQL Queue backend');
+    console.error('🔧 Initializing PostgreSQL Queue backend');
     this.startPolling();
   }
 
@@ -30,7 +30,7 @@ export class PgQueue implements IQueue {
     if (this.pollTimer) {
       clearTimeout(this.pollTimer);
     }
-    console.log('📦 PostgreSQL Queue backend closed');
+    console.error('📦 PostgreSQL Queue backend closed');
   }
 
   async enqueue<T = unknown>(

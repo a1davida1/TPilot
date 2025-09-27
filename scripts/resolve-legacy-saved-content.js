@@ -51,7 +51,7 @@ async function main() {
   // Persist the same SQL as a canonical migration so future deploys don't re-ask
   const path = `migrations/${Date.now()}_archive_saved_content_and_create_referral_codes.sql`;
   await fs.writeFile(path, MIGRATION_SQL);
-  console.log("Wrote migration:", path);
+  console.error("Wrote migration:", path);
 
   // Verification
   const tables = await client.query(`

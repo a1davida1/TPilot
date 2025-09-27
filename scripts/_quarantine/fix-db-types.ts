@@ -38,7 +38,7 @@ async function main() {
   await client.connect();
   await client.query(FIX);
   await client.end();
-  console.log("DB type normalization executed.");
+  console.error("DB type normalization executed.");
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });

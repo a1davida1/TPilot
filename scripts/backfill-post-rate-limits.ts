@@ -26,7 +26,7 @@ function normalizeDate(value: Date | null): Date {
 }
 
 export async function backfillPostRateLimits(): Promise<void> {
-  console.log('🔄 Starting post rate limits backfill...');
+  console.error('🔄 Starting post rate limits backfill...');
 
   const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MS);
 
@@ -47,11 +47,11 @@ export async function backfillPostRateLimits(): Promise<void> {
     .where(isNull(postRateLimits.id));
 
   if (duplicates.length === 0) {
-    console.log('✅ No missing rate limit records found. Backfill complete.');
+    console.error('✅ No missing rate limit records found. Backfill complete.');
     return;
   }
 
-  console.log(`📊 Found ${duplicates.length} historical posts missing rate limit coverage`);
+  console.error(`📊 Found ${duplicates.length} historical posts missing rate limit coverage`);
 
   const seeds = new Map<string, RateLimitSeed>();
 
@@ -87,13 +87,13 @@ export async function backfillPostRateLimits(): Promise<void> {
   }
 
   if (seeds.size === 0) {
-    console.log('✅ No new rate limit seeds required after filtering existing records.');
+    console.error('✅ No new rate limit seeds required after filtering existing records.');
     return;
   }
 
   const seedArray = Array.from(seeds.values());
 
-  console.log(`🧮 Preparing to insert ${seedArray.length} rate limit records`);
+  console.error(`🧮 Preparing to insert ${seedArray.length} rate limit records`);
 
   let processed = 0;
 
@@ -114,16 +114,16 @@ export async function backfillPostRateLimits(): Promise<void> {
       .onConflictDoNothing();
 
     processed += batch.length;
-    console.log(`⏳ Processed ${processed}/${seedArray.length} rate limit seeds`);
+    console.error(`⏳ Processed ${processed}/${seedArray.length} rate limit seeds`);
   }
 
-  console.log(`✅ Successfully backfilled ${processed} rate limit records`);
+  console.error(`✅ Successfully backfilled ${processed} rate limit records`);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   backfillPostRateLimits()
     .then(() => {
-      console.log('🎉 Backfill completed successfully');
+      console.error('🎉 Backfill completed successfully');
       process.exit(0);
     })
     .catch((error) => {
