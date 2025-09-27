@@ -1,0 +1,97 @@
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
+
+const mockOpenAIInstance = vi.hoisted(() => ({
+  chat: {
+    completions: {
+      create: vi.fn()
+    }
+  }
+}));
+
+const mockOpenAIConstructor = vi.hoisted(() => vi.fn(() => mockOpenAIInstance));
+
+vi.mock('openai', () => ({ default: mockOpenAIConstructor }));
+
+describe('openAICaptionFallback safe responses', () => {
+  const originalNodeEnv = process.env.NODE_ENV;
+  const originalOpenAiKey = process.env.OPENAI_API_KEY;
+
+  beforeEach(() => {
+    mockOpenAIInstance.chat.completions.create.mockReset();
+    mockOpenAIConstructor.mockReset();
+  });
+
+  afterEach(() => {
+    if (originalNodeEnv === undefined) {
+      delete process.env.NODE_ENV;
+    } else {
+      process.env.NODE_ENV = originalNodeEnv;
+    }
+
+    if (originalOpenAiKey === undefined) {
+      delete process.env.OPENAI_API_KEY;
+    } else {
+      process.env.OPENAI_API_KEY = originalOpenAiKey;
+    }
+  });
+
+  it('short-circuits with safe template when API key is missing', async () => {
+    vi.resetModules();
+    delete process.env.OPENAI_API_KEY;
+    process.env.NODE_ENV = 'development';
+
+    const inferenceModule = await import('../inferFallbackFromFacts');
+    const complianceSpy = vi.spyOn(inferenceModule, 'ensureFallbackCompliance');
+    const rankingFallback = await import('../rankingGuards');
+    const { openAICaptionFallback } = await import('../openaiFallback');
+
+    const result = await openAICaptionFallback({
+      platform: 'instagram',
+      voice: 'confident'
+    });
+
+    expect(mockOpenAIInstance.chat.completions.create).not.toHaveBeenCalled();
+    expect(complianceSpy).toHaveBeenCalledTimes(1);
+    expect(result.caption).toBe(rankingFallback.safeFallbackCaption);
+    expect(result.hashtags).toEqual(Array.from(rankingFallback.safeFallbackHashtags));
+    expect(result.cta).toBe(rankingFallback.safeFallbackCta);
+    expect(result.alt).toBe('Engaging social media content');
+    expect(result.mood).toBe('engaging');
+    expect(result.style).toBe('authentic');
+    expect(result.safety_level).toBe('normal');
+    expect(result.nsfw).toBe(false);
+
+    complianceSpy.mockRestore();
+  });
+
+  it('returns safe template when OpenAI throws', async () => {
+    vi.resetModules();
+    process.env.OPENAI_API_KEY = 'test-key';
+    process.env.NODE_ENV = 'development';
+
+    const inferenceModule = await import('../inferFallbackFromFacts');
+    const complianceSpy = vi.spyOn(inferenceModule, 'ensureFallbackCompliance');
+    const rankingFallback = await import('../rankingGuards');
+    const { openAICaptionFallback } = await import('../openaiFallback');
+
+    mockOpenAIInstance.chat.completions.create.mockRejectedValueOnce(new Error('Boom'));
+
+    const result = await openAICaptionFallback({
+      platform: 'instagram',
+      voice: 'confident'
+    });
+
+    expect(mockOpenAIInstance.chat.completions.create).toHaveBeenCalledTimes(1);
+    expect(complianceSpy).toHaveBeenCalledTimes(1);
+    expect(result.caption).toBe(rankingFallback.safeFallbackCaption);
+    expect(result.hashtags).toEqual(Array.from(rankingFallback.safeFallbackHashtags));
+    expect(result.cta).toBe(rankingFallback.safeFallbackCta);
+    expect(result.alt).toBe('Engaging social media content');
+    expect(result.mood).toBe('engaging');
+    expect(result.style).toBe('authentic');
+    expect(result.safety_level).toBe('normal');
+    expect(result.nsfw).toBe(false);
+
+    complianceSpy.mockRestore();
+  });
+});
