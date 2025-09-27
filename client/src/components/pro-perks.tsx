@@ -139,6 +139,14 @@ export function ProPerks({ userTier = "pro" }: ProPerksProps) {
   const [referralLoading, setReferralLoading] = useState<string | null>(null);
   const { toast } = useToast();
 
+  const sessionFetch = useCallback(
+    async (input: RequestInfo | URL, init?: RequestInit) => {
+      const response = await fetch(input, { ...init, credentials: "include" });
+      return response;
+    },
+    []
+  );
+
   // Fetch real resources from API
   const { data, isLoading, isError } = useQuery<ProResourcesResult>({
     queryKey: ["pro-resources"],
@@ -147,17 +155,10 @@ export function ProPerks({ userTier = "pro" }: ProPerksProps) {
         return { perks: [], accessGranted: false } satisfies ProResourcesResult;
       }
 
-      const token = window.localStorage.getItem("authToken");
-      if (!token) {
-        return { perks: [], accessGranted: false } satisfies ProResourcesResult;
-      }
-
       try {
-        const response = await fetch("/api/pro-resources", {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const response = await sessionFetch("/api/pro-resources");
 
-        if (response.status === 403) {
+        if (response.status === 401 || response.status === 403) {
           return { perks: [], accessGranted: false } satisfies ProResourcesResult;
         }
 
@@ -244,21 +245,18 @@ export function ProPerks({ userTier = "pro" }: ProPerksProps) {
       return;
     }
 
-    const token = window.localStorage.getItem("authToken");
-    if (!token) {
-      toast({
-        title: "Sign in required",
-        description: "Log in with your Pro account to view detailed signup steps.",
-        variant: "destructive"
-      });
-      return;
-    }
-
     try {
       setInstructionsLoading(perk.id);
-      const response = await fetch(`/api/pro-resources/${perk.id}/signup-instructions`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await sessionFetch(`/api/pro-resources/${perk.id}/signup-instructions`);
+
+      if (response.status === 401 || response.status === 403) {
+        toast({
+          title: "Sign in required",
+          description: "Log in with your Pro account to view detailed signup steps.",
+          variant: "destructive"
+        });
+        return;
+      }
 
       if (!response.ok) {
         throw new Error("Failed to load signup instructions");
@@ -278,7 +276,7 @@ export function ProPerks({ userTier = "pro" }: ProPerksProps) {
     } finally {
       setInstructionsLoading(null);
     }
-  }, [instructionsByPerk, toast]);
+  }, [instructionsByPerk, sessionFetch, toast]);
 
   const handleOpenPerk = useCallback((perk: ProPerk) => {
     setSelectedPerk(perk);
@@ -290,22 +288,20 @@ export function ProPerks({ userTier = "pro" }: ProPerksProps) {
       return;
     }
 
-    const token = window.localStorage.getItem("authToken");
-    if (!token) {
-      toast({
-        title: "Sign in required",
-        description: "Log in with your Pro account to generate referral codes.",
-        variant: "destructive"
-      });
-      return;
-    }
-
     try {
       setReferralLoading(perk.id);
-      const response = await fetch(`/api/pro-resources/${perk.id}/referral-code`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` }
+      const response = await sessionFetch(`/api/pro-resources/${perk.id}/referral-code`, {
+        method: "POST"
       });
+
+      if (response.status === 401 || response.status === 403) {
+        toast({
+          title: "Sign in required",
+          description: "Log in with your Pro account to generate referral codes.",
+          variant: "destructive"
+        });
+        return;
+      }
 
       if (!response.ok) {
         throw new Error("Failed to generate referral code");
@@ -338,7 +334,7 @@ export function ProPerks({ userTier = "pro" }: ProPerksProps) {
     } finally {
       setReferralLoading(null);
     }
-  }, [toast]);
+  }, [sessionFetch, toast]);
 
   // Show empty state when no resources available or no access
   if (!isLoading && (!hasAccess || perks.length === 0)) {

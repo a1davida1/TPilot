@@ -31,7 +31,6 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '@/hooks/useAuth';
 import { protectImage, downloadProtectedImage, protectionPresets, type ImageProcessingOptions } from '@/lib/image-protection';
 import { getErrorMessage } from '@/utils/errorHelpers';
 
@@ -67,7 +66,6 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { token } = useAuth() as unknown as { token: string };
 
   const isProUser = userTier === 'pro';
   const showGallery = isProUser; // Only Pro users see gallery
@@ -75,23 +73,22 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
   // Authenticated API request helper
   const authenticatedRequest = async (url: string, method: string = 'GET', data?: unknown) => {
     let body: FormData | string | undefined;
-    const headers: { [key: string]: string } = {
-      'Authorization': `Bearer ${token}`
-    };
-    
+    const headers: Record<string, string> = {};
+
     if (data instanceof FormData) {
       body = data;
     } else if (data) {
       headers['Content-Type'] = 'application/json';
       body = JSON.stringify(data);
     }
-    
+
     const response = await fetch(url, {
       method,
       headers,
-      body
+      body,
+      credentials: 'include'
     });
-    
+
     if (!response.ok) {
       const errorText = await response.text();
       let errorMessage;
@@ -104,14 +101,23 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
       throw new Error(errorMessage);
     }
     
-    return response.json();
+    if (response.status === 204) {
+      return null;
+    }
+
+    const contentType = response.headers.get('content-type');
+    if (contentType?.includes('application/json')) {
+      return response.json();
+    }
+
+    return null;
   };
 
   // Gallery functionality - only for Pro/Premium users
   const { data: galleryImages = [] } = useQuery<MediaAsset[]>({
     queryKey: ['/api/media'],
     queryFn: () => authenticatedRequest('/api/media'),
-    enabled: !!token && showGallery
+    enabled: showGallery
   });
 
   const uploadToGalleryMutation = useMutation({
