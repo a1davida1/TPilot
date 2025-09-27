@@ -53,10 +53,12 @@ export function registerRedditRoutes(app: Express) {
       // Generate cryptographically secure state
       const state = crypto.randomBytes(32).toString('hex');
 
+      const requestIP = req.userIP ?? req.ip;
+
       // Store state securely with user binding
       await stateStore.set(`reddit_state:${state}`, {
         userId,
-        ip: req.ip,
+        ip: requestIP,
         userAgent: req.get('user-agent'),
         timestamp: Date.now()
       }, 600); // 10 minute expiry
@@ -64,7 +66,7 @@ export function registerRedditRoutes(app: Express) {
       logger.info('Reddit OAuth initiated', {
         userId,
         statePreview: state.substring(0, 8) + '...',
-        requestIP: req.ip
+        requestIP
       });
 
       const authUrl = getRedditAuthUrl(state);
@@ -104,11 +106,13 @@ export function registerRedditRoutes(app: Express) {
         return res.redirect('/dashboard?error=invalid_state');
       }
 
+      const callbackIP = req.userIP ?? req.ip;
+
       // Additional security check - log if IP differs (but don't block)
-      if (stateData.ip !== req.ip) {
+      if (stateData.ip !== callbackIP) {
         logger.warn('IP mismatch in OAuth callback', {
           originalIP: stateData.ip,
-          callbackIP: req.ip,
+          callbackIP,
           userId: stateData.userId
         });
       }
