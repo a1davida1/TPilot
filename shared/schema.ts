@@ -941,26 +941,6 @@ export const socialMediaPosts = pgTable("social_media_posts", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const savedContent = pgTable(
-  "saved_content",
-  {
-    id: serial("id").primaryKey(),
-    userId: integer("user_id").references(() => users.id).notNull(),
-    title: varchar("title", { length: 255 }).notNull(),
-    content: text("content").notNull(),
-    platform: varchar("platform", { length: 50 }),
-    contentGenerationId: integer("content_generation_id").references(() => contentGenerations.id),
-    socialMediaPostId: integer("social_media_post_id").references(() => socialMediaPosts.id),
-    metadata: jsonb("metadata").$type<Record<string, unknown> | null>(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at").defaultNow().notNull(),
-  },
-  (table) => ({
-    userIdIndex: index("saved_content_user_idx").on(table.userId),
-    generationIndex: index("saved_content_generation_idx").on(table.contentGenerationId),
-    socialPostIndex: index("saved_content_social_post_idx").on(table.socialMediaPostId),
-  })
-);
 
 export const platformEngagement = pgTable("platform_engagement", {
   id: serial("id").primaryKey(),
@@ -1136,7 +1116,6 @@ export const insertSocialMediaPostSchema = createInsertSchema(socialMediaPosts);
 export const insertSavedContentSchema = createInsertSchema(savedContent);
 export const insertPlatformEngagementSchema = createInsertSchema(platformEngagement);
 export const insertPostScheduleSchema = createInsertSchema(postSchedule);
-export const insertSavedContentSchema = createInsertSchema(savedContent);
 
 // PHASE 1: Analytics Schema Validation
 export const insertUserSessionSchema = createInsertSchema(userSessions);
@@ -1181,8 +1160,6 @@ export type SavedContent = typeof savedContent.$inferSelect;
 export type InsertSavedContent = z.infer<typeof insertSavedContentSchema>;
 export type PlatformEngagement = typeof platformEngagement.$inferSelect;
 export type InsertPlatformEngagement = z.infer<typeof insertPlatformEngagementSchema>;
-export type SavedContent = typeof savedContent.$inferSelect;
-export type InsertSavedContent = z.infer<typeof insertSavedContentSchema>;
 export type PostSchedule = typeof postSchedule.$inferSelect;
 export type InsertPostSchedule = z.infer<typeof insertPostScheduleSchema>;
 
