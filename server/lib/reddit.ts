@@ -1,4 +1,5 @@
 import snoowrap from 'snoowrap';
+import { z } from 'zod';
 import { db } from '../db.js';
 import { creatorAccounts, subredditRules, postRateLimits, redditCommunities, users } from '@shared/schema';
 import { eq, and, gt, or } from 'drizzle-orm';
@@ -7,6 +8,7 @@ import { SafetyManager } from './safety-systems.js';
 import { getEligibleCommunitiesForUser, type CommunityEligibilityCriteria } from '../reddit-communities.js';
 import type { RedditCommunity, ShadowbanStatusType, ShadowbanSubmissionSummary, ShadowbanEvidenceResponse, ShadowbanCheckApiResponse } from '@shared/schema';
 import { lookup } from 'dns/promises';
+import { logger } from './logger.js';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
@@ -379,6 +381,126 @@ function getEnvOrDefault(name: string, defaultValue?: string): string {
     return '';
   }
   return value || defaultValue || '';
+}
+
+const DEFAULT_REDDIT_SERVICE_USER_AGENT = 'ThottoPilot/1.0 (Community sync bot)';
+
+export const REDDIT_SERVICE_CLIENT_KEYS = {
+  COMMUNITY_SYNC: 'community-sync',
+} as const;
+
+export type RedditServiceClientKey = typeof REDDIT_SERVICE_CLIENT_KEYS[keyof typeof REDDIT_SERVICE_CLIENT_KEYS];
+
+type RedditServiceClientMap = Map<RedditServiceClientKey, snoowrap>;
+
+const redditServiceClients: RedditServiceClientMap = new Map();
+
+const redditServiceEnvSchema = z
+  .object({
+    REDDIT_CLIENT_ID: z.string().min(1, 'REDDIT_CLIENT_ID is required'),
+    REDDIT_CLIENT_SECRET: z.string().min(1, 'REDDIT_CLIENT_SECRET is required'),
+    REDDIT_USER_AGENT: z
+      .string()
+      .min(1, 'REDDIT_USER_AGENT must not be empty')
+      .optional()
+      .default(DEFAULT_REDDIT_SERVICE_USER_AGENT),
+    REDDIT_REFRESH_TOKEN: z.string().min(1, 'REDDIT_REFRESH_TOKEN must not be empty').optional(),
+    REDDIT_USERNAME: z.string().min(1, 'REDDIT_USERNAME must not be empty').optional(),
+    REDDIT_PASSWORD: z.string().min(1, 'REDDIT_PASSWORD must not be empty').optional(),
+  })
+  .superRefine((data, ctx) => {
+    const hasRefreshToken = typeof data.REDDIT_REFRESH_TOKEN === 'string' && data.REDDIT_REFRESH_TOKEN.length > 0;
+    const hasUserCredentials =
+      typeof data.REDDIT_USERNAME === 'string' && data.REDDIT_USERNAME.length > 0 &&
+      typeof data.REDDIT_PASSWORD === 'string' && data.REDDIT_PASSWORD.length > 0;
+
+    if (!hasRefreshToken && !hasUserCredentials) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['REDDIT_REFRESH_TOKEN'],
+        message: 'Provide REDDIT_REFRESH_TOKEN or both REDDIT_USERNAME and REDDIT_PASSWORD.',
+      });
+    }
+  });
+
+type RedditServiceEnv = z.infer<typeof redditServiceEnvSchema>;
+
+let hasLoggedIncompleteRedditCredentials = false;
+
+function readOptionalEnv(name: string): string | undefined {
+  const value = process.env[name];
+  if (!value) {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function parseRedditServiceEnv(): z.SafeParseReturnType<RedditServiceEnv, RedditServiceEnv> {
+  return redditServiceEnvSchema.safeParse({
+    REDDIT_CLIENT_ID: readOptionalEnv('REDDIT_CLIENT_ID'),
+    REDDIT_CLIENT_SECRET: readOptionalEnv('REDDIT_CLIENT_SECRET'),
+    REDDIT_USER_AGENT: readOptionalEnv('REDDIT_USER_AGENT'),
+    REDDIT_REFRESH_TOKEN: readOptionalEnv('REDDIT_REFRESH_TOKEN'),
+    REDDIT_USERNAME: readOptionalEnv('REDDIT_USERNAME'),
+    REDDIT_PASSWORD: readOptionalEnv('REDDIT_PASSWORD'),
+  });
+}
+
+function createRedditServiceClient(env: RedditServiceEnv): snoowrap {
+  const baseConfig = {
+    userAgent: env.REDDIT_USER_AGENT,
+    clientId: env.REDDIT_CLIENT_ID,
+    clientSecret: env.REDDIT_CLIENT_SECRET,
+  };
+
+  if (env.REDDIT_REFRESH_TOKEN) {
+    return new snoowrap({
+      ...baseConfig,
+      refreshToken: env.REDDIT_REFRESH_TOKEN,
+    });
+  }
+
+  const username = env.REDDIT_USERNAME;
+  const password = env.REDDIT_PASSWORD;
+
+  if (!username || !password) {
+    throw new Error('Reddit service credentials missing username or password after validation');
+  }
+
+  return new snoowrap({
+    ...baseConfig,
+    username,
+    password,
+  });
+}
+
+export function registerDefaultRedditClients(): void {
+  const parseResult = parseRedditServiceEnv();
+
+  if (!parseResult.success) {
+    if (!hasLoggedIncompleteRedditCredentials) {
+      const issues = parseResult.error.issues.map((issue) => issue.message);
+      logger.warn('Reddit service credentials incomplete; community sync client not registered.', { issues });
+      hasLoggedIncompleteRedditCredentials = true;
+    }
+    return;
+  }
+
+  hasLoggedIncompleteRedditCredentials = false;
+
+  const existingClient = redditServiceClients.get(REDDIT_SERVICE_CLIENT_KEYS.COMMUNITY_SYNC);
+  if (existingClient) {
+    return;
+  }
+
+  const client = createRedditServiceClient(parseResult.data);
+  redditServiceClients.set(REDDIT_SERVICE_CLIENT_KEYS.COMMUNITY_SYNC, client);
+  logger.info('Registered Reddit service client for community sync workloads.');
+}
+
+export function getRedditServiceClient(key: RedditServiceClientKey): snoowrap | undefined {
+  return redditServiceClients.get(key);
 }
 
 // These will be validated when actually needed, not at startup

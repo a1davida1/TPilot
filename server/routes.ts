@@ -3,6 +3,9 @@ import express from "express";
 import type { Session } from "express-session";
 import { createServer, type Server } from "http";
 import path from 'path';
+import { createReadStream } from 'fs';
+import { stat } from 'fs/promises';
+import { lookup as lookupMimeType } from 'mime-types';
 import Stripe from 'stripe';
 import passport from 'passport';
 
@@ -20,6 +23,7 @@ import { analyticsRouter } from "./routes/analytics.js";
 import { referralRouter } from "./routes/referrals.js";
 import { registerExpenseRoutes } from "./expense-routes.js";
 import { adminCommunitiesRouter } from "./routes/admin-communities.js";
+import { createCancelSubscriptionHandler } from "./routes/subscription-management.js";
 
 // Core imports
 import { storage } from "./storage.js";
@@ -29,6 +33,25 @@ import { configureSocialAuth, socialAuthRoutes } from "./social-auth-config.js";
 import { visitorAnalytics } from "./visitor-analytics.js";
 import { makePaxum, makeCoinbase, makeStripe } from "./payments/payment-providers.js";
 import { deriveStripeConfig } from "./payments/stripe-config.js";
+<<<<<<< ours
+
+export const csrfProtectedRoutes = [
+  '/api/auth/verify-email',
+  '/api/auth/change-password',
+  '/api/auth/forgot-password',
+  '/api/auth/reset-password',
+  '/api/upload/image',
+  '/api/generate-content',
+  '/api/reddit/connect',
+  '/api/reddit/submit',
+  '/api/admin/*', // All admin routes
+  '/api/billing/*', // All billing operations
+  '/api/auth/delete-account',
+  '/api/user/settings'
+];
+=======
+import { buildUploadUrl } from "./lib/uploads.js";
+>>>>>>> theirs
 // Analytics request type
 interface AnalyticsRequest extends express.Request {
   sessionID: string;
@@ -580,22 +603,6 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api', o
   // Apply CSRF protection to sensitive routes
   // Note: JWT-based routes rely on token authentication instead of CSRF
 
-  // CSRF-protected routes (session-based and sensitive operations)
-  const csrfProtectedRoutes = [
-    '/api/auth/verify-email',
-    '/api/auth/change-password',
-    '/api/auth/forgot-password',
-    '/api/auth/reset-password',
-    '/api/upload/image',
-    '/api/content/generate',
-    '/api/reddit/connect',
-    '/api/reddit/post',
-    '/api/admin/*', // All admin routes
-    '/api/billing/*', // All billing operations
-    '/api/account/delete',
-    '/api/account/update-preferences'
-  ];
-
   // Apply CSRF protection to sensitive routes
   csrfProtectedRoutes.forEach(route => {
     if (route.includes('*')) {
@@ -655,7 +662,59 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api', o
   app.get('/api/auth/reddit/callback', socialAuthRoutes.redditCallback);
 
   // Serve uploaded files securely
-  app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+  const uploadsRoot = path.resolve(path.join(process.cwd(), 'uploads'));
+
+  const streamUpload = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ) => {
+    const requestedFile = (req.params as { file?: string }).file;
+
+    if (!requestedFile) {
+      res.status(404).json({ message: 'File not found' });
+      return;
+    }
+
+    const absolutePath = path.resolve(uploadsRoot, requestedFile);
+
+    if (!absolutePath.startsWith(uploadsRoot)) {
+      res.status(400).json({ message: 'Invalid file path' });
+      return;
+    }
+
+    try {
+      await stat(absolutePath);
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code === 'ENOENT') {
+        res.status(404).json({ message: 'File not found' });
+        return;
+      }
+      next(error);
+      return;
+    }
+
+    const mimeType = lookupMimeType(absolutePath) || 'application/octet-stream';
+    res.setHeader('Content-Type', mimeType);
+
+    const stream = createReadStream(absolutePath);
+
+    stream.on('error', (error: NodeJS.ErrnoException) => {
+      if (error.code === 'ENOENT') {
+        if (!res.headersSent) {
+          res.status(404).json({ message: 'File not found' });
+        }
+        return;
+      }
+
+      next(error);
+    });
+
+    stream.pipe(res);
+  };
+
+  app.get('/uploads/:file(*)', authenticateToken, streamUpload);
 
   // ==========================================
   // STRIPE PAYMENT ENDPOINTS
@@ -803,40 +862,15 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api', o
     }
   });
 
-  // Cancel subscription
-  app.post("/api/cancel-subscription", authenticateToken, async (req: AuthRequest, res) => {
-    try {
-      if (!stripe) {
-        return res.status(503).json({ message: "Payment system not configured" });
-      }
-
-      if (!req.user?.id) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-
-      const { subscriptionId } = req.body;
-
-      if (!subscriptionId) {
-        return res.status(400).json({ message: "Subscription ID required" });
-      }
-
-      // Cancel at period end to allow user to keep access until end of billing period
-      const subscription = await stripe.subscriptions.update(subscriptionId, {
-        cancel_at_period_end: true
-      });
-
-      res.json({
-        message: "Subscription will be cancelled at the end of the billing period",
-        cancelAt: subscription.cancel_at
-      });
-    } catch (error) {
-      logger.error("Subscription cancellation error:", error);
-      if (options?.sentry) {
-        options.sentry.captureException(error);
-      }
-      res.status(500).json({ message: "Failed to cancel subscription" });
-    }
+  const cancelSubscriptionHandler = createCancelSubscriptionHandler({
+    stripe,
+    storage,
+    logger,
+    sentry: options?.sentry ?? null,
   });
+
+  // Cancel subscription
+  app.post("/api/cancel-subscription", authenticateToken, cancelSubscriptionHandler);
 
   // ==========================================
   // CONTENT GENERATION ENDPOINTS
@@ -1226,7 +1260,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api', o
         userId: req.user.id,
         filename: req.file.filename,
         originalName: req.file.originalname,
-        url: `/uploads/${req.file.filename}`,
+        url: buildUploadUrl(req.file.filename),
         size: req.file.size,
         mimeType: req.file.mimetype,
         isProtected: false,
@@ -1619,9 +1653,10 @@ export async function registerRoutes(app: Express, apiPrefix: string = '/api', o
       const protectedName = `protected_${Date.now()}_${image.filename}`;
       const outputPath = path.join(process.cwd(), 'uploads', protectedName);
       await applyImageShieldProtection(inputPath, outputPath, level as 'light' | 'standard' | 'heavy', false);
-      await storage.updateUserImage(imageId, userId, { url: `/uploads/${protectedName}`, isProtected: true, protectionLevel: level });
+      const protectedUrl = buildUploadUrl(protectedName);
+      await storage.updateUserImage(imageId, userId, { url: protectedUrl, isProtected: true, protectionLevel: level });
 
-      res.json({ success: true, protectedUrl: `/uploads/${protectedName}`, message: 'Image protected successfully' });
+      res.json({ success: true, protectedUrl, message: 'Image protected successfully' });
     } catch (error: unknown) {
       logger.error('Failed to protect image:', error);
       if (options?.sentry) {

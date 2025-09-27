@@ -78,6 +78,8 @@ export default [
       '**/public/build/**',
       'client/dist/**',
       '**/attached_assets/**',
+      'assistant-last40-unified/**',
+      'unified-tasks-snapshot/**',
       '**/tmp/**',
       'browser-extension/**',
       '*.accessibility.js',

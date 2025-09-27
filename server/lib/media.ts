@@ -9,6 +9,7 @@ import { mediaAssets, mediaUsages } from "@shared/schema";
 import { eq, sum, and } from "drizzle-orm";
 import fs from "fs/promises";
 import path from "path";
+import { buildUploadUrl } from "./uploads.js";
 
 // Check if S3 is configured
 const isS3Configured = !!(env.AWS_ACCESS_KEY_ID && env.AWS_SECRET_ACCESS_KEY && env.S3_BUCKET_MEDIA);
@@ -165,7 +166,7 @@ export class MediaManager {
         : undefined;
     } else {
       const token = await this.generateLocalDownloadToken(asset);
-      const downloadPath = `/uploads/${token}`;
+      const downloadPath = buildUploadUrl(token);
       response.signedUrl = downloadPath;
       response.downloadUrl = downloadPath;
       response.downloadToken = token;
@@ -355,7 +356,7 @@ export class MediaManager {
   private static async getSignedUrl(key: string): Promise<string> {
     if (!isS3Configured || !s3Client) {
       // Return local URL if S3 not configured
-      return `/uploads/${key.replace(/\//g, '_')}`;
+      return buildUploadUrl(key.replace(/\//g, '_'));
     }
     
     const command = new GetObjectCommand({
@@ -377,7 +378,9 @@ export class MediaManager {
     
     return {
       ...existing,
-      signedUrl: isS3Configured ? await this.getSignedUrl(existing.key) : `/uploads/${existing.key.replace(/\//g, '_')}`,
+      signedUrl: isS3Configured
+        ? await this.getSignedUrl(existing.key)
+        : buildUploadUrl(existing.key.replace(/\//g, '_')),
     };
   }
   

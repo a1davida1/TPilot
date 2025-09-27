@@ -40,12 +40,16 @@ function isApiError(error: unknown): error is ApiError {
   return 'status' in error && 'statusText' in error;
 }
 
+type SchedulePreset = 'optimal' | 'now' | '1h' | '6h' | '12h' | '24h' | 'custom';
+
 export default function PostScheduler() {
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
+  const [selectedPreset, setSelectedPreset] = useState<SchedulePreset>('optimal');
   const [formData, setFormData] = useState<SchedulePostForm>({
     subreddit: '',
     title: '',
     body: '',
+    scheduledAt: undefined,
   });
 
   const queryClient = useQueryClient();
@@ -63,12 +67,14 @@ export default function PostScheduler() {
       return response.json();
     },
     onSuccess: (_data) => {
+      const scheduledSubreddit = formData.subreddit;
       queryClient.invalidateQueries({ queryKey: ['/api/posts/scheduled'] });
       setIsScheduleOpen(false);
-      setFormData({ subreddit: '', title: '', body: '' });
+      setFormData({ subreddit: '', title: '', body: '', scheduledAt: undefined });
+      setSelectedPreset('optimal');
       toast({
         title: "Post scheduled",
-        description: `Your post will be sent to r/${formData.subreddit} at the optimal time`,
+        description: `Your post will be sent to r/${scheduledSubreddit} at the optimal time`,
       });
     },
     onError: (error: unknown) => {
@@ -104,7 +110,27 @@ export default function PostScheduler() {
       });
       return;
     }
-    scheduleMutation.mutate(formData);
+
+    const presetOffsets: Record<Exclude<SchedulePreset, 'optimal' | 'now' | 'custom'>, number> = {
+      '1h': 60 * 60 * 1000,
+      '6h': 6 * 60 * 60 * 1000,
+      '12h': 12 * 60 * 60 * 1000,
+      '24h': 24 * 60 * 60 * 1000,
+    };
+
+    let scheduledAt: string | undefined;
+    if (selectedPreset === 'custom') {
+      scheduledAt = formData.scheduledAt;
+    } else if (selectedPreset === 'now' || selectedPreset === 'optimal') {
+      scheduledAt = undefined;
+    } else {
+      scheduledAt = new Date(Date.now() + presetOffsets[selectedPreset]).toISOString();
+    }
+
+    scheduleMutation.mutate({
+      ...formData,
+      scheduledAt,
+    });
   };
 
   const getStatusIcon = (status: string) => {
@@ -184,9 +210,16 @@ export default function PostScheduler() {
               
               <div>
                 <label className="block text-sm font-medium mb-2">Schedule Time</label>
-                <Select value={formData.scheduledAt || 'optimal'} onValueChange={(value) => 
-                  setFormData({ ...formData, scheduledAt: value === 'optimal' ? undefined : value })
-                }>
+                <Select
+                  value={selectedPreset}
+                  onValueChange={(value) => {
+                    const preset = value as SchedulePreset;
+                    setSelectedPreset(preset);
+                    if (preset !== 'custom') {
+                      setFormData((prev) => ({ ...prev, scheduledAt: undefined }));
+                    }
+                  }}
+                >
                   <SelectTrigger data-testid="select-schedule-time">
                   </SelectTrigger>
                   <SelectContent>

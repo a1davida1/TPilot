@@ -81,6 +81,16 @@ NODE_ENV=production
 PORT=5000
 SESSION_SECRET=your_secure_session_secret
 
+# Reddit community sync service (optional but recommended for automated updates)
+REDDIT_CLIENT_ID=service_app_client_id
+REDDIT_CLIENT_SECRET=service_app_client_secret
+REDDIT_USER_AGENT=ThottoPilot/1.0 (Community sync bot)
+# Choose one authentication approach for the dedicated sync client
+# REDDIT_REFRESH_TOKEN=service_refresh_token
+#   - or -
+# REDDIT_USERNAME=service_account_username
+# REDDIT_PASSWORD=service_account_password
+
 # External Services (if used)
 SENDGRID_API_KEY=your_sendgrid_key
 GOOGLE_GENAI_API_KEY=your_gemini_key
@@ -94,6 +104,8 @@ OPENAI_API_KEY=your_openai_key
 2. **Client Build**: The client needs to be built separately with `cd client && npx vite build` for production deployment.
 
 3. **Database**: Ensure your PostgreSQL database is accessible from the deployment environment.
+
+4. **Reddit Credential Isolation**: Configure the Reddit sync service credentials separately from any creator posting accounts. The server now provisions a cached Snoowrap client during startup (`registerDefaultRedditClients`) so queue workers reuse the shared service identity exclusively for community discovery workloads.
 
 ## 🔐 Provisioning the Admin Account
 

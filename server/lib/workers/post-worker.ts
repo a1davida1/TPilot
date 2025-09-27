@@ -208,7 +208,10 @@ export class PostWorker {
 
       for (let i = 0; i < results.length; i++) {
         const result = results[i];
-        const account = targetAccounts.find(a => a.platform === result.platform);
+        const account = targetAccounts.find(
+          acc => acc.id.toString() === result.clientKey
+        );
+
         if (account) {
           const postData = {
             userId,
@@ -223,6 +226,11 @@ export class PostWorker {
             errorMessage: result.error,
           };
           await storage.createSocialMediaPost(postData);
+        } else {
+          logger.warn('No matching account found for social media result', {
+            clientKey: result.clientKey,
+            platform: result.platform,
+          });
         }
       }
     } catch (error) {

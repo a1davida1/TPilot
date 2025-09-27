@@ -1,32 +1,9 @@
-import snoowrap from 'snoowrap';
+import type Snoowrap from 'snoowrap';
 import { z } from 'zod';
 import { db } from '../db.js';
 import { redditCommunities, insertRedditCommunitySchema, InsertRedditCommunity } from '@shared/schema';
 import { logger } from '../lib/logger.js';
-
-// Environment validation schema
-const DEFAULT_USER_AGENT = 'ThottoPilot/1.0 (Community sync bot)';
-
-const envSchema = z
-  .object({
-    REDDIT_CLIENT_ID: z.string().min(1, 'REDDIT_CLIENT_ID is required'),
-    REDDIT_CLIENT_SECRET: z.string().min(1, 'REDDIT_CLIENT_SECRET is required'),
-    REDDIT_USER_AGENT: z
-      .string()
-      .min(1, 'REDDIT_USER_AGENT is required')
-      .optional()
-      .default(DEFAULT_USER_AGENT),
-    REDDIT_USERNAME: z.string().optional(),
-    REDDIT_PASSWORD: z.string().optional(),
-    REDDIT_REFRESH_TOKEN: z.string().optional(),
-  })
-  .refine(
-    (data) => data.REDDIT_REFRESH_TOKEN || (data.REDDIT_USERNAME && data.REDDIT_PASSWORD),
-    {
-      message:
-        'Either provide REDDIT_REFRESH_TOKEN or both REDDIT_USERNAME and REDDIT_PASSWORD for the sync worker.',
-    }
-  );
+import { getRedditServiceClient, registerDefaultRedditClients, REDDIT_SERVICE_CLIENT_KEYS } from '../lib/reddit.js';
 
 // Sync configuration schema
 const syncConfigSchema = z.object({
@@ -140,7 +117,7 @@ function normalizeSubredditData(subreddit: SubredditData, engagementMetrics: Eng
 /**
  * Calculate engagement metrics for a subreddit
  */
-async function calculateEngagementMetrics(reddit: snoowrap, subredditName: string): Promise<EngagementMetrics> {
+async function calculateEngagementMetrics(reddit: Snoowrap, subredditName: string): Promise<EngagementMetrics> {
   try {
     // Fetch recent posts to calculate engagement metrics
     const subreddit = reddit.getSubreddit(subredditName);
@@ -175,7 +152,7 @@ async function calculateEngagementMetrics(reddit: snoowrap, subredditName: strin
 /**
  * Sync a single subreddit's data with retry logic
  */
-async function syncSubreddit(reddit: snoowrap, subredditName: string, retryCount = 0): Promise<void> {
+async function syncSubreddit(reddit: Snoowrap, subredditName: string, retryCount = 0): Promise<void> {
   const maxRetries = 3;
   const baseDelay = 1000;
   
@@ -248,78 +225,20 @@ export async function syncRedditCommunities(config?: { subreddits?: string[]; ru
     subreddits: subreddits.slice(0, 5).join(', ') + (subreddits.length > 5 ? '...' : '')
   });
 
-  // Validate environment variables
-  const rawEnv = {
-    REDDIT_CLIENT_ID: process.env.REDDIT_CLIENT_ID,
-    REDDIT_CLIENT_SECRET: process.env.REDDIT_CLIENT_SECRET,
-    REDDIT_USER_AGENT: process.env.REDDIT_USER_AGENT || DEFAULT_USER_AGENT,
-    REDDIT_USERNAME: process.env.REDDIT_USERNAME,
-    REDDIT_PASSWORD: process.env.REDDIT_PASSWORD,
-    REDDIT_REFRESH_TOKEN: process.env.REDDIT_REFRESH_TOKEN,
-  };
+  registerDefaultRedditClients();
 
-  const envResult = envSchema.safeParse(rawEnv);
+  const reddit = getRedditServiceClient(REDDIT_SERVICE_CLIENT_KEYS.COMMUNITY_SYNC);
 
-  if (!envResult.success) {
-    const credentialKeys = new Set([
-      'REDDIT_CLIENT_ID',
-      'REDDIT_CLIENT_SECRET',
-      'REDDIT_USERNAME',
-      'REDDIT_PASSWORD',
-      'REDDIT_REFRESH_TOKEN',
-    ]);
+  if (!reddit) {
+    logger.warn('Skipping Reddit community sync because service credentials are not configured', { runId });
 
-    const hasMissingCredentials = !rawEnv.REDDIT_CLIENT_ID ||
-      !rawEnv.REDDIT_CLIENT_SECRET ||
-      (!rawEnv.REDDIT_REFRESH_TOKEN && !(rawEnv.REDDIT_USERNAME && rawEnv.REDDIT_PASSWORD));
-
-    const credentialIssuesOnly = envResult.error.issues.every((issue) => {
-      if (issue.message.includes('Either REDDIT_REFRESH_TOKEN')) {
-        return true;
-      }
-
-      const [pathSegment] = issue.path;
-      return typeof pathSegment === 'string' && credentialKeys.has(pathSegment);
-    });
-
-    if (hasMissingCredentials && credentialIssuesOnly) {
-      logger.warn('Skipping Reddit community sync because credentials are not configured', { runId });
-
-      return {
-        processed: 0,
-        succeeded: 0,
-        failed: 0,
-        errors: [],
-      };
-    }
-
-    throw envResult.error;
+    return {
+      processed: 0,
+      succeeded: 0,
+      failed: 0,
+      errors: [],
+    };
   }
-
-  const env = envResult.data;
-  
-  // Initialize Reddit client with proper authentication
-  const redditConfig: {
-    userAgent: string;
-    clientId: string;
-    clientSecret: string;
-    refreshToken?: string;
-    username?: string;
-    password?: string;
-  } = {
-    userAgent: env.REDDIT_USER_AGENT,
-    clientId: env.REDDIT_CLIENT_ID,
-    clientSecret: env.REDDIT_CLIENT_SECRET,
-  };
-
-  if (env.REDDIT_REFRESH_TOKEN) {
-    redditConfig.refreshToken = env.REDDIT_REFRESH_TOKEN;
-  } else if (env.REDDIT_USERNAME && env.REDDIT_PASSWORD) {
-    redditConfig.username = env.REDDIT_USERNAME;
-    redditConfig.password = env.REDDIT_PASSWORD;
-  }
-
-  const reddit = new snoowrap(redditConfig);
 
   const result: SyncResult = {
     processed: 0,
