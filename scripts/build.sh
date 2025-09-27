@@ -286,6 +286,14 @@ log "Client assets copied to $BUILD_DIR/client"
 cp -r "$SERVER_BUILD_DIR" "$BUILD_DIR/server"
 log "Server build copied to $BUILD_DIR/server"
 
+# Copy prompt templates for runtime usage
+if [ -d "prompts" ]; then
+    cp -r prompts "$BUILD_DIR/prompts"
+    log "Prompts copied to $BUILD_DIR/prompts"
+else
+    warn "prompts directory not found, skipping copy"
+fi
+
 # Copy essential files
 cp package.json "$BUILD_DIR/"
 cp package-lock.json "$BUILD_DIR/" 2>/dev/null || warn "package-lock.json not found"

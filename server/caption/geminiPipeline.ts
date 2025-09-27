@@ -37,6 +37,7 @@ interface CaptionResult {
   facts?: Record<string, unknown>;
   variants?: z.infer<typeof CaptionArray>;
   ranked?: z.infer<typeof RankResult>;
+  titles?: string[];
 }
 
 // Text model interfaces for type safety
@@ -58,6 +59,24 @@ const MAX_VARIANT_ATTEMPTS = 4;
 const VARIANT_TARGET = 5;
 const VARIANT_RETRY_LIMIT = 4;
 const CAPTION_KEY_LENGTH = 80;
+const TITLE_MAX_LENGTH = 64;
+const TITLE_MAX_WORDS = 9;
+const TITLE_MIN_LENGTH = 4;
+const LOWERCASE_WORDS = new Set([
+  "and",
+  "or",
+  "the",
+  "with",
+  "a",
+  "an",
+  "of",
+  "to",
+  "for",
+  "in",
+  "on",
+  "at",
+  "by"
+]);
 
 const safeFallbackCaption = "Check out this amazing content!";
 const safeFallbackAlt = "Detailed alt text describing the scene.";
@@ -83,6 +102,100 @@ function truncateForHint(caption: string): string {
     return trimmed;
   }
   return `${trimmed.slice(0, 57)}...`;
+}
+
+function toTitleCase(input: string): string {
+  return input
+    .split(" ")
+    .map((word, index) => {
+      if (word.length === 0) return word;
+      const lower = word.toLowerCase();
+      if (index !== 0 && LOWERCASE_WORDS.has(lower)) {
+        return lower;
+      }
+      return `${lower.charAt(0).toUpperCase()}${lower.slice(1)}`;
+    })
+    .join(" ");
+}
+
+function normalizeTitleSource(text: string | undefined): string | null {
+  if (!text) return null;
+  const cleaned = text
+    .replace(/https?:\/\/\S+/gi, "")
+    .replace(/#[^\s]+/g, "")
+    .replace(/@[^\s]+/g, "")
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201c\u201d]/g, '"')
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!cleaned) return null;
+  const sentences = cleaned
+    .split(/(?:[.!?]+|\n+)/g)
+    .map(sentence => sentence.trim())
+    .filter(Boolean);
+  const base = sentences[0] ?? cleaned;
+  const words = base.split(" ").filter(Boolean);
+  if (words.length === 0) {
+    return null;
+  }
+  const sliced = words.slice(0, TITLE_MAX_WORDS).join(" ").replace(/[,:;.!?]+$/g, "").trim();
+  const candidate = sliced.length > 0 ? sliced : base;
+  const normalized = candidate.length > TITLE_MAX_LENGTH ? candidate.slice(0, TITLE_MAX_LENGTH).trim() : candidate;
+  if (normalized.length < TITLE_MIN_LENGTH) {
+    return null;
+  }
+  return toTitleCase(normalized);
+}
+
+type TitleCandidateContext = {
+  final?: z.infer<typeof CaptionItem>;
+  ranked?: z.infer<typeof RankResult>;
+  variants?: z.infer<typeof CaptionArray>;
+};
+
+export function generateTitleCandidates({ final, ranked, variants }: TitleCandidateContext): string[] {
+  const titles: string[] = [];
+  const seen = new Set<string>();
+  const register = (caption?: string) => {
+    const candidate = normalizeTitleSource(typeof caption === "string" ? caption : undefined);
+    if (!candidate) return;
+    const key = candidate.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    titles.push(candidate);
+  };
+
+  register(final?.caption);
+  if (ranked?.final && ranked.final !== final) {
+    register(ranked.final.caption);
+  }
+  if (variants && variants.length > 0) {
+    for (const variant of variants.slice(0, 3)) {
+      register(variant.caption);
+    }
+  }
+
+  if (titles.length === 0 && final?.caption) {
+    const fallback = normalizeTitleSource(final.caption);
+    if (fallback) titles.push(fallback);
+  }
+
+  return titles;
+}
+
+export function enrichWithTitleCandidates(
+  final: z.infer<typeof CaptionItem>,
+  context: { variants?: z.infer<typeof CaptionArray>; ranked?: z.infer<typeof RankResult> }
+): { final: z.infer<typeof CaptionItem>; ranked?: z.infer<typeof RankResult> } {
+  const titles = generateTitleCandidates({ final, ranked: context.ranked, variants: context.variants });
+  if (titles.length === 0) {
+    return { final, ranked: context.ranked };
+  }
+  const finalWithTitles = { ...final, titles } as z.infer<typeof CaptionItem>;
+  if (context.ranked) {
+    return { final: finalWithTitles, ranked: { ...context.ranked, final: finalWithTitles } };
+  }
+  return { final: finalWithTitles };
 }
 
 // Sanitize hint strings for retry logic
@@ -988,13 +1101,21 @@ export async function pipeline({ imageUrl, platform, voice = "flirty_playful", n
         mood,
         facts,
         hint: `Fix: ${err}. Use IMAGE_FACTS nouns/colors/setting explicitly.`,
-        nsfw
+        nsfw,
+        ...tone
       });
-      ranked = await rankAndSelect(variants);
+      variants = dedupeVariantsForRanking(variants, 5, { platform, facts });
+      ranked = await rankAndSelect(variants, { platform, facts });
       out = ranked.final;
     }
 
-    return { provider: 'gemini', facts, variants, ranked, final: out };
+    const enriched = enrichWithTitleCandidates(out, { variants, ranked });
+    out = enriched.final;
+    if (enriched.ranked) {
+      ranked = enriched.ranked;
+    }
+
+    return { provider: 'gemini', facts, variants, ranked, final: out, titles: out.titles };
   } catch (error) {
     const { openAICaptionFallback } = await import('./openaiFallback');
     const final = await openAICaptionFallback({ platform, voice, imageUrl });
@@ -1004,6 +1125,13 @@ export async function pipeline({ imageUrl, platform, voice = "flirty_playful", n
       reason: 'OpenAI fallback selected after Gemini pipeline error',
       final,
     });
-    return { provider: 'openai', final, ranked } as CaptionResult;
+    const enriched = enrichWithTitleCandidates(ranked.final, { ranked });
+    const enrichedRanked = enriched.ranked ?? ranked;
+    return {
+      provider: 'openai',
+      final: enriched.final,
+      ranked: enrichedRanked,
+      titles: enriched.final.titles,
+    } as CaptionResult;
   }
 }

@@ -46,9 +46,15 @@ chmod +x dist/server/index.js
 echo "✅ Set executable permissions on dist/server/index.js"
 echo "✅ Server TypeScript compiled to dist/"
 
+# Copy prompt templates for runtime access
+echo "🧠 Copying prompt templates..."
+mkdir -p dist/prompts
+cp -R prompts/. dist/prompts/
+echo "✅ Prompts copied to dist/prompts/"
+
 # Apply path mappings
 echo "🔗 Resolving path mappings..."
-tsc-alias -p tsconfig.server.json
+npx tsc-alias -p tsconfig.server.json
 
 # Fix imports - add .js extensions
 echo "🔄 Fixing import extensions..."

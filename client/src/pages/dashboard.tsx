@@ -7,6 +7,7 @@ import { type User } from "@shared/schema.js";
 
 // DashboardUser interface extending User with additional properties
 interface DashboardUser extends User {
+  redditUsername?: string | null;
   reddit_username?: string | null;
 }
 
@@ -99,7 +100,10 @@ export default function Dashboard() {
   
   // Check Reddit connection status
   const typedUser = user as DashboardUser;
-  const isRedditConnected = !!typedUser?.reddit_username || !!typedUser?.provider;
+  const isRedditConnected =
+    !!typedUser?.redditUsername ||
+    !!typedUser?.reddit_username ||
+    !!typedUser?.provider;
   
   return (
     <ModernDashboard 

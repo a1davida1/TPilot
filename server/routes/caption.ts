@@ -18,6 +18,7 @@ const captionObjectSchema = z.object({
   style: z.string().optional(),
   cta: z.string().optional(),
   safety_level: z.enum(['normal', 'spicy_safe', 'unsafe']).optional(),
+  titles: z.array(z.string()).min(1).optional(),
 });
 
 const rankedResultSchema = z.object({
@@ -29,7 +30,36 @@ const generationResponseSchema = z.object({
   ranked: z.union([z.array(z.string()), rankedResultSchema]),
   facts: z.record(z.string(), z.unknown()).optional(),
   provider: z.string().optional(),
+  titles: z.array(z.string()).min(1).optional(),
 }).catchall(z.unknown());
+
+function extractCaptionMetadata(final: unknown, titlesHint?: unknown): { caption: string; titles: string[] } {
+  const normalizedHint = Array.isArray(titlesHint)
+    ? titlesHint.filter((title): title is string => typeof title === 'string' && title.trim().length > 0)
+    : [];
+  if (typeof final === 'string') {
+    const trimmed = final.trim();
+    const fallback = trimmed.length > 0 ? trimmed : 'Generated content';
+    if (normalizedHint.length > 0) {
+      return { caption: final, titles: normalizedHint };
+    }
+    return { caption: final, titles: [fallback] };
+  }
+  if (final && typeof final === 'object') {
+    const value = final as CaptionObject & { titles?: string[] };
+    const captionText = typeof value.caption === 'string' ? value.caption : '';
+    const providedTitles = Array.isArray(value.titles)
+      ? value.titles.filter((title): title is string => typeof title === 'string' && title.trim().length > 0)
+      : [];
+    const fallback = captionText.trim().length > 0 ? captionText.trim() : 'Generated content';
+    const titles = [...providedTitles, ...normalizedHint.filter(title => !providedTitles.includes(title))];
+    if (titles.length > 0) {
+      return { caption: captionText, titles };
+    }
+    return { caption: captionText, titles: [fallback] };
+  }
+  return { caption: '', titles: ['Generated content'] };
+}
 
 const router = Router();
 
@@ -73,14 +103,15 @@ router.post('/generate', authenticateToken, async (req: AuthRequest, res: Respon
     
     // Save generation to database
     if (req.user?.id && result.final) {
+      const { caption: captionText, titles } = extractCaptionMetadata(result.final, result.titles);
       try {
         await storage.createGeneration({
           userId: req.user.id,
           platform,
           style: style || voice || 'default',
           theme: 'image_based',
-          titles: [result.final.caption || 'Generated content'],
-          content: result.final.caption || '',
+          titles,
+          content: captionText || '',
           photoInstructions: {
             lighting: 'Natural lighting',
             cameraAngle: 'Eye level',
@@ -122,14 +153,15 @@ router.post('/generate-text', authenticateToken, async (req: AuthRequest, res: R
     
     // Save generation to database
     if (req.user?.id && result.final) {
+      const { caption: captionText, titles } = extractCaptionMetadata(result.final, result.titles);
       try {
         await storage.createGeneration({
           userId: req.user.id,
           platform,
           style: style || voice || 'default',
           theme: theme || 'lifestyle',
-          titles: [result.final.caption || 'Generated content'],
-          content: result.final.caption || '',
+          titles,
+          content: captionText || '',
           photoInstructions: {
             lighting: 'Natural lighting',
             cameraAngle: 'Eye level',
@@ -171,15 +203,15 @@ router.post('/rewrite', authenticateToken, async (req: AuthRequest, res: Respons
     
     // Save generation to database
     if (req.user?.id && result.final) {
-      const finalResult = result.final as CaptionObject;
+      const { caption: captionText, titles } = extractCaptionMetadata(result.final, result.titles);
       try {
         await storage.createGeneration({
           userId: req.user.id,
           platform,
           style: style || voice || 'default',
           theme: 'rewrite',
-          titles: [finalResult.caption || 'Generated content'],
-          content: finalResult.caption || '',
+          titles,
+          content: captionText || '',
           photoInstructions: {
             lighting: 'Natural lighting',
             cameraAngle: 'Eye level',

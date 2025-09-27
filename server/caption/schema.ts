@@ -8,7 +8,8 @@ export const CaptionItem = z.object({
   mood: z.string().min(2),
   style: z.string().min(2),
   safety_level: z.string(),
-  nsfw: z.boolean().default(false)
+  nsfw: z.boolean().default(false),
+  titles: z.array(z.string()).min(1).optional()
 });
 export const CaptionArray = z.array(CaptionItem).length(5);
 export const RankResult = z.object({

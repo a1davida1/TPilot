@@ -13,7 +13,6 @@ vi.mock('../../server/lib/gemini.js', () => ({
   },
 }));
 
-import { CaptionItem } from '../../server/caption/schema.js';
 import { generationResponseSchema } from '../../shared/types/caption.js';
 
 vi.mock('../../server/caption/openaiFallback.js', () => ({
@@ -254,6 +253,16 @@ describe('Caption Generation', () => {
         caption: expect.any(String) as string,
         safety_level: expect.stringMatching(/safe|low|spicy_safe|normal/),
       });
+      expect(result.titles).toBeDefined();
+      expect(Array.isArray(result.titles)).toBe(true);
+      expect(result.titles?.length).toBeGreaterThan(0);
+      const finalTitles = (result.final as { titles?: string[] }).titles;
+      expect(finalTitles).toBeDefined();
+      expect(Array.isArray(finalTitles)).toBe(true);
+      expect(finalTitles?.length).toBeGreaterThan(0);
+      const rankedFinalTitles = ((result.ranked as { final?: { titles?: string[] } })?.final)?.titles;
+      expect(rankedFinalTitles).toBeDefined();
+      expect(rankedFinalTitles?.length).toBeGreaterThan(0);
     });
 
     it('should fallback to safe defaults when Gemini returns variants with missing hashtags', async () => {
@@ -386,6 +395,16 @@ describe('Caption Generation', () => {
         cta: 'Check this out',
         nsfw: false,
       });
+
+      expect(result.titles).toBeDefined();
+      expect(result.titles?.length).toBeGreaterThan(0);
+
+      const fallbackTitles = (result.final as { titles?: string[] }).titles;
+      expect(fallbackTitles).toBeDefined();
+      expect(fallbackTitles?.length).toBeGreaterThan(0);
+      const rankedFallbackTitles = ((result.ranked as { final?: { titles?: string[] } })?.final)?.titles;
+      expect(rankedFallbackTitles).toBeDefined();
+      expect(rankedFallbackTitles?.length).toBeGreaterThan(0);
 
       expect(result.provider).toBe('openai');
       expect(result.ranked).toBeDefined();
@@ -598,6 +617,11 @@ describe('Caption Generation', () => {
         mood,
       });
       expect(result.final.hashtags).toHaveLength(3);
+      expect(result.titles).toBeDefined();
+      expect(result.titles?.length).toBeGreaterThan(0);
+      const retryTitles = (result.final as { titles?: string[] }).titles;
+      expect(retryTitles).toBeDefined();
+      expect(retryTitles?.length).toBeGreaterThan(0);
     });
 
     it('should verify all returned variants are unique', async () => {

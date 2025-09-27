@@ -12,16 +12,25 @@ export type { CaptionObject, RankedResult, CaptionPreviewData } from '@shared/ty
 export function CaptionPreview({ data }: { data: CaptionPreviewData | null | undefined }) {
   const [copiedCaption, setCopiedCaption] = useState(false);
   const [copiedJSON, setCopiedJSON] = useState(false);
+  const [copiedTitleIndex, setCopiedTitleIndex] = useState<number | null>(null);
 
 
   if (!data) return null;
   
   const { final = '', ranked = [] } = data || {};
   if (!final) return null;
-  
+
   // Handle different data formats - final could be a string or object with caption property
   const captionText = typeof final === 'string' ? final : final.caption;
   const charCount = captionText ? captionText.length : 0;
+  const finalTitles =
+    typeof final === 'object' && Array.isArray(final.titles)
+      ? final.titles.filter((title): title is string => typeof title === 'string' && title.trim().length > 0)
+      : [];
+  const topLevelTitles = Array.isArray(data?.titles)
+    ? data.titles.filter((title): title is string => typeof title === 'string' && title.trim().length > 0)
+    : [];
+  const titles = [...finalTitles, ...topLevelTitles.filter(title => !finalTitles.includes(title))];
   
   if (!captionText) return null;
 
@@ -29,6 +38,12 @@ export function CaptionPreview({ data }: { data: CaptionPreviewData | null | und
     await navigator.clipboard.writeText(captionText);
     setCopiedCaption(true);
     setTimeout(() => setCopiedCaption(false), 2000);
+  };
+
+  const handleCopyTitle = async (title: string, index: number) => {
+    await navigator.clipboard.writeText(title);
+    setCopiedTitleIndex(index);
+    setTimeout(() => setCopiedTitleIndex(null), 2000);
   };
 
   const handleCopyJSON = async () => {
@@ -48,6 +63,31 @@ export function CaptionPreview({ data }: { data: CaptionPreviewData | null | und
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {titles.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Suggested Titles</p>
+            <div className="flex flex-wrap gap-2">
+              {titles.map((title, index) => (
+                <Button
+                  key={`${title}-${index}`}
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="bg-gradient-to-r from-purple-100 to-pink-100 text-gray-800 dark:from-purple-900/40 dark:to-pink-900/40 dark:text-gray-100"
+                  onClick={() => handleCopyTitle(title, index)}
+                >
+                  <span className="mr-2 text-xs font-medium truncate max-w-[160px]">{title}</span>
+                  {copiedTitleIndex === index ? (
+                    <Check className="h-3 w-3 text-green-500" />
+                  ) : (
+                    <Copy className="h-3 w-3" />
+                  )}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Main Caption */}
         <div className="p-4 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/20 dark:to-purple-950/20 rounded-lg">
           <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">

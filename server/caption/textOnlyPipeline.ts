@@ -3,6 +3,7 @@ import * as path from "node:path";
 import { z } from "zod";
 import { textModel } from "../lib/gemini";
 import { CaptionArray, CaptionItem, RankResult, platformChecks } from "./schema";
+import { enrichWithTitleCandidates } from "./geminiPipeline";
 import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
 import { extractToneOptions, ToneOptions } from "./toneOptions";
 import { BANNED_WORDS_HINT, variantContainsBannedWord } from "./bannedWords";
@@ -545,5 +546,11 @@ export async function pipelineTextOnly({ platform, voice="flirty_playful", theme
     out = ranked.final;
   }
 
-  return { variants, ranked, final: out };
+  const enriched = enrichWithTitleCandidates(out, { variants, ranked });
+  out = enriched.final;
+  if (enriched.ranked) {
+    ranked = enriched.ranked;
+  }
+
+  return { variants, ranked, final: out, titles: out.titles };
 }

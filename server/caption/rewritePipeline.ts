@@ -2,7 +2,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { z } from "zod";
 import { visionModel, textModel } from "../lib/gemini";
-import { rankAndSelect } from "./geminiPipeline";
+import { rankAndSelect, enrichWithTitleCandidates } from "./geminiPipeline";
 import { CaptionArray, RankResult, platformChecks, CaptionItem } from "./schema";
 import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
 import { BANNED_WORDS_HINT, variantContainsBannedWord } from "./bannedWords";
@@ -21,6 +21,7 @@ interface CaptionResult {
   facts?: unknown;
   variants?: unknown;
   ranked?: unknown;
+  titles?: unknown;
 }
 
 async function load(p:string){ return fs.readFile(path.join(process.cwd(),"prompts",p),"utf8"); }
@@ -562,7 +563,13 @@ export async function pipelineRewrite({ platform, voice="flirty_playful", style,
       }
     }
 
-    return { provider: 'gemini', facts, variants, ranked, final: out };
+    const enriched = enrichWithTitleCandidates(out, { variants, ranked });
+    out = enriched.final;
+    if (enriched.ranked) {
+      ranked = enriched.ranked;
+    }
+
+    return { provider: 'gemini', facts, variants, ranked, final: out, titles: out.titles };
   } catch (error) {
     const { openAICaptionFallback } = await import('./openaiFallback');
     const final = await openAICaptionFallback({ platform, voice, existingCaption, imageUrl });
@@ -572,6 +579,12 @@ export async function pipelineRewrite({ platform, voice="flirty_playful", style,
       reason: 'OpenAI fallback selected after Gemini rewrite error',
       final,
     });
-    return { provider: 'openai', final, ranked } as CaptionResult;
+    const enriched = enrichWithTitleCandidates(ranked.final, { ranked });
+    return {
+      provider: 'openai',
+      final: enriched.final,
+      ranked: enriched.ranked ?? ranked,
+      titles: enriched.final.titles,
+    } as CaptionResult;
   }
 }
