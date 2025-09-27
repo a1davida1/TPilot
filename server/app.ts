@@ -14,6 +14,7 @@ import { prepareResponseLogPayload, truncateLogLine } from './lib/request-logger
 import passport from 'passport'; // Assuming passport is imported elsewhere or needs to be imported here
 import { createSessionMiddleware } from './bootstrap/session.js';
 import { initializeSentry } from './bootstrap/sentry';
+import { registerDefaultRedditClients } from './lib/reddit.js';
 
 export interface CreateAppOptions {
   startQueue?: boolean;
@@ -268,6 +269,8 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
     }
 
     const sentry = initializeSentry();
+
+    registerDefaultRedditClients();
 
     setupAuth(app);
     setupSocialAuth(app);  // Register social auth routes including logout
