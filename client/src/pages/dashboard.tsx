@@ -100,10 +100,11 @@ export default function Dashboard() {
   
   // Check Reddit connection status
   const typedUser = user as DashboardUser;
-  const isRedditConnected =
-    !!typedUser?.redditUsername ||
-    !!typedUser?.reddit_username ||
-    !!typedUser?.provider;
+  const isRedditConnected = Boolean(
+    typedUser?.redditUsername ||
+      typedUser?.reddit_username ||
+      typedUser?.provider
+  );
   
   return (
     <ModernDashboard 

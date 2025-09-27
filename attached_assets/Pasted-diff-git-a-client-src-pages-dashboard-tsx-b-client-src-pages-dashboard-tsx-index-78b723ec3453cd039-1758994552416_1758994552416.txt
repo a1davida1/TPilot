@@ -1,0 +1,87 @@
+diff --git a/client/src/pages/dashboard.tsx b/client/src/pages/dashboard.tsx
+index 78b723ec3453cd039f539cd6587a5cf37cf03bed..d95d1e2908ae00e46345cf3aeeb6d5363b2bee65 100644
+--- a/client/src/pages/dashboard.tsx
++++ b/client/src/pages/dashboard.tsx
+@@ -1,35 +1,36 @@
+ import { useState, useEffect } from "react";
+ import { useLocation } from "wouter";
+ import { useAuth } from "@/hooks/useAuth";
+ import { ModernDashboard } from "@/components/modern-dashboard";
+ import { useToast } from "@/hooks/use-toast";
+ import { type User } from "@shared/schema.js";
+ 
+ // DashboardUser interface extending User with additional properties
+ interface DashboardUser extends User {
+   reddit_username?: string | null;
++  redditUsername?: string | null;
+ }
+ 
+ export default function Dashboard() {
+   const [isGuestMode, setIsGuestMode] = useState(false);
+   const [location] = useLocation();
+   const { user, isLoading, isAuthenticated, refetch } = useAuth();
+   const { toast } = useToast();
+ 
+   // Check for OAuth callbacks, email verification, and guest mode
+   useEffect(() => {
+     const urlParams = new URLSearchParams(window.location.search);
+     const reddit = urlParams.get('reddit');
+     const error = urlParams.get('error');
+     const guest = urlParams.get('guest');
+     const verified = urlParams.get('verified');
+     const welcome = urlParams.get('welcome');
+     
+     // Handle email verification success
+     if (verified === 'true') {
+       toast({
+         title: welcome === 'true' ? "Welcome to ThottoPilot!" : "Email Verified",
+         description: welcome === 'true' 
+           ? "Your account has been verified successfully. Welcome aboard!" 
+           : "Your email has been verified successfully.",
+         variant: "default",
+diff --git a/client/src/pages/dashboard.tsx b/client/src/pages/dashboard.tsx
+index 78b723ec3453cd039f539cd6587a5cf37cf03bed..d95d1e2908ae00e46345cf3aeeb6d5363b2bee65 100644
+--- a/client/src/pages/dashboard.tsx
++++ b/client/src/pages/dashboard.tsx
+@@ -77,36 +78,40 @@ export default function Dashboard() {
+       // Clean URL
+       window.history.replaceState({}, '', '/dashboard');
+     }
+     
+     // Set guest mode
+     setIsGuestMode(guest === 'true' || !isAuthenticated);
+   }, [location, isAuthenticated, toast, refetch]);
+ 
+   if (isLoading) {
+     return (
+       <div className="min-h-screen flex items-center justify-center">
+         <div className="text-center">
+           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto"></div>
+           <p className="mt-4 text-muted-foreground">Loading dashboard...</p>
+         </div>
+       </div>
+     );
+   }
+ 
+   // Determine admin status and user tier
+   const isAdmin = user && (user.id === 999 || user.username === 'admin' || user.isAdmin || user.email === 'thottopilot@thottopilot.com');
+   const userTier = isAdmin ? 'admin' : (user?.tier || 'free');
+   
+   // Check Reddit connection status
+   const typedUser = user as DashboardUser;
+-  const isRedditConnected = !!typedUser?.reddit_username || !!typedUser?.provider;
++  const isRedditConnected = Boolean(
++    typedUser?.redditUsername ||
++      typedUser?.reddit_username ||
++      typedUser?.provider
++  );
+   
+   return (
+     <ModernDashboard 
+       user={user ? { ...user, username: user.username || user.email || 'User' } : undefined} 
+       userTier={userTier} 
+       isAdmin={isAdmin}
+       isRedditConnected={isRedditConnected}
+     />
+   );
+ }
