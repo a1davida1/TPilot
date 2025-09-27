@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
@@ -36,6 +36,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { QuickStartModal } from "@/components/dashboard-quick-start";
+import { apiRequest } from "@/lib/queryClient";
+import type { ApiError } from "@/lib/queryClient";
 
 interface ModernDashboardProps {
   isRedditConnected?: boolean;
@@ -483,6 +485,37 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
     setQuickStartOpen(true);
   };
 
+  const handleConnectReddit = useCallback(async () => {
+    try {
+      const response = await apiRequest('GET', '/api/reddit/connect');
+      const data = await response.json() as { authUrl?: string; message?: string };
+
+      if (data?.authUrl) {
+        window.open(data.authUrl, '_blank', 'noopener,noreferrer');
+        toast({
+          title: '🔗 Reddit Authorization',
+          description: 'Complete the authorization in the popup window',
+        });
+        return;
+      }
+
+      const fallbackMessage = data?.message ?? 'Failed to get Reddit authorization link.';
+      toast({
+        title: '❌ Connection Failed',
+        description: fallbackMessage,
+        variant: 'destructive',
+      });
+    } catch (error) {
+      const apiError = error as Partial<ApiError> & Error;
+      const description = apiError.userMessage ?? apiError.message ?? 'Unable to connect to Reddit.';
+      toast({
+        title: '❌ Connection Failed',
+        description,
+        variant: 'destructive',
+      });
+    }
+  }, [toast]);
+
   const handleCommandCenter = () => {
     setSidebarOpen(!sidebarOpen);
   };
@@ -567,7 +600,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                   </p>
                 </div>
                 <Button
-                  onClick={() => setLocation('/auth/reddit')}
+                  onClick={handleConnectReddit}
                   className="bg-white text-orange-600 hover:bg-gray-100"
                   data-testid="button-connect-reddit-to-start"
                 >

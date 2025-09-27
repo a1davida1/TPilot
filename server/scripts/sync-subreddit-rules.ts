@@ -3,6 +3,7 @@
 import { db } from '../db.js';
 import { subredditRules, redditCommunities, createDefaultRules } from '@shared/schema';
 import { eq } from 'drizzle-orm';
+import { logger } from '../lib/logger.js';
 import type { RuleSpec, RuleSpecBase } from '../lib/policy-linter.js';
 import type { RedditCommunityRuleSet } from '@shared/schema';
 
@@ -299,7 +300,11 @@ function mapRuleSpecToCommunityRules(spec: RuleSpec): RedditCommunityRuleSet {
 }
 
 export async function syncSubredditRules(subreddit: string): Promise<RuleSpec> {
-  console.log(`Syncing rules for r/${subreddit}...`);
+<<<<<<< ours
+  console.warn(`Syncing rules for r/${subreddit}...`);
+=======
+  logger.info(`Syncing rules for r/${subreddit}...`);
+>>>>>>> theirs
 
   try {
     // Fetch rules from Reddit
@@ -339,7 +344,8 @@ export async function syncSubredditRules(subreddit: string): Promise<RuleSpec> {
       })
       .where(eq(redditCommunities.id, subreddit.toLowerCase()));
 
-    console.log(`✅ Successfully synced rules for r/${subreddit}`);
+    logger.info(`✅ Successfully synced rules for r/${subreddit}`);
+
     return finalSpec;
   } catch (error) {
     console.error(`❌ Failed to sync rules for r/${subreddit}:`, error);
