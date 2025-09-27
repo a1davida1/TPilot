@@ -150,6 +150,9 @@ export function registerAnalyticsRoutes(app: Express) {
 
       const { startDate, endDate } = getDateRange(period);
       const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(403).json({ error: 'Authentication required' });
+      }
 
       const analytics = await analyticsService.getAnalyticsData(userId, startDate, endDate);
       res.json(analytics);
@@ -162,6 +165,9 @@ export function registerAnalyticsRoutes(app: Express) {
   app.get('/api/analytics/realtime', authenticateToken, async (req: AuthRequest, res: Response) => {
     try {
       const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(403).json({ error: 'Authentication required' });
+      }
       const realtime = await analyticsService.getRealtimeAnalytics(userId);
       res.json(realtime);
     } catch (error) {
@@ -178,6 +184,9 @@ export function registerAnalyticsRoutes(app: Express) {
       }
 
       const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(403).json({ error: 'Authentication required' });
+      }
       const contentAnalytics = await analyticsService.getContentAnalytics(contentId, userId);
       
       if (!contentAnalytics) {
@@ -224,6 +233,10 @@ export function registerAnalyticsRoutes(app: Express) {
     try {
       const userId = getUserIdFromRequest(req);
       const limit = parseInt(req.query.limit as string) || 50;
+
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
 
       const sessions = await db
         .select()
