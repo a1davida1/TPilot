@@ -243,7 +243,7 @@ class AnalyticsService {
     
     // Log in development
     if (process.env.NODE_ENV === 'development') {
-      console.log('Analytics Event:', event, properties);
+      console.error('Analytics Event:', event, properties);
     }
   }
 

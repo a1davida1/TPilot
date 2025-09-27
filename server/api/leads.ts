@@ -46,7 +46,7 @@ export async function createLead(req: Request, res: Response) {
         cookieUTM = JSON.parse(decodeURIComponent(req.cookies.utm_params));
       }
     } catch (error) {
-      console.log('Failed to parse UTM cookie:', error);
+      console.error('Failed to parse UTM cookie:', error);
       cookieUTM = {};
     }
     

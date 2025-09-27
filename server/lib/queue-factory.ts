@@ -19,10 +19,10 @@ export function getQueueBackend(): IQueue {
   const shouldUseRedis = !env.USE_PG_QUEUE && env.REDIS_URL;
 
   if (shouldUseRedis && env.REDIS_URL) {
-    console.log('🚀 Using Redis BullMQ queue backend');
+    console.error('🚀 Using Redis BullMQ queue backend');
     queueInstance = new RedisBullQueue(env.REDIS_URL);
   } else {
-    console.log('🔧 Using PostgreSQL queue backend (Redis not available)');
+    console.error('🔧 Using PostgreSQL queue backend (Redis not available)');
     queueInstance = new PgQueue();
   }
 

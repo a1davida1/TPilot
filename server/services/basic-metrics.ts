@@ -25,7 +25,7 @@ class BasicAuthMetrics {
     
     // Log failures for monitoring
     if (!success) {
-      console.log(`⚠️ Auth failure: ${action} - ${error}`);
+      console.error(`⚠️ Auth failure: ${action} - ${error}`);
     }
   }
   

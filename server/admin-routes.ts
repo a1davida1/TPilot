@@ -173,7 +173,7 @@ export function setupAdminRoutes(app: Express) {
       await storage.updateUser(userId, { mustChangePassword: true, passwordResetAt: new Date() });
       
       const adminUser = (req as AdminRequest).user as User;
-      console.log(`Admin ${adminUser?.username || adminUser?.id} reset password for user ${user.username} (ID: ${userId})`);
+      console.error(`Admin ${adminUser?.username || adminUser?.id} reset password for user ${user.username} (ID: ${userId})`);
       
       res.json({
         message: 'Password reset successful',

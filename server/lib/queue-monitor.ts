@@ -42,7 +42,7 @@ export class QueueMonitor {
   async startMonitoring(intervalMs: number = 30000) { // 30 seconds default
     if (this.monitoring) return;
 
-    console.log('🔍 Starting queue monitoring...');
+    console.error('🔍 Starting queue monitoring...');
     this.monitoring = true;
 
     // Initial collection
@@ -57,13 +57,13 @@ export class QueueMonitor {
       }
     }, intervalMs);
 
-    console.log(`✅ Queue monitoring started (interval: ${intervalMs}ms)`);
+    console.error(`✅ Queue monitoring started (interval: ${intervalMs}ms)`);
   }
 
   stopMonitoring() {
     if (!this.monitoring) return;
 
-    console.log('🛑 Stopping queue monitoring...');
+    console.error('🛑 Stopping queue monitoring...');
     this.monitoring = false;
 
     if (this.intervalId) {
@@ -71,7 +71,7 @@ export class QueueMonitor {
       this.intervalId = undefined;
     }
 
-    console.log('✅ Queue monitoring stopped');
+    console.error('✅ Queue monitoring stopped');
   }
 
   private async collectMetrics() {
@@ -282,7 +282,7 @@ export class QueueMonitor {
     try {
       const { pauseQueue } = await import("./queue/index.js");
       await pauseQueue(queueName);
-      console.log(`⏸️ Queue ${queueName} paused`);
+      console.error(`⏸️ Queue ${queueName} paused`);
       return true;
     } catch (error) {
       console.error(`Failed to pause queue ${queueName}:`, error);

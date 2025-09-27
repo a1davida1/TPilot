@@ -20,7 +20,7 @@ export class RedisBullQueue implements IQueue {
   }
 
   async initialize(): Promise<void> {
-    console.log('🚀 Initializing Redis BullMQ Queue backend');
+    console.error('🚀 Initializing Redis BullMQ Queue backend');
     // Test Redis connection
     await this.redis.ping();
   }
@@ -40,7 +40,7 @@ export class RedisBullQueue implements IQueue {
     }
 
     await this.redis.quit();
-    console.log('📦 Redis BullMQ Queue backend closed');
+    console.error('📦 Redis BullMQ Queue backend closed');
   }
 
   async enqueue<T = unknown>(
