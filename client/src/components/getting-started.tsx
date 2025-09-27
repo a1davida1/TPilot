@@ -6,8 +6,6 @@ import { Progress } from '@/components/ui/progress';
 import { 
   CheckCircle, 
   Circle, 
-  PlayCircle, 
-  BookOpen, 
   Zap, 
   Shield, 
   TrendingUp,
@@ -17,8 +15,6 @@ import {
   Users,
   Crown,
   FileText,
-  Camera,
-  ChevronDown,
   ChevronUp,
   EyeOff
 } from 'lucide-react';
