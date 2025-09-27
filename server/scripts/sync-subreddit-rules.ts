@@ -1,9 +1,10 @@
 #!/usr/bin/env tsx
 
 import { db } from '../db.js';
-import { subredditRules, redditCommunities } from '@shared/schema';
-import { eq, sql } from 'drizzle-orm';
+import { subredditRules, redditCommunities, createDefaultRules } from '@shared/schema';
+import { eq } from 'drizzle-orm';
 import type { RuleSpec, RuleSpecBase } from '../lib/policy-linter.js';
+import type { RedditCommunityRuleSet } from '@shared/schema';
 
 // Reddit API configuration
 const REDDIT_USER_AGENT = 'ThottoPilot/1.0 (Subreddit rules sync)';
@@ -258,8 +259,47 @@ async function applyExistingOverrides(subreddit: string, newSpec: RuleSpecBase):
 /**
  * Sync rules for a single subreddit
  */
-async function syncSubredditRules(subreddit: string): Promise<void> {
-  console.error(`Syncing rules for r/${subreddit}...`);
+function mapRuleSpecToCommunityRules(spec: RuleSpec): RedditCommunityRuleSet {
+  const defaults = createDefaultRules();
+
+  const sellingPolicy = (() => {
+    if (spec.linkPolicy === 'no-link') return 'not_allowed';
+    if (spec.linkPolicy === 'one-link') return 'limited';
+    if (spec.linkPolicy === 'ok') return 'allowed';
+    return 'unknown';
+  })();
+
+  return {
+    eligibility: {
+      minKarma: spec.manualFlags?.minKarma ?? defaults.eligibility?.minKarma ?? null,
+      minAccountAgeDays: spec.manualFlags?.minAccountAgeDays ?? defaults.eligibility?.minAccountAgeDays ?? null,
+      verificationRequired: spec.manualFlags?.verificationRequired ?? defaults.eligibility?.verificationRequired ?? false,
+      requiresApproval: defaults.eligibility?.requiresApproval ?? false,
+    },
+    content: {
+      sellingPolicy,
+      watermarksAllowed: defaults.content?.watermarksAllowed ?? null,
+      promotionalLinks: defaults.content?.promotionalLinks ?? null,
+      requiresOriginalContent: spec.flairRequired ?? defaults.content?.requiresOriginalContent ?? false,
+      nsfwRequired: defaults.content?.nsfwRequired ?? false,
+      titleGuidelines: spec.titleRegexes?.map(regex => `Avoid pattern: ${regex}`) ?? defaults.content?.titleGuidelines ?? [],
+      contentGuidelines: spec.wikiNotes ?? defaults.content?.contentGuidelines ?? [],
+      linkRestrictions: spec.requiredTags ?? defaults.content?.linkRestrictions ?? [],
+      bannedContent: spec.bannedWords ?? defaults.content?.bannedContent ?? [],
+      formattingRequirements: defaults.content?.formattingRequirements ?? [],
+    },
+    posting: {
+      maxPostsPerDay: defaults.posting?.maxPostsPerDay ?? null,
+      cooldownHours: defaults.posting?.cooldownHours ?? null,
+    },
+    notes: (spec.manualFlags?.notes && spec.manualFlags.notes.length > 0)
+      ? spec.manualFlags.notes.join('\n')
+      : defaults.notes ?? null,
+  };
+}
+
+export async function syncSubredditRules(subreddit: string): Promise<RuleSpec> {
+  console.log(`Syncing rules for r/${subreddit}...`);
 
   try {
     // Fetch rules from Reddit
@@ -290,9 +330,20 @@ async function syncSubredditRules(subreddit: string): Promise<void> {
         },
       });
 
-    console.error(`✅ Successfully synced rules for r/${subreddit}`);
+    const communityRuleSet = mapRuleSpecToCommunityRules(finalSpec);
+
+    await db
+      .update(redditCommunities)
+      .set({
+        rules: communityRuleSet,
+      })
+      .where(eq(redditCommunities.id, subreddit.toLowerCase()));
+
+    console.log(`✅ Successfully synced rules for r/${subreddit}`);
+    return finalSpec;
   } catch (error) {
     console.error(`❌ Failed to sync rules for r/${subreddit}:`, error);
+    throw error;
   }
 }
 
@@ -315,7 +366,13 @@ async function syncAllCommunityRules(): Promise<void> {
       
       // Process batch in parallel but with delay between batches
       await Promise.all(
-        batch.map(community => syncSubredditRules(community.name))
+        batch.map(async community => {
+          try {
+            await syncSubredditRules(community.name);
+          } catch (error) {
+            console.error(`❌ Failed to sync rules for r/${community.name} in batch:`, error);
+          }
+        })
       );
 
       // Delay between batches to respect Reddit's rate limits
@@ -366,4 +423,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   main().catch(console.error);
 }
 
-export { syncSubredditRules, syncAllCommunityRules, parseRulesToSpec };
+export { syncAllCommunityRules, parseRulesToSpec };

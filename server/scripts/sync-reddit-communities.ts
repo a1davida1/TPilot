@@ -2,6 +2,7 @@ import type Snoowrap from 'snoowrap';
 import { z } from 'zod';
 import { db } from '../db.js';
 import { redditCommunities, insertRedditCommunitySchema, InsertRedditCommunity } from '@shared/schema';
+import { syncSubredditRules } from './sync-subreddit-rules.js';
 import { logger } from '../lib/logger.js';
 import { getRedditServiceClient, registerDefaultRedditClients, REDDIT_SERVICE_CLIENT_KEYS } from '../lib/reddit.js';
 
@@ -152,7 +153,11 @@ async function calculateEngagementMetrics(reddit: Snoowrap, subredditName: strin
 /**
  * Sync a single subreddit's data with retry logic
  */
-async function syncSubreddit(reddit: Snoowrap, subredditName: string, retryCount = 0): Promise<void> {
+interface SubredditSyncOutcome {
+  ruleSyncError?: string;
+}
+
+async function syncSubreddit(reddit: Snoowrap, subredditName: string, retryCount = 0): Promise<SubredditSyncOutcome> {
   const maxRetries = 3;
   const baseDelay = 1000;
   
@@ -194,8 +199,21 @@ async function syncSubreddit(reddit: Snoowrap, subredditName: string, retryCount
           averageUpvotes: validatedData.averageUpvotes,
         },
       });
-    
+
+    let ruleSyncError: string | undefined;
+
+    try {
+      // Give Reddit a brief breather before fetching rule metadata.
+      await new Promise(resolve => setTimeout(resolve, 500));
+      await syncSubredditRules(subredditName);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error(`⚠️ Failed to sync rules for r/${subredditName}:`, error);
+      ruleSyncError = `r/${subredditName} rules: ${errorMessage}`;
+    }
+
     logger.info(`✅ Successfully synced r/${subredditName} (${subreddit.subscribers} members)`);
+    return { ruleSyncError };
   } catch (error: unknown) {
     // Handle rate limiting and authentication errors
     const errorObj = error as { statusCode?: number };
@@ -252,8 +270,11 @@ export async function syncRedditCommunities(config?: { subreddits?: string[]; ru
     result.processed++;
     
     try {
-      await syncSubreddit(reddit, subredditName);
+      const outcome = await syncSubreddit(reddit, subredditName);
       result.succeeded++;
+      if (outcome.ruleSyncError) {
+        result.errors.push(outcome.ruleSyncError);
+      }
     } catch (error) {
       result.failed++;
       const errorMessage = error instanceof Error ? error.message : String(error);

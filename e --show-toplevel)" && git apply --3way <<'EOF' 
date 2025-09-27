@@ -1,0 +1,165 @@
+[1mdiff --git a/server/scripts/sync-reddit-communities.ts b/server/scripts/sync-reddit-communities.ts[m
+[1mindex 134238d..a8aa31d 100644[m
+[1m--- a/server/scripts/sync-reddit-communities.ts[m
+[1m+++ b/server/scripts/sync-reddit-communities.ts[m
+[36m@@ -2,6 +2,7 @@[m [mimport type Snoowrap from 'snoowrap';[m
+ import { z } from 'zod';[m
+ import { db } from '../db.js';[m
+ import { redditCommunities, insertRedditCommunitySchema, InsertRedditCommunity } from '@shared/schema';[m
+[32m+[m[32mimport { syncSubredditRules } from './sync-subreddit-rules.js';[m
+ import { logger } from '../lib/logger.js';[m
+ import { getRedditServiceClient, registerDefaultRedditClients, REDDIT_SERVICE_CLIENT_KEYS } from '../lib/reddit.js';[m
+ [m
+[36m@@ -152,7 +153,11 @@[m [masync function calculateEngagementMetrics(reddit: Snoowrap, subredditName: strin[m
+ /**[m
+  * Sync a single subreddit's data with retry logic[m
+  */[m
+[31m-async function syncSubreddit(reddit: Snoowrap, subredditName: string, retryCount = 0): Promise<void> {[m
+[32m+[m[32minterface SubredditSyncOutcome {[m
+[32m+[m[32m  ruleSyncError?: string;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32masync function syncSubreddit(reddit: Snoowrap, subredditName: string, retryCount = 0): Promise<SubredditSyncOutcome> {[m
+   const maxRetries = 3;[m
+   const baseDelay = 1000;[m
+   [m
+[36m@@ -194,8 +199,21 @@[m [masync function syncSubreddit(reddit: Snoowrap, subredditName: string, retryCount[m
+           averageUpvotes: validatedData.averageUpvotes,[m
+         },[m
+       });[m
+[31m-    [m
+[32m+[m
+[32m+[m[32m    let ruleSyncError: string | undefined;[m
+[32m+[m
+[32m+[m[32m    try {[m
+[32m+[m[32m      // Give Reddit a brief breather before fetching rule metadata.[m
+[32m+[m[32m      await new Promise(resolve => setTimeout(resolve, 500));[m
+[32m+[m[32m      await syncSubredditRules(subredditName);[m
+[32m+[m[32m    } catch (error) {[m
+[32m+[m[32m      const errorMessage = error instanceof Error ? error.message : String(error);[m
+[32m+[m[32m      logger.error(`⚠️ Failed to sync rules for r/${subredditName}:`, error);[m
+[32m+[m[32m      ruleSyncError = `r/${subredditName} rules: ${errorMessage}`;[m
+[32m+[m[32m    }[m
+[32m+[m
+     logger.info(`✅ Successfully synced r/${subredditName} (${subreddit.subscribers} members)`);[m
+[32m+[m[32m    return { ruleSyncError };[m
+   } catch (error: unknown) {[m
+     // Handle rate limiting and authentication errors[m
+     const errorObj = error as { statusCode?: number };[m
+[36m@@ -252,8 +270,11 @@[m [mexport async function syncRedditCommunities(config?: { subreddits?: string[]; ru[m
+     result.processed++;[m
+     [m
+     try {[m
+[31m-      await syncSubreddit(reddit, subredditName);[m
+[32m+[m[32m      const outcome = await syncSubreddit(reddit, subredditName);[m
+       result.succeeded++;[m
+[32m+[m[32m      if (outcome.ruleSyncError) {[m
+[32m+[m[32m        result.errors.push(outcome.ruleSyncError);[m
+[32m+[m[32m      }[m
+     } catch (error) {[m
+       result.failed++;[m
+       const errorMessage = error instanceof Error ? error.message : String(error);[m
+[1mdiff --git a/server/scripts/sync-subreddit-rules.ts b/server/scripts/sync-subreddit-rules.ts[m
+[1mindex df8d8f2..17a8fd6 100644[m
+[1m--- a/server/scripts/sync-subreddit-rules.ts[m
+[1m+++ b/server/scripts/sync-subreddit-rules.ts[m
+[36m@@ -1,9 +1,10 @@[m
+ #!/usr/bin/env tsx[m
+ [m
+ import { db } from '../db.js';[m
+[31m-import { subredditRules, redditCommunities } from '@shared/schema';[m
+[31m-import { eq, sql } from 'drizzle-orm';[m
+[32m+[m[32mimport { subredditRules, redditCommunities, createDefaultRules } from '@shared/schema';[m
+[32m+[m[32mimport { eq } from 'drizzle-orm';[m
+ import type { RuleSpec, RuleSpecBase } from '../lib/policy-linter.js';[m
+[32m+[m[32mimport type { RedditCommunityRuleSet } from '@shared/schema';[m
+ [m
+ // Reddit API configuration[m
+ const REDDIT_USER_AGENT = 'ThottoPilot/1.0 (Subreddit rules sync)';[m
+[36m@@ -258,8 +259,47 @@[m [masync function applyExistingOverrides(subreddit: string, newSpec: RuleSpecBase):[m
+ /**[m
+  * Sync rules for a single subreddit[m
+  */[m
+[31m-async function syncSubredditRules(subreddit: string): Promise<void> {[m
+[31m-  console.error(`Syncing rules for r/${subreddit}...`);[m
+[32m+[m[32mfunction mapRuleSpecToCommunityRules(spec: RuleSpec): RedditCommunityRuleSet {[m
+[32m+[m[32m  const defaults = createDefaultRules();[m
+[32m+[m
+[32m+[m[32m  const sellingPolicy = (() => {[m
+[32m+[m[32m    if (spec.linkPolicy === 'no-link') return 'not_allowed';[m
+[32m+[m[32m    if (spec.linkPolicy === 'one-link') return 'limited';[m
+[32m+[m[32m    if (spec.linkPolicy === 'ok') return 'allowed';[m
+[32m+[m[32m    return 'unknown';[m
+[32m+[m[32m  })();[m
+[32m+[m
+[32m+[m[32m  return {[m
+[32m+[m[32m    eligibility: {[m
+[32m+[m[32m      minKarma: spec.manualFlags?.minKarma ?? defaults.eligibility?.minKarma ?? null,[m
+[32m+[m[32m      minAccountAgeDays: spec.manualFlags?.minAccountAgeDays ?? defaults.eligibility?.minAccountAgeDays ?? null,[m
+[32m+[m[32m      verificationRequired: spec.manualFlags?.verificationRequired ?? defaults.eligibility?.verificationRequired ?? false,[m
+[32m+[m[32m      requiresApproval: defaults.eligibility?.requiresApproval ?? false,[m
+[32m+[m[32m    },[m
+[32m+[m[32m    content: {[m
+[32m+[m[32m      sellingPolicy,[m
+[32m+[m[32m      watermarksAllowed: defaults.content?.watermarksAllowed ?? null,[m
+[32m+[m[32m      promotionalLinks: defaults.content?.promotionalLinks ?? null,[m
+[32m+[m[32m      requiresOriginalContent: spec.flairRequired ?? defaults.content?.requiresOriginalContent ?? false,[m
+[32m+[m[32m      nsfwRequired: defaults.content?.nsfwRequired ?? false,[m
+[32m+[m[32m      titleGuidelines: spec.titleRegexes?.map(regex => `Avoid pattern: ${regex}`) ?? defaults.content?.titleGuidelines ?? [],[m
+[32m+[m[32m      contentGuidelines: spec.wikiNotes ?? defaults.content?.contentGuidelines ?? [],[m
+[32m+[m[32m      linkRestrictions: spec.requiredTags ?? defaults.content?.linkRestrictions ?? [],[m
+[32m+[m[32m      bannedContent: spec.bannedWords ?? defaults.content?.bannedContent ?? [],[m
+[32m+[m[32m      formattingRequirements: defaults.content?.formattingRequirements ?? [],[m
+[32m+[m[32m    },[m
+[32m+[m[32m    posting: {[m
+[32m+[m[32m      maxPostsPerDay: defaults.posting?.maxPostsPerDay ?? null,[m
+[32m+[m[32m      cooldownHours: defaults.posting?.cooldownHours ?? null,[m
+[32m+[m[32m    },[m
+[32m+[m[32m    notes: (spec.manualFlags?.notes && spec.manualFlags.notes.length > 0)[m
+[32m+[m[32m      ? spec.manualFlags.notes.join('\n')[m
+[32m+[m[32m      : defaults.notes ?? null,[m
+[32m+[m[32m  };[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mexport async function syncSubredditRules(subreddit: string): Promise<RuleSpec> {[m
+[32m+[m[32m  console.log(`Syncing rules for r/${subreddit}...`);[m
+ [m
+   try {[m
+     // Fetch rules from Reddit[m
+[36m@@ -290,9 +330,20 @@[m [masync function syncSubredditRules(subreddit: string): Promise<void> {[m
+         },[m
+       });[m
+ [m
+[31m-    console.error(`✅ Successfully synced rules for r/${subreddit}`);[m
+[32m+[m[32m    const communityRuleSet = mapRuleSpecToCommunityRules(finalSpec);[m
+[32m+[m
+[32m+[m[32m    await db[m
+[32m+[m[32m      .update(redditCommunities)[m
+[32m+[m[32m      .set({[m
+[32m+[m[32m        rules: communityRuleSet,[m
+[32m+[m[32m      })[m
+[32m+[m[32m      .where(eq(redditCommunities.id, subreddit.toLowerCase()));[m
+[32m+[m
+[32m+[m[32m    console.log(`✅ Successfully synced rules for r/${subreddit}`);[m
+[32m+[m[32m    return finalSpec;[m
+   } catch (error) {[m
+     console.error(`❌ Failed to sync rules for r/${subreddit}:`, error);[m
+[32m+[m[32m    throw error;[m
+   }[m
+ }[m
+ [m
+[36m@@ -315,7 +366,13 @@[m [masync function syncAllCommunityRules(): Promise<void> {[m
+       [m
+       // Process batch in parallel but with delay between batches[m
+       await Promise.all([m
+[31m-        batch.map(community => syncSubredditRules(community.name))[m
+[32m+[m[32m        batch.map(async community => {[m
+[32m+[m[32m          try {[m
+[32m+[m[32m            await syncSubredditRules(community.name);[m
+[32m+[m[32m          } catch (error) {[m
+[32m+[m[32m            console.error(`❌ Failed to sync rules for r/${community.name} in batch:`, error);[m
+[32m+[m[32m          }[m
+[32m+[m[32m        })[m
+       );[m
+ [m
+       // Delay between batches to respect Reddit's rate limits[m

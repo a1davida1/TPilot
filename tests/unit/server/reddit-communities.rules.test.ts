@@ -2,23 +2,13 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { normalizeRules, inferSellingPolicy } from '../../../server/reddit-communities.js';
+import { normalizeRules, inferSellingPolicy, getCommunityInsights } from '../../../server/reddit-communities.js';
+import { db } from '../../../server/db.js';
+import { redditCommunities, subredditRules } from '@shared/schema.js';
+import type { RedditCommunityRuleSet } from '@shared/schema.js';
+import { syncSubredditRules } from '../../../server/scripts/sync-subreddit-rules.js';
 
 // Test interfaces
-interface TestCommunityRules {
-  sellingAllowed?: string;
-  watermarksAllowed?: boolean;
-  titleRules?: string[];
-  contentRules?: string[];
-  verificationRequired?: boolean;
-  minKarma?: number;
-  minAccountAge?: number;
-  requiresApproval?: boolean;
-  nsfwRequired?: boolean;
-  maxPostsPerDay?: number;
-  cooldownHours?: number;
-}
-
 interface TestCommunity {
   id: string;
   name?: string;
@@ -29,7 +19,7 @@ interface TestCommunity {
   growthTrend?: string;
   competitionLevel?: string;
   bestPostingTimes?: string[];
-  rules: TestCommunityRules;
+  rules: RedditCommunityRuleSet | undefined;
 }
 
 const __filename = fileURLToPath(import.meta.url);

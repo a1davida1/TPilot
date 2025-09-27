@@ -101,85 +101,86 @@
   }
 
   .dark {
-    /* Dark Mode - Twilight Candy Dream */
-    --background: 278 52 10;
-    --foreground: 305 55 94;
+    /* Dark Mode - Luminous Canopy */
+    --background: 100 38 8;
+    --foreground: 78 68 94;
 
     /* Card colors with guaranteed contrast */
-    --card: 280 46 14;
-    --card-foreground: 305 55 94;
-    --card-border: 296 45 32;
+    --card: 100 34 12;
+    --card-foreground: 78 68 94;
+    --card-border: 98 42 24;
 
     /* Popover colors for floating panels */
-    --popover: 280 46 18;
-    --popover-foreground: 305 55 94;
+    --popover: 100 32 16;
+    --popover-foreground: 78 68 94;
 
-    /* Primary brand colors - Midnight sherbet scale */
-    --primary: 300 70 70;
+    /* Primary brand colors - Neon canopy scale */
+    --primary: 92 92 58;
     --primary-foreground: 0 0 10;
-    --primary-50: 300 46 18;
-    --primary-100: 300 52 24;
-    --primary-200: 300 58 32;
-    --primary-300: 300 62 40;
-    --primary-400: 300 66 52;
-    --primary-500: 300 68 60;
-    --primary-600: 300 70 66;
-    --primary-700: 300 70 70;
-    --primary-800: 300 68 78;
-    --primary-900: 300 64 86;
-    --primary-950: 300 60 92;
+    --primary-50: 105 28 12;
+    --primary-100: 102 36 18;
+    --primary-200: 100 44 26;
+    --primary-300: 96 56 34;
+    --primary-400: 94 68 44;
+    --primary-500: 92 80 52;
+    --primary-600: 90 88 56;
+    --primary-700: 88 92 62;
+    --primary-800: 86 94 70;
+    --primary-900: 84 96 80;
+    --primary-950: 82 98 88;
 
     /* Secondary and muted surfaces */
-    --secondary: 208 42 20;
-    --secondary-foreground: 208 72 88;
-    --muted: 276 32 22;
-    --muted-foreground: 276 40 78;
+    --secondary: 120 30 18;
+    --secondary-foreground: 78 62 88;
+    --muted: 102 24 20;
+    --muted-foreground: 78 46 76;
 
-    /* Accent colors - Cotton sky twilight */
-    --accent: 205 80 68;
-    --accent-foreground: 210 100 12;
-    --accent-purple: 286 74 72;
-    --accent-violet: 255 78 70;
-    --accent-indigo: 220 76 64;
+    /* Accent colors - Citrus glow blend */
+    --accent: 68 96 62;
+    --accent-foreground: 100 36 14;
+    --accent-purple: 84 88 58;
+    --accent-violet: 72 92 60;
+    --accent-indigo: 64 88 58;
 
-    /* State colors with proper contrast */
-    --destructive: 352 70 60;
+    /* State colors tuned for lime palette */
+    --destructive: 18 82 56;
     --destructive-foreground: 0 0 96;
-    --success: 160 52 46;
-    --success-foreground: 160 32 90;
-    --warning: 42 82 56;
-    --warning-foreground: 42 40 12;
+    --success: 110 72 50;
+    --success-foreground: 110 30 94;
+    --warning: 58 98 58;
+    --warning-foreground: 58 48 12;
 
     /* Form and interaction colors */
-    --border: 278 34 28;
-    --input: 278 38 18;
-    --ring: 300 70 66;
+    --border: 100 34 26;
+    --input: 100 28 18;
+    --ring: 92 92 58;
+    --focus-ring: 0 0 0 2px rgba(210, 255, 90, 0.55);
 
     /* Interactive states */
-    --hover: 300 42 22;
-    --active: 300 44 18;
-    --focus: 205 78 70;
+    --hover: 100 40 18;
+    --active: 100 36 14;
+    --focus: 78 96 64;
 
     /* Chart colors for dark mode */
-    --chart-1: 300 66 68;
-    --chart-2: 205 74 64;
-    --chart-3: 260 70 62;
-    --chart-4: 190 70 56;
-    --chart-5: 150 64 48;
+    --chart-1: 92 88 60;
+    --chart-2: 68 88 58;
+    --chart-3: 54 90 56;
+    --chart-4: 40 92 52;
+    --chart-5: 30 86 46;
 
     /* Sidebar colors for dark mode */
-    --sidebar-background: 278 48 12;
-    --sidebar-foreground: 305 55 90;
-    --sidebar-primary: 300 70 66;
+    --sidebar-background: 100 36 10;
+    --sidebar-foreground: 78 68 90;
+    --sidebar-primary: 92 92 58;
     --sidebar-primary-foreground: 0 0 10;
-    --sidebar-accent: 205 80 68;
-    --sidebar-accent-foreground: 210 100 12;
-    --sidebar-border: 278 34 28;
-    --sidebar-ring: 300 70 66;
+    --sidebar-accent: 68 96 62;
+    --sidebar-accent-foreground: 100 36 14;
+    --sidebar-border: 100 34 24;
+    --sidebar-ring: 92 92 58;
 
     /* Overlay colors for dark mode */
-    --overlay: 278 60 6;
-    --overlay-opacity: 0.88;
+    --overlay: 100 46 6;
+    --overlay-opacity: 0.86;
     --backdrop-blur: 24px;
   }
 }

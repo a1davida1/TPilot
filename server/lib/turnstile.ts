@@ -9,11 +9,17 @@ interface TurnstileResponse {
 
 export async function verifyTurnstileToken(token: string, userIP?: string): Promise<boolean> {
   const config = getEnvConfig();
-  
-  // If Turnstile is not configured, bypass in development mode
+  const isDevelopment = process.env.NODE_ENV === 'development';
+
+  // If Turnstile is not configured, bypass only in development mode
   if (!config.TURNSTILE_SECRET_KEY) {
-    console.warn('⚠️ Turnstile not configured - bypassing verification in development');
-    return true;
+    if (isDevelopment) {
+      console.warn('⚠️ Turnstile not configured - bypassing verification in development');
+      return true;
+    }
+
+    console.error('❌ Turnstile secret key is not configured. Rejecting verification request.');
+    return false;
   }
 
   try {

@@ -199,7 +199,7 @@ export function ImageGallery() {
             />
           </div>
           
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+          <div className="border-2 border-dashed border-border rounded-lg p-6">
             <input
               type="file"
               accept="image/*"
@@ -210,11 +210,11 @@ export function ImageGallery() {
             />
             <label htmlFor="bulk-upload" className="cursor-pointer">
               <div className="text-center">
-                <Upload className="mx-auto h-8 w-8 text-gray-400" />
-                <p className="mt-2 text-sm text-gray-600">
+                <Upload className="mx-auto h-8 w-8 text-muted-foreground/70" />
+                <p className="mt-2 text-sm text-muted-foreground">
                   Click to upload images or drag and drop
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground/80">
                   Supports multiple files
                 </p>
               </div>
@@ -233,8 +233,8 @@ export function ImageGallery() {
         </CardHeader>
         <CardContent>
           {filteredImages.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <Upload className="mx-auto h-12 w-12 text-gray-300 mb-4" />
+            <div className="text-center py-8 text-muted-foreground/80">
+              <Upload className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
               <p>No images yet. Upload some photos to get started!</p>
             </div>
           ) : (
@@ -249,7 +249,7 @@ export function ImageGallery() {
                           alt={image.filename}
                           className="w-full h-full object-cover"
                         />
-                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all">
+                        <div className="absolute inset-0 bg-foreground bg-opacity-0 group-hover:bg-opacity-20 transition-all">
                           <div className="absolute bottom-2 left-2 right-2">
                             <div className="flex flex-wrap gap-1">
                               <Badge variant="secondary" className="text-xs">

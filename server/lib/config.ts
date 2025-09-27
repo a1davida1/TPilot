@@ -1,7 +1,8 @@
 import { z } from "zod";
 
 // Environment configuration with Zod validation
-export const envSchema = z.object({
+export const envSchema = z
+  .object({
   // Database
   DATABASE_URL: z.string().min(1),
   
@@ -81,7 +82,26 @@ export const envSchema = z.object({
   
   // Admin Configuration
   ADMIN_EMAIL_WHITELIST: z.string().optional()
-});
+  })
+  .superRefine((configValues, ctx) => {
+    if (process.env.NODE_ENV === 'production') {
+      if (!configValues.TURNSTILE_SITE_KEY) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['TURNSTILE_SITE_KEY'],
+          message: 'TURNSTILE_SITE_KEY is required in production',
+        });
+      }
+
+      if (!configValues.TURNSTILE_SECRET_KEY) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['TURNSTILE_SECRET_KEY'],
+          message: 'TURNSTILE_SECRET_KEY is required in production',
+        });
+      }
+    }
+  });
 
 export function getEnvConfig() {
   try {

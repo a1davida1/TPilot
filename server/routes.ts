@@ -33,7 +33,7 @@ import { configureSocialAuth, socialAuthRoutes } from "./social-auth-config.js";
 import { visitorAnalytics } from "./visitor-analytics.js";
 import { makePaxum, makeCoinbase, makeStripe } from "./payments/payment-providers.js";
 import { deriveStripeConfig } from "./payments/stripe-config.js";
-<<<<<<< ours
+import { buildUploadUrl } from "./lib/uploads.js";
 
 export const csrfProtectedRoutes = [
   '/api/auth/verify-email',
@@ -49,9 +49,6 @@ export const csrfProtectedRoutes = [
   '/api/auth/delete-account',
   '/api/user/settings'
 ];
-=======
-import { buildUploadUrl } from "./lib/uploads.js";
->>>>>>> theirs
 // Analytics request type
 interface AnalyticsRequest extends express.Request {
   sessionID: string;
