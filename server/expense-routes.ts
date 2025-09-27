@@ -7,6 +7,7 @@ import crypto from 'crypto';
 import { authenticateToken } from './middleware/auth.js';
 import { storage } from './storage.js';
 import { MediaManager } from './lib/media.js';
+import { buildUploadUrl } from './lib/uploads.js';
 import { logger } from './bootstrap/logger.js';
 import { type Expense, type ExpenseCategory, type InsertExpense, type User } from '@shared/schema';
 
@@ -485,7 +486,7 @@ export function registerExpenseRoutes(app: Express) {
         const timestampedFileName = `protected_${Date.now()}-${safeOriginalName}`;
         const fileName = timestampedFileName;
         await fs.writeFile(path.join(uploadDir, fileName), receiptBuffer);
-        receiptUrl = `/uploads/receipts/${fileName}`;
+        receiptUrl = buildUploadUrl('receipts', fileName);
         receiptFileName = fileName;
       }
 
