@@ -98,7 +98,7 @@ export interface SaveContentRequestBody {
   contentGenerationId?: number | string | null;
   socialMediaPostId?: number | string | null;
   tags?: string[]; // or a more specific type if available
-  metadata?: InsertSavedContent['metadata'];
+  metadata?: Record<string, unknown>;
 }
 
 interface SaveContentHandlerDependencies {
@@ -414,7 +414,7 @@ export function registerSavedContentRoutes(app: Express, options?: RegisterRoute
         ? body.tags.map(tag => tag.trim())
         : undefined;
 
-      const payloadInput: Partial<InsertSavedContent> = {
+      const payloadInput: any = {
         userId: req.user.id,
         title,
         content,

@@ -1046,7 +1046,7 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       safeLog('error', 'Failed to create saved content record', {
         error: (error as Error).message,
-        userId: content.userId,
+        userId: (content as any).userId ?? 'unknown',
       });
       throw error;
     }
