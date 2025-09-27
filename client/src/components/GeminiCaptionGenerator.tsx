@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CaptionPreview } from "./CaptionPreview";
 import { Loader2, Sparkles, Upload, AlertCircle, Image as _ImageIcon } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 import { apiRequest, type ApiError } from "@/lib/queryClient";
 import { getErrorMessage } from "@/utils/errorHelpers";
@@ -69,6 +70,7 @@ export function GeminiCaptionGenerator() {
   const [imageUrl, setImageUrl] = useState("");
   const [platform, setPlatform] = useState<string>("instagram");
   const [voice, setVoice] = useState<string>("flirty_playful");
+  const [includeHashtags, setIncludeHashtags] = useState<boolean>(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [captionData, setCaptionData] = useState<GenerationResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -112,7 +114,8 @@ export function GeminiCaptionGenerator() {
       const response = await apiRequest('POST', '/api/caption/generate', {
         imageUrl,
         platform,
-        voice
+        voice,
+        includeHashtags,
       });
 
       const result = await response.json();
@@ -135,7 +138,8 @@ export function GeminiCaptionGenerator() {
             mood: 'engaging',
             theme: 'Image fallback caption',
             context: 'Auto-generated because the supplied image could not be processed.',
-            nsfw: false
+            nsfw: false,
+            includeHashtags,
           });
 
           const fallbackResult = await fallbackResponse.json();
@@ -267,6 +271,18 @@ export function GeminiCaptionGenerator() {
             </Select>
           </div>
 
+          <div className="flex items-center justify-between rounded-lg border border-dashed border-gray-200 dark:border-gray-800 p-3">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Include hashtags</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Toggle off to hide hashtags in the preview and copies.</p>
+            </div>
+            <Switch
+              checked={includeHashtags}
+              onCheckedChange={(checked) => setIncludeHashtags(Boolean(checked))}
+              aria-label="Toggle hashtag suggestions"
+            />
+          </div>
+
           {/* Error Display */}
           {error && (
             <Alert variant="destructive">
@@ -298,7 +314,12 @@ export function GeminiCaptionGenerator() {
 
       {captionData ? (
         <div className="space-y-4">
-          <CaptionPreview data={captionData as CaptionPreviewData} />
+          <CaptionPreview
+            data={captionData as CaptionPreviewData}
+            includeHashtags={captionData?.includeHashtags ?? includeHashtags}
+            platform={platform}
+            metadata={captionData?.metadata}
+          />
           
           {/* Regenerate Button */}
           <Button

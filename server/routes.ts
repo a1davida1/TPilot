@@ -58,12 +58,8 @@ interface AnalyticsRequest extends express.Request {
 }
 
 // Import users table for type inference
-<<<<<<< ours
-import { users, type ContentGeneration, type InsertSavedContent } from "@shared/schema";
-import type { IStorage } from "./storage.js";
-=======
 import { users, type ContentGeneration, insertSavedContentSchema, type InsertSavedContent } from "@shared/schema";
->>>>>>> theirs
+import type { IStorage } from "./storage.js";
 
 // AuthUser interface for passport serialization
 interface AuthUser {
@@ -94,17 +90,19 @@ interface PhotoInstructionsData {
   technical?: string | string[];
 }
 
-  export interface SaveContentRequestBody {
-    title?: string;
-    content?: string;
-    platform?: string | null;
-    generationId?: number | string | null;
-    contentGenerationId?: number | string | null;
-    socialMediaPostId?: number | string | null;
-    tags?: string[]; // or a more specific type if available
-    metadata?: InsertSavedContent['metadata'];
-  }
+export interface SaveContentRequestBody {
+  title?: string;
+  content?: string;
+  platform?: string | null;
+  generationId?: number | string | null;
+  contentGenerationId?: number | string | null;
+  socialMediaPostId?: number | string | null;
+  tags?: string[]; // or a more specific type if available
+  metadata?: InsertSavedContent['metadata'];
+}
 
+interface SaveContentHandlerDependencies {
+  storage: IStorage;
 }
 
 interface SessionWithReddit extends Session {
@@ -342,31 +340,6 @@ const isRecord = (value: unknown): value is Record<string, unknown> => (
   typeof value === 'object' && value !== null && !Array.isArray(value)
 );
 
-const normalizeOptionalId = (value: number | string | null | undefined, field: string): number | undefined => {
-  if (value === undefined || value === null || value === '') {
-    return undefined;
-  }
-
-  if (typeof value === 'number') {
-    if (Number.isInteger(value) && value > 0) {
-      return value;
-    }
-    throw new Error(`Invalid ${field}`);
-  }
-
-  if (typeof value === 'string') {
-    const trimmed = value.trim();
-    if (trimmed.length === 0) {
-      return undefined;
-    }
-    const parsed = Number.parseInt(trimmed, 10);
-    if (Number.isInteger(parsed) && parsed > 0) {
-      return parsed;
-    }
-  }
-
-  throw new Error(`Invalid ${field}`);
-};
 
 export function registerSavedContentRoutes(app: Express, options?: RegisterRoutesOptions): void {
   app.post('/api/saved-content', authenticateToken, async (req: AuthenticatedRequest, res) => {
@@ -390,17 +363,17 @@ export function registerSavedContentRoutes(app: Express, options?: RegisterRoute
       let contentGenerationId: number | undefined;
       let socialMediaPostId: number | undefined;
 
-      try {
-        contentGenerationId = normalizeOptionalId(body?.contentGenerationId ?? undefined, 'contentGenerationId');
-      } catch (idError) {
-        return res.status(400).json({ message: (idError as Error).message });
+      const normalizedGenerationId = normalizeOptionalId(body?.contentGenerationId ?? undefined);
+      if (normalizedGenerationId === 'invalid') {
+        return res.status(400).json({ message: 'Invalid contentGenerationId' });
       }
+      contentGenerationId = normalizedGenerationId;
 
-      try {
-        socialMediaPostId = normalizeOptionalId(body?.socialMediaPostId ?? undefined, 'socialMediaPostId');
-      } catch (idError) {
-        return res.status(400).json({ message: (idError as Error).message });
+      const normalizedSocialPostId = normalizeOptionalId(body?.socialMediaPostId ?? undefined);
+      if (normalizedSocialPostId === 'invalid') {
+        return res.status(400).json({ message: 'Invalid socialMediaPostId' });
       }
+      socialMediaPostId = normalizedSocialPostId;
 
       if (Array.isArray(body?.tags)) {
         const hasInvalidTag = body.tags.some(tag => typeof tag !== 'string' || tag.trim().length === 0);

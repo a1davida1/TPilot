@@ -12,12 +12,24 @@ export const redditCommunitySellingPolicySchema = z.enum(['allowed', 'limited', 
 
 export const promotionAllowedSchema = z.enum(['yes', 'no', 'limited', 'subtle', 'strict', 'unknown']);
 
-export const categorySchema = z.enum([
+export const KNOWN_REDDIT_COMMUNITY_CATEGORIES = [
     'age', 'amateur', 'appearance', 'body_type', 'cam', 'clothing', 'comparison',
     'content_type', 'cosplay', 'couples', 'dancer', 'ethnicity', 'fetish',
     'fitness', 'gaming', 'general', 'gonewild', 'lifestyle', 'natural',
-    'niche', 'reveal', 'selling', 'social', 'specific', 'style', 'theme'
-]);
+    'niche', 'reveal', 'selling', 'social', 'specific', 'style', 'theme',
+    // Additional categories observed in production datasets and syncing jobs
+    'art', 'beauty', 'business', 'education', 'entertainment', 'fashion', 'finance',
+    'food', 'health', 'music', 'news', 'sports', 'support', 'technology', 'travel',
+    // Subreddit types emitted by Reddit sync tooling
+    'public', 'restricted', 'private', 'archived', 'employees_only', 'gold_only', 'gold_restricted'
+];
+const knownRedditCategoryEnum = z.enum(KNOWN_REDDIT_COMMUNITY_CATEGORIES);
+const fallbackRedditCategorySchema = z.string().trim().min(1, {
+    message: 'Category cannot be empty'
+}).max(100, {
+    message: 'Category must be 100 characters or fewer'
+});
+export const categorySchema = z.union([knownRedditCategoryEnum, fallbackRedditCategorySchema]);
 
 export const competitionLevelSchema = z.enum(['low', 'medium', 'high']).nullable();
 

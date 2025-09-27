@@ -1,15 +1,199 @@
 import React from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Check, AlertCircle } from "lucide-react";
-import { useState } from "react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Copy, Check, AlertCircle, Info } from "lucide-react";
 import type { CaptionObject, RankedResult, CaptionPreviewData } from '@shared/types/caption';
 
 // Re-export types from shared module for backward compatibility
 export type { CaptionObject, RankedResult, CaptionPreviewData } from '@shared/types/caption';
 
-export function CaptionPreview({ data }: { data: CaptionPreviewData | null | undefined }) {
+const PLATFORM_HASHTAG_LIMITS: Record<string, number> = {
+  instagram: 8,
+  x: 3,
+  twitter: 3,
+  tiktok: 5,
+  youtube: 15,
+  linkedin: 5,
+  pinterest: 10,
+  reddit: 0,
+};
+
+const PLATFORM_LABELS: Record<string, string> = {
+  instagram: "Instagram",
+  x: "X",
+  twitter: "X",
+  tiktok: "TikTok",
+  youtube: "YouTube",
+  linkedin: "LinkedIn",
+  pinterest: "Pinterest",
+  reddit: "Reddit",
+};
+
+const CONTEXT_KEYWORDS = [
+  "creator",
+  "photographer",
+  "artist",
+  "brand",
+  "company",
+  "label",
+  "designer",
+  "subreddit",
+  "community",
+  "location",
+  "city",
+  "country",
+  "state",
+  "region",
+  "neighborhood",
+  "venue",
+  "event",
+  "festival",
+  "landmark",
+  "studio",
+  "team",
+  "club",
+  "series",
+  "campaign",
+  "collection",
+  "place",
+];
+
+type ContextSource = Record<string, unknown>;
+
+function determineHashtagLimit(platform?: string): number {
+  if (!platform) {
+    return 10;
+  }
+  const normalized = platform.toLowerCase();
+  if (normalized in PLATFORM_HASHTAG_LIMITS) {
+    return PLATFORM_HASHTAG_LIMITS[normalized];
+  }
+  return 10;
+}
+
+function normalizeForComparison(tag: string): string {
+  return tag.replace(/^#+/, "").toLowerCase();
+}
+
+function formatHashtag(value: string): string | null {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+  const withoutHash = trimmed.replace(/^#+/, "");
+  const sanitized = withoutHash
+    .replace(/[^A-Za-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!sanitized) {
+    return null;
+  }
+  const words = sanitized.split(" ").filter(Boolean);
+  if (words.length === 0) {
+    return null;
+  }
+  const formattedWords = words.map(word => {
+    if (word.length <= 3 && word === word.toUpperCase()) {
+      return word.toUpperCase();
+    }
+    return `${word.charAt(0).toUpperCase()}${word.slice(1).toLowerCase()}`;
+  });
+  return `#${formattedWords.join("")}`;
+}
+
+function sanitizeHashtagList(tags: string[] | undefined): string[] {
+  if (!Array.isArray(tags)) {
+    return [];
+  }
+  const seen = new Set<string>();
+  const sanitized: string[] = [];
+  for (const tag of tags) {
+    const formatted = typeof tag === "string" ? formatHashtag(tag) : null;
+    if (!formatted) {
+      continue;
+    }
+    const key = normalizeForComparison(formatted);
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    sanitized.push(formatted);
+  }
+  return sanitized;
+}
+
+function shouldIncludeKey(path: string[]): boolean {
+  return path.some(segment => {
+    const normalized = segment.toLowerCase();
+    return CONTEXT_KEYWORDS.some(keyword => normalized.includes(keyword));
+  });
+}
+
+function collectContextualStrings(value: unknown, path: string[] = []): string[] {
+  if (typeof value === "string") {
+    return shouldIncludeKey(path) ? [value] : [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(item => collectContextualStrings(item, path));
+  }
+  if (value && typeof value === "object") {
+    return Object.entries(value as ContextSource).flatMap(([key, child]) =>
+      collectContextualStrings(child, [...path, key])
+    );
+  }
+  return [];
+}
+
+function buildContextualHashtags({ facts, metadata }: { facts?: ContextSource; metadata?: ContextSource }): string[] {
+  const results: string[] = [];
+  const seen = new Set<string>();
+  const sources: ContextSource[] = [];
+  if (facts) {
+    sources.push(facts);
+  }
+  if (metadata) {
+    sources.push(metadata);
+  }
+  for (const source of sources) {
+    const strings = collectContextualStrings(source);
+    for (const value of strings) {
+      const formatted = formatHashtag(value);
+      if (!formatted) {
+        continue;
+      }
+      const key = normalizeForComparison(formatted);
+      if (seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      results.push(formatted);
+    }
+  }
+  return results;
+}
+
+function resolvePlatformLabel(platform?: string): string {
+  if (!platform) {
+    return "your selected platform";
+  }
+  const normalized = platform.toLowerCase();
+  if (normalized in PLATFORM_LABELS) {
+    return PLATFORM_LABELS[normalized];
+  }
+  return `${platform.charAt(0).toUpperCase()}${platform.slice(1)}`;
+}
+
+interface CaptionPreviewProps {
+  data: CaptionPreviewData | null | undefined;
+  includeHashtags?: boolean;
+  platform?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export function CaptionPreview({ data, includeHashtags, platform, metadata }: CaptionPreviewProps) {
   const [copiedCaption, setCopiedCaption] = useState(false);
   const [copiedJSON, setCopiedJSON] = useState(false);
   const [copiedTitleIndex, setCopiedTitleIndex] = useState<number | null>(null);
@@ -31,7 +215,45 @@ export function CaptionPreview({ data }: { data: CaptionPreviewData | null | und
     ? data.titles.filter((title): title is string => typeof title === 'string' && title.trim().length > 0)
     : [];
   const titles = [...finalTitles, ...topLevelTitles.filter(title => !finalTitles.includes(title))];
-  
+
+  const effectivePlatform = platform ?? data?.platform;
+  const metadataSource = metadata ?? data?.metadata;
+  const factsSource = data?.facts;
+  const includeHashtagsPreference = includeHashtags ?? data?.includeHashtags ?? true;
+  const platformLimit = determineHashtagLimit(effectivePlatform);
+
+  const baseHashtags = includeHashtagsPreference && typeof final === 'object'
+    ? sanitizeHashtagList(final.hashtags)
+    : [];
+
+  const contextualHashtags = includeHashtagsPreference
+    ? buildContextualHashtags({ facts: factsSource, metadata: metadataSource })
+    : [];
+
+  const combinedHashtags = [...baseHashtags];
+  const seenHashtags = new Set(combinedHashtags.map(normalizeForComparison));
+  for (const tag of contextualHashtags) {
+    const normalized = normalizeForComparison(tag);
+    if (seenHashtags.has(normalized)) {
+      continue;
+    }
+    seenHashtags.add(normalized);
+    combinedHashtags.push(tag);
+  }
+
+  const limitedHashtags = platformLimit > 0 ? combinedHashtags.slice(0, platformLimit) : [];
+  const hashtagsSuppressedByPreference = !includeHashtagsPreference;
+  const hashtagsSuppressedByPlatform = includeHashtagsPreference && platformLimit === 0;
+  const showHashtagRow = includeHashtagsPreference && platformLimit !== 0 && limitedHashtags.length > 0;
+  const showHashtagNotice = hashtagsSuppressedByPreference || hashtagsSuppressedByPlatform;
+  const platformLabel = resolvePlatformLabel(effectivePlatform);
+  const omissionSummary = hashtagsSuppressedByPreference
+    ? "Hashtags intentionally omitted per your settings."
+    : `Hashtags are typically not used on ${platformLabel}, so we left them out.`;
+  const tooltipDetails = hashtagsSuppressedByPreference
+    ? "You asked us to exclude hashtags for this draft. Enable hashtags to bring them back."
+    : `To keep your ${platformLabel} post compliant, we skipped hashtags even though fallback suggestions existed.`;
+
   if (!captionText) return null;
 
   const handleCopyCaption = async () => {
@@ -106,18 +328,36 @@ export function CaptionPreview({ data }: { data: CaptionPreviewData | null | und
         )}
 
         {/* Hashtags */}
-        {typeof final === 'object' && final.hashtags && final.hashtags.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {final.hashtags.map((h: string, index: number) => (
-              <Badge 
-                key={`${h}-${index}`} 
-                variant="secondary" 
-                className="text-xs bg-gradient-to-r from-pink-100 to-purple-100 dark:from-pink-900/30 dark:to-purple-900/30"
-              >
-                {h}
-              </Badge>
-            ))}
+        {showHashtagRow && (
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Recommended Hashtags</p>
+            <div className="flex flex-wrap gap-2">
+              {limitedHashtags.map((tag, index) => (
+                <Badge
+                  key={`${tag}-${index}`}
+                  variant="secondary"
+                  className="text-xs bg-gradient-to-r from-pink-100 to-purple-100 dark:from-pink-900/30 dark:to-purple-900/30"
+                >
+                  {tag}
+                </Badge>
+              ))}
+            </div>
           </div>
+        )}
+        {showHashtagNotice && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                  <Info className="h-3 w-3" />
+                  <span>{omissionSummary}</span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs text-xs">
+                {tooltipDetails}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         )}
 
         {/* Metadata Grid */}

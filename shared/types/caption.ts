@@ -21,6 +21,10 @@ export interface CaptionPreviewData {
   final: string | CaptionObject;
   ranked: string[] | RankedResult;
   titles?: string[];
+  facts?: Record<string, unknown>;
+  includeHashtags?: boolean;
+  platform?: string;
+  metadata?: Record<string, unknown>;
 }
 
 export interface GenerationResponse {
@@ -29,6 +33,9 @@ export interface GenerationResponse {
   facts?: Record<string, unknown>;
   provider?: string;
   titles?: string[];
+  includeHashtags?: boolean;
+  platform?: string;
+  metadata?: Record<string, unknown>;
   [key: string]: unknown;
 }
 
