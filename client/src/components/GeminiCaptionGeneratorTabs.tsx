@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { CaptionPreview } from "./CaptionPreview";
 import { Loader2, Sparkles, Upload, AlertCircle, Image as ImageIcon, Type, Edit3 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
@@ -60,6 +61,7 @@ export function GeminiCaptionGeneratorTabs() {
   const [style, setStyle] = useState<string>("playful");
   const [mood, setMood] = useState<string>("seductive");
   const [nsfw, setNsfw] = useState<boolean>(false);
+  const [includeHashtags, setIncludeHashtags] = useState<boolean>(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [captionData, setCaptionData] = useState<GenerationResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -116,7 +118,7 @@ export function GeminiCaptionGeneratorTabs() {
 
     try {
       const response = await apiRequest('POST', '/api/caption/generate', {
-        imageUrl, platform, voice, style, mood, nsfw
+        imageUrl, platform, voice, style, mood, nsfw, includeHashtags
       });
 
       const result = await response.json();
@@ -151,7 +153,7 @@ export function GeminiCaptionGeneratorTabs() {
 
     try {
       const response = await apiRequest('POST', '/api/caption/generate-text', {
-        platform, voice, style, mood, theme, context, nsfw
+        platform, voice, style, mood, theme, context, nsfw, includeHashtags
       });
 
       const result = await response.json();
@@ -186,13 +188,14 @@ export function GeminiCaptionGeneratorTabs() {
 
     try {
       const response = await apiRequest('POST', '/api/caption/rewrite', {
-        platform, 
-        voice, 
+        platform,
+        voice,
         style,
         mood,
-        existingCaption, 
+        existingCaption,
         imageUrl: rewriteImageUrl || undefined,
-        nsfw
+        nsfw,
+        includeHashtags,
       });
 
       const result = await response.json();
@@ -294,6 +297,18 @@ export function GeminiCaptionGeneratorTabs() {
         <Label htmlFor="nsfw" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
           NSFW Content
         </Label>
+      </div>
+
+      <div className="flex items-center justify-between rounded-lg border border-dashed border-gray-200 dark:border-gray-800 p-3">
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Include hashtags</p>
+          <p className="text-xs text-muted-foreground">Disable to keep captions clean and hashtag-free.</p>
+        </div>
+        <Switch
+          checked={includeHashtags}
+          onCheckedChange={(checked) => setIncludeHashtags(Boolean(checked))}
+          aria-label="Toggle hashtag suggestions"
+        />
       </div>
     </>
   );
@@ -554,7 +569,11 @@ export function GeminiCaptionGeneratorTabs() {
       </Tabs>
 
       {captionData ? (
-        <CaptionPreview data={captionData as CaptionPreviewData} />
+        <CaptionPreview
+          data={captionData as CaptionPreviewData}
+          includeHashtags={includeHashtags}
+          platform={platform}
+        />
       ) : null}
     </div>
   );

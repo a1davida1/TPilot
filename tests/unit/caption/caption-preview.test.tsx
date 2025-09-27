@@ -28,4 +28,48 @@ describe('CaptionPreview component', () => {
     expect(markup).toContain('Moonlit Moments');
     expect(markup).toContain('Satin Night Vibes');
   });
+
+  it('combines contextual hashtags when the include flag is enabled', () => {
+    const data: CaptionPreviewData = {
+      final: {
+        caption: "Street lights and skyline dreams.",
+        hashtags: ['#moonlit', '#cityvibes'],
+      },
+      ranked: { reason: 'High relevance' },
+      facts: {
+        creator: 'Jane Doe',
+        location: {
+          city: 'New York',
+        },
+        subreddit: 'Cityscapes',
+      },
+    };
+
+    const markup = renderToStaticMarkup(
+      <CaptionPreview data={data} includeHashtags platform="instagram" />
+    );
+
+    expect(markup).toContain('#Moonlit');
+    expect(markup).toContain('#Cityvibes');
+    expect(markup).toContain('#NewYork');
+    expect(markup).toContain('#JaneDoe');
+    expect(markup).toContain('Recommended Hashtags');
+  });
+
+  it('omits hashtags and shows reassurance when the flag is disabled', () => {
+    const data: CaptionPreviewData = {
+      final: {
+        caption: "Golden hour glow.",
+        hashtags: ['#goldenhour', '#sunsetlove'],
+      },
+      ranked: { reason: 'Requested without hashtags' },
+    };
+
+    const markup = renderToStaticMarkup(
+      <CaptionPreview data={data} includeHashtags={false} platform="instagram" />
+    );
+
+    expect(markup).not.toContain('#Goldenhour');
+    expect(markup).toContain('Hashtags intentionally omitted per your settings.');
+  });
 });
