@@ -12,6 +12,7 @@ import { uploadRequestSchema, type ProtectionLevel, type UploadRequest as Upload
 import { ZodError } from 'zod';
 import { imageStreamingUpload, cleanupUploadedFiles } from '../middleware/streaming-upload.js';
 import { embedSignature } from '../lib/steganography.js';
+import { buildUploadUrl } from '../lib/uploads.js';
 
 interface UploadAuthRequest extends AuthRequest {
   file?: Express.Multer.File;
@@ -480,7 +481,7 @@ router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken, u
     await fs.unlink(tempFilePath);
     tempFilePath = '';
     
-    const fileUrl = `/uploads/${protectedFileName}`;
+    const fileUrl = buildUploadUrl(protectedFileName);
     const protectedStats = await fs.stat(protectedFilePath);
     
     logger.info(`Protected file uploaded: ${protectedFileName} by user ${authReq.user?.id}, tier: ${userTier}`);

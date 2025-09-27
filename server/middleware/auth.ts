@@ -8,6 +8,21 @@ import { getAdminCredentials } from '../lib/admin-auth.js';
 
 import { eq } from 'drizzle-orm';
 
+const EMAIL_NOT_VERIFIED_RESPONSE = (
+  res: express.Response,
+  email: string
+) => {
+  if (typeof res.clearCookie === 'function') {
+    res.clearCookie('authToken');
+  }
+
+  return res.status(403).json({
+    message: 'Email not verified. Please check your email or resend verification.',
+    code: 'EMAIL_NOT_VERIFIED',
+    email
+  });
+};
+
 // Create a proper User type alias from the schema
 type UserType = typeof users.$inferSelect;
 
@@ -67,6 +82,10 @@ export const authenticateToken = async (req: AuthRequest, res: express.Response,
         return res.status(401).json({ error: 'User not found' });
       }
 
+      if (!user.emailVerified) {
+        return EMAIL_NOT_VERIFIED_RESPONSE(res, user.email);
+      }
+
       req.user = user;
       return next();
     } catch (error) {
@@ -77,7 +96,13 @@ export const authenticateToken = async (req: AuthRequest, res: express.Response,
 
   // Fallback to session-based auth
   if (req.session && (req.session as { user?: UserType }).user) {
-    req.user = (req.session as { user?: UserType }).user as UserType;
+    const sessionUser = (req.session as { user?: UserType }).user as UserType;
+
+    if (!sessionUser.emailVerified) {
+      return EMAIL_NOT_VERIFIED_RESPONSE(res, sessionUser.email);
+    }
+
+    req.user = sessionUser;
     return next();
   }
 
