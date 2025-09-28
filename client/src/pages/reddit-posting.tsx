@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useLocation } from 'wouter';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -215,7 +216,37 @@ function checkCommunityEligibility(
 export default function RedditPostingPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isLoading: authLoading } = useAuth();
+  const [, setLocation] = useLocation();
+  
+  // Redirect to landing page if not authenticated
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to access Reddit posting features",
+        variant: "destructive"
+      });
+      setLocation('/?showAuth=true');
+    }
+  }, [authLoading, isAuthenticated, setLocation, toast]);
+  
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-purple-600" />
+          <p className="mt-2 text-sm text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Don't render anything if not authenticated (will redirect)
+  if (!isAuthenticated) {
+    return null;
+  }
 
   // Form state
   const [subreddit, setSubreddit] = useState('');
