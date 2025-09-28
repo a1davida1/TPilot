@@ -72,6 +72,7 @@ export function dedupeVariantsForRanking(
     facts?: Record<string, unknown>;
     theme?: string;
     context?: string;
+    includeHashtags?: boolean;
   }
 ): z.infer<typeof CaptionArray> {
   const uniques: CaptionVariant[] = [];
@@ -96,6 +97,7 @@ export function dedupeVariantsForRanking(
   }
 
   // Get contextual fallback data for padding if needed
+  const includeHashtags = context?.includeHashtags ?? true;
   const fallbackData = context?.platform
     ? inferFallbackFromFacts({
         platform: context.platform,
@@ -105,11 +107,13 @@ export function dedupeVariantsForRanking(
       })
     : null;
   const platform = context?.platform;
-  const minHashtags = minimumHashtagCount(platform);
+  const minHashtags = includeHashtags ? minimumHashtagCount(platform) : 0;
   const inferredHashtags = sanitizeHashtagList(fallbackData?.hashtags, minHashtags);
-  const fallbackTags = inferredHashtags.length >= minHashtags
-    ? inferredHashtags
-    : resolveFallbackHashtags(platform);
+  const fallbackTags = includeHashtags
+    ? (inferredHashtags.length >= minHashtags
+        ? inferredHashtags
+        : resolveFallbackHashtags(platform))
+    : [];
   const fallbackAlt =
     typeof fallbackData?.alt === "string" && fallbackData.alt.trim().length >= 20
       ? fallbackData.alt.trim()
@@ -121,7 +125,7 @@ export function dedupeVariantsForRanking(
   const base = uniques[0] ?? duplicates[0] ?? {
     caption: SAFE_DEFAULT_CAPTION,
     alt: fallbackAlt,
-    hashtags: [...fallbackTags],
+    hashtags: includeHashtags ? [...fallbackTags] : [],
     cta: fallbackCta,
     mood: "engaging",
     style: "authentic",
@@ -136,7 +140,7 @@ export function dedupeVariantsForRanking(
     uniques.push({
       ...source,
       caption: freshCaption,
-      hashtags: [...fallbackTags],
+      hashtags: includeHashtags ? [...fallbackTags] : [],
       cta: fallbackCta,
       alt: fallbackAlt,
     });

@@ -8,6 +8,7 @@ export interface FallbackInferenceInput {
   existingCaption?: string;
   theme?: string;
   context?: string;
+  includeHashtags?: boolean;
 }
 
 export interface FallbackInferenceResult {
