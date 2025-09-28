@@ -193,14 +193,14 @@ export function registerRedditRoutes(app: Express) {
           }
         });
 
-      console.error('Reddit account connected successfully for user:', userId);
+      logger.info('Reddit account connected successfully', { userId });
 
       // Success redirect to dashboard
       res.redirect('/dashboard?reddit=connected&username=' + encodeURIComponent(profile.username));
 
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      console.error('Reddit callback error:', err.message);
+      logger.error('Reddit callback error', { error: err.message, stack: err.stack });
       res.redirect('/dashboard?error=reddit_connection_failed');
     }
   });
@@ -223,7 +223,7 @@ export function registerRedditRoutes(app: Express) {
       res.json(validatedCommunities);
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      console.error('Error fetching Reddit communities:', err.message);
+      logger.error('Error fetching Reddit communities', { error: err.message, stack: err.stack });
       res.status(500).json({ error: 'Failed to fetch Reddit communities' });
     }
   });
@@ -236,7 +236,7 @@ export function registerRedditRoutes(app: Express) {
       res.json(insights);
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      console.error('Error fetching community insights:', err.message);
+      logger.error('Error fetching community insights', { error: err.message, stack: err.stack });
       res.status(500).json({ error: 'Failed to fetch community insights' });
     }
   });
@@ -269,7 +269,10 @@ export function registerRedditRoutes(app: Express) {
       })));
 
     } catch (error) {
-      console.error('Error fetching Reddit accounts:', error);
+      logger.error('Error fetching Reddit accounts', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       res.status(500).json({ error: 'Failed to fetch Reddit accounts' });
     }
   });
@@ -342,7 +345,10 @@ export function registerRedditRoutes(app: Express) {
       res.json({ message: 'Reddit account disconnected successfully' });
 
     } catch (error) {
-      console.error('Error disconnecting Reddit account:', error);
+      logger.error('Error disconnecting Reddit account', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       res.status(500).json({ error: 'Failed to disconnect Reddit account' });
     }
   });
@@ -425,7 +431,11 @@ export function registerRedditRoutes(app: Express) {
       }
 
     } catch (error) {
-      console.error('Reddit test error:', error);
+      logger.error('Reddit test error', {
+        userId: req.user?.id,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       res.status(500).json({ error: 'Failed to test Reddit connection' });
     }
   });
@@ -532,7 +542,7 @@ export function registerRedditRoutes(app: Express) {
 
       if (result.success) {
         recordPostOutcome(userId, subreddit, { status: 'posted' });
-        console.error('Reddit post successful:', {
+        logger.info('Reddit post successful', {
           userId,
           subreddit,
           postType,
@@ -548,9 +558,17 @@ export function registerRedditRoutes(app: Express) {
             title, 
             body || url || ''
           );
-          console.error(`Recorded safety signals for user ${userId} in r/${subreddit}`);
+          logger.info('Recorded safety signals for Reddit submission', {
+            userId,
+            subreddit,
+          });
         } catch (safetyError) {
-          console.error('Failed to record safety signals:', safetyError);
+          logger.warn('Failed to record safety signals', {
+            userId,
+            subreddit,
+            error: safetyError instanceof Error ? safetyError.message : String(safetyError),
+            stack: safetyError instanceof Error ? safetyError.stack : undefined,
+          });
           // Don't fail the request if safety recording fails
         }
 
@@ -598,7 +616,12 @@ export function registerRedditRoutes(app: Express) {
         });
       }
 
-      console.error('Reddit submit error:', error);
+      logger.error('Reddit submit error', {
+        userId,
+        subreddit,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       res.status(500).json({
         error: failureMessage
       });
@@ -622,7 +645,12 @@ export function registerRedditRoutes(app: Express) {
       res.json(capabilities);
 
     } catch (error) {
-      console.error('Error checking subreddit:', error);
+      logger.error('Error checking subreddit capabilities', {
+        userId: req.user?.id,
+        subreddit: req.params.name,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       res.status(500).json({ error: 'Failed to check subreddit' });
     }
   });
@@ -651,7 +679,11 @@ export function registerRedditRoutes(app: Express) {
       res.json(eligibility);
 
     } catch (error) {
-      console.error('Error fetching eligible communities:', error);
+      logger.error('Error fetching eligible communities', {
+        userId: req.user?.id,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       res.status(500).json({ 
         error: 'Failed to fetch eligible communities',
         karma: null,
