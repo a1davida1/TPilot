@@ -68,8 +68,9 @@ export function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
       const cookieOptions = {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict' as const,
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+        sameSite: 'lax' as const, // Changed from 'strict' to 'lax' for Replit compatibility
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        path: '/' // Explicitly set path to root
       };
 
       if (isDevelopment) {
@@ -227,8 +228,9 @@ export function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
       res.cookie('authToken', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+        sameSite: 'lax', // Changed from 'strict' to 'lax' for Replit compatibility
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        path: '/' // Explicitly set path to root
       });
       res.json({
         token,
@@ -468,8 +470,9 @@ export function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
       res.cookie('authToken', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 24 * 60 * 60 * 1000
+        sameSite: 'lax', // Changed from 'strict' to 'lax' for Replit compatibility
+        maxAge: 24 * 60 * 60 * 1000,
+        path: '/' // Explicitly set path to root
       });
 
       res.json({
