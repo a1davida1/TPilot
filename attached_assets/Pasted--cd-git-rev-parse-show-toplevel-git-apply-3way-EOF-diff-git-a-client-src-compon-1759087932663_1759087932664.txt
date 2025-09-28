@@ -1,0 +1,306 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/client/src/components/GeminiCaptionGeneratorTabs.tsx b/client/src/components/GeminiCaptionGeneratorTabs.tsx
+index 4db0bb5936ccc479a0f3d29289ee31fa58fa86f9..f14098f7b4337d46bce8e313223f90fb5d021c27 100644
+--- a/client/src/components/GeminiCaptionGeneratorTabs.tsx
++++ b/client/src/components/GeminiCaptionGeneratorTabs.tsx
+@@ -38,50 +38,51 @@ const STYLES = [
+   { value: "playful", label: "Playful" },
+   { value: "mysterious", label: "Mysterious" },
+   { value: "confident", label: "Confident" },
+   { value: "elegant", label: "Elegant" },
+   { value: "casual", label: "Casual" }
+ ];
+ 
+ const MOODS = [
+   { value: "seductive", label: "Seductive" },
+   { value: "romantic", label: "Romantic" },
+   { value: "energetic", label: "Energetic" },
+   { value: "relaxed", label: "Relaxed" },
+   { value: "intimate", label: "Intimate" },
+   { value: "adventurous", label: "Adventurous" },
+   { value: "dreamy", label: "Dreamy" },
+   { value: "bold", label: "Bold" }
+ ];
+ 
+ export function GeminiCaptionGeneratorTabs() {
+   // Shared states
+   const [platform, setPlatform] = useState<string>("reddit");
+   const [voice, setVoice] = useState<string>("flirty_playful");
+   const [style, setStyle] = useState<string>("playful");
+   const [mood, setMood] = useState<string>("seductive");
+   const [nsfw, setNsfw] = useState<boolean>(false);
++  const [includeHashtags, setIncludeHashtags] = useState<boolean>(true);
+   const [isGenerating, setIsGenerating] = useState(false);
+   const [captionData, setCaptionData] = useState<GenerationResponse | null>(null);
+   const [error, setError] = useState<string | null>(null);
+   
+   // Image tab states
+   const [imageUrl, setImageUrl] = useState("");
+   const [imageFile, setImageFile] = useState<File | null>(null);
+   const [imagePreview, setImagePreview] = useState<string | null>(null);
+   
+   // Text tab states
+   const [theme, setTheme] = useState("");
+   const [context, setContext] = useState("");
+   
+   // Rewrite tab states
+   const [existingCaption, setExistingCaption] = useState("");
+   const [rewriteImageUrl, setRewriteImageUrl] = useState("");
+ 
+   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, forRewrite = false) => {
+     const file = e.target.files?.[0];
+     if (file) {
+       if (!file.type.startsWith('image/')) {
+         toast({
+           title: "Invalid file",
+           description: "Please upload an image file",
+           variant: "destructive"
+diff --git a/client/src/components/GeminiCaptionGeneratorTabs.tsx b/client/src/components/GeminiCaptionGeneratorTabs.tsx
+index 4db0bb5936ccc479a0f3d29289ee31fa58fa86f9..f14098f7b4337d46bce8e313223f90fb5d021c27 100644
+--- a/client/src/components/GeminiCaptionGeneratorTabs.tsx
++++ b/client/src/components/GeminiCaptionGeneratorTabs.tsx
+@@ -94,127 +95,128 @@ export function GeminiCaptionGeneratorTabs() {
+         const base64 = reader.result as string;
+         if (forRewrite) {
+           setRewriteImageUrl(base64);
+         } else {
+           setImageFile(file);
+           setImagePreview(base64);
+           setImageUrl(base64);
+         }
+       };
+       reader.readAsDataURL(file);
+     }
+   };
+ 
+   const handleGenerateImage = async () => {
+     if (!imageUrl && !imageFile) {
+       setError("Please provide an image URL or upload an image");
+       return;
+     }
+ 
+     setIsGenerating(true);
+     setError(null);
+     setCaptionData(null);
+ 
+     try {
+       const response = await apiRequest('POST', '/api/caption/generate', {
+-        imageUrl, platform, voice, style, mood, nsfw
++        imageUrl, platform, voice, style, mood, nsfw, includeHashtags
+       });
+ 
+       const result = await response.json();
+ 
+       setCaptionData(result);
+       toast({
+         title: "Content generated!",
+         description: "Your AI-powered content is ready to use",
+       });
+     } catch (err: unknown) {
+       console.error('Generation error:', err);
+       setError(getErrorMessage(err) || 'Failed to generate caption');
+       toast({
+         title: "Generation failed",
+         description: getErrorMessage(err) || 'Please try again',
+         variant: "destructive"
+       });
+     } finally {
+       setIsGenerating(false);
+     }
+   };
+ 
+   const handleGenerateText = async () => {
+     if (!theme) {
+       setError("Please provide a theme for your content");
+       return;
+     }
+ 
+     setIsGenerating(true);
+     setError(null);
+     setCaptionData(null);
+ 
+     try {
+       const response = await apiRequest('POST', '/api/caption/generate-text', {
+-        platform, voice, style, mood, theme, context, nsfw
++        platform, voice, style, mood, theme, context, nsfw, includeHashtags
+       });
+ 
+       const result = await response.json();
+ 
+       setCaptionData(result);
+       toast({
+         title: "Content generated!",
+         description: "Your AI-powered content is ready to use",
+       });
+     } catch (err: unknown) {
+       console.error('Generation error:', err);
+       setError(getErrorMessage(err) || 'Failed to generate caption');
+       toast({
+         title: "Generation failed",
+         description: getErrorMessage(err) || 'Please try again',
+         variant: "destructive"
+       });
+     } finally {
+       setIsGenerating(false);
+     }
+   };
+ 
+   const handleRewrite = async () => {
+     if (!existingCaption) {
+       setError("Please provide existing content to rewrite");
+       return;
+     }
+ 
+     setIsGenerating(true);
+     setError(null);
+     setCaptionData(null);
+ 
+     try {
+       const response = await apiRequest('POST', '/api/caption/rewrite', {
+-        platform, 
+-        voice, 
++        platform,
++        voice,
+         style,
+         mood,
+-        existingCaption, 
++        existingCaption,
+         imageUrl: rewriteImageUrl || undefined,
+-        nsfw
++        nsfw,
++        includeHashtags
+       });
+ 
+       const result = await response.json();
+       if (!response.ok) throw new Error(result.error || 'Rewrite failed');
+ 
+       setCaptionData(result);
+       toast({
+         title: "Content rewritten!",
+         description: "Your improved content is ready to use",
+       });
+     } catch (err: unknown) {
+       console.error('Rewrite error:', err);
+       setError(getErrorMessage(err) || 'Failed to rewrite caption');
+       toast({
+         title: "Rewrite failed",
+         description: getErrorMessage(err) || 'Please try again',
+         variant: "destructive"
+       });
+     } finally {
+       setIsGenerating(false);
+     }
+   };
+ 
+   const PlatformVoiceSelectors = () => (
+     <>
+diff --git a/client/src/components/GeminiCaptionGeneratorTabs.tsx b/client/src/components/GeminiCaptionGeneratorTabs.tsx
+index 4db0bb5936ccc479a0f3d29289ee31fa58fa86f9..f14098f7b4337d46bce8e313223f90fb5d021c27 100644
+--- a/client/src/components/GeminiCaptionGeneratorTabs.tsx
++++ b/client/src/components/GeminiCaptionGeneratorTabs.tsx
+@@ -273,50 +275,66 @@ export function GeminiCaptionGeneratorTabs() {
+             <SelectTrigger id="mood">
+               <SelectValue />
+             </SelectTrigger>
+             <SelectContent>
+               {MOODS.map(m => (
+                 <SelectItem key={m.value} value={m.value}>
+                   {m.label}
+                 </SelectItem>
+               ))}
+             </SelectContent>
+           </Select>
+         </div>
+       </div>
+ 
+       <div className="flex items-center space-x-2 pt-4">
+         <Checkbox
+           id="nsfw"
+           checked={nsfw}
+           onCheckedChange={(checked) => setNsfw(checked as boolean)}
+           data-testid="checkbox-nsfw"
+         />
+         <Label htmlFor="nsfw" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+           NSFW Content
+         </Label>
+       </div>
++      <div className="flex items-start gap-2 pt-2">
++        <Checkbox
++          id="include-hashtags"
++          checked={includeHashtags}
++          onCheckedChange={(checked) => setIncludeHashtags(Boolean(checked))}
++          data-testid="checkbox-include-hashtags"
++        />
++        <div className="space-y-1">
++          <Label htmlFor="include-hashtags" className="text-sm font-medium leading-none">
++            Include Hashtags
++          </Label>
++          <p className="text-xs text-muted-foreground max-w-xs">
++            Disable to generate clean captions without hashtag callouts. Enable for contextual tag recommendations.
++          </p>
++        </div>
++      </div>
+     </>
+   );
+ 
+   return (
+     <div className="space-y-6">
+       <Tabs defaultValue="image" className="w-full relative z-10">
+         <TabsList className="grid w-full grid-cols-3">
+           <TabsTrigger value="image" className="flex items-center gap-2">
+             <ImageIcon className="h-4 w-4" />
+             Image → Content
+           </TabsTrigger>
+           <TabsTrigger value="text" className="flex items-center gap-2">
+             <Type className="h-4 w-4" />
+             Text → Content
+           </TabsTrigger>
+           <TabsTrigger value="rewrite" className="flex items-center gap-2">
+             <Edit3 className="h-4 w-4" />
+             Rewrite
+           </TabsTrigger>
+         </TabsList>
+ 
+         {/* Image → Caption Tab */}
+         <TabsContent value="image" className="mt-0">
+           <Card className="relative z-10">
+             <CardHeader>
+diff --git a/client/src/components/GeminiCaptionGeneratorTabs.tsx b/client/src/components/GeminiCaptionGeneratorTabs.tsx
+index 4db0bb5936ccc479a0f3d29289ee31fa58fa86f9..f14098f7b4337d46bce8e313223f90fb5d021c27 100644
+--- a/client/src/components/GeminiCaptionGeneratorTabs.tsx
++++ b/client/src/components/GeminiCaptionGeneratorTabs.tsx
+@@ -532,30 +550,30 @@ export function GeminiCaptionGeneratorTabs() {
+ 
+               <Button
+                 onClick={handleRewrite}
+                 disabled={isGenerating || !existingCaption}
+                 className="w-full bg-gradient-to-r from-green-500 to-purple-500 hover:from-green-600 hover:to-purple-600 text-white"
+                 data-testid="button-rewrite"
+               >
+                 {isGenerating ? (
+                   <>
+                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                     Rewriting Content...
+                   </>
+                 ) : (
+                   <>
+                     <Edit3 className="mr-2 h-4 w-4" />
+                     Rewrite Content
+                   </>
+                 )}
+               </Button>
+             </CardContent>
+           </Card>
+         </TabsContent>
+       </Tabs>
+ 
+       {captionData ? (
+-        <CaptionPreview data={captionData as CaptionPreviewData} />
++        <CaptionPreview data={captionData as CaptionPreviewData} includeHashtags={includeHashtags} />
+       ) : null}
+     </div>
+   );
+ }
+ 
+EOF
+)

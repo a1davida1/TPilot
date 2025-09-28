@@ -299,16 +299,21 @@ export function GeminiCaptionGeneratorTabs() {
         </Label>
       </div>
 
-      <div className="flex items-center justify-between rounded-lg border border-dashed border-gray-200 dark:border-gray-800 p-3">
-        <div className="space-y-1">
-          <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Include hashtags</p>
-          <p className="text-xs text-muted-foreground">Disable to keep captions clean and hashtag-free.</p>
-        </div>
-        <Switch
+      <div className="flex items-start gap-2 pt-2">
+        <Checkbox
+          id="include-hashtags"
           checked={includeHashtags}
           onCheckedChange={(checked) => setIncludeHashtags(Boolean(checked))}
-          aria-label="Toggle hashtag suggestions"
+          data-testid="checkbox-include-hashtags"
         />
+        <div className="space-y-1">
+          <Label htmlFor="include-hashtags" className="text-sm font-medium leading-none">
+            Include Hashtags
+          </Label>
+          <p className="text-xs text-muted-foreground max-w-xs">
+            Disable to generate clean captions without hashtag callouts. Enable for contextual tag recommendations.
+          </p>
+        </div>
       </div>
     </>
   );
