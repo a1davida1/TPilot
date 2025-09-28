@@ -116,7 +116,7 @@ describe('DatabaseStorage saved content operations', () => {
     const result = await storage.getSavedContentById(1, 1);
 
     expect(result).toBeUndefined();
-    expect(safeLogMock).toHaveBeenCalledWith('error', expect.stringContaining('Failed to fetch saved content record'), expect.objectContaining({
+    expect(safeLogMock).toHaveBeenCalledWith('error', expect.stringContaining('Failed to load saved content record'), expect.objectContaining({
       error: failure.message,
       id: 1,
       userId: 1,
