@@ -146,6 +146,17 @@ export const requireAdmin = (req: AdminRequest & { isAuthenticated?: () => boole
 };
 
 export function setupAdminRoutes(app: Express) {
+  // Early validation of JWT_SECRET in production
+  if (process.env.NODE_ENV === 'production') {
+    const jwtSecret = resolveJwtSecret();
+    if (!jwtSecret) {
+      // Return a middleware that always returns 500 for missing JWT secret in production
+      app.use('/api/admin/*', (req: express.Request, res: express.Response) => {
+        res.status(500).json({ message: MISSING_JWT_SECRET_MESSAGE });
+      });
+      return;
+    }
+  }
 
   // Reset user password (Admin only)
   app.post('/api/admin/reset-password', requireAdmin, async (req, res) => {
