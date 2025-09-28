@@ -1097,7 +1097,14 @@ export async function pipeline({ imageUrl, platform, voice = "flirty_playful", n
   };
 
   try {
-    if (!isGeminiAvailable()) {
+    let geminiEnabled = false;
+    try {
+      geminiEnabled = isGeminiAvailable();
+    } catch (availabilityError) {
+      console.warn('Gemini availability check failed, falling back to OpenAI', availabilityError);
+    }
+
+    if (!geminiEnabled) {
       console.warn("Gemini API not available, falling back to OpenAI");
       return resolveWithOpenAIFallback('OpenAI fallback selected because Gemini API is not configured');
     }
@@ -1149,6 +1156,7 @@ export async function pipeline({ imageUrl, platform, voice = "flirty_playful", n
 
     return { provider: 'gemini', facts, variants, ranked, final: out, titles: out.titles };
   } catch (error) {
+    console.error('Gemini pipeline failed, using OpenAI fallback:', error);
     return resolveWithOpenAIFallback('OpenAI fallback selected after Gemini pipeline error');
   }
 }

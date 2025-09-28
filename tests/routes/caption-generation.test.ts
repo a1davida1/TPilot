@@ -11,6 +11,7 @@ vi.mock('../../server/lib/gemini.js', () => ({
   visionModel: {
     generateContent: vi.fn(),
   },
+  isGeminiAvailable: vi.fn(() => true),
 }));
 
 import { generationResponseSchema } from '../../shared/types/caption.js';
@@ -64,6 +65,9 @@ describe('Caption Generation', () => {
     const { textModel, visionModel } = await import('../../server/lib/gemini.js');
     (textModel.generateContent as Mock | undefined)?.mockReset?.();
     (visionModel.generateContent as Mock | undefined)?.mockReset?.();
+    const { isGeminiAvailable } = await import('../../server/lib/gemini.js');
+    asMock(isGeminiAvailable).mockReset?.();
+    asMock(isGeminiAvailable).mockReturnValue(true);
     const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.js');
     const mockOpenAI = vi.mocked(openAICaptionFallback);
     mockOpenAI.mockReset();
@@ -419,6 +423,41 @@ describe('Caption Generation', () => {
       fallbackHashtags.forEach((tag) => {
         expect(tag.toLowerCase()).not.toContain('content');
       });
+    });
+
+    it('falls back to OpenAI when Gemini is disabled', async () => {
+      const mockImageUrl = 'https://cdn.example.com/fallback-image.jpg';
+      const platform = 'instagram';
+      const voice = 'flirty_playful';
+
+      const { isGeminiAvailable } = await import('../../server/lib/gemini.js');
+      asMock(isGeminiAvailable).mockReturnValueOnce(false);
+
+      const result = await pipeline({
+        imageUrl: mockImageUrl,
+        platform,
+        voice,
+      });
+
+      const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.js');
+      expect(openAICaptionFallback).toHaveBeenCalledWith({
+        imageUrl: mockImageUrl,
+        platform,
+        voice,
+      });
+
+      expect(result.provider).toBe('openai');
+      expect(result.titles).toBeDefined();
+      expect(result.titles?.length).toBeGreaterThan(0);
+      const rankedResult = result.ranked as { reason?: string; final?: unknown };
+      expect(rankedResult.reason).toContain('OpenAI fallback selected because Gemini API is not configured');
+      expect(rankedResult.final).toEqual(result.final);
+
+      const fallbackTitles = (result.final as { titles?: string[] }).titles;
+      expect(fallbackTitles).toBeDefined();
+      expect(fallbackTitles?.length).toBeGreaterThan(0);
+
+      expect(() => generationResponseSchema.parse(result)).not.toThrow();
     });
 
     it('should handle safety level normalization', async () => {
