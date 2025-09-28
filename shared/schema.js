@@ -12,16 +12,25 @@ export const redditCommunitySellingPolicySchema = z.enum(['allowed', 'limited', 
 
 export const promotionAllowedSchema = z.enum(['yes', 'no', 'limited', 'subtle', 'strict', 'unknown']);
 
-export const KNOWN_REDDIT_COMMUNITY_CATEGORIES = [
+const SEED_COMMUNITY_CATEGORIES = [
     'age', 'amateur', 'appearance', 'body_type', 'cam', 'clothing', 'comparison',
     'content_type', 'cosplay', 'couples', 'dancer', 'ethnicity', 'fetish',
     'fitness', 'gaming', 'general', 'gonewild', 'lifestyle', 'natural',
-    'niche', 'reveal', 'selling', 'social', 'specific', 'style', 'theme',
-    // Additional categories observed in production datasets and syncing jobs
-    'art', 'beauty', 'business', 'education', 'entertainment', 'fashion', 'finance',
-    'food', 'health', 'music', 'news', 'sports', 'support', 'technology', 'travel',
-    // Subreddit types emitted by Reddit sync tooling
+    'niche', 'reveal', 'selling', 'social', 'specific', 'style', 'teasing', 'theme',
+    // Lightweight seed dataset coverage
+    'art', 'health'
+];
+const PRODUCTION_OBSERVED_COMMUNITY_CATEGORIES = [
+    'beauty', 'business', 'education', 'entertainment', 'fashion', 'finance',
+    'food', 'music', 'news', 'sports', 'support', 'technology', 'travel'
+];
+const REDDIT_SYNC_COMMUNITY_CATEGORY_TYPES = [
     'public', 'restricted', 'private', 'archived', 'employees_only', 'gold_only', 'gold_restricted'
+];
+export const KNOWN_REDDIT_COMMUNITY_CATEGORIES = [
+    ...SEED_COMMUNITY_CATEGORIES,
+    ...PRODUCTION_OBSERVED_COMMUNITY_CATEGORIES,
+    ...REDDIT_SYNC_COMMUNITY_CATEGORY_TYPES
 ];
 const knownRedditCategoryEnum = z.enum(KNOWN_REDDIT_COMMUNITY_CATEGORIES);
 const fallbackRedditCategorySchema = z.string().trim().min(1, {
