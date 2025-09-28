@@ -19,11 +19,26 @@ vi.mocked(utils.mlSafetyCheck).mockImplementation(mockMlSafetyCheck);
 vi.mocked(utils.getUserPostingStats).mockImplementation(mockGetUserPostingStats);
 
 beforeEach(() => {
-  vi.resetAllMocks();
+  vi.clearAllMocks();
+  
+  // Reset mock implementations for each test
+  vi.mocked(utils.getSubredditRules).mockImplementation(mockGetSubredditRules);
+  vi.mocked(utils.getUserRecentPosts).mockImplementation(mockGetUserRecentPosts);
+  vi.mocked(utils.calculateSimilarity).mockImplementation(mockCalculateSimilarity);
+  vi.mocked(utils.mlSafetyCheck).mockImplementation(mockMlSafetyCheck);
+  vi.mocked(utils.getUserPostingStats).mockImplementation(mockGetUserPostingStats);
+  
+  // Set default mock implementations
+  mockGetSubredditRules.mockResolvedValue({ bannedDomains: [] });
+  mockGetUserRecentPosts.mockResolvedValue([]);
+  mockCalculateSimilarity.mockReturnValue(0);
+  mockMlSafetyCheck.mockResolvedValue({ nsfw: 0.1 });
+  mockGetUserPostingStats.mockResolvedValue({ requests: 0, allowed: 10 });
 });
 
 test('blocks banned domains from subreddit rules', async () => {
   mockGetSubredditRules.mockResolvedValue({ bannedDomains: ['spam.com'] });
+  mockMlSafetyCheck.mockResolvedValue({ nsfw: 0.1 });
   const res = await validateContent('visit spam.com now', { subreddit: 'test' });
   expect(res.allowed).toBe(false);
   expect(res.violations).toEqual(
@@ -33,6 +48,7 @@ test('blocks banned domains from subreddit rules', async () => {
 
 test('warns on url shorteners', async () => {
   mockGetSubredditRules.mockResolvedValue({ bannedDomains: [] });
+  mockMlSafetyCheck.mockResolvedValue({ nsfw: 0.1 });
   const res = await validateContent('check https://bit.ly/abc', {});
   expect(res.violations).toEqual(
     expect.arrayContaining([{ type: 'url_shortener', severity: 'warn' }])
@@ -42,6 +58,7 @@ test('warns on url shorteners', async () => {
 test('throttles repetitive content', async () => {
   mockGetUserRecentPosts.mockResolvedValue(['hello world']);
   mockCalculateSimilarity.mockReturnValue(0.9);
+  mockMlSafetyCheck.mockResolvedValue({ nsfw: 0.1 });
   const res = await validateContent('hello world', { userId: 1 });
   expect(res.violations).toEqual(
     expect.arrayContaining([{ type: 'repetitive_content', severity: 'throttle' }])
@@ -59,6 +76,7 @@ test('blocks NSFW content', async () => {
 
 test('throttles rate-limit circumvention', async () => {
   mockGetUserPostingStats.mockResolvedValue({ requests: 5, allowed: 3 });
+  mockMlSafetyCheck.mockResolvedValue({ nsfw: 0.1 });
   const res = await validateContent('content', { userId: 1 });
   expect(res.violations).toEqual(
     expect.arrayContaining([{ type: 'rate_limit', severity: 'throttle' }])
