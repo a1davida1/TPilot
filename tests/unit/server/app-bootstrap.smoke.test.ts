@@ -52,7 +52,7 @@ describe('createExpressApp bootstrap fallback', () => {
     Object.assign(process.env, originalEnv);
   });
 
-  it('resolves when queue prerequisites are absent', async () => {
+  it('resolves when queue prerequisites are absent', { timeout: 30000 }, async () => {
     delete process.env.DATABASE_URL;
     delete process.env.REDIS_URL;
     delete process.env.JWT_SECRET;

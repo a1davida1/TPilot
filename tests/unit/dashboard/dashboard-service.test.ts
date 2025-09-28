@@ -14,6 +14,10 @@ vi.mock('../../../server/database.js', () => ({
   db: mockDbInstance,
 }));
 
+vi.mock('../../../server/db.js', () => ({
+  db: mockDbInstance,
+}));
+
 // Mock the schema imports
 vi.mock('../../../shared/schema.js', () => ({
   contentGenerations: { 
@@ -51,6 +55,7 @@ vi.mock('drizzle-orm', () => ({
   eq: vi.fn((column, value) => ({ column, value, op: 'eq' })),
   desc: vi.fn((column) => ({ column, order: 'desc' })),
   gte: vi.fn((column, value) => ({ column, value, op: 'gte' })),
+  and: vi.fn((...conditions) => ({ conditions, op: 'and' })),
   sql: vi.fn((template, ...values) => ({ template, values, type: 'sql' }))
 }));
 

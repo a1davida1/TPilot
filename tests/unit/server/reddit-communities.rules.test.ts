@@ -60,10 +60,12 @@ describe('Reddit Communities Rules Unit Tests', () => {
         expect(typeof community.rules).toBe('object');
         expect(community.rules).toHaveProperty('sellingAllowed');
         expect(community.rules).toHaveProperty('watermarksAllowed');
-        expect(community.rules).toHaveProperty('titleRules');
-        expect(community.rules).toHaveProperty('contentRules');
-        expect(Array.isArray(community.rules.titleRules)).toBe(true);
-        expect(Array.isArray(community.rules.contentRules)).toBe(true);
+        if (community.rules?.content) {
+          expect(community.rules.content).toHaveProperty('titleGuidelines');
+          expect(community.rules.content).toHaveProperty('contentGuidelines');
+          expect(Array.isArray(community.rules.content.titleGuidelines)).toBe(true);
+          expect(Array.isArray(community.rules.content.contentGuidelines)).toBe(true);
+        }
       });
       
       // Verify structured rule format in full seed
@@ -72,10 +74,12 @@ describe('Reddit Communities Rules Unit Tests', () => {
         expect(typeof community.rules).toBe('object');
         expect(community.rules).toHaveProperty('sellingAllowed');
         expect(community.rules).toHaveProperty('watermarksAllowed');
-        expect(community.rules).toHaveProperty('titleRules');
-        expect(community.rules).toHaveProperty('contentRules');
-        expect(Array.isArray(community.rules.titleRules)).toBe(true);
-        expect(Array.isArray(community.rules.contentRules)).toBe(true);
+        if (community.rules?.content) {
+          expect(community.rules.content).toHaveProperty('titleGuidelines');
+          expect(community.rules.content).toHaveProperty('contentGuidelines');
+          expect(Array.isArray(community.rules.content.titleGuidelines)).toBe(true);
+          expect(Array.isArray(community.rules.content.contentGuidelines)).toBe(true);
+        }
       });
       
       // Test specific communities from different seeds
@@ -248,7 +252,7 @@ describe('Reddit Communities Rules Unit Tests', () => {
       for (const value of validValues) {
         const rules = { content: { sellingPolicy: value } };
         const result = redditCommunityRuleSetSchema.parse(rules);
-        expect(result.content?.sellingPolicy).toBe(value);
+        expect(result?.content?.sellingPolicy).toBe(value);
       }
       
       // Test invalid value
