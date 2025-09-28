@@ -4,6 +4,9 @@ import jwt from 'jsonwebtoken';
 import session from 'express-session';
 import { storage } from './storage';
 import { emailService } from './services/email-service';
+import { db } from './db';
+import { creatorAccounts } from '@shared/schema';
+import { eq, and } from 'drizzle-orm';
 import crypto from 'crypto';
 import { z } from 'zod';
 import { authLimiter } from './middleware/security.js';
@@ -371,10 +374,35 @@ export function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
         if (user) {
           const { password: _, ...userResponse } = user;
           const isAdmin = Boolean(userResponse.isAdmin || userResponse.role === 'admin');
+          
+          // Check for Reddit connection
+          let redditUsername: string | null = null;
+          try {
+            const redditAccounts = await db
+              .select()
+              .from(creatorAccounts)
+              .where(
+                and(
+                  eq(creatorAccounts.userId, userId),
+                  eq(creatorAccounts.platform, 'reddit'),
+                  eq(creatorAccounts.isActive, true)
+                )
+              )
+              .limit(1);
+            
+            if (redditAccounts.length > 0) {
+              redditUsername = redditAccounts[0].platformUsername || redditAccounts[0].handle || null;
+            }
+          } catch (err) {
+            console.error('Failed to fetch Reddit connection status:', err);
+          }
+          
           return res.json({
             ...userResponse,
             tier: userResponse.tier || 'free',
-            isAdmin
+            isAdmin,
+            redditUsername,
+            reddit_username: redditUsername // For backwards compatibility
           });
         }
 

@@ -1,7 +1,7 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { z } from "zod";
-import { visionModel, textModel } from "../lib/gemini";
+import { visionModel, textModel, isGeminiAvailable } from "../lib/gemini";
 import { CaptionArray, CaptionItem, RankResult, platformChecks } from "./schema";
 import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
 import { BANNED_WORDS_HINT, variantContainsBannedWord } from "./bannedWords";
@@ -1069,6 +1069,12 @@ type GeminiPipelineArgs = {
  * payload so the caller's requested persona stays intact.
  */
 export async function pipeline({ imageUrl, platform, voice = "flirty_playful", nsfw = false, style, mood, ...toneRest }: GeminiPipelineArgs): Promise<CaptionResult> {
+  // Check if Gemini is available before trying to use it
+  if (!isGeminiAvailable()) {
+    console.warn("Gemini API not available, falling back to OpenAI");
+    throw new Error("Gemini API not configured - will use OpenAI fallback");
+  }
+  
   try {
     const tone = extractToneOptions(toneRest);
     const facts = await extractFacts(imageUrl);

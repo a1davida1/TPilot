@@ -5,11 +5,10 @@ import { ModernDashboard } from "@/components/modern-dashboard";
 import { useToast } from "@/hooks/use-toast";
 import { type User } from "@shared/schema.js";
 
-// DashboardUser interface extending User with additional properties
-interface DashboardUser extends User {
-  redditUsername?: string | null;
-  reddit_username?: string | null;
-}
+// DashboardUser type - User already has redditUsername field
+type DashboardUser = User & {
+  reddit_username?: string | null; // For backwards compatibility
+};
 
 export default function Dashboard() {
   const [isGuestMode, setIsGuestMode] = useState(false);
