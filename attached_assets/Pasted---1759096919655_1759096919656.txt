@@ -1,0 +1,679 @@
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[168/278]⎯
+
+ FAIL  tests/unit/storage/saved-content.test.ts > DatabaseStorage saved content operations > returns empty array and logs when getUserSavedContent fails
+AssertionError: expected "spy" to be called with arguments: [ 'error', StringContaining{…}, …(1) ]
+
+Received: 
+
+  1st spy call:
+
+  [
+    "error",
+-   StringContaining "getting user saved content",
+-   ObjectContaining {
++   "Failed to list saved content records for user",
++   {
+      "error": "user list failure",
+      "userId": 3,
+    },
+  ]
+
+
+Number of calls: 1
+
+ ❯ tests/unit/storage/saved-content.test.ts:165:25
+    163| 
+    164|     expect(result).toEqual([]);
+    165|     expect(safeLogMock).toHaveBeenCalledWith('error', expect.stringContaining('getting user saved conte…
+       |                         ^
+    166|       error: failure.message,
+    167|       userId: 3,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[169/278]⎯
+
+ FAIL  tests/unit/storage/saved-content.test.ts > DatabaseStorage saved content operations > logs and rethrows when deleteSavedContent fails
+AssertionError: expected "spy" to be called with arguments: [ 'error', StringContaining{…}, …(1) ]
+
+Received: 
+
+  1st spy call:
+
+  [
+    "error",
+-   StringContaining "deleting saved content",
+-   ObjectContaining {
++   "Failed to delete saved content record",
++   {
+      "error": "delete failure",
+      "id": 9,
+      "userId": 2,
+    },
+  ]
+
+
+Number of calls: 1
+
+ ❯ tests/unit/storage/saved-content.test.ts:191:25
+    189|     await expect(storage.deleteSavedContent(9, 2)).rejects.toThrow(failure);
+    190| 
+    191|     expect(safeLogMock).toHaveBeenCalledWith('error', expect.stringContaining('deleting saved content')…
+       |                         ^
+    192|       error: failure.message,
+    193|       id: 9,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[170/278]⎯
+
+ FAIL  tests/unit/workers/queue-initialization.test.ts > Worker Queue Initialization > Queue Factory Initialization > should initialize PostgreSQL queue backend when Redis unavailable
+AssertionError: expected "log" to be called with arguments: [ StringContaining{…} ]
+
+Number of calls: 0
+
+ ❯ tests/unit/workers/queue-initialization.test.ts:30:22
+     28| 
+     29|       // Should log PostgreSQL queue usage
+     30|       expect(logSpy).toHaveBeenCalledWith(
+       |                      ^
+     31|         expect.stringContaining('PostgreSQL queue backend')
+     32|       );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[171/278]⎯
+
+ FAIL  tests/unit/workers/queue-initialization.test.ts > Worker Queue Initialization > Queue Factory Initialization > should log queue backend selection
+AssertionError: expected "log" to be called at least once
+ ❯ tests/unit/workers/queue-initialization.test.ts:48:22
+     46|         return typeof msg === 'string' && msg.includes('queue backend');
+     47|       });
+     48|       expect(logSpy).toHaveBeenCalled();
+       |                      ^
+     49|     });
+     50|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[172/278]⎯
+
+ FAIL  assistant-last40-unified/server/caption/__tests__/fact-coverage.test.ts > Gemini fact coverage enforcement > re-prompts the gemini pipeline when variants miss image facts
+ FAIL  assistant-last40-unified/server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests ('function-based textModel mock') > rankAndSelect > should sanitize output when AI returns banned content
+ FAIL  assistant-last40-unified/server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests ('function-based textModel mock') > rankAndSelect > should handle persistent violations by sanitizing output
+ FAIL  assistant-last40-unified/server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests ('function-based textModel mock') > rankAndSelect > should drop sparkle-filler winners before reranking
+ FAIL  assistant-last40-unified/server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests ('function-based textModel mock') > rankAndSelect > should preserve clean content without modification
+ FAIL  assistant-last40-unified/server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests ('function-based textModel mock') > rankAndSelect > should apply platform-specific hashtag limits
+ FAIL  assistant-last40-unified/server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests ('function-based textModel mock') > rankAndSelect > should provide empty hashtags for Reddit platform
+ FAIL  assistant-last40-unified/server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests ('object-based textModel mock') > rankAndSelect > should sanitize output when AI returns banned content
+ FAIL  assistant-last40-unified/server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests ('object-based textModel mock') > rankAndSelect > should handle persistent violations by sanitizing output
+ FAIL  assistant-last40-unified/server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests ('object-based textModel mock') > rankAndSelect > should drop sparkle-filler winners before reranking
+ FAIL  assistant-last40-unified/server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests ('object-based textModel mock') > rankAndSelect > should preserve clean content without modification
+ FAIL  assistant-last40-unified/server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests ('object-based textModel mock') > rankAndSelect > should apply platform-specific hashtag limits
+ FAIL  assistant-last40-unified/server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests ('object-based textModel mock') > rankAndSelect > should provide empty hashtags for Reddit platform
+ FAIL  assistant-last40-unified/tests/unit/caption/pipeline-tone-retry.test.ts > Gemini pipelines keep persona tone on retry > forwards tone fields on image pipeline retry
+ FAIL  assistant-last40-unified/tests/unit/caption/pipeline-tone-retry.test.ts > Gemini pipelines keep persona tone on retry > includes tone payload on Gemini platform retry parameters
+Error: Cannot find module '../lib/gemini' imported from '/home/runner/workspace/assistant-last40-unified/server/caption/geminiPipeline.ts'
+ ❯ assistant-last40-unified/server/caption/geminiPipeline.ts:4:1
+      2| import * as path from "node:path";
+      3| import { z } from "zod";
+      4| import { visionModel, textModel } from "../lib/gemini";
+       | ^
+      5| import { CaptionArray, CaptionItem, RankResult, platformChecks } from "./schema";
+      6| import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
+
+Caused by: Error: Failed to load url ../lib/gemini (resolved id: ../lib/gemini) in /home/runner/workspace/assistant-last40-unified/server/caption/geminiPipeline.ts. Does the file exist?
+ ❯ loadAndTransform node_modules/vite/dist/node/chunks/dep-M_KD0XSK.js:26400:33
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[173/278]⎯
+
+ FAIL  assistant-last40-unified/server/caption/__tests__/fact-coverage.test.ts > Gemini fact coverage enforcement > retries rewrite pipeline when coverage fails initially
+ FAIL  assistant-last40-unified/tests/unit/caption/pipeline-tone-retry.test.ts > Gemini pipelines keep persona tone on retry > forwards tone fields on rewrite pipeline retry
+ FAIL  assistant-last40-unified/tests/unit/caption/pipeline-tone-retry.test.ts > Gemini pipelines keep persona tone on retry > includes tone payload on rewrite platform retry parameters
+Error: Cannot find module '../lib/gemini' imported from '/home/runner/workspace/assistant-last40-unified/server/caption/rewritePipeline.ts'
+ ❯ assistant-last40-unified/server/caption/rewritePipeline.ts:4:1
+      2| import * as path from "node:path";
+      3| import { z } from "zod";
+      4| import { textModel, visionModel } from "../lib/gemini";
+       | ^
+      5| import { CaptionArray, RankResult, platformChecks, CaptionItem } from "./schema";
+      6| import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
+
+Caused by: Error: Failed to load url ../lib/gemini (resolved id: ../lib/gemini) in /home/runner/workspace/assistant-last40-unified/server/caption/geminiPipeline.ts. Does the file exist?
+ ❯ loadAndTransform node_modules/vite/dist/node/chunks/dep-M_KD0XSK.js:26400:33
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[174/278]⎯
+
+ FAIL  assistant-last40-unified/server/caption/__tests__/textOnly-ranking-integration.test.ts > Text-only ranking integration ('function-based textModel mock') > filters sparkle filler selections before reranking
+ FAIL  assistant-last40-unified/server/caption/__tests__/textOnly-ranking-integration.test.ts > Text-only ranking integration ('object-based textModel mock') > filters sparkle filler selections before reranking
+ FAIL  assistant-last40-unified/tests/unit/caption/pipeline-tone-retry.test.ts > Gemini pipelines keep persona tone on retry > forwards tone fields on text-only pipeline retry
+ FAIL  assistant-last40-unified/tests/unit/caption/pipeline-tone-retry.test.ts > Gemini pipelines keep persona tone on retry > includes tone payload on text-only platform retry parameters
+Error: Cannot find module '../lib/gemini' imported from '/home/runner/workspace/assistant-last40-unified/server/caption/textOnlyPipeline.ts'
+ ❯ assistant-last40-unified/server/caption/textOnlyPipeline.ts:4:1
+      2| import * as path from "node:path";
+      3| import { z } from "zod";
+      4| import { textModel } from "../lib/gemini";
+       | ^
+      5| import { CaptionArray, CaptionItem, RankResult, platformChecks } from "./schema";
+      6| import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
+
+Caused by: Error: Failed to load url ../lib/gemini (resolved id: ../lib/gemini) in /home/runner/workspace/assistant-last40-unified/server/caption/geminiPipeline.ts. Does the file exist?
+ ❯ loadAndTransform node_modules/vite/dist/node/chunks/dep-M_KD0XSK.js:26400:33
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[175/278]⎯
+
+ FAIL  assistant-last40-unified/tests/unit/caption/tone-options.test.ts > ToneOptions Helper > extractToneOptions > should extract style and mood parameters
+AssertionError: expected { style: 'modern', …(2) } to deeply equal { style: 'modern', mood: 'confident' }
+
+- Expected
++ Received
+
+  {
++   "extras": {
++     "otherParam": "value",
++   },
+    "mood": "confident",
+    "style": "modern",
+  }
+
+ ❯ assistant-last40-unified/tests/unit/caption/tone-options.test.ts:26:22
+     24|       const result = extractToneOptions(params);
+     25| 
+     26|       expect(result).toEqual({
+       |                      ^
+     27|         style: 'modern',
+     28|         mood: 'confident'
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[176/278]⎯
+
+ FAIL  assistant-last40-unified/tests/unit/caption/tone-options.test.ts > ToneOptions Helper > extractToneOptions > should ignore non-string tone values
+AssertionError: expected { style: 'modern', …(2) } to deeply equal { style: 'modern' }
+
+- Expected
++ Received
+
+  {
++   "extras": {},
++   "mood": undefined,
+    "style": "modern",
+  }
+
+ ❯ assistant-last40-unified/tests/unit/caption/tone-options.test.ts:58:22
+     56|       const result = extractToneOptions(params);
+     57| 
+     58|       expect(result).toEqual({
+       |                      ^
+     59|         style: 'modern'
+     60|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[177/278]⎯
+
+ FAIL  assistant-last40-unified/tests/unit/caption/tone-options.test.ts > ToneOptions Helper > extractToneOptions > should only extract known tone parameters
+AssertionError: expected { style: 'elegant', …(2) } to deeply equal { style: 'elegant', mood: 'playful' }
+
+- Expected
++ Received
+
+  {
++   "extras": {
++     "someRandomParam": "should not be included",
++   },
+    "mood": "playful",
+    "style": "elegant",
+  }
+
+ ❯ assistant-last40-unified/tests/unit/caption/tone-options.test.ts:82:22
+     80| 
+     81|       // Should only extract style and mood
+     82|       expect(result).toEqual({
+       |                      ^
+     83|         style: 'elegant',
+     84|         mood: 'playful'
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[178/278]⎯
+
+ FAIL  assistant-last40-unified/tests/unit/server/advanced-content-generator.platform.test.ts > generateAdvancedContent platform profiles > formats instagram captions with double newlines and IG call-to-action
+AssertionError: expected 'Natural light, warm skin, no distract…' to contain '\n\n'
+
+- Expected
++ Received
+
+-
+-
+-
++ Natural light, warm skin, no distractions. Just me feeling powerful in my own space and letting every detail breathe. Minimal posing, maximum confidence, and a quiet energy that feels intimate and honest.
+
+ ❯ assistant-last40-unified/tests/unit/server/advanced-content-generator.platform.test.ts:28:28
+     26|     const result = generateAdvancedContent({ ...baseParams, platform: 'instagram' });
+     27| 
+     28|     expect(result.content).toContain('\n\n');
+       |                            ^
+     29|     expect(result.content).toContain('Tap the bio link for the full drop 🔗');
+     30|     expect(result.titles[0]).toContain('Tap the bio link for the full drop 🔗');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[179/278]⎯
+
+ FAIL  assistant-last40-unified/tests/unit/server/advanced-content-generator.platform.test.ts > generateAdvancedContent platform profiles > adds emoji clusters for Fansly exports
+AssertionError: expected 'Natural light, warm skin, no distract…' to contain 'Unlock the rest on my Fansly 💖'
+
+Expected: "Unlock the rest on my Fansly 💖"
+Received: "Natural light, warm skin, no distractions. Just me feeling powerful in my own space and letting every detail breathe. Minimal posing, maximum confidence, and a quiet energy that feels intimate and honest."
+
+ ❯ assistant-last40-unified/tests/unit/server/advanced-content-generator.platform.test.ts:37:28
+     35|     const lines = result.content.split('\n');
+     36| 
+     37|     expect(result.content).toContain('Unlock the rest on my Fansly 💖');
+       |                            ^
+     38|     expect(lines[lines.length - 1]).toMatch(/^[^A-Za-z0-9]*$/u);
+     39|     expect(result.titles[0]).toMatch(/Unlock the rest on my Fansly 💖/);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[180/278]⎯
+
+ FAIL  assistant-last40-unified/tests/unit/server/advanced-content-generator.platform.test.ts > generateAdvancedContent platform profiles > keeps twitter threads compact with single newlines
+AssertionError: expected 'Soft natural light and unfiltered con…' to contain 'RT if you\'re ready for more 🔁'
+
+Expected: "RT if you're ready for more 🔁"
+Received: "Soft natural light and unfiltered confidence ✨"
+
+ ❯ assistant-last40-unified/tests/unit/server/advanced-content-generator.platform.test.ts:47:30
+     45|     expect(result.content).not.toContain('\n\n');
+     46|     expect(result.content.split('\n').length).toBeLessThanOrEqual(3);
+     47|     expect(result.titles[0]).toContain("RT if you're ready for more 🔁");
+       |                              ^
+     48|   });
+     49| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[181/278]⎯
+
+ FAIL  assistant-last40-unified/tests/unit/server/advanced-content-generator.platform.test.ts > generateAdvancedContent platform profiles > produces different bodies for each platform profile
+AssertionError: expected 'Natural light, warm skin, no distract…' to not deeply equal 'Natural light, warm skin, no distract…'
+ ❯ assistant-last40-unified/tests/unit/server/advanced-content-generator.platform.test.ts:55:35
+     53|     const twitter = generateAdvancedContent({ ...baseParams, platform: 'twitter' });
+     54| 
+     55|     expect(instagram.content).not.toEqual(fansly.content);
+       |                                   ^
+     56|     expect(instagram.content).not.toEqual(twitter.content);
+     57|     expect(fansly.content).not.toEqual(twitter.content);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[182/278]⎯
+
+ FAIL  assistant-last40-unified/tests/unit/server/advanced-content-generator.test.ts > advanced content generator helpers > wraps custom prompts with contextual connectors
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ assistant-last40-unified/tests/unit/server/advanced-content-generator.test.ts:82:26
+     80|     }
+     81| 
+     82|     expect(hasConnector).toBe(true);
+       |                          ^
+     83|   });
+     84| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[183/278]⎯
+
+ FAIL  assistant-last40-unified/tests/unit/server/advanced-content-generator.test.ts > generateAdvancedContent humanization > keeps appended hashtags intact after applying humanization
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ assistant-last40-unified/tests/unit/server/advanced-content-generator.test.ts:159:53
+    157|     const result = generateAdvancedContent(params);
+    158| 
+    159|     expect(result.content.endsWith(' #glow #mood')).toBe(true);
+       |                                                     ^
+    160|     expect(JSON.stringify(result)).toContain('#glow');
+    161|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[184/278]⎯
+
+ FAIL  assistant-last40-unified/tests/unit/server/app-bootstrap.smoke.test.ts > createExpressApp bootstrap fallback > resolves when queue prerequisites are absent
+Error: Cannot find module '../../../server/index.js' imported from '/home/runner/workspace/assistant-last40-unified/tests/unit/server/app-bootstrap.smoke.test.ts'
+ ❯ assistant-last40-unified/tests/unit/server/app-bootstrap.smoke.test.ts:62:34
+     60|     process.env.NODE_ENV = 'development';
+     61| 
+     62|     const { createExpressApp } = await import('../../../server/index.js');
+       |                                  ^
+     63| 
+     64|     await expect(
+
+Caused by: Error: Failed to load url ../../../server/index.js (resolved id: ../../../server/index.js) in /home/runner/workspace/assistant-last40-unified/tests/unit/server/app-bootstrap.smoke.test.ts. Does the file exist?
+ ❯ loadAndTransform node_modules/vite/dist/node/chunks/dep-M_KD0XSK.js:26400:33
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[185/278]⎯
+
+ FAIL  assistant-last40-unified/tests/unit/server/reddit-manager.can-post.test.ts > RedditManager.canPostToSubreddit Safety Checks > should block posting when SafetyManager reports rate limit exceeded
+ReferenceError: RedditManager is not defined
+ ❯ assistant-last40-unified/tests/unit/server/reddit-manager.can-post.test.ts:66:20
+     64|     });
+     65| 
+     66|     const result = await RedditManager.canPostToSubreddit(123, 'testsubreddit', {
+       |                    ^
+     67|       title: 'Test Title',
+     68|       body: 'Test content',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[186/278]⎯
+
+ FAIL  assistant-last40-unified/tests/unit/server/reddit-manager.can-post.test.ts > RedditManager.canPostToSubreddit Safety Checks > should block posting when SafetyManager detects duplicate content
+ReferenceError: RedditManager is not defined
+ ❯ assistant-last40-unified/tests/unit/server/reddit-manager.can-post.test.ts:101:20
+     99|     });
+    100| 
+    101|     const result = await RedditManager.canPostToSubreddit(123, 'testsubreddit', {
+       |                    ^
+    102|       title: 'Duplicate Title',
+    103|       body: 'Duplicate content',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[187/278]⎯
+
+ FAIL  assistant-last40-unified/tests/unit/server/reddit-manager.can-post.test.ts > RedditManager.canPostToSubreddit Safety Checks > should include warnings when approaching rate limits
+ReferenceError: RedditManager is not defined
+ ❯ assistant-last40-unified/tests/unit/server/reddit-manager.can-post.test.ts:131:20
+    129|     });
+    130| 
+    131|     const result = await RedditManager.canPostToSubreddit(123, 'testsubreddit', {
+       |                    ^
+    132|       title: 'Test Title',
+    133|       body: 'Test content',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[188/278]⎯
+
+ FAIL  assistant-last40-unified/tests/unit/server/reddit-manager.can-post.test.ts > RedditManager.canPostToSubreddit Safety Checks > should always call SafetyManager.performSafetyCheck even with missing title or body
+ReferenceError: RedditManager is not defined
+ ❯ assistant-last40-unified/tests/unit/server/reddit-manager.can-post.test.ts:162:5
+    160| 
+    161|     // Test with missing title
+    162|     await RedditManager.canPostToSubreddit(123, 'testsubreddit', {
+       |     ^
+    163|       body: 'Test content',
+    164|       hasLink: false
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[189/278]⎯
+
+ FAIL  assistant-last40-unified/tests/unit/server/reddit-manager.can-post.test.ts > RedditManager.canPostToSubreddit Safety Checks > should combine body and url content for safety checks
+ReferenceError: RedditManager is not defined
+ ❯ assistant-last40-unified/tests/unit/server/reddit-manager.can-post.test.ts:216:5
+    214|     });
+    215| 
+    216|     await RedditManager.canPostToSubreddit(123, 'testsubreddit', {
+       |     ^
+    217|       title: 'Test Title',
+    218|       body: 'Test content',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[190/278]⎯
+
+ FAIL  assistant-last40-unified/tests/unit/server/reddit-manager.can-post.test.ts > RedditManager.canPostToSubreddit Safety Checks > should return descriptive reasons for multiple rule violations
+ReferenceError: RedditManager is not defined
+ ❯ assistant-last40-unified/tests/unit/server/reddit-manager.can-post.test.ts:253:20
+    251|     });
+    252| 
+    253|     const result = await RedditManager.canPostToSubreddit(123, 'testsubreddit', {
+       |                    ^
+    254|       title: 'Test Title',
+    255|       body: 'Test content',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[191/278]⎯
+
+ FAIL  client/src/pages/__tests__/reddit-posting.test.tsx > RedditPosting community picker > defaults to an eligible community, gates ineligible options, and updates the form when selecting
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ client/src/pages/__tests__/reddit-posting.test.tsx:219:27
+    217|       gatedOption?.getAttribute('aria-disabled') === 'true' ||
+    218|       gatedOption?.getAttribute('data-disabled') === 'true';
+    219|     expect(gatedDisabled).toBe(true);
+       |                           ^
+    220| 
+    221|     const gatedReason = document.querySelector('[data-testid="community-option-gatedelite-reasons"]');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[192/278]⎯
+
+ FAIL  client/src/pages/__tests__/referral.test.tsx > ReferralPage > renders live referral data from API responses
+AssertionError: the given combination of arguments (undefined and string) is invalid for this assertion. You can use an array, a map, an object, a set, a string, or a weakset instead of a string
+ ❯ client/src/pages/__tests__/referral.test.tsx:149:41
+    147|     expect(codeInput?.value).toBe('TP123456');
+    148|     expect(urlInput?.value).toBe('https://example.com/signup?ref=TP123456');
+    149|     expect(totalReferrals?.textContent).toContain('12');
+       |                                         ^
+    150|     expect(totalCommission?.textContent).toContain('$35.00');
+    151|     expect(conversionRate?.textContent).toContain('58%');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[193/278]⎯
+
+ FAIL  tests/unit/server/services/multi-ai-provider.test.ts > generateWithMultiProvider provider selection > prefers Gemini when a Gemini key is available
+Error: All AI providers failed
+ ❯ generateWithMultiProvider server/services/multi-ai-provider.ts:96:9
+     94| 
+     95|   safeLog('error', 'All AI providers failed - no fallback available', {});
+     96|   throw new Error('All AI providers failed');
+       |         ^
+     97| }
+     98| 
+ ❯ tests/unit/server/services/multi-ai-provider.test.ts:93:22
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[194/278]⎯
+
+ FAIL  tests/unit/server/services/safety-systems.record-post.test.ts > SafetyManager.recordPost > inserts a new rate limit row when no rows were updated
+AssertionError: expected "spy" to be called with arguments: [ { userId: 42, …(3) } ]
+
+Received: 
+
+  1st spy call:
+
+  [
+    {
+      "lastPostAt": 2024-01-01T00:00:00.000Z,
+      "postCount24h": 1,
+      "subreddit": "unit_testing",
++     "updatedAt": 2024-01-01T00:00:00.000Z,
+      "userId": 42,
+    },
+  ]
+
+
+Number of calls: 1
+
+ ❯ tests/unit/server/services/safety-systems.record-post.test.ts:86:26
+     84| 
+     85|     expect(insertSpy).toHaveBeenCalledWith(postRateLimits);
+     86|     expect(insertValues).toHaveBeenCalledWith({
+       |                          ^
+     87|       userId: 42,
+     88|       subreddit: 'unit_testing',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[195/278]⎯
+
+ FAIL  unified-tasks-snapshot/server/caption/__tests__/fact-coverage.test.ts > Gemini fact coverage enforcement > re-prompts the gemini pipeline when variants miss image facts
+ FAIL  unified-tasks-snapshot/server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests ('function-based textModel mock') > rankAndSelect > should sanitize output when AI returns banned content
+ FAIL  unified-tasks-snapshot/server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests ('function-based textModel mock') > rankAndSelect > should handle persistent violations by sanitizing output
+ FAIL  unified-tasks-snapshot/server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests ('function-based textModel mock') > rankAndSelect > should drop sparkle-filler winners before reranking
+ FAIL  unified-tasks-snapshot/server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests ('function-based textModel mock') > rankAndSelect > should preserve clean content without modification
+ FAIL  unified-tasks-snapshot/server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests ('function-based textModel mock') > rankAndSelect > should apply platform-specific hashtag limits
+ FAIL  unified-tasks-snapshot/server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests ('function-based textModel mock') > rankAndSelect > should provide empty hashtags for Reddit platform
+ FAIL  unified-tasks-snapshot/server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests ('object-based textModel mock') > rankAndSelect > should sanitize output when AI returns banned content
+ FAIL  unified-tasks-snapshot/server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests ('object-based textModel mock') > rankAndSelect > should handle persistent violations by sanitizing output
+ FAIL  unified-tasks-snapshot/server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests ('object-based textModel mock') > rankAndSelect > should drop sparkle-filler winners before reranking
+ FAIL  unified-tasks-snapshot/server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests ('object-based textModel mock') > rankAndSelect > should preserve clean content without modification
+ FAIL  unified-tasks-snapshot/server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests ('object-based textModel mock') > rankAndSelect > should apply platform-specific hashtag limits
+ FAIL  unified-tasks-snapshot/server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests ('object-based textModel mock') > rankAndSelect > should provide empty hashtags for Reddit platform
+ FAIL  unified-tasks-snapshot/tests/unit/caption/pipeline-tone-retry.test.ts > Gemini pipelines keep persona tone on retry > forwards tone fields on image pipeline retry
+ FAIL  unified-tasks-snapshot/tests/unit/caption/pipeline-tone-retry.test.ts > Gemini pipelines keep persona tone on retry > includes tone payload on Gemini platform retry parameters
+Error: Cannot find module '../lib/gemini' imported from '/home/runner/workspace/unified-tasks-snapshot/server/caption/geminiPipeline.ts'
+ ❯ unified-tasks-snapshot/server/caption/geminiPipeline.ts:4:1
+      2| import * as path from "node:path";
+      3| import { z } from "zod";
+      4| import { visionModel, textModel } from "../lib/gemini";
+       | ^
+      5| import { CaptionArray, CaptionItem, RankResult, platformChecks } from "./schema";
+      6| import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
+
+Caused by: Error: Failed to load url ../lib/gemini (resolved id: ../lib/gemini) in /home/runner/workspace/assistant-last40-unified/server/caption/geminiPipeline.ts. Does the file exist?
+ ❯ loadAndTransform node_modules/vite/dist/node/chunks/dep-M_KD0XSK.js:26400:33
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[196/278]⎯
+
+ FAIL  unified-tasks-snapshot/server/caption/__tests__/fact-coverage.test.ts > Gemini fact coverage enforcement > retries rewrite pipeline when coverage fails initially
+ FAIL  unified-tasks-snapshot/tests/unit/caption/pipeline-tone-retry.test.ts > Gemini pipelines keep persona tone on retry > forwards tone fields on rewrite pipeline retry
+ FAIL  unified-tasks-snapshot/tests/unit/caption/pipeline-tone-retry.test.ts > Gemini pipelines keep persona tone on retry > includes tone payload on rewrite platform retry parameters
+Error: Cannot find module '../lib/gemini' imported from '/home/runner/workspace/unified-tasks-snapshot/server/caption/rewritePipeline.ts'
+ ❯ unified-tasks-snapshot/server/caption/rewritePipeline.ts:4:1
+      2| import * as path from "node:path";
+      3| import { z } from "zod";
+      4| import { textModel, visionModel } from "../lib/gemini";
+       | ^
+      5| import { CaptionArray, RankResult, platformChecks, CaptionItem } from "./schema";
+      6| import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
+
+Caused by: Error: Failed to load url ../lib/gemini (resolved id: ../lib/gemini) in /home/runner/workspace/assistant-last40-unified/server/caption/geminiPipeline.ts. Does the file exist?
+ ❯ loadAndTransform node_modules/vite/dist/node/chunks/dep-M_KD0XSK.js:26400:33
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[197/278]⎯
+
+ FAIL  unified-tasks-snapshot/server/caption/__tests__/textOnly-ranking-integration.test.ts > Text-only ranking integration ('function-based textModel mock') > filters sparkle filler selections before reranking
+ FAIL  unified-tasks-snapshot/server/caption/__tests__/textOnly-ranking-integration.test.ts > Text-only ranking integration ('object-based textModel mock') > filters sparkle filler selections before reranking
+ FAIL  unified-tasks-snapshot/tests/unit/caption/pipeline-tone-retry.test.ts > Gemini pipelines keep persona tone on retry > forwards tone fields on text-only pipeline retry
+ FAIL  unified-tasks-snapshot/tests/unit/caption/pipeline-tone-retry.test.ts > Gemini pipelines keep persona tone on retry > includes tone payload on text-only platform retry parameters
+Error: Cannot find module '../lib/gemini' imported from '/home/runner/workspace/unified-tasks-snapshot/server/caption/textOnlyPipeline.ts'
+ ❯ unified-tasks-snapshot/server/caption/textOnlyPipeline.ts:4:1
+      2| import * as path from "node:path";
+      3| import { z } from "zod";
+      4| import { textModel } from "../lib/gemini";
+       | ^
+      5| import { CaptionArray, CaptionItem, RankResult, platformChecks } from "./schema";
+      6| import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
+
+Caused by: Error: Failed to load url ../lib/gemini (resolved id: ../lib/gemini) in /home/runner/workspace/assistant-last40-unified/server/caption/geminiPipeline.ts. Does the file exist?
+ ❯ loadAndTransform node_modules/vite/dist/node/chunks/dep-M_KD0XSK.js:26400:33
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[198/278]⎯
+
+ FAIL  unified-tasks-snapshot/tests/unit/caption/tone-options.test.ts > ToneOptions Helper > extractToneOptions > should extract style and mood parameters
+AssertionError: expected { style: 'modern', …(2) } to deeply equal { style: 'modern', mood: 'confident' }
+
+- Expected
++ Received
+
+  {
++   "extras": {
++     "otherParam": "value",
++   },
+    "mood": "confident",
+    "style": "modern",
+  }
+
+ ❯ unified-tasks-snapshot/tests/unit/caption/tone-options.test.ts:26:22
+     24|       const result = extractToneOptions(params);
+     25| 
+     26|       expect(result).toEqual({
+       |                      ^
+     27|         style: 'modern',
+     28|         mood: 'confident'
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[199/278]⎯
+
+ FAIL  unified-tasks-snapshot/tests/unit/caption/tone-options.test.ts > ToneOptions Helper > extractToneOptions > should ignore non-string tone values
+AssertionError: expected { style: 'modern', …(2) } to deeply equal { style: 'modern' }
+
+- Expected
++ Received
+
+  {
++   "extras": {},
++   "mood": undefined,
+    "style": "modern",
+  }
+
+ ❯ unified-tasks-snapshot/tests/unit/caption/tone-options.test.ts:58:22
+     56|       const result = extractToneOptions(params);
+     57| 
+     58|       expect(result).toEqual({
+       |                      ^
+     59|         style: 'modern'
+     60|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[200/278]⎯
+
+ FAIL  unified-tasks-snapshot/tests/unit/caption/tone-options.test.ts > ToneOptions Helper > extractToneOptions > should only extract known tone parameters
+AssertionError: expected { style: 'elegant', …(2) } to deeply equal { style: 'elegant', mood: 'playful' }
+
+- Expected
++ Received
+
+  {
++   "extras": {
++     "someRandomParam": "should not be included",
++   },
+    "mood": "playful",
+    "style": "elegant",
+  }
+
+ ❯ unified-tasks-snapshot/tests/unit/caption/tone-options.test.ts:82:22
+     80| 
+     81|       // Should only extract style and mood
+     82|       expect(result).toEqual({
+       |                      ^
+     83|         style: 'elegant',
+     84|         mood: 'playful'
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[201/278]⎯
+
+ FAIL  assistant-last40-unified/client/src/pages/__tests__/imageshield.test.tsx > ImageShield page > normalizes pro_plus tier to pro for ImageShield component
+ReferenceError: document is not defined
+ ❯ renderImageShieldPage assistant-last40-unified/client/src/pages/__tests__/imageshield.test.tsx:31:21
+     29| 
+     30| const renderImageShieldPage = async (ImageShieldPage: React.ComponentType) => {
+     31|   const container = document.createElement('div');
+       |                     ^
+     32|   document.body.appendChild(container);
+     33|   const root = createRoot(container);
+ ❯ assistant-last40-unified/client/src/pages/__tests__/imageshield.test.tsx:62:39
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[202/278]⎯
+
+ FAIL  assistant-last40-unified/client/src/pages/__tests__/imageshield.test.tsx > ImageShield page > normalizes pro_plus tier to pro for ImageShield component
+ReferenceError: document is not defined
+ ❯ assistant-last40-unified/client/src/pages/__tests__/imageshield.test.tsx:56:5
+     54| 
+     55|   afterEach(() => {
+     56|     document.body.innerHTML = '';
+       |     ^
+     57|   });
+     58| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[203/278]⎯
+
+ FAIL  unified-tasks-snapshot/client/src/pages/__tests__/imageshield.test.tsx > ImageShield page > normalizes pro_plus tier to pro for ImageShield component
+ReferenceError: document is not defined
+ ❯ renderImageShieldPage unified-tasks-snapshot/client/src/pages/__tests__/imageshield.test.tsx:31:21
+     29| 
+     30| const renderImageShieldPage = async (ImageShieldPage: React.ComponentType) => {
+     31|   const container = document.createElement('div');
+       |                     ^
+     32|   document.body.appendChild(container);
+     33|   const root = createRoot(container);
+ ❯ unified-tasks-snapshot/client/src/pages/__tests__/imageshield.test.tsx:62:39
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[204/278]⎯
+
+ FAIL  unified-tasks-snapshot/client/src/pages/__tests__/imageshield.test.tsx > ImageShield page > normalizes pro_plus tier to pro for ImageShield component
+ReferenceError: document is not defined
+ ❯ unified-tasks-snapshot/client/src/pages/__tests__/imageshield.test.tsx:56:5
+     54| 
+     55|   afterEach(() => {
+     56|     document.body.innerHTML = '';
+       |     ^
+     57|   });
+     58| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[205/278]⎯
+
+
+ Test Files  91 failed | 55 passed (146)
+      Tests  242 failed | 501 passed | 24 skipped (767)
+   Start at  21:57:40
+   Duration  60.03s (transform 6.16s, setup 5.49s, collect 47.01s, tests 54.16s, environment 9.15s, prepare 18.17s)
