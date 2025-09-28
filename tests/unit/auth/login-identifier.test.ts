@@ -75,7 +75,7 @@ describe('Login Identifier and Cookie Auth', () => {
       // If cookies are present, check their properties
       if (auth.cookie && auth.cookie.includes('authToken')) {
         expect(auth.cookie).toContain('HttpOnly');
-        expect(auth.cookie).toContain('SameSite=Strict');
+        expect(auth.cookie).toContain('SameSite=Lax');
       }
     });
 

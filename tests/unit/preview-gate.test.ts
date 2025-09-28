@@ -3,6 +3,12 @@ import { getPreviewStats, checkPreviewGate } from '../../server/lib/preview-gate
 import { db } from '../../server/db';
 import { postPreviews, contentGenerations, users } from '@shared/schema.js';
 
+// Helper function for tests
+async function canQueuePosts(userId: number): Promise<boolean> {
+  const gateResult = await checkPreviewGate(userId);
+  return gateResult.canQueue;
+}
+
 describe('Preview Gate', () => {
   const testUserId = 999; // Test user ID
 
