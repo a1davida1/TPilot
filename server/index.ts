@@ -34,78 +34,23 @@ async function bootstrap(): Promise<void> {
   const port = Number.parseInt(process.env.PORT ?? '5000', 10);
   logger.info(`[HEALTH] Target port from environment: ${port}`);
 
-  const startServer = (attemptPort: number, retryCount = 0): void => {
-    const maxRetries = 3;
-    
-    server.removeAllListeners('error');
-    
-    // Add health logging for port binding process
-    logger.info(`[HEALTH] Attempting to bind to port ${attemptPort} (attempt ${retryCount + 1}/${maxRetries + 1})`);
-    logger.info(`[HEALTH] Server configuration: host=0.0.0.0, reusePort=true`);
+  // Simplified server startup for autoscale deployment
+  logger.info(`[HEALTH] Starting server on port ${port}`);
+  
+  server.listen(port, '0.0.0.0', () => {
+    logger.info(`[HEALTH] ✅ Server started successfully on port ${port}`);
+    logger.info(`serving on port ${port}`);
+  });
 
-    server.listen(
-      {
-        port: attemptPort,
-        host: '0.0.0.0',
-        reusePort: true,
-      },
-      () => {
-        logger.info(`[HEALTH] ✅ Server successfully started on port ${attemptPort}`);
-        logger.info(`[HEALTH] Process ID: ${process.pid}`);
-        logger.info(`[HEALTH] Node version: ${process.version}`);
-        logger.info(`[HEALTH] Memory usage: ${JSON.stringify(process.memoryUsage())}`);
-        
-        if (attemptPort !== port) {
-          logger.warn(`[HEALTH] Note: Using fallback port ${attemptPort} instead of requested port ${port}`);
-        }
-        
-        // Log successful binding
-        logger.info(`serving on port ${attemptPort}`);
-      },
-    );
-
-    server.on('error', (err: unknown) => {
-      const error = err as NodeJS.ErrnoException;
-      
-      logger.error(`[HEALTH] ❌ Server error on port ${attemptPort}:`, {
-        code: error.code,
-        message: error.message,
-        syscall: error.syscall
-      });
-      
-      if (error.code === 'EADDRINUSE') {
-        logger.warn(`[HEALTH] Port ${attemptPort} is already in use`);
-        
-        // Try to identify what's using the port
-        logger.info(`[HEALTH] Checking what process might be using port ${attemptPort}`);
-
-        if (retryCount < maxRetries) {
-          const waitTime = 2000 * (retryCount + 1); // Exponential backoff
-          logger.info(`[HEALTH] Waiting ${waitTime}ms before retry (attempt ${retryCount + 2}/${maxRetries + 1})`);
-          setTimeout(() => {
-            startServer(attemptPort, retryCount + 1);
-          }, waitTime);
-        } else {
-          logger.error(`[HEALTH] Failed to bind to port ${attemptPort} after ${maxRetries + 1} attempts`);
-          logger.error('[HEALTH] Possible causes:');
-          logger.error('[HEALTH]   - Another process is using this port');
-          logger.error('[HEALTH]   - Previous server instance did not shut down cleanly');
-          logger.error('[HEALTH]   - Port permissions issue');
-          logger.error('[HEALTH] Try running: lsof -i :' + attemptPort + ' or netstat -tulpn | grep ' + attemptPort);
-          process.exit(1);
-        }
-      } else if (error.code === 'EACCES') {
-        logger.error(`[HEALTH] Permission denied for port ${attemptPort}`);
-        logger.error('[HEALTH] Ports below 1024 require elevated privileges');
-        process.exit(1);
-      } else {
-        logger.error('[HEALTH] Unexpected server error:', error);
-        process.exit(1);
-      }
+  server.on('error', (err: unknown) => {
+    const error = err as NodeJS.ErrnoException;
+    logger.error(`[HEALTH] ❌ Server startup failed:`, {
+      code: error.code,
+      message: error.message,
+      port: port
     });
-  };
-
-  startServer(port);
+    process.exit(1);
+  });
 }
 
 const isExecutedDirectly =
