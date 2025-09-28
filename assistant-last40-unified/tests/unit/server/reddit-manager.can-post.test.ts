@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { SafetyManager } from '../../../server/lib/safety-systems.js';
+import { RedditManager } from '../../../server/lib/reddit.js';
 
 // Mock SafetyManager
 vi.mock('../../../server/lib/safety-systems.js', () => ({
