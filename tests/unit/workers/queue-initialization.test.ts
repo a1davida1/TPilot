@@ -9,7 +9,7 @@ interface LogCall {
 }
 
 // Mock logging methods
-const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+const logSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 const infoSpy = vi.spyOn(logger, 'info').mockImplementation(() => logger);
 
 describe('Worker Queue Initialization', () => {
@@ -28,7 +28,7 @@ describe('Worker Queue Initialization', () => {
 
       // Should log PostgreSQL queue usage
       expect(logSpy).toHaveBeenCalledWith(
-        expect.stringContaining('PostgreSQL queue backend')
+        expect.stringContaining('Using PostgreSQL queue backend')
       );
 
       // Restore environment
@@ -45,6 +45,7 @@ describe('Worker Queue Initialization', () => {
         const [msg] = call;
         return typeof msg === 'string' && msg.includes('queue backend');
       });
+      expect(hasQueueLog).toBe(true);
       expect(logSpy).toHaveBeenCalled();
     });
   });
