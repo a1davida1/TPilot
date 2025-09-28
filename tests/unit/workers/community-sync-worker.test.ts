@@ -49,7 +49,7 @@ describe('CommunitySyncWorker - missing Reddit credentials', () => {
     await expect(processJob({}, 'missing-creds')).resolves.toBeUndefined();
 
     expect(warnSpy).toHaveBeenCalledWith(
-      'Skipping Reddit community sync because credentials are not configured',
+      'Skipping Reddit community sync because service credentials are not configured',
       expect.objectContaining({ runId: 'missing-creds' })
     );
     expect(errorSpy).not.toHaveBeenCalled();

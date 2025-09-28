@@ -4,8 +4,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { normalizeRules, inferSellingPolicy, getCommunityInsights } from '../../../server/reddit-communities.js';
 import { db } from '../../../server/db.js';
-import { redditCommunities, subredditRules } from '@shared/schema.js';
-import type { RedditCommunityRuleSet } from '@shared/schema.js';
+import { redditCommunities, subredditRules } from '@shared/schema';
+import type { RedditCommunityRuleSet } from '@shared/schema';
 import { syncSubredditRules } from '../../../server/scripts/sync-subreddit-rules.js';
 
 // Test interfaces
@@ -129,7 +129,7 @@ describe('Reddit Communities Rules Unit Tests', () => {
       expect(inferSellingPolicy('limited', 'general')).toBe('limited');
       expect(inferSellingPolicy('subtle', 'general')).toBe('limited');
       expect(inferSellingPolicy('unknown', 'selling')).toBe('allowed');
-      expect(inferSellingPolicy('unknown', 'gonewild')).toBe(undefined);
+      expect(inferSellingPolicy('unknown', 'gonewild')).toBe('unknown');
       
       // Test with normalizeRules to verify integration
       const rules = { sellingAllowed: 'unknown' };
@@ -248,7 +248,7 @@ describe('Reddit Communities Rules Unit Tests', () => {
       for (const value of validValues) {
         const rules = { sellingAllowed: value };
         const result = redditCommunityRuleSetSchema.parse(rules);
-        expect(result?.sellingAllowed).toBe(value);
+        expect(result.sellingAllowed).toBe(value);
       }
       
       // Test invalid value
