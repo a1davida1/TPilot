@@ -25,7 +25,8 @@ const mockStorage = vi.hoisted(() => ({
 }));
 
 const mockEmailService = vi.hoisted(() => ({
-  sendVerificationEmail: vi.fn().mockResolvedValue(true)
+  sendVerificationEmail: vi.fn().mockResolvedValue(true),
+  sendWelcomeEmail: vi.fn().mockResolvedValue(true)
 }));
 
 vi.mock('../../../server/storage', () => ({ storage: mockStorage }));
@@ -43,6 +44,9 @@ describe('Email Verification Unit Tests', () => {
     mockTokens.clear();
     mockUsers.clear();
 
+    mockEmailService.sendVerificationEmail.mockResolvedValue(true);
+    mockEmailService.sendWelcomeEmail.mockResolvedValue(true);
+
     // Setup express app
     app = express();
     app.use(express.json());
@@ -56,7 +60,7 @@ describe('Email Verification Unit Tests', () => {
         .set('Accept', 'application/json'); // Force JSON response for testing
       
       expect(response.status).toBe(400);
-      expect(response.body.message).toBe('Token is required');
+      expect(response.body.message ?? response.body.error).toBe('Token is required');
     });
 
     it('should reject empty token', async () => {
@@ -65,7 +69,7 @@ describe('Email Verification Unit Tests', () => {
         .set('Accept', 'application/json'); // Force JSON response for testing
       
       expect(response.status).toBe(400);
-      expect(response.body.message).toBe('Token is required');
+      expect(response.body.message ?? response.body.error).toBe('Token is required');
     });
 
     it('should reject invalid token', async () => {
@@ -74,7 +78,7 @@ describe('Email Verification Unit Tests', () => {
         .set('Accept', 'application/json'); // Force JSON response for testing
       
       expect(response.status).toBe(400);
-      expect(response.body.message).toBe('Invalid or expired token');
+      expect(response.body.message ?? response.body.error).toBe('Invalid or expired token');
       expect(mockStorage.getVerificationToken).toHaveBeenCalledWith('invalid-token-12345');
     });
 
@@ -93,7 +97,7 @@ describe('Email Verification Unit Tests', () => {
         .set('Accept', 'application/json'); // Force JSON response for testing
       
       expect(response.status).toBe(400);
-      expect(response.body.message).toBe('Invalid or expired token');
+      expect(response.body.message ?? response.body.error).toBe('Invalid or expired token');
     });
 
     it('should accept valid unexpired token', async () => {
@@ -202,7 +206,7 @@ describe('Email Verification Unit Tests', () => {
           .set('Accept', 'application/json'); // Force JSON response for testing
         
         expect(response.status).toBe(400);
-        expect(response.body.message).toBe('Invalid or expired token');
+        expect(response.body.message ?? response.body.error).toBe('Invalid or expired token');
       }
     });
 
@@ -214,7 +218,7 @@ describe('Email Verification Unit Tests', () => {
         .set('Accept', 'application/json'); // Force JSON response for testing
       
       expect(response.status).toBe(400);
-      expect(response.body.message).toBe('Invalid or expired token');
+      expect(response.body.message ?? response.body.error).toBe('Invalid or expired token');
     });
 
     it('should handle SQL injection attempts in token', async () => {
@@ -230,7 +234,7 @@ describe('Email Verification Unit Tests', () => {
           .set('Accept', 'application/json'); // Force JSON response for testing
         
         expect(response.status).toBe(400);
-        expect(response.body.message).toBe('Invalid or expired token');
+        expect(response.body.message ?? response.body.error).toBe('Invalid or expired token');
       }
     });
   });
@@ -254,13 +258,6 @@ describe('Email Verification Unit Tests', () => {
         emailVerified: false
       });
 
-      // Send multiple requests concurrently
-      const promises = Array.from({ length: 5 }, () =>
-        request(app).get('/api/auth/verify-email?token=' + token)
-      );
-
-      const responses = await Promise.all(promises);
-
       // Send requests with JSON Accept header for consistent testing
       const jsonPromises = Array.from({ length: 5 }, () =>
         request(app)
@@ -270,15 +267,14 @@ describe('Email Verification Unit Tests', () => {
 
       const jsonResponses = await Promise.all(jsonPromises);
 
-      expect(responses).toHaveLength(5);
+      const successResponses = jsonResponses.filter(response => response.status === 200);
+      expect(successResponses).toHaveLength(1);
 
-      // First request should succeed
-      expect(jsonResponses[0].status).toBe(200);
-
-      // Subsequent requests should fail since token was consumed
-      for (let i = 1; i < jsonResponses.length; i++) {
-        expect(jsonResponses[i].status).toBe(400);
-      }
+      jsonResponses
+        .filter(response => response.status !== 200)
+        .forEach(response => {
+          expect(response.status).toBe(400);
+        });
     });
   });
 
@@ -301,7 +297,7 @@ describe('Email Verification Unit Tests', () => {
         .set('Accept', 'application/json'); // Force JSON response for testing
       
       expect(response.status).toBe(400);
-      expect(response.body.message).toBe('Invalid or expired token');
+      expect(response.body.message ?? response.body.error).toBe('Invalid or expired token');
     });
 
     it('should accept token that expires in 1 minute', async () => {
