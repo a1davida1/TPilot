@@ -73,7 +73,7 @@ describe('DatabaseStorage saved content operations', () => {
     const storage = new DatabaseStorageClass();
 
     await expect(storage.createSavedContent(basePayload)).rejects.toThrow(failure);
-    expect(safeLogMock).toHaveBeenCalledWith('error', expect.stringContaining('creating saved content'), expect.objectContaining({
+    expect(safeLogMock).toHaveBeenCalledWith('error', expect.stringContaining('Failed to create saved content record'), expect.objectContaining({
       error: failure.message,
       userId: basePayload.userId,
     }));
@@ -116,7 +116,7 @@ describe('DatabaseStorage saved content operations', () => {
     const result = await storage.getSavedContentById(1, 1);
 
     expect(result).toBeUndefined();
-    expect(safeLogMock).toHaveBeenCalledWith('error', expect.stringContaining('getting saved content by id'), expect.objectContaining({
+    expect(safeLogMock).toHaveBeenCalledWith('error', expect.stringContaining('Failed to fetch saved content record'), expect.objectContaining({
       error: failure.message,
       id: 1,
       userId: 1,
@@ -162,7 +162,7 @@ describe('DatabaseStorage saved content operations', () => {
     const result = await storage.getUserSavedContent(3);
 
     expect(result).toEqual([]);
-    expect(safeLogMock).toHaveBeenCalledWith('error', expect.stringContaining('getting user saved content'), expect.objectContaining({
+    expect(safeLogMock).toHaveBeenCalledWith('error', expect.stringContaining('Failed to list saved content records for user'), expect.objectContaining({
       error: failure.message,
       userId: 3,
     }));
@@ -188,7 +188,7 @@ describe('DatabaseStorage saved content operations', () => {
     const storage = new DatabaseStorageClass();
     await expect(storage.deleteSavedContent(9, 2)).rejects.toThrow(failure);
 
-    expect(safeLogMock).toHaveBeenCalledWith('error', expect.stringContaining('deleting saved content'), expect.objectContaining({
+    expect(safeLogMock).toHaveBeenCalledWith('error', expect.stringContaining('Failed to delete saved content record'), expect.objectContaining({
       error: failure.message,
       id: 9,
       userId: 2,

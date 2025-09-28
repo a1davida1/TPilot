@@ -25,7 +25,10 @@ describe('ToneOptions Helper', () => {
 
       expect(result).toEqual({
         style: 'modern',
-        mood: 'confident'
+        mood: 'confident',
+        extras: {
+          otherParam: 'value'
+        }
       });
     });
 
@@ -56,7 +59,9 @@ describe('ToneOptions Helper', () => {
       const result = extractToneOptions(params);
 
       expect(result).toEqual({
-        style: 'modern'
+        style: 'modern',
+        mood: undefined,
+        extras: {}
       });
     });
 
@@ -81,7 +86,10 @@ describe('ToneOptions Helper', () => {
       // Should only extract style and mood
       expect(result).toEqual({
         style: 'elegant',
-        mood: 'playful'
+        mood: 'playful',
+        extras: {
+          someRandomParam: 'should not be included'
+        }
       });
 
       // Should not include non-tone parameters
