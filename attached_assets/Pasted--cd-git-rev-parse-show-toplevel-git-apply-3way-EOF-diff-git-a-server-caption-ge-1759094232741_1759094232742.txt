@@ -1,0 +1,132 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/server/caption/geminiPipeline.ts b/server/caption/geminiPipeline.ts
+index f5f2a1f61175d45d4162c0b53a8cad98b22eeba7..428005a3a0f078b56f704ddce3d54d895194d66e 100644
+--- a/server/caption/geminiPipeline.ts
++++ b/server/caption/geminiPipeline.ts
+@@ -1047,97 +1047,100 @@ export async function rankAndSelect(
+   return RankResult.parse({
+     ...parsed,
+     final: sanitizedFinal,
+     reason: summary
+   });
+ }
+ 
+ type GeminiPipelineArgs = {
+   imageUrl: string;
+   platform: "instagram" | "x" | "reddit" | "tiktok";
+   voice?: string;
+   nsfw?: boolean;
+   style?: string;
+   mood?: string;
+ };
+ 
+ /**
+  * Primary image captioning pipeline backed by Gemini vision + text models.
+  *
+  * @remarks
+  * Persona controls such as `style`, `mood`, and future tone keys must persist through
+  * retries. When platform validation fails we re-run Gemini with the exact same tone
+  * payload so the caller's requested persona stays intact.
+  */
+ export async function pipeline({ imageUrl, platform, voice = "flirty_playful", nsfw = false, style, mood, ...toneRest }: GeminiPipelineArgs): Promise<CaptionResult> {
+-  // Check if Gemini is available before trying to use it
+-  if (!isGeminiAvailable()) {
+-    console.warn("Gemini API not available, falling back to OpenAI");
+-    throw new Error("Gemini API not configured - will use OpenAI fallback");
+-  }
+-  
++  const resolveWithOpenAIFallback = async (reason: string): Promise<CaptionResult> => {
++    const { openAICaptionFallback } = await import('./openaiFallback');
++    const final = await openAICaptionFallback({ platform, voice, imageUrl });
++    const ranked = RankResult.parse({
++      winner_index: 0,
++      scores: [1, 0, 0, 0, 0],
++      reason,
++      final,
++    });
++    const enriched = enrichWithTitleCandidates(ranked.final, { ranked });
++    const enrichedRanked = enriched.ranked ?? ranked;
++    return {
++      provider: 'openai',
++      final: enriched.final,
++      ranked: enrichedRanked,
++      titles: enriched.final.titles,
++    } as CaptionResult;
++  };
++
+   try {
++    if (!isGeminiAvailable()) {
++      console.warn("Gemini API not available, falling back to OpenAI");
++      return resolveWithOpenAIFallback('OpenAI fallback selected because Gemini API is not configured');
++    }
++
+     const tone = extractToneOptions(toneRest);
+     const facts = await extractFacts(imageUrl);
+     let variants = await generateVariants({ platform, voice, facts, nsfw, ...tone });
+     variants = dedupeVariantsForRanking(variants, 5, { platform, facts });
+     let ranked = await rankAndSelect(variants, { platform, facts });
+     let out = ranked.final;
+ 
+     const enforceCoverage = async () => {
+       let attempts = 0;
+       let coverage = ensureFactCoverage({ facts, caption: out.caption, alt: out.alt });
+       while (!coverage.ok && coverage.hint && attempts < 2) {
+         attempts += 1;
+         variants = await generateVariants({ platform, voice, facts, hint: coverage.hint, nsfw, ...tone });
+         variants = dedupeVariantsForRanking(variants, 5, { platform, facts });
+         ranked = await rankAndSelect(variants, { platform, facts });
+         out = ranked.final;
+         coverage = ensureFactCoverage({ facts, caption: out.caption, alt: out.alt });
+       }
+     };
+ 
+     await enforceCoverage();
+ 
+     const err = platformChecks(platform, out);
+     if (err) {
+       variants = await generateVariants({
+         platform,
+         voice,
+         style,
+         mood,
+         facts,
+         hint: `Fix: ${err}. Use IMAGE_FACTS nouns/colors/setting explicitly.`,
+         nsfw,
+         ...tone
+       });
+       variants = dedupeVariantsForRanking(variants, 5, { platform, facts });
+       ranked = await rankAndSelect(variants, { platform, facts });
+       out = ranked.final;
+     }
+ 
+     const enriched = enrichWithTitleCandidates(out, { variants, ranked });
+     out = enriched.final;
+     if (enriched.ranked) {
+       ranked = enriched.ranked;
+     }
+ 
+     return { provider: 'gemini', facts, variants, ranked, final: out, titles: out.titles };
+   } catch (error) {
+-    const { openAICaptionFallback } = await import('./openaiFallback');
+-    const final = await openAICaptionFallback({ platform, voice, imageUrl });
+-    const ranked = RankResult.parse({
+-      winner_index: 0,
+-      scores: [1, 0, 0, 0, 0],
+-      reason: 'OpenAI fallback selected after Gemini pipeline error',
+-      final,
+-    });
+-    const enriched = enrichWithTitleCandidates(ranked.final, { ranked });
+-    const enrichedRanked = enriched.ranked ?? ranked;
+-    return {
+-      provider: 'openai',
+-      final: enriched.final,
+-      ranked: enrichedRanked,
+-      titles: enriched.final.titles,
+-    } as CaptionResult;
++    return resolveWithOpenAIFallback('OpenAI fallback selected after Gemini pipeline error');
+   }
+-}
++}
+ 
+EOF
+)
