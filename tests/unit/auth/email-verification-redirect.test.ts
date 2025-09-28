@@ -104,7 +104,7 @@ describe('Email Verification Redirect Tests', () => {
       .set('Accept', 'application/json') // Explicit JSON Accept header
       .expect(400);
 
-    expect(response.body.message || "").toBe('Invalid or expired token');
+    expect(response.body.message ?? response.body.error ?? '').toBe('Invalid or expired token');
     expect(response.headers.location).toBeUndefined(); // No redirect
   });
 

@@ -1,0 +1,51 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/tests/unit/auth/email-verification-redirect.test.ts b/tests/unit/auth/email-verification-redirect.test.ts
+index d894a0f3e405466c6dabc0d2146c4f086cb83ab0..c9cace44d7616d6d8a13ecb1748c422da2dee860 100644
+--- a/tests/unit/auth/email-verification-redirect.test.ts
++++ b/tests/unit/auth/email-verification-redirect.test.ts
+@@ -82,41 +82,41 @@ describe('Email Verification Redirect Tests', () => {
+ 
+     mockStorage.updateUserEmailVerified.mockResolvedValue(undefined);
+     mockStorage.deleteVerificationToken.mockResolvedValue(undefined);
+     mockEmailService.sendWelcomeEmail.mockResolvedValue(undefined);
+ 
+     const response = await request(app)
+       .get(`/api/auth/verify-email?token=${validToken}`)
+       .set('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8') // Browser Accept header
+       .set('User-Agent', 'Mozilla/5.0 (compatible browser)') // Browser User-Agent
+       .expect(302); // Expect redirect
+ 
+     expect(response.headers.location).toMatch(/\/email-verification\?verified=true&email=/);
+     expect(mockStorage.updateUserEmailVerified).toHaveBeenCalledWith(2, true);
+     expect(mockStorage.deleteVerificationToken).toHaveBeenCalledWith(validToken);
+     expect(mockEmailService.sendWelcomeEmail).toHaveBeenCalledWith('browser@example.com', 'browseruser');
+   });
+ 
+   test('should return JSON error for invalid token with explicit Accept header', async () => {
+     mockStorage.getVerificationToken.mockResolvedValue(null);
+ 
+     const response = await request(app)
+       .get('/api/auth/verify-email?token=invalid-token')
+       .set('Accept', 'application/json') // Explicit JSON Accept header
+       .expect(400);
+ 
+-    expect(response.body.message || "").toBe('Invalid or expired token');
++    expect(response.body.message ?? response.body.error ?? '').toBe('Invalid or expired token');
+     expect(response.headers.location).toBeUndefined(); // No redirect
+   });
+ 
+   test('should redirect to error page for invalid token with browser Accept header', async () => {
+     mockStorage.getVerificationToken.mockResolvedValue(null);
+ 
+     const response = await request(app)
+       .get('/api/auth/verify-email?token=invalid-token')
+       .set('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8') // Browser Accept header
+       .set('User-Agent', 'Mozilla/5.0 (compatible browser)') // Browser User-Agent
+       .expect(302); // Expect redirect to error page
+ 
+     expect(response.headers.location).toMatch(/\/email-verification\?error=invalid_token/);
+   });
+ });
+ 
+EOF
+)
