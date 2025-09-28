@@ -271,7 +271,9 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
 
     const sentry = initializeSentry();
 
-    registerDefaultRedditClients();
+    // Commented out to prevent unnecessary Reddit service client registration
+    // The community sync worker will check for credentials during initialization
+    // registerDefaultRedditClients();
 
     setupAuth(app, API_PREFIX);
     setupSocialAuth(app, API_PREFIX);  // Register social auth routes including logout

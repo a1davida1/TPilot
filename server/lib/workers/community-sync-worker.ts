@@ -18,8 +18,23 @@ export class CommunitySyncWorker {
     return process.env.NODE_ENV !== 'test';
   }
 
+  private hasRequiredCredentials(): boolean {
+    // Check if all required Reddit service credentials are present
+    const hasRefreshToken = Boolean(process.env.REDDIT_REFRESH_TOKEN);
+    const hasUsernameAndPassword = Boolean(process.env.REDDIT_USERNAME && process.env.REDDIT_PASSWORD);
+    const hasClientCredentials = Boolean(process.env.REDDIT_CLIENT_ID && process.env.REDDIT_CLIENT_SECRET);
+    
+    return hasClientCredentials && (hasRefreshToken || hasUsernameAndPassword);
+  }
+
   async initialize(): Promise<void> {
     if (this.initialized) {
+      return;
+    }
+
+    // Skip initialization if Reddit service credentials are not configured
+    if (!this.hasRequiredCredentials()) {
+      logger.info('⏭️ Community sync worker skipped - Reddit service credentials not configured');
       return;
     }
 
