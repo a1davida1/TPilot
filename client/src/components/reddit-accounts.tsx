@@ -14,7 +14,7 @@ interface RedditAccount {
   id: number;
   username: string;
   isActive: boolean;
-  connectedAt: string;
+  connectedAt: string | null;
   karma: number;
   verified: boolean;
 }
@@ -22,7 +22,7 @@ interface RedditAccount {
 export function RedditAccounts() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
@@ -159,63 +159,71 @@ export function RedditAccounts() {
             </CardContent>
           </Card>
         ) : accounts && accounts.length > 0 ? (
-          accounts.map((account: RedditAccount) => (
-            <Card key={account.id} className="bg-gray-800/50 border-gray-700">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle className="h-5 w-5 text-green-400" />
-                    <CardTitle className="text-lg text-gray-100">u/{account.username}</CardTitle>
-                    {account.verified && (
-                      <Badge variant="outline" className="text-xs border-blue-500 text-blue-400">
-                        Verified
-                      </Badge>
-                    )}
+          accounts.map((account: RedditAccount) => {
+            const connectedDate = account.connectedAt ? new Date(account.connectedAt) : null;
+            const connectionStatusText =
+              connectedDate && !Number.isNaN(connectedDate.getTime())
+                ? `Connected on ${connectedDate.toLocaleDateString()}`
+                : 'Connection date unavailable';
+
+            return (
+              <Card key={account.id} className="bg-gray-800/50 border-gray-700">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle className="h-5 w-5 text-green-400" />
+                      <CardTitle className="text-lg text-gray-100">u/{account.username}</CardTitle>
+                      {account.verified && (
+                        <Badge variant="outline" className="text-xs border-blue-500 text-blue-400">
+                          Verified
+                        </Badge>
+                      )}
+                    </div>
+                    <Badge className={account.isActive ? 'bg-green-500' : 'bg-gray-500'}>
+                      {account.isActive ? 'Active' : 'Inactive'}
+                    </Badge>
                   </div>
-                  <Badge className={account.isActive ? 'bg-green-500' : 'bg-gray-500'}>
-                    {account.isActive ? 'Active' : 'Inactive'}
-                  </Badge>
-                </div>
-                <CardDescription className="text-gray-400">
-                  Connected on {new Date(account.connectedAt).toLocaleDateString()}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="text-sm">
-                      <span className="text-gray-400">Karma:</span>
-                      <span className="ml-1 text-gray-200 font-medium">{account.karma.toLocaleString()}</span>
+                  <CardDescription className="text-gray-400">
+                    {connectionStatusText}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="text-sm">
+                        <span className="text-gray-400">Karma:</span>
+                        <span className="ml-1 text-gray-200 font-medium">{account.karma.toLocaleString()}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => testConnectionMutation.mutate()}
+                        disabled={testConnectionMutation.isPending}
+                        data-testid={`button-test-${account.id}`}
+                      >
+                        {testConnectionMutation.isPending ? (
+                          <RefreshCw className="h-4 w-4 animate-spin" />
+                        ) : (
+                          "Test"
+                        )}
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => disconnectMutation.mutate(account.id)}
+                        disabled={disconnectMutation.isPending}
+                        data-testid={`button-disconnect-${account.id}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => testConnectionMutation.mutate()}
-                      disabled={testConnectionMutation.isPending}
-                      data-testid={`button-test-${account.id}`}
-                    >
-                      {testConnectionMutation.isPending ? (
-                        <RefreshCw className="h-4 w-4 animate-spin" />
-                      ) : (
-                        "Test"
-                      )}
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => disconnectMutation.mutate(account.id)}
-                      disabled={disconnectMutation.isPending}
-                      data-testid={`button-disconnect-${account.id}`}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
+                </CardContent>
+              </Card>
+            );
+          })
         ) : (
           <Card className="bg-gray-800/50 border-gray-700">
             <CardContent className="p-6 text-center">
