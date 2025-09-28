@@ -83,6 +83,8 @@ const safeFallbackAlt = "Detailed alt text describing the scene.";
 const safeFallbackHashtags = ["#content", "#creative", "#amazing"];
 const safeFallbackCta = "Check it out";
 
+const MIN_IMAGE_BYTES = 32;
+
 function captionKey(caption: string): string {
   return caption.trim().slice(0, 80).toLowerCase();
 }
@@ -303,8 +305,12 @@ async function b64(url: string): Promise<{ base64: string; mimeType: string }> {
       throw new InvalidImageError(`unsupported content-type: ${ct}`);
 
     const b = Buffer.from(await r.arrayBuffer());
+    if (b.length < MIN_IMAGE_BYTES) {
+      throw new InvalidImageError(
+        `image data too small after decoding (${b.length} bytes)`
+      );
+    }
     const base64 = b.toString("base64");
-    if (base64.length < 100) throw new InvalidImageError("image data too small");
 
     return { base64, mimeType: ct.split(";")[0] };
   } catch (err) {
@@ -575,6 +581,12 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
         throw new InvalidImageError(`Invalid Base64 data format: ${base64Error instanceof Error ? base64Error.message : String(base64Error)}`);
       }
 
+      if (decodedBuffer.length < MIN_IMAGE_BYTES) {
+        throw new InvalidImageError(
+          `Decoded image data appears to be too small (${decodedBuffer.length} bytes)`
+        );
+      }
+
       // Validate image signatures for common formats
       if (mimeType === 'image/png') {
         // PNG signature: 89 50 4E 47 0D 0A 1A 0A
@@ -620,10 +632,6 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
       }
 
       // Check if Base64 data is reasonable length (not too short or extremely long)
-      if (imageData.length < 100) {
-        throw new InvalidImageError('Base64 data appears to be too short');
-      }
-
       if (imageData.length > 10000000) { // ~7.5MB base64 encoded
         throw new InvalidImageError('Image data too large for processing');
       }
