@@ -236,7 +236,7 @@ export default function RedditPostingPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto text-purple-600" />
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
           <p className="mt-2 text-sm text-muted-foreground">Loading...</p>
         </div>
       </div>
@@ -346,26 +346,26 @@ export default function RedditPostingPage() {
     : shadowbanStatus?.status ?? 'unknown';
 
   const shadowbanCardStyles = shadowbanStatusLevel === 'suspected'
-    ? 'border-red-200 bg-red-50'
+    ? 'border-destructive/20 bg-destructive/5'
     : shadowbanStatusLevel === 'clear'
-      ? 'border-green-200 bg-green-50'
+      ? 'border-success/20 bg-success/5'
       : shadowbanStatusLevel === 'error'
-        ? 'border-red-200 bg-red-50'
-        : 'border-blue-200 bg-blue-50';
+        ? 'border-destructive/20 bg-destructive/5'
+        : 'border-primary/20 bg-primary/5';
 
   const shadowbanIcon = shadowbanStatusLevel === 'clear'
-    ? <CheckCircle className="h-4 w-4 text-green-600" />
+    ? <CheckCircle className="h-4 w-4 text-success" />
     : shadowbanStatusLevel === 'suspected'
-      ? <AlertTriangle className="h-4 w-4 text-red-600" />
+      ? <AlertTriangle className="h-4 w-4 text-destructive" />
       : shadowbanStatusLevel === 'error'
-        ? <XCircle className="h-4 w-4 text-red-600" />
-        : <Eye className="h-4 w-4 text-blue-600" />;
+        ? <XCircle className="h-4 w-4 text-destructive" />
+        : <Eye className="h-4 w-4 text-primary" />;
 
   const shadowbanButtonStyles = shadowbanStatusLevel === 'suspected' || shadowbanStatusLevel === 'error'
-    ? 'border-red-200 text-red-700 hover:bg-red-50'
+    ? 'border-destructive/20 text-destructive hover:bg-destructive/5'
     : shadowbanStatusLevel === 'clear'
-      ? 'border-green-200 text-green-700 hover:bg-green-50'
-      : 'border-blue-200 text-blue-700 hover:bg-blue-50';
+      ? 'border-success/20 text-success hover:bg-success/5'
+      : 'border-primary/20 text-primary hover:bg-primary/5';
 
   const lastShadowbanCheck = shadowbanStatus?.evidence.checkedAt
     ? new Date(shadowbanStatus.evidence.checkedAt).toLocaleString()
@@ -681,21 +681,21 @@ export default function RedditPostingPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50 to-pink-100 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted p-6">
       <div className="max-w-7xl mx-auto space-y-6">
 
         {/* Header */}
-        <Card className="bg-white/90 backdrop-blur-sm border-pink-200 shadow-xl">
+        <Card className="bg-card/90 backdrop-blur-sm border-accent/20 shadow-xl">
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-500 rounded-lg">
+              <div className="p-2 bg-accent rounded-lg">
                 <Globe className="h-6 w-6 text-white" />
               </div>
               <div>
-                <CardTitle className="text-2xl bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                <CardTitle className="text-2xl bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                   Reddit Posting Hub
                 </CardTitle>
-                <CardDescription className="text-gray-600">
+                <CardDescription className="text-muted-foreground">
                   Create, validate, and publish content to Reddit communities with intelligent optimization
                 </CardDescription>
               </div>
@@ -719,10 +719,10 @@ export default function RedditPostingPage() {
               <CardContent>
                 <div className="space-y-4">
                   {!isAuthenticated ? (
-                    <div className="text-center p-6 bg-purple-50 rounded-lg border border-purple-200">
-                      <UserCheck className="h-12 w-12 text-purple-500 mx-auto mb-3" />
-                      <h3 className="font-medium text-purple-800 mb-2">Sign in to manage Reddit accounts</h3>
-                      <p className="text-sm text-purple-600 mb-4">
+                    <div className="text-center p-6 bg-muted/50 rounded-lg border border-border">
+                      <UserCheck className="h-12 w-12 text-primary mx-auto mb-3" />
+                      <h3 className="font-medium text-foreground mb-2">Sign in to manage Reddit accounts</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
                         Create an account or log in to connect Reddit profiles and manage posting permissions.
                       </p>
                       <Button
