@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ShieldAlert, ShieldCheck, CheckCircle2, Clock3, AlertCircle, ArrowClockwise, CalendarClock } from 'lucide-react';
+import { ShieldAlert, ShieldCheck, CheckCircle2, Clock3, AlertCircle, RotateCw, CalendarClock } from 'lucide-react';
 
 type Removal = { id: string; removedAt: string; reason: string; actionTaken?: string };
 type SubredditComplianceStatus = {
@@ -47,7 +47,7 @@ export default function ComplianceStatusDashboard() {
               <p className="text-sm text-red-600">{(error as Error).message || 'The service did not return a response.'}</p>
             </div>
             <button className="inline-flex items-center gap-2 text-sm" onClick={() => refetch()} disabled={isFetching}>
-              <ArrowClockwise className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+              <RotateCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
               Retry
             </button>
           </div>
@@ -83,7 +83,7 @@ export default function ComplianceStatusDashboard() {
           <span>Last refresh:</span>
           <span className="font-medium text-gray-700">{generatedAt ? formatDateTime(generatedAt) : '—'}</span>
           <button className="inline-flex items-center gap-2" onClick={() => refetch()} disabled={isFetching}>
-            <ArrowClockwise className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+            <RotateCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
             Refresh
           </button>
         </div>

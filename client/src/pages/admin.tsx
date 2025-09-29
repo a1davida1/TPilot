@@ -12,10 +12,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { AdminCommunitiesPanel } from '@/components/admin/admin-communities-panel';
 
 // Lazy load compliance dashboard
-const ComplianceStatusDashboard = lazy(() => 
-  import('@/components/compliance/ComplianceStatusDashboard').then(module => ({
-    default: module.ComplianceStatusDashboard
-  }))
+const ComplianceStatusDashboard = lazy(() =>
+  import('@/components/compliance/ComplianceStatusDashboard')
 );
 import { 
   Users, 
