@@ -9,15 +9,15 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-gradient-to-r from-orange-500 via-amber-400 to-red-500 text-white font-bold shadow-orange-500/25 hover:shadow-orange-500/40 hover:from-orange-600 hover:via-amber-500 hover:to-red-500",
+        default: "bg-gradient-to-r from-primary via-accent to-accent-purple text-primary-foreground font-bold shadow-primary/25 hover:shadow-primary/40 hover:from-primary-600 hover:via-accent hover:to-accent-purple",
         destructive:
-          "bg-gradient-to-r from-red-500 to-red-600 text-white font-bold shadow-red-500/25 hover:shadow-red-500/40",
+          "bg-gradient-to-r from-destructive to-destructive text-destructive-foreground font-bold shadow-destructive/25 hover:shadow-destructive/40",
         outline:
-          "border-2 border-orange-300 bg-background/80 backdrop-blur text-orange-700 font-semibold hover:bg-orange-50 hover:border-orange-400 dark:border-orange-500 dark:text-orange-300 dark:hover:bg-orange-950/20",
+          "border-2 border-primary/30 bg-background/80 backdrop-blur text-primary font-semibold hover:bg-primary/5 hover:border-primary/40 dark:border-primary/50 dark:text-primary dark:hover:bg-primary/10",
         secondary:
-          "bg-gradient-to-r from-amber-100 to-orange-100 text-orange-800 font-semibold border border-orange-200 hover:from-amber-200 hover:to-orange-200 dark:from-orange-900/20 dark:to-red-900/20 dark:text-orange-300",
-        ghost: "text-orange-600 font-semibold hover:bg-orange-100/50 hover:text-orange-700 dark:text-orange-400 dark:hover:bg-orange-950/20",
-        link: "text-orange-600 font-semibold underline-offset-4 hover:underline hover:text-orange-700 dark:text-orange-400",
+          "bg-gradient-to-r from-secondary to-muted text-secondary-foreground font-semibold border border-border hover:from-secondary/80 hover:to-muted/80 dark:from-secondary dark:to-muted dark:text-secondary-foreground",
+        ghost: "text-primary font-semibold hover:bg-accent/50 hover:text-primary dark:text-primary dark:hover:bg-accent/20",
+        link: "text-primary font-semibold underline-offset-4 hover:underline hover:text-primary-600 dark:text-primary",
       },
       size: {
         default: "h-11 px-6 py-3 text-base",
