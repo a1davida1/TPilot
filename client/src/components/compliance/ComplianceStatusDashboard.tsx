@@ -1,285 +1,152 @@
-
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useQuery } from '@tanstack/react-query';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { AlertTriangle, CheckCircle, Clock, Shield } from 'lucide-react';
+import { ShieldAlert, ShieldCheck, CheckCircle2, Clock3, AlertCircle, ArrowClockwise, CalendarClock } from 'lucide-react';
 
-export interface SubredditRemoval {
-  id: string;
-  removedAt: string;
-  reason: string;
-  actionTaken?: string;
-}
-
-/**
- * Shape of the subreddit level compliance metrics expected from the backend.
- * The dashboard currently renders an array of these objects while backend
- * integration is pending.
- * - `name`: Subreddit name without the leading `r/`.
- * - `shadowbanned`: Flag indicating if automation detected a shadowban.
- * - `verificationStatus`: Either `pending`, `review`, or `verified`.
- * - `nextPostTime`: ISO timestamp representing the next compliant posting window.
- * - `recentRemovals`: Chronological list of the latest moderation removals.
- */
-export interface SubredditComplianceStatus {
+type Removal = { id: string; removedAt: string; reason: string; actionTaken?: string };
+type SubredditComplianceStatus = {
   name: string;
   shadowbanned: boolean;
   verificationStatus: 'pending' | 'review' | 'verified';
   nextPostTime: string;
-  recentRemovals: SubredditRemoval[];
-}
-
-/**
- * Temporary mocked data. Replace this structure with live compliance results
- * once the moderation ingestion pipeline is wired up.
- *
- * Backend teams can refer to `docs/compliance-dashboard-data.md` for the
- * contract powering this dashboard. When the API is ready, swap this array
- * with the fetched response typed as `SubredditComplianceStatus[]` to unlock
- * live telemetry without updating the UI layer.
- */
-const dummyComplianceData: SubredditComplianceStatus[] = [
-  {
-    name: 'CreatorSupport',
-    shadowbanned: false,
-    verificationStatus: 'verified',
-    nextPostTime: '2024-03-09T18:30:00Z',
-    recentRemovals: [
-      {
-        id: 'CS-2051',
-        removedAt: '2024-03-07T21:15:00Z',
-        reason: 'Automod: Affiliate link outside allowed domains',
-        actionTaken: 'Auto-removed'
-      },
-      {
-        id: 'CS-2049',
-        removedAt: '2024-03-06T16:03:00Z',
-        reason: 'Manual: Low-effort promotion',
-        actionTaken: 'Warning issued'
-      },
-      {
-        id: 'CS-2045',
-        removedAt: '2024-03-05T09:47:00Z',
-        reason: 'Automod: Missing flair'
-      },
-      {
-        id: 'CS-2043',
-        removedAt: '2024-03-04T14:22:00Z',
-        reason: 'Manual: Rule violation - excessive self-promotion',
-        actionTaken: 'Temporary ban'
-      },
-      {
-        id: 'CS-2041',
-        removedAt: '2024-03-03T11:30:00Z',
-        reason: 'Automod: Title format violation'
-      }
-    ]
-  },
-  {
-    name: 'OnlyFansPromotion',
-    shadowbanned: true,
-    verificationStatus: 'review',
-    nextPostTime: '2024-03-10T12:00:00Z',
-    recentRemovals: [
-      {
-        id: 'OF-1823',
-        removedAt: '2024-03-08T09:15:00Z',
-        reason: 'Shadowban detected - posts not visible',
-        actionTaken: 'Account review initiated'
-      },
-      {
-        id: 'OF-1821',
-        removedAt: '2024-03-07T16:45:00Z',
-        reason: 'Automod: Watermark policy violation',
-        actionTaken: 'Auto-removed'
-      },
-      {
-        id: 'OF-1819',
-        removedAt: '2024-03-06T13:20:00Z',
-        reason: 'Manual: Spam filter triggered',
-        actionTaken: 'Manual review'
-      }
-    ]
-  },
-  {
-    name: 'AdultCreators',
-    shadowbanned: false,
-    verificationStatus: 'pending',
-    nextPostTime: '2024-03-09T20:45:00Z',
-    recentRemovals: [
-      {
-        id: 'AC-3456',
-        removedAt: '2024-03-08T14:30:00Z',
-        reason: 'Manual: Content quality standards',
-        actionTaken: 'Feedback provided'
-      },
-      {
-        id: 'AC-3454',
-        removedAt: '2024-03-07T10:15:00Z',
-        reason: 'Automod: Account age requirement',
-        actionTaken: 'Auto-removed'
-      }
-    ]
-  },
-  {
-    name: 'ContentCreatorHub',
-    shadowbanned: false,
-    verificationStatus: 'verified',
-    nextPostTime: '2024-03-09T15:20:00Z',
-    recentRemovals: []
-  }
-];
-
-const getVerificationStatusBadge = (status: SubredditComplianceStatus['verificationStatus']) => {
-  switch (status) {
-    case 'verified':
-      return (
-        <Badge variant="default" className="bg-green-100 text-green-700 border-green-200">
-          <CheckCircle className="h-3 w-3 mr-1" />
-          Verified
-        </Badge>
-      );
-    case 'review':
-      return (
-        <Badge variant="secondary" className="bg-yellow-100 text-yellow-700 border-yellow-200">
-          <Clock className="h-3 w-3 mr-1" />
-          Under Review
-        </Badge>
-      );
-    case 'pending':
-      return (
-        <Badge variant="outline" className="bg-gray-100 text-gray-700 border-gray-200">
-          <Clock className="h-3 w-3 mr-1" />
-          Pending
-        </Badge>
-      );
-    default:
-      return null;
-  }
+  recentRemovals: Removal[];
+};
+type ComplianceDashboardResponse = {
+  generatedAt: string;
+  subreddits: SubredditComplianceStatus[];
 };
 
-const getShadowbanBadge = (shadowbanned: boolean) => {
-  if (shadowbanned) {
+const formatDateTime = (iso: string) =>
+  new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso));
+
+export default function ComplianceStatusDashboard() {
+  const { data, isLoading, isError, error, refetch, isFetching } =
+    useQuery<ComplianceDashboardResponse>({
+      queryKey: ['/api/admin/compliance/dashboard'],
+      queryFn: async () => {
+        const res = await fetch('/api/admin/compliance/dashboard');
+        if (!res.ok) throw new Error('Failed to load compliance insights');
+        return res.json();
+      },
+      staleTime: 60_000,
+      refetchInterval: 120_000,
+    });
+
+  if (isLoading) {
+    return <div className="text-sm text-gray-500">Loading compliance insights…</div>;
+  }
+  if (isError) {
     return (
-      <Badge variant="destructive" className="bg-red-100 text-red-700 border-red-200">
-        <AlertTriangle className="h-3 w-3 mr-1" />
-        Shadowbanned
-      </Badge>
+      <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-red-700">
+        <div className="flex items-start gap-3">
+          <AlertCircle className="mt-1 h-5 w-5" />
+          <div className="space-y-2">
+            <div>
+              <p className="text-sm font-semibold">Unable to load compliance insights</p>
+              <p className="text-sm text-red-600">{(error as Error).message || 'The service did not return a response.'}</p>
+            </div>
+            <button className="inline-flex items-center gap-2 text-sm" onClick={() => refetch()} disabled={isFetching}>
+              <ArrowClockwise className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
     );
   }
-  return (
-    <Badge variant="default" className="bg-green-100 text-green-700 border-green-200">
-      <Shield className="h-3 w-3 mr-1" />
-      Active
-    </Badge>
-  );
-};
 
-const formatDateTime = (isoString: string) => {
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZoneName: 'short'
-  }).format(new Date(isoString));
-};
+  const generatedAt = data?.generatedAt;
+  const subreddits = data?.subreddits ?? [];
 
-const formatNextPostTime = (isoString: string) => {
-  const now = new Date();
-  const postTime = new Date(isoString);
-  const diffMs = postTime.getTime() - now.getTime();
-  
-  if (diffMs <= 0) {
-    return 'Available now';
+  if (subreddits.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-8 text-center">
+        <ShieldCheck className="h-10 w-10 text-emerald-500" />
+        <div className="space-y-1">
+          <p className="text-base font-semibold text-gray-700">No moderation flags recorded yet</p>
+          <p className="text-sm text-gray-500">Once posting runs, this dashboard will surface removal trends in real time.</p>
+        </div>
+      </div>
+    );
   }
-  
-  const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
-  if (diffHours < 24) {
-    return `${diffHours}h remaining`;
-  }
-  
-  const diffDays = Math.ceil(diffHours / 24);
-  return `${diffDays}d remaining`;
-};
 
-export function ComplianceStatusDashboard() {
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight text-gray-900">
-            Compliance Dashboard
-          </h2>
-          <p className="text-gray-600 mt-1">
-            Monitor subreddit compliance status and moderation activity
-          </p>
+      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-semibold text-gray-900">Compliance Telemetry</h2>
+          <p className="text-sm text-gray-500">Synthesized from recent Reddit posting outcomes.</p>
         </div>
-        <Badge variant="outline" className="text-xs">
-          Live Data Coming Soon
-        </Badge>
+        <div className="flex items-center gap-2 text-xs text-gray-500">
+          <CalendarClock className="h-4 w-4 text-purple-500" />
+          <span>Last refresh:</span>
+          <span className="font-medium text-gray-700">{generatedAt ? formatDateTime(generatedAt) : '—'}</span>
+          <button className="inline-flex items-center gap-2" onClick={() => refetch()} disabled={isFetching}>
+            <ArrowClockwise className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
       </div>
 
-      {dummyComplianceData.map((subreddit) => {
-        const hasRemovals = subreddit.recentRemovals.length > 0;
-        
+      {subreddits.map((s) => {
+        const statusBadge = s.shadowbanned
+          ? { tone: 'border-red-200 bg-red-50 text-red-700', label: 'Shadowbanned', icon: <ShieldAlert className="h-4 w-4" /> }
+          : { tone: 'border-emerald-200 bg-emerald-50 text-emerald-700', label: 'Clear', icon: <ShieldCheck className="h-4 w-4" /> };
+
         return (
-          <Card key={subreddit.name} className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-3">
-                  <span className="text-lg font-semibold text-gray-900">
-                    r/{subreddit.name}
-                  </span>
-                  {getShadowbanBadge(subreddit.shadowbanned)}
-                  {getVerificationStatusBadge(subreddit.verificationStatus)}
+          <Card key={s.name} className="border border-gray-200 bg-white shadow-sm">
+            <CardHeader className="flex flex-col gap-3 border-b border-gray-100 bg-gray-50/80">
+              <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <span className="text-gray-900">r/{s.name}</span>
+                  <Badge variant="secondary" className={`flex items-center gap-1 border ${statusBadge.tone}`}>
+                    {statusBadge.icon}
+                    {statusBadge.label}
+                  </Badge>
                 </CardTitle>
-                <div className="text-sm text-gray-500">
-                  Next post: {formatNextPostTime(subreddit.nextPostTime)}
-                </div>
+                <Badge variant="outline" className="flex items-center gap-1 text-sm">
+                  <CheckCircle2 className="h-4 w-4" />
+                  {s.verificationStatus}
+                </Badge>
               </div>
+              <CardDescription className="text-sm text-gray-500">
+                Automated compliance health snapshot with the most recent moderation context.
+              </CardDescription>
             </CardHeader>
-            
-            <CardContent>
-              {!hasRemovals ? (
-                <div className="text-center py-8">
-                  <CheckCircle className="h-12 w-12 text-green-400 mx-auto mb-3" />
-                  <p className="text-gray-500 font-medium">No recent removals</p>
-                  <p className="text-sm text-gray-400 mt-1">
-                    This subreddit has a clean moderation record
-                  </p>
+
+            <CardContent className="space-y-6 pt-6">
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-inner">
+                  <div className="flex items-center gap-2 text-sm font-medium text-gray-500">
+                    <Clock3 className="h-4 w-4 text-purple-500" />
+                    Next Post Window
+                  </div>
+                  <p className="mt-2 text-lg font-semibold text-gray-900">{formatDateTime(s.nextPostTime)}</p>
+                  <p className="mt-1 text-xs text-gray-500">Local timezone adjusted automatically.</p>
                 </div>
-              ) : (
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4" />
-                    Recent Removals ({subreddit.recentRemovals.length})
-                  </h4>
+                <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-inner">
+                  <div className="mb-2 text-sm font-medium text-gray-500">Recent Removals</div>
                   <Table>
                     <TableHeader>
-                      <TableRow className="border-gray-200">
-                        <TableHead className="text-xs uppercase tracking-wide text-gray-500">ID</TableHead>
-                        <TableHead className="text-xs uppercase tracking-wide text-gray-500">Removed At</TableHead>
-                        <TableHead className="text-xs uppercase tracking-wide text-gray-500">Reason</TableHead>
-                        <TableHead className="text-xs uppercase tracking-wide text-gray-500">Action</TableHead>
+                      <TableRow>
+                        <TableHead>When</TableHead>
+                        <TableHead>Reason</TableHead>
+                        <TableHead>Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {subreddit.recentRemovals.map((removal) => (
-                        <TableRow key={removal.id} className="border-gray-100">
-                          <TableCell className="font-mono text-xs text-gray-600">{removal.id}</TableCell>
-                          <TableCell className="text-sm text-gray-700">{formatDateTime(removal.removedAt)}</TableCell>
-                          <TableCell className="text-sm text-gray-700">{removal.reason}</TableCell>
-                          <TableCell className="text-sm text-gray-500">
-                            {removal.actionTaken || '—'}
-                          </TableCell>
+                      {s.recentRemovals.map((r) => (
+                        <TableRow key={r.id}>
+                          <TableCell className="text-sm text-gray-700">{formatDateTime(r.removedAt)}</TableCell>
+                          <TableCell className="text-sm text-gray-700">{r.reason}</TableCell>
+                          <TableCell className="text-sm text-gray-500">{r.actionTaken || '—'}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
                 </div>
-              )}
+              </div>
             </CardContent>
           </Card>
         );
