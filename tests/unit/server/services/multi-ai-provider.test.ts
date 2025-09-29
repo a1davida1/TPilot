@@ -28,7 +28,7 @@ const anthropicConstructor = vi.hoisted(() => vi.fn(() => mockAnthropic));
 vi.mock('@google/genai', () => ({ GoogleGenAI: googleGenAIConstructor }));
 vi.mock('openai', () => ({ default: openAIConstructor }));
 vi.mock('@anthropic-ai/sdk', () => ({ default: anthropicConstructor }));
-vi.mock('../../../../server/lib/logger-utils.js', () => ({ safeLog: mockSafeLog }));
+vi.mock('../../../../server/lib/logger-utils.ts', () => ({ safeLog: mockSafeLog }));
 
 const envKeys = ['OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'GEMINI_API_KEY', 'GOOGLE_GENAI_API_KEY'] as const;
 type EnvKey = typeof envKeys[number];

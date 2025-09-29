@@ -3,7 +3,7 @@ import type {
   ExpenseCategory,
   Expense,
 } from '../../../shared/schema.js';
-import { summarizeExpenseTotals } from '../../../server/storage.js';
+import { summarizeExpenseTotals } from '../../../server/storage.ts';
 
 function makeCategory(overrides: Partial<ExpenseCategory> & Pick<ExpenseCategory, 'name' | 'description' | 'legalExplanation' | 'deductionPercentage' | 'examples' | 'icon' | 'color' | 'isActive' | 'sortOrder'>, id: number): ExpenseCategory {
   const now = new Date('2024-01-01T00:00:00.000Z');

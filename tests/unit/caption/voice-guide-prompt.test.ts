@@ -1,9 +1,9 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { buildVoiceGuideBlock } from '../../../../server/caption/stylePack';
-import { generateVariants } from '../../../../server/caption/geminiPipeline';
-import { generateVariantsTextOnly } from '../../../../server/caption/textOnlyPipeline';
-import { variantsRewrite } from '../../../../server/caption/rewritePipeline';
+import { buildVoiceGuideBlock } from '../../../server/caption/stylePack';
+import { generateVariants } from '../../../server/caption/geminiPipeline';
+import { generateVariantsTextOnly } from '../../../server/caption/textOnlyPipeline';
+import { variantsRewrite } from '../../../server/caption/rewritePipeline';
 
 const mockTextModel = vi.hoisted(() => ({
   generateContent: vi.fn(),

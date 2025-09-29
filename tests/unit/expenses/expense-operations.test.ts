@@ -6,12 +6,12 @@ import type {
   ExpenseCategory
 } from '../../../shared/schema.js';
 import type { IStorage } from '../../../server/storage';
-import { buildStorageMock } from '../../_helpers/buildStorageMock.js';
+import { buildStorageMock } from '../../_helpers/buildStorageMock.ts';
 
 // Mock the storage module
 const mockStorage = buildStorageMock();
 
-vi.mock('../../../server/storage.js', () => ({
+vi.mock('../../../server/storage.ts', () => ({
   storage: mockStorage
 }));
 
@@ -23,7 +23,7 @@ describe('Expense Operations Unit Tests', () => {
   beforeAll(async () => {
     vi.resetModules();
     // Import storage dynamically after mocks are set up
-    const storageModule = await import('../../../server/storage.js');
+    const storageModule = await import('../../../server/storage.ts');
     storage = storageModule.storage;
   });
 
