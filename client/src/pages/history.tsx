@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { History, Search, Filter, Calendar, Download, Share2, Trash2, Star, Copy, ArrowLeft } from 'lucide-react';
 import { Link } from 'wouter';
-import type { ContentGeneration } from '@shared/schema.js';
+import type { ContentGeneration } from '@shared/schema';
 import { ThottoPilotLogo } from '@/components/thottopilot-logo';
 
 export default function HistoryPage() {

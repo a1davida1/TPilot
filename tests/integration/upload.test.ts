@@ -5,7 +5,6 @@ import request from 'supertest';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs/promises';
-import sharp from 'sharp';
 import type { Logger } from 'winston';
 import {
   describe,
@@ -93,21 +92,10 @@ describe('ImageShield upload integration', () => {
 
   beforeAll(async () => {
     await fs.mkdir(fixturesRoot, { recursive: true });
-
-    const width = 320;
-    const height = 240;
-    await sharp({
-      create: {
-        width,
-        height,
-        channels: 3,
-        background: { r: 180, g: 60, b: 120 }
-      }
-    })
-      .png()
-      .toFile(sampleImagePath);
+    await fs.access(sampleImagePath);
 
     baseFileSize = (await fs.stat(sampleImagePath)).size;
+    expect(baseFileSize).toBeGreaterThan(0);
 
     vi.resetModules();
 
@@ -189,7 +177,6 @@ describe('ImageShield upload integration', () => {
     createTokenSpy.mockRestore();
     verifyTokenSpy.mockRestore();
     await fs.rm(uploadsDir, { recursive: true, force: true });
-    await fs.rm(fixturesRoot, { recursive: true, force: true });
   });
 
   test('applies ImageShield protection with watermark for free tier uploads', async () => {
