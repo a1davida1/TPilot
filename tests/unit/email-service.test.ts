@@ -41,7 +41,7 @@ describe('Email Service - SendGrid Integration', () => {
       
       // Re-import to trigger configuration
       vi.resetModules();
-      const { emailService } = await import('../../server/services/email-service.js');
+      const { emailService } = await import('../../server/services/email-service.ts');
       
       expect(emailService.isEmailServiceConfigured).toBe(true);
       expect(mockSetApiKey).toHaveBeenCalledWith('SG.test_key_123');
@@ -52,7 +52,7 @@ describe('Email Service - SendGrid Integration', () => {
       
       // Re-import to trigger configuration
       vi.resetModules();
-      const { emailService } = await import('../../server/services/email-service.js');
+      const { emailService } = await import('../../server/services/email-service.ts');
       
       expect(emailService.isEmailServiceConfigured).toBe(false);
       expect(mockSetApiKey).not.toHaveBeenCalled();
@@ -71,7 +71,7 @@ describe('Email Service - SendGrid Integration', () => {
       
       // Re-import after setting env vars
       vi.resetModules();
-      const { emailService } = await import('../../server/services/email-service.js');
+      const { emailService } = await import('../../server/services/email-service.ts');
       
       await emailService.sendVerificationEmail('user@test.com', 'testuser', 'token123');
       
@@ -91,7 +91,7 @@ describe('Email Service - SendGrid Integration', () => {
       mockSend.mockResolvedValue({ statusCode: 202 });
       
       vi.resetModules();
-      const { emailService } = await import('../../server/services/email-service.js');
+      const { emailService } = await import('../../server/services/email-service.ts');
       
       await emailService.sendPasswordResetEmail('user@test.com', 'testuser');
       
@@ -110,7 +110,7 @@ describe('Email Service - SendGrid Integration', () => {
       mockSend.mockResolvedValue({ statusCode: 202 });
       
       vi.resetModules();
-      const { emailService } = await import('../../server/services/email-service.js');
+      const { emailService } = await import('../../server/services/email-service.ts');
       
       await emailService.sendWelcomeEmail('user@test.com', 'testuser');
       
@@ -137,13 +137,13 @@ describe('Email Service - SendGrid Integration', () => {
       mockSend.mockRejectedValue(sendGridError);
       
       vi.resetModules();
-      const { emailService } = await import('../../server/services/email-service.js');
+      const { emailService } = await import('../../server/services/email-service.ts');
       
       await expect(
         emailService.sendVerificationEmail('user@test.com', 'testuser', 'token123')
       ).rejects.toThrow('SendGrid API rate limit exceeded');
       
-      const { safeLog } = await import('../../server/lib/logger-utils.js');
+      const { safeLog } = await import('../../server/lib/logger-utils.ts');
       expect(safeLog).toHaveBeenCalledWith(
         'error',
         'Verification email send failed',
@@ -155,7 +155,7 @@ describe('Email Service - SendGrid Integration', () => {
       delete process.env.SENDGRID_API_KEY;
       
       vi.resetModules();
-      const { emailService } = await import('../../server/services/email-service.js');
+      const { emailService } = await import('../../server/services/email-service.ts');
       
       // Should return without throwing
       await emailService.sendVerificationEmail('user@test.com', 'testuser', 'token123');
@@ -169,7 +169,7 @@ describe('Email Service - SendGrid Integration', () => {
       delete process.env.JWT_SECRET;
       
       vi.resetModules();
-      const { emailService } = await import('../../server/services/email-service.js');
+      const { emailService } = await import('../../server/services/email-service.ts');
       
       await expect(
         emailService.sendPasswordResetEmail('user@test.com', 'testuser')
@@ -181,14 +181,14 @@ describe('Email Service - SendGrid Integration', () => {
       mockSend.mockRejectedValue(sendGridError);
       
       vi.resetModules();
-      const { emailService } = await import('../../server/services/email-service.js');
+      const { emailService } = await import('../../server/services/email-service.ts');
       
       // Welcome email should not throw (non-critical)
       await expect(
         emailService.sendWelcomeEmail('user@test.com', 'testuser')
       ).resolves.toBeUndefined();
       
-      const { safeLog } = await import('../../server/lib/logger-utils.js');
+      const { safeLog } = await import('../../server/lib/logger-utils.ts');
       expect(safeLog).toHaveBeenCalledWith(
         'error',
         'Welcome email send failed',

@@ -5,7 +5,7 @@ import cookieParser from 'cookie-parser';
 import { setupAuth } from '../../../server/auth.ts';
 import bcrypt from 'bcrypt';
 import { db } from '../../../server/db';
-import { users } from '../../../shared/schema.js';
+import { users } from '../../../shared/schema.ts';
 import { eq } from 'drizzle-orm';
 
 const app = express();

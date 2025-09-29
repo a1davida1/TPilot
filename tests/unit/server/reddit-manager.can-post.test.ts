@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { SafetyManager } from '../../../server/lib/safety-systems.js';
-import { RedditManager } from '../../../server/lib/reddit.js';
+import { SafetyManager } from '../../../server/lib/safety-systems.ts';
+import { RedditManager } from '../../../server/lib/reddit.ts';
 
 // Mock SafetyManager
-vi.mock('../../../server/lib/safety-systems.js', () => ({
+vi.mock('../../../server/lib/safety-systems.ts', () => ({
   SafetyManager: {
     performSafetyCheck: vi.fn(),
     recordPost: vi.fn(),
@@ -12,7 +12,7 @@ vi.mock('../../../server/lib/safety-systems.js', () => ({
 }));
 
 // Mock database 
-vi.mock('../../../server/db.js', () => ({
+vi.mock('../../../server/db.ts', () => ({
   db: {
     select: vi.fn(() => ({
       from: vi.fn(() => ({
@@ -35,8 +35,8 @@ describe('RedditManager.canPostToSubreddit Safety Checks', () => {
     mockSafetyManager = SafetyManager as typeof SafetyManager;
     
     // Mock checkSubredditEligibility to always pass
-    vi.doMock('../../../server/lib/reddit.js', async () => {
-      const original = await vi.importActual('../../../server/lib/reddit.js') as Record<string, unknown>;
+    vi.doMock('../../../server/lib/reddit.ts', async () => {
+      const original = await vi.importActual('../../../server/lib/reddit.ts') as Record<string, unknown>;
       return {
         ...original,
         RedditManager: {

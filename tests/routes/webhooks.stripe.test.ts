@@ -3,8 +3,8 @@ import type { Express } from 'express';
 import type { Server } from 'http';
 import { createServer } from 'http';
 import { describe, it, beforeAll, beforeEach, afterEach, expect, vi } from 'vitest';
-import { subscriptions, invoices, users } from '../../shared/schema.js';
-import type { db as DbType } from '../../server/db.js';
+import { subscriptions, invoices, users } from '../../shared/schema.ts';
+import type { db as DbType } from '../../server/db.ts';
 
 interface InsertCall {
   table: unknown;
@@ -40,27 +40,27 @@ const conflictCalls: ConflictUpdateCall[] = [];
 const updateSetCalls: UpdateSetCall[] = [];
 const updateWhereCalls: UpdateWhereCall[] = [];
 
-vi.mock('../../server/routes.js', () => ({
+vi.mock('../../server/routes.ts', () => ({
   registerRoutes: vi.fn(async (app: Express) => createServer(app))
 }));
 
-vi.mock('../../server/auth.js', () => ({
+vi.mock('../../server/auth.ts', () => ({
   setupAuth: vi.fn()
 }));
 
-vi.mock('../../server/social-auth.js', () => ({
+vi.mock('../../server/social-auth.ts', () => ({
   setupSocialAuth: vi.fn()
 }));
 
-vi.mock('../../server/routes/billing.js', () => ({
+vi.mock('../../server/routes/billing.ts', () => ({
   mountBillingRoutes: vi.fn()
 }));
 
-vi.mock('../../server/bootstrap/queue.js', () => ({
+vi.mock('../../server/bootstrap/queue.ts', () => ({
   startQueue: vi.fn(async () => undefined)
 }));
 
-vi.mock('../../server/db.js', () => {
+vi.mock('../../server/db.ts', () => {
   const dbMock = {
     insert: (table: unknown) => ({
       values: (valuesArg: unknown) => {
@@ -92,9 +92,9 @@ vi.mock('../../server/db.js', () => {
   };
 });
 
-let createApp: typeof import('../../server/index.js')['createApp'];
-let apiPrefix: typeof import('../../server/app.js')['API_PREFIX'];
-let stripeInstance: typeof import('../../server/lib/billing/stripe.js')['stripe'];
+let createApp: typeof import('../../server/index.ts')['createApp'];
+let apiPrefix: typeof import('../../server/app.ts')['API_PREFIX'];
+let stripeInstance: typeof import('../../server/lib/billing/stripe.ts')['stripe'];
 
 async function closeServer(server: Server | undefined): Promise<void> {
   if (!server || !server.listening) {
@@ -119,8 +119,8 @@ beforeAll(async () => {
   process.env.JWT_SECRET = process.env.JWT_SECRET ?? 'webhook-test-jwt';
   process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? 'webhook-test-session';
 
-  ({ createApp, API_PREFIX: apiPrefix } = await import('../../server/index.js'));
-  ({ stripe: stripeInstance } = await import('../../server/lib/billing/stripe.js'));
+  ({ createApp, API_PREFIX: apiPrefix } = await import('../../server/index.ts'));
+  ({ stripe: stripeInstance } = await import('../../server/lib/billing/stripe.ts'));
 });
 
 beforeEach(() => {

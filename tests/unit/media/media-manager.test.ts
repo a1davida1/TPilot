@@ -18,11 +18,11 @@ const mockConfig = vi.hoisted(() => ({
   signedUrlTTL: 900,
 }));
 
-vi.mock('../../../server/db.js', () => ({
+vi.mock('../../../server/db.ts', () => ({
   db: mockDb,
 }));
 
-vi.mock('../../../server/lib/config.js', () => ({
+vi.mock('../../../server/lib/config.ts', () => ({
   env: {
     AWS_ACCESS_KEY_ID: '',
     AWS_SECRET_ACCESS_KEY: '',
@@ -41,7 +41,7 @@ describe('MediaManager.getUserStorageUsage', () => {
   });
 
   it('returns configured free tier quota for free users', async () => {
-    const { MediaManager } = await import('../../../server/lib/media.js');
+    const { MediaManager } = await import('../../../server/lib/media.ts');
 
     mockDb.select
       .mockImplementationOnce(() => ({
@@ -64,7 +64,7 @@ describe('MediaManager.getUserStorageUsage', () => {
   });
 
   it('returns configured pro tier quota for pro users', async () => {
-    const { MediaManager } = await import('../../../server/lib/media.js');
+    const { MediaManager } = await import('../../../server/lib/media.ts');
 
     mockDb.select
       .mockImplementationOnce(() => ({

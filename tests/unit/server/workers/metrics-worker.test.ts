@@ -1,10 +1,10 @@
 
 import { describe, it, expect, vi, afterEach } from 'vitest';
 
-import { MetricsWorker } from '../../../../server/lib/workers/metrics-worker.js';
-import type { RedditManager } from '../../../../server/lib/reddit.js';
-import { db } from '../../../../server/db.js';
-import { postJobs } from '../../../../shared/schema.js';
+import { MetricsWorker } from '../../../../server/lib/workers/metrics-worker.ts';
+import type { RedditManager } from '../../../../server/lib/reddit.ts';
+import { db } from '../../../../server/db.ts';
+import { postJobs } from '../../../../shared/schema.ts';
 
 type RedditSubmission = Awaited<
   ReturnType<RedditManager['prototype']['getSubmission']>

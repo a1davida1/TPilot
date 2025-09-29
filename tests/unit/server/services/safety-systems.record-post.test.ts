@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { postRateLimits } from '../../../../shared/schema.js';
+import { postRateLimits } from '../../../../shared/schema.ts';
 
 type RowCountResult = { rowCount?: number };
 
@@ -69,7 +69,7 @@ describe('SafetyManager.recordPost', () => {
       .mockReturnValue({ onConflictDoUpdate });
     insertSpy.mockReturnValue({ values: insertValues });
 
-    const { SafetyManager } = await import('../../../../server/lib/safety-systems.js');
+    const { SafetyManager } = await import('../../../../server/lib/safety-systems.ts');
 
     await SafetyManager.recordPost('42', 'unit_testing');
 
@@ -115,7 +115,7 @@ describe('SafetyManager.recordPost', () => {
     const insertValues = vi.fn<InsertValues>();
     insertSpy.mockReturnValue({ values: insertValues });
 
-    const { SafetyManager } = await import('../../../../server/lib/safety-systems.js');
+    const { SafetyManager } = await import('../../../../server/lib/safety-systems.ts');
 
     await SafetyManager.recordPost('7', 'existing_subreddit');
 

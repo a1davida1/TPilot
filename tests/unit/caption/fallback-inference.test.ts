@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { Mock } from 'vitest';
 
-vi.mock('../../../server/lib/gemini.js', () => ({
+vi.mock('../../../server/lib/gemini.ts', () => ({
   textModel: {
     generateContent: vi.fn(),
   },
@@ -16,7 +16,7 @@ describe('inferFallbackFromFacts helper', () => {
   });
 
   it('infers beach-centric fallbacks from image facts', async () => {
-    const { inferFallbackFromFacts } = await import('../../../server/caption/inferFallbackFromFacts.js');
+    const { inferFallbackFromFacts } = await import('../../../server/caption/inferFallbackFromFacts.ts');
     const fallback = inferFallbackFromFacts({
       platform: 'instagram',
       facts: {
@@ -32,7 +32,7 @@ describe('inferFallbackFromFacts helper', () => {
   });
 
   it('adapts fallback data for text-only launch themes', async () => {
-    const { inferFallbackFromFacts } = await import('../../../server/caption/inferFallbackFromFacts.js');
+    const { inferFallbackFromFacts } = await import('../../../server/caption/inferFallbackFromFacts.ts');
     const fallback = inferFallbackFromFacts({
       platform: 'x',
       theme: 'Fintech product launch',
@@ -48,7 +48,7 @@ describe('inferFallbackFromFacts helper', () => {
 describe('pipeline fallbacks', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
-    const { textModel, visionModel } = await import('../../../server/lib/gemini.js');
+    const { textModel, visionModel } = await import('../../../server/lib/gemini.ts');
     (textModel.generateContent as unknown as Mock)?.mockReset?.();
     (visionModel.generateContent as unknown as Mock)?.mockReset?.();
   });
@@ -107,14 +107,14 @@ describe('pipeline fallbacks', () => {
       },
     ];
 
-    const { textModel } = await import('../../../server/lib/gemini.js');
+    const { textModel } = await import('../../../server/lib/gemini.ts');
     (textModel.generateContent as unknown as Mock).mockResolvedValueOnce({
       response: {
         text: () => JSON.stringify(variantPayload),
       },
     });
 
-    const { generateVariants } = await import('../../../server/caption/geminiPipeline.js');
+    const { generateVariants } = await import('../../../server/caption/geminiPipeline.ts');
     const variants = await generateVariants({
       platform: 'instagram',
       voice: 'bold',
@@ -185,14 +185,14 @@ describe('pipeline fallbacks', () => {
       },
     ];
 
-    const { textModel } = await import('../../../server/lib/gemini.js');
+    const { textModel } = await import('../../../server/lib/gemini.ts');
     (textModel.generateContent as unknown as Mock).mockResolvedValueOnce({
       response: {
         text: () => JSON.stringify(variantPayload),
       },
     });
 
-    const { generateVariantsTextOnly } = await import('../../../server/caption/textOnlyPipeline.js');
+    const { generateVariantsTextOnly } = await import('../../../server/caption/textOnlyPipeline.ts');
     const variants = await generateVariantsTextOnly({
       platform: 'x',
       voice: 'confident',

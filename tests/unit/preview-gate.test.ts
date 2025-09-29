@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { getPreviewStats, checkPreviewGate } from '../../server/lib/preview-gate';
 import { db } from '../../server/db';
-import { postPreviews, contentGenerations, users } from '@shared/schema.js';
+import { postPreviews, contentGenerations, users } from '@shared/schema.ts';
 
 // Helper function for tests
 async function canQueuePosts(userId: number): Promise<boolean> {

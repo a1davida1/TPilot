@@ -3,11 +3,11 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 const mockStartQueue = vi.fn();
 
-vi.mock('../../../server/bootstrap/queue.js', () => ({
+vi.mock('../../../server/bootstrap/queue.ts', () => ({
   startQueue: mockStartQueue,
 }));
 
-vi.mock('../../../server/db.js', () => ({
+vi.mock('../../../server/db.ts', () => ({
   db: {},
   pool: {},
   closeDatabaseConnections: vi.fn(),
@@ -20,9 +20,9 @@ const mockLogger = {
   debug: vi.fn(),
 };
 
-vi.mock('../../../server/bootstrap/logger.js', async () => {
-  const actual = await vi.importActual<typeof import('../../../server/bootstrap/logger.js')>(
-    '../../../server/bootstrap/logger.js'
+vi.mock('../../../server/bootstrap/logger.ts', async () => {
+  const actual = await vi.importActual<typeof import('../../../server/bootstrap/logger.ts')>(
+    '../../../server/bootstrap/logger.ts'
   );
 
   return {
@@ -59,7 +59,7 @@ describe('createExpressApp bootstrap fallback', () => {
     delete process.env.SESSION_SECRET;
     process.env.NODE_ENV = 'development';
 
-    const { createExpressApp } = await import('../../../server/index.js');
+    const { createExpressApp } = await import('../../../server/index.ts');
 
     await expect(
       createExpressApp({ startQueue: undefined, configureStaticAssets: false, enableVite: false })

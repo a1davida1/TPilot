@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { initializeQueue, closeQueue } from '../../../server/lib/queue-factory.js';
-import { initializeWorkers } from '../../../server/lib/workers/index.js';
-import { logger } from '../../../server/lib/logger.js';
+import { initializeQueue, closeQueue } from '../../../server/lib/queue-factory.ts';
+import { initializeWorkers } from '../../../server/lib/workers/index.ts';
+import { logger } from '../../../server/lib/logger.ts';
 
 // Test interfaces
 interface LogCall {

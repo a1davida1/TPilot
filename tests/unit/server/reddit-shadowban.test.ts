@@ -1,7 +1,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { RedditManager } from '../../../server/lib/reddit.js';
-import type { ShadowbanCheckApiResponse } from '../../../shared/schema.js';
+import { RedditManager } from '../../../server/lib/reddit.ts';
+import type { ShadowbanCheckApiResponse } from '../../../shared/schema.ts';
 import type snoowrap from 'snoowrap';
 
 // Test interfaces
@@ -59,8 +59,8 @@ const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
 // Mock RedditManager.forUser to return our test instance
-vi.mock('../../../server/lib/reddit.js', async () => {
-  const actual = await vi.importActual<typeof import('../../../server/lib/reddit.js')>('../../../server/lib/reddit.js');
+vi.mock('../../../server/lib/reddit.ts', async () => {
+  const actual = await vi.importActual<typeof import('../../../server/lib/reddit.ts')>('../../../server/lib/reddit.ts');
   class TestableRedditManager extends actual.RedditManager {
     static override forUser = vi.fn();
   }

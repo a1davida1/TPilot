@@ -12,7 +12,7 @@ describe('Reddit Safety Validation and Rule Checks', () => {
   describe('Safety Integration Tests', () => {
     it('should validate SafetyManager has correct API methods', async () => {
       // Test that SafetyManager exports the correct methods for integration
-      const { SafetyManager } = await import('../../../server/lib/safety-systems.js');
+      const { SafetyManager } = await import('../../../server/lib/safety-systems.ts');
       
       expect(SafetyManager.performSafetyCheck).toBeDefined();
       expect(typeof SafetyManager.performSafetyCheck).toBe('function');
@@ -24,7 +24,7 @@ describe('Reddit Safety Validation and Rule Checks', () => {
 
     it('should validate RedditManager has correct method signatures', async () => {
       // Test that RedditManager exports the correct static methods
-      const { RedditManager } = await import('../../../server/lib/reddit.js');
+      const { RedditManager } = await import('../../../server/lib/reddit.ts');
       
       expect(RedditManager.canPostToSubreddit).toBeDefined();
       expect(typeof RedditManager.canPostToSubreddit).toBe('function');
@@ -34,10 +34,10 @@ describe('Reddit Safety Validation and Rule Checks', () => {
 
     it('should handle SafetyCheckResult structure correctly', async () => {
       // Test that SafetyManager.performSafetyCheck returns expected structure
-      const { SafetyManager } = await import('../../../server/lib/safety-systems.js');
+      const { SafetyManager } = await import('../../../server/lib/safety-systems.ts');
       
       // Mock database to avoid actual DB calls
-      vi.doMock('../../../server/db.js', () => ({
+      vi.doMock('../../../server/db.ts', () => ({
         db: {
           select: vi.fn().mockReturnValue({
             from: vi.fn().mockReturnValue({
@@ -64,8 +64,8 @@ describe('Reddit Safety Validation and Rule Checks', () => {
 
     it('should validate integration patterns work correctly', async () => {
       // Test that both SafetyManager and RedditManager methods can be called together
-      const { SafetyManager } = await import('../../../server/lib/safety-systems.js');
-      const { RedditManager } = await import('../../../server/lib/reddit.js');
+      const { SafetyManager } = await import('../../../server/lib/safety-systems.ts');
+      const { RedditManager } = await import('../../../server/lib/reddit.ts');
       
       // Both should be defined and have expected methods
       expect(SafetyManager.recordPost).toBeDefined();
@@ -90,7 +90,7 @@ describe('Reddit Safety Validation and Rule Checks', () => {
 
     it('should validate config utilities are accessible', async () => {
       // Test that required utility functions are available
-      const configModule = await import('../../../server/lib/config.js');
+      const configModule = await import('../../../server/lib/config.ts');
       
       // Check that the config module exports what we expect
       expect(configModule).toBeDefined();

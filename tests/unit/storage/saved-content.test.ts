@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import type { InsertSavedContent, SavedContent } from '../../../shared/schema.js';
+import type { InsertSavedContent, SavedContent } from '../../../shared/schema.ts';
 
 const insertMock = vi.fn();
 const selectMock = vi.fn();
 const deleteMock = vi.fn();
 const safeLogMock = vi.fn();
 
-vi.mock('../../../server/db.js', () => ({
+vi.mock('../../../server/db.ts', () => ({
   db: {
     insert: (...args: unknown[]) => insertMock(...args),
     select: (...args: unknown[]) => selectMock(...args),
@@ -14,11 +14,11 @@ vi.mock('../../../server/db.js', () => ({
   },
 }));
 
-vi.mock('../../../server/lib/logger-utils.js', () => ({
+vi.mock('../../../server/lib/logger-utils.ts', () => ({
   safeLog: safeLogMock,
 }));
 
-let DatabaseStorageClass: typeof import('../../../server/storage.js').DatabaseStorage;
+let DatabaseStorageClass: typeof import('../../../server/storage.ts').DatabaseStorage;
 
 const basePayload: InsertSavedContent = {
   userId: 1,
@@ -32,7 +32,7 @@ beforeEach(async () => {
   deleteMock.mockReset();
   safeLogMock.mockReset();
   vi.resetModules();
-  ({ DatabaseStorage: DatabaseStorageClass } = await import('../../../server/storage.js'));
+  ({ DatabaseStorage: DatabaseStorageClass } = await import('../../../server/storage.ts'));
 });
 
 describe('DatabaseStorage saved content operations', () => {

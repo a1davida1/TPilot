@@ -2,11 +2,11 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { normalizeRules, inferSellingPolicy, getCommunityInsights } from '../../../server/reddit-communities.js';
-import { db } from '../../../server/db.js';
-import { redditCommunities, subredditRules } from '../../../shared/schema.js';
-import type { RedditCommunityRuleSet } from '../../../shared/schema.js';
-import { syncSubredditRules } from '../../../server/scripts/sync-subreddit-rules.js';
+import { normalizeRules, inferSellingPolicy, getCommunityInsights } from '../../../server/reddit-communities.ts';
+import { db } from '../../../server/db.ts';
+import { redditCommunities, subredditRules } from '../../../shared/schema.ts';
+import type { RedditCommunityRuleSet } from '../../../shared/schema.ts';
+import { syncSubredditRules } from '../../../server/scripts/sync-subreddit-rules.ts';
 
 // Test interfaces
 interface TestCommunity {
@@ -203,7 +203,7 @@ describe('Reddit Communities Rules Unit Tests', () => {
   describe('Schema validation', () => {
     it('should validate RedditCommunityRuleSet schema correctly', async () => {
       // Import schema components
-      const { redditCommunityRuleSetSchema, createDefaultRules } = await import('../../../shared/schema.js');
+      const { redditCommunityRuleSetSchema, createDefaultRules } = await import('../../../shared/schema.ts');
       
       // Test valid rule set
       const validRules = {
@@ -225,7 +225,7 @@ describe('Reddit Communities Rules Unit Tests', () => {
     });
 
     it('should create proper default rules', async () => {
-      const { createDefaultRules } = await import('../../../shared/schema.js');
+      const { createDefaultRules } = await import('../../../shared/schema.ts');
       
       const defaults = createDefaultRules();
       
@@ -245,7 +245,7 @@ describe('Reddit Communities Rules Unit Tests', () => {
     });
 
     it('should validate sellingAllowed enum values', async () => {
-      const { redditCommunityRuleSetSchema } = await import('../../../shared/schema.js');
+      const { redditCommunityRuleSetSchema } = await import('../../../shared/schema.ts');
       
       const validValues = ['allowed', 'limited', 'not_allowed', 'unknown'];
       

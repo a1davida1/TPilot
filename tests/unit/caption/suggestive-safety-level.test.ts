@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { CaptionItem } from '../../../server/caption/schema.js';
+import { CaptionItem } from '../../../server/caption/schema.ts';
 
 describe('Caption Generation Safety Levels', () => {
   describe('Suggestive Safety Level Acceptance', () => {

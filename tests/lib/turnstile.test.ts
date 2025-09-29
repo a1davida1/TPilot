@@ -32,7 +32,7 @@ describe('Turnstile verification hardening', () => {
     process.env.NODE_ENV = 'development';
     delete process.env.TURNSTILE_SECRET_KEY;
 
-    const { verifyTurnstileToken } = await import('../../server/lib/turnstile.js');
+    const { verifyTurnstileToken } = await import('../../server/lib/turnstile.ts');
     const result = await verifyTurnstileToken('test-token');
 
     expect(result).toBe(true);
@@ -44,7 +44,7 @@ describe('Turnstile verification hardening', () => {
   it('rejects verification when the secret is missing outside development', async () => {
     process.env.NODE_ENV = 'test';
 
-    const { verifyTurnstileToken } = await import('../../server/lib/turnstile.js');
+    const { verifyTurnstileToken } = await import('../../server/lib/turnstile.ts');
 
     process.env.NODE_ENV = 'production';
     delete process.env.TURNSTILE_SECRET_KEY;
@@ -59,7 +59,7 @@ describe('Turnstile verification hardening', () => {
 
   it('fails environment validation for missing Turnstile secrets in production', async () => {
     process.env.NODE_ENV = 'test';
-    const { envSchema } = await import('../../server/lib/config.js');
+    const { envSchema } = await import('../../server/lib/config.ts');
 
     process.env.NODE_ENV = 'production';
     delete process.env.TURNSTILE_SECRET_KEY;

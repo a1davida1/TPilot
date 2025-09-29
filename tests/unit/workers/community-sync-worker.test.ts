@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { CommunitySyncWorker } from '../../../server/lib/workers/community-sync-worker.js';
-import { logger } from '../../../server/lib/logger.js';
+import { CommunitySyncWorker } from '../../../server/lib/workers/community-sync-worker.ts';
+import { logger } from '../../../server/lib/logger.ts';
 
 describe('CommunitySyncWorker - missing Reddit credentials', () => {
   const envKeys: Array<keyof NodeJS.ProcessEnv> = [

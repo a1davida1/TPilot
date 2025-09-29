@@ -30,8 +30,8 @@ const expenseCategoriesTableMock = {
   updatedAt: { name: 'updatedAt' }
 };
 
-vi.mock('../../../shared/schema.js', async () => {
-  const actual = await vi.importActual<typeof import('../../../shared/schema.js')>('../../../shared/schema.js');
+vi.mock('../../../shared/schema.ts', async () => {
+  const actual = await vi.importActual<typeof import('../../../shared/schema.ts')>('../../../shared/schema.ts');
   return {
     ...actual,
     expenseCategories: expenseCategoriesTableMock

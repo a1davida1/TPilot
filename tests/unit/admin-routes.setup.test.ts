@@ -36,7 +36,7 @@ describe('setupAdminRoutes environment configuration', () => {
     delete process.env.JWT_SECRET;
     process.env.NODE_ENV = 'test';
 
-    const { setupAdminRoutes } = await import('../../server/admin-routes.js');
+    const { setupAdminRoutes } = await import('../../server/admin-routes.ts');
 
     const app = express();
     app.use(express.json());
@@ -52,7 +52,7 @@ describe('setupAdminRoutes environment configuration', () => {
     process.env.NODE_ENV = 'production';
     process.env.SENDGRID_API_KEY = 'SG.test-key';
 
-    const { setupAdminRoutes } = await import('../../server/admin-routes.js');
+    const { setupAdminRoutes } = await import('../../server/admin-routes.ts');
 
     const app = express();
     app.use(express.json());

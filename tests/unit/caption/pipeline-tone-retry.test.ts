@@ -167,7 +167,7 @@ describe('Gemini pipelines keep persona tone on retry', () => {
       response: { text: () => JSON.stringify({ objects: ['subject'], setting: 'studio', mood: 'focused' }) }
     });
 
-    const geminiModule = await import('../../../server/caption/geminiPipeline.js');
+    const geminiModule = await import('../../../server/caption/geminiPipeline.ts');
 
     const failing = createVariantSet(LONG_FAILING_CAPTION, ['#one', '#two', '#three', '#four']);
     const passing = createVariantSet('Second attempt caption obeys X rules', ['#one', '#two']);
@@ -200,7 +200,7 @@ describe('Gemini pipelines keep persona tone on retry', () => {
 
     vi.doMock('../../../server/lib/gemini.js', () => ({ textModel, visionModel }));
 
-    const rewriteModule = await import('../../../server/caption/rewritePipeline.js');
+    const rewriteModule = await import('../../../server/caption/rewritePipeline.ts');
 
     const failing = createVariantSet(LONG_FAILING_CAPTION, ['#one', '#two', '#three', '#four']);
     const passing = createVariantSet('Rewrite attempt passes platform rules', ['#one', '#two']);
@@ -230,7 +230,7 @@ describe('Gemini pipelines keep persona tone on retry', () => {
 
     vi.doMock('../../../server/lib/gemini.js', () => ({ textModel }));
 
-    const textOnlyModule = await import('../../../server/caption/textOnlyPipeline.js');
+    const textOnlyModule = await import('../../../server/caption/textOnlyPipeline.ts');
 
     const failing = createVariantSet(LONG_FAILING_CAPTION, ['#one', '#two', '#three', '#four']);
     const passing = createVariantSet('Text-only attempt passes platform rules', ['#one', '#two']);

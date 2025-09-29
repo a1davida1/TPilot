@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { nsfwCaptionFallback } from '../../../server/caption/nsfwFallback.js';
+import { nsfwCaptionFallback } from '../../../server/caption/nsfwFallback.ts';
 
 describe('nsfwCaptionFallback', () => {
   beforeEach(() => {

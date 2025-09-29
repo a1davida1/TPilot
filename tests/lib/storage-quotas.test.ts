@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { env } from '../../server/lib/config.js';
+import { env } from '../../server/lib/config.ts';
 
 // Mock config values
-vi.mock('../../server/lib/config.js', () => ({
+vi.mock('../../server/lib/config.ts', () => ({
   env: {
     PLAN_STORAGE_BYTES_FREE: 2 * 1024 * 1024 * 1024, // 2GB
     PLAN_STORAGE_BYTES_STARTER: 10 * 1024 * 1024 * 1024, // 10GB

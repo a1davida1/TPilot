@@ -51,7 +51,7 @@ interface CaptionResult {
 
 const asMock = <T>(fn: T) => fn as unknown as Mock;
 
-vi.mock('../../server/storage.js', () => ({
+vi.mock('../../server/storage.ts', () => ({
   storage: {
     getUserById: vi.fn(),
     createContentGeneration: vi.fn(),
@@ -62,13 +62,13 @@ vi.mock('../../server/storage.js', () => ({
 describe('Caption Generation', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
-    const { textModel, visionModel } = await import('../../server/lib/gemini.js');
+    const { textModel, visionModel } = await import('../../server/lib/gemini.ts');
     (textModel.generateContent as Mock | undefined)?.mockReset?.();
     (visionModel.generateContent as Mock | undefined)?.mockReset?.();
-    const { isGeminiAvailable } = await import('../../server/lib/gemini.js');
+    const { isGeminiAvailable } = await import('../../server/lib/gemini.ts');
     asMock(isGeminiAvailable).mockReset?.();
     asMock(isGeminiAvailable).mockReturnValue(true);
-    const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.js');
+    const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.ts');
     const mockOpenAI = vi.mocked(openAICaptionFallback);
     mockOpenAI.mockReset();
     mockOpenAI.mockResolvedValue({
@@ -221,7 +221,7 @@ describe('Caption Generation', () => {
         },
       };
 
-      const { textModel, visionModel } = await import('../../server/lib/gemini.js');
+      const { textModel, visionModel } = await import('../../server/lib/gemini.ts');
       const visionGenerateMock = asMock(visionModel.generateContent);
       visionGenerateMock.mockResolvedValueOnce(mockFactsResponse);
       const textGenerateMock = asMock(textModel.generateContent);
@@ -250,7 +250,7 @@ describe('Caption Generation', () => {
         voice: mockVoice,
       });
 
-      const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.js');
+      const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.ts');
 
       expect(openAICaptionFallback).not.toHaveBeenCalled();
       expect(result.final).toMatchObject({
@@ -366,7 +366,7 @@ describe('Caption Generation', () => {
         },
       };
 
-      const { textModel, visionModel } = await import('../../server/lib/gemini.js');
+      const { textModel, visionModel } = await import('../../server/lib/gemini.ts');
       const visionGenerateMock = asMock(visionModel.generateContent);
       visionGenerateMock.mockResolvedValueOnce(mockFactsResponse);
       const textGenerateMock = asMock(textModel.generateContent);
@@ -378,7 +378,7 @@ describe('Caption Generation', () => {
         voice: mockVoice,
       });
 
-      const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.js');
+      const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.ts');
 
       // When Gemini returns variants with missing or empty hashtags, 
       // the pipeline should fall back to OpenAI which provides safe defaults
@@ -430,7 +430,7 @@ describe('Caption Generation', () => {
       const platform = 'instagram';
       const voice = 'flirty_playful';
 
-      const { isGeminiAvailable } = await import('../../server/lib/gemini.js');
+      const { isGeminiAvailable } = await import('../../server/lib/gemini.ts');
       asMock(isGeminiAvailable).mockReturnValueOnce(false);
 
       const result = await pipeline({
@@ -439,7 +439,7 @@ describe('Caption Generation', () => {
         voice,
       });
 
-      const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.js');
+      const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.ts');
       expect(openAICaptionFallback).toHaveBeenCalledWith({
         imageUrl: mockImageUrl,
         platform,
@@ -520,12 +520,12 @@ describe('Caption Generation', () => {
         },
       };
 
-      const { textModel } = await import('../../server/lib/gemini.js');
+      const { textModel } = await import('../../server/lib/gemini.ts');
       const textGenerateMock = asMock(textModel.generateContent);
       textGenerateMock.mockResolvedValue(mockResponse);
 
       // This would normally be called as part of the pipeline
-      const { generateVariants } = await import('../../server/caption/geminiPipeline.js');
+      const { generateVariants } = await import('../../server/caption/geminiPipeline.ts');
       const result = await generateVariants({
         platform: 'instagram',
         voice: 'flirty_playful',
@@ -630,7 +630,7 @@ describe('Caption Generation', () => {
         },
       };
 
-      const { textModel, visionModel } = await import('../../server/lib/gemini.js');
+      const { textModel, visionModel } = await import('../../server/lib/gemini.ts');
       (visionModel.generateContent as Mock).mockResolvedValueOnce(mockFactsResponse);
       (textModel.generateContent as Mock)
         .mockResolvedValueOnce(firstVariantsResponse)
@@ -735,13 +735,13 @@ describe('Caption Generation', () => {
         },
       };
 
-      const { textModel } = await import('../../server/lib/gemini.js');
+      const { textModel } = await import('../../server/lib/gemini.ts');
       const textGenerateMock = asMock(textModel.generateContent);
       textGenerateMock
         .mockResolvedValueOnce(mockVariantsResponse)
         .mockResolvedValueOnce(mockRankResponse);
 
-      const { generateVariants } = await import('../../server/caption/geminiPipeline.js');
+      const { generateVariants } = await import('../../server/caption/geminiPipeline.ts');
       const result = await generateVariants({
         platform: 'instagram',
         voice: 'flirty_playful',
@@ -817,7 +817,7 @@ describe('Caption Generation', () => {
         },
       ];
 
-      const { textModel } = await import('../../server/lib/gemini.js');
+      const { textModel } = await import('../../server/lib/gemini.ts');
       const textGenerateMock = asMock(textModel.generateContent);
       textGenerateMock
         .mockResolvedValueOnce({
@@ -827,7 +827,7 @@ describe('Caption Generation', () => {
           response: { text: () => JSON.stringify(uniqueBatch) },
         });
 
-      const { generateVariants } = await import('../../server/caption/geminiPipeline.js');
+      const { generateVariants } = await import('../../server/caption/geminiPipeline.ts');
       const result = await generateVariants({
         platform: 'instagram',
         voice: 'flirty_playful',
@@ -894,7 +894,7 @@ describe('Caption Generation', () => {
         },
       ];
 
-      const { textModel } = await import('../../server/lib/gemini.js');
+      const { textModel } = await import('../../server/lib/gemini.ts');
       const textGenerateMock = asMock(textModel.generateContent);
       textGenerateMock.mockResolvedValue({
         response: {
@@ -902,7 +902,7 @@ describe('Caption Generation', () => {
         },
       });
 
-      const { generateVariants } = await import('../../server/caption/geminiPipeline.js');
+      const { generateVariants } = await import('../../server/caption/geminiPipeline.ts');
       const hint = 'Keep it "fresh"\nline two';
       await generateVariants({
         platform: 'instagram',
@@ -913,7 +913,7 @@ describe('Caption Generation', () => {
 
       expect(textGenerateMock).toHaveBeenCalledTimes(1);
       const prompt = textGenerateMock.mock.calls[0][0][0].text as string;
-      const { serializePromptField } = await import('../../server/caption/promptUtils.js');
+      const { serializePromptField } = await import('../../server/caption/promptUtils.ts');
       const sanitizedHint = serializePromptField(hint, { block: true });
       expect(prompt).toContain(`HINT:${sanitizedHint}`);
       expect(prompt).not.toContain(`HINT:${hint}`);
@@ -987,13 +987,13 @@ describe('Caption Generation', () => {
         },
       ];
 
-      const { textModel } = await import('../../server/lib/gemini.js');
+      const { textModel } = await import('../../server/lib/gemini.ts');
       const textGenerateMock = asMock(textModel.generateContent);
       textGenerateMock
         .mockResolvedValueOnce({ response: { text: () => JSON.stringify(duplicateBatch) } })
         .mockResolvedValueOnce({ response: { text: () => JSON.stringify(uniqueBatch) } });
 
-      const { generateVariants } = await import('../../server/caption/geminiPipeline.js');
+      const { generateVariants } = await import('../../server/caption/geminiPipeline.ts');
       const baseHint = 'Line1\nLine2 "quoted"';
       await generateVariants({
         platform: 'instagram',
@@ -1006,7 +1006,7 @@ describe('Caption Generation', () => {
       const firstPrompt = textGenerateMock.mock.calls[0][0][0].text as string;
       const secondPrompt = textGenerateMock.mock.calls[1][0][0].text as string;
 
-      const { serializePromptField } = await import('../../server/caption/promptUtils.js');
+      const { serializePromptField } = await import('../../server/caption/promptUtils.ts');
       const sanitizedBaseHint = serializePromptField(baseHint, { block: true });
       expect(firstPrompt).toContain(`\nHINT:${sanitizedBaseHint}`);
       expect(firstPrompt).not.toContain('HINT:Line1\nLine2 "quoted"');
@@ -1093,7 +1093,7 @@ describe('Caption Generation', () => {
         },
       };
 
-      const { textModel } = await import('../../server/lib/gemini.js');
+      const { textModel } = await import('../../server/lib/gemini.ts');
       const textGenerateMock = asMock(textModel.generateContent);
       textGenerateMock
         .mockResolvedValueOnce(mockVariantsResponse)
@@ -1184,13 +1184,13 @@ describe('Caption Generation', () => {
         },
       };
 
-      const { textModel } = await import('../../server/lib/gemini.js');
+      const { textModel } = await import('../../server/lib/gemini.ts');
       const textGenerateMock = asMock(textModel.generateContent);
       textGenerateMock
         .mockResolvedValueOnce(mockVariantsResponse)
         .mockResolvedValueOnce(mockRankResponse);
 
-      const { generateVariantsTextOnly } = await import('../../server/caption/textOnlyPipeline.js');
+      const { generateVariantsTextOnly } = await import('../../server/caption/textOnlyPipeline.ts');
       const result = await generateVariantsTextOnly({
         platform: 'instagram',
         voice: 'inspiring',
@@ -1266,7 +1266,7 @@ describe('Caption Generation', () => {
         },
       ];
 
-      const { textModel } = await import('../../server/lib/gemini.js');
+      const { textModel } = await import('../../server/lib/gemini.ts');
       const textGenerateMock = asMock(textModel.generateContent);
       textGenerateMock
         .mockResolvedValueOnce({
@@ -1276,7 +1276,7 @@ describe('Caption Generation', () => {
           response: { text: () => JSON.stringify(uniqueBatch) },
         });
 
-      const { generateVariantsTextOnly } = await import('../../server/caption/textOnlyPipeline.js');
+      const { generateVariantsTextOnly } = await import('../../server/caption/textOnlyPipeline.ts');
       const result = await generateVariantsTextOnly({
         platform: 'instagram',
         voice: 'inspiring',
@@ -1311,7 +1311,7 @@ describe('Caption Generation', () => {
         },
       };
 
-      const { textModel } = await import('../../server/lib/gemini.js');
+      const { textModel } = await import('../../server/lib/gemini.ts');
       const genSpy = vi.spyOn(textModel, 'generateContent').mockResolvedValue(mockResponse as MockResponse);
 
       const result = await pipelineRewrite({
@@ -1329,7 +1329,7 @@ describe('Caption Generation', () => {
 
     it('returns schema compliant fallback when Gemini rewrite fails', async () => {
       const existingCaption = 'Baseline caption';
-      const { textModel } = await import('../../server/lib/gemini.js');
+      const { textModel } = await import('../../server/lib/gemini.ts');
       const generateSpy = vi.spyOn(textModel, 'generateContent').mockRejectedValue(new Error('Gemini unavailable'));
 
       const result = await pipelineRewrite({
@@ -1338,7 +1338,7 @@ describe('Caption Generation', () => {
         existingCaption,
       });
 
-      const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.js');
+      const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.ts');
       expect(openAICaptionFallback).toHaveBeenCalledWith({
         platform: 'instagram',
         voice: 'engaging',
@@ -1439,7 +1439,7 @@ describe('Caption Generation', () => {
         },
       };
 
-      const { textModel } = await import('../../server/lib/gemini.js');
+      const { textModel } = await import('../../server/lib/gemini.ts');
       const generateSpy = vi.spyOn(textModel, 'generateContent');
       type GenerateReturn = Awaited<ReturnType<typeof textModel.generateContent>>;
 
@@ -1540,7 +1540,7 @@ describe('Caption Generation', () => {
         },
       } satisfies { response: { text: () => string } };
 
-      const { textModel } = await import('../../server/lib/gemini.js');
+      const { textModel } = await import('../../server/lib/gemini.ts');
       const generateContentMock = vi.spyOn(textModel, 'generateContent');
 
       const shortVariantsCast = shortVariantsResponse as unknown as Awaited<
@@ -1637,7 +1637,7 @@ describe('Caption Generation', () => {
         },
       };
 
-      const { textModel } = await import('../../server/lib/gemini.js');
+      const { textModel } = await import('../../server/lib/gemini.ts');
       const textGenerateMock = asMock(textModel.generateContent);
       textGenerateMock
         .mockResolvedValueOnce(missingVariants)
@@ -1651,7 +1651,7 @@ describe('Caption Generation', () => {
         existingCaption,
       });
 
-      const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.js');
+      const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.ts');
       expect(openAICaptionFallback).not.toHaveBeenCalled();
       expect(textGenerateMock).toHaveBeenCalledTimes(4);
       const promptCalls = [...textGenerateMock.mock.calls];
@@ -1671,7 +1671,7 @@ describe('Caption Generation', () => {
 
     it('enforces fact coverage when image context is available', async () => {
       // Simple test to verify the fact coverage feature exists and functions
-      const { ensureFactCoverage } = await import('../../server/caption/ensureFactCoverage.js');
+      const { ensureFactCoverage } = await import('../../server/caption/ensureFactCoverage.ts');
       const facts = { camera: 'Canon 5D', setting: 'rooftop at sunset' };
       const caption = 'Having fun today';
       const alt = 'Photo description';
