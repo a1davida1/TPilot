@@ -74,6 +74,7 @@ vi.mock('../../../shared/schema.js', () => ({
     createdAt: 'createdAt'
   },
   engagementEvents: {
+<<<<<<< ours
     userId: 'userId',
     createdAt: 'createdAt',
   },
@@ -86,15 +87,56 @@ vi.mock('../../../shared/schema.js', () => ({
     startedAt: 'startedAt',
     duration: 'duration',
   },
+=======
+    id: 'id',
+    userId: 'userId',
+    createdAt: 'createdAt',
+    eventType: 'eventType'
+  },
+  pageViews: {
+    id: 'id',
+    userId: 'userId',
+    createdAt: 'createdAt',
+    path: 'path'
+  },
+  userSessions: {
+    id: 'id',
+    userId: 'userId',
+    duration: 'duration',
+    startedAt: 'startedAt'
+  }
+>>>>>>> theirs
 }));
 
 // Mock drizzle-orm functions
+const createComparisonMock = (operator: 'eq' | 'gte') =>
+  vi.fn((column: unknown, value: unknown) => ({
+    column,
+    value,
+    op: operator
+  }));
+
+const mockDesc = vi.fn((column: unknown) => ({ column, order: 'desc' }));
+
+const mockAnd = vi.fn((...conditions: unknown[]) => ({
+  conditions,
+  op: 'and'
+}));
+
+const mockSql = vi.fn(
+  (template: TemplateStringsArray | string, ...values: unknown[]) => ({
+    template,
+    values,
+    type: 'sql'
+  })
+);
+
 vi.mock('drizzle-orm', () => ({
-  eq: vi.fn((column, value) => ({ column, value, op: 'eq' })),
-  desc: vi.fn((column) => ({ column, order: 'desc' })),
-  gte: vi.fn((column, value) => ({ column, value, op: 'gte' })),
-  and: vi.fn((...conditions) => ({ conditions, op: 'and' })),
-  sql: vi.fn((template, ...values) => ({ template, values, type: 'sql' }))
+  eq: createComparisonMock('eq'),
+  desc: mockDesc,
+  gte: createComparisonMock('gte'),
+  and: mockAnd,
+  sql: mockSql
 }));
 
 vi.mock('../../../server/lib/media.js', () => ({

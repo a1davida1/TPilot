@@ -68,8 +68,8 @@ vi.mock('../../server/middleware/streaming-upload.js', () => ({
 }));
 
 vi.mock('../../server/middleware/auth.js', async () => {
-  const actual = await vi.importActual<typeof import('../../server/middleware/auth.js')>(
-    '../../server/middleware/auth.js'
+  const actual = await vi.importActual<typeof import('../../server/middleware/auth.ts')>(
+    '../../server/middleware/auth.ts'
   );
 
   return {
@@ -104,7 +104,7 @@ describe('stream upload error handling', () => {
       .png()
       .toFile(sampleImagePath);
 
-    const { uploadRoutes } = await import('../../server/routes/upload.js');
+    const { uploadRoutes } = await import('../../server/routes/upload.ts');
 
     app = express();
     app.use(express.json());

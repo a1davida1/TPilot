@@ -8,7 +8,7 @@ const getSocialMediaPostMock = vi.fn();
 const authenticateTokenMock = vi.fn();
 const loggerErrorMock = vi.fn();
 
-vi.mock('../../server/storage.js', () => ({
+vi.mock('../../server/storage.ts', () => ({
   storage: {
     getUserContentGenerations: getUserContentGenerationsMock,
     getSocialMediaPost: getSocialMediaPostMock,
@@ -16,12 +16,12 @@ vi.mock('../../server/storage.js', () => ({
   },
 }));
 
-vi.mock('../../server/middleware/auth.js', () => ({
+vi.mock('../../server/middleware/auth.ts', () => ({
   authenticateToken: authenticateTokenMock,
 }));
 
 vi.mock('../../server/middleware/security.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../server/middleware/security.js')>();
+  const actual = await importOriginal<typeof import('../../server/middleware/security.ts')>();
   return {
     ...actual,
     validateEnvironment: vi.fn(),
@@ -37,7 +37,7 @@ vi.mock('../../server/middleware/security.js', async (importOriginal) => {
   };
 });
 
-let registerSavedContentRoutes: typeof import('../../server/routes.js').registerSavedContentRoutes;
+let registerSavedContentRoutes: typeof import('../../server/routes.ts').registerSavedContentRoutes;
 
 describe('POST /api/saved-content', () => {
   let app: express.Express;
@@ -49,7 +49,7 @@ describe('POST /api/saved-content', () => {
     authenticateTokenMock.mockReset();
     loggerErrorMock.mockReset();
     vi.resetModules();
-    ({ registerSavedContentRoutes } = await import('../../server/routes.js'));
+    ({ registerSavedContentRoutes } = await import('../../server/routes.ts'));
 
     app = express();
     app.use(express.json());

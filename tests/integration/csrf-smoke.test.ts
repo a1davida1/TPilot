@@ -6,7 +6,7 @@ import csrf from 'csurf';
 import request from 'supertest';
 import { describe, it, beforeAll, beforeEach, afterAll, expect } from 'vitest';
 
-import { csrfProtectedRoutes, registerRoutes } from '../../server/routes.js';
+import { csrfProtectedRoutes, registerRoutes } from '../../server/routes.ts';
 
 declare module 'express-session' {
   interface SessionData {

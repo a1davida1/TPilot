@@ -81,13 +81,13 @@ vi.mock('../../server/db.js', () => {
 describe('ImageShield upload integration', () => {
   let app: express.Express;
   let uploadRouter: express.Router;
-  let createToken: typeof import('../../server/middleware/auth.js')['createToken'];
+  let createToken: typeof import('../../server/middleware/auth.ts')['createToken'];
   let logger: Logger;
   let infoSpy: SpyInstance;
   let authenticateSpy: SpyInstance;
   let createTokenSpy: SpyInstance;
   let verifyTokenSpy: SpyInstance;
-  let authModule: typeof import('../../server/middleware/auth.js');
+  let authModule: typeof import('../../server/middleware/auth.ts');
   let baseFileSize = 0;
 
   beforeAll(async () => {
@@ -99,7 +99,7 @@ describe('ImageShield upload integration', () => {
 
     vi.resetModules();
 
-    authModule = await import('../../server/middleware/auth.js');
+    authModule = await import('../../server/middleware/auth.ts');
 
     authenticateSpy = vi.spyOn(authModule, 'authenticateToken').mockImplementation((req: Request & { user?: TestUser }, res: Response, next: NextFunction) => {
       const token = req.cookies?.authToken;
@@ -131,8 +131,8 @@ describe('ImageShield upload integration', () => {
       };
     });
 
-    ({ uploadRoutes: uploadRouter } = await import('../../server/routes/upload.js'));
-    ({ logger } = await import('../../server/middleware/security.js'));
+    ({ uploadRoutes: uploadRouter } = await import('../../server/routes/upload.ts'));
+    ({ logger } = await import('../../server/middleware/security.ts'));
     createToken = authModule.createToken;
 
     app = express();

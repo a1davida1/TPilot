@@ -3,7 +3,7 @@ import request from 'supertest';
 import express from 'express';
 
 // Mock dependencies
-vi.mock('../../server/storage.js', () => ({
+vi.mock('../../server/storage.ts', () => ({
   storage: {
     getAllUsers: vi.fn().mockResolvedValue([
       { id: 1, username: 'user1', email: 'user1@test.com', tier: 'free' },
@@ -24,14 +24,14 @@ vi.mock('../../server/storage.js', () => ({
   }
 }));
 
-vi.mock('../../server/middleware/auth.js', () => ({
+vi.mock('../../server/middleware/auth.ts', () => ({
   authenticateToken: (req: Record<string, unknown>, res: Record<string, unknown>, next: () => void) => {
     req.user = { id: 999, username: 'admin', isAdmin: true };
     next();
   }
 }));
 
-vi.mock('../../server/admin-routes.js', () => ({
+vi.mock('../../server/admin-routes.ts', () => ({
   setupAdminRoutes: (app: express.Application) => {
     app.get('/api/admin/users', (req: express.Request, res: express.Response) => {
       res.json([
@@ -56,7 +56,7 @@ vi.mock('../../server/admin-routes.js', () => ({
   }
 }));
 
-import { setupAdminRoutes } from '../../server/admin-routes.js';
+import { setupAdminRoutes } from '../../server/admin-routes.ts';
 
 describe('Admin Routes', () => {
   let app: unknown;

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import request from 'supertest';
 import express from 'express';
-import { healthRouter } from '../../server/routes/health.js';
+import { healthRouter } from '../../server/routes/health.ts';
 
 describe('Health route', () => {
   it('returns ok status', async () => {

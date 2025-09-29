@@ -1,0 +1,942 @@
+diff --git a/tests/integration/admin-communities-auth.test.ts b/tests/integration/admin-communities-auth.test.ts
+index db45c61..58ad127 100644
+--- a/tests/integration/admin-communities-auth.test.ts
++++ b/tests/integration/admin-communities-auth.test.ts
+@@ -7 +7 @@ import request from 'supertest';
+-import { adminCommunitiesRouter } from '../../server/routes/admin-communities.js';
++import { adminCommunitiesRouter } from '../../server/routes/admin-communities.ts';
+@@ -10 +10 @@ import { adminCommunitiesRouter } from '../../server/routes/admin-communities.js
+-vi.mock('../../server/reddit-communities.js', () => ({
++vi.mock('../../server/reddit-communities.ts', () => ({
+@@ -143 +143 @@ describe('Admin Communities Authentication Integration', () => {
+-    const redditCommunities = await import('../../server/reddit-communities.js');
++    const redditCommunities = await import('../../server/reddit-communities.ts');
+@@ -347 +347 @@ describe('Admin Communities Authentication Integration', () => {
+-    const { updateCommunity } = await import('../../server/reddit-communities.js');
++    const { updateCommunity } = await import('../../server/reddit-communities.ts');
+@@ -365 +365 @@ describe('Admin Communities Authentication Integration', () => {
+-    const { listCommunities } = await import('../../server/reddit-communities.js');
++    const { listCommunities } = await import('../../server/reddit-communities.ts');
+diff --git a/tests/integration/analytics-security.test.ts b/tests/integration/analytics-security.test.ts
+index 9c86431..57e1ef8 100644
+--- a/tests/integration/analytics-security.test.ts
++++ b/tests/integration/analytics-security.test.ts
+@@ -11 +11 @@ let authImpl: (req: AuthenticatedRequest, res: Response, next: NextFunction) =>
+-vi.mock('../../server/middleware/auth.js', () => ({
++vi.mock('../../server/middleware/auth.ts', () => ({
+@@ -15 +15 @@ vi.mock('../../server/middleware/auth.js', () => ({
+-import * as analyticsModule from '../../server/analytics-routes.js';
++import * as analyticsModule from '../../server/analytics-routes.ts';
+diff --git a/tests/integration/api-prefix.test.ts b/tests/integration/api-prefix.test.ts
+index fb1c09e..1871c58 100644
+--- a/tests/integration/api-prefix.test.ts
++++ b/tests/integration/api-prefix.test.ts
+@@ -6 +6 @@ import { beforeAll, afterAll, describe, expect, it, vi } from 'vitest';
+-import { stripe } from '../../server/lib/billing/stripe.js';
++import { stripe } from '../../server/lib/billing/stripe.ts';
+@@ -8 +8 @@ import { stripe } from '../../server/lib/billing/stripe.js';
+-vi.mock('../../server/storage.js', () => ({
++vi.mock('../../server/storage.ts', () => ({
+@@ -26 +26 @@ vi.mock('../../server/storage.js', () => ({
+-let createApp: typeof import('../../server/index.js')['createApp'];
++let createApp: typeof import('../../server/index.ts')['createApp'];
+@@ -49 +49 @@ describe('API prefix alignment', () => {
+-    ({ createApp } = await import('../../server/index.js'));
++    ({ createApp } = await import('../../server/index.ts'));
+diff --git a/tests/integration/caption-openai-fallback.test.ts b/tests/integration/caption-openai-fallback.test.ts
+index f0fff9b..e87505a 100644
+--- a/tests/integration/caption-openai-fallback.test.ts
++++ b/tests/integration/caption-openai-fallback.test.ts
+@@ -24 +24 @@ describe('/api/caption/generate OpenAI fallback', () => {
+-    vi.doMock('../../server/caption/openaiFallback.js', () => ({
++    vi.doMock('../../server/caption/openaiFallback.ts', () => ({
+@@ -28 +28 @@ describe('/api/caption/generate OpenAI fallback', () => {
+-    vi.doMock('../../server/lib/gemini.js', () => ({
++    vi.doMock('../../server/lib/gemini.ts', () => ({
+@@ -35 +35 @@ describe('/api/caption/generate OpenAI fallback', () => {
+-    vi.doMock('../../server/storage.js', () => ({
++    vi.doMock('../../server/storage.ts', () => ({
+@@ -41 +41 @@ describe('/api/caption/generate OpenAI fallback', () => {
+-    vi.doMock('../../server/middleware/auth.js', () => ({
++    vi.doMock('../../server/middleware/auth.ts', () => ({
+@@ -50 +50 @@ describe('/api/caption/generate OpenAI fallback', () => {
+-    const { captionRouter } = await import('../../server/routes/caption.js');
++    const { captionRouter } = await import('../../server/routes/caption.ts');
+@@ -53 +53 @@ describe('/api/caption/generate OpenAI fallback', () => {
+-    const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.js');
++    const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.ts');
+diff --git a/tests/integration/content-generation.test.ts b/tests/integration/content-generation.test.ts
+index b788213..1f234ad 100644
+--- a/tests/integration/content-generation.test.ts
++++ b/tests/integration/content-generation.test.ts
+@@ -25 +25 @@ class MockInvalidImageError extends Error {}
+-vi.mock('../../server/caption/geminiPipeline.js', () => ({
++vi.mock('../../server/caption/geminiPipeline.ts', () => ({
+@@ -30 +30 @@ vi.mock('../../server/caption/geminiPipeline.js', () => ({
+-vi.mock('../../server/caption/textOnlyPipeline.js', () => ({
++vi.mock('../../server/caption/textOnlyPipeline.ts', () => ({
+@@ -34 +34 @@ vi.mock('../../server/caption/textOnlyPipeline.js', () => ({
+-vi.mock('../../server/caption/rewritePipeline.js', () => ({
++vi.mock('../../server/caption/rewritePipeline.ts', () => ({
+@@ -38 +38 @@ vi.mock('../../server/caption/rewritePipeline.js', () => ({
+-vi.mock('../../server/storage.js', () => ({
++vi.mock('../../server/storage.ts', () => ({
+@@ -44 +44 @@ vi.mock('../../server/storage.js', () => ({
+-vi.mock('../../server/middleware/auth.js', () => {
++vi.mock('../../server/middleware/auth.ts', () => {
+@@ -145 +145 @@ describe('Caption generation route contract', () => {
+-    const routeModule = await import('../../server/routes/caption.js');
++    const routeModule = await import('../../server/routes/caption.ts');
+diff --git a/tests/integration/csrf-smoke.test.ts b/tests/integration/csrf-smoke.test.ts
+index e4abdc8..7f73804 100644
+--- a/tests/integration/csrf-smoke.test.ts
++++ b/tests/integration/csrf-smoke.test.ts
+@@ -9 +9 @@ import { describe, it, beforeAll, beforeEach, afterAll, expect } from 'vitest';
+-import { csrfProtectedRoutes, registerRoutes } from '../../server/routes.js';
++import { csrfProtectedRoutes, registerRoutes } from '../../server/routes.ts';
+diff --git a/tests/integration/dashboard-api.test.ts b/tests/integration/dashboard-api.test.ts
+index 9dd1216..bad1198 100644
+--- a/tests/integration/dashboard-api.test.ts
++++ b/tests/integration/dashboard-api.test.ts
+@@ -5,2 +5,2 @@ import jwt from 'jsonwebtoken';
+-import { createApp } from '../../server/index.js';
+-import { storage } from '../../server/storage.js';
++import { createApp } from '../../server/index.ts';
++import { storage } from '../../server/storage.ts';
+@@ -224,2 +224,2 @@ import jwt from 'jsonwebtoken';
+-import { createApp } from '../../server/index.js';
+-import { storage } from '../../server/storage.js';
++import { createApp } from '../../server/index.ts';
++import { storage } from '../../server/storage.ts';
+diff --git a/tests/integration/post-scheduling.test.ts b/tests/integration/post-scheduling.test.ts
+index 5e4fe36..25ccd97 100644
+--- a/tests/integration/post-scheduling.test.ts
++++ b/tests/integration/post-scheduling.test.ts
+@@ -8,5 +8,5 @@ import bcrypt from 'bcrypt';
+-import { createApp } from '../../server/index.js';
+-import { db } from '../../server/db.js';
+-import { postJobs, users } from '../../shared/schema.js';
+-import * as queueModule from '../../server/lib/queue/index.js';
+-import { PostScheduler } from '../../server/lib/scheduling.js';
++import { createApp } from '../../server/index.ts';
++import { db } from '../../server/db.ts';
++import { postJobs, users } from '../../shared/schema.ts';
++import * as queueModule from '../../server/lib/queue/index.ts';
++import { PostScheduler } from '../../server/lib/scheduling.ts';
+diff --git a/tests/integration/pro-resources.test.ts b/tests/integration/pro-resources.test.ts
+index 114d45a..4975ce7 100644
+--- a/tests/integration/pro-resources.test.ts
++++ b/tests/integration/pro-resources.test.ts
+@@ -5 +5 @@ import type { Express } from 'express';
+-import { storage } from '../../server/storage.js';
++import { storage } from '../../server/storage.ts';
+@@ -42 +42 @@ const mockAuthMiddleware = vi.fn((req: Express.Request, res: Express.Response, n
+-vi.mock('../../server/pro-perks.js', () => ({
++vi.mock('../../server/pro-perks.ts', () => ({
+@@ -68 +68 @@ vi.mock('../../server/pro-perks.js', () => ({
+-vi.mock('../../server/middleware/auth.js', () => ({
++vi.mock('../../server/middleware/auth.ts', () => ({
+@@ -77 +77 @@ type MockedStorage = {
+-vi.mock('../../server/storage.js', () => ({
++vi.mock('../../server/storage.ts', () => ({
+@@ -193 +193 @@ describe('Pro Resources Integration', () => {
+-    const { registerRoutes } = await import('../../server/routes.js');
++    const { registerRoutes } = await import('../../server/routes.ts');
+@@ -430 +430 @@ describe('Pro Resources Integration', () => {
+-      const { storage } = await import('../../server/storage.js');
++      const { storage } = await import('../../server/storage.ts');
+diff --git a/tests/integration/reddit-communities-schema.test.ts b/tests/integration/reddit-communities-schema.test.ts
+index 2fee251..765186d 100644
+--- a/tests/integration/reddit-communities-schema.test.ts
++++ b/tests/integration/reddit-communities-schema.test.ts
+@@ -4 +4 @@ import request from 'supertest';
+-import { createApp } from '../../server/index.js';
++import { createApp } from '../../server/index.ts';
+diff --git a/tests/integration/referral-routes.test.ts b/tests/integration/referral-routes.test.ts
+index 91009af..b1c4c73 100644
+--- a/tests/integration/referral-routes.test.ts
++++ b/tests/integration/referral-routes.test.ts
+@@ -4,2 +4,2 @@ import jwt from 'jsonwebtoken';
+-import { createApp } from '../../server/app.js';
+-import { ReferralManager } from '../../server/lib/referral-system.js';
++import { createApp } from '../../server/app.ts';
++import { ReferralManager } from '../../server/lib/referral-system.ts';
+@@ -8 +8 @@ import { ReferralManager } from '../../server/lib/referral-system.js';
+-vi.mock('../../server/lib/referral-system.js', () => ({
++vi.mock('../../server/lib/referral-system.ts', () => ({
+@@ -17 +17 @@ vi.mock('../../server/lib/referral-system.js', () => ({
+-vi.mock('../../server/bootstrap/logger.js', () => ({
++vi.mock('../../server/bootstrap/logger.ts', () => ({
+@@ -26 +26 @@ vi.mock('../../server/bootstrap/logger.js', () => ({
+-vi.mock('../../server/middleware/auth.js', () => ({
++vi.mock('../../server/middleware/auth.ts', () => ({
+@@ -46 +46 @@ vi.mock('../../server/middleware/auth.js', () => ({
+-vi.mock('../../server/db.js', () => ({
++vi.mock('../../server/db.ts', () => ({
+diff --git a/tests/integration/static-assets.test.ts b/tests/integration/static-assets.test.ts
+index de904c1..e0bcdcf 100644
+--- a/tests/integration/static-assets.test.ts
++++ b/tests/integration/static-assets.test.ts
+@@ -23 +23 @@ const cssAssetPath = path.join(assetsDirectory, 'styles.css');
+-vi.mock('../../server/routes.js', () => ({
++vi.mock('../../server/routes.ts', () => ({
+@@ -27 +27 @@ vi.mock('../../server/routes.js', () => ({
+-vi.mock('../../server/auth.js', () => ({
++vi.mock('../../server/auth.ts', () => ({
+@@ -31 +31 @@ vi.mock('../../server/auth.js', () => ({
+-vi.mock('../../server/social-auth.js', () => ({
++vi.mock('../../server/social-auth.ts', () => ({
+@@ -35 +35 @@ vi.mock('../../server/social-auth.js', () => ({
+-vi.mock('../../server/routes/webhooks.stripe.js', () => ({
++vi.mock('../../server/routes/webhooks.stripe.ts', () => ({
+@@ -39 +39 @@ vi.mock('../../server/routes/webhooks.stripe.js', () => ({
+-vi.mock('../../server/routes/billing.js', () => ({
++vi.mock('../../server/routes/billing.ts', () => ({
+@@ -43 +43 @@ vi.mock('../../server/routes/billing.js', () => ({
+-vi.mock('../../server/bootstrap/queue.js', () => ({
++vi.mock('../../server/bootstrap/queue.ts', () => ({
+@@ -47 +47 @@ vi.mock('../../server/bootstrap/queue.js', () => ({
+-type LoggerType = typeof import('../../server/bootstrap/logger.js')['logger'];
++type LoggerType = typeof import('../../server/bootstrap/logger.ts')['logger'];
+@@ -56 +56 @@ type WarnSpy = SpyInstance<LoggerWarnParams, LoggerWarnReturn>;
+-type CreateApp = typeof import('../../server/index.js')['createApp'];
++type CreateApp = typeof import('../../server/index.ts')['createApp'];
+@@ -109,2 +109,2 @@ beforeAll(async () => {
+-  ({ createApp } = await import('../../server/index.js'));
+-  ({ logger: loggerInstance } = await import('../../server/bootstrap/logger.js'));
++  ({ createApp } = await import('../../server/index.ts'));
++  ({ logger: loggerInstance } = await import('../../server/bootstrap/logger.ts'));
+diff --git a/tests/integration/upload-stream.test.ts b/tests/integration/upload-stream.test.ts
+index e782d1d..c982302 100644
+--- a/tests/integration/upload-stream.test.ts
++++ b/tests/integration/upload-stream.test.ts
+@@ -42 +42 @@ const authenticatedUser = vi.hoisted(() => ({ id: 99, tier: 'free' }));
+-vi.mock('../../server/middleware/security.js', () => ({
++vi.mock('../../server/middleware/security.ts', () => ({
+@@ -49 +49 @@ vi.mock('../../server/middleware/security.js', () => ({
+-vi.mock('../../server/middleware/tiered-rate-limit.js', () => ({
++vi.mock('../../server/middleware/tiered-rate-limit.ts', () => ({
+@@ -55 +55 @@ vi.mock('../../server/middleware/tiered-rate-limit.js', () => ({
+-vi.mock('../../server/middleware/streaming-upload.js', () => ({
++vi.mock('../../server/middleware/streaming-upload.ts', () => ({
+@@ -70,3 +70,3 @@ vi.mock('../../server/middleware/streaming-upload.js', () => ({
+-vi.mock('../../server/middleware/auth.js', async () => {
+-  const actual = await vi.importActual<typeof import('../../server/middleware/auth.js')>(
+-    '../../server/middleware/auth.js'
++vi.mock('../../server/middleware/auth.ts', async () => {
++  const actual = await vi.importActual<typeof import('../../server/middleware/auth.ts')>(
++    '../../server/middleware/auth.ts'
+@@ -107 +107 @@ describe('stream upload error handling', () => {
+-    const { uploadRoutes } = await import('../../server/routes/upload.js');
++    const { uploadRoutes } = await import('../../server/routes/upload.ts');
+diff --git a/tests/integration/upload.test.ts b/tests/integration/upload.test.ts
+index 96b91ae..ad65e4f 100644
+--- a/tests/integration/upload.test.ts
++++ b/tests/integration/upload.test.ts
+@@ -72 +72 @@ const tokenStore = new Map<string, TestUser>();
+-vi.mock('../../server/db.js', () => {
++vi.mock('../../server/db.ts', () => {
+@@ -85 +85 @@ describe('ImageShield upload integration', () => {
+-  let createToken: typeof import('../../server/middleware/auth.js')['createToken'];
++  let createToken: typeof import('../../server/middleware/auth.ts')['createToken'];
+@@ -91 +91 @@ describe('ImageShield upload integration', () => {
+-  let authModule: typeof import('../../server/middleware/auth.js');
++  let authModule: typeof import('../../server/middleware/auth.ts');
+@@ -114 +114 @@ describe('ImageShield upload integration', () => {
+-    authModule = await import('../../server/middleware/auth.js');
++    authModule = await import('../../server/middleware/auth.ts');
+@@ -146,2 +146,2 @@ describe('ImageShield upload integration', () => {
+-    ({ uploadRoutes: uploadRouter } = await import('../../server/routes/upload.js'));
+-    ({ logger } = await import('../../server/middleware/security.js'));
++    ({ uploadRoutes: uploadRouter } = await import('../../server/routes/upload.ts'));
++    ({ logger } = await import('../../server/middleware/security.ts'));
+diff --git a/tests/integration/workflow.test.ts b/tests/integration/workflow.test.ts
+index 5c9d880..cca1a69 100644
+--- a/tests/integration/workflow.test.ts
++++ b/tests/integration/workflow.test.ts
+@@ -4 +4 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
+-vi.mock('../../server/lib/gemini.js', () => ({
++vi.mock('../../server/lib/gemini.ts', () => ({
+@@ -52,3 +52,3 @@ vi.mock('../../server/storage.ts', () => ({
+-import { pipeline } from '../../server/caption/geminiPipeline.js';
+-import { pipelineTextOnly } from '../../server/caption/textOnlyPipeline.js';
+-import { pipelineRewrite } from '../../server/caption/rewritePipeline.js';
++import { pipeline } from '../../server/caption/geminiPipeline.ts';
++import { pipelineTextOnly } from '../../server/caption/textOnlyPipeline.ts';
++import { pipelineRewrite } from '../../server/caption/rewritePipeline.ts';
+diff --git a/tests/lib/storage-quotas.test.ts b/tests/lib/storage-quotas.test.ts
+index 96184ed..1ebff8a 100644
+--- a/tests/lib/storage-quotas.test.ts
++++ b/tests/lib/storage-quotas.test.ts
+@@ -2 +2 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
+-import { env } from '../../server/lib/config.js';
++import { env } from '../../server/lib/config.ts';
+@@ -5 +5 @@ import { env } from '../../server/lib/config.js';
+-vi.mock('../../server/lib/config.js', () => ({
++vi.mock('../../server/lib/config.ts', () => ({
+diff --git a/tests/lib/storage.test.ts b/tests/lib/storage.test.ts
+index 0f0b9da..6a9835f 100644
+--- a/tests/lib/storage.test.ts
++++ b/tests/lib/storage.test.ts
+@@ -48 +48 @@ vi.mock('../../server/storage', () => ({ storage: mockStorage }));
+-vi.mock('@shared/schema.js', () => ({
++vi.mock('@shared/schema.ts', () => ({
+diff --git a/tests/lib/turnstile.test.ts b/tests/lib/turnstile.test.ts
+index 4b859c7..d962a11 100644
+--- a/tests/lib/turnstile.test.ts
++++ b/tests/lib/turnstile.test.ts
+@@ -35 +35 @@ describe('Turnstile verification hardening', () => {
+-    const { verifyTurnstileToken } = await import('../../server/lib/turnstile.js');
++    const { verifyTurnstileToken } = await import('../../server/lib/turnstile.ts');
+@@ -47 +47 @@ describe('Turnstile verification hardening', () => {
+-    const { verifyTurnstileToken } = await import('../../server/lib/turnstile.js');
++    const { verifyTurnstileToken } = await import('../../server/lib/turnstile.ts');
+@@ -62 +62 @@ describe('Turnstile verification hardening', () => {
+-    const { envSchema } = await import('../../server/lib/config.js');
++    const { envSchema } = await import('../../server/lib/config.ts');
+diff --git a/tests/routes/admin-communities.test.ts b/tests/routes/admin-communities.test.ts
+index 120b212..39373a7 100644
+--- a/tests/routes/admin-communities.test.ts
++++ b/tests/routes/admin-communities.test.ts
+@@ -4 +4 @@ import express from 'express';
+-import { adminCommunitiesRouter } from '../../server/routes/admin-communities.js';
++import { adminCommunitiesRouter } from '../../server/routes/admin-communities.ts';
+@@ -7 +7 @@ import { adminCommunitiesRouter } from '../../server/routes/admin-communities.js
+-vi.mock('../../server/reddit-communities.js', () => ({
++vi.mock('../../server/reddit-communities.ts', () => ({
+@@ -14 +14 @@ vi.mock('../../server/reddit-communities.js', () => ({
+-vi.mock('../../server/middleware/auth.js', () => ({
++vi.mock('../../server/middleware/auth.ts', () => ({
+@@ -18 +18 @@ vi.mock('../../server/middleware/auth.js', () => ({
+-vi.mock('../../server/admin-routes.js', () => ({
++vi.mock('../../server/admin-routes.ts', () => ({
+@@ -32,3 +32,3 @@ vi.mock('@shared/schema', () => ({
+-import { listCommunities, createCommunity, updateCommunity, deleteCommunity } from '../../server/reddit-communities.js';
+-import { authenticateToken } from '../../server/middleware/auth.js';
+-import { requireAdmin } from '../../server/admin-routes.js';
++import { listCommunities, createCommunity, updateCommunity, deleteCommunity } from '../../server/reddit-communities.ts';
++import { authenticateToken } from '../../server/middleware/auth.ts';
++import { requireAdmin } from '../../server/admin-routes.ts';
+diff --git a/tests/routes/admin.test.ts b/tests/routes/admin.test.ts
+index dbef785..b806531 100644
+--- a/tests/routes/admin.test.ts
++++ b/tests/routes/admin.test.ts
+@@ -6 +6 @@ import express from 'express';
+-vi.mock('../../server/storage.js', () => ({
++vi.mock('../../server/storage.ts', () => ({
+@@ -27 +27 @@ vi.mock('../../server/storage.js', () => ({
+-vi.mock('../../server/middleware/auth.js', () => ({
++vi.mock('../../server/middleware/auth.ts', () => ({
+@@ -34 +34 @@ vi.mock('../../server/middleware/auth.js', () => ({
+-vi.mock('../../server/admin-routes.js', () => ({
++vi.mock('../../server/admin-routes.ts', () => ({
+@@ -59 +59 @@ vi.mock('../../server/admin-routes.js', () => ({
+-import { setupAdminRoutes } from '../../server/admin-routes.js';
++import { setupAdminRoutes } from '../../server/admin-routes.ts';
+diff --git a/tests/routes/ai-history.test.ts b/tests/routes/ai-history.test.ts
+index 2a3139d..e2a3501 100644
+--- a/tests/routes/ai-history.test.ts
++++ b/tests/routes/ai-history.test.ts
+@@ -5,2 +5,2 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
+-import { createAiHistoryHandler } from '../../server/api-routes.js';
+-import type { AuthRequest } from '../../server/middleware/auth.js';
++import { createAiHistoryHandler } from '../../server/api-routes.ts';
++import type { AuthRequest } from '../../server/middleware/auth.ts';
+diff --git a/tests/routes/billing.test.ts b/tests/routes/billing.test.ts
+index 1352160..fd027bd 100644
+--- a/tests/routes/billing.test.ts
++++ b/tests/routes/billing.test.ts
+@@ -2 +2 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
+-import { storage } from '../../server/storage.js';
++import { storage } from '../../server/storage.ts';
+@@ -5 +5 @@ import { storage } from '../../server/storage.js';
+-vi.mock('../../server/storage.js', () => ({
++vi.mock('../../server/storage.ts', () => ({
+@@ -14 +14 @@ vi.mock('../../server/storage.js', () => ({
+-vi.mock('../../server/lib/billing/stripe.js', () => ({
++vi.mock('../../server/lib/billing/stripe.ts', () => ({
+@@ -42 +42 @@ describe('Billing System', () => {
+-      const { createSubscription } = await import('../../server/lib/billing/stripe.js');
++      const { createSubscription } = await import('../../server/lib/billing/stripe.ts');
+@@ -65 +65 @@ describe('Billing System', () => {
+-      const { cancelSubscription } = await import('../../server/lib/billing/stripe.js');
++      const { cancelSubscription } = await import('../../server/lib/billing/stripe.ts');
+diff --git a/tests/routes/cancel-subscription.test.ts b/tests/routes/cancel-subscription.test.ts
+index d3bdaf4..f34d3da 100644
+--- a/tests/routes/cancel-subscription.test.ts
++++ b/tests/routes/cancel-subscription.test.ts
+@@ -5 +5 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
+-import { createCancelSubscriptionHandler } from '../../server/routes/subscription-management.js';
++import { createCancelSubscriptionHandler } from '../../server/routes/subscription-management.ts';
+diff --git a/tests/routes/caption-generation.test.ts b/tests/routes/caption-generation.test.ts
+index 4b38a49..85429dc 100644
+--- a/tests/routes/caption-generation.test.ts
++++ b/tests/routes/caption-generation.test.ts
+@@ -2,3 +2,3 @@ import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
+-import { pipeline } from '../../server/caption/geminiPipeline.js';
+-import { pipelineRewrite, extractKeyEntities } from '../../server/caption/rewritePipeline.js';
+-import { pipelineTextOnly } from '../../server/caption/textOnlyPipeline.js';
++import { pipeline } from '../../server/caption/geminiPipeline.ts';
++import { pipelineRewrite, extractKeyEntities } from '../../server/caption/rewritePipeline.ts';
++import { pipelineTextOnly } from '../../server/caption/textOnlyPipeline.ts';
+@@ -7 +7 @@ import { pipelineTextOnly } from '../../server/caption/textOnlyPipeline.js';
+-vi.mock('../../server/lib/gemini.js', () => ({
++vi.mock('../../server/lib/gemini.ts', () => ({
+@@ -19 +19 @@ import { generationResponseSchema } from '../../shared/types/caption.js';
+-vi.mock('../../server/caption/openaiFallback.js', () => ({
++vi.mock('../../server/caption/openaiFallback.ts', () => ({
+@@ -65 +65 @@ describe('Caption Generation', () => {
+-    const { textModel, visionModel } = await import('../../server/lib/gemini.js');
++    const { textModel, visionModel } = await import('../../server/lib/gemini.ts');
+@@ -68 +68 @@ describe('Caption Generation', () => {
+-    const { isGeminiAvailable } = await import('../../server/lib/gemini.js');
++    const { isGeminiAvailable } = await import('../../server/lib/gemini.ts');
+@@ -71 +71 @@ describe('Caption Generation', () => {
+-    const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.js');
++    const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.ts');
+@@ -224 +224 @@ describe('Caption Generation', () => {
+-      const { textModel, visionModel } = await import('../../server/lib/gemini.js');
++      const { textModel, visionModel } = await import('../../server/lib/gemini.ts');
+@@ -253 +253 @@ describe('Caption Generation', () => {
+-      const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.js');
++      const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.ts');
+@@ -369 +369 @@ describe('Caption Generation', () => {
+-      const { textModel, visionModel } = await import('../../server/lib/gemini.js');
++      const { textModel, visionModel } = await import('../../server/lib/gemini.ts');
+@@ -381 +381 @@ describe('Caption Generation', () => {
+-      const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.js');
++      const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.ts');
+@@ -433 +433 @@ describe('Caption Generation', () => {
+-      const { isGeminiAvailable } = await import('../../server/lib/gemini.js');
++      const { isGeminiAvailable } = await import('../../server/lib/gemini.ts');
+@@ -442 +442 @@ describe('Caption Generation', () => {
+-      const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.js');
++      const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.ts');
+@@ -523 +523 @@ describe('Caption Generation', () => {
+-      const { textModel } = await import('../../server/lib/gemini.js');
++      const { textModel } = await import('../../server/lib/gemini.ts');
+@@ -528 +528 @@ describe('Caption Generation', () => {
+-      const { generateVariants } = await import('../../server/caption/geminiPipeline.js');
++      const { generateVariants } = await import('../../server/caption/geminiPipeline.ts');
+@@ -633 +633 @@ describe('Caption Generation', () => {
+-      const { textModel, visionModel } = await import('../../server/lib/gemini.js');
++      const { textModel, visionModel } = await import('../../server/lib/gemini.ts');
+@@ -738 +738 @@ describe('Caption Generation', () => {
+-      const { textModel } = await import('../../server/lib/gemini.js');
++      const { textModel } = await import('../../server/lib/gemini.ts');
+@@ -744 +744 @@ describe('Caption Generation', () => {
+-      const { generateVariants } = await import('../../server/caption/geminiPipeline.js');
++      const { generateVariants } = await import('../../server/caption/geminiPipeline.ts');
+@@ -820 +820 @@ describe('Caption Generation', () => {
+-      const { textModel } = await import('../../server/lib/gemini.js');
++      const { textModel } = await import('../../server/lib/gemini.ts');
+@@ -830 +830 @@ describe('Caption Generation', () => {
+-      const { generateVariants } = await import('../../server/caption/geminiPipeline.js');
++      const { generateVariants } = await import('../../server/caption/geminiPipeline.ts');
+@@ -897 +897 @@ describe('Caption Generation', () => {
+-      const { textModel } = await import('../../server/lib/gemini.js');
++      const { textModel } = await import('../../server/lib/gemini.ts');
+@@ -905 +905 @@ describe('Caption Generation', () => {
+-      const { generateVariants } = await import('../../server/caption/geminiPipeline.js');
++      const { generateVariants } = await import('../../server/caption/geminiPipeline.ts');
+@@ -916 +916 @@ describe('Caption Generation', () => {
+-      const { serializePromptField } = await import('../../server/caption/promptUtils.js');
++      const { serializePromptField } = await import('../../server/caption/promptUtils.ts');
+@@ -990 +990 @@ describe('Caption Generation', () => {
+-      const { textModel } = await import('../../server/lib/gemini.js');
++      const { textModel } = await import('../../server/lib/gemini.ts');
+@@ -996 +996 @@ describe('Caption Generation', () => {
+-      const { generateVariants } = await import('../../server/caption/geminiPipeline.js');
++      const { generateVariants } = await import('../../server/caption/geminiPipeline.ts');
+@@ -1009 +1009 @@ describe('Caption Generation', () => {
+-      const { serializePromptField } = await import('../../server/caption/promptUtils.js');
++      const { serializePromptField } = await import('../../server/caption/promptUtils.ts');
+@@ -1096 +1096 @@ describe('Caption Generation', () => {
+-      const { textModel } = await import('../../server/lib/gemini.js');
++      const { textModel } = await import('../../server/lib/gemini.ts');
+@@ -1187 +1187 @@ describe('Caption Generation', () => {
+-      const { textModel } = await import('../../server/lib/gemini.js');
++      const { textModel } = await import('../../server/lib/gemini.ts');
+@@ -1193 +1193 @@ describe('Caption Generation', () => {
+-      const { generateVariantsTextOnly } = await import('../../server/caption/textOnlyPipeline.js');
++      const { generateVariantsTextOnly } = await import('../../server/caption/textOnlyPipeline.ts');
+@@ -1269 +1269 @@ describe('Caption Generation', () => {
+-      const { textModel } = await import('../../server/lib/gemini.js');
++      const { textModel } = await import('../../server/lib/gemini.ts');
+@@ -1279 +1279 @@ describe('Caption Generation', () => {
+-      const { generateVariantsTextOnly } = await import('../../server/caption/textOnlyPipeline.js');
++      const { generateVariantsTextOnly } = await import('../../server/caption/textOnlyPipeline.ts');
+@@ -1314 +1314 @@ describe('Caption Generation', () => {
+-      const { textModel } = await import('../../server/lib/gemini.js');
++      const { textModel } = await import('../../server/lib/gemini.ts');
+@@ -1332 +1332 @@ describe('Caption Generation', () => {
+-      const { textModel } = await import('../../server/lib/gemini.js');
++      const { textModel } = await import('../../server/lib/gemini.ts');
+@@ -1341 +1341 @@ describe('Caption Generation', () => {
+-      const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.js');
++      const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.ts');
+@@ -1442 +1442 @@ describe('Caption Generation', () => {
+-      const { textModel } = await import('../../server/lib/gemini.js');
++      const { textModel } = await import('../../server/lib/gemini.ts');
+@@ -1543 +1543 @@ describe('Caption Generation', () => {
+-      const { textModel } = await import('../../server/lib/gemini.js');
++      const { textModel } = await import('../../server/lib/gemini.ts');
+@@ -1640 +1640 @@ describe('Caption Generation', () => {
+-      const { textModel } = await import('../../server/lib/gemini.js');
++      const { textModel } = await import('../../server/lib/gemini.ts');
+@@ -1654 +1654 @@ describe('Caption Generation', () => {
+-      const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.js');
++      const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.ts');
+@@ -1674 +1674 @@ describe('Caption Generation', () => {
+-      const { ensureFactCoverage } = await import('../../server/caption/ensureFactCoverage.js');
++      const { ensureFactCoverage } = await import('../../server/caption/ensureFactCoverage.ts');
+diff --git a/tests/routes/downloads.test.ts b/tests/routes/downloads.test.ts
+index 4a13891..f666592 100644
+--- a/tests/routes/downloads.test.ts
++++ b/tests/routes/downloads.test.ts
+@@ -7,2 +7,2 @@ import crypto from 'crypto';
+-import { createLocalDownloadRouter } from '../../server/routes/downloads.js';
+-import { MediaManager } from '../../server/lib/media.js';
++import { createLocalDownloadRouter } from '../../server/routes/downloads.ts';
++import { MediaManager } from '../../server/lib/media.ts';
+diff --git a/tests/routes/health.test.ts b/tests/routes/health.test.ts
+index a8d016e..635c3a6 100644
+--- a/tests/routes/health.test.ts
++++ b/tests/routes/health.test.ts
+@@ -4 +4 @@ import express from 'express';
+-import { healthRouter } from '../../server/routes/health.js';
++import { healthRouter } from '../../server/routes/health.ts';
+diff --git a/tests/routes/reddit-legacy-account-info.test.ts b/tests/routes/reddit-legacy-account-info.test.ts
+index a3b952a..716841b 100644
+--- a/tests/routes/reddit-legacy-account-info.test.ts
++++ b/tests/routes/reddit-legacy-account-info.test.ts
+@@ -4,2 +4,2 @@ import express from 'express';
+-import { registerApiRoutes } from '../../server/api-routes.js';
+-import { registerRedditRoutes } from '../../server/reddit-routes.js';
++import { registerApiRoutes } from '../../server/api-routes.ts';
++import { registerRedditRoutes } from '../../server/reddit-routes.ts';
+diff --git a/tests/routes/reddit-oauth-ip.test.ts b/tests/routes/reddit-oauth-ip.test.ts
+index 57453cb..679d7bd 100644
+--- a/tests/routes/reddit-oauth-ip.test.ts
++++ b/tests/routes/reddit-oauth-ip.test.ts
+@@ -9 +9 @@ const exchangeRedditCodeMock = vi.fn(async () => {
+-vi.mock('../../server/db.js', () => ({
++vi.mock('../../server/db.ts', () => ({
+@@ -27 +27 @@ vi.mock('../../server/db.js', () => ({
+-vi.mock('../../server/middleware/auth.js', () => ({
++vi.mock('../../server/middleware/auth.ts', () => ({
+@@ -35 +35 @@ vi.mock('../../server/middleware/auth.js', () => ({
+-vi.mock('../../server/lib/safety-systems.js', () => ({
++vi.mock('../../server/lib/safety-systems.ts', () => ({
+@@ -43 +43 @@ vi.mock('../../server/lib/safety-systems.js', () => ({
+-vi.mock('../../server/lib/reddit.js', () => {
++vi.mock('../../server/lib/reddit.ts', () => {
+@@ -68,3 +68,3 @@ vi.mock('../../server/lib/reddit.js', () => {
+-import { registerRedditRoutes } from '../../server/reddit-routes.js';
+-import { stateStore } from '../../server/services/state-store.js';
+-import { logger } from '../../server/bootstrap/logger.js';
++import { registerRedditRoutes } from '../../server/reddit-routes.ts';
++import { stateStore } from '../../server/services/state-store.ts';
++import { logger } from '../../server/bootstrap/logger.ts';
+diff --git a/tests/routes/saved-content.test.ts b/tests/routes/saved-content.test.ts
+index 7ca130c..afad46e 100644
+--- a/tests/routes/saved-content.test.ts
++++ b/tests/routes/saved-content.test.ts
+@@ -19 +19 @@ vi.mock('../../server/storage.ts', () => ({
+-vi.mock('../../server/middleware/auth.js', () => ({
++vi.mock('../../server/middleware/auth.ts', () => ({
+@@ -23,2 +23,2 @@ vi.mock('../../server/middleware/auth.js', () => ({
+-vi.mock('../../server/middleware/security.js', async (importOriginal) => {
+-  const actual = await importOriginal<typeof import('../../server/middleware/security.js')>();
++vi.mock('../../server/middleware/security.ts', async (importOriginal) => {
++  const actual = await importOriginal<typeof import('../../server/middleware/security.ts')>();
+@@ -40 +40 @@ vi.mock('../../server/middleware/security.js', async (importOriginal) => {
+-let registerSavedContentRoutes: typeof import('../../server/routes.js').registerSavedContentRoutes;
++let registerSavedContentRoutes: typeof import('../../server/routes.ts').registerSavedContentRoutes;
+@@ -52 +52 @@ describe('POST /api/saved-content', () => {
+-    ({ registerSavedContentRoutes } = await import('../../server/routes.js'));
++    ({ registerSavedContentRoutes } = await import('../../server/routes.ts'));
+diff --git a/tests/routes/webhooks.stripe.test.ts b/tests/routes/webhooks.stripe.test.ts
+index b728678..16e2525 100644
+--- a/tests/routes/webhooks.stripe.test.ts
++++ b/tests/routes/webhooks.stripe.test.ts
+@@ -6,2 +6,2 @@ import { describe, it, beforeAll, beforeEach, afterEach, expect, vi } from 'vite
+-import { subscriptions, invoices, users } from '../../shared/schema.js';
+-import type { db as DbType } from '../../server/db.js';
++import { subscriptions, invoices, users } from '../../shared/schema.ts';
++import type { db as DbType } from '../../server/db.ts';
+@@ -43 +43 @@ const updateWhereCalls: UpdateWhereCall[] = [];
+-vi.mock('../../server/routes.js', () => ({
++vi.mock('../../server/routes.ts', () => ({
+@@ -47 +47 @@ vi.mock('../../server/routes.js', () => ({
+-vi.mock('../../server/auth.js', () => ({
++vi.mock('../../server/auth.ts', () => ({
+@@ -51 +51 @@ vi.mock('../../server/auth.js', () => ({
+-vi.mock('../../server/social-auth.js', () => ({
++vi.mock('../../server/social-auth.ts', () => ({
+@@ -55 +55 @@ vi.mock('../../server/social-auth.js', () => ({
+-vi.mock('../../server/routes/billing.js', () => ({
++vi.mock('../../server/routes/billing.ts', () => ({
+@@ -59 +59 @@ vi.mock('../../server/routes/billing.js', () => ({
+-vi.mock('../../server/bootstrap/queue.js', () => ({
++vi.mock('../../server/bootstrap/queue.ts', () => ({
+@@ -63 +63 @@ vi.mock('../../server/bootstrap/queue.js', () => ({
+-vi.mock('../../server/db.js', () => {
++vi.mock('../../server/db.ts', () => {
+@@ -95,3 +95,3 @@ vi.mock('../../server/db.js', () => {
+-let createApp: typeof import('../../server/index.js')['createApp'];
+-let apiPrefix: typeof import('../../server/app.js')['API_PREFIX'];
+-let stripeInstance: typeof import('../../server/lib/billing/stripe.js')['stripe'];
++let createApp: typeof import('../../server/index.ts')['createApp'];
++let apiPrefix: typeof import('../../server/app.ts')['API_PREFIX'];
++let stripeInstance: typeof import('../../server/lib/billing/stripe.ts')['stripe'];
+@@ -122,2 +122,2 @@ beforeAll(async () => {
+-  ({ createApp, API_PREFIX: apiPrefix } = await import('../../server/index.js'));
+-  ({ stripe: stripeInstance } = await import('../../server/lib/billing/stripe.js'));
++  ({ createApp, API_PREFIX: apiPrefix } = await import('../../server/index.ts'));
++  ({ stripe: stripeInstance } = await import('../../server/lib/billing/stripe.ts'));
+diff --git a/tests/unit/admin-routes.setup.test.ts b/tests/unit/admin-routes.setup.test.ts
+index a7ef714..73a2e99 100644
+--- a/tests/unit/admin-routes.setup.test.ts
++++ b/tests/unit/admin-routes.setup.test.ts
+@@ -39 +39 @@ describe('setupAdminRoutes environment configuration', () => {
+-    const { setupAdminRoutes } = await import('../../server/admin-routes.js');
++    const { setupAdminRoutes } = await import('../../server/admin-routes.ts');
+@@ -55 +55 @@ describe('setupAdminRoutes environment configuration', () => {
+-    const { setupAdminRoutes } = await import('../../server/admin-routes.js');
++    const { setupAdminRoutes } = await import('../../server/admin-routes.ts');
+diff --git a/tests/unit/auth/login-identifier.test.ts b/tests/unit/auth/login-identifier.test.ts
+index b1c53da..e9edbb1 100644
+--- a/tests/unit/auth/login-identifier.test.ts
++++ b/tests/unit/auth/login-identifier.test.ts
+@@ -5 +5 @@ import cookieParser from 'cookie-parser';
+-import { setupAuth } from '../../../server/auth.js';
++import { setupAuth } from '../../../server/auth.ts';
+@@ -8 +8 @@ import { db } from '../../../server/db';
+-import { users } from '../../../shared/schema.js';
++import { users } from '../../../shared/schema.ts';
+diff --git a/tests/unit/auth/login-identifier.test.ts.bak b/tests/unit/auth/login-identifier.test.ts.bak
+index acf3367..f770eb9 100644
+--- a/tests/unit/auth/login-identifier.test.ts.bak
++++ b/tests/unit/auth/login-identifier.test.ts.bak
+@@ -5 +5 @@ import cookieParser from 'cookie-parser';
+-import { setupAuth } from '../../../server/auth.js';
++import { setupAuth } from '../../../server/auth.ts';
+@@ -8 +8 @@ import { db } from '../../../server/db';
+-import { users } from '../../../shared/schema.js';
++import { users } from '../../../shared/schema.ts';
+diff --git a/tests/unit/caption/fallback-inference.test.ts b/tests/unit/caption/fallback-inference.test.ts
+index 68356aa..591a492 100644
+--- a/tests/unit/caption/fallback-inference.test.ts
++++ b/tests/unit/caption/fallback-inference.test.ts
+@@ -4 +4 @@ import type { Mock } from 'vitest';
+-vi.mock('../../../server/lib/gemini.js', () => ({
++vi.mock('../../../server/lib/gemini.ts', () => ({
+@@ -19 +19 @@ describe('inferFallbackFromFacts helper', () => {
+-    const { inferFallbackFromFacts } = await import('../../../server/caption/inferFallbackFromFacts.js');
++    const { inferFallbackFromFacts } = await import('../../../server/caption/inferFallbackFromFacts.ts');
+@@ -35 +35 @@ describe('inferFallbackFromFacts helper', () => {
+-    const { inferFallbackFromFacts } = await import('../../../server/caption/inferFallbackFromFacts.js');
++    const { inferFallbackFromFacts } = await import('../../../server/caption/inferFallbackFromFacts.ts');
+@@ -51 +51 @@ describe('pipeline fallbacks', () => {
+-    const { textModel, visionModel } = await import('../../../server/lib/gemini.js');
++    const { textModel, visionModel } = await import('../../../server/lib/gemini.ts');
+@@ -110 +110 @@ describe('pipeline fallbacks', () => {
+-    const { textModel } = await import('../../../server/lib/gemini.js');
++    const { textModel } = await import('../../../server/lib/gemini.ts');
+@@ -117 +117 @@ describe('pipeline fallbacks', () => {
+-    const { generateVariants } = await import('../../../server/caption/geminiPipeline.js');
++    const { generateVariants } = await import('../../../server/caption/geminiPipeline.ts');
+@@ -188 +188 @@ describe('pipeline fallbacks', () => {
+-    const { textModel } = await import('../../../server/lib/gemini.js');
++    const { textModel } = await import('../../../server/lib/gemini.ts');
+@@ -195 +195 @@ describe('pipeline fallbacks', () => {
+-    const { generateVariantsTextOnly } = await import('../../../server/caption/textOnlyPipeline.js');
++    const { generateVariantsTextOnly } = await import('../../../server/caption/textOnlyPipeline.ts');
+diff --git a/tests/unit/caption/nsfw-fallback.test.ts b/tests/unit/caption/nsfw-fallback.test.ts
+index 2f1ce0f..6b533f8 100644
+--- a tests/unit/caption/nsfw-fallback.test.ts
++++ b/tests/unit/caption/nsfw-fallback.test.ts
+@@ -2 +2 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
+-import { nsfwCaptionFallback } from '../../../server/caption/nsfwFallback.js';
++import { nsfwCaptionFallback } from '../../../server/caption/nsfwFallback.ts';
+diff --git a/tests/unit/caption/pipeline-tone-retry.test.ts b/tests/unit/caption/pipeline-tone-retry.test.ts
+index a57ed95..ddf85ca 100644
+--- a/tests/unit/caption/pipeline-tone-retry.test.ts
++++ b/tests/unit/caption/pipeline-tone-retry.test.ts
+@@ -157 +157 @@ describe('Gemini pipelines keep persona tone on retry', () => {
+-    vi.doMock('../../../server/lib/gemini.js', () => ({ textModel, visionModel }));
++    vi.doMock('../../../server/lib/gemini.ts', () => ({ textModel, visionModel }));
+@@ -170 +170 @@ describe('Gemini pipelines keep persona tone on retry', () => {
+-    const geminiModule = await import('../../../server/caption/geminiPipeline.js');
++    const geminiModule = await import('../../../server/caption/geminiPipeline.ts');
+@@ -201 +201 @@ describe('Gemini pipelines keep persona tone on retry', () => {
+-    vi.doMock('../../../server/lib/gemini.js', () => ({ textModel, visionModel }));
++    vi.doMock('../../../server/lib/gemini.ts', () => ({ textModel, visionModel }));
+@@ -203 +203 @@ describe('Gemini pipelines keep persona tone on retry', () => {
+-    const rewriteModule = await import('../../../server/caption/rewritePipeline.js');
++    const rewriteModule = await import('../../../server/caption/rewritePipeline.ts');
+@@ -231 +231 @@ describe('Gemini pipelines keep persona tone on retry', () => {
+-    vi.doMock('../../../server/lib/gemini.js', () => ({ textModel }));
++    vi.doMock('../../../server/lib/gemini.ts', () => ({ textModel }));
+@@ -233 +233 @@ describe('Gemini pipelines keep persona tone on retry', () => {
+-    const textOnlyModule = await import('../../../server/caption/textOnlyPipeline.js');
++    const textOnlyModule = await import('../../../server/caption/textOnlyPipeline.ts');
+diff --git a/tests/unit/caption/suggestive-safety-level.test.ts b/tests/unit/caption/suggestive-safety-level.test.ts
+index a0471e0..bb15f10 100644
+--- a/tests/unit/caption/suggestive-safety-level.test.ts
++++ b/tests/unit/caption/suggestive-safety-level.test.ts
+@@ -2 +2 @@ import { describe, it, expect } from 'vitest';
+-import { CaptionItem } from '../../../server/caption/schema.js';
++import { CaptionItem } from '../../../server/caption/schema.ts';
+diff --git a/tests/unit/caption/voice-guide-prompt.test.ts b/tests/unit/caption/voice-guide-prompt.test.ts
+index 36a2247..af14e3c 100644
+--- a/tests/unit/caption/voice-guide-prompt.test.ts
++++ b/tests/unit/caption/voice-guide-prompt.test.ts
+@@ -3,4 +3,4 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
+-import { buildVoiceGuideBlock } from '../../../../server/caption/stylePack.js';
+-import { generateVariants } from '../../../../server/caption/geminiPipeline.js';
+-import { generateVariantsTextOnly } from '../../../../server/caption/textOnlyPipeline.js';
+-import { variantsRewrite } from '../../../../server/caption/rewritePipeline.js';
++import { buildVoiceGuideBlock } from '../../../../server/caption/stylePack.ts';
++import { generateVariants } from '../../../../server/caption/geminiPipeline.ts';
++import { generateVariantsTextOnly } from '../../../../server/caption/textOnlyPipeline.ts';
++import { variantsRewrite } from '../../../../server/caption/rewritePipeline.ts';
+@@ -16 +16 @@ const mockVisionModel = vi.hoisted(() => ({
+-vi.mock('../../../../server/lib/gemini.js', () => ({
++vi.mock('../../../../server/lib/gemini.ts', () => ({
+diff --git a/tests/unit/dashboard/dashboard-service.test.ts b/tests/unit/dashboard/dashboard-service.test.ts
+index 4b60d30..64c7a79 100644
+--- a/tests/unit/dashboard/dashboard-service.test.ts
++++ b/tests/unit/dashboard/dashboard-service.test.ts
+@@ -13 +13 @@ const mockDbInstance = vi.hoisted(() => ({
+-vi.mock('../../../server/database.js', () => ({
++vi.mock('../../../server/database.ts', () => ({
+@@ -17 +17 @@ vi.mock('../../../server/database.js', () => ({
+-vi.mock('../../../server/db.js', () => ({
++vi.mock('../../../server/db.ts', () => ({
+@@ -22 +22 @@ vi.mock('../../../server/db.js', () => ({
+-vi.mock('../../../shared/schema.js', () => ({
++vi.mock('../../../shared/schema.ts', () => ({
+@@ -62 +62 @@ vi.mock('drizzle-orm', () => ({
+-const { dashboardService } = await import('../../../server/services/dashboard-service.js');
++const { dashboardService } = await import('../../../server/services/dashboard-service.ts');
+@@ -72 +72 @@ describe('DashboardService', () => {
+-      const { db: mockDb } = await import('../../../server/database.js');
++      const { db: mockDb } = await import('../../../server/database.ts');
+@@ -119 +119 @@ describe('DashboardService', () => {
+-      const { db: mockDb } = await import('../../../server/database.js');
++      const { db: mockDb } = await import('../../../server/database.ts');
+@@ -143 +143 @@ describe('DashboardService', () => {
+-      const { db: mockDb } = await import('../../../server/database.js');
++      const { db: mockDb } = await import('../../../server/database.ts');
+@@ -181 +181 @@ describe('DashboardService', () => {
+-      const { db: mockDb } = await import('../../../server/database.js');
++      const { db: mockDb } = await import('../../../server/database.ts');
+@@ -204 +204 @@ describe('DashboardService', () => {
+-      const { db: mockDb } = await import('../../../server/database.js');
++      const { db: mockDb } = await import('../../../server/database.ts');
+@@ -229 +229 @@ describe('DashboardService', () => {
+-      const { db: mockDb } = await import('../../../server/database.js');
++      const { db: mockDb } = await import('../../../server/database.ts');
+diff --git a/tests/unit/expenses/expense-categories.test.ts b/tests/unit/expenses/expense-categories.test.ts
+index 27f65c9..6e4b120 100644
+--- a/tests/unit/expenses/expense-categories.test.ts
++++ b/tests/unit/expenses/expense-categories.test.ts
+@@ -19,2 +19,2 @@ vi.mock('../../../server/db', () => dbModuleMock);
+-vi.mock('../../../server/db.js', () => dbModuleMock);
+-vi.mock('../../../server/db.js', () => dbModuleMock);
++vi.mock('../../../server/db.ts', () => dbModuleMock);
++vi.mock('../../../server/db.ts', () => dbModuleMock);
+@@ -33,2 +33,2 @@ const expenseCategoriesTableMock = {
+-vi.mock('../../../shared/schema.js', async () => {
+-  const actual = await vi.importActual<typeof import('../../../shared/schema.js')>('../../../shared/schema.js');
++vi.mock('../../../shared/schema.ts', async () => {
++  const actual = await vi.importActual<typeof import('../../../shared/schema.ts')>('../../../shared/schema.ts');
+diff --git a/tests/unit/expenses/expense-operations.test.ts b/tests/unit/expenses/expense-operations.test.ts
+index 5a32a4b..ed2a06d 100644
+--- a/tests/unit/expenses/expense-operations.test.ts
++++ b/tests/unit/expenses/expense-operations.test.ts
+@@ -7 +7 @@ import type {
+-} from '../../../shared/schema.js';
++} from '../../../shared/schema.ts';
+@@ -14 +14 @@ const mockStorage = buildStorageMock();
+-vi.mock('../../../server/storage.js', () => ({
++vi.mock('../../../server/storage.ts', () => ({
+@@ -26 +26 @@ describe('Expense Operations Unit Tests', () => {
+-    const storageModule = await import('../../../server/storage.js');
++    const storageModule = await import('../../../server/storage.ts');
+diff --git a/tests/unit/expenses/expense-storage.totals.test.ts b/tests/unit/expenses/expense-storage.totals.test.ts
+index 7daaf74..ac87cac 100644
+--- a/tests/unit/expenses/expense-storage.totals.test.ts
++++ b/tests/unit/expenses/expense-storage.totals.test.ts
+@@ -5,2 +5,2 @@ import type {
+-} from '../../../shared/schema.js';
+-import { summarizeExpenseTotals } from '../../../server/storage.js';
++} from '../../../shared/schema.ts';
++import { summarizeExpenseTotals } from '../../../server/storage.ts';
+diff --git a/tests/unit/expenses/receipt-upload.test.ts b/tests/unit/expenses/receipt-upload.test.ts
+index 162d140..43f6822 100644
+--- a tests/unit/expenses/receipt-upload.test.ts
++++ b/tests/unit/expenses/receipt-upload.test.ts
+@@ -20,3 +20,3 @@ const mockAuthenticateToken = vi.hoisted(() => vi.fn());
+-vi.mock('../../../server/storage.js', () => ({ storage: mockStorage }));
+-vi.mock('../../../server/lib/media.js', () => ({ MediaManager: mockMediaManager }));
+-vi.mock('../../../server/middleware/auth.js', () => ({ authenticateToken: mockAuthenticateToken }));
++vi.mock('../../../server/storage.ts', () => ({ storage: mockStorage }));
++vi.mock('../../../server/lib/media.ts', () => ({ MediaManager: mockMediaManager }));
++vi.mock('../../../server/middleware/auth.ts', () => ({ authenticateToken: mockAuthenticateToken }));
+diff --git a/tests/unit/image-generator/enhanced-ai-service.test.ts b/tests/unit/image-generator/enhanced-ai-service.test.ts
+index dbe502f..d1915d8 100644
+--- a tests/unit/image-generator/enhanced-ai-service.test.ts
++++ b/tests/unit/image-generator/enhanced-ai-service.test.ts
+@@ -12 +12 @@ const mockEnv = {
+-vi.mock('../../../server/services/multi-ai-provider.js', () => ({
++vi.mock('../../../server/services/multi-ai-provider.ts', () => ({
+@@ -15,2 +15,2 @@ vi.mock('../../../server/services/multi-ai-provider.js', () => ({
+-vi.mock('../../../server/lib/logger-utils.js', () => ({ safeLog: vi.fn() }));
+-vi.mock('../../../server/content-templates.js', () => ({
++vi.mock('../../../server/lib/logger-utils.ts', () => ({ safeLog: vi.fn() }));
++vi.mock('../../../server/content-templates.ts', () => ({
+diff --git a/tests/unit/media/media-manager.test.ts b/tests/unit/media/media-manager.test.ts
+index 5d5e370..8b0002e 100644
+--- a tests/unit/media/media-manager.test.ts
++++ b tests/unit/media/media-manager.test.ts
+@@ -21 +21 @@ const mockConfig = vi.hoisted(() => ({
+-vi.mock('../../../server/db.js', () => ({
++vi.mock('../../../server/db.ts', () => ({
+@@ -25 +25 @@ vi.mock('../../../server/db.js', () => ({
+-vi.mock('../../../server/lib/config.js', () => ({
++vi.mock('../../../server/lib/config.ts', () => ({
+@@ -44 +44 @@ describe('MediaManager.getUserStorageUsage', () => {
+-    const { MediaManager } = await import('../../../server/lib/media.js');
++    const { MediaManager } = await import('../../../server/lib/media.ts');
+@@ -67 +67 @@ describe('MediaManager.getUserStorageUsage', () => {
+-    const { MediaManager } = await import('../../../server/lib/media.js');
++    const { MediaManager } = await import('../../../server/lib/media.ts');
+diff --git a/tests/unit/middleware/auth.test.ts b/tests/unit/middleware/auth.test.ts
+index 2f2d2c8..0e3c3e3 100644
+--- a tests/unit/middleware/auth.test.ts
++++ b tests/unit/middleware/auth.test.ts
+@@ -16 +16 @@ const dbMock = vi.hoisted(() => {
+-vi.mock('../../../server/db.js', () => ({
++vi.mock('../../../server/db.ts', () => ({
+@@ -47 +47 @@ const buildResponse = () => {
+-let authenticateToken: typeof import('../../../server/middleware/auth.js')['authenticateToken'];
++let authenticateToken: typeof import('../../../server/middleware/auth.ts')['authenticateToken'];
+@@ -53 +53 @@ const loadAuthenticateToken = async () => {
+-  ({ authenticateToken } = await import('../../../server/middleware/auth.js'));
++  ({ authenticateToken } = await import('../../../server/middleware/auth.ts'));
+@@ -80 +80 @@ describe('authenticateToken email verification', () => {
+-    } as unknown as import('../../../server/middleware/auth.js').AuthRequest;
++    } as unknown as import('../../../server/middleware/auth.ts').AuthRequest;
+@@ -106 +106 @@ describe('authenticateToken email verification', () => {
+-    } as unknown as import('../../../server/middleware/auth.js').AuthRequest;
++    } as unknown as import('../../../server/middleware/auth.ts').AuthRequest;
+@@ -144 +144 @@ describe('authenticateToken account restrictions', () => {
+-    } as unknown as import('../../../server/middleware/auth.js').AuthRequest;
++    } as unknown as import('../../../server/middleware/auth.ts').AuthRequest;
+@@ -173 +173 @@ describe('authenticateToken account restrictions', () => {
+-    } as unknown as import('../../../server/middleware/auth.js').AuthRequest;
++    } as unknown as import('../../../server/middleware/auth.ts').AuthRequest;
+@@ -203 +203 @@ describe('authenticateToken account restrictions', () => {
+-    } as unknown as import('../../../server/middleware/auth.js').AuthRequest;
++    } as unknown as import('../../../server/middleware/auth.ts').AuthRequest;
+@@ -230 +230 @@ describe('authenticateToken account restrictions', () => {
+-    } as unknown as import('../../../server/middleware/auth.js').AuthRequest;
++    } as unknown as import('../../../server/middleware/auth.ts').AuthRequest;
+@@ -257 +257 @@ describe('authenticateToken account restrictions', () => {
+-    } as unknown as import('../../../server/middleware/auth.js').AuthRequest;
++    } as unknown as import('../../../server/middleware/auth.ts').AuthRequest;
+@@ -285 +285 @@ describe('authenticateToken account restrictions', () => {
+-    } as unknown as import('../../../server/middleware/auth.js').AuthRequest;
++    } as unknown as import('../../../server/middleware/auth.ts').AuthRequest;
+diff --git a/tests/unit/preview-gate.test.ts b/tests/unit/preview-gate.test.ts
+index fce4bb2..a1c7839 100644
+--- a tests/unit/preview-gate.test.ts
++++ b tests/unit/preview-gate.test.ts
+@@ -4 +4 @@ import { db } from '../../server/db';
+-import { postPreviews, contentGenerations, users } from '@shared/schema.js';
++import { postPreviews, contentGenerations, users } from '@shared/schema.ts';
+diff --git a/tests/unit/server/app-bootstrap.smoke.test.ts b/tests/unit/server/app-bootstrap.smoke.test.ts
+index e6dee6d..0f895a9 100644
+--- a tests/unit/server/app-bootstrap.smoke.test.ts
++++ b tests/unit/server/app-bootstrap.smoke.test.ts
+@@ -6 +6 @@ const mockStartQueue = vi.fn();
+-vi.mock('../../../server/bootstrap/queue.js', () => ({
++vi.mock('../../../server/bootstrap/queue.ts', () => ({
+@@ -10 +10 @@ vi.mock('../../../server/bootstrap/queue.js', () => ({
+-vi.mock('../../../server/db.js', () => ({
++vi.mock('../../../server/db.ts', () => ({
+@@ -23,3 +23,3 @@ const mockLogger = {
+-vi.mock('../../../server/bootstrap/logger.js', async () => {
+-  const actual = await vi.importActual<typeof import('../../../server/bootstrap/logger.js')>(
+-    '../../../server/bootstrap/logger.js'
++vi.mock('../../../server/bootstrap/logger.ts', async () => {
++  const actual = await vi.importActual<typeof import('../../../server/bootstrap/logger.ts')>(
++    '../../../server/bootstrap/logger.ts'
+@@ -62 +62 @@ describe('createExpressApp bootstrap fallback', () => {
+-    const { createExpressApp } = await import('../../../server/index.js');
++    const { createExpressApp } = await import('../../../server/index.ts');
+diff --git a/tests/unit/server/reddit-communities.rules.test.ts b/tests/unit/server/reddit-communities.rules.test.ts
+index 448e828..9959f9c 100644
+--- a tests/unit/server/reddit-communities.rules.test.ts
++++ b tests/unit/server/reddit-communities.rules.test.ts
+@@ -5,5 +5,5 @@ import { fileURLToPath } from 'url';
+-import { normalizeRules, inferSellingPolicy, getCommunityInsights } from '../../../server/reddit-communities.js';
+-import { db } from '../../../server/db.js';
+-import { redditCommunities, subredditRules } from '../../../shared/schema.js';
+-import type { RedditCommunityRuleSet } from '../../../shared/schema.js';
+-import { syncSubredditRules } from '../../../server/scripts/sync-subreddit-rules.js';
++import { normalizeRules, inferSellingPolicy, getCommunityInsights } from '../../../server/reddit-communities.ts';
++import { db } from '../../../server/db.ts';
++import { redditCommunities, subredditRules } from '../../../shared/schema.ts';
++import type { RedditCommunityRuleSet } from '../../../shared/schema.ts';
++import { syncSubredditRules } from '../../../server/scripts/sync-subreddit-rules.ts';
+@@ -42,2 +42,2 @@ describe('Reddit Communities Rules Unit Tests', () => {
+-      const regularSeedPath = path.join(projectRoot, 'server/seeds/reddit-communities.json');
+-      const fullSeedPath = path.join(projectRoot, 'server/seeds/reddit-communities-full.json');
++      const regularSeedPath = path.join(projectRoot, 'server/seeds/reddit-communities.tson');
++      const fullSeedPath = path.join(projectRoot, 'server/seeds/reddit-communities-full.tson');
+diff --git a/tests/unit/server/reddit-manager.can-post.test.ts b/tests/unit/server/reddit-manager.can-post.test.ts
+index 2f6dcb9..5a547ff 100644
+--- a tests/unit/server/reddit-manager.can-post.test.ts
++++ b tests/unit/server/reddit-manager.can-post.test.ts
+@@ -2,2 +2,2 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
+-import { SafetyManager } from '../../../server/lib/safety-systems.js';
+-import { RedditManager } from '../../../server/lib/reddit.js';
++import { SafetyManager } from '../../../server/lib/safety-systems.ts';
++import { RedditManager } from '../../../server/lib/reddit.ts';
+@@ -6 +6 @@ import { RedditManager } from '../../../server/lib/reddit.js';
+-vi.mock('../../../server/lib/safety-systems.js', () => ({
++vi.mock('../../../server/lib/safety-systems.ts', () => ({
+@@ -15 +15 @@ vi.mock('../../../server/lib/safety-systems.js', () => ({
+-vi.mock('../../../server/db.js', () => ({
++vi.mock('../../../server/db.ts', () => ({
+@@ -38,2 +38,2 @@ describe('RedditManager.canPostToSubreddit Safety Checks', () => {
+-    vi.doMock('../../../server/lib/reddit.js', async () => {
+-      const original = await vi.importActual('../../../server/lib/reddit.js') as Record<string, unknown>;
++    vi.doMock('../../../server/lib/reddit.ts', async () => {
++      const original = await vi.importActual('../../../server/lib/reddit.ts') as Record<string, unknown>;
+diff --git a/tests/unit/server/reddit-shadowban.test.ts b/tests/unit/server/reddit-shadowban.test.ts
+index 4d5b76d..5d2d833 100644
+--- a tests/unit/server/reddit-shadowban.test.ts
++++ b tests/unit/server/reddit-shadowban.test.ts
+@@ -3,2 +3,2 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+-import { RedditManager } from '../../../server/lib/reddit.js';
+-import type { ShadowbanCheckApiResponse } from '../../../shared/schema.js';
++import { RedditManager } from '../../../server/lib/reddit.ts';
++import type { ShadowbanCheckApiResponse } from '../../../shared/schema.ts';
+@@ -62,2 +62,2 @@ global.fetch = mockFetch;
+-vi.mock('../../../server/lib/reddit.js', async () => {
+-  const actual = await vi.importActual<typeof import('../../../server/lib/reddit.js')>('../../../server/lib/reddit.js');
++vi.mock('../../../server/lib/reddit.ts', async () => {
++  const actual = await vi.importActual<typeof import('../../../server/lib/reddit.ts')>('../../../server/lib/reddit.ts');
+diff --git a/tests/unit/server/services/multi-ai-provider.test.ts b/tests/unit/server/services/multi-ai-provider.test.ts
+index e394eff..c4772b0 100644
+--- a tests/unit/server/services/multi-ai-provider.test.ts
++++ b tests/unit/server/services/multi-ai-provider.test.ts
+@@ -31 +31 @@ vi.mock('@anthropic-ai/sdk', () => ({ default: anthropicConstructor }));
+-vi.mock('../../../../server/lib/logger-utils.js', () => ({ safeLog: mockSafeLog }));
++vi.mock('../../../../server/lib/logger-utils.ts', () => ({ safeLog: mockSafeLog }));
+diff --

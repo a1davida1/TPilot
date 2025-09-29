@@ -4,10 +4,10 @@ import express from 'express';
 import session, { type Session, type SessionData } from 'express-session';
 import cookieParser from 'cookie-parser';
 import request from 'supertest';
-import { adminCommunitiesRouter } from '../../server/routes/admin-communities.js';
+import { adminCommunitiesRouter } from '../../server/routes/admin-communities.ts';
 
 // Mock the reddit-communities module
-vi.mock('../../server/reddit-communities.js', () => ({
+vi.mock('../../server/reddit-communities.ts', () => ({
   listCommunities: vi.fn().mockResolvedValue([
     {
       id: '1',
@@ -140,7 +140,7 @@ describe('Admin Communities Authentication Integration', () => {
       }
     }));
 
-    const redditCommunities = await import('../../server/reddit-communities.js');
+    const redditCommunities = await import('../../server/reddit-communities.ts');
 
     app.use((req, _res, next) => {
       const requestWithSession = req as RequestWithSession;
@@ -344,7 +344,7 @@ describe('Admin Communities Authentication Integration', () => {
   });
 
   test('handles non-existent community update gracefully', async () => {
-    const { updateCommunity } = await import('../../server/reddit-communities.js');
+    const { updateCommunity } = await import('../../server/reddit-communities.ts');
     vi.mocked(updateCommunity).mockResolvedValueOnce(undefined);
 
     await loginAs(adminUser);
@@ -362,7 +362,7 @@ describe('Admin Communities Authentication Integration', () => {
   });
 
   test('handles non-existent community deletion gracefully', async () => {
-    const { listCommunities } = await import('../../server/reddit-communities.js');
+    const { listCommunities } = await import('../../server/reddit-communities.ts');
     // Mock empty communities list to simulate non-existent community
     vi.mocked(listCommunities).mockResolvedValueOnce([]);
 

@@ -6,7 +6,7 @@ const exchangeRedditCodeMock = vi.fn(async () => {
   throw new Error('token exchange disabled in tests');
 });
 
-vi.mock('../../server/db.js', () => ({
+vi.mock('../../server/db.ts', () => ({
   db: {
     insert: vi.fn(() => ({
       values: vi.fn().mockReturnThis(),
@@ -24,7 +24,7 @@ vi.mock('../../server/db.js', () => ({
   }
 }));
 
-vi.mock('../../server/middleware/auth.js', () => ({
+vi.mock('../../server/middleware/auth.ts', () => ({
   authenticateToken: (req: express.Request, _res: express.Response, next: express.NextFunction) => {
     const requestWithUser = req as express.Request & { user?: { id: number } };
     requestWithUser.user = { id: 42 };
@@ -32,7 +32,7 @@ vi.mock('../../server/middleware/auth.js', () => ({
   }
 }));
 
-vi.mock('../../server/lib/safety-systems.js', () => ({
+vi.mock('../../server/lib/safety-systems.ts', () => ({
   SafetyManager: {
     performSafetyCheck: vi.fn(),
     checkRateLimit: vi.fn(),
@@ -40,7 +40,7 @@ vi.mock('../../server/lib/safety-systems.js', () => ({
   }
 }));
 
-vi.mock('../../server/lib/reddit.js', () => {
+vi.mock('../../server/lib/reddit.ts', () => {
   class MockRedditManager {
     constructor(_accessToken: string, _refreshToken: string, _userId: number) {}
 
@@ -65,9 +65,9 @@ vi.mock('../../server/lib/reddit.js', () => {
   };
 });
 
-import { registerRedditRoutes } from '../../server/reddit-routes.js';
-import { stateStore } from '../../server/services/state-store.js';
-import { logger } from '../../server/bootstrap/logger.js';
+import { registerRedditRoutes } from '../../server/reddit-routes.ts';
+import { stateStore } from '../../server/services/state-store.ts';
+import { logger } from '../../server/bootstrap/logger.ts';
 
 const FORWARDED_IP = '203.0.113.10';
 

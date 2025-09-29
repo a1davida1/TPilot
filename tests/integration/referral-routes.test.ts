@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
-import { createApp } from '../../server/app.js';
-import { ReferralManager } from '../../server/lib/referral-system.js';
+import { createApp } from '../../server/app.ts';
+import { ReferralManager } from '../../server/lib/referral-system.ts';
 
 // Mock the ReferralManager to avoid database dependencies
-vi.mock('../../server/lib/referral-system.js', () => ({
+vi.mock('../../server/lib/referral-system.ts', () => ({
   ReferralManager: {
     getUserReferralCode: vi.fn(),
     getReferralInfo: vi.fn(),
@@ -14,7 +14,7 @@ vi.mock('../../server/lib/referral-system.js', () => ({
 }));
 
 // Mock logger to avoid console noise
-vi.mock('../../server/bootstrap/logger.js', () => ({
+vi.mock('../../server/bootstrap/logger.ts', () => ({
   logger: {
     info: vi.fn(),
     error: vi.fn(),
@@ -23,7 +23,7 @@ vi.mock('../../server/bootstrap/logger.js', () => ({
 }));
 
 // Mock authentication middleware to bypass JWT issues in tests
-vi.mock('../../server/middleware/auth.js', () => ({
+vi.mock('../../server/middleware/auth.ts', () => ({
   authenticateToken: vi.fn((req: { headers: { authorization?: string }; user?: unknown }, res: { status: (code: number) => { json: (data: unknown) => unknown } }, next: () => unknown) => {
     // Mock user for authenticated requests
     const authHeader = req.headers['authorization'];
@@ -43,7 +43,7 @@ vi.mock('../../server/middleware/auth.js', () => ({
 }));
 
 // Mock database to avoid real DB calls
-vi.mock('../../server/db.js', () => ({
+vi.mock('../../server/db.ts', () => ({
   db: {
     select: vi.fn(() => ({
       from: vi.fn(() => ({

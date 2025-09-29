@@ -8,11 +8,11 @@ type AuthenticatedRequest = Request & { user?: MockUser };
 
 let authImpl: (req: AuthenticatedRequest, res: Response, next: NextFunction) => void = (_req, _res, next) => next();
 
-vi.mock('../../server/middleware/auth.js', () => ({
+vi.mock('../../server/middleware/auth.ts', () => ({
   authenticateToken: (req: AuthenticatedRequest, res: Response, next: NextFunction) => authImpl(req, res, next)
 }));
 
-import * as analyticsModule from '../../server/analytics-routes.js';
+import * as analyticsModule from '../../server/analytics-routes.ts';
 
 const { registerAnalyticsRoutes, analyticsService } = analyticsModule;
 

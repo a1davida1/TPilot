@@ -5,11 +5,11 @@ import type { Express } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 
-import { createApp } from '../../server/index.js';
-import { db } from '../../server/db.js';
-import { postJobs, users } from '../../shared/schema.js';
-import * as queueModule from '../../server/lib/queue/index.js';
-import { PostScheduler } from '../../server/lib/scheduling.js';
+import { createApp } from '../../server/index.ts';
+import { db } from '../../server/db.ts';
+import { postJobs, users } from '../../shared/schema.ts';
+import * as queueModule from '../../server/lib/queue/index.ts';
+import { PostScheduler } from '../../server/lib/scheduling.ts';
 
 interface PostingJobPayload {
   userId: number;

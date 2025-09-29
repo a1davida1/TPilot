@@ -21,24 +21,24 @@ describe('/api/caption/generate OpenAI fallback', () => {
   beforeEach(async () => {
     vi.resetModules();
 
-    vi.doMock('../../server/caption/openaiFallback.js', () => ({
+    vi.doMock('../../server/caption/openaiFallback.ts', () => ({
       openAICaptionFallback: vi.fn().mockResolvedValue(fallbackResult),
     }));
 
-    vi.doMock('../../server/lib/gemini.js', () => ({
+    vi.doMock('../../server/lib/gemini.ts', () => ({
       isGeminiAvailable: vi.fn(() => false),
       textModel: { generateContent: vi.fn() },
       visionModel: { generateContent: vi.fn() },
     }));
 
     createGenerationMock = vi.fn().mockResolvedValue(undefined);
-    vi.doMock('../../server/storage.js', () => ({
+    vi.doMock('../../server/storage.ts', () => ({
       storage: {
         createGeneration: createGenerationMock,
       },
     }));
 
-    vi.doMock('../../server/middleware/auth.js', () => ({
+    vi.doMock('../../server/middleware/auth.ts', () => ({
       authenticateToken: (req: Request & { user?: { id: number } }, _res: Response, next: NextFunction) => {
         req.user = { id: 101 };
         next();
@@ -47,10 +47,10 @@ describe('/api/caption/generate OpenAI fallback', () => {
 
     app = express();
     app.use(express.json());
-    const { captionRouter } = await import('../../server/routes/caption.js');
+    const { captionRouter } = await import('../../server/routes/caption.ts');
     app.use('/api/caption', captionRouter);
 
-    const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.js');
+    const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.ts');
     openAIFallbackMock = vi.mocked(openAICaptionFallback);
   });
 

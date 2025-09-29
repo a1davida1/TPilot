@@ -1,7 +1,7 @@
 /* eslint-env node, jest */
 import { describe, test, expect } from 'vitest';
 import request from 'supertest';
-import { createApp } from '../../server/index.js';
+import { createApp } from '../../server/index.ts';
 
 describe('Reddit Communities Schema Integration', () => {
 

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll, vi } 
 import request from 'supertest';
 import express from 'express';
 import type { Express } from 'express';
-import { storage } from '../../server/storage.js';
+import { storage } from '../../server/storage.ts';
 
 interface Perk {
   id: string;
@@ -39,7 +39,7 @@ const mockAuthMiddleware = vi.fn((req: Express.Request, res: Express.Response, n
 });
 
 // Mock the pro-perks module
-vi.mock('../../server/pro-perks.js', () => ({
+vi.mock('../../server/pro-perks.ts', () => ({
   getAvailablePerks: vi.fn(() => [
     {
       id: 'onlyfans-referral',
@@ -65,7 +65,7 @@ vi.mock('../../server/pro-perks.js', () => ({
 }));
 
 // Mock the authenticateToken middleware
-vi.mock('../../server/middleware/auth.js', () => ({
+vi.mock('../../server/middleware/auth.ts', () => ({
   authenticateToken: mockAuthMiddleware
 }));
 
@@ -74,7 +74,7 @@ type MockedStorage = {
   getUserById: ReturnType<typeof vi.fn>;
 };
 
-vi.mock('../../server/storage.js', () => ({
+vi.mock('../../server/storage.ts', () => ({
   storage: {
     getUserById: vi.fn()
   } as MockedStorage
@@ -190,7 +190,7 @@ describe('Pro Resources Integration', () => {
     app.use(express.json());
     
     // Import the real routes function
-    const { registerRoutes } = await import('../../server/routes.js');
+    const { registerRoutes } = await import('../../server/routes.ts');
     
     // Call registerRoutes to mount all routes including pro-resources
     await registerRoutes(app);
@@ -427,7 +427,7 @@ describe('Pro Resources Integration', () => {
         // Note: no subscriptionTier field, should trigger fallback
       };
 
-      const { storage } = await import('../../server/storage.js');
+      const { storage } = await import('../../server/storage.ts');
       const storedUser: Partial<User> & { subscriptionTier?: string | null } = {
         id: persistedUserId,
         tier: 'pro'

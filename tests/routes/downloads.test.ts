@@ -4,8 +4,8 @@ import request from 'supertest';
 import path from 'path';
 import fs from 'fs/promises';
 import crypto from 'crypto';
-import { createLocalDownloadRouter } from '../../server/routes/downloads.js';
-import { MediaManager } from '../../server/lib/media.js';
+import { createLocalDownloadRouter } from '../../server/routes/downloads.ts';
+import { MediaManager } from '../../server/lib/media.ts';
 
 describe('createLocalDownloadRouter', () => {
   const app = express();

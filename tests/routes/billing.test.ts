@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { storage } from '../../server/storage.js';
+import { storage } from '../../server/storage.ts';
 
 // Mock dependencies
-vi.mock('../../server/storage.js', () => ({
+vi.mock('../../server/storage.ts', () => ({
   storage: {
     getUserById: vi.fn(),
     updateUserTier: vi.fn(),
@@ -11,7 +11,7 @@ vi.mock('../../server/storage.js', () => ({
   },
 }));
 
-vi.mock('../../server/lib/billing/stripe.js', () => ({
+vi.mock('../../server/lib/billing/stripe.ts', () => ({
   createSubscription: vi.fn(),
   cancelSubscription: vi.fn(),
   updateSubscription: vi.fn(),
@@ -39,7 +39,7 @@ describe('Billing System', () => {
       };
 
       storage.getUserById.mockResolvedValue(mockUser);
-      const { createSubscription } = await import('../../server/lib/billing/stripe.js');
+      const { createSubscription } = await import('../../server/lib/billing/stripe.ts');
       createSubscription.mockResolvedValue(mockSubscription);
 
       // This would normally be tested via API route
@@ -62,7 +62,7 @@ describe('Billing System', () => {
       };
 
       storage.getUserById.mockResolvedValue(mockUser);
-      const { cancelSubscription } = await import('../../server/lib/billing/stripe.js');
+      const { cancelSubscription } = await import('../../server/lib/billing/stripe.ts');
       cancelSubscription.mockResolvedValue({ success: true });
 
       const result = await cancelSubscription('sub_123');

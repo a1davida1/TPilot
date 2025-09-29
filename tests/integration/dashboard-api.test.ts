@@ -2,8 +2,8 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import request from 'supertest';
 import type { Express } from 'express';
 import jwt from 'jsonwebtoken';
-import { createApp } from '../../server/index.js';
-import { storage } from '../../server/storage.js';
+import { createApp } from '../../server/index.ts';
+import { storage } from '../../server/storage.ts';
 
 describe('Dashboard API', () => {
   let app: Express;
@@ -221,8 +221,8 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import request from 'supertest';
 import type { Express } from 'express';
 import jwt from 'jsonwebtoken';
-import { createApp } from '../../server/index.js';
-import { storage } from '../../server/storage.js';
+import { createApp } from '../../server/index.ts';
+import { storage } from '../../server/storage.ts';
 
 describe('Dashboard API readiness', () => {
   it('registers dashboard endpoints before the server starts handling traffic', async () => {

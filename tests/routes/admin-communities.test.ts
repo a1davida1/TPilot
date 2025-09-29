@@ -1,21 +1,21 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import supertest from 'supertest';
 import express from 'express';
-import { adminCommunitiesRouter } from '../../server/routes/admin-communities.js';
+import { adminCommunitiesRouter } from '../../server/routes/admin-communities.ts';
 
 // Mock dependencies with factory functions
-vi.mock('../../server/reddit-communities.js', () => ({
+vi.mock('../../server/reddit-communities.ts', () => ({
   listCommunities: vi.fn(),
   createCommunity: vi.fn(),
   updateCommunity: vi.fn(),
   deleteCommunity: vi.fn(),
 }));
 
-vi.mock('../../server/middleware/auth.js', () => ({
+vi.mock('../../server/middleware/auth.ts', () => ({
   authenticateToken: vi.fn()
 }));
 
-vi.mock('../../server/admin-routes.js', () => ({
+vi.mock('../../server/admin-routes.ts', () => ({
   requireAdmin: vi.fn()
 }));
 
@@ -29,9 +29,9 @@ vi.mock('@shared/schema', () => ({
 }));
 
 // Import mocked functions
-import { listCommunities, createCommunity, updateCommunity, deleteCommunity } from '../../server/reddit-communities.js';
-import { authenticateToken } from '../../server/middleware/auth.js';
-import { requireAdmin } from '../../server/admin-routes.js';
+import { listCommunities, createCommunity, updateCommunity, deleteCommunity } from '../../server/reddit-communities.ts';
+import { authenticateToken } from '../../server/middleware/auth.ts';
+import { requireAdmin } from '../../server/admin-routes.ts';
 import { insertRedditCommunitySchema } from '@shared/schema';
 
 const mockListCommunities = vi.mocked(listCommunities);

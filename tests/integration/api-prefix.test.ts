@@ -3,9 +3,9 @@ import type { Server } from 'http';
 import type Stripe from 'stripe';
 import request from 'supertest';
 import { beforeAll, afterAll, describe, expect, it, vi } from 'vitest';
-import { stripe } from '../../server/lib/billing/stripe.js';
+import { stripe } from '../../server/lib/billing/stripe.ts';
 
-vi.mock('../../server/storage.js', () => ({
+vi.mock('../../server/storage.ts', () => ({
   storage: {
     getUser: vi.fn(async () => undefined),
     getUserById: vi.fn(async () => undefined),
@@ -23,7 +23,7 @@ vi.mock('../../server/storage.js', () => ({
   },
 }));
 
-let createApp: typeof import('../../server/index.js')['createApp'];
+let createApp: typeof import('../../server/index.ts')['createApp'];
 
 async function closeServer(server: Server | undefined): Promise<void> {
   if (!server || !('close' in server)) {
@@ -46,7 +46,7 @@ describe('API prefix alignment', () => {
   let server: Server | undefined;
 
   beforeAll(async () => {
-    ({ createApp } = await import('../../server/index.js'));
+    ({ createApp } = await import('../../server/index.ts'));
     const result = await createApp({
       startQueue: false,
       configureStaticAssets: false,

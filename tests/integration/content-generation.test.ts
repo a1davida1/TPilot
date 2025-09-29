@@ -68,26 +68,26 @@ const createGenerationMock = vi.fn();
 
 class MockInvalidImageError extends Error {}
 
-vi.mock('../../server/caption/geminiPipeline', () => ({
+vi.mock('../../server/caption/geminiPipeline.ts', () => ({
   pipeline: pipelineMock,
   InvalidImageError: MockInvalidImageError
 }));
 
-vi.mock('../../server/caption/textOnlyPipeline.js', () => ({
+vi.mock('../../server/caption/textOnlyPipeline.ts', () => ({
   pipelineTextOnly: pipelineTextOnlyMock
 }));
 
-vi.mock('../../server/caption/rewritePipeline.js', () => ({
+vi.mock('../../server/caption/rewritePipeline.ts', () => ({
   pipelineRewrite: pipelineRewriteMock
 }));
 
-vi.mock('../../server/storage.js', () => ({
+vi.mock('../../server/storage.ts', () => ({
   storage: {
     createGeneration: createGenerationMock
   }
 }));
 
-vi.mock('../../server/middleware/auth.js', () => {
+vi.mock('../../server/middleware/auth.ts', () => {
   type AuthenticatedRequest = Request & { user?: TestUser };
   const authenticateToken = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     const authHeader = req.headers.authorization;
@@ -188,7 +188,7 @@ describe('Caption generation route contract', () => {
   };
 
   beforeAll(async () => {
-    const routeModule = await import('../../server/routes/caption.js');
+    const routeModule = await import('../../server/routes/caption.ts');
 
     InvalidImageErrorCtor = MockInvalidImageError;
 

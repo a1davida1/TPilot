@@ -20,31 +20,31 @@ const indexFilePath = path.join(clientDistRoot, 'index.html');
 const jsAssetPath = path.join(assetsDirectory, 'app.js');
 const cssAssetPath = path.join(assetsDirectory, 'styles.css');
 
-vi.mock('../../server/routes.js', () => ({
+vi.mock('../../server/routes.ts', () => ({
   registerRoutes: vi.fn(async (app: Express) => createServer(app))
 }));
 
-vi.mock('../../server/auth.js', () => ({
+vi.mock('../../server/auth.ts', () => ({
   setupAuth: vi.fn()
 }));
 
-vi.mock('../../server/social-auth.js', () => ({
+vi.mock('../../server/social-auth.ts', () => ({
   setupSocialAuth: vi.fn()
 }));
 
-vi.mock('../../server/routes/webhooks.stripe.js', () => ({
+vi.mock('../../server/routes/webhooks.stripe.ts', () => ({
   mountStripeWebhook: vi.fn()
 }));
 
-vi.mock('../../server/routes/billing.js', () => ({
+vi.mock('../../server/routes/billing.ts', () => ({
   mountBillingRoutes: vi.fn()
 }));
 
-vi.mock('../../server/bootstrap/queue.js', () => ({
+vi.mock('../../server/bootstrap/queue.ts', () => ({
   startQueue: vi.fn(async () => undefined)
 }));
 
-type LoggerType = typeof import('../../server/bootstrap/logger.js')['logger'];
+type LoggerType = typeof import('../../server/bootstrap/logger.ts')['logger'];
 type LoggerInfoParams = Parameters<LoggerType['info']>;
 type LoggerInfoReturn = ReturnType<LoggerType['info']>;
 type LoggerWarnParams = Parameters<LoggerType['warn']>;
@@ -53,7 +53,7 @@ type LoggerWarnReturn = ReturnType<LoggerType['warn']>;
 type InfoSpy = SpyInstance<LoggerInfoParams, LoggerInfoReturn>;
 type WarnSpy = SpyInstance<LoggerWarnParams, LoggerWarnReturn>;
 
-type CreateApp = typeof import('../../server/index.js')['createApp'];
+type CreateApp = typeof import('../../server/index.ts')['createApp'];
 
 type CreateAppResult = Awaited<ReturnType<CreateApp>>;
 
@@ -106,8 +106,8 @@ beforeAll(async () => {
   process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? 'static-assets-test-session-secret-123456';
   process.env.DATABASE_URL = process.env.DATABASE_URL ?? 'https://example.com/database';
 
-  ({ createApp } = await import('../../server/index.js'));
-  ({ logger: loggerInstance } = await import('../../server/bootstrap/logger.js'));
+  ({ createApp } = await import('../../server/index.ts'));
+  ({ logger: loggerInstance } = await import('../../server/bootstrap/logger.ts'));
 });
 
 afterAll(async () => {
