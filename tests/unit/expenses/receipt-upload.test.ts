@@ -17,9 +17,9 @@ const mockMediaManager = vi.hoisted(() => ({
 
 const mockAuthenticateToken = vi.hoisted(() => vi.fn());
 
-vi.mock('../../../server/storage.js', () => ({ storage: mockStorage }));
-vi.mock('../../../server/lib/media.js', () => ({ MediaManager: mockMediaManager }));
-vi.mock('../../../server/middleware/auth.js', () => ({ authenticateToken: mockAuthenticateToken }));
+vi.mock('../../../server/storage.ts', () => ({ storage: mockStorage }));
+vi.mock('../../../server/lib/media.ts', () => ({ MediaManager: mockMediaManager }));
+vi.mock('../../../server/middleware/auth.ts', () => ({ authenticateToken: mockAuthenticateToken }));
 vi.mock('fs/promises', () => ({
   default: {
     mkdir: vi.fn(),

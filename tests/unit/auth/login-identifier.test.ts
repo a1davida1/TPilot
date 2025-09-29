@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll } from
 import request from 'supertest';
 import express from 'express';
 import cookieParser from 'cookie-parser';
-import { setupAuth } from '../../../server/auth.js';
+import { setupAuth } from '../../../server/auth.ts';
 import bcrypt from 'bcrypt';
 import { db } from '../../../server/db';
 import { users } from '../../../shared/schema.js';

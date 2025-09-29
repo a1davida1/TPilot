@@ -16,8 +16,8 @@ const dbModuleMock: { db: MockedDb } = {
 };
 
 vi.mock('../../../server/db', () => dbModuleMock);
-vi.mock('../../../server/db.js', () => dbModuleMock);
-vi.mock('../../../server/db.js', () => dbModuleMock);
+vi.mock('../../../server/db.ts', () => dbModuleMock);
+vi.mock('../../../server/db.ts', () => dbModuleMock);
 
 const expenseCategoriesTableMock = {
   id: { name: 'id' },

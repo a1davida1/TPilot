@@ -13,7 +13,7 @@ const dbMock = vi.hoisted(() => {
   return db;
 });
 
-vi.mock('../../../server/db.js', () => ({
+vi.mock('../../../server/db.ts', () => ({
   db: dbMock,
 }));
 
@@ -44,13 +44,13 @@ const buildResponse = () => {
   };
 };
 
-let authenticateToken: typeof import('../../../server/middleware/auth.js')['authenticateToken'];
+let authenticateToken: typeof import('../../../server/middleware/auth.ts')['authenticateToken'];
 
 const loadAuthenticateToken = async () => {
   vi.clearAllMocks();
   dbWhereMock.mockReset();
 
-  ({ authenticateToken } = await import('../../../server/middleware/auth.js'));
+  ({ authenticateToken } = await import('../../../server/middleware/auth.ts'));
 };
 
 afterAll(() => {
@@ -77,7 +77,7 @@ describe('authenticateToken email verification', () => {
     const req = {
       headers: { authorization: `Bearer ${token}` },
       cookies: { authToken: token },
-    } as unknown as import('../../../server/middleware/auth.js').AuthRequest;
+    } as unknown as import('../../../server/middleware/auth.ts').AuthRequest;
 
     const res = buildResponse();
     const next = vi.fn();
@@ -103,7 +103,7 @@ describe('authenticateToken email verification', () => {
           emailVerified: false,
         },
       },
-    } as unknown as import('../../../server/middleware/auth.js').AuthRequest;
+    } as unknown as import('../../../server/middleware/auth.ts').AuthRequest;
 
     const res = buildResponse();
     const next = vi.fn();
@@ -141,7 +141,7 @@ describe('authenticateToken account restrictions', () => {
     const req = {
       headers: { authorization: `Bearer ${token}` },
       cookies: { authToken: token },
-    } as unknown as import('../../../server/middleware/auth.js').AuthRequest;
+    } as unknown as import('../../../server/middleware/auth.ts').AuthRequest;
 
     const res = buildResponse();
     const next = vi.fn();
@@ -170,7 +170,7 @@ describe('authenticateToken account restrictions', () => {
     const req = {
       headers: { authorization: `Bearer ${token}` },
       cookies: { authToken: token },
-    } as unknown as import('../../../server/middleware/auth.js').AuthRequest;
+    } as unknown as import('../../../server/middleware/auth.ts').AuthRequest;
 
     const res = buildResponse();
     const next = vi.fn();
@@ -200,7 +200,7 @@ describe('authenticateToken account restrictions', () => {
     const req = {
       headers: { authorization: `Bearer ${token}` },
       cookies: { authToken: token },
-    } as unknown as import('../../../server/middleware/auth.js').AuthRequest;
+    } as unknown as import('../../../server/middleware/auth.ts').AuthRequest;
 
     const res = buildResponse();
     const next = vi.fn();
@@ -227,7 +227,7 @@ describe('authenticateToken account restrictions', () => {
           isDeleted: true,
         },
       },
-    } as unknown as import('../../../server/middleware/auth.js').AuthRequest;
+    } as unknown as import('../../../server/middleware/auth.ts').AuthRequest;
 
     const res = buildResponse();
     const next = vi.fn();
@@ -254,7 +254,7 @@ describe('authenticateToken account restrictions', () => {
           bannedAt,
         },
       },
-    } as unknown as import('../../../server/middleware/auth.js').AuthRequest;
+    } as unknown as import('../../../server/middleware/auth.ts').AuthRequest;
 
     const res = buildResponse();
     const next = vi.fn();
@@ -282,7 +282,7 @@ describe('authenticateToken account restrictions', () => {
           suspendedUntil,
         },
       },
-    } as unknown as import('../../../server/middleware/auth.js').AuthRequest;
+    } as unknown as import('../../../server/middleware/auth.ts').AuthRequest;
 
     const res = buildResponse();
     const next = vi.fn();

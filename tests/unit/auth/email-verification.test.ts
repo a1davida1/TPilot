@@ -29,8 +29,8 @@ const mockEmailService = vi.hoisted(() => ({
   sendWelcomeEmail: vi.fn().mockResolvedValue(true)
 }));
 
-vi.mock('../../../server/storage.js', () => ({ storage: mockStorage }));
-vi.mock('../../../server/services/email-service.js', () => ({ emailService: mockEmailService }));
+vi.mock('../../../server/storage.ts', () => ({ storage: mockStorage }));
+vi.mock('../../../server/services/email-service.ts', () => ({ emailService: mockEmailService }));
 
 // Import auth setup after mocking
 import { setupAuth } from '../../../server/auth';
