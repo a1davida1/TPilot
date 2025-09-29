@@ -1,0 +1,1137 @@
+ DEPRECATED  "environmentMatchGlobs" is deprecated. Use `test.projects` to define different configurations instead.
+
+ RUN  v3.2.4 /home/runner/workspace
+
+stdout | tests/integration/api-prefix.test.ts
+[dotenv@17.2.2] injecting env (2) from .env.test -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+
+stdout | tests/unit/server/app-bootstrap.smoke.test.ts
+[dotenv@17.2.2] injecting env (2) from .env.test -- tip: ⚙️  override existing env vars with { override: true }
+
+stdout | tests/integration/pro-resources.test.ts
+[dotenv@17.2.2] injecting env (2) from .env.test -- tip: ⚙️  enable debug logging with { debug: true }
+
+stdout | tests/integration/api-prefix.test.ts > API prefix alignment
+[dotenv@17.2.2] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > GET /api/pro-resources > should return 403 for unauthenticated requests
+[dotenv@17.2.2] injecting env (0) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+
+stdout | tests/unit/server/app-bootstrap.smoke.test.ts > createExpressApp bootstrap fallback > resolves when queue prerequisites are absent
+[dotenv@17.2.2] injecting env (3) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > GET /api/pro-resources > should return 403 for unauthenticated requests
+warn: Session middleware not configured before registerRoutes; applying default session middleware {"timestamp":"2025-09-29T10:56:21.209Z"}
+2025-09-29T10:56:21.308Z [[32minfo[39m] Session store configured with PostgreSQL backend
+
+ ↓ tests/integration/api-prefix.test.ts > API prefix alignment > enforces login rate limiting on the prefixed auth route
+ ↓ tests/integration/api-prefix.test.ts > API prefix alignment > delivers Stripe webhooks using the shared API prefix
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > GET /api/pro-resources > should return 403 for unauthenticated requests
+info: [2025-09-29T10:56:21.389Z] GET /api/pro-resources - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:21.389Z"}
+
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > GET /api/pro-resources > should return 403 for free tier users
+warn: Session middleware not configured before registerRoutes; applying default session middleware {"timestamp":"2025-09-29T10:56:21.453Z"}
+2025-09-29T10:56:21.456Z [[32minfo[39m] Session store configured with PostgreSQL backend
+
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > GET /api/pro-resources > should return 403 for free tier users
+info: [2025-09-29T10:56:21.471Z] GET /api/pro-resources - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:21.472Z"}
+
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > GET /api/pro-resources > should return pro resources for authenticated pro users
+warn: Session middleware not configured before registerRoutes; applying default session middleware {"timestamp":"2025-09-29T10:56:21.504Z"}
+2025-09-29T10:56:21.505Z [[32minfo[39m] Session store configured with PostgreSQL backend
+
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > GET /api/pro-resources > should return pro resources for authenticated pro users
+info: [2025-09-29T10:56:21.537Z] GET /api/pro-resources - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:21.537Z"}
+
+ ✓ tests/integration/pro-resources.test.ts > Pro Resources Integration > GET /api/pro-resources > should return 403 for unauthenticated requests 10052ms
+ ✓ tests/integration/pro-resources.test.ts > Pro Resources Integration > GET /api/pro-resources > should return 403 for free tier users 54ms
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > GET /api/pro-resources/:id/signup-instructions > should return 401 for unauthenticated requests
+warn: Session middleware not configured before registerRoutes; applying default session middleware {"timestamp":"2025-09-29T10:56:21.571Z"}
+2025-09-29T10:56:21.571Z [[32minfo[39m] Session store configured with PostgreSQL backend
+
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > GET /api/pro-resources/:id/signup-instructions > should return 401 for unauthenticated requests
+info: [2025-09-29T10:56:21.595Z] GET /api/pro-resources/test-perk-id/signup-instructions - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:21.595Z"}
+
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > GET /api/pro-resources/:id/signup-instructions > should return 403 for free tier users
+warn: Session middleware not configured before registerRoutes; applying default session middleware {"timestamp":"2025-09-29T10:56:21.601Z"}
+2025-09-29T10:56:21.602Z [[32minfo[39m] Session store configured with PostgreSQL backend
+
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > GET /api/pro-resources/:id/signup-instructions > should return 403 for free tier users
+info: [2025-09-29T10:56:21.627Z] GET /api/pro-resources/test-perk-id/signup-instructions - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:21.627Z"}
+
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > GET /api/pro-resources/:id/signup-instructions > should return 404 for non-existent perk
+warn: Session middleware not configured before registerRoutes; applying default session middleware {"timestamp":"2025-09-29T10:56:21.646Z"}
+2025-09-29T10:56:21.648Z [[32minfo[39m] Session store configured with PostgreSQL backend
+
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > GET /api/pro-resources/:id/signup-instructions > should return 404 for non-existent perk
+info: [2025-09-29T10:56:21.663Z] GET /api/pro-resources/non-existent-perk/signup-instructions - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:21.663Z"}
+
+ ✓ tests/integration/pro-resources.test.ts > Pro Resources Integration > GET /api/pro-resources > should return pro resources for authenticated pro users 64ms
+ ✓ tests/integration/pro-resources.test.ts > Pro Resources Integration > GET /api/pro-resources/:id/signup-instructions > should return 401 for unauthenticated requests 31ms
+ ✓ tests/integration/pro-resources.test.ts > Pro Resources Integration > GET /api/pro-resources/:id/signup-instructions > should return 403 for free tier users 37ms
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > GET /api/pro-resources/:id/signup-instructions > should return signup instructions for valid perk and pro user
+warn: Session middleware not configured before registerRoutes; applying default session middleware {"timestamp":"2025-09-29T10:56:21.671Z"}
+2025-09-29T10:56:21.675Z [[32minfo[39m] Session store configured with PostgreSQL backend
+
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > GET /api/pro-resources/:id/signup-instructions > should return signup instructions for valid perk and pro user
+info: [2025-09-29T10:56:21.692Z] GET /api/pro-resources/onlyfans-referral/signup-instructions - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:21.693Z"}
+
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > POST /api/pro-resources/:id/referral-code > should return 401 for unauthenticated requests
+warn: Session middleware not configured before registerRoutes; applying default session middleware {"timestamp":"2025-09-29T10:56:21.709Z"}
+2025-09-29T10:56:21.710Z [[32minfo[39m] Session store configured with PostgreSQL backend
+
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > POST /api/pro-resources/:id/referral-code > should return 401 for unauthenticated requests
+info: [2025-09-29T10:56:21.754Z] POST /api/pro-resources/test-perk-id/referral-code - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:21.754Z"}
+
+ × tests/unit/server/app-bootstrap.smoke.test.ts > createExpressApp bootstrap fallback > resolves when queue prerequisites are absent 11295ms
+   → expected "spy" to not be called at all, but actually been called 1 times[90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m    Array []
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > POST /api/pro-resources/:id/referral-code > should return 403 for free tier users
+warn: Session middleware not configured before registerRoutes; applying default session middleware {"timestamp":"2025-09-29T10:56:21.764Z"}
+2025-09-29T10:56:21.766Z [[32minfo[39m] Session store configured with PostgreSQL backend
+
+ ✓ tests/integration/pro-resources.test.ts > Pro Resources Integration > GET /api/pro-resources/:id/signup-instructions > should return 404 for non-existent perk 34ms
+ ✓ tests/integration/pro-resources.test.ts > Pro Resources Integration > GET /api/pro-resources/:id/signup-instructions > should return signup instructions for valid perk and pro user 36ms
+ × tests/integration/pro-resources.test.ts > Pro Resources Integration > POST /api/pro-resources/:id/referral-code > should return 401 for unauthenticated requests 57ms
+   → expected 401 "Unauthorized", got 404 "Not Found"
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > POST /api/pro-resources/:id/referral-code > should return 403 for free tier users
+info: [2025-09-29T10:56:21.779Z] POST /api/pro-resources/test-perk-id/referral-code - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:21.779Z"}
+
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > POST /api/pro-resources/:id/referral-code > should return 404 for non-existent perk
+warn: Session middleware not configured before registerRoutes; applying default session middleware {"timestamp":"2025-09-29T10:56:21.787Z"}
+2025-09-29T10:56:21.787Z [[32minfo[39m] Session store configured with PostgreSQL backend
+
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > POST /api/pro-resources/:id/referral-code > should return 404 for non-existent perk
+info: [2025-09-29T10:56:21.794Z] POST /api/pro-resources/non-existent-perk/referral-code - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:21.794Z"}
+
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > POST /api/pro-resources/:id/referral-code > should generate referral code for valid perk and pro user
+warn: Session middleware not configured before registerRoutes; applying default session middleware {"timestamp":"2025-09-29T10:56:21.804Z"}
+2025-09-29T10:56:21.804Z [[32minfo[39m] Session store configured with PostgreSQL backend
+
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > POST /api/pro-resources/:id/referral-code > should generate referral code for valid perk and pro user
+info: [2025-09-29T10:56:21.838Z] POST /api/pro-resources/onlyfans-referral/referral-code - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:21.838Z"}
+
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > POST /api/pro-resources/:id/referral-code > should generate unique referral codes for different users
+warn: Session middleware not configured before registerRoutes; applying default session middleware {"timestamp":"2025-09-29T10:56:21.844Z"}
+2025-09-29T10:56:21.847Z [[32minfo[39m] Session store configured with PostgreSQL backend
+
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > POST /api/pro-resources/:id/referral-code > should generate unique referral codes for different users
+info: [2025-09-29T10:56:21.865Z] POST /api/pro-resources/onlyfans-referral/referral-code - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:21.865Z"}
+
+ × tests/integration/pro-resources.test.ts > Pro Resources Integration > POST /api/pro-resources/:id/referral-code > should return 403 for free tier users 23ms
+   → expected 403 "Forbidden", got 404 "Not Found"
+ ✓ tests/integration/pro-resources.test.ts > Pro Resources Integration > POST /api/pro-resources/:id/referral-code > should return 404 for non-existent perk 17ms
+ × tests/integration/pro-resources.test.ts > Pro Resources Integration > POST /api/pro-resources/:id/referral-code > should generate referral code for valid perk and pro user 40ms
+   → expected 200 "OK", got 404 "Not Found"
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > POST /api/pro-resources/:id/referral-code > should fall back to stored tier when session is missing subscription tier
+warn: Session middleware not configured before registerRoutes; applying default session middleware {"timestamp":"2025-09-29T10:56:21.876Z"}
+2025-09-29T10:56:21.876Z [[32minfo[39m] Session store configured with PostgreSQL backend
+
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > POST /api/pro-resources/:id/referral-code > should fall back to stored tier when session is missing subscription tier
+info: [2025-09-29T10:56:21.889Z] POST /api/pro-resources/onlyfans-referral/referral-code - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:21.889Z"}
+
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > Data Validation > should return perks with correct structure and required fields
+warn: Session middleware not configured before registerRoutes; applying default session middleware {"timestamp":"2025-09-29T10:56:21.895Z"}
+2025-09-29T10:56:21.895Z [[32minfo[39m] Session store configured with PostgreSQL backend
+
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > Data Validation > should return perks with correct structure and required fields
+info: [2025-09-29T10:56:21.911Z] GET /api/pro-resources - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:21.911Z"}
+
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > Data Validation > should include at least one affiliate program to prevent regressions
+warn: Session middleware not configured before registerRoutes; applying default session middleware {"timestamp":"2025-09-29T10:56:21.918Z"}
+2025-09-29T10:56:21.919Z [[32minfo[39m] Session store configured with PostgreSQL backend
+
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > Data Validation > should include at least one affiliate program to prevent regressions
+info: [2025-09-29T10:56:21.930Z] GET /api/pro-resources - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:21.930Z"}
+
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > Storage Fallback Behavior > should fallback to storage when session lacks subscriptionTier
+warn: Session middleware not configured before registerRoutes; applying default session middleware {"timestamp":"2025-09-29T10:56:21.947Z"}
+2025-09-29T10:56:21.950Z [[32minfo[39m] Session store configured with PostgreSQL backend
+
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > Storage Fallback Behavior > should fallback to storage when session lacks subscriptionTier
+info: [2025-09-29T10:56:21.965Z] GET /api/pro-resources - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:21.965Z"}
+
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > Storage Fallback Behavior > should handle storage errors gracefully
+warn: Session middleware not configured before registerRoutes; applying default session middleware {"timestamp":"2025-09-29T10:56:21.971Z"}
+2025-09-29T10:56:21.971Z [[32minfo[39m] Session store configured with PostgreSQL backend
+
+ × tests/integration/pro-resources.test.ts > Pro Resources Integration > POST /api/pro-resources/:id/referral-code > should generate unique referral codes for different users 31ms
+   → expected 200 "OK", got 404 "Not Found"
+ × tests/integration/pro-resources.test.ts > Pro Resources Integration > POST /api/pro-resources/:id/referral-code > should fall back to stored tier when session is missing subscription tier 19ms
+   → expected 200 "OK", got 404 "Not Found"
+ ✓ tests/integration/pro-resources.test.ts > Pro Resources Integration > Data Validation > should return perks with correct structure and required fields 24ms
+ ✓ tests/integration/pro-resources.test.ts > Pro Resources Integration > Data Validation > should include at least one affiliate program to prevent regressions 26ms
+ × tests/integration/pro-resources.test.ts > Pro Resources Integration > Storage Fallback Behavior > should fallback to storage when session lacks subscriptionTier 26ms
+   → expected 200 "OK", got 403 "Forbidden"
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > Storage Fallback Behavior > should handle storage errors gracefully
+info: [2025-09-29T10:56:22.012Z] GET /api/pro-resources - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:22.012Z"}
+
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > Storage Fallback Behavior > should handle storage errors gracefully
+warn: Failed to resolve user tier from storage {"error":"Storage unavailable","timestamp":"2025-09-29T10:56:22.014Z","userId":456}
+
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > Storage Fallback Behavior > should use subscriptionTier from storage when session tier is outdated
+warn: Session middleware not configured before registerRoutes; applying default session middleware {"timestamp":"2025-09-29T10:56:22.030Z"}
+2025-09-29T10:56:22.031Z [[32minfo[39m] Session store configured with PostgreSQL backend
+
+stdout | tests/integration/pro-resources.test.ts > Pro Resources Integration > Storage Fallback Behavior > should use subscriptionTier from storage when session tier is outdated
+info: [2025-09-29T10:56:22.122Z] POST /api/pro-resources/onlyfans-referral/referral-code - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:22.122Z"}
+
+ ✓ tests/integration/pro-resources.test.ts > Pro Resources Integration > Storage Fallback Behavior > should handle storage errors gracefully 53ms
+ × tests/integration/pro-resources.test.ts > Pro Resources Integration > Storage Fallback Behavior > should use subscriptionTier from storage when session tier is outdated 125ms
+   → expected 200 "OK", got 404 "Not Found"
+stdout | server/caption/__tests__/ranking-integration.test.ts
+[dotenv@17.2.2] injecting env (2) from .env.test -- tip: 📡 auto-backup env with Radar: https://dotenvx.com/radar
+
+stdout | tests/unit/caption/pipeline-tone-retry.test.ts
+[dotenv@17.2.2] injecting env (2) from .env.test -- tip: 📡 version env with Radar: https://dotenvx.com/radar
+
+ × server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests ('function-based textModel mock') > rankAndSelect > should sanitize output when AI returns banned content 252ms
+   → expected [ '#morninglight', '#peaceful', …(1) ] to deeply equal [ '#morninglight', '#peaceful' ]
+ × server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests ('function-based textModel mock') > rankAndSelect > should handle persistent violations by sanitizing output 129ms
+   → expected [ '#check' ] to deeply equal [ '#behindthescenes', …(3) ]
+ ✓ server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests ('function-based textModel mock') > rankAndSelect > should preserve clean content without modification 74ms
+stdout | tests/unit/middleware/auth.test.ts
+[dotenv@17.2.2] injecting env (2) from .env.test -- tip: 📡 observe env with Radar: https://dotenvx.com/radar
+
+stderr | tests/unit/caption/pipeline-tone-retry.test.ts > Gemini pipelines keep persona tone on retry > forwards tone fields on image pipeline retry
+Gemini availability check failed, falling back to OpenAI Error: [vitest] No "isGeminiAvailable" export is defined on the "../../../server/lib/gemini.js" mock. Did you forget to return it from "vi.mock"?
+If you need to partially mock a module, you can use "importOriginal" helper inside:
+
+    at VitestMocker.createError [90m(file:///home/runner/workspace/[39mnode_modules/[4mvitest[24m/dist/chunks/execute.B7h3T_Hc.js:284:17[90m)[39m
+    at Object.get [90m(file:///home/runner/workspace/[39mnode_modules/[4mvitest[24m/dist/chunks/execute.B7h3T_Hc.js:330:16[90m)[39m
+    at Module.pipeline [90m(/home/runner/workspace/[39mserver/caption/geminiPipeline.ts:1102:23[90m)[39m
+    at [90m/home/runner/workspace/[39mtests/unit/caption/pipeline-tone-retry.test.ts:177:24
+[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+    at [90mfile:///home/runner/workspace/[39mnode_modules/[4m@vitest[24m/runner/dist/chunk-hooks.js:752:20 {
+  codeFrame: [32m'vi\x1B[33m.\x1B[39m\x1B[34mmock\x1B[39m(\x1B[35mimport\x1B[39m(\x1B[32m"../../../server/lib/gemini.js"\x1B[39m)\x1B[33m,\x1B[39m \x1B[35masync\x1B[39m (importOriginal) \x1B[33m=>\x1B[39m {\n'[39m +
+    [32m'  \x1B[35mconst\x1B[39m actual \x1B[33m=\x1B[39m \x1B[35mawait\x1B[39m \x1B[34mimportOriginal\x1B[39m()\n'[39m +
+    [32m'  \x1B[35mreturn\x1B[39m {\n'[39m +
+    [32m'    \x1B[33m...\x1B[39mactual\x1B[33m,\x1B[39m\n'[39m +
+    [32m'    \x1B[90m// your mocked methods\x1B[39m\n'[39m +
+    [32m'  }\n'[39m +
+    [32m'})'[39m
+}
+Gemini API not available, falling back to OpenAI
+
+ × server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests ('function-based textModel mock') > rankAndSelect > should apply platform-specific hashtag limits 253ms
+   → Cannot read properties of undefined (reading 'indexOf')
+ × server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests ('function-based textModel mock') > rankAndSelect > should provide empty hashtags for Reddit platform 154ms
+   → Cannot read properties of undefined (reading 'indexOf')
+ × server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests ('object-based textModel mock') > rankAndSelect > should sanitize output when AI returns banned content 71ms
+   → expected [ '#morninglight', '#peaceful', …(1) ] to deeply equal [ '#morninglight', '#peaceful' ]
+ × server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests ('object-based textModel mock') > rankAndSelect > should handle persistent violations by sanitizing output 143ms
+   → expected [ '#check' ] to deeply equal [ '#behindthescenes', …(3) ]
+ ✓ server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests ('object-based textModel mock') > rankAndSelect > should preserve clean content without modification 66ms
+ × tests/unit/caption/pipeline-tone-retry.test.ts > Gemini pipelines keep persona tone on retry > forwards tone fields on image pipeline retry 780ms
+   → expected [] to have a length of 2 but got +0
+ × server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests ('object-based textModel mock') > rankAndSelect > should apply platform-specific hashtag limits 82ms
+   → Cannot read properties of undefined (reading 'indexOf')
+ × server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests ('object-based textModel mock') > rankAndSelect > should provide empty hashtags for Reddit platform 91ms
+   → Cannot read properties of undefined (reading 'indexOf')
+ ✓ tests/unit/caption/pipeline-tone-retry.test.ts > Gemini pipelines keep persona tone on retry > forwards tone fields on rewrite pipeline retry 175ms
+ ✓ tests/unit/caption/pipeline-tone-retry.test.ts > Gemini pipelines keep persona tone on retry > forwards tone fields on text-only pipeline retry 170ms
+ × server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests Part 2 ('function-based textModel mock') > rankAndSelect > should sanitize output when AI returns banned content 76ms
+   → expected [ '#morninglight', '#peaceful', …(1) ] to deeply equal [ '#morninglight', '#peaceful' ]
+ × server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests Part 2 ('function-based textModel mock') > rankAndSelect > should handle persistent violations by sanitizing output 157ms
+   → expected [ '#check' ] to deeply equal [ '#behindthescenes', …(3) ]
+ × server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests Part 2 ('function-based textModel mock') > rankAndSelect > should drop sparkle-filler winners before reranking 179ms
+   → expected [ { …(8) }, { …(8) } ] to have a length of 1 but got 2
+ ✓ server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests Part 2 ('function-based textModel mock') > rankAndSelect > should preserve clean content without modification 87ms
+ × server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests Part 2 ('function-based textModel mock') > rankAndSelect > should apply platform-specific hashtag limits 100ms
+   → Cannot read properties of undefined (reading 'indexOf')
+ × server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests Part 2 ('function-based textModel mock') > rankAndSelect > should provide empty hashtags for Reddit platform 178ms
+   → Cannot read properties of undefined (reading 'indexOf')
+ × server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests Part 2 ('object-based textModel mock') > rankAndSelect > should sanitize output when AI returns banned content 160ms
+   → expected [ '#morninglight', '#peaceful', …(1) ] to deeply equal [ '#morninglight', '#peaceful' ]
+ × server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests Part 2 ('object-based textModel mock') > rankAndSelect > should handle persistent violations by sanitizing output 443ms
+   → expected [ '#check' ] to deeply equal [ '#behindthescenes', …(3) ]
+ × server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests Part 2 ('object-based textModel mock') > rankAndSelect > should drop sparkle-filler winners before reranking 293ms
+   → expected [ { …(8) }, { …(8) } ] to have a length of 1 but got 2
+ ✓ server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests Part 2 ('object-based textModel mock') > rankAndSelect > should preserve clean content without modification 167ms
+ × server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests Part 2 ('object-based textModel mock') > rankAndSelect > should apply platform-specific hashtag limits 129ms
+   → Cannot read properties of undefined (reading 'indexOf')
+stdout | tests/integration/reddit-communities-schema.test.ts
+[dotenv@17.2.2] injecting env (2) from .env.test -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+
+ × server/caption/__tests__/ranking-integration.test.ts > Ranking Integration Tests Part 2 ('object-based textModel mock') > rankAndSelect > should provide empty hashtags for Reddit platform 273ms
+   → Cannot read properties of undefined (reading 'indexOf')
+stdout | tests/unit/middleware/auth.test.ts > authenticateToken email verification > rejects JWT-authenticated users with unverified email and clears auth cookie
+[dotenv@17.2.2] injecting env (0) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+
+ ✓ tests/unit/middleware/auth.test.ts > authenticateToken email verification > rejects JWT-authenticated users with unverified email and clears auth cookie 4307ms
+ ✓ tests/unit/middleware/auth.test.ts > authenticateToken email verification > rejects session-authenticated users with unverified email 7ms
+stdout | tests/integration/dashboard-api.test.ts
+[dotenv@17.2.2] injecting env (2) from .env.test -- tip: ⚙️  suppress all logs with { quiet: true }
+
+ × tests/unit/middleware/auth.test.ts > authenticateToken account restrictions > rejects JWT-authenticated users whose account is deleted 143ms
+   → expected "spy" to not be called at all, but actually been called 1 times[90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m    Array []
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+ × tests/unit/middleware/auth.test.ts > authenticateToken account restrictions > rejects JWT-authenticated users who are banned 4ms
+   → expected "spy" to not be called at all, but actually been called 1 times[90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m    Array []
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+ × tests/unit/middleware/auth.test.ts > authenticateToken account restrictions > rejects JWT-authenticated users who are suspended 48ms
+   → expected "spy" to not be called at all, but actually been called 1 times[90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m    Array []
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+ × tests/unit/middleware/auth.test.ts > authenticateToken account restrictions > rejects session-authenticated users whose account is deleted 2ms
+   → expected "spy" to not be called at all, but actually been called 1 times[90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m    Array []
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+ × tests/unit/middleware/auth.test.ts > authenticateToken account restrictions > rejects session-authenticated users who are banned 10ms
+   → expected "spy" to not be called at all, but actually been called 1 times[90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m    Array []
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+ × tests/unit/middleware/auth.test.ts > authenticateToken account restrictions > rejects session-authenticated users who are suspended 2ms
+   → expected "spy" to not be called at all, but actually been called 1 times[90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m    Array []
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+stdout | tests/unit/caption/voice-guide-prompt.test.ts
+[dotenv@17.2.2] injecting env (2) from .env.test -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+
+stderr | tests/unit/caption/voice-guide-prompt.test.ts > Voice guide prompt forwarding > includes the voice guide when generating image-based variants
+Gemini textModel.generateContent failed: GoogleGenerativeAIFetchError: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent: [404 Not Found] models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+    at handleResponseNotOk [90m(file:///home/runner/workspace/[39mnode_modules/[4m@google[24m/generative-ai/dist/index.mjs:432:11[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+    at makeRequest [90m(file:///home/runner/workspace/[39mnode_modules/[4m@google[24m/generative-ai/dist/index.mjs:401:9[90m)[39m
+    at generateContent [90m(file:///home/runner/workspace/[39mnode_modules/[4m@google[24m/generative-ai/dist/index.mjs:865:22[90m)[39m
+    at fetchVariants [90m(/home/runner/workspace/[39mserver/caption/geminiPipeline.ts:777:19[90m)[39m
+    at Module.generateVariants [90m(/home/runner/workspace/[39mserver/caption/geminiPipeline.ts:804:25[90m)[39m
+    at [90m/home/runner/workspace/[39mtests/unit/caption/voice-guide-prompt.test.ts:81:5
+    at [90mfile:///home/runner/workspace/[39mnode_modules/[4m@vitest[24m/runner/dist/chunk-hooks.js:752:20 {
+  status: [33m404[39m,
+  statusText: [32m'Not Found'[39m,
+  errorDetails: [90mundefined[39m
+}
+
+ × tests/unit/caption/voice-guide-prompt.test.ts > Voice guide prompt forwarding > includes the voice guide when generating image-based variants 562ms
+   → [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent: [404 Not Found] models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+stderr | tests/unit/caption/voice-guide-prompt.test.ts > Voice guide prompt forwarding > includes the voice guide for text-only variant generation
+Gemini textModel.generateContent failed: GoogleGenerativeAIFetchError: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent: [404 Not Found] models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+    at handleResponseNotOk [90m(file:///home/runner/workspace/[39mnode_modules/[4m@google[24m/generative-ai/dist/index.mjs:432:11[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+    at makeRequest [90m(file:///home/runner/workspace/[39mnode_modules/[4m@google[24m/generative-ai/dist/index.mjs:401:9[90m)[39m
+    at generateContent [90m(file:///home/runner/workspace/[39mnode_modules/[4m@google[24m/generative-ai/dist/index.mjs:865:22[90m)[39m
+    at fetchVariants [90m(/home/runner/workspace/[39mserver/caption/textOnlyPipeline.ts:282:19[90m)[39m
+    at Module.generateVariantsTextOnly [90m(/home/runner/workspace/[39mserver/caption/textOnlyPipeline.ts:321:25[90m)[39m
+    at [90m/home/runner/workspace/[39mtests/unit/caption/voice-guide-prompt.test.ts:102:5
+    at [90mfile:///home/runner/workspace/[39mnode_modules/[4m@vitest[24m/runner/dist/chunk-hooks.js:752:20 {
+  status: [33m404[39m,
+  statusText: [32m'Not Found'[39m,
+  errorDetails: [90mundefined[39m
+}
+
+ × tests/unit/caption/voice-guide-prompt.test.ts > Voice guide prompt forwarding > includes the voice guide for text-only variant generation 134ms
+   → [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent: [404 Not Found] models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+stderr | tests/unit/caption/voice-guide-prompt.test.ts > Voice guide prompt forwarding > includes the voice guide when rewriting captions
+Gemini textModel.generateContent failed: GoogleGenerativeAIFetchError: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent: [404 Not Found] models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+    at handleResponseNotOk [90m(file:///home/runner/workspace/[39mnode_modules/[4m@google[24m/generative-ai/dist/index.mjs:432:11[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+    at makeRequest [90m(file:///home/runner/workspace/[39mnode_modules/[4m@google[24m/generative-ai/dist/index.mjs:401:9[90m)[39m
+    at generateContent [90m(file:///home/runner/workspace/[39mnode_modules/[4m@google[24m/generative-ai/dist/index.mjs:865:22[90m)[39m
+    at Module.variantsRewrite [90m(/home/runner/workspace/[39mserver/caption/rewritePipeline.ts:240:18[90m)[39m
+    at [90m/home/runner/workspace/[39mtests/unit/caption/voice-guide-prompt.test.ts:124:5
+    at [90mfile:///home/runner/workspace/[39mnode_modules/[4m@vitest[24m/runner/dist/chunk-hooks.js:752:20 {
+  status: [33m404[39m,
+  statusText: [32m'Not Found'[39m,
+  errorDetails: [90mundefined[39m
+}
+
+ × tests/unit/caption/voice-guide-prompt.test.ts > Voice guide prompt forwarding > includes the voice guide when rewriting captions 221ms
+   → [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent: [404 Not Found] models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+stdout | tests/integration/reddit-communities-schema.test.ts
+[dotenv@17.2.2] injecting env (0) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+
+stdout | server/caption/__tests__/extractFacts.test.ts
+[dotenv@17.2.2] injecting env (2) from .env.test -- tip: ⚙️  write to custom object with { processEnv: myObject }
+
+stderr | server/caption/__tests__/extractFacts.test.ts > extractFacts > accepts minimal PNG data URIs without throwing InvalidImageError
+Starting fact extraction for image: data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4//8/AwAI/AL+9P6rAA...
+
+stderr | server/caption/__tests__/extractFacts.test.ts > extractFacts > accepts minimal PNG data URIs without throwing InvalidImageError
+Processing data URL with mime type: image/png, data length: 92
+Base64 starts with: iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADU...
+Sending to Gemini for fact extraction...
+
+stdout | tests/integration/dashboard-api.test.ts
+[dotenv@17.2.2] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
+
+stderr | server/caption/__tests__/extractFacts.test.ts > extractFacts > accepts minimal PNG data URIs without throwing InvalidImageError
+Gemini visionModel.generateContent failed: GoogleGenerativeAIFetchError: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent: [404 Not Found] models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+    at handleResponseNotOk [90m(file:///home/runner/workspace/[39mnode_modules/[4m@google[24m/generative-ai/dist/index.mjs:432:11[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+    at makeRequest [90m(file:///home/runner/workspace/[39mnode_modules/[4m@google[24m/generative-ai/dist/index.mjs:401:9[90m)[39m
+    at generateContent [90m(file:///home/runner/workspace/[39mnode_modules/[4m@google[24m/generative-ai/dist/index.mjs:865:22[90m)[39m
+    at extractFacts [90m(/home/runner/workspace/[39mserver/caption/geminiPipeline.ts:657:19[90m)[39m
+    at [90m/home/runner/workspace/[39mserver/caption/__tests__/extractFacts.test.ts:29:5
+    at [90mfile:///home/runner/workspace/[39mnode_modules/[4m@vitest[24m/runner/dist/chunk-hooks.js:752:20 {
+  status: [33m404[39m,
+  statusText: [32m'Not Found'[39m,
+  errorDetails: [90mundefined[39m
+}
+Error in extractFacts: GoogleGenerativeAIFetchError: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent: [404 Not Found] models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+    at handleResponseNotOk [90m(file:///home/runner/workspace/[39mnode_modules/[4m@google[24m/generative-ai/dist/index.mjs:432:11[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+    at makeRequest [90m(file:///home/runner/workspace/[39mnode_modules/[4m@google[24m/generative-ai/dist/index.mjs:401:9[90m)[39m
+    at generateContent [90m(file:///home/runner/workspace/[39mnode_modules/[4m@google[24m/generative-ai/dist/index.mjs:865:22[90m)[39m
+    at extractFacts [90m(/home/runner/workspace/[39mserver/caption/geminiPipeline.ts:657:19[90m)[39m
+    at [90m/home/runner/workspace/[39mserver/caption/__tests__/extractFacts.test.ts:29:5
+    at [90mfile:///home/runner/workspace/[39mnode_modules/[4m@vitest[24m/runner/dist/chunk-hooks.js:752:20 {
+  status: [33m404[39m,
+  statusText: [32m'Not Found'[39m,
+  errorDetails: [90mundefined[39m
+}
+
+ × server/caption/__tests__/extractFacts.test.ts > extractFacts > accepts minimal PNG data URIs without throwing InvalidImageError 1114ms
+   → promise rejected "Error: Failed to extract facts: [GoogleGe…" instead of resolving
+stdout | tests/integration/referral-routes.test.ts
+[dotenv@17.2.2] injecting env (2) from .env.test -- tip: ⚙️  override existing env vars with { override: true }
+
+stdout | tests/integration/referral-routes.test.ts
+[dotenv@17.2.2] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should return communities with structured rules schema from seeded data
+2025-09-29T10:56:43.540Z [[32minfo[39m] Session store configured with PostgreSQL backend
+2025-09-29T10:56:43.547Z [[32minfo[39m] 🔄 Initializing queue system...
+
+stderr | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should return communities with structured rules schema from seeded data
+🔧 Using PostgreSQL queue backend (Redis not available)
+🔧 Initializing PostgreSQL Queue backend
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should return communities with structured rules schema from seeded data
+2025-09-29T10:56:43.672Z [[32minfo[39m] ✅ Queue system initialized
+2025-09-29T10:56:43.673Z [info] 🔄 Initializing background workers...
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should return communities with structured rules schema from seeded data
+2025-09-29T10:56:43.677Z [info] ✅ Post worker initialized with queue abstraction
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should return communities with structured rules schema from seeded data
+2025-09-29T10:56:43.682Z [info] ✅ Post worker initialized
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should return communities with structured rules schema from seeded data
+2025-09-29T10:56:43.708Z [info] ✅ Metrics worker initialized with queue abstraction
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should return communities with structured rules schema from seeded data
+2025-09-29T10:56:43.709Z [info] ✅ Metrics worker initialized
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should return communities with structured rules schema from seeded data
+2025-09-29T10:56:43.711Z [info] ✅ AI Promo worker initialized with queue abstraction
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should return communities with structured rules schema from seeded data
+2025-09-29T10:56:43.712Z [info] ✅ AI Promo worker initialized
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should return communities with structured rules schema from seeded data
+2025-09-29T10:56:43.713Z [info] ✅ Dunning worker initialized with queue abstraction
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should return communities with structured rules schema from seeded data
+2025-09-29T10:56:43.714Z [info] ✅ Dunning worker initialized
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should return communities with structured rules schema from seeded data
+2025-09-29T10:56:43.735Z [info] ✅ Batch posting worker initialized with queue abstraction
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should return communities with structured rules schema from seeded data
+2025-09-29T10:56:43.765Z [info] ✅ Batch posting worker initialized
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should return communities with structured rules schema from seeded data
+2025-09-29T10:56:43.770Z [info] Community sync worker scheduling skipped in test environment
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should return communities with structured rules schema from seeded data
+2025-09-29T10:56:43.772Z [info] ✅ Community sync worker initialized
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should return communities with structured rules schema from seeded data
+2025-09-29T10:56:43.774Z [info] ✅ Community sync worker initialized
+
+stderr | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should return communities with structured rules schema from seeded data
+🔍 Starting queue monitoring...
+
+stdout | tests/integration/dashboard-api.test.ts > Dashboard API
+2025-09-29T10:56:43.891Z [[32minfo[39m] Session store configured with PostgreSQL backend
+2025-09-29T10:56:43.918Z [[32minfo[39m] Queue startup disabled for current execution context.
+2025-09-29T10:56:43.918Z [[32minfo[39m] Sentry DSN not configured, skipping Sentry initialization
+
+stdout | tests/integration/dashboard-api.test.ts > Dashboard API
+error: Storage operation failed - creating user: {"error":"Failed query: insert into \"users\" (\"id\", \"username\", \"password\", \"email\", \"email_verified\", \"first_name\", \"last_name\", \"tier\", \"subscription_status\", \"trial_ends_at\", \"provider\", \"provider_id\", \"avatar\", \"referral_code_id\", \"referred_by\", \"created_at\") values (default, $1, $2, $3, default, default, default, default, default, default, default, default, default, default, default, default) returning \"id\", \"username\", \"password\", \"email\", \"email_verified\", \"first_name\", \"last_name\", \"tier\", \"subscription_status\", \"trial_ends_at\", \"provider\", \"provider_id\", \"avatar\", \"referral_code_id\", \"referred_by\", \"created_at\"\nparams: dashboardtest,hashedpassword,[email-redacted]","timestamp":"2025-09-29T10:56:44.432Z"}
+
+ ↓ tests/integration/dashboard-api.test.ts > Dashboard API > GET /api/dashboard/stats > should return 401 without authentication
+ ↓ tests/integration/dashboard-api.test.ts > Dashboard API > GET /api/dashboard/stats > should return dashboard stats for authenticated user
+ ↓ tests/integration/dashboard-api.test.ts > Dashboard API > GET /api/dashboard/stats > should return admin stats for admin user
+ ↓ tests/integration/dashboard-api.test.ts > Dashboard API > GET /api/dashboard/activity > should return 401 without authentication
+ ↓ tests/integration/dashboard-api.test.ts > Dashboard API > GET /api/dashboard/activity > should return dashboard activity for authenticated user
+ ↓ tests/integration/dashboard-api.test.ts > Dashboard API > GET /api/dashboard/activity > should return admin activity for admin user
+ ↓ tests/integration/dashboard-api.test.ts > Dashboard API > GET /api/dashboard/activity > should return empty array when no media exists
+ ↓ tests/integration/dashboard-api.test.ts > Dashboard API > Dashboard API Security > should validate JWT token format
+ ↓ tests/integration/dashboard-api.test.ts > Dashboard API > Dashboard API Security > should reject expired tokens
+ ↓ tests/integration/dashboard-api.test.ts > Dashboard API > Dashboard API Security > should require user ID in token payload
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should return communities with structured rules schema from seeded data
+2025-09-29T10:56:44.876Z [info] 🔄 Starting Reddit communities sync {"runId":"4123","subredditCount":9,"subreddits":"photography, earthporn, naturephotography, art, drawing..."}
+2025-09-29T10:56:44.885Z [info] Registered Reddit service client for community sync workloads.
+2025-09-29T10:56:44.885Z [info] Syncing r/photography...
+
+stdout | tests/integration/dashboard-api.test.ts > Dashboard API readiness > registers dashboard endpoints before the server starts handling traffic
+2025-09-29T10:56:44.873Z [[32minfo[39m] Session store configured with PostgreSQL backend
+2025-09-29T10:56:44.873Z [[32minfo[39m] Queue startup disabled for current execution context.
+2025-09-29T10:56:44.873Z [[32minfo[39m] Sentry DSN not configured, skipping Sentry initialization
+
+stdout | tests/integration/dashboard-api.test.ts > Dashboard API readiness > registers dashboard endpoints before the server starts handling traffic
+info: [2025-09-29T10:56:44.978Z] GET /api/dashboard/stats - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:44.978Z"}
+
+stdout | tests/integration/dashboard-api.test.ts > Dashboard API readiness > registers dashboard endpoints before the server starts handling traffic
+2025-09-29T10:56:44.993Z [[32minfo[39m] [2b93ce52-9e2b-43ed-a537-89668798f569] GET /api/dashboard/stats 404 in 15ms :: {"message":"API endpoint not found: /"}
+
+stdout | tests/integration/dashboard-api.test.ts > Dashboard API readiness > registers dashboard endpoints before the server starts handling traffic
+error: Storage operation failed - deleting user: {"error":"Failed query: update \"users\" set  where \"users\".\"id\" = $1\nparams: 591","timestamp":"2025-09-29T10:56:45.073Z"}
+
+stdout | tests/integration/dashboard-api.test.ts > Dashboard API
+2025-09-29T10:56:45.077Z [[32minfo[39m] Session store configured with PostgreSQL backend
+2025-09-29T10:56:45.078Z [[32minfo[39m] Queue startup disabled for current execution context.
+2025-09-29T10:56:45.079Z [[32minfo[39m] Sentry DSN not configured, skipping Sentry initialization
+
+ × tests/integration/dashboard-api.test.ts > Dashboard API readiness > registers dashboard endpoints before the server starts handling traffic 627ms
+   → expected 200 "OK", got 404 "Not Found"
+stdout | tests/integration/dashboard-api.test.ts > Dashboard API
+error: Storage operation failed - creating user: {"error":"Failed query: insert into \"users\" (\"id\", \"username\", \"password\", \"email\", \"email_verified\", \"first_name\", \"last_name\", \"tier\", \"subscription_status\", \"trial_ends_at\", \"provider\", \"provider_id\", \"avatar\", \"referral_code_id\", \"referred_by\", \"created_at\") values (default, $1, $2, $3, default, default, default, default, default, default, default, default, default, default, default, default) returning \"id\", \"username\", \"password\", \"email\", \"email_verified\", \"first_name\", \"last_name\", \"tier\", \"subscription_status\", \"trial_ends_at\", \"provider\", \"provider_id\", \"avatar\", \"referral_code_id\", \"referred_by\", \"created_at\"\nparams: dashboardtest,hashedpassword,[email-redacted]","timestamp":"2025-09-29T10:56:45.392Z"}
+
+ ↓ tests/integration/dashboard-api.test.ts > Dashboard API > should return dashboard stats for authenticated users
+stderr | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should return communities with structured rules schema from seeded data
+✅ Queue monitoring started (interval: 30000ms)
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should return communities with structured rules schema from seeded data
+2025-09-29T10:56:45.458Z [info] 🚀 Queue monitoring started
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should return communities with structured rules schema from seeded data
+2025-09-29T10:56:45.459Z [[32minfo[39m] ✅ Background workers initialized
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should return communities with structured rules schema from seeded data
+2025-09-29T10:56:45.459Z [[32minfo[39m] ✅ Queue monitoring started (interval: 30000ms)
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should return communities with structured rules schema from seeded data
+2025-09-29T10:56:45.460Z [error] ❌ Failed to sync r/photography: 400 - {"message":"Bad Request","error":400} {"name":"StatusCodeError","statusCode":400,"error":{"message":"Bad Request","error":400},"options":{"gzip":true,"json":true,"auth":{"user":"ByrMwubDSmQvi9OFhuQI6g","pass":"2Lj_45rwuGfPElT4rrLfmc5wN61MEw"},"headers":{"user-agent":"ThottoPilot/1.0.0 by /u/ThottoPilot"},"baseUrl":"https://www.reddit.com","method":"POST","uri":"api/v1/access_token","form":{"grant_type":"refresh_token","refresh_token":"test-reddit-refresh-token"},"simple":true,"resolveWithFullResponse":false,"transform2xxOnly":false},"response":{"statusCode":400,"body":{"message":"Bad Request","error":400},"headers":{"connection":"keep-alive","content-type":"application/json; charset=UTF-8","expires":"-1","cache-control":"private, s-maxage=0, max-age=0, must-revalidate, no-store","x-ua-compatible":"IE=edge","set-cookie":["loid=000000001ysv41v02m.2.1759143405170.Z0FBQUFBQm8ybVh0TFRpbEI0YVd1eUFWNm1vYTlReGpGQU1lOUtsSS1GOW84QkRPc0FfRS1TU1p1RVN6WlpfV3FHRVd0SUU4U2wyeHd0VVRSN0RKeEZocWhMU1BlQmhUbUJyeE9yS3V0VFhUd2UxcXNZS0xtMUdsRFB5SEh6cEhUN1VjRDBsWG5HYV8; Domain=reddit.com; Max-Age=63071999; Path=/; expires=Wed, 29-Sep-2027 10:56:45 GMT; secure","session_tracker=jhbemfeelfklkjcgpe.0.1759143405324.Z0FBQUFBQm8ybVh0bFNKUzFxMEJSSHBmSmltQXEtZDAyZkxoLS03aERfVE5GUzl5WDN4ZmV3VHFRYUk2c0p6Rm54dUtGNkpncUltSk84TjRRQTFxei1IWjhzN0ZUd0pmeGlYV016MmQ3emJvTzdIQmx3Q2FOOTV6VnBOSGJfNGdTNkt4Q0NnOWdaQnE; Domain=reddit.com; Max-Age=7199; Path=/; expires=Mon, 29-Sep-2025 12:56:45 GMT; secure","edgebucket=kRtwLjcbfrh5AVb9g7; Domain=reddit.com; Max-Age=63071999; Path=/;  secure"],"content-encoding":"gzip","accept-ranges":"bytes","date":"Mon, 29 Sep 2025 10:56:45 GMT","via":"1.1 varnish","vary":"Accept-Encoding","strict-transport-security":"max-age=31536000; includeSubdomains","x-content-type-options":"nosniff","x-frame-options":"SAMEORIGIN","x-xss-protection":"1; mode=block","server":"snooserv","report-to":"{\"group\": \"w3-reporting-nel\", \"max_age\": 14400, \"include_subdomains\": true,  \"endpoints\": [{ \"url\": \"https://w3-reporting-nel.reddit.com/reports\" }]}, {\"group\": \"w3-reporting\", \"max_age\": 14400, \"include_subdomains\": true, \"endpoints\": [{ \"url\": \"https://w3-reporting.reddit.com/reports\" }]}, {\"group\": \"w3-reporting-csp\", \"max_age\": 14400, \"include_subdomains\": true, \"endpoints\": [{ \"url\": \"https://w3-reporting-csp.reddit.com/reports\" }]}","nel":"{\"report_to\": \"w3-reporting-nel\", \"max_age\": 14400, \"include_subdomains\": false, \"success_fraction\": 1.0, \"failure_fraction\": 1.0}","transfer-encoding":"chunked"},"request":{"uri":{"protocol":"https:","slashes":true,"auth":null,"host":"www.reddit.com","port":443,"hostname":"www.reddit.com","hash":null,"search":null,"query":null,"pathname":"/api/v1/access_token","path":"/api/v1/access_token","href":"https://www.reddit.com/api/v1/access_token"},"method":"post","headers":{"user-agent":"ThottoPilot/1.0.0 by /u/ThottoPilot","content-type":"application/x-www-form-urlencoded","authorization":"Basic QnlyTXd1YkRTbVF2aTlPRmh1UUk2ZzoyTGpfNDVyd3VHZlBFbFQ0cnJMZm1jNXdONjFNRXc=","accept-encoding":"gzip, deflate","accept":"application/json","content-length":64}}},"stack":"StatusCodeError: 400 - {\"message\":\"Bad Request\",\"error\":400}\n    at new StatusCodeError (/home/runner/workspace/node_modules/request-promise-core/lib/errors.js:32:15)\n    at Request.plumbing.callback (/home/runner/workspace/node_modules/request-promise-core/lib/plumbing.js:104:33)\n    at Request.RP$callback [as _callback] (/home/runner/workspace/node_modules/request-promise-core/lib/plumbing.js:46:31)\n    at Request.self.callback (/home/runner/workspace/node_modules/request/request.js:185:22)\n    at Request.emit (node:events:524:28)\n    at Request.<anonymous> (/home/runner/workspace/node_modules/request/request.js:1154:10)\n    at Request.emit (node:events:524:28)\n    at Gunzip.<anonymous> (/home/runner/workspace/node_modules/request/request.js:1076:12)\n    at Object.onceWrapper (node:events:638:28)\n    at Gunzip.emit (node:events:524:28)\n    at endReadableNT (node:internal/streams/readable:1698:12)\n    at processTicksAndRejections (node:internal/process/task_queues:82:21)"}
+
+ ↓ tests/integration/dashboard-api.test.ts > Dashboard API > should return dashboard activity for authenticated users
+ ↓ tests/integration/dashboard-api.test.ts > Dashboard API > should reject unauthorized requests
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should return communities with structured rules schema from seeded data
+info: 📈 Starting worker auto-scaling... {"timestamp":"2025-09-29T10:56:45.640Z"}
+info: ✅ Worker auto-scaling started (interval: 60000ms) {"timestamp":"2025-09-29T10:56:45.650Z"}
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should return communities with structured rules schema from seeded data
+2025-09-29T10:56:45.650Z [[32minfo[39m] ✅ Worker auto-scaling started (interval: 60000ms)
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should return communities with structured rules schema from seeded data
+2025-09-29T10:56:45.652Z [[32minfo[39m] Sentry DSN not configured, skipping Sentry initialization
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should return communities with structured rules schema from seeded data
+2025-09-29T10:56:45.676Z [[33mwarn[39m] Client build not found at /home/runner/dist/client/index.html; Client build not found at /home/runner/workspace/client/dist/index.html
+2025-09-29T10:56:45.676Z [[31merror[39m] Client build not found; unable to locate compiled client assets in any known directory.
+
+stdout | tests/integration/dashboard-api.test.ts > Dashboard API
+error: Storage operation failed - deleting user: {"error":"Failed query: update \"users\" set  where \"users\".\"id\" = $1\nparams: ","timestamp":"2025-09-29T10:56:45.710Z"}
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should return communities with structured rules schema from seeded data
+info: [2025-09-29T10:56:45.835Z] GET /api/reddit/communities - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:45.835Z"}
+
+stdout | tests/integration/dashboard-api.test.ts > Dashboard API
+error: Storage operation failed - deleting user: {"error":"Failed query: update \"users\" set  where \"users\".\"id\" = $1\nparams: ","timestamp":"2025-09-29T10:56:45.997Z"}
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should return communities with structured rules schema from seeded data
+2025-09-29T10:56:46.056Z [[31merror[39m] Error fetching Reddit communities {"error":"(0 , __vite_ssr_import_2__.canonicalizeCompetitionLevel) is not a function"}
+TypeError: (0 , __vite_ssr_import_2__.canonicalizeCompetitionLevel) is not a function
+    at normalizeCommunityRecord (/home/runner/workspace/server/reddit-communities.ts:203:23)
+    at Array.map (<anonymous>)
+    at listCommunities (/home/runner/workspace/server/reddit-communities.ts:211:24)
+    at processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at /home/runner/workspace/server/reddit-routes.ts:214:11
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should return communities with structured rules schema from seeded data
+2025-09-29T10:56:46.096Z [[32minfo[39m] [007aac02-f99c-49dd-9287-409f33c4d92b] GET /api/reddit/communities 500 in 262ms :: {"error":"Failed to fetch Reddit communities"}
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should validate schema consistency across multiple communities
+2025-09-29T10:56:46.151Z [[32minfo[39m] Session store configured with PostgreSQL backend
+2025-09-29T10:56:46.151Z [[32minfo[39m] 🔄 Initializing queue system...
+
+stderr | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should validate schema consistency across multiple communities
+🔧 Initializing PostgreSQL Queue backend
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should validate schema consistency across multiple communities
+2025-09-29T10:56:46.152Z [[32minfo[39m] ✅ Queue system initialized
+2025-09-29T10:56:46.152Z [info] 🔄 Initializing background workers...
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should validate schema consistency across multiple communities
+2025-09-29T10:56:46.153Z [info] ✅ Post worker initialized
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should validate schema consistency across multiple communities
+2025-09-29T10:56:46.153Z [info] ✅ Metrics worker initialized
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should validate schema consistency across multiple communities
+2025-09-29T10:56:46.153Z [info] ✅ AI Promo worker initialized
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should validate schema consistency across multiple communities
+2025-09-29T10:56:46.153Z [info] ✅ Dunning worker initialized
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should validate schema consistency across multiple communities
+2025-09-29T10:56:46.153Z [info] ✅ Batch posting worker initialized
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should validate schema consistency across multiple communities
+2025-09-29T10:56:46.153Z [info] ✅ Community sync worker initialized
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should validate schema consistency across multiple communities
+2025-09-29T10:56:46.154Z [info] 🚀 Queue monitoring started
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should validate schema consistency across multiple communities
+2025-09-29T10:56:46.154Z [[32minfo[39m] ✅ Background workers initialized
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should validate schema consistency across multiple communities
+2025-09-29T10:56:46.155Z [[32minfo[39m] ✅ Queue monitoring started (interval: 30000ms)
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should validate schema consistency across multiple communities
+2025-09-29T10:56:46.155Z [[32minfo[39m] ✅ Worker auto-scaling started (interval: 60000ms)
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should validate schema consistency across multiple communities
+2025-09-29T10:56:46.156Z [[32minfo[39m] Sentry DSN not configured, skipping Sentry initialization
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should validate schema consistency across multiple communities
+2025-09-29T10:56:46.162Z [[33mwarn[39m] Client build not found at /home/runner/dist/client/index.html; Client build not found at /home/runner/workspace/client/dist/index.html
+2025-09-29T10:56:46.162Z [[31merror[39m] Client build not found; unable to locate compiled client assets in any known directory.
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should validate schema consistency across multiple communities
+info: [2025-09-29T10:56:46.254Z] GET /api/reddit/communities - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:46.254Z"}
+
+ × tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should return communities with structured rules schema from seeded data 2832ms
+   → expected 200 "OK", got 500 "Internal Server Error"
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should validate schema consistency across multiple communities
+2025-09-29T10:56:46.346Z [[31merror[39m] Error fetching Reddit communities {"error":"(0 , __vite_ssr_import_2__.canonicalizeCompetitionLevel) is not a function"}
+TypeError: (0 , __vite_ssr_import_2__.canonicalizeCompetitionLevel) is not a function
+    at normalizeCommunityRecord (/home/runner/workspace/server/reddit-communities.ts:203:23)
+    at Array.map (<anonymous>)
+    at listCommunities (/home/runner/workspace/server/reddit-communities.ts:211:24)
+    at processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at /home/runner/workspace/server/reddit-routes.ts:214:11
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should validate schema consistency across multiple communities
+2025-09-29T10:56:46.353Z [[32minfo[39m] [7317380b-ab67-47ba-abdd-e1b97c64005a] GET /api/reddit/communities 500 in 100ms :: {"error":"Failed to fetch Reddit communities"}
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should ensure new schema fields are properly serialized
+2025-09-29T10:56:46.366Z [[32minfo[39m] Session store configured with PostgreSQL backend
+2025-09-29T10:56:46.369Z [[32minfo[39m] 🔄 Initializing queue system...
+
+stderr | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should ensure new schema fields are properly serialized
+🔧 Initializing PostgreSQL Queue backend
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should ensure new schema fields are properly serialized
+2025-09-29T10:56:46.372Z [[32minfo[39m] ✅ Queue system initialized
+2025-09-29T10:56:46.373Z [info] 🔄 Initializing background workers...
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should ensure new schema fields are properly serialized
+2025-09-29T10:56:46.377Z [info] ✅ Post worker initialized
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should ensure new schema fields are properly serialized
+2025-09-29T10:56:46.379Z [info] ✅ Metrics worker initialized
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should ensure new schema fields are properly serialized
+2025-09-29T10:56:46.380Z [info] ✅ AI Promo worker initialized
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should ensure new schema fields are properly serialized
+2025-09-29T10:56:46.381Z [info] ✅ Dunning worker initialized
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should ensure new schema fields are properly serialized
+2025-09-29T10:56:46.382Z [info] ✅ Batch posting worker initialized
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should ensure new schema fields are properly serialized
+2025-09-29T10:56:46.383Z [info] ✅ Community sync worker initialized
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should ensure new schema fields are properly serialized
+2025-09-29T10:56:46.385Z [info] 🚀 Queue monitoring started
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should ensure new schema fields are properly serialized
+2025-09-29T10:56:46.386Z [[32minfo[39m] ✅ Background workers initialized
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should ensure new schema fields are properly serialized
+2025-09-29T10:56:46.397Z [[32minfo[39m] ✅ Queue monitoring started (interval: 30000ms)
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should ensure new schema fields are properly serialized
+2025-09-29T10:56:46.404Z [[32minfo[39m] ✅ Worker auto-scaling started (interval: 60000ms)
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should ensure new schema fields are properly serialized
+2025-09-29T10:56:46.410Z [[32minfo[39m] Sentry DSN not configured, skipping Sentry initialization
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should ensure new schema fields are properly serialized
+2025-09-29T10:56:46.498Z [[33mwarn[39m] Client build not found at /home/runner/dist/client/index.html; Client build not found at /home/runner/workspace/client/dist/index.html
+2025-09-29T10:56:46.498Z [[31merror[39m] Client build not found; unable to locate compiled client assets in any known directory.
+
+ × tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should validate schema consistency across multiple communities 216ms
+   → expected 200 "OK", got 500 "Internal Server Error"
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should ensure new schema fields are properly serialized
+info: [2025-09-29T10:56:46.743Z] GET /api/reddit/communities - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:46.743Z"}
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should ensure new schema fields are properly serialized
+2025-09-29T10:56:46.806Z [info] Syncing r/earthporn...
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should ensure new schema fields are properly serialized
+2025-09-29T10:56:46.848Z [[31merror[39m] Error fetching Reddit communities {"error":"(0 , __vite_ssr_import_2__.canonicalizeCompetitionLevel) is not a function"}
+TypeError: (0 , __vite_ssr_import_2__.canonicalizeCompetitionLevel) is not a function
+    at normalizeCommunityRecord (/home/runner/workspace/server/reddit-communities.ts:203:23)
+    at Array.map (<anonymous>)
+    at listCommunities (/home/runner/workspace/server/reddit-communities.ts:211:24)
+    at processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at /home/runner/workspace/server/reddit-routes.ts:214:11
+
+stdout | tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should ensure new schema fields are properly serialized
+2025-09-29T10:56:46.859Z [[32minfo[39m] [a2a387fc-4120-48fb-858a-e33c62959a8b] GET /api/reddit/communities 500 in 114ms :: {"error":"Failed to fetch Reddit communities"}
+
+ × tests/integration/reddit-communities-schema.test.ts > Reddit Communities Schema Integration > should ensure new schema fields are properly serialized 516ms
+   → expected 200 "OK", got 500 "Internal Server Error"
+stdout | tests/auth/signup.test.ts
+[dotenv@17.2.2] injecting env (2) from .env.test -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+
+stdout | tests/integration/post-scheduling.test.ts
+[dotenv@17.2.2] injecting env (2) from .env.test -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+
+stdout | tests/integration/referral-routes.test.ts > Referral Routes Integration Tests > GET /api/referral/code > should return referral code and URL for authenticated user
+info: [2025-09-29T10:56:49.638Z] GET /api/referral/code - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:49.639Z"}
+
+ ✓ tests/integration/referral-routes.test.ts > Referral Routes Integration Tests > GET /api/referral/code > should return referral code and URL for authenticated user 263ms
+stdout | tests/integration/referral-routes.test.ts > Referral Routes Integration Tests > GET /api/referral/code > should return 401 for unauthenticated requests
+info: [2025-09-29T10:56:49.688Z] GET /api/referral/code - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:49.688Z"}
+
+stdout | tests/integration/referral-routes.test.ts > Referral Routes Integration Tests > GET /api/referral/code > should handle ReferralManager errors gracefully
+info: [2025-09-29T10:56:49.719Z] GET /api/referral/code - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:49.719Z"}
+
+stdout | tests/integration/referral-routes.test.ts > Referral Routes Integration Tests > GET /api/referral/code > should return same referral code on multiple calls
+info: [2025-09-29T10:56:49.741Z] GET /api/referral/code - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:49.741Z"}
+
+stdout | tests/integration/referral-routes.test.ts > Referral Routes Integration Tests > GET /api/referral/code > should return same referral code on multiple calls
+info: [2025-09-29T10:56:49.750Z] GET /api/referral/code - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:49.750Z"}
+
+stdout | tests/integration/referral-routes.test.ts > Referral Routes Integration Tests > GET /api/referral/summary > should return referral summary for authenticated user
+info: [2025-09-29T10:56:49.762Z] GET /api/referral/summary - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:49.763Z"}
+
+ ✓ tests/integration/referral-routes.test.ts > Referral Routes Integration Tests > GET /api/referral/code > should return 401 for unauthenticated requests 32ms
+ ✓ tests/integration/referral-routes.test.ts > Referral Routes Integration Tests > GET /api/referral/code > should handle ReferralManager errors gracefully 24ms
+ ✓ tests/integration/referral-routes.test.ts > Referral Routes Integration Tests > GET /api/referral/code > should return same referral code on multiple calls 28ms
+ ✓ tests/integration/referral-routes.test.ts > Referral Routes Integration Tests > GET /api/referral/summary > should return referral summary for authenticated user 14ms
+stdout | tests/integration/referral-routes.test.ts > Referral Routes Integration Tests > GET /api/referral/summary > should return 401 for unauthenticated requests
+info: [2025-09-29T10:56:49.789Z] GET /api/referral/summary - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:49.789Z"}
+
+stdout | tests/integration/referral-routes.test.ts > Referral Routes Integration Tests > GET /api/referral/summary > should handle ReferralManager errors gracefully
+info: [2025-09-29T10:56:49.842Z] GET /api/referral/summary - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:49.842Z"}
+
+stdout | tests/integration/referral-routes.test.ts > Referral Routes Integration Tests > POST /api/referral/apply > should apply referral code successfully
+info: [2025-09-29T10:56:49.887Z] POST /api/referral/apply - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:49.887Z"}
+
+ ✓ tests/integration/referral-routes.test.ts > Referral Routes Integration Tests > GET /api/referral/summary > should return 401 for unauthenticated requests 27ms
+ ✓ tests/integration/referral-routes.test.ts > Referral Routes Integration Tests > GET /api/referral/summary > should handle ReferralManager errors gracefully 51ms
+stdout | tests/integration/referral-routes.test.ts > Referral Routes Integration Tests > POST /api/referral/apply > should return 400 for missing referral code
+info: [2025-09-29T10:56:49.932Z] POST /api/referral/apply - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:49.932Z"}
+
+stdout | tests/integration/referral-routes.test.ts > Referral Routes Integration Tests > POST /api/referral/apply > should return 400 for invalid referral code type
+info: [2025-09-29T10:56:49.980Z] POST /api/referral/apply - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:49.980Z"}
+
+ × tests/integration/referral-routes.test.ts > Referral Routes Integration Tests > POST /api/referral/apply > should apply referral code successfully 51ms
+   → expected 200 "OK", got 401 "Unauthorized"
+ × tests/integration/referral-routes.test.ts > Referral Routes Integration Tests > POST /api/referral/apply > should return 400 for missing referral code 45ms
+   → expected 400 "Bad Request", got 401 "Unauthorized"
+ × tests/integration/referral-routes.test.ts > Referral Routes Integration Tests > POST /api/referral/apply > should return 400 for invalid referral code type 43ms
+   → expected 400 "Bad Request", got 401 "Unauthorized"
+stdout | tests/integration/referral-routes.test.ts > Referral Routes Integration Tests > POST /api/referral/apply > should return 400 when applicant information is missing
+info: [2025-09-29T10:56:50.010Z] POST /api/referral/apply - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:50.010Z"}
+
+stdout | tests/integration/referral-routes.test.ts > Referral Routes Integration Tests > POST /api/referral/apply > should normalize referral code casing before forwarding to the manager
+info: [2025-09-29T10:56:50.113Z] POST /api/referral/apply - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:50.113Z"}
+
+ × tests/integration/referral-routes.test.ts > Referral Routes Integration Tests > POST /api/referral/apply > should return 400 when applicant information is missing 36ms
+   → expected 400 "Bad Request", got 401 "Unauthorized"
+stdout | tests/integration/referral-routes.test.ts > Referral Routes Integration Tests > POST /api/referral/apply > should handle failed referral application
+info: [2025-09-29T10:56:50.158Z] POST /api/referral/apply - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:50.158Z"}
+
+stdout | tests/integration/referral-routes.test.ts > Referral Routes Integration Tests > POST /api/referral/apply > should handle ReferralManager errors gracefully
+info: [2025-09-29T10:56:50.196Z] POST /api/referral/apply - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:50.197Z"}
+
+ × tests/integration/referral-routes.test.ts > Referral Routes Integration Tests > POST /api/referral/apply > should normalize referral code casing before forwarding to the manager 113ms
+   → expected 200 "OK", got 401 "Unauthorized"
+ × tests/integration/referral-routes.test.ts > Referral Routes Integration Tests > POST /api/referral/apply > should handle failed referral application 33ms
+   → expected 400 "Bad Request", got 401 "Unauthorized"
+ × tests/integration/referral-routes.test.ts > Referral Routes Integration Tests > POST /api/referral/apply > should handle ReferralManager errors gracefully 37ms
+   → expected 500 "Internal Server Error", got 401 "Unauthorized"
+stdout | tests/integration/referral-routes.test.ts > Referral Routes Integration Tests > Endpoint data consistency > should return consistent referral code across different endpoints
+info: [2025-09-29T10:56:50.241Z] GET /api/referral/code - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:50.242Z"}
+
+stdout | tests/integration/referral-routes.test.ts > Referral Routes Integration Tests > Endpoint data consistency > should return consistent referral code across different endpoints
+info: [2025-09-29T10:56:50.261Z] GET /api/referral/summary - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:56:50.261Z"}
+
+ ✓ tests/integration/referral-routes.test.ts > Referral Routes Integration Tests > Endpoint data consistency > should return consistent referral code across different endpoints 69ms
+stdout | tests/integration/content-generation.test.ts
+[dotenv@17.2.2] injecting env (2) from .env.test -- tip: ⚙️  write to custom object with { processEnv: myObject }
+
+stdout | tests/auth/signup.test.ts
+[dotenv@17.2.2] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
+
+stdout | tests/auth/signup.test.ts > Signup and email verification > verifies email before allowing login
+2025-09-29T10:56:54.055Z [[32minfo[39m] 📧 EMAIL VERIFICATION WORKFLOW STARTED {"token":"8a50d833...","origin":"Unknown","responseMode":"REDIRECT","preferredType":"html"}
+
+stdout | tests/auth/signup.test.ts > Signup and email verification > verifies email before allowing login
+2025-09-29T10:56:54.067Z [[32minfo[39m] ✅ EMAIL VERIFICATION SUCCESSFUL {"user":"alice","email":"al***@example.com","responseMode":"REDIRECT"}
+
+ ✓ tests/integration/content-generation.test.ts > Caption generation route contract > rejects requests without authentication 95ms
+stdout | tests/integration/content-generation.test.ts > Caption generation route contract > requires imageUrl in the payload
+2025-09-29T10:56:54.138Z [[31merror[39m] Caption generation error {"error":"[\n  {\n    \"code\": \"invalid_type\",\n    \"expected\": \"string\",\n    \"received\": \"undefined\",\n    \"path\": [\n      \"imageUrl\"\n    ],\n    \"message\": \"Required\"\n  }\n]"}
+
+ ✓ tests/auth/signup.test.ts > Signup and email verification > verifies email before allowing login 792ms
+ × tests/integration/content-generation.test.ts > Caption generation route contract > requires imageUrl in the payload 102ms
+   → expected 500 to be 400 // Object.is equality
+ ✓ tests/integration/content-generation.test.ts > Caption generation route contract > invokes the pipeline with default nsfw value when not provided 30ms
+ ✓ tests/integration/content-generation.test.ts > Caption generation route contract > forwards persona options to the pipeline when present 34ms
+ ✓ tests/integration/content-generation.test.ts > Caption generation route contract > returns the pipeline payload and persists the generation 71ms
+ × tests/auth/signup.test.ts > Signup and email verification > sets a secure auth cookie on production signup 254ms
+   → expected 'authToken=eyJhbGciOiJIUzI1NiIsInR5cCI…' to match /SameSite=Strict/i
+ ✓ tests/integration/content-generation.test.ts > Caption generation route contract > falls back to the voice as style when no explicit style is provided 39ms
+ ✓ tests/integration/content-generation.test.ts > Caption generation route contract > skips persistence when the authenticated user is not attached 17ms
+stdout | tests/integration/content-generation.test.ts > Caption generation route contract > does not fail the response when storage.createGeneration throws
+2025-09-29T10:56:54.485Z [[31merror[39m] Failed to save generation to database {"error":{}}
+
+stdout | tests/integration/content-generation.test.ts > Caption generation route contract > surfaces unsupported image format errors as 422 responses
+2025-09-29T10:56:54.520Z [[31merror[39m] Caption generation error {"error":"unsupported content-type: text/plain"}
+
+stdout | tests/integration/content-generation.test.ts > Caption generation route contract > returns a 500 error for unexpected pipeline failures
+2025-09-29T10:56:54.549Z [[31merror[39m] Caption generation error {"error":"Gemini outage"}
+
+ ✓ tests/integration/content-generation.test.ts > Caption generation route contract > does not fail the response when storage.createGeneration throws 62ms
+ ✓ tests/integration/content-generation.test.ts > Caption generation route contract > surfaces unsupported image format errors as 422 responses 36ms
+ ✓ tests/integration/content-generation.test.ts > Caption generation route contract > returns a 500 error for unexpected pipeline failures 35ms
+stdout | tests/integration/post-scheduling.test.ts
+[dotenv@17.2.2] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+
+stdout | tests/unit/server/services/multi-ai-provider.test.ts
+[dotenv@17.2.2] injecting env (2) from .env.test -- tip: ⚙️  write to custom object with { processEnv: myObject }
+
+stdout | tests/integration/csrf-smoke.test.ts
+[dotenv@17.2.2] injecting env (2) from .env.test -- tip: 📡 auto-backup env with Radar: https://dotenvx.com/radar
+
+ × tests/unit/server/services/multi-ai-provider.test.ts > generateWithMultiProvider provider selection > prefers Gemini when a Gemini key is available 1063ms
+   → All AI providers failed
+ ✓ tests/unit/server/services/multi-ai-provider.test.ts > generateWithMultiProvider provider selection > falls back to Claude before OpenAI when Gemini is unavailable 42ms
+ ✓ tests/unit/server/services/multi-ai-provider.test.ts > generateWithMultiProvider provider selection > falls back to OpenAI after Claude when Claude fails 26ms
+stdout | tests/routes/caption-generation.test.ts
+[dotenv@17.2.2] injecting env (2) from .env.test -- tip: 📡 observe env with Radar: https://dotenvx.com/radar
+
+stderr | tests/routes/caption-generation.test.ts > Caption Generation > Gemini Pipeline > should handle image-based caption generation
+Starting fact extraction for image: data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP///////////////wAALCAABAAEBAREA/8QAFAABAAAA...
+
+stderr | tests/routes/caption-generation.test.ts > Caption Generation > Gemini Pipeline > should handle image-based caption generation
+Processing data URL with mime type: image/jpeg, data length: 140
+Base64 starts with: /9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP///////////////w...
+Sending to Gemini for fact extraction...
+
+stderr | tests/routes/caption-generation.test.ts > Caption Generation > Gemini Pipeline > should handle image-based caption generation
+Fact extraction completed successfully
+
+ ✓ tests/routes/caption-generation.test.ts > Caption Generation > Gemini Pipeline > should handle image-based caption generation 342ms
+stderr | tests/routes/caption-generation.test.ts > Caption Generation > Gemini Pipeline > should fallback to safe defaults when Gemini returns variants with missing hashtags
+Starting fact extraction for image: data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP///////////////wAALCAABAAEBAREA/8QAFAABAAAA...
+
+stderr | tests/routes/caption-generation.test.ts > Caption Generation > Gemini Pipeline > should fallback to safe defaults when Gemini returns variants with missing hashtags
+Processing data URL with mime type: image/jpeg, data length: 140
+Base64 starts with: /9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP///////////////w...
+Sending to Gemini for fact extraction...
+
+stderr | tests/routes/caption-generation.test.ts > Caption Generation > Gemini Pipeline > should fallback to safe defaults when Gemini returns variants with missing hashtags
+Fact extraction completed successfully
+
+stderr | tests/routes/caption-generation.test.ts > Caption Generation > Gemini Pipeline > should fallback to safe defaults when Gemini returns variants with missing hashtags
+Gemini textModel.generateContent failed: Error: Gemini variants unavailable
+    at [90m/home/runner/workspace/[39mtests/routes/caption-generation.test.ts:373:46
+    at [90mfile:///home/runner/workspace/[39mnode_modules/[4m@vitest[24m/runner/dist/chunk-hooks.js:752:20
+
+stderr | tests/routes/caption-generation.test.ts > Caption Generation > Gemini Pipeline > should fallback to safe defaults when Gemini returns variants with missing hashtags
+Gemini pipeline failed, using OpenAI fallback: Error: Gemini variants unavailable
+    at [90m/home/runner/workspace/[39mtests/routes/caption-generation.test.ts:373:46
+    at [90mfile:///home/runner/workspace/[39mnode_modules/[4m@vitest[24m/runner/dist/chunk-hooks.js:752:20
+
+ ✓ tests/routes/caption-generation.test.ts > Caption Generation > Gemini Pipeline > should fallback to safe defaults when Gemini returns variants with missing hashtags 136ms
+stderr | tests/routes/caption-generation.test.ts > Caption Generation > Gemini Pipeline > falls back to OpenAI when Gemini is disabled
+Gemini API not available, falling back to OpenAI
+
+stderr | tests/routes/caption-generation.test.ts > Caption Generation > Gemini Pipeline > should preserve requested tone when retrying after platform check failure
+Starting fact extraction for image: data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP///////////////wAALCAABAAEBAREA/8QAFAABAAAA...
+
+stderr | tests/routes/caption-generation.test.ts > Caption Generation > Gemini Pipeline > should preserve requested tone when retrying after platform check failure
+Processing data URL with mime type: image/jpeg, data length: 140
+Base64 starts with: /9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP///////////////w...
+Sending to Gemini for fact extraction...
+
+stderr | tests/routes/caption-generation.test.ts > Caption Generation > Gemini Pipeline > should preserve requested tone when retrying after platform check failure
+Fact extraction completed successfully
+
+stderr | tests/routes/caption-generation.test.ts > Caption Generation > Gemini Pipeline > should preserve requested tone when retrying after platform check failure
+Gemini textModel.generateContent failed: TypeError: Cannot read properties of undefined (reading 'response')
+    at fetchVariants [90m(/home/runner/workspace/[39mserver/caption/geminiPipeline.ts:780:36[90m)[39m
+    at generateVariants [90m(/home/runner/workspace/[39mserver/caption/geminiPipeline.ts:804:25[90m)[39m
+    at enforceCoverage [90m(/home/runner/workspace/[39mserver/caption/geminiPipeline.ts:1124:20[90m)[39m
+    at Module.pipeline [90m(/home/runner/workspace/[39mserver/caption/geminiPipeline.ts:1132:5[90m)[39m
+    at [90m/home/runner/workspace/[39mtests/routes/caption-generation.test.ts:641:22
+    at [90mfile:///home/runner/workspace/[39mnode_modules/[4m@vitest[24m/runner/dist/chunk-hooks.js:752:20
+
+stderr | tests/routes/caption-generation.test.ts > Caption Generation > Gemini Pipeline > should preserve requested tone when retrying after platform check failure
+Gemini pipeline failed, using OpenAI fallback: TypeError: Cannot read properties of undefined (reading 'response')
+    at fetchVariants [90m(/home/runner/workspace/[39mserver/caption/geminiPipeline.ts:780:36[90m)[39m
+    at generateVariants [90m(/home/runner/workspace/[39mserver/caption/geminiPipeline.ts:804:25[90m)[39m
+    at enforceCoverage [90m(/home/runner/workspace/[39mserver/caption/geminiPipeline.ts:1124:20[90m)[39m
+    at Module.pipeline [90m(/home/runner/workspace/[39mserver/caption/geminiPipeline.ts:1132:5[90m)[39m
+    at [90m/home/runner/workspace/[39mtests/routes/caption-generation.test.ts:641:22
+    at [90mfile:///home/runner/workspace/[39mnode_modules/[4m@vitest[24m/runner/dist/chunk-hooks.js:752:20
+
+ ✓ tests/routes/caption-generation.test.ts > Caption Generation > Gemini Pipeline > falls back to OpenAI when Gemini is disabled 3ms
+ ✓ tests/routes/caption-generation.test.ts > Caption Generation > Gemini Pipeline > should handle safety level normalization 11ms
+ × tests/routes/caption-generation.test.ts > Caption Generation > Gemini Pipeline > should preserve requested tone when retrying after platform check failure 98ms
+   → expected 'You are a senior social copywriter. U…' to contain 'STYLE: luxury'
+ ✓ tests/routes/caption-generation.test.ts > Caption Generation > Gemini Pipeline > should verify all returned variants are unique 74ms
+ × tests/routes/caption-generation.test.ts > Caption Generation > Gemini Pipeline > retries when duplicate captions are returned 60ms
+   → expected 'You are a senior social copywriter. U…' to contain 'HINT:You already wrote'
+ ✓ tests/routes/caption-generation.test.ts > Caption Generation > Gemini Pipeline > sanitizes base hints with quotes and line breaks for Gemini variants 42ms
+ ✓ tests/routes/caption-generation.test.ts > Caption Generation > Gemini Pipeline > preserves sanitized retry hints built from duplicates 23ms
+stderr | tests/routes/caption-generation.test.ts > Caption Generation > Rewrite Pipeline > returns schema compliant fallback when Gemini rewrite fails
+Gemini textModel.generateContent failed: Error: Gemini unavailable
+    at [90m/home/runner/workspace/[39mtests/routes/caption-generation.test.ts:1333:84
+    at [90mfile:///home/runner/workspace/[39mnode_modules/[4m@vitest[24m/runner/dist/chunk-hooks.js:752:20
+
+ × tests/routes/caption-generation.test.ts > Caption Generation > Text-Only Pipeline > should generate content without image context 61ms
+   → Cannot read properties of undefined (reading 'response')
+ ✓ tests/routes/caption-generation.test.ts > Caption Generation > Text-Only Pipeline > should verify all returned variants are unique for text-only 8ms
+ × tests/routes/caption-generation.test.ts > Caption Generation > Text-Only Pipeline > retries when text-only duplicates occur 16ms
+   → expected "spy" to be called 2 times, but got 1 times
+ × tests/routes/caption-generation.test.ts > Caption Generation > Rewrite Pipeline > should improve existing captions 39ms
+   → expected 'Fallback caption' to contain 'Enhanced'
+ ✓ tests/routes/caption-generation.test.ts > Caption Generation > Rewrite Pipeline > returns schema compliant fallback when Gemini rewrite fails 8ms
+ × tests/routes/caption-generation.test.ts > Caption Generation > Rewrite Pipeline > retries with hints when the rewrite is not longer 28ms
+   → expected 'You are a senior social copywriter. U…' to contain 'Make it 20% longer with a natural hoo…'
+ × tests/routes/caption-generation.test.ts > Caption Generation > Rewrite Pipeline > retries rewrite with hints when the first pass is too short 36ms
+   → expected 16 to be greater than 18
+ ✓ tests/routes/caption-generation.test.ts > Caption Generation > Rewrite Pipeline > retries when mandatory tokens are dropped without platform errors 42ms
+ ✓ tests/routes/caption-generation.test.ts > Caption Generation > Rewrite Pipeline > enforces fact coverage when image context is available 5ms
+ ✓ tests/routes/caption-generation.test.ts > extractKeyEntities > captures urls, handles, hashtags, numbers, quotes, and branded terms 0ms
+stdout | tests/integration/post-scheduling.test.ts > POST /api/posts/schedule
+2025-09-29T10:57:02.547Z [[32minfo[39m] Session store configured with PostgreSQL backend
+2025-09-29T10:57:02.553Z [[32minfo[39m] Queue startup disabled for current execution context.
+2025-09-29T10:57:02.553Z [[32minfo[39m] Sentry DSN not configured, skipping Sentry initialization
+
+stdout | tests/integration/post-scheduling.test.ts > POST /api/posts/schedule > enqueues a posting job for authenticated users
+info: [2025-09-29T10:57:02.842Z] POST /api/posts/schedule - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:57:02.842Z"}
+
+stdout | tests/integration/post-scheduling.test.ts > POST /api/posts/schedule > enqueues a posting job for authenticated users
+2025-09-29T10:57:02.877Z [[32minfo[39m] [8876c4b4-0ced-489b-a305-15b0adf94878] POST /api/posts/schedule 200 in 0ms :: {"success":true,"postJobId":1,"scheduledAt":"2023-11-14T22:14:20.000Z"}
+
+stdout | tests/integration/post-scheduling.test.ts > POST /api/posts/schedule > accepts authenticated cookie sessions and enqueues a posting job
+info: [2025-09-29T10:57:02.925Z] POST /api/posts/schedule - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:57:02.925Z"}
+
+stdout | tests/integration/post-scheduling.test.ts > POST /api/posts/schedule > accepts authenticated cookie sessions and enqueues a posting job
+2025-09-29T10:57:02.932Z [[32minfo[39m] [7606d0e7-7707-4dec-8c68-c674d5f01918] POST /api/posts/schedule 200 in 0ms :: {"success":true,"postJobId":2,"scheduledAt":"2023-11-14T22:23:40.000Z"}
+
+stdout | tests/integration/post-scheduling.test.ts > POST /api/posts/schedule > rejects unauthenticated requests with 401
+info: [2025-09-29T10:57:02.946Z] POST /api/posts/schedule - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:57:02.946Z"}
+
+stdout | tests/integration/post-scheduling.test.ts > POST /api/posts/schedule > rejects unauthenticated requests with 401
+2025-09-29T10:57:02.950Z [[32minfo[39m] [1d8d80f1-af48-4af3-b57e-03a3690112b4] POST /api/posts/schedule 401 in 3ms :: {"error":"Access token required"}
+
+stdout | tests/integration/post-scheduling.test.ts > POST /api/posts/schedule > rejects requests with invalid tokens
+info: [2025-09-29T10:57:02.987Z] POST /api/posts/schedule - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:57:02.987Z"}
+
+stdout | tests/integration/post-scheduling.test.ts > POST /api/posts/schedule > rejects requests with invalid tokens
+error: Auth error: jwt malformed {"name":"JsonWebTokenError","stack":"JsonWebTokenError: jwt malformed\n    at Object.module.exports [as verify] (/home/runner/workspace/node_modules/jsonwebtoken/verify.js:70:17)\n    at authenticateToken (/home/runner/workspace/server/middleware/auth.ts:120:27)\n    at processTicksAndRejections (node:internal/process/task_queues:95:5)","timestamp":"2025-09-29T10:57:02.999Z"}
+
+stdout | tests/integration/post-scheduling.test.ts > POST /api/posts/schedule > rejects requests with invalid tokens
+2025-09-29T10:57:03.003Z [[32minfo[39m] [cb9cbdb4-69aa-4800-8eb6-9c144e2ddf73] POST /api/posts/schedule 401 in 16ms :: {"error":"Invalid token"}
+
+ ✓ tests/integration/post-scheduling.test.ts > POST /api/posts/schedule > enqueues a posting job for authenticated users 178ms
+ ✓ tests/integration/post-scheduling.test.ts > POST /api/posts/schedule > accepts authenticated cookie sessions and enqueues a posting job 27ms
+ × tests/integration/post-scheduling.test.ts > POST /api/posts/schedule > rejects unauthenticated requests with 401 37ms
+   → expected { error: 'Access token required' } to match object { Object (error, message) }
+stdout | tests/integration/post-scheduling.test.ts > POST /api/posts/schedule > accepts custom scheduledAt parameter
+info: [2025-09-29T10:57:03.023Z] POST /api/posts/schedule - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:57:03.023Z"}
+
+stdout | tests/integration/post-scheduling.test.ts > POST /api/posts/schedule > accepts custom scheduledAt parameter
+2025-09-29T10:57:03.027Z [[32minfo[39m] [3cb2ee11-4c7f-4b6c-b7af-76146c0b133c] POST /api/posts/schedule 200 in 4ms :: {"success":true,"postJobId":3,"scheduledAt":"2024-12-25T10:00:00.000Z"}
+
+stdout | tests/integration/post-scheduling.test.ts > POST /api/posts/schedule > validates required fields
+info: [2025-09-29T10:57:03.037Z] POST /api/posts/schedule - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:57:03.038Z"}
+
+stderr | tests/integration/post-scheduling.test.ts > POST /api/posts/schedule > validates required fields
+Failed to schedule post: ZodError: [
+  {
+    "code": "invalid_type",
+    "expected": "string",
+    "received": "undefined",
+    "path": [
+      "subreddit"
+    ],
+    "message": "Required"
+  },
+  {
+    "code": "invalid_type",
+    "expected": "string",
+    "received": "undefined",
+    "path": [
+      "title"
+    ],
+    "message": "Required"
+  },
+  {
+    "code": "invalid_type",
+    "expected": "string",
+    "received": "undefined",
+    "path": [
+      "body"
+    ],
+    "message": "Required"
+  }
+]
+    at Object.get error [as error] [90m(file:///home/runner/workspace/[39mnode_modules/[4mzod[24m/v3/types.js:39:31[90m)[39m
+    at ZodObject.parse [90m(file:///home/runner/workspace/[39mnode_modules/[4mzod[24m/v3/types.js:114:22[90m)[39m
+    at [90m/home/runner/workspace/[39mserver/api-routes.ts:267:27
+    at Layer.handle [as handle_request] [90m(/home/runner/workspace/[39mnode_modules/[4mexpress[24m/lib/router/layer.js:95:5[90m)[39m
+    at next [90m(/home/runner/workspace/[39mnode_modules/[4mexpress[24m/lib/router/route.js:149:13[90m)[39m
+    at authenticateToken [90m(/home/runner/workspace/[39mserver/middleware/auth.ts:147:14[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m {
+  issues: [
+    {
+      code: [32m'invalid_type'[39m,
+      expected: [32m'string'[39m,
+      received: [32m'undefined'[39m,
+      path: [36m[Array][39m,
+      message: [32m'Required'[39m
+    },
+    {
+      code: [32m'invalid_type'[39m,
+      expected: [32m'string'[39m,
+      received: [32m'undefined'[39m,
+      path: [36m[Array][39m,
+      message: [32m'Required'[39m
+    },
+    {
+      code: [32m'invalid_type'[39m,
+      expected: [32m'string'[39m,
+      received: [32m'undefined'[39m,
+      path: [36m[Array][39m,
+      message: [32m'Required'[39m
+    }
+  ],
+  addIssue: [36m[Function (anonymous)][39m,
+  addIssues: [36m[Function (anonymous)][39m,
+  errors: [
+    {
+      code: [32m'invalid_type'[39m,
+      expected: [32m'string'[39m,
+      received: [32m'undefined'[39m,
+      path: [36m[Array][39m,
+      message: [32m'Required'[39m
+    },
+    {
+      code: [32m'invalid_type'[39m,
+      expected: [32m'string'[39m,
+      received: [32m'undefined'[39m,
+      path: [36m[Array][39m,
+      message: [32m'Required'[39m
+    },
+    {
+      code: [32m'invalid_type'[39m,
+      expected: [32m'string'[39m,
+      received: [32m'undefined'[39m,
+      path: [36m[Array][39m,
+      message: [32m'Required'[39m
+    }
+  ]
+}
+
+stdout | tests/integration/post-scheduling.test.ts > POST /api/posts/schedule > validates required fields
+2025-09-29T10:57:03.063Z [[32minfo[39m] [e5ffc851-81cb-4862-bc63-4a38db27b09c] POST /api/posts/schedule 500 in 26ms :: {"error":"[\n  {\n    \"code\": \"invalid_type\",\n    \"expected\": \"string\",\n    \"received\": \"undefined\",\n    \"path\": [\n      \"subreddit\"\n    ],\n    \"message\": \"Required\"\n  },\n  {\n    \"code\": \"invalid_type\",\n    \"expected\": \"string\",\n    \"received\": \"undefined\",\n    \"path\": [\n      \"title\"\n    ],\n    \"message\": \"Required\"\n  },\n  {\n    \"code\": \"invalid_type\",\n    \"expected\": \"string\",\n    \"received\": \"undefined\",\n    \"path\": [\n      \"body\"\n    ],\n    \"message\": \"Required\"\n  }\n]"}
+
+stdout | tests/integration/post-scheduling.test.ts > POST /api/posts/schedule > handles mediaKey parameter
+info: [2025-09-29T10:57:03.083Z] POST /api/posts/schedule - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:57:03.083Z"}
+
+stdout | tests/integration/post-scheduling.test.ts > POST /api/posts/schedule > handles mediaKey parameter
+2025-09-29T10:57:03.087Z [[32minfo[39m] [82a26f87-ae8d-4ed6-8a81-d6c876417e34] POST /api/posts/schedule 200 in 3ms :: {"success":true,"postJobId":4,"scheduledAt":"2025-09-29T10:58:03.073Z"}
+
+stdout | tests/integration/post-scheduling.test.ts > POST /api/posts/schedule > returns scheduled posts for authenticated users
+info: [2025-09-29T10:57:03.107Z] GET /api/posts/scheduled - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:57:03.107Z"}
+
+stdout | tests/integration/post-scheduling.test.ts > POST /api/posts/schedule > returns scheduled posts for authenticated users
+2025-09-29T10:57:03.111Z [[32minfo[39m] [6d1e8966-ccee-40f1-b3cb-c84b9188be89] GET /api/posts/scheduled 200 in 4ms :: [{"id":101,"userId":422578,"subreddit":"integrationtest","titleFinal":"Scheduled Title 1","bodyFinal":"Scheduled Body 1","mediaKey":null,"scheduledAt":"2025-09-29T10:58:03.090Z","status":"queued","resultJson":null,"createdAt":"2025-09-29T10:57:03.090Z","updatedAt":"2025-09-29T10:57:03.090Z"},{"id":102,"userId":422578,"subreddit":"integrationtest2","titleFinal":"Scheduled Title 2","bodyFinal":"Scheduled Body 2","mediaKey":null,"scheduledAt":"2025-09-29T10:59:03.090Z","status":"queued","resultJson":null,"createdAt":"2025-09-29T10:57:03.090Z","updatedAt":"2025-09-29T10:57:03.090Z"}]
+
+ × tests/integration/post-scheduling.test.ts > POST /api/posts/schedule > rejects requests with invalid tokens 35ms
+   → expected 403 "Forbidden", got 401 "Unauthorized"
+ ✓ tests/integration/post-scheduling.test.ts > POST /api/posts/schedule > accepts custom scheduledAt parameter 23ms
+ × tests/integration/post-scheduling.test.ts > POST /api/posts/schedule > validates required fields 42ms
+   → expected 400 "Bad Request", got 500 "Internal Server Error"
+ ✓ tests/integration/post-scheduling.test.ts > POST /api/posts/schedule > handles mediaKey parameter 18ms
+stdout | tests/integration/post-scheduling.test.ts > POST /api/posts/schedule > rejects unauthenticated requests for scheduled posts
+info: [2025-09-29T10:57:03.136Z] GET /api/posts/scheduled - IP: ::ffff:127.0.0.1 {"timestamp":"2025-09-29T10:57:03.136Z"}
+
+stdout | tests/integration/post-scheduling.test.ts > POST /api/posts/schedule > rejects unauthenticated requests for scheduled posts
+2025-09-29T10:57:03.140Z [[32minfo[39m] [42a61e3a-8871-474d-992b-f3ad9251961a] GET /api/posts/scheduled 401 in 4ms :: {"error":"Access token required"}
+
+ ✓ tests/integration/post-scheduling.test.ts > POST /api/posts/schedule > returns scheduled posts for authenticated users 26ms
+ ✓ tests/integration/post-scheduling.test.ts > POST /api/posts/schedule > rejects unauthenticated requests for scheduled posts 27ms
+stdout | tests/integration/reddit/posting-flow.test.ts
+[dotenv@17.2.2] injecting env (2) from .env.test -- tip: ⚙️  enable debug logging with { debug: true }
+
+stdout | tests/integration/csrf-smoke.test.ts
+[dotenv@17.2.2] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+
+stdout | tests/routes/admin-communities.test.ts
+[dotenv@17.2.2] injecting env (2) from .env.test -- tip: ⚙️  override existing env vars with { override: true }
+
