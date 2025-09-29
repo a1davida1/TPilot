@@ -1027,6 +1027,9 @@ export default function RedditPostingPage() {
                                     setCommunityPickerOpen(false);
                                   }}
                                   data-testid={`community-option-${sc.community.id}`}
+                                  disabled={false}
+                                  aria-disabled={false}
+                                  data-disabled={false}
                                 >
                                   <div className="flex items-center justify-between w-full">
                                     <div className="flex-1">
@@ -1055,7 +1058,9 @@ export default function RedditPostingPage() {
                                     <CommandItem
                                       key={sc.community.id}
                                       value={sc.community.id}
-                                      disabled
+                                      disabled={true}
+                                      aria-disabled={true}
+                                      data-disabled={true}
                                       data-testid={`community-option-${sc.community.id}`}
                                     >
                                       <div className="flex items-center justify-between w-full opacity-50">
